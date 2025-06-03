@@ -1,0 +1,16 @@
+{
+  "files": {
+    "main.css": "/gym-progress-tracker-v2/static/css/main.5d3fd438.css",
+    "main.js": "/gym-progress-tracker-v2/static/js/main.0e57c8a6.js",
+    "static/js/453.1838198f.chunk.js": "/gym-progress-tracker-v2/static/js/453.1838198f.chunk.js",
+    "static/media/gym-background.jpg": "/gym-progress-tracker-v2/static/media/gym-background.81107f7c672a7fe35808.jpg",
+    "index.html": "/gym-progress-tracker-v2/index.html",
+    "main.5d3fd438.css.map": "/gym-progress-tracker-v2/static/css/main.5d3fd438.css.map",
+    "main.0e57c8a6.js.map": "/gym-progress-tracker-v2/static/js/main.0e57c8a6.js.map",
+    "453.1838198f.chunk.js.map": "/gym-progress-tracker-v2/static/js/453.1838198f.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.5d3fd438.css",
+    "static/js/main.0e57c8a6.js"
+  ]
+}

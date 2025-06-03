@@ -1,0 +1,32 @@
+# Enable Cross-Origin Resource Sharing (CORS)
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "*"
+    Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With"
+    Header set Access-Control-Allow-Credentials "true"
+    
+    # Cache Control Headers
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+</IfModule>
+
+# PHP settings
+<IfModule mod_php7.c>
+    # Session settings
+    php_value session.cookie_httponly 1
+    php_value session.use_only_cookies 1
+    php_value session.cookie_secure 0
+    php_value session.cookie_samesite "None"
+    
+    # Increase session lifetime if needed
+    php_value session.gc_maxlifetime 86400
+    php_value session.cookie_lifetime 86400
+</IfModule>
+
+# Prevent directory listing
+Options -Indexes
+
+# Handle errors
+ErrorDocument 404 /gym-progress-tracker-v2/backend/api/error/404.php
+ErrorDocument 500 /gym-progress-tracker-v2/backend/api/error/500.php

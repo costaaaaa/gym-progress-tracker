@@ -1,0 +1,24 @@
+# Enable client-side routing
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /gym-progress-tracker-v2/
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-l
+  RewriteRule . /gym-progress-tracker-v2/index.html [L]
+</IfModule>
+
+# Set proper MIME types
+<IfModule mod_mime.c>
+  AddType application/javascript .js
+  AddType text/css .css
+</IfModule>
+
+# Enable CORS
+<IfModule mod_headers.c>
+  Header set Access-Control-Allow-Origin "*"
+</IfModule>
+
+# Disable directory listing
+Options -Indexes
