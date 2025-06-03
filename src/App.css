@@ -1,0 +1,126 @@
+body {
+  background-image: url('./assets/images/gym-background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  position: relative;
+  color: #333333;
+}
+
+body::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.9);
+  z-index: -1;
+}
+
+.App {
+  text-align: center;
+}
+
+/* Miglioramento leggibilità testo */
+h1, h2, h3, h4, h5, h6 {
+  color: #333333;
+  text-shadow: 0px 1px 1px rgba(0,0,0,0.05);
+}
+
+p, span, div {
+  color: #444444;
+}
+
+/* Sfondo per i contenitori principali per migliorare contrasto e leggibilità */
+.MuiPaper-root {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Effetto pulsazione per elementi importanti */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Effetto energico per hover sui pulsanti */
+.MuiButton-contained:hover {
+  animation: pulse 0.5s ease-in-out;
+}
+
+/* Stile per le card con effetto sportivo */
+.workout-card {
+  border-left: 4px solid #d50000;
+  transition: all 0.3s ease;
+}
+
+.workout-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+/* Stile per i titoli delle sezioni */
+.section-title {
+  position: relative;
+  padding-left: 15px;
+  font-weight: 700;
+}
+
+.section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 70%;
+  width: 5px;
+  background-color: #d50000;
+  border-radius: 3px;
+}
+
+/* Stile per le barre di progresso */
+.progress-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #d50000 0%, #ff1744 100%);
+  transition: width 0.5s ease-in-out;
+}
+
+/* Effetto per le immagini */
+.fitness-image {
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  filter: saturate(1.2);
+}
+
+.fitness-image:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+/* Miglioramento contrasto per testi su sfondo */
+.MuiTypography-root.MuiTypography-body1, 
+.MuiTypography-root.MuiTypography-body2 {
+  color: #333333;
+}
+
+.MuiListItemText-primary {
+  color: #333333 !important;
+  font-weight: 500;
+}
+
+.MuiListItemText-secondary {
+  color: #555555 !important;
+}
+
+/* Aggiunta ombra sottile per aumentare leggibilità testo importante */
+.MuiContainer-root, .MuiPaper-elevation {
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
