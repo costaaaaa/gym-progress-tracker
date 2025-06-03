@@ -1,13 +1,10 @@
 # Gym Progress Tracker
 
-[🇮🇹 Versione Italiana](#Italiano) | [🇬🇧 English Version](#gym-progress-tracker)
+[🇮🇹 Versione Italiana](#italiano) | [🇬🇧 English Version](#gym-progress-tracker)
 
-[![Live Demo](https://img.shields.io/badge/Demo-Live-green)](https://andreacostamagna.altervista.org/gym-progress-tracker-v2/)
-[![GitHub Repo](https://img.shields.io/badge/GitHub-Repository-blue)](https://github.com/costaaaaa/gym-progress-tracker)
+## 🇬🇧 English
 
-# 🇬🇧 English
-
-## Description
+### Description
 
 **Gym Progress Tracker** is a web application designed for those who want to keep track of their gym workouts in a simple, flexible, and detailed way.
 
@@ -43,8 +40,7 @@ With this tool you can:
 
 ## Try it Out
 
-You can test the app directly here:
-👉 [Gym Progress Tracker Live](https://andreacostamagna.altervista.org/gym-progress-tracker-v2/)
+You can test the app directly here: 👉 [Gym Progress Tracker Live](https://andreacostamagna.altervista.org/gym-progress-tracker-v2/)
 
 ## Local Installation (Optional)
 
@@ -127,8 +123,7 @@ Con questo strumento è possibile:
 
 ## Come provarlo
 
-Puoi testare l'app direttamente al seguente link:
-👉 [Gym Progress Tracker Live](https://andreacostamagna.altervista.org/gym-progress-tracker-v2/)
+Puoi testare l'app direttamente al seguente link: 👉 [Gym Progress Tracker Live](https://andreacostamagna.altervista.org/gym-progress-tracker-v2/)
 
 ## Installazione locale (facoltativa)
 
