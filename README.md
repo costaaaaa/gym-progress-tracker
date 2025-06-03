@@ -1,6 +1,6 @@
 # Gym Progress Tracker
 
-[🇮🇹 Versione Italiana](#italiano) | [🇬🇧 English Version](#gym-progress-tracker)
+[🇮🇹 Versione Italiana](#-italiano) | [🇬🇧 English Version](#gym-progress-tracker)
 
 ## 🇬🇧 English
 
