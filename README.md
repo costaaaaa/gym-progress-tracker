@@ -1,6 +1,6 @@
 # Gym Progress Tracker
 
-[🇮🇹 Versione Italiana](#gym-progress-tracker-in-italiano) | [🇬🇧 English Version](#gym-progress-tracker)
+[🇮🇹 Versione Italiana](#Italiano) | [🇬🇧 English Version](#gym-progress-tracker)
 
 [![Live Demo](https://img.shields.io/badge/Demo-Live-green)](https://andreacostamagna.altervista.org/gym-progress-tracker-v2/)
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Repository-blue)](https://github.com/costaaaaa/gym-progress-tracker)
