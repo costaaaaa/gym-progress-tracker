@@ -2,9 +2,9 @@
 
 [🇮🇹 Versione Italiana](#-italiano) | [🇬🇧 English Version](#gym-progress-tracker)
 
-## 🇬🇧 English
+# 🇬🇧 English
 
-### Description
+## Description
 
 **Gym Progress Tracker** is a web application designed for those who want to keep track of their gym workouts in a simple, flexible, and detailed way.
 
@@ -87,7 +87,7 @@ If you find this project useful, consider giving it a ⭐ on GitHub!
 
 [🇬🇧 English Version](#gym-progress-tracker)
 
-## 🇮🇹 Descrizione
+## Descrizione
 
 **Gym Progress Tracker** è un'applicazione web pensata per chi desidera tenere traccia dei propri allenamenti in palestra in modo semplice, flessibile e dettagliato.
 
