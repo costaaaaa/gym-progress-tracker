@@ -131,28 +131,6 @@ const Navbar = () => {
         </Box>
         
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {!isMobile && isLoggedIn && (
-            <Box sx={{ display: 'flex', gap: 0.5, mr: 2 }}>
-              {menuItems.slice(1).map((item) => (
-                <Button
-                  key={item.path}
-                  component={RouterLink}
-                  to={item.path}
-                  color="inherit"
-                  sx={{
-                    borderRadius: 2,
-                    px: 1.5,
-                    bgcolor: isActive(item.path) ? 'rgba(255,255,255,0.15)' : 'transparent',
-                    fontWeight: isActive(item.path) ? 700 : 500,
-                    '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' }
-                  }}
-                >
-                  {item.label}
-                </Button>
-              ))}
-            </Box>
-          )}
-
           <Tooltip title={mode === 'light' ? 'Modalità Scura' : 'Modalità Chiara'}>
             <IconButton color="inherit" onClick={toggleThemeMode} sx={{ bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}>
               {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
