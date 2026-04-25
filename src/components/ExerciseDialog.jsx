@@ -29,6 +29,19 @@ const muscleGroups = [
   'Addominali'
 ];
 
+export const INTENSITY_TECHNIQUES = [
+  'Nessuna (Normale)',
+  'Drop Set (Stripping)',
+  'Rest Pause',
+  'Super Set',
+  'Jump Set',
+  'Negative',
+  'Ripetizioni Forzate',
+  'Isometria',
+  'Peak Contraction',
+  'Myo-Reps'
+];
+
 const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
   const [exercise, setExercise] = useState({
     name: '',
@@ -36,7 +49,8 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
     reps: '',
     rest: '',
     notes: '',
-    muscleGroup: ''
+    muscleGroup: '',
+    intensity_technique: ''
   });
 
   // Stato per gli esercizi caricati dal database
@@ -135,7 +149,8 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
       reps: '',
       rest: '',
       notes: '',
-      muscleGroup: ''
+      muscleGroup: '',
+      intensity_technique: ''
     });
     setInputValue('');
     onClose();
@@ -209,24 +224,47 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
             />
             <TextField
               name="reps"
-              margin="dense"
               label="Ripetizioni"
-              type="number"
+              type="text"
               fullWidth
               value={exercise.reps}
               onChange={(e) => setExercise({ ...exercise, reps: e.target.value })}
             />
-            
             <TextField
-              margin="dense"
-              label="Note"
-              multiline
-              rows={3}
+              name="rest"
+              label="Recupero (s)"
+              type="number"
               fullWidth
-              value={exercise.notes || ''}
-              onChange={(e) => setExercise({ ...exercise, notes: e.target.value })}
+              value={exercise.rest}
+              onChange={(e) => setExercise({ ...exercise, rest: e.target.value })}
             />
           </Box>
+          
+          <FormControl fullWidth>
+            <InputLabel>Tecnica di Intensità (Opzionale)</InputLabel>
+            <Select
+              name="intensity_technique"
+              value={exercise.intensity_technique}
+              label="Tecnica di Intensità (Opzionale)"
+              onChange={handleChange}
+            >
+              {INTENSITY_TECHNIQUES.map((tech) => (
+                <MenuItem key={tech} value={tech === 'Nessuna (Normale)' ? '' : tech}>
+                  {tech}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+            
+          <TextField
+            margin="dense"
+            label="Note"
+            multiline
+            rows={3}
+            fullWidth
+            value={exercise.notes || ''}
+            onChange={(e) => setExercise({ ...exercise, notes: e.target.value })}
+          />
         </Box>
       </DialogContent>
       <DialogActions>

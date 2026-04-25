@@ -4,6 +4,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { useAuth } from '../context/AuthContext';
 
 const Home = () => {
@@ -24,6 +25,28 @@ const Home = () => {
             <>
               <Button 
                 variant="contained" 
+                color="primary" 
+                component={RouterLink} 
+                to="/focus"
+                startIcon={<PlayArrowIcon />}
+                sx={{ 
+                  mr: 2, py: 1.5, px: 4, fontWeight: 'bold', mb: { xs: 2, sm: 2, md: 0 },
+                  fontSize: '1.1rem',
+                  background: 'linear-gradient(45deg, #c62828 0%, #e53935 100%)',
+                  boxShadow: '0 4px 16px rgba(229, 57, 53, 0.35)',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #b71c1c 0%, #c62828 100%)',
+                    boxShadow: '0 6px 20px rgba(229, 57, 53, 0.5)',
+                    transform: 'translateY(-3px)',
+                  },
+                  transition: 'all 0.3s ease',
+                }}
+                className="workout-card"
+              >
+                Inizia Allenamento
+              </Button>
+              <Button 
+                variant="outlined" 
                 color="primary" 
                 component={RouterLink} 
                 to="/workout-plans"

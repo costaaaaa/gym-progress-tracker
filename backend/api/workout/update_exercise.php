@@ -52,9 +52,11 @@ if (
         $workoutExercise->reps = $data->reps;
         $workoutExercise->rest = $data->rest;
         $workoutExercise->notes = isset($data->notes) && $data->notes !== "" ? $data->notes : null; // Gestiamo correttamente il campo notes
+        $workoutExercise->intensity_technique = isset($data->intensity_technique) && $data->intensity_technique !== "" ? $data->intensity_technique : null;
 
         // Log per debug
         error_log("Notes value: " . (isset($data->notes) ? $data->notes : 'null') . ", Final value: " . $workoutExercise->notes);
+        error_log("Intensity Technique value: " . (isset($data->intensity_technique) ? $data->intensity_technique : 'null') . ", Final value: " . $workoutExercise->intensity_technique);
 
         // Esegui l'aggiornamento
         if ($workoutExercise->update()) {

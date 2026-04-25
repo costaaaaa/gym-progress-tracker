@@ -21,7 +21,9 @@ import {
   Collapse
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
+import WhatshotIcon from '@mui/icons-material/Whatshot';
 import { API_BASE_URL } from '../config';
+import { INTENSITY_TECHNIQUES } from './ExerciseDialog';
 
 const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
   const [selectedDay, setSelectedDay] = useState('');
@@ -41,7 +43,8 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
       selectedDayData.exercises.forEach(exercise => {
         initialWorkoutData[exercise.id] = Array(exercise.sets).fill().map(() => ({
           weight: '',
-          reps: exercise.reps // Default to planned reps
+          reps: exercise.reps, // Default to planned reps
+          intensity_technique: exercise.intensity_technique || '' // Default to planned intensity technique
         }));
       });
     }
@@ -70,6 +73,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
             exercise_name: exercise.exercise_name,
             weight: parseFloat(set.weight),
             reps: set.reps, // Manteniamo il formato testuale delle ripetizioni
+            intensity_technique: set.intensity_technique,
             day_id: selectedDay,
             set_number: setIndex + 1
           }))
@@ -240,13 +244,28 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                             value={workoutData[exercise.id]?.[setIndex]?.weight || ''}
                             onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'weight', e.target.value)}
                             fullWidth
+                            size="small"
                           />
                           <TextField
                             label="Ripetizioni"
                             value={workoutData[exercise.id]?.[setIndex]?.reps || exercise.reps}
                             onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'reps', e.target.value)}
                             fullWidth
+                            size="small"
                           />
+                          <FormControl fullWidth size="small">
+                            <InputLabel>Tecnica</InputLabel>
+                            <Select
+                              value={workoutData[exercise.id]?.[setIndex]?.intensity_technique || ''}
+                              label="Tecnica"
+                              onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'intensity_technique', e.target.value)}
+                            >
+                              <MenuItem value=""><em>Nessuna</em></MenuItem>
+                              {INTENSITY_TECHNIQUES.filter(t => t !== 'Nessuna (Normale)').map(tech => (
+                                <MenuItem key={tech} value={tech}>{tech}</MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
                         </Box>
                       ))}
                     </Box>

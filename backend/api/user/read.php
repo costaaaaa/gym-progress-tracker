@@ -28,7 +28,8 @@ if ($user->readById($user_id)) {
         'id' => $user->id,
         'username' => $user->username,
         'email' => $user->email,
-        'created_at' => $user->created_at
+        'created_at' => $user->created_at,
+        'rest_timer_enabled' => $user->rest_timer_enabled
     ));
 } else {
     http_response_code(404);

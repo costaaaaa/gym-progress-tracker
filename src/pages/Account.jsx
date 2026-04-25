@@ -30,6 +30,7 @@ import {
   FormGroup,
   CircularProgress
 } from '@mui/material';
+import Switch from '@mui/material/Switch';
 import { 
   Person as PersonIcon,
   Email as EmailIcon,
@@ -45,7 +46,8 @@ import {
   Download as DownloadIcon,
   FileDownload as FileDownloadIcon,
   History as HistoryIcon,
-  Description as DescriptionIcon
+  Description as DescriptionIcon,
+  Timer as TimerIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -98,6 +100,10 @@ const Account = () => {
   const [workoutData, setWorkoutData] = useState([]);
   const [plansData, setPlansData] = useState([]);
   const [dataLoaded, setDataLoaded] = useState(false);
+  
+  // Stato per le impostazioni allenamento
+  const [restTimerEnabled, setRestTimerEnabled] = useState(true);
+  const [savingSettings, setSavingSettings] = useState(false);
   
   // Funzioni per gestire la visibilità delle password
   const handleToggleCurrentPasswordVisibility = () => {
@@ -343,6 +349,11 @@ const fetchExportData = React.useCallback(async () => {
         email: userDetails.email,
         created_at: userDetails.created_at
       });
+
+      // Impostazione timer
+      if (userDetails.rest_timer_enabled !== undefined) {
+        setRestTimerEnabled(userDetails.rest_timer_enabled);
+      }
 
       if (userDetails.created_at) {
         setJoinDate(new Date(userDetails.created_at));
@@ -681,6 +692,77 @@ const fetchExportData = React.useCallback(async () => {
             </Card>
           </Grid>
         </Grid>
+      </Paper>
+      
+      {/* Sezione Impostazioni Allenamento */}
+      <Paper elevation={3} sx={{ 
+        p: { xs: 2, sm: 3, md: 4 }, 
+        borderRadius: 2,
+        mb: 4,
+        background: 'linear-gradient(to right bottom, #ffffff, #f8f9fa)'
+      }}>
+        <Typography variant="h6" gutterBottom sx={{ 
+          display: 'flex', 
+          alignItems: 'center',
+          mb: 2
+        }}>
+          <TimerIcon sx={{ mr: 1, color: 'primary.main' }} />
+          Impostazioni Allenamento
+        </Typography>
+        
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          p: 2,
+          borderRadius: 2,
+          bgcolor: 'rgba(25, 118, 210, 0.04)',
+          border: '1px solid rgba(25, 118, 210, 0.12)'
+        }}>
+          <Box>
+            <Typography variant="subtitle1" fontWeight="medium">
+              Timer di recupero
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Disattiva se usi un timer dedicato o l'orologio della palestra
+            </Typography>
+          </Box>
+          <Switch
+            checked={restTimerEnabled}
+            onChange={async (e) => {
+              const newValue = e.target.checked;
+              setRestTimerEnabled(newValue);
+              setSavingSettings(true);
+              try {
+                const response = await fetch(`${API_BASE_URL}api/user/update_settings.php`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                  body: JSON.stringify({ rest_timer_enabled: newValue })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message);
+                setSnackbar({
+                  open: true,
+                  message: newValue ? 'Timer di recupero attivato' : 'Timer di recupero disattivato',
+                  severity: 'success'
+                });
+              } catch (error) {
+                console.error('Errore aggiornamento impostazioni:', error);
+                setRestTimerEnabled(!newValue); // Rollback
+                setSnackbar({
+                  open: true,
+                  message: 'Errore nel salvataggio delle impostazioni',
+                  severity: 'error'
+                });
+              } finally {
+                setSavingSettings(false);
+              }
+            }}
+            disabled={savingSettings}
+            color="primary"
+          />
+        </Box>
       </Paper>
       
       {/* Dialog per cambio password */}

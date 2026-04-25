@@ -13,6 +13,7 @@ class User
     public $created_at;
     public $updated_at;
     public $is_hashed; // Nuova proprietà per indicare se la password è già hashata
+    public $rest_timer_enabled; // Preferenza timer di recupero nella modalità Focus
 
     // Constructor with database connection
     public function __construct($db)
@@ -280,7 +281,7 @@ class User
     }
     public function readById($id)
     {
-        $query = "SELECT id, username, email, created_at FROM " . $this->table_name . " WHERE id = ? LIMIT 1";
+        $query = "SELECT id, username, email, created_at, rest_timer_enabled FROM " . $this->table_name . " WHERE id = ? LIMIT 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(1, $id);
         $stmt->execute();
@@ -291,8 +292,34 @@ class User
             $this->username = $row['username'];
             $this->email = $row['email'];
             $this->created_at = $row['created_at'];
+            $this->rest_timer_enabled = (bool)$row['rest_timer_enabled'];
             return true;
         }
+        return false;
+    }
+
+    // Aggiorna le impostazioni dell'utente (timer di recupero)
+    public function updateSettings($rest_timer_enabled)
+    {
+        if (!$this->id) {
+            error_log("Update settings failed: No user ID provided");
+            return false;
+        }
+
+        $query = "UPDATE " . $this->table_name . " SET rest_timer_enabled = :rest_timer_enabled, updated_at = NOW() WHERE id = :id";
+
+        $stmt = $this->conn->prepare($query);
+
+        $timer_value = $rest_timer_enabled ? 1 : 0;
+        $stmt->bindParam(':rest_timer_enabled', $timer_value, PDO::PARAM_INT);
+        $stmt->bindParam(':id', $this->id);
+
+        if ($stmt->execute()) {
+            $this->rest_timer_enabled = (bool)$rest_timer_enabled;
+            return true;
+        }
+
+        error_log("Update settings failed: Database error for user ID {$this->id}");
         return false;
     }
 

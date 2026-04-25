@@ -1,3 +1,6 @@
+-- Gym Progress Tracker - Unified Database Schema
+-- Generated: 2026-04-25
+
 -- Database creation
 CREATE DATABASE IF NOT EXISTS `gym_progress_tracker`;
 USE `gym_progress_tracker`;
@@ -8,6 +11,7 @@ CREATE TABLE IF NOT EXISTS `gym_users` (
   `username` varchar(50) NOT NULL,
   `email` varchar(100) NOT NULL,
   `password` varchar(255) NOT NULL,
+  `rest_timer_enabled` tinyint(1) NOT NULL DEFAULT 1,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -90,7 +94,7 @@ CREATE TABLE IF NOT EXISTS `gym_progress` (
 CREATE TABLE IF NOT EXISTS `gym_workout_history` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
-  `exercises` text NOT NULL,
+  `exercises` text NOT NULL, -- Keep for compatibility with legacy code
   `date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `notes` text DEFAULT NULL,
   PRIMARY KEY (`id`),
