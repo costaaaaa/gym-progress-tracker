@@ -54,78 +54,35 @@ import {
   History as HistoryIcon
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
+import { useThemeMode } from '../context/ThemeModeContext';
+import { useTheme } from '@mui/material/styles';
 import { API_BASE_URL } from '../config';
-import { INTENSITY_TECHNIQUES } from '../components/ExerciseDialog';
-import { hapticFeedback } from '../utils/vibration';
-
-// ================================================
-// TEMA SCURO PER FOCUS MODE
-// ================================================
-const focusTheme = {
-  bg: '#121212',
-  bgCard: '#1e1e1e',
-  bgElevated: '#2a2a2a',
-  primary: '#e53935',
-  primaryLight: '#ff6f60',
-  primaryDark: '#ab000d',
-  text: '#ffffff',
-  textSecondary: '#b0b0b0',
-  textMuted: '#757575',
-  success: '#4caf50',
-  warning: '#ff9800',
-  border: '#333333',
-  timerBg: 'rgba(229, 57, 53, 0.08)',
-};
-
-const darkFocusTheme = createTheme({
-  palette: {
-    mode: 'dark',
-    primary: {
-      main: focusTheme.primary,
-      light: focusTheme.primaryLight,
-      dark: focusTheme.primaryDark,
-    },
-    background: {
-      default: focusTheme.bg,
-      paper: focusTheme.bgCard,
-    },
-    text: {
-      primary: focusTheme.text,
-      secondary: focusTheme.textSecondary,
-    },
-    success: {
-      main: focusTheme.success,
-    },
-    warning: {
-      main: focusTheme.warning,
-    },
-    divider: focusTheme.border,
-  },
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    h1: { fontFamily: '"Inter", sans-serif', fontWeight: 800 },
-    h2: { fontFamily: '"Inter", sans-serif', fontWeight: 800 },
-    h3: { fontFamily: '"Inter", sans-serif', fontWeight: 700 },
-    h4: { fontFamily: '"Inter", sans-serif', fontWeight: 700 },
-    h5: { fontFamily: '"Inter", sans-serif', fontWeight: 700 },
-    h6: { fontFamily: '"Inter", sans-serif', fontWeight: 700 },
-  },
-  components: {
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          backgroundImage: 'none', // Rimuove il gradiente di elevazione di MUI dark mode
-        },
-      },
-    },
-  },
-});
 
 const DRAFT_STORAGE_KEY = 'gym_focus_workout_draft';
 
 const FocusWorkout = () => {
   const navigate = useNavigate();
   const { isLoggedIn, loading: authLoading } = useAuth();
+  const theme = useTheme();
+  const { mode } = useThemeMode();
+  const isDarkMode = mode === 'dark';
+
+  const colors = {
+    bg: theme.palette.background.default,
+    bgCard: theme.palette.background.paper,
+    bgElevated: isDarkMode ? '#2a2a2a' : '#f5f5f5',
+    primary: theme.palette.primary.main,
+    primaryLight: theme.palette.primary.light,
+    primaryDark: theme.palette.primary.dark,
+    text: theme.palette.text.primary,
+    textSecondary: theme.palette.text.secondary,
+    textMuted: isDarkMode ? '#757575' : '#9e9e9e',
+    success: theme.palette.success.main,
+    warning: theme.palette.warning.main,
+    border: theme.palette.divider,
+    timerBg: isDarkMode ? 'rgba(213, 0, 0, 0.08)' : 'rgba(213, 0, 0, 0.04)',
+    primaryAlpha: isDarkMode ? 'rgba(213, 0, 0, 0.15)' : 'rgba(213, 0, 0, 0.08)',
+  };
 
   // ================================================
   // STATE
@@ -595,10 +552,10 @@ const FocusWorkout = () => {
     if (phase === 'loading' || authLoading) {
       return (
         <Box sx={{
-          minHeight: '100vh', bgcolor: focusTheme.bg, display: 'flex',
+          minHeight: '100vh', bgcolor: colors.bg, display: 'flex',
           alignItems: 'center', justifyContent: 'center'
         }}>
-          <CircularProgress sx={{ color: focusTheme.primary }} />
+          <CircularProgress sx={{ color: colors.primary }} />
         </Box>
       );
     }
@@ -606,25 +563,25 @@ const FocusWorkout = () => {
     if (phase === 'resume_prompt' && draftToResume) {
       return (
         <Box sx={{ 
-          minHeight: '100vh', bgcolor: focusTheme.bg, color: focusTheme.text,
+          minHeight: '100vh', bgcolor: colors.bg, color: colors.text,
           display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3
         }}>
           <Paper sx={{ 
-            bgcolor: focusTheme.bgCard, p: 4, borderRadius: 4, maxWidth: 400, textAlign: 'center',
-            border: `1px solid ${focusTheme.border}`,
+            bgcolor: colors.bgCard, p: 4, borderRadius: 4, maxWidth: 400, textAlign: 'center',
+            border: `1px solid ${colors.border}`,
             boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
           }}>
-            <HistoryIcon sx={{ fontSize: 64, color: focusTheme.warning, mb: 2 }} />
+            <HistoryIcon sx={{ fontSize: 64, color: colors.warning, mb: 2 }} />
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
               Allenamento in sospeso
             </Typography>
-            <Typography variant="body1" sx={{ color: focusTheme.textSecondary, mb: 1 }}>
+            <Typography variant="body1" sx={{ color: colors.textSecondary, mb: 1 }}>
               Hai un allenamento non salvato per il giorno:
             </Typography>
-            <Typography variant="h6" sx={{ color: focusTheme.primaryLight, fontWeight: 600, mb: 1 }}>
+            <Typography variant="h6" sx={{ color: colors.primaryLight, fontWeight: 600, mb: 1 }}>
               {draftToResume.selectedDay?.name}
             </Typography>
-            <Typography variant="body2" sx={{ color: focusTheme.textMuted, mb: 4 }}>
+            <Typography variant="body2" sx={{ color: colors.textMuted, mb: 4 }}>
               Iniziato il {new Date(draftToResume.startTime).toLocaleString('it-IT')}
             </Typography>
 
@@ -635,8 +592,8 @@ const FocusWorkout = () => {
                 fullWidth
                 onClick={handleResumeDraft}
                 sx={{ 
-                  bgcolor: focusTheme.primary, py: 1.5, fontWeight: 700, borderRadius: 2,
-                  '&:hover': { bgcolor: focusTheme.primaryDark }
+                  bgcolor: colors.primary, py: 1.5, fontWeight: 700, borderRadius: 2,
+                  '&:hover': { bgcolor: colors.primaryDark }
                 }}
               >
                 Riprendi Allenamento
@@ -647,8 +604,8 @@ const FocusWorkout = () => {
                 fullWidth
                 onClick={handleDiscardDraft}
                 sx={{ 
-                  color: focusTheme.textSecondary, borderColor: focusTheme.border, py: 1.5, borderRadius: 2,
-                  '&:hover': { borderColor: focusTheme.primary, color: focusTheme.primaryLight }
+                  color: colors.textSecondary, borderColor: colors.border, py: 1.5, borderRadius: 2,
+                  '&:hover': { borderColor: colors.primary, color: colors.primaryLight }
                 }}
               >
                 Scarta e Inizia Nuovo
@@ -661,15 +618,15 @@ const FocusWorkout = () => {
 
     if (phase === 'select_day') {
       return (
-        <Box sx={{ minHeight: '100vh', bgcolor: focusTheme.bg, color: focusTheme.text }}>
+        <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text }}>
           <Box sx={{
             p: 2, display: 'flex', alignItems: 'center', gap: 1,
-            borderBottom: `1px solid ${focusTheme.border}`
+            borderBottom: `1px solid ${colors.border}`
           }}>
-            <IconButton onClick={() => navigate('/')} sx={{ color: focusTheme.text }}>
+            <IconButton onClick={() => navigate('/')} sx={{ color: colors.text }}>
               <ArrowBackIcon />
             </IconButton>
-            <FitnessCenterIcon sx={{ color: focusTheme.primary }} />
+            <FitnessCenterIcon sx={{ color: colors.primary }} />
             <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: 1 }}>
               FOCUS MODE
             </Typography>
@@ -678,17 +635,17 @@ const FocusWorkout = () => {
           <Container maxWidth="sm" sx={{ py: 4 }}>
             {!activePlan ? (
               <Box sx={{ textAlign: 'center', py: 6 }}>
-                <FitnessCenterIcon sx={{ fontSize: 64, color: focusTheme.textMuted, mb: 2 }} />
-                <Typography variant="h6" sx={{ color: focusTheme.textSecondary, mb: 2 }}>
+                <FitnessCenterIcon sx={{ fontSize: 64, color: colors.textMuted, mb: 2 }} />
+                <Typography variant="h6" sx={{ color: colors.textSecondary, mb: 2 }}>
                   Nessun piano attivo
                 </Typography>
-                <Typography variant="body2" sx={{ color: focusTheme.textMuted, mb: 3 }}>
+                <Typography variant="body2" sx={{ color: colors.textMuted, mb: 3 }}>
                   Vai alle Schede e attiva un piano di allenamento
                 </Typography>
                 <Button
                   variant="outlined"
                   onClick={() => navigate('/workout-plans')}
-                  sx={{ color: focusTheme.primary, borderColor: focusTheme.primary }}
+                  sx={{ color: colors.primary, borderColor: colors.primary }}
                 >
                   Vai alle Schede
                 </Button>
@@ -696,27 +653,27 @@ const FocusWorkout = () => {
             ) : (
               <>
                 <Paper sx={{
-                  bgcolor: focusTheme.bgCard, p: 3, mb: 3, borderRadius: 3,
-                  border: `1px solid ${focusTheme.border}`
+                  bgcolor: colors.bgCard, p: 3, mb: 3, borderRadius: 3,
+                  border: `1px solid ${colors.border}`
                 }}>
-                  <Typography variant="overline" sx={{ color: focusTheme.textMuted, letterSpacing: 2 }}>
+                  <Typography variant="overline" sx={{ color: colors.textMuted, letterSpacing: 2 }}>
                     Piano attivo
                   </Typography>
-                  <Typography variant="h5" sx={{ color: focusTheme.text, fontWeight: 700, mb: 3 }}>
+                  <Typography variant="h5" sx={{ color: colors.text, fontWeight: 700, mb: 3 }}>
                     {activePlan.name}
                   </Typography>
 
                   <FormControl fullWidth sx={{
                     mb: 3,
                     '& .MuiOutlinedInput-root': {
-                      color: focusTheme.text,
-                      '& fieldset': { borderColor: focusTheme.border },
-                      '&:hover fieldset': { borderColor: focusTheme.primary },
-                      '&.Mui-focused fieldset': { borderColor: focusTheme.primary },
+                      color: colors.text,
+                      '& fieldset': { borderColor: colors.border },
+                      '&:hover fieldset': { borderColor: colors.primary },
+                      '&.Mui-focused fieldset': { borderColor: colors.primary },
                     },
-                    '& .MuiInputLabel-root': { color: focusTheme.textSecondary },
-                    '& .MuiInputLabel-root.Mui-focused': { color: focusTheme.primary },
-                    '& .MuiSvgIcon-root': { color: focusTheme.textSecondary },
+                    '& .MuiInputLabel-root': { color: colors.textSecondary },
+                    '& .MuiInputLabel-root.Mui-focused': { color: colors.primary },
+                    '& .MuiSvgIcon-root': { color: colors.textSecondary },
                   }}>
                     <InputLabel>Seleziona Giorno</InputLabel>
                     <Select
@@ -732,19 +689,19 @@ const FocusWorkout = () => {
 
                   {selectedDay && selectedDay.exercises && (
                     <Box>
-                      <Typography variant="subtitle2" sx={{ color: focusTheme.textMuted, mb: 1.5, letterSpacing: 1 }}>
+                      <Typography variant="subtitle2" sx={{ color: colors.textMuted, mb: 1.5, letterSpacing: 1 }}>
                         ESERCIZI ({selectedDay.exercises.length})
                       </Typography>
                       {selectedDay.exercises.map((ex, idx) => (
                         <Box key={ex.id} sx={{
                           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          py: 1.5, borderBottom: idx < selectedDay.exercises.length - 1 ? `1px solid ${focusTheme.border}` : 'none'
+                          py: 1.5, borderBottom: idx < selectedDay.exercises.length - 1 ? `1px solid ${colors.border}` : 'none'
                         }}>
                           <Box>
-                            <Typography variant="body1" sx={{ color: focusTheme.text, fontWeight: 500 }}>
+                            <Typography variant="body1" sx={{ color: colors.text, fontWeight: 500 }}>
                               {ex.exercise_name}
                             </Typography>
-                            <Typography variant="caption" sx={{ color: focusTheme.textMuted }}>
+                            <Typography variant="caption" sx={{ color: colors.textMuted }}>
                               {ex.sets} serie × {ex.reps} — Recupero: {ex.rest}s
                               {ex.intensity_technique && ` — ${ex.intensity_technique}`}
                             </Typography>
@@ -753,8 +710,8 @@ const FocusWorkout = () => {
                             label={ex.muscle_group}
                             size="small"
                             sx={{
-                              bgcolor: 'rgba(229, 57, 53, 0.15)',
-                              color: focusTheme.primaryLight,
+                              bgcolor: colors.primaryAlpha,
+                              color: colors.primaryLight,
                               fontWeight: 500,
                               fontSize: '0.7rem'
                             }}
@@ -774,10 +731,10 @@ const FocusWorkout = () => {
                   onClick={handleStartWorkout}
                   sx={{
                     py: 2, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1,
-                    bgcolor: focusTheme.primary, color: '#fff', borderRadius: 3, textTransform: 'uppercase',
-                    boxShadow: '0 4px 20px rgba(229, 57, 53, 0.4)',
-                    '&:hover': { bgcolor: focusTheme.primaryDark, boxShadow: '0 6px 24px rgba(229, 57, 53, 0.5)', transform: 'translateY(-2px)' },
-                    '&:disabled': { bgcolor: focusTheme.bgElevated, color: focusTheme.textMuted },
+                    bgcolor: colors.primary, color: '#fff', borderRadius: 3, textTransform: 'uppercase',
+                    boxShadow: isDarkMode ? '0 4px 20px rgba(0, 0, 0, 0.4)' : '0 4px 20px rgba(213, 0, 0, 0.2)',
+                    '&:hover': { bgcolor: colors.primaryDark, boxShadow: isDarkMode ? '0 6px 24px rgba(0, 0, 0, 0.5)' : '0 6px 24px rgba(213, 0, 0, 0.3)', transform: 'translateY(-2px)' },
+                    '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted },
                     transition: 'all 0.3s ease',
                   }}
                 >
@@ -787,13 +744,13 @@ const FocusWorkout = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 2, gap: 1 }}>
                   {timerEnabled ? (
                     <>
-                      <TimerIcon sx={{ fontSize: 16, color: focusTheme.success }} />
-                      <Typography variant="caption" sx={{ color: focusTheme.textMuted }}>Timer di recupero attivo</Typography>
+                      <TimerIcon sx={{ fontSize: 16, color: colors.success }} />
+                      <Typography variant="caption" sx={{ color: colors.textMuted }}>Timer di recupero attivo</Typography>
                     </>
                   ) : (
                     <>
-                      <TimerOffIcon sx={{ fontSize: 16, color: focusTheme.textMuted }} />
-                      <Typography variant="caption" sx={{ color: focusTheme.textMuted }}>Timer di recupero disattivato</Typography>
+                      <TimerOffIcon sx={{ fontSize: 16, color: colors.textMuted }} />
+                      <Typography variant="caption" sx={{ color: colors.textMuted }}>Timer di recupero disattivato</Typography>
                     </>
                   )}
                 </Box>
@@ -808,24 +765,24 @@ const FocusWorkout = () => {
       const progress = timerDuration > 0 ? ((timerDuration - timerRemaining) / timerDuration) * 100 : 0;
       return (
         <Box sx={{
-          minHeight: '100vh', bgcolor: focusTheme.bg, color: focusTheme.text,
+          minHeight: '100vh', bgcolor: colors.bg, color: colors.text,
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', px: 3
         }}>
           <Box sx={{ position: 'relative', display: 'inline-flex', mb: 4 }}>
             <CircularProgress variant="determinate" value={progress} size={220} thickness={4}
-              sx={{ color: focusTheme.primary, '& .MuiCircularProgress-circle': { strokeLinecap: 'round', transition: 'stroke-dashoffset 1s linear' } }} />
+              sx={{ color: colors.primary, '& .MuiCircularProgress-circle': { strokeLinecap: 'round', transition: 'stroke-dashoffset 1s linear' } }} />
             <CircularProgress variant="determinate" value={100} size={220} thickness={4}
-              sx={{ color: focusTheme.border, position: 'absolute', left: 0, zIndex: 0 }} />
+              sx={{ color: colors.border, position: 'absolute', left: 0, zIndex: 0 }} />
             <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-              <Typography variant="h2" sx={{ fontWeight: 700, fontFamily: 'monospace', color: focusTheme.text }}>{formatTime(timerRemaining)}</Typography>
-              <Typography variant="caption" sx={{ color: focusTheme.textMuted, mt: 0.5 }}>RECUPERO</Typography>
+              <Typography variant="h2" sx={{ fontWeight: 700, fontFamily: 'monospace', color: colors.text }}>{formatTime(timerRemaining)}</Typography>
+              <Typography variant="caption" sx={{ color: colors.textMuted, mt: 0.5 }}>RECUPERO</Typography>
             </Box>
           </Box>
-          <Typography variant="body1" sx={{ color: focusTheme.textSecondary, mb: 1 }}>{currentExercise?.exercise_name}</Typography>
-          <Typography variant="body2" sx={{ color: focusTheme.textMuted, mb: 4 }}>Prossima: Serie {currentSetIndex + 1} di {totalSetsForCurrentExercise}</Typography>
+          <Typography variant="body1" sx={{ color: colors.textSecondary, mb: 1 }}>{currentExercise?.exercise_name}</Typography>
+          <Typography variant="body2" sx={{ color: colors.textMuted, mb: 4 }}>Prossima: Serie {currentSetIndex + 1} di {totalSetsForCurrentExercise}</Typography>
           <Button variant="outlined" size="large" startIcon={<SkipNextIcon />} onClick={handleSkipTimer}
-            sx={{ color: focusTheme.text, borderColor: focusTheme.border, borderRadius: 3, px: 4, py: 1.5, fontSize: '1rem',
-              '&:hover': { borderColor: focusTheme.primary, bgcolor: 'rgba(229, 57, 53, 0.08)' } }}>
+            sx={{ color: colors.text, borderColor: colors.border, borderRadius: 3, px: 4, py: 1.5, fontSize: '1rem',
+              '&:hover': { borderColor: colors.primary, bgcolor: colors.timerBg } }}>
             Salta Timer
           </Button>
         </Box>
@@ -834,27 +791,27 @@ const FocusWorkout = () => {
 
     if (phase === 'workout' && currentExercise) {
       return (
-        <Box sx={{ minHeight: '100vh', bgcolor: focusTheme.bg, color: focusTheme.text, display: 'flex', flexDirection: 'column' }}>
-          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${focusTheme.border}` }}>
-            <IconButton onClick={handleQuit} sx={{ color: focusTheme.textSecondary }}><CloseIcon /></IconButton>
+        <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text, display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${colors.border}` }}>
+            <IconButton onClick={handleQuit} sx={{ color: colors.textSecondary }}><CloseIcon /></IconButton>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <AccessTimeIcon sx={{ fontSize: 16, color: focusTheme.textMuted }} />
-              <Typography variant="caption" sx={{ color: focusTheme.textMuted, fontFamily: 'monospace' }}>{getElapsedTime()}</Typography>
+              <AccessTimeIcon sx={{ fontSize: 16, color: colors.textMuted }} />
+              <Typography variant="caption" sx={{ color: colors.textMuted, fontFamily: 'monospace' }}>{getElapsedTime()}</Typography>
             </Box>
-            <Typography variant="caption" sx={{ color: focusTheme.textMuted }}>{currentExerciseIndex + 1}/{totalExercises}</Typography>
+            <Typography variant="caption" sx={{ color: colors.textMuted }}>{currentExerciseIndex + 1}/{totalExercises}</Typography>
           </Box>
 
           <LinearProgress variant="determinate" value={((currentExerciseIndex) / totalExercises) * 100}
-            sx={{ height: 3, bgcolor: focusTheme.border, '& .MuiLinearProgress-bar': { bgcolor: focusTheme.primary } }} />
+            sx={{ height: 3, bgcolor: colors.border, '& .MuiLinearProgress-bar': { bgcolor: colors.primary } }} />
 
           <Fade in={exerciseTransition} timeout={300}>
             <Container maxWidth="sm" sx={{ py: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
               <Box sx={{ textAlign: 'center', mb: 3 }}>
-                <Chip label={currentExercise.muscle_group} size="small" sx={{ bgcolor: 'rgba(229, 57, 53, 0.15)', color: focusTheme.primaryLight, mb: 1, fontWeight: 500 }} />
-                <Typography variant="h4" sx={{ fontWeight: 700, color: focusTheme.text, lineHeight: 1.2 }}>{currentExercise.exercise_name}</Typography>
+                <Chip label={currentExercise.muscle_group} size="small" sx={{ bgcolor: colors.primaryAlpha, color: colors.primaryLight, mb: 1, fontWeight: 500 }} />
+                <Typography variant="h4" sx={{ fontWeight: 700, color: colors.text, lineHeight: 1.2 }}>{currentExercise.exercise_name}</Typography>
                 {currentExercise.notes && (
-                  <Alert severity="info" icon={<InfoIcon sx={{ color: focusTheme.primaryLight }} />}
-                    sx={{ mt: 2, bgcolor: 'rgba(229, 57, 53, 0.08)', color: focusTheme.textSecondary, '& .MuiAlert-icon': { color: focusTheme.primaryLight }, border: `1px solid ${focusTheme.border}`, borderRadius: 2 }}>
+                  <Alert severity="info" icon={<InfoIcon sx={{ color: colors.primaryLight }} />}
+                    sx={{ mt: 2, bgcolor: colors.timerBg, color: colors.textSecondary, '& .MuiAlert-icon': { color: colors.primaryLight }, border: `1px solid ${colors.border}`, borderRadius: 2 }}>
                     {currentExercise.notes}
                   </Alert>
                 )}
@@ -864,9 +821,9 @@ const FocusWorkout = () => {
                 {Array(totalSetsForCurrentExercise).fill(null).map((_, idx) => (
                   <Box key={idx} sx={{
                     width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: `2px solid ${idx < currentSetIndex ? focusTheme.success : idx === currentSetIndex ? focusTheme.primary : focusTheme.border}`,
-                    bgcolor: idx < currentSetIndex ? focusTheme.success : 'transparent',
-                    color: idx < currentSetIndex ? '#fff' : idx === currentSetIndex ? focusTheme.primary : focusTheme.textMuted,
+                    border: `2px solid ${idx < currentSetIndex ? colors.success : idx === currentSetIndex ? colors.primary : colors.border}`,
+                    bgcolor: idx < currentSetIndex ? colors.success : 'transparent',
+                    color: idx < currentSetIndex ? '#fff' : idx === currentSetIndex ? colors.primary : colors.textMuted,
                     fontWeight: 700, fontSize: '0.875rem', transition: 'all 0.3s ease'
                   }}>
                     {idx < currentSetIndex ? <CheckIcon sx={{ fontSize: 18 }} /> : idx + 1}
@@ -874,30 +831,30 @@ const FocusWorkout = () => {
                 ))}
               </Box>
 
-              <Typography variant="subtitle2" sx={{ textAlign: 'center', color: focusTheme.textMuted, mb: 3, letterSpacing: 1 }}>
+              <Typography variant="subtitle2" sx={{ textAlign: 'center', color: colors.textMuted, mb: 3, letterSpacing: 1 }}>
                 SERIE {currentSetIndex + 1} DI {totalSetsForCurrentExercise}
               </Typography>
 
               <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                 <TextField label="Peso (kg)" type="number" value={weightInput} onChange={(e) => setWeightInput(e.target.value)}
                   fullWidth autoFocus inputProps={{ step: 0.5, min: 0, inputMode: 'decimal' }}
-                  sx={{ '& .MuiOutlinedInput-root': { color: focusTheme.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: focusTheme.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: focusTheme.primary }, '&.Mui-focused fieldset': { borderColor: focusTheme.primary } }, '& .MuiInputLabel-root': { color: focusTheme.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: focusTheme.primary } }} />
+                  sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.primary }, '&.Mui-focused fieldset': { borderColor: colors.primary } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.primary } }} />
                 <TextField label="Ripetizioni" value={repsInput} onChange={(e) => setRepsInput(e.target.value)}
                   fullWidth inputProps={{ inputMode: 'text' }}
-                  sx={{ '& .MuiOutlinedInput-root': { color: focusTheme.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: focusTheme.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: focusTheme.primary }, '&.Mui-focused fieldset': { borderColor: focusTheme.primary } }, '& .MuiInputLabel-root': { color: focusTheme.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: focusTheme.primary } }} />
+                  sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.primary }, '&.Mui-focused fieldset': { borderColor: colors.primary } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.primary } }} />
               </Box>
 
               <FormControl fullWidth sx={{
                 mb: 3,
                 '& .MuiOutlinedInput-root': {
-                  color: focusTheme.text,
-                  '& fieldset': { borderColor: focusTheme.border, borderWidth: 2 },
-                  '&:hover fieldset': { borderColor: focusTheme.primary },
-                  '&.Mui-focused fieldset': { borderColor: focusTheme.primary },
+                  color: colors.text,
+                  '& fieldset': { borderColor: colors.border, borderWidth: 2 },
+                  '&:hover fieldset': { borderColor: colors.primary },
+                  '&.Mui-focused fieldset': { borderColor: colors.primary },
                 },
-                '& .MuiInputLabel-root': { color: focusTheme.textSecondary },
-                '& .MuiInputLabel-root.Mui-focused': { color: focusTheme.primary },
-                '& .MuiSvgIcon-root': { color: focusTheme.textSecondary },
+                '& .MuiInputLabel-root': { color: colors.textSecondary },
+                '& .MuiInputLabel-root.Mui-focused': { color: colors.primary },
+                '& .MuiSvgIcon-root': { color: colors.textSecondary },
               }}>
                 <InputLabel>Tecnica di Intensità</InputLabel>
                 <Select
@@ -913,39 +870,39 @@ const FocusWorkout = () => {
               </FormControl>
 
               <Button variant="contained" fullWidth size="large" startIcon={<CheckIcon />} onClick={handleConfirmSet} disabled={!weightInput || !repsInput}
-                sx={{ py: 2.5, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1, bgcolor: focusTheme.success, color: '#fff', borderRadius: 3,
+                sx={{ py: 2.5, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.success, color: '#fff', borderRadius: 3,
                   boxShadow: '0 4px 16px rgba(76, 175, 80, 0.3)', '&:hover': { bgcolor: '#388e3c', boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)' },
-                  '&:disabled': { bgcolor: focusTheme.bgElevated, color: focusTheme.textMuted }, mb: 2, transition: 'all 0.3s ease' }}>
+                  '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted }, mb: 2, transition: 'all 0.3s ease' }}>
                 Conferma Serie
               </Button>
 
               <Button variant="text" fullWidth startIcon={<SkipNextIcon />} onClick={handleSkipExercise}
-                sx={{ py: 1.5, color: focusTheme.textMuted, '&:hover': { color: focusTheme.textSecondary, bgcolor: 'rgba(255,255,255,0.05)' }, mb: 3 }}>
+                sx={{ py: 1.5, color: colors.textMuted, '&:hover': { color: colors.textSecondary, bgcolor: 'rgba(255,255,255,0.05)' }, mb: 3 }}>
                 Salta Esercizio
               </Button>
 
               {currentExerciseSets.length > 0 && (
-                <Paper sx={{ bgcolor: focusTheme.bgCard, borderRadius: 2, overflow: 'hidden', border: `1px solid ${focusTheme.border}` }}>
-                  <Box sx={{ px: 2, py: 1.5, bgcolor: focusTheme.bgElevated }}>
-                    <Typography variant="subtitle2" sx={{ color: focusTheme.textMuted, letterSpacing: 1 }}>SERIE COMPLETATE</Typography>
+                <Paper sx={{ bgcolor: colors.bgCard, borderRadius: 2, overflow: 'hidden', border: `1px solid ${colors.border}` }}>
+                  <Box sx={{ px: 2, py: 1.5, bgcolor: colors.bgElevated }}>
+                    <Typography variant="subtitle2" sx={{ color: colors.textMuted, letterSpacing: 1 }}>SERIE COMPLETATE</Typography>
                   </Box>
                   <TableContainer>
                     <Table size="small">
                       <TableHead>
                         <TableRow>
-                          <TableCell sx={{ color: focusTheme.textMuted, borderColor: focusTheme.border }}>#</TableCell>
-                          <TableCell sx={{ color: focusTheme.textMuted, borderColor: focusTheme.border }}>Peso</TableCell>
-                          <TableCell sx={{ color: focusTheme.textMuted, borderColor: focusTheme.border }}>Reps</TableCell>
-                          <TableCell sx={{ color: focusTheme.textMuted, borderColor: focusTheme.border }}>Tecnica</TableCell>
+                          <TableCell sx={{ color: colors.textMuted, borderColor: colors.border }}>#</TableCell>
+                          <TableCell sx={{ color: colors.textMuted, borderColor: colors.border }}>Peso</TableCell>
+                          <TableCell sx={{ color: colors.textMuted, borderColor: colors.border }}>Reps</TableCell>
+                          <TableCell sx={{ color: colors.textMuted, borderColor: colors.border }}>Tecnica</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
                         {currentExerciseSets.map((set) => (
                           <TableRow key={set.setNumber}>
-                            <TableCell sx={{ color: focusTheme.text, borderColor: focusTheme.border }}>{set.setNumber}</TableCell>
-                            <TableCell sx={{ color: focusTheme.text, borderColor: focusTheme.border, fontWeight: 600 }}>{set.weight} kg</TableCell>
-                            <TableCell sx={{ color: focusTheme.text, borderColor: focusTheme.border }}>{set.reps}</TableCell>
-                            <TableCell sx={{ color: focusTheme.text, borderColor: focusTheme.border }}>{set.intensity_technique || '-'}</TableCell>
+                            <TableCell sx={{ color: colors.text, borderColor: colors.border }}>{set.setNumber}</TableCell>
+                            <TableCell sx={{ color: colors.text, borderColor: colors.border, fontWeight: 600 }}>{set.weight} kg</TableCell>
+                            <TableCell sx={{ color: colors.text, borderColor: colors.border }}>{set.reps}</TableCell>
+                            <TableCell sx={{ color: colors.text, borderColor: colors.border }}>{set.intensity_technique || '-'}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -957,14 +914,14 @@ const FocusWorkout = () => {
           </Fade>
 
           <Dialog open={confirmQuitDialog} onClose={() => setConfirmQuitDialog(false)}
-            PaperProps={{ sx: { bgcolor: focusTheme.bgCard, color: focusTheme.text, borderRadius: 3 } }}>
-            <DialogTitle sx={{ color: focusTheme.text }}>Interrompere l'allenamento?</DialogTitle>
+            PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: 3 } }}>
+            <DialogTitle sx={{ color: colors.text }}>Interrompere l'allenamento?</DialogTitle>
             <DialogContent>
-              <DialogContentText sx={{ color: focusTheme.textSecondary }}>Hai completato {getTotalCompletedSets()} serie. I dati non salvati andranno persi.</DialogContentText>
+              <DialogContentText sx={{ color: colors.textSecondary }}>Hai completato {getTotalCompletedSets()} serie. I dati non salvati andranno persi.</DialogContentText>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setConfirmQuitDialog(false)} sx={{ color: focusTheme.textSecondary }}>Continua</Button>
-              <Button onClick={confirmQuit} sx={{ color: focusTheme.primary }}>Esci</Button>
+              <Button onClick={() => setConfirmQuitDialog(false)} sx={{ color: colors.textSecondary }}>Continua</Button>
+              <Button onClick={confirmQuit} sx={{ color: colors.primary }}>Esci</Button>
             </DialogActions>
           </Dialog>
         </Box>
@@ -975,59 +932,59 @@ const FocusWorkout = () => {
       const totalSets = getTotalCompletedSets();
       const exercisesCompleted = Object.keys(completedSets).length;
       return (
-        <Box sx={{ minHeight: '100vh', bgcolor: focusTheme.bg, color: focusTheme.text }}>
-          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1, borderBottom: `1px solid ${focusTheme.border}` }}>
-            <IconButton onClick={handleQuit} sx={{ color: focusTheme.textSecondary }}><ArrowBackIcon /></IconButton>
+        <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text }}>
+          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1, borderBottom: `1px solid ${colors.border}` }}>
+            <IconButton onClick={handleQuit} sx={{ color: colors.textSecondary }}><ArrowBackIcon /></IconButton>
             <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: 1 }}>RIEPILOGO</Typography>
           </Box>
 
           <Container maxWidth="sm" sx={{ py: 3 }}>
             <Box sx={{ textAlign: 'center', mb: 4 }}>
-              <TrophyIcon sx={{ fontSize: 56, color: focusTheme.warning, mb: 1 }} />
+              <TrophyIcon sx={{ fontSize: 56, color: colors.warning, mb: 1 }} />
               <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>Allenamento Completato!</Typography>
               <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mt: 2 }}>
                 <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h4" sx={{ fontWeight: 700, color: focusTheme.primary }}>{exercisesCompleted}</Typography>
-                  <Typography variant="caption" sx={{ color: focusTheme.textMuted }}>ESERCIZI</Typography>
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: colors.primary }}>{exercisesCompleted}</Typography>
+                  <Typography variant="caption" sx={{ color: colors.textMuted }}>ESERCIZI</Typography>
                 </Box>
                 <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h4" sx={{ fontWeight: 700, color: focusTheme.primary }}>{totalSets}</Typography>
-                  <Typography variant="caption" sx={{ color: focusTheme.textMuted }}>SERIE</Typography>
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: colors.primary }}>{totalSets}</Typography>
+                  <Typography variant="caption" sx={{ color: colors.textMuted }}>SERIE</Typography>
                 </Box>
                 <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h4" sx={{ fontWeight: 700, color: focusTheme.primary, fontFamily: 'monospace' }}>{getElapsedTime()}</Typography>
-                  <Typography variant="caption" sx={{ color: focusTheme.textMuted }}>DURATA</Typography>
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: colors.primary, fontFamily: 'monospace' }}>{getElapsedTime()}</Typography>
+                  <Typography variant="caption" sx={{ color: colors.textMuted }}>DURATA</Typography>
                 </Box>
               </Box>
             </Box>
 
-            <Paper sx={{ bgcolor: focusTheme.bgCard, borderRadius: 3, overflow: 'hidden', mb: 3, border: `1px solid ${focusTheme.border}` }}>
-              <Box sx={{ px: 2, py: 1.5, bgcolor: focusTheme.bgElevated }}>
-                <Typography variant="subtitle2" sx={{ color: focusTheme.textMuted, letterSpacing: 1 }}>DETTAGLIO ESERCIZI</Typography>
+            <Paper sx={{ bgcolor: colors.bgCard, borderRadius: 3, overflow: 'hidden', mb: 3, border: `1px solid ${colors.border}` }}>
+              <Box sx={{ px: 2, py: 1.5, bgcolor: colors.bgElevated }}>
+                <Typography variant="subtitle2" sx={{ color: colors.textMuted, letterSpacing: 1 }}>DETTAGLIO ESERCIZI</Typography>
               </Box>
               {selectedDay?.exercises?.map((exercise) => {
                 const sets = completedSets[exercise.id];
                 if (!sets || sets.length === 0) return null;
                 return (
-                  <Box key={exercise.id} sx={{ px: 2, py: 2, borderBottom: `1px solid ${focusTheme.border}` }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1, color: focusTheme.text }}>{exercise.exercise_name}</Typography>
+                  <Box key={exercise.id} sx={{ px: 2, py: 2, borderBottom: `1px solid ${colors.border}` }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1, color: colors.text }}>{exercise.exercise_name}</Typography>
                     <TableContainer>
                       <Table size="small">
                         <TableHead>
                           <TableRow>
-                            <TableCell sx={{ color: focusTheme.textMuted, borderColor: focusTheme.border, py: 0.5 }}>Serie</TableCell>
-                            <TableCell sx={{ color: focusTheme.textMuted, borderColor: focusTheme.border, py: 0.5 }}>Peso</TableCell>
-                            <TableCell sx={{ color: focusTheme.textMuted, borderColor: focusTheme.border, py: 0.5 }}>Reps</TableCell>
-                            <TableCell sx={{ color: focusTheme.textMuted, borderColor: focusTheme.border, py: 0.5 }}>Tecnica</TableCell>
+                            <TableCell sx={{ color: colors.textMuted, borderColor: colors.border, py: 0.5 }}>Serie</TableCell>
+                            <TableCell sx={{ color: colors.textMuted, borderColor: colors.border, py: 0.5 }}>Peso</TableCell>
+                            <TableCell sx={{ color: colors.textMuted, borderColor: colors.border, py: 0.5 }}>Reps</TableCell>
+                            <TableCell sx={{ color: colors.textMuted, borderColor: colors.border, py: 0.5 }}>Tecnica</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
                           {sets.map((set) => (
                             <TableRow key={set.setNumber}>
-                              <TableCell sx={{ color: focusTheme.text, borderColor: focusTheme.border, py: 0.5 }}>{set.setNumber}</TableCell>
-                              <TableCell sx={{ color: focusTheme.text, borderColor: focusTheme.border, py: 0.5, fontWeight: 600 }}>{set.weight} kg</TableCell>
-                              <TableCell sx={{ color: focusTheme.text, borderColor: focusTheme.border, py: 0.5 }}>{set.reps}</TableCell>
-                              <TableCell sx={{ color: focusTheme.text, borderColor: focusTheme.border, py: 0.5 }}>{set.intensity_technique || '-'}</TableCell>
+                              <TableCell sx={{ color: colors.text, borderColor: colors.border, py: 0.5 }}>{set.setNumber}</TableCell>
+                              <TableCell sx={{ color: colors.text, borderColor: colors.border, py: 0.5, fontWeight: 600 }}>{set.weight} kg</TableCell>
+                              <TableCell sx={{ color: colors.text, borderColor: colors.border, py: 0.5 }}>{set.reps}</TableCell>
+                              <TableCell sx={{ color: colors.text, borderColor: colors.border, py: 0.5 }}>{set.intensity_technique || '-'}</TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -1040,29 +997,29 @@ const FocusWorkout = () => {
 
             <TextField label="Note sull'allenamento (opzionale)" multiline rows={3} value={workoutNotes}
               onChange={(e) => setWorkoutNotes(e.target.value)} fullWidth placeholder="Come ti sei sentito? Qualcosa da ricordare?"
-              sx={{ mb: 3, '& .MuiOutlinedInput-root': { color: focusTheme.text, '& fieldset': { borderColor: focusTheme.border }, '&:hover fieldset': { borderColor: focusTheme.primary }, '&.Mui-focused fieldset': { borderColor: focusTheme.primary } }, '& .MuiInputLabel-root': { color: focusTheme.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: focusTheme.primary } }} />
+              sx={{ mb: 3, '& .MuiOutlinedInput-root': { color: colors.text, '& fieldset': { borderColor: colors.border }, '&:hover fieldset': { borderColor: colors.primary }, '&.Mui-focused fieldset': { borderColor: colors.primary } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.primary } }} />
 
             <Button variant="contained" fullWidth size="large"
               startIcon={saving ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : <SaveIcon />}
               onClick={handleSave} disabled={saving || getTotalCompletedSets() === 0}
-              sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, letterSpacing: 1, bgcolor: focusTheme.primary, color: '#fff', borderRadius: 3,
-                boxShadow: '0 4px 20px rgba(229, 57, 53, 0.4)', '&:hover': { bgcolor: focusTheme.primaryDark },
-                '&:disabled': { bgcolor: focusTheme.bgElevated, color: focusTheme.textMuted }, mb: 2 }}>
+              sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.primary, color: '#fff', borderRadius: 3,
+                boxShadow: isDarkMode ? '0 4px 20px rgba(0, 0, 0, 0.4)' : '0 4px 20px rgba(213, 0, 0, 0.2)', '&:hover': { bgcolor: colors.primaryDark },
+                '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted }, mb: 2 }}>
               {saving ? 'Salvataggio...' : 'Salva Allenamento'}
             </Button>
 
-            <Button variant="text" fullWidth onClick={handleQuit} disabled={saving} sx={{ color: focusTheme.textMuted, py: 1.5 }}>Annulla</Button>
+            <Button variant="text" fullWidth onClick={handleQuit} disabled={saving} sx={{ color: colors.textMuted, py: 1.5 }}>Annulla</Button>
           </Container>
 
           <Dialog open={confirmQuitDialog} onClose={() => setConfirmQuitDialog(false)}
-            PaperProps={{ sx: { bgcolor: focusTheme.bgCard, color: focusTheme.text, borderRadius: 3 } }}>
-            <DialogTitle sx={{ color: focusTheme.text }}>Scartare l'allenamento?</DialogTitle>
+            PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: 3 } }}>
+            <DialogTitle sx={{ color: colors.text }}>Scartare l'allenamento?</DialogTitle>
             <DialogContent>
-              <DialogContentText sx={{ color: focusTheme.textSecondary }}>Hai completato {getTotalCompletedSets()} serie. I dati non verranno salvati.</DialogContentText>
+              <DialogContentText sx={{ color: colors.textSecondary }}>Hai completato {getTotalCompletedSets()} serie. I dati non verranno salvati.</DialogContentText>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setConfirmQuitDialog(false)} sx={{ color: focusTheme.textSecondary }}>Rimani</Button>
-              <Button onClick={confirmQuit} sx={{ color: focusTheme.primary }}>Scarta ed Esci</Button>
+              <Button onClick={() => setConfirmQuitDialog(false)} sx={{ color: colors.textSecondary }}>Rimani</Button>
+              <Button onClick={confirmQuit} sx={{ color: colors.primary }}>Scarta ed Esci</Button>
             </DialogActions>
           </Dialog>
         </Box>
@@ -1071,28 +1028,27 @@ const FocusWorkout = () => {
 
     // Fallback
     return (
-      <Box sx={{ minHeight: '100vh', bgcolor: focusTheme.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <CircularProgress sx={{ color: focusTheme.primary }} />
+      <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <CircularProgress sx={{ color: colors.primary }} />
       </Box>
     );
   };
-return (
-  <ThemeProvider theme={darkFocusTheme}>
-    <CssBaseline />
+  return (
+    <>
     <GlobalStyles styles={{
       '.MuiPaper-root.MuiMenu-paper': {
-        backgroundColor: `${focusTheme.bgElevated} !important`,
-        color: `${focusTheme.text} !important`,
-        border: `1px solid ${focusTheme.border} !important`,
+        backgroundColor: `${colors.bgElevated} !important`,
+        color: `${colors.text} !important`,
+        border: `1px solid ${colors.border} !important`,
       },
       '.MuiMenuItem-root': {
-        color: `${focusTheme.text} !important`,
+        color: `${colors.text} !important`,
       },
       '.MuiMenuItem-root:hover': {
-        backgroundColor: 'rgba(229, 57, 53, 0.2) !important',
+        backgroundColor: isDarkMode ? 'rgba(229, 57, 53, 0.2) !important' : 'rgba(213, 0, 0, 0.1) !important',
       },
       '.MuiTypography-root': {
-        color: 'inherit', // Permette al tema di gestire il colore
+        color: 'inherit',
       }
     }} />
     {renderContent()}
@@ -1111,7 +1067,7 @@ return (
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </ThemeProvider>
+    </>
   );
 };
 

@@ -67,7 +67,7 @@ const Home = () => {
           gutterBottom 
           sx={{ fontWeight: 800, mb: 2 }}
         >
-          Gym Progress Tracker <span style={{ color: '#d50000' }}>v2.2</span>
+          Gym Progress Tracker
         </Typography>
         <Typography variant="h6" color="text.secondary" sx={{ mb: 4, maxWidth: '700px', mx: 'auto', lineHeight: 1.6 }}>
           {isLoggedIn 
@@ -112,18 +112,18 @@ const Home = () => {
             <>
               {/* Ultimo Allenamento */}
               <Grid item xs={12} md={6}>
-                <Card sx={{ height: '100%', borderLeft: '6px solid #d50000' }}>
+                <Card sx={{ height: '100%', borderLeft: (theme) => `6px solid ${theme.palette.primary.main}` }}>
                   <CardActionArea component={RouterLink} to="/workout-history" sx={{ height: '100%', p: 1 }}>
                     <CardContent>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                        <Box sx={{ p: 1.5, borderRadius: 3, bgcolor: 'rgba(19, 127, 236, 0.1)', mr: 2 }}>
-                          <HistoryIcon sx={{ color: '#d50000', fontSize: '1.8rem' }} />
+                        <Box sx={{ p: 1.5, borderRadius: 3, bgcolor: (theme) => theme.palette.mode === 'light' ? 'rgba(213, 0, 0, 0.05)' : 'rgba(213, 0, 0, 0.15)', mr: 2 }}>
+                          <HistoryIcon sx={{ color: 'primary.main', fontSize: '1.8rem' }} />
                         </Box>
                         <Typography variant="h5" sx={{ fontWeight: 800 }}>Ultimo Allenamento</Typography>
                       </Box>
                       {lastWorkout ? (
                         <>
-                          <Typography variant="h6" sx={{ color: '#d50000', fontWeight: 700, mb: 1 }}>
+                          <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 700, mb: 1 }}>
                             {formatDate(lastWorkout.date)}
                           </Typography>
                           <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
@@ -152,18 +152,18 @@ const Home = () => {
 
               {/* Piano Attivo */}
               <Grid item xs={12} md={6}>
-                <Card sx={{ height: '100%', borderLeft: (theme) => `6px solid ${theme.palette.primary.light}` }}>
+                <Card sx={{ height: '100%', borderLeft: (theme) => `6px solid ${theme.palette.primary.main}` }}>
                   <CardActionArea component={RouterLink} to="/workout-plans" sx={{ height: '100%', p: 1 }}>
                     <CardContent>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                        <Box sx={{ p: 1.5, borderRadius: 3, bgcolor: (theme) => theme.palette.mode === 'light' ? 'rgba(255, 81, 49, 0.05)' : 'rgba(255, 81, 49, 0.15)', mr: 2 }}>
-                          <AssignmentIcon sx={{ color: 'primary.light', fontSize: '1.8rem' }} />
+                        <Box sx={{ p: 1.5, borderRadius: 3, bgcolor: (theme) => theme.palette.mode === 'light' ? 'rgba(213, 0, 0, 0.05)' : 'rgba(213, 0, 0, 0.15)', mr: 2 }}>
+                          <AssignmentIcon sx={{ color: 'primary.main', fontSize: '1.8rem' }} />
                         </Box>
                         <Typography variant="h5" sx={{ fontWeight: 800 }}>Piano Attivo</Typography>
                       </Box>
                       {activePlan ? (
                         <>
-                          <Typography variant="h6" sx={{ color: 'primary.light', fontWeight: 700, mb: 1 }}>
+                          <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 700, mb: 1 }}>
                             {activePlan.name}
                           </Typography>
                           <Typography variant="body1" color="text.secondary">
@@ -222,9 +222,9 @@ const Home = () => {
       ) : (
         <Grid container spacing={3}>
           <Grid item xs={12} md={4}>
-            <Paper sx={{ p: 4, height: '100%', borderTop: '6px solid #d50000' }}>
+            <Paper sx={{ p: 4, height: '100%', borderTop: (theme) => `6px solid ${theme.palette.primary.main}` }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <FitnessCenterIcon sx={{ mr: 2, color: '#d50000', fontSize: '2rem' }} />
+                <FitnessCenterIcon sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
                 <Typography variant="h5" sx={{ fontWeight: 800 }}>Allenamenti</Typography>
               </Box>
               <Divider sx={{ my: 2 }} />
@@ -234,9 +234,9 @@ const Home = () => {
             </Paper>
           </Grid>
           <Grid item xs={12} md={4}>
-            <Paper sx={{ p: 4, height: '100%', borderTop: '6px solid #d50000' }}>
+            <Paper sx={{ p: 4, height: '100%', borderTop: (theme) => `6px solid ${theme.palette.primary.main}` }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <StraightenIcon sx={{ mr: 2, color: '#d50000', fontSize: '2rem' }} />
+                <StraightenIcon sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
                 <Typography variant="h5" sx={{ fontWeight: 800 }}>Misure</Typography>
               </Box>
               <Divider sx={{ my: 2 }} />
@@ -246,9 +246,9 @@ const Home = () => {
             </Paper>
           </Grid>
           <Grid item xs={12} md={4}>
-            <Paper sx={{ p: 4, height: '100%', borderTop: '6px solid #d50000' }}>
+            <Paper sx={{ p: 4, height: '100%', borderTop: (theme) => `6px solid ${theme.palette.primary.main}` }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <HealthAndSafetyIcon sx={{ mr: 2, color: '#d50000', fontSize: '2rem' }} />
+                <HealthAndSafetyIcon sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
                 <Typography variant="h5" sx={{ fontWeight: 800 }}>Health Sync</Typography>
               </Box>
               <Divider sx={{ my: 2 }} />

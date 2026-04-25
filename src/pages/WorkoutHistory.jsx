@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Typography, 
   Paper, 
@@ -358,14 +358,14 @@ const WorkoutHistory = () => {
     }));
   };
 
-  const groupedWorkouts = groupWorkoutsByMonth();
+  const groupedWorkouts = useMemo(() => groupWorkoutsByMonth(), [workouts]);
   
   // Ottieni il mese corrente per confronto
   const now = new Date();
   const currentMonthYear = `${now.getMonth() + 1}/${now.getFullYear()}`; // formato MM/YYYY
 
   return (
-    <Container maxWidth="lg" sx={{ backgroundColor: '#f9f9f9', borderRadius: 2, py: 2 }}>
+    <Container maxWidth="lg" sx={{ py: 2 }}>
       <Box sx={{ pt: 3, pb: 6 }}>
         <Box 
           sx={{ 
@@ -377,7 +377,7 @@ const WorkoutHistory = () => {
         >
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <CalendarTodayIcon sx={{ mr: 2, color: 'primary.main', fontSize: 32 }} />
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: '#333333', textShadow: '0px 1px 1px rgba(0,0,0,0.1)' }}>
+            <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
               Cronologia Allenamenti
             </Typography>
           </Box>
@@ -396,8 +396,8 @@ const WorkoutHistory = () => {
         </Box>
 
         {!isLoggedIn ? (
-          <Paper elevation={2} sx={{ p: 4, borderRadius: 2, backgroundColor: '#ffffff' }}>
-            <Typography variant="body1" sx={{ mb: 2, color: '#444444' }}>
+          <Paper elevation={2} sx={{ p: 4 }}>
+            <Typography variant="body1" sx={{ mb: 2 }}>
               Effettua il login per visualizzare la tua cronologia allenamenti.
             </Typography>
             <MuiLink component={Link} to="/login" color="primary" sx={{ fontWeight: 'bold' }}>
@@ -409,12 +409,12 @@ const WorkoutHistory = () => {
             <CircularProgress />
           </Box>
         ) : workouts.length === 0 ? (
-          <Paper elevation={2} sx={{ p: 4, borderRadius: 2, backgroundColor: '#ffffff' }}>
+          <Paper elevation={2} sx={{ p: 4 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <FitnessCenterIcon sx={{ mr: 2, color: 'primary.main' }} />
-              <Typography variant="h6" sx={{ color: '#333333' }}>Nessun allenamento registrato</Typography>
+              <Typography variant="h6">Nessun allenamento registrato</Typography>
             </Box>
-            <Typography variant="body1" sx={{ color: '#444444' }}>
+            <Typography variant="body1" color="text.secondary">
               Non hai ancora registrato nessun allenamento. Quando registrerai i tuoi allenamenti, 
               li troverai qui, organizzati in ordine cronologico.
             </Typography>
@@ -463,8 +463,7 @@ const WorkoutHistory = () => {
                         borderBottom: '2px solid',
                         borderColor: 'primary.main',
                         pb: 1,
-                        display: 'inline-block',
-                        color: '#333333'
+                        display: 'inline-block'
                       }}
                     >
                       {isUnknownDate ? 'Data sconosciuta' : `${getMonthName(parseInt(month))} ${year}`}
@@ -483,7 +482,7 @@ const WorkoutHistory = () => {
                   </Box>
                   
                   {isExpanded && (
-                    <Paper elevation={2} sx={{ borderRadius: 2, overflow: 'hidden', backgroundColor: '#ffffff' }}>
+                    <Paper elevation={2} sx={{ overflow: 'hidden' }}>
                       <List sx={{ p: 0 }}>
                         {workoutsInMonth.map((workout, index) => (
                           <ListItem 
@@ -523,7 +522,7 @@ const WorkoutHistory = () => {
                           >
                             <ListItemText
                               primary={
-                                <Typography variant="subtitle1" sx={{ fontWeight: 'medium', color: '#333333' }}>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
                                   {(() => {
                                     try {
                                       const dateObj = new Date(workout.date);
@@ -545,7 +544,7 @@ const WorkoutHistory = () => {
                                 </Typography>
                               }
                               secondary={
-                                <Typography variant="body2" sx={{ color: '#555555' }}>
+                                <Typography variant="body2" color="text.secondary">
                                   {(() => {
                                     try {
                                       const dateObj = new Date(workout.date);
@@ -577,6 +576,7 @@ const WorkoutHistory = () => {
           </>
         )}
       </Box>
+
 
       {isLoggedIn && !loading && workouts.length > 0 && (
         <Fab 

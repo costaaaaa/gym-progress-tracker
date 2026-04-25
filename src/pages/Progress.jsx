@@ -1173,8 +1173,13 @@ const Progress = () => {
               sx={{ 
                 p: 3, 
                 borderRadius: 2,
-                background: 'linear-gradient(to right, rgba(250,250,250,1) 0%, rgba(245,245,245,1) 100%)',
-                boxShadow: '0 3px 5px rgba(0,0,0,0.05)'
+                background: (theme) => theme.palette.mode === 'light' 
+                  ? 'linear-gradient(to right, rgba(250,250,250,1) 0%, rgba(245,245,245,1) 100%)'
+                  : 'linear-gradient(to right, rgba(30,30,32,1) 0%, rgba(20,20,22,1) 100%)',
+                boxShadow: (theme) => theme.palette.mode === 'light'
+                  ? '0 3px 5px rgba(0,0,0,0.05)'
+                  : '0 3px 5px rgba(0,0,0,0.3)',
+                border: (theme) => theme.palette.mode === 'light' ? 'none' : '1px solid rgba(255,255,255,0.05)'
               }}
             >
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
@@ -1195,7 +1200,7 @@ const Progress = () => {
                         borderRadius: 2,
                         transition: 'all 0.2s',
                         '&:hover': {
-                          boxShadow: '0 3px 8px rgba(0,0,0,0.1)'
+                          boxShadow: (theme) => theme.palette.mode === 'light' ? '0 3px 8px rgba(0,0,0,0.1)' : '0 3px 8px rgba(0,0,0,0.4)'
                         }
                       }
                     }}
@@ -1217,7 +1222,7 @@ const Progress = () => {
                               width: 32,
                               height: 32,
                               borderRadius: '50%',
-                              bgcolor: `${getMuscleGroupColor(selected)}20`,
+                              bgcolor: (theme) => theme.palette.mode === 'light' ? `${getMuscleGroupColor(selected)}20` : `${getMuscleGroupColor(selected)}30`,
                               color: getMuscleGroupColor(selected)
                             }}>
                               {getMuscleGroupIcon(selected)}
@@ -1231,7 +1236,8 @@ const Progress = () => {
                         PaperProps: {
                           sx: {
                             borderRadius: 2,
-                            maxHeight: 300
+                            maxHeight: 300,
+                            backgroundImage: 'none'
                           }
                         }
                       }}
@@ -1243,12 +1249,12 @@ const Progress = () => {
                           sx={{
                             py: 1.5,
                             '&:hover': {
-                              bgcolor: `${getMuscleGroupColor(group)}10`
+                              bgcolor: (theme) => theme.palette.mode === 'light' ? `${getMuscleGroupColor(group)}10` : `${getMuscleGroupColor(group)}20`
                             },
                             '&.Mui-selected': {
-                              bgcolor: `${getMuscleGroupColor(group)}20`,
+                              bgcolor: (theme) => theme.palette.mode === 'light' ? `${getMuscleGroupColor(group)}20` : `${getMuscleGroupColor(group)}30`,
                               '&:hover': {
-                                bgcolor: `${getMuscleGroupColor(group)}30`
+                                bgcolor: (theme) => theme.palette.mode === 'light' ? `${getMuscleGroupColor(group)}30` : `${getMuscleGroupColor(group)}40`
                               }
                             }
                           }}
@@ -1261,7 +1267,7 @@ const Progress = () => {
                               width: 32,
                               height: 32,
                               borderRadius: '50%',
-                              bgcolor: `${getMuscleGroupColor(group)}20`,
+                              bgcolor: (theme) => theme.palette.mode === 'light' ? `${getMuscleGroupColor(group)}20` : `${getMuscleGroupColor(group)}30`,
                               color: getMuscleGroupColor(group)
                             }}>
                               {getMuscleGroupIcon(group)}
@@ -1287,7 +1293,7 @@ const Progress = () => {
                         transition: 'all 0.2s',
                         borderColor: selectedMuscleGroup ? getMuscleGroupColor(selectedMuscleGroup) : 'inherit',
                         '&:hover': {
-                          boxShadow: '0 3px 8px rgba(0,0,0,0.1)'
+                          boxShadow: (theme) => theme.palette.mode === 'light' ? '0 3px 8px rgba(0,0,0,0.1)' : '0 3px 8px rgba(0,0,0,0.4)'
                         },
                         '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                           borderColor: selectedMuscleGroup ? getMuscleGroupColor(selectedMuscleGroup) : 'primary.main'
@@ -1315,7 +1321,7 @@ const Progress = () => {
                               width: 28,
                               height: 28,
                               borderRadius: '50%',
-                              bgcolor: `${getMuscleGroupColor(selectedMuscleGroup)}20`,
+                              bgcolor: (theme) => theme.palette.mode === 'light' ? `${getMuscleGroupColor(selectedMuscleGroup)}20` : `${getMuscleGroupColor(selectedMuscleGroup)}30`,
                               fontSize: '0.75rem',
                               fontWeight: 'bold',
                               color: getMuscleGroupColor(selectedMuscleGroup)
@@ -1331,7 +1337,8 @@ const Progress = () => {
                         PaperProps: {
                           sx: {
                             borderRadius: 2,
-                            maxHeight: 300
+                            maxHeight: 300,
+                            backgroundImage: 'none'
                           }
                         }
                       }}
@@ -1346,12 +1353,12 @@ const Progress = () => {
                             alignItems: 'center',
                             gap: 1.5,
                             '&:hover': {
-                              bgcolor: `${getMuscleGroupColor(selectedMuscleGroup)}10`,
+                              bgcolor: (theme) => theme.palette.mode === 'light' ? `${getMuscleGroupColor(selectedMuscleGroup)}10` : `${getMuscleGroupColor(selectedMuscleGroup)}20`,
                             },
                             '&.Mui-selected': {
-                              bgcolor: `${getMuscleGroupColor(selectedMuscleGroup)}20`,
+                              bgcolor: (theme) => theme.palette.mode === 'light' ? `${getMuscleGroupColor(selectedMuscleGroup)}20` : `${getMuscleGroupColor(selectedMuscleGroup)}30`,
                               '&:hover': {
-                                bgcolor: `${getMuscleGroupColor(selectedMuscleGroup)}30`
+                                bgcolor: (theme) => theme.palette.mode === 'light' ? `${getMuscleGroupColor(selectedMuscleGroup)}30` : `${getMuscleGroupColor(selectedMuscleGroup)}40`
                               }
                             }
                           }}
@@ -1363,7 +1370,7 @@ const Progress = () => {
                             width: 28,
                             height: 28,
                             borderRadius: '50%',
-                            bgcolor: `${getMuscleGroupColor(selectedMuscleGroup)}20`,
+                            bgcolor: (theme) => theme.palette.mode === 'light' ? `${getMuscleGroupColor(selectedMuscleGroup)}20` : `${getMuscleGroupColor(selectedMuscleGroup)}30`,
                             fontSize: '0.75rem',
                             fontWeight: 'bold',
                             color: getMuscleGroupColor(selectedMuscleGroup)

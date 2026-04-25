@@ -37,110 +37,95 @@ $num = $stmt->rowCount();
 
 // Check if more than 0 record found
 if ($num > 0) {
-    // Initialize the response array
+    // 1. Recupera tutti gli allenamenti
+    $workouts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // 2. Recupera tutti i set per questi allenamenti in una singola query
+    $workout_set = new WorkoutSet($db);
+    $sets_stmt = $workout_set->readAllByUserId($_SESSION['user_id']);
+    $all_sets = $sets_stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // 3. Organizza i set per workout_history_id per un accesso rapido
+    $sets_by_workout = [];
+    foreach ($all_sets as $set) {
+        $wh_id = $set['workout_history_id'];
+        if (!isset($sets_by_workout[$wh_id])) {
+            $sets_by_workout[$wh_id] = [];
+        }
+        
+        $exercise_id = $set['exercise_id'];
+        
+        // Raggruppamento per blocchi contigui di esercizi (come in getExerciseSetsForWorkout)
+        $last_idx = count($sets_by_workout[$wh_id]) - 1;
+        if ($last_idx >= 0 && $sets_by_workout[$wh_id][$last_idx]['exercise_id'] == $exercise_id) {
+            $sets_by_workout[$wh_id][$last_idx]['sets'][] = [
+                "set_number" => $set['set_number'],
+                "weight" => $set['weight'],
+                "reps" => $set['reps'],
+                "intensity_technique" => $set['intensity_technique']
+            ];
+        } else {
+            $sets_by_workout[$wh_id][] = [
+                "exercise_id" => $exercise_id,
+                "name" => $set['exercise_name'],
+                "muscle_group" => $set['muscle_group'],
+                "sets" => [[
+                    "set_number" => $set['set_number'],
+                    "weight" => $set['weight'],
+                    "reps" => $set['reps'],
+                    "intensity_technique" => $set['intensity_technique']
+                ]]
+            ];
+        }
+    }
+
+    // 4. Costruisci la risposta finale
     $records_arr = array();
     $records_arr["records"] = array();
 
-    // Retrieve our table contents
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        extract($row);
-
-        // Create a standard record object
+    foreach ($workouts as $row) {
         $record_item = array(
-            "id" => $id,
-            "date" => $date,
-            "notes" => $notes,
-            "exercises" => array() // This will hold all exercise data
+            "id" => $row['id'],
+            "date" => $row['date'],
+            "notes" => $row['notes'],
+            "exercises" => []
         );
 
-        // Utilizziamo il nuovo modello WorkoutSet per ottenere i set raggruppati per esercizio
-        $workout_set = new WorkoutSet($db);
-        $workout_set->workout_history_id = $id;
-        
-        // Verifichiamo se esistono dati nella nuova struttura
-        $has_new_data = false;
-        $new_exercises = array();
-        
-        try {
-            // Attempt to read from the new structure
-            $exercises_with_sets = $workout_set->getExerciseSetsForWorkout();
-            
-            if (!empty($exercises_with_sets)) {
-                $has_new_data = true;
-                $new_exercises = $exercises_with_sets;
-            }
-        } catch (Exception $e) {
-            // Log error but continue with legacy format
-            error_log("Error reading from new structure: " . $e->getMessage());
-        }
-        
-        if ($has_new_data) {
-            // Use the new structure data
-            foreach ($new_exercises as $exercise) {
-                $exercise_item = array(
-                    "exercise_id" => $exercise['exercise_id'],
-                    "name" => $exercise['exercise_name'],
-                    "muscle_group" => $exercise['muscle_group'],
-                    "sets" => array()
-                );
-                
-                // Add each set to the exercise
-                foreach ($exercise['sets'] as $set) {
-                    $exercise_item["sets"][] = array(
-                        "set_number" => $set['set_number'],
-                        "weight" => $set['weight'],
-                        "reps" => $set['reps'],
-                        "intensity_technique" => isset($set['intensity_technique']) ? $set['intensity_technique'] : null
-                    );
-                }
-                
-                $record_item["exercises"][] = $exercise_item;
-            }
+        if (isset($sets_by_workout[$row['id']])) {
+            $record_item["exercises"] = $sets_by_workout[$row['id']];
         } else {
-            // Fall back to the legacy JSON format
+            // Fallback legacy (solo se non ci sono dati nella nuova tabella)
             if (isset($row['exercises']) && !empty($row['exercises'])) {
+                // ... logica legacy mantenuta per sicurezza ...
                 $exercises_data = json_decode($row['exercises'], true);
-                
                 if (is_array($exercises_data)) {
-                    // Group exercises by exercise_id
-                    $grouped_exercises = array();
-                    
-                    foreach ($exercises_data as $exercise_data) {
-                        $exercise_id = isset($exercise_data['exercise_id']) ? $exercise_data['exercise_id'] : null;
-                        
-                        if (!$exercise_id) {
-                            continue;
-                        }
-                        
-                        if (!isset($grouped_exercises[$exercise_id])) {
-                            $grouped_exercises[$exercise_id] = array(
-                                "exercise_id" => $exercise_id,
-                                "name" => isset($exercise_data['exercise_name']) ? $exercise_data['exercise_name'] : "Esercizio",
+                    $grouped = [];
+                    foreach ($exercises_data as $ex_data) {
+                        $eid = $ex_data['exercise_id'] ?? null;
+                        if (!$eid) continue;
+                        if (!isset($grouped[$eid])) {
+                            $grouped[$eid] = [
+                                "exercise_id" => $eid,
+                                "name" => $ex_data['exercise_name'] ?? "Esercizio",
                                 "muscle_group" => "N/A",
-                                "sets" => array()
-                            );
+                                "sets" => []
+                            ];
                         }
-                        
-                        $grouped_exercises[$exercise_id]["sets"][] = array(
-                            "set_number" => isset($exercise_data['set_number']) ? $exercise_data['set_number'] : 1,
-                            "weight" => isset($exercise_data['weight']) ? $exercise_data['weight'] : 0,
-                            "reps" => isset($exercise_data['reps']) ? $exercise_data['reps'] : 0
-                        );
+                        $grouped[$eid]["sets"][] = [
+                            "set_number" => $ex_data['set_number'] ?? 1,
+                            "weight" => $ex_data['weight'] ?? 0,
+                            "reps" => $ex_data['reps'] ?? 0
+                        ];
                     }
-                    
-                    $record_item["exercises"] = array_values($grouped_exercises);
+                    $record_item["exercises"] = array_values($grouped);
                 }
             }
         }
         
-        // Add this record to the records array
         array_push($records_arr["records"], $record_item);
     }
 
-    // Set response code - 200 OK
     http_response_code(200);
-
-    // Show records
     echo json_encode($records_arr);
 } else {
     // Set response code - 404 Not found
