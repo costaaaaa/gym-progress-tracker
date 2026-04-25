@@ -1,0 +1,1 @@
+const o=window.location.hostname==="localhost"?`${window.location.protocol}//${window.location.host}/gym-progress-tracker/backend/`:`${window.location.protocol}//${window.location.host}/gym-progress-tracker-v2/backend/`;export{o as A};

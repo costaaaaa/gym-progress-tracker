@@ -1,5 +1,5 @@
 body {
-  background-image: url('./assets/images/gym-background.jpg');
+  background-image: url('./assets/images/gym-background.webp');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
@@ -28,13 +28,10 @@ h1, h2, h3, h4, h5, h6 {
   text-shadow: 0px 1px 1px rgba(0,0,0,0.05);
 }
 
-p, span, div {
-  color: #444444;
-}
-
 /* Sfondo per i contenitori principali per migliorare contrasto e leggibilità */
+/* RIMOSSO !important per permettere la Focus Mode */
 .MuiPaper-root {
-  background-color: rgba(255, 255, 255, 0.95) !important;
+  background-color: rgba(255, 255, 255, 0.95);
 }
 
 /* Effetto pulsazione per elementi importanti */
@@ -106,18 +103,19 @@ p, span, div {
 }
 
 /* Miglioramento contrasto per testi su sfondo */
+/* RIMOSSA REGOLA GENERICA p, span, div { color: #444444 } */
 .MuiTypography-root.MuiTypography-body1, 
 .MuiTypography-root.MuiTypography-body2 {
   color: #333333;
 }
 
 .MuiListItemText-primary {
-  color: #333333 !important;
+  color: #333333;
   font-weight: 500;
 }
 
 .MuiListItemText-secondary {
-  color: #555555 !important;
+  color: #555555;
 }
 
 /* Aggiunta ombra sottile per aumentare leggibilità testo importante */
