@@ -147,3 +147,5 @@ GEMINI.md
 # Old heavy assets
 src/assets/images/gym-background.jpg
 
+.gemini/
+.gemini/settings.json

@@ -56,6 +56,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import { INTENSITY_TECHNIQUES } from '../components/ExerciseDialog';
+import { hapticFeedback } from '../utils/vibration';
 
 // ================================================
 // TEMA SCURO PER FOCUS MODE
@@ -101,7 +102,13 @@ const darkFocusTheme = createTheme({
     divider: focusTheme.border,
   },
   typography: {
-    fontFamily: '"Roboto Condensed", "Helvetica", "Arial", sans-serif',
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h1: { fontFamily: '"Inter", sans-serif', fontWeight: 800 },
+    h2: { fontFamily: '"Inter", sans-serif', fontWeight: 800 },
+    h3: { fontFamily: '"Inter", sans-serif', fontWeight: 700 },
+    h4: { fontFamily: '"Inter", sans-serif', fontWeight: 700 },
+    h5: { fontFamily: '"Inter", sans-serif', fontWeight: 700 },
+    h6: { fontFamily: '"Inter", sans-serif', fontWeight: 700 },
   },
   components: {
     MuiPaper: {
@@ -345,6 +352,7 @@ const FocusWorkout = () => {
     setWeightInput('');
 
     setPhase('workout');
+    hapticFeedback.medium();
   };
 
   // ================================================
@@ -360,6 +368,8 @@ const FocusWorkout = () => {
   // ================================================
   const handleConfirmSet = () => {
     if (!weightInput || !repsInput) return;
+
+    hapticFeedback.success();
 
     const exerciseId = currentExercise.id;
     const newSet = {
@@ -442,11 +452,7 @@ const FocusWorkout = () => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
           timerRef.current = null;
-          // Vibrazione se supportata
-          if (navigator.vibrate) {
-            navigator.vibrate([200, 100, 200]);
-          }
-          setPhase('workout');
+          hapticFeedback.warning();
           return 0;
         }
         return prev - 1;
@@ -907,14 +913,14 @@ const FocusWorkout = () => {
               </FormControl>
 
               <Button variant="contained" fullWidth size="large" startIcon={<CheckIcon />} onClick={handleConfirmSet} disabled={!weightInput || !repsInput}
-                sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, letterSpacing: 1, bgcolor: focusTheme.success, color: '#fff', borderRadius: 3,
+                sx={{ py: 2.5, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1, bgcolor: focusTheme.success, color: '#fff', borderRadius: 3,
                   boxShadow: '0 4px 16px rgba(76, 175, 80, 0.3)', '&:hover': { bgcolor: '#388e3c', boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)' },
                   '&:disabled': { bgcolor: focusTheme.bgElevated, color: focusTheme.textMuted }, mb: 2, transition: 'all 0.3s ease' }}>
                 Conferma Serie
               </Button>
 
-              <Button variant="text" startIcon={<SkipNextIcon />} onClick={handleSkipExercise}
-                sx={{ color: focusTheme.textMuted, '&:hover': { color: focusTheme.textSecondary, bgcolor: 'rgba(255,255,255,0.05)' }, mb: 3 }}>
+              <Button variant="text" fullWidth startIcon={<SkipNextIcon />} onClick={handleSkipExercise}
+                sx={{ py: 1.5, color: focusTheme.textMuted, '&:hover': { color: focusTheme.textSecondary, bgcolor: 'rgba(255,255,255,0.05)' }, mb: 3 }}>
                 Salta Esercizio
               </Button>
 

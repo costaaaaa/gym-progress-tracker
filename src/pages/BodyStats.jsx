@@ -168,7 +168,7 @@ const BodyStats = () => {
           variant="contained" 
           startIcon={<AddIcon />} 
           onClick={() => setIsDialogOpen(true)}
-          sx={{ bgcolor: '#d50000', '&:hover': { bgcolor: '#b71c1c' } }}
+          sx={{ bgcolor: '#d50000', '&:hover': { bgcolor: '#9b0000' } }}
         >
           Nuova Misurazione
         </Button>
@@ -398,7 +398,7 @@ const BodyStats = () => {
           <Button 
             variant="contained" 
             onClick={handleSubmit} 
-            sx={{ bgcolor: '#d50000', '&:hover': { bgcolor: '#b71c1c' } }}
+            sx={{ bgcolor: '#d50000', '&:hover': { bgcolor: '#9b0000' } }}
           >
             Salva
           </Button>
