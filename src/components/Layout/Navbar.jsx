@@ -8,6 +8,7 @@ import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import StraightenIcon from '@mui/icons-material/Straighten';
 import { useAuth } from '../../context/AuthContext';
 
 const Navbar = () => {
@@ -66,6 +67,7 @@ const Navbar = () => {
       { label: 'Focus', path: '/focus' },
       { label: 'Schede', path: '/workout-plans' },
       { label: 'Progressi', path: '/progress' },
+      { label: 'Misure', path: '/body-stats' },
       { label: 'Cronologia', path: '/workout-history' }
     ] : [])
   ];
@@ -182,6 +184,7 @@ const Navbar = () => {
                   {item.path === '/focus' && <PlayArrowIcon sx={{ mr: 1, color: 'white!important' }} />}
                   {item.path === '/workout-plans' && <FitnessCenterIcon sx={{ mr: 1, color: 'white!important' }} />}
                   {item.path === '/progress' && <DirectionsRunIcon sx={{ mr: 1, color: 'white!important' }} />}
+                  {item.path === '/body-stats' && <StraightenIcon sx={{ mr: 1, color: 'white!important' }} />}
                   {item.path === '/workout-history' && <CalendarTodayIcon sx={{ mr: 1, color: 'white!important' }} />}
                   {item.label}
                 </MenuItem>
@@ -291,6 +294,7 @@ const Navbar = () => {
                   item.path === '/focus' ? <PlayArrowIcon sx={{ color: 'white' }} /> :
                   item.path === '/workout-plans' ? <FitnessCenterIcon sx={{ color: 'white' }} /> : 
                   item.path === '/progress' ? <DirectionsRunIcon sx={{ color: 'white' }} /> : 
+                  item.path === '/body-stats' ? <StraightenIcon sx={{ color: 'white' }} /> : 
                   item.path === '/workout-history' ? <CalendarTodayIcon sx={{ color: 'white' }} /> : null
                 }
                 sx={{

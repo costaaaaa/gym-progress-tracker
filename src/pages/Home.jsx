@@ -5,7 +5,11 @@ import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import StraightenIcon from '@mui/icons-material/Straighten';
 import { useAuth } from '../context/AuthContext';
+
+import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 
 const Home = () => {
   const { isLoggedIn } = useAuth();
@@ -13,14 +17,14 @@ const Home = () => {
 
   return (
     <>
-      <Paper elevation={3} sx={{ p: 4, mb: 4, borderRadius: 3, background: 'linear-gradient(to right bottom, #ffffff, #f0f0f0)' }}>
+      <Paper elevation={3} sx={{ p: 4, mb: 4, borderRadius: 3, background: 'linear-gradient(to right bottom, #ffffff, #f8f8f8)' }}>
         <Typography variant="h4" component="h1" gutterBottom className="section-title" sx={{ fontWeight: 800, color: '#212121', textTransform: 'uppercase', letterSpacing: '0.5px', mb: 2, textShadow: '0px 1px 2px rgba(0,0,0,0.1)' }}>
-          Benvenuto nel tuo Gym Progress Tracker
+          Gym Progress Tracker <span style={{ color: '#d50000' }}>v2.1</span>
         </Typography>
         <Typography variant="body1" paragraph sx={{ fontSize: '1.1rem', lineHeight: 1.6, color: '#333333' }}>
-          Questa applicazione ti aiuterà a tenere traccia dei tuoi progressi in palestra, gestire le tue schede di allenamento e visualizzare i tuoi miglioramenti nel tempo.
+          La tua piattaforma completa per il fitness. Gestisci allenamenti, monitora i carichi, traccia le misure corporee e sincronizza i tuoi dati con Apple Health.
         </Typography>
-        <Box sx={{ mt: 3 }}>
+        <Box sx={{ mt: 3, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
           {isLoggedIn ? (
             <>
               <Button 
@@ -30,7 +34,7 @@ const Home = () => {
                 to="/focus"
                 startIcon={<PlayArrowIcon />}
                 sx={{ 
-                  mr: 2, py: 1.5, px: 4, fontWeight: 'bold', mb: { xs: 2, sm: 2, md: 0 },
+                  py: 1.5, px: 4, fontWeight: 'bold',
                   fontSize: '1.1rem',
                   background: 'linear-gradient(45deg, #c62828 0%, #e53935 100%)',
                   boxShadow: '0 4px 16px rgba(229, 57, 53, 0.35)',
@@ -41,7 +45,6 @@ const Home = () => {
                   },
                   transition: 'all 0.3s ease',
                 }}
-                className="workout-card"
               >
                 Inizia Allenamento
               </Button>
@@ -49,84 +52,84 @@ const Home = () => {
                 variant="outlined" 
                 color="primary" 
                 component={RouterLink} 
-                to="/workout-plans"
-                startIcon={<FitnessCenterIcon />}
-                sx={{ mr: 2, py: 1.2, px: 3, fontWeight: 'bold', mb: { xs: 2, sm: 2, md: 0 } }}
-                className="workout-card"
+                to="/body-stats"
+                startIcon={<StraightenIcon />}
+                sx={{ py: 1.5, px: 3, fontWeight: 'bold' }}
               >
-                Visualizza Schede
+                Misure e Peso
               </Button>
               <Button 
                 variant="outlined" 
                 color="primary" 
                 component={RouterLink} 
                 to="/progress"
-                startIcon={<DirectionsRunIcon />}
-                sx={{ py: 1.2, px: 3, fontWeight: 'bold', mr: 2, mb: { xs: 2, sm: 2, md: 0 } }}
+                startIcon={<AssessmentIcon />}
+                sx={{ py: 1.5, px: 3, fontWeight: 'bold' }}
               >
-                Controlla Progressi
-              </Button>
-              <Button 
-                variant="outlined" 
-                color="primary" 
-                component={RouterLink} 
-                to="/workout-history"
-                startIcon={<CalendarTodayIcon />}
-                sx={{ py: 1.2, px: 3, fontWeight: 'bold', mr: 2, mb: { xs: 2, sm: 2, md: 0 } }}
-              >
-                Cronologia Allenamenti
+                Analisi Progressi
               </Button>
             </>
           ) : (
-            <Typography variant="body2" color="text.secondary">
-              Effettua il login per accedere alle tue schede e ai tuoi progressi
-            </Typography>
+            <Button 
+              variant="contained" 
+              color="primary" 
+              component={RouterLink} 
+              to="/login"
+              sx={{ py: 1.5, px: 4, fontWeight: 'bold' }}
+            >
+              Accedi per Iniziare
+            </Button>
           )}
         </Box>
-        </Paper>
+      </Paper>
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>
-          <Paper elevation={2} sx={{ p: 3, height: '100%', backgroundColor: '#ffffff' }} className="workout-card">
+          <Paper elevation={2} sx={{ p: 3, height: '100%', borderTop: '4px solid #d50000' }} className="workout-card">
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
               <FitnessCenterIcon sx={{ mr: 1, color: '#d50000' }} />
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 0, color: '#333333' }}>
-                Gestisci Schede
-              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333' }}>Allenamenti</Typography>
             </Box>
-            <Divider sx={{ my: 1.5, borderColor: 'rgba(213, 0, 0, 0.1)' }} />
-            <Typography variant="body2" sx={{ lineHeight: 1.6, color: '#444444' }}>
-              Crea e gestisci le tue schede di allenamento suddivise in 3 giorni, con esercizi, ripetizioni e tempi di recupero personalizzati.
+            <Divider sx={{ my: 1.5 }} />
+            <Typography variant="body2" color="text.secondary">
+              Gestisci le tue schede personalizzate e registra ogni sessione in tempo reale con il timer di recupero integrato.
             </Typography>
-            </Paper>
+          </Paper>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Paper elevation={2} sx={{ p: 3, height: '100%', backgroundColor: '#ffffff' }} className="workout-card">
+          <Paper elevation={2} sx={{ p: 3, height: '100%', borderTop: '4px solid #d50000' }} className="workout-card">
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <CalendarTodayIcon sx={{ mr: 1, color: '#d50000' }} />
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 0, color: '#333333' }}>
-                Registra Allenamenti
-              </Typography>
+              <StraightenIcon sx={{ mr: 1, color: '#d50000' }} />
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333' }}>Statistiche Fisiche</Typography>
             </Box>
-            <Divider sx={{ my: 1.5, borderColor: 'rgba(213, 0, 0, 0.1)' }} />
-            <Typography variant="body2" sx={{ lineHeight: 1.6, color: '#444444' }}>
-              Registra i tuoi allenamenti quotidiani, tenendo traccia dei pesi sollevati, delle ripetizioni effettuate e delle sensazioni durante l'esercizio.
+            <Divider sx={{ my: 1.5 }} />
+            <Typography variant="body2" color="text.secondary">
+              Monitora peso, massa grassa e circonferenze. Visualizza l'evoluzione del tuo fisico attraverso grafici dettagliati.
             </Typography>
-            </Paper>
+          </Paper>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Paper elevation={2} sx={{ p: 3, height: '100%', backgroundColor: '#ffffff' }} className="workout-card">
+          <Paper elevation={2} sx={{ p: 3, height: '100%', borderTop: '4px solid #d50000' }} className="workout-card">
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <DirectionsRunIcon sx={{ mr: 1, color: '#d50000' }} />
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 0, color: '#333333' }}>
-                Analizza Progressi
-              </Typography>
+              <HealthAndSafetyIcon sx={{ mr: 1, color: '#d50000' }} />
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333' }}>Apple Health Sync</Typography>
             </Box>
-            <Divider sx={{ my: 1.5, borderColor: 'rgba(213, 0, 0, 0.1)' }} />
-            <Typography variant="body2" sx={{ lineHeight: 1.6, color: '#444444' }}>
-              Visualizza grafici dettagliati dei tuoi progressi suddivisi per gruppo muscolare e monitora la tua evoluzione nel tempo.
+            <Divider sx={{ my: 1.5 }} />
+            <Typography variant="body2" color="text.secondary">
+              Sincronizzazione automatica del peso da iPhone. I tuoi dati di salute sempre aggiornati senza inserimenti manuali.
             </Typography>
-            </Paper>
+          </Paper>
+        </Grid>
+        <Grid item xs={12}>
+          <Paper elevation={2} sx={{ p: 3, bgcolor: '#f1f8e9', borderLeft: '6px solid #4caf50' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <AssessmentIcon sx={{ mr: 1, color: '#2e7d32' }} />
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1b5e20' }}>Novità: Analisi Avanzata</Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary">
+              Scopri i nuovi grafici di <strong>Volume Totale</strong> e <strong>Frequenza Settimanale</strong> nella sezione Progressi per ottimizzare il tuo sovraccarico progressivo.
+            </Typography>
+          </Paper>
         </Grid>
       </Grid>
 
