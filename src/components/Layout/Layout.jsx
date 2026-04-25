@@ -1,19 +1,21 @@
 import React from 'react';
-import { Container } from '@mui/material';
+import { Container, Box } from '@mui/material';
 import Navbar from './Navbar';
+import BottomNav from './BottomNav';
 import { useAuth } from '../../context/AuthContext';
 
 const Layout = ({ children }) => {
   // Utilizziamo il context di autenticazione - questo forza il re-render quando cambia lo stato di autenticazione
-  useAuth(); // Rimuovo l'oggetto pattern vuoto che causa warning
+  const { isLoggedIn } = useAuth();
 
   return (
-    <>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Navbar />
-      <Container sx={{ mt: 4, mb: 4 }}>
+      <Container component="main" sx={{ mt: 4, mb: isLoggedIn ? 10 : 4, flexGrow: 1 }}>
         {children}
       </Container>
-    </>
+      <BottomNav />
+    </Box>
   );
 };
 
