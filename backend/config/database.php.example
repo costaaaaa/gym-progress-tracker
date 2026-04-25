@@ -1,0 +1,39 @@
+<?php
+
+// Rinominare questo file in database.php e inserire le proprie credenziali
+
+
+class Database
+{
+    private $host = "localhost";
+    private $db_name = "NOME_DATABASE";
+    private $username = "USERNAME_DATABASE";
+    private $password = "PASSWORD_DATABASE";
+    private $port = 3306;
+    public $conn;
+
+    public function getConnection()
+    {
+        $this->conn = null;
+
+        try {
+            if (!extension_loaded('pdo_mysql')) {
+                throw new Exception("Errore: estensione MySQL PDO non installata");
+            }
+
+            $dsn = "mysql:host={$this->host};port={$this->port};dbname={$this->db_name};charset=utf8mb4";
+            $options = [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false,
+            ];
+
+            $this->conn = new PDO($dsn, $this->username, $this->password, $options);
+            return $this->conn;
+        } catch (PDOException $e) {
+            throw new Exception("Errore di connessione al database: " . $e->getMessage());
+        } catch (Exception $e) {
+            throw new Exception($e->getMessage());
+        }
+    }
+}

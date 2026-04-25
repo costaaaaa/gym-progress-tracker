@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Container,
   Box,
@@ -70,6 +71,8 @@ const focusTheme = {
   timerBg: 'rgba(229, 57, 53, 0.08)',
 };
 
+const DRAFT_STORAGE_KEY = 'gym_focus_workout_draft';
+
 const FocusWorkout = () => {
   const navigate = useNavigate();
   const { isLoggedIn, loading: authLoading } = useAuth();
@@ -77,7 +80,7 @@ const FocusWorkout = () => {
   // ================================================
   // STATE
   // ================================================
-  const [phase, setPhase] = useState('loading'); // loading | select_day | workout | rest_timer | summary
+  const [phase, setPhase] = useState('loading'); // loading | select_day | workout | rest_timer | summary | resume_prompt
   const [activePlan, setActivePlan] = useState(null);
   const [selectedDayId, setSelectedDayId] = useState('');
   const [selectedDay, setSelectedDay] = useState(null);
@@ -106,6 +109,34 @@ const FocusWorkout = () => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [confirmQuitDialog, setConfirmQuitDialog] = useState(false);
   const [exerciseTransition, setExerciseTransition] = useState(true);
+  const [draftToResume, setDraftToResume] = useState(null);
+
+  // ================================================
+  // AUTOSAVE LOGIC
+  // ================================================
+  useEffect(() => {
+    // Salva solo se siamo in una fase attiva di allenamento
+    if (['workout', 'rest_timer', 'summary'].includes(phase) && selectedDay) {
+      const draft = {
+        activePlan,
+        selectedDay,
+        selectedDayId,
+        completedSets,
+        skippedExercises,
+        currentExerciseIndex,
+        currentSetIndex,
+        workoutNotes,
+        startTime,
+        phase: phase === 'rest_timer' ? 'workout' : phase, // Se crasha durante il timer, riprendi dall'esercizio
+        timestamp: new Date().getTime()
+      };
+      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+    }
+  }, [phase, activePlan, selectedDay, selectedDayId, completedSets, skippedExercises, currentExerciseIndex, currentSetIndex, workoutNotes, startTime]);
+
+  const clearDraft = useCallback(() => {
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
+  }, []);
 
   // ================================================
   // AUTH GUARD
@@ -127,6 +158,23 @@ const FocusWorkout = () => {
 
   const loadInitialData = async () => {
     try {
+      // Verifica prima se esiste una bozza
+      const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (savedDraft) {
+        try {
+          const parsed = JSON.parse(savedDraft);
+          // La bozza è valida solo se ha i dati minimi e appartiene allo stesso giorno (opzionale, ma qui la teniamo valida per UX)
+          if (parsed.selectedDay && parsed.startTime) {
+            setDraftToResume(parsed);
+            setPhase('resume_prompt');
+            // Continuiamo comunque il caricamento per avere i dati aggiornati del piano
+          }
+        } catch (e) {
+          console.error("Errore parsing bozza:", e);
+          clearDraft();
+        }
+      }
+
       // Carica piano attivo e impostazioni in parallelo
       const [plansRes, userRes] = await Promise.all([
         fetch(`${API_BASE_URL}api/workout/read_plans.php`, { method: 'GET', credentials: 'include' }),
@@ -146,19 +194,59 @@ const FocusWorkout = () => {
         const active = plansData.records.find(p => p.is_active);
         if (active) {
           setActivePlan(active);
-          setPhase('select_day');
+          // Se non c'è bozza, vai alla selezione giorno
+          if (phase !== 'resume_prompt') {
+            setPhase('select_day');
+          }
         } else {
           setSnackbar({ open: true, message: 'Nessun piano attivo trovato. Attiva un piano dalle Schede.', severity: 'warning' });
-          setPhase('select_day');
+          if (phase !== 'resume_prompt') {
+            setPhase('select_day');
+          }
         }
       } else {
-        setPhase('select_day');
+        if (phase !== 'resume_prompt') {
+          setPhase('select_day');
+        }
       }
     } catch (error) {
       console.error('Errore nel caricamento dati:', error);
       setSnackbar({ open: true, message: 'Errore nel caricamento dei dati', severity: 'error' });
-      setPhase('select_day');
+      if (phase !== 'resume_prompt') {
+        setPhase('select_day');
+      }
     }
+  };
+
+  // ================================================
+  // GESTIONE BOZZA
+  // ================================================
+  const handleResumeDraft = () => {
+    if (!draftToResume) return;
+
+    setActivePlan(draftToResume.activePlan);
+    setSelectedDay(draftToResume.selectedDay);
+    setSelectedDayId(draftToResume.selectedDayId);
+    setCompletedSets(draftToResume.completedSets);
+    setSkippedExercises(draftToResume.skippedExercises);
+    setCurrentExerciseIndex(draftToResume.currentExerciseIndex);
+    setCurrentSetIndex(draftToResume.currentSetIndex);
+    setWorkoutNotes(draftToResume.workoutNotes);
+    setStartTime(new Date(draftToResume.startTime));
+    
+    // Ripristina input correnti
+    const currentEx = draftToResume.selectedDay.exercises[draftToResume.currentExerciseIndex];
+    setRepsInput(currentEx?.reps || '');
+    setIntensityTechniqueInput(currentEx?.intensity_technique || '');
+
+    setPhase(draftToResume.phase || 'workout');
+    setDraftToResume(null);
+  };
+
+  const handleDiscardDraft = () => {
+    clearDraft();
+    setDraftToResume(null);
+    setPhase('select_day');
   };
 
   // ================================================
@@ -383,6 +471,7 @@ const FocusWorkout = () => {
       }
 
       setSnackbar({ open: true, message: 'Allenamento salvato con successo! 💪', severity: 'success' });
+      clearDraft();
 
       // Redirect dopo un breve delay
       setTimeout(() => {
@@ -413,6 +502,7 @@ const FocusWorkout = () => {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
+    clearDraft();
     setConfirmQuitDialog(false);
     navigate('/');
   };
@@ -435,6 +525,62 @@ const FocusWorkout = () => {
           alignItems: 'center', justifyContent: 'center'
         }}>
           <CircularProgress sx={{ color: focusTheme.primary }} />
+        </Box>
+      );
+    }
+
+    if (phase === 'resume_prompt' && draftToResume) {
+      return (
+        <Box sx={{ 
+          minHeight: '100vh', bgcolor: focusTheme.bg, color: focusTheme.text,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3
+        }}>
+          <Paper sx={{ 
+            bgcolor: focusTheme.bgCard, p: 4, borderRadius: 4, maxWidth: 400, textAlign: 'center',
+            border: `1px solid ${focusTheme.border}`,
+            boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
+          }}>
+            <HistoryIcon sx={{ fontSize: 64, color: focusTheme.warning, mb: 2 }} />
+            <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
+              Allenamento in sospeso
+            </Typography>
+            <Typography variant="body1" sx={{ color: focusTheme.textSecondary, mb: 1 }}>
+              Hai un allenamento non salvato per il giorno:
+            </Typography>
+            <Typography variant="h6" sx={{ color: focusTheme.primaryLight, fontWeight: 600, mb: 1 }}>
+              {draftToResume.selectedDay?.name}
+            </Typography>
+            <Typography variant="body2" sx={{ color: focusTheme.textMuted, mb: 4 }}>
+              Iniziato il {new Date(draftToResume.startTime).toLocaleString('it-IT')}
+            </Typography>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Button
+                variant="contained"
+                size="large"
+                fullWidth
+                onClick={handleResumeDraft}
+                sx={{ 
+                  bgcolor: focusTheme.primary, py: 1.5, fontWeight: 700, borderRadius: 2,
+                  '&:hover': { bgcolor: focusTheme.primaryDark }
+                }}
+              >
+                Riprendi Allenamento
+              </Button>
+              <Button
+                variant="outlined"
+                size="large"
+                fullWidth
+                onClick={handleDiscardDraft}
+                sx={{ 
+                  color: focusTheme.textSecondary, borderColor: focusTheme.border, py: 1.5, borderRadius: 2,
+                  '&:hover': { borderColor: focusTheme.primary, color: focusTheme.primaryLight }
+                }}
+              >
+                Scarta e Inizia Nuovo
+              </Button>
+            </Box>
+          </Paper>
         </Box>
       );
     }
