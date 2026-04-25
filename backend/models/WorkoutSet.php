@@ -70,6 +70,24 @@ class WorkoutSet
         }
     }
 
+    // Read all sets for a specific user to optimize N+1 queries
+    public function readAllByUserId($user_id)
+    {
+        $query = "SELECT ws.id, ws.workout_history_id, ws.exercise_id, ws.set_number, ws.weight, ws.reps, ws.intensity_technique,
+                       e.name as exercise_name, e.muscle_group
+                FROM " . $this->table_name . " ws
+                LEFT JOIN gym_exercises e ON ws.exercise_id = e.id
+                JOIN gym_workout_history wh ON ws.workout_history_id = wh.id
+                WHERE wh.user_id = ?
+                ORDER BY wh.date DESC, ws.workout_history_id ASC, ws.id ASC";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(1, $user_id);
+        $stmt->execute();
+
+        return $stmt;
+    }
+
     // Read all sets for a specific workout
     public function readByWorkoutId()
     {

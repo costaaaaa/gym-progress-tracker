@@ -539,7 +539,10 @@ const fetchExportData = React.useCallback(async () => {
         p: { xs: 2, sm: 3, md: 4 }, 
         borderRadius: 2,
         mb: 4,
-        background: 'linear-gradient(to right bottom, #ffffff, #f8f9fa)'
+        background: (theme) => theme.palette.mode === 'light' 
+          ? 'linear-gradient(to right bottom, #ffffff, #f8f9fa)'
+          : 'linear-gradient(to right bottom, #141416, #1a1a1b)',
+        border: (theme) => theme.palette.mode === 'light' ? 'none' : '1px solid rgba(255,255,255,0.05)'
       }}>
         {/* Intestazione con avatar e nome utente */}
         <Box sx={{ 
@@ -555,7 +558,8 @@ const fetchExportData = React.useCallback(async () => {
               bgcolor: 'primary.main',
               mb: { xs: 2, sm: 0 },
               mr: { xs: 0, sm: 3 },
-              fontSize: { xs: '2rem', sm: '2.5rem' }
+              fontSize: { xs: '2rem', sm: '2.5rem' },
+              boxShadow: (theme) => theme.palette.mode === 'light' ? '0 4px 12px rgba(213, 0, 0, 0.2)' : '0 4px 20px rgba(0, 0, 0, 0.4)'
             }}
           >
             {userData?.username?.charAt(0).toUpperCase() || <PersonIcon fontSize="large" />}
@@ -614,11 +618,12 @@ const fetchExportData = React.useCallback(async () => {
               </Typography>
             </Box>
             
-            <Box sx={{ mt: 2, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+            <Box sx={{ mt: 2, display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, flexWrap: 'wrap', gap: 2 }}>
               <Button
                 variant="outlined"
                 startIcon={<LockIcon />}
                 onClick={handleOpenPasswordDialog}
+                fullWidth={false}
               >
                 Cambia Password
               </Button>
@@ -628,6 +633,7 @@ const fetchExportData = React.useCallback(async () => {
                 startIcon={<DownloadIcon />}
                 onClick={handleOpenExportDialog}
                 color="primary"
+                fullWidth={false}
               >
                 Esporta Dati
               </Button>
@@ -637,6 +643,7 @@ const fetchExportData = React.useCallback(async () => {
                 startIcon={<DeleteForeverIcon />}
                 onClick={handleOpenDeleteDialog}
                 color="error"
+                fullWidth={false}
               >
                 Elimina Account
               </Button>
@@ -657,8 +664,8 @@ const fetchExportData = React.useCallback(async () => {
             <Card sx={{ 
               mb: 2, 
               boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              bgcolor: 'rgba(25, 118, 210, 0.04)',
-              border: '1px solid rgba(25, 118, 210, 0.12)'
+              bgcolor: (theme) => theme.palette.mode === 'light' ? 'rgba(25, 118, 210, 0.04)' : 'rgba(213, 0, 0, 0.08)',
+              border: (theme) => theme.palette.mode === 'light' ? '1px solid rgba(25, 118, 210, 0.12)' : '1px solid rgba(213, 0, 0, 0.2)'
             }}>
               <CardContent>
                 <Typography variant="subtitle1" color="text.secondary" gutterBottom>
@@ -675,8 +682,8 @@ const fetchExportData = React.useCallback(async () => {
             
             <Card sx={{ 
               boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              bgcolor: 'rgba(76, 175, 80, 0.04)',
-              border: '1px solid rgba(76, 175, 80, 0.12)'
+              bgcolor: (theme) => theme.palette.mode === 'light' ? 'rgba(76, 175, 80, 0.04)' : 'rgba(76, 175, 80, 0.08)',
+              border: (theme) => theme.palette.mode === 'light' ? '1px solid rgba(76, 175, 80, 0.12)' : '1px solid rgba(76, 175, 80, 0.2)'
             }}>
               <CardContent>
                 <Typography variant="subtitle1" color="text.secondary" gutterBottom>
@@ -699,7 +706,10 @@ const fetchExportData = React.useCallback(async () => {
         p: { xs: 2, sm: 3, md: 4 }, 
         borderRadius: 2,
         mb: 4,
-        background: 'linear-gradient(to right bottom, #ffffff, #f8f9fa)'
+        background: (theme) => theme.palette.mode === 'light' 
+          ? 'linear-gradient(to right bottom, #ffffff, #f8f9fa)'
+          : 'linear-gradient(to right bottom, #141416, #1a1a1b)',
+        border: (theme) => theme.palette.mode === 'light' ? 'none' : '1px solid rgba(255,255,255,0.05)'
       }}>
         <Typography variant="h6" gutterBottom sx={{ 
           display: 'flex', 
@@ -716,8 +726,8 @@ const fetchExportData = React.useCallback(async () => {
           justifyContent: 'space-between',
           p: 2,
           borderRadius: 2,
-          bgcolor: 'rgba(25, 118, 210, 0.04)',
-          border: '1px solid rgba(25, 118, 210, 0.12)'
+          bgcolor: (theme) => theme.palette.mode === 'light' ? 'rgba(25, 118, 210, 0.04)' : 'rgba(255, 255, 255, 0.03)',
+          border: (theme) => theme.palette.mode === 'light' ? '1px solid rgba(25, 118, 210, 0.12)' : '1px solid rgba(255, 255, 255, 0.08)'
         }}>
           <Box>
             <Typography variant="subtitle1" fontWeight="medium">

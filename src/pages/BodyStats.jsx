@@ -161,14 +161,15 @@ const BodyStats = () => {
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#333' }}>
+        <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
           Statistiche Fisiche
         </Typography>
         <Button 
           variant="contained" 
           startIcon={<AddIcon />} 
           onClick={() => setIsDialogOpen(true)}
-          sx={{ bgcolor: '#d50000', '&:hover': { bgcolor: '#9b0000' } }}
+          color="primary"
+          sx={{ fontWeight: 'bold' }}
         >
           Nuova Misurazione
         </Button>
@@ -176,7 +177,7 @@ const BodyStats = () => {
 
       {isLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 10 }}>
-          <CircularProgress color="error" />
+          <CircularProgress color="primary" />
         </Box>
       ) : (
         <Grid container spacing={3}>
@@ -185,15 +186,22 @@ const BodyStats = () => {
             <Card elevation={3} sx={{ borderRadius: 2 }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                  <MonitorWeightIcon sx={{ mr: 1, color: '#d50000' }} /> Andamento Peso (kg)
+                  <MonitorWeightIcon sx={{ mr: 1, color: 'primary.main' }} /> Andamento Peso (kg)
                 </Typography>
                 <Box sx={{ height: 300, mt: 2 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                      <XAxis dataKey="dateFormatted" stroke="#666" fontSize={12} />
-                      <YAxis domain={['auto', 'auto']} stroke="#666" fontSize={12} />
-                      <Tooltip />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(128,128,128,0.2)" />
+                      <XAxis dataKey="dateFormatted" stroke="currentColor" fontSize={12} />
+                      <YAxis domain={['auto', 'auto']} stroke="currentColor" fontSize={12} />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'rgba(0,0,0,0.8)', 
+                          border: 'none', 
+                          borderRadius: '8px',
+                          color: '#fff' 
+                        }}
+                      />
                       <Legend />
                       <Line 
                         type="monotone" 
@@ -220,10 +228,17 @@ const BodyStats = () => {
                 <Box sx={{ height: 300, mt: 2 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                      <XAxis dataKey="dateFormatted" stroke="#666" fontSize={12} />
-                      <YAxis stroke="#666" fontSize={12} />
-                      <Tooltip />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(128,128,128,0.2)" />
+                      <XAxis dataKey="dateFormatted" stroke="currentColor" fontSize={12} />
+                      <YAxis stroke="currentColor" fontSize={12} />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'rgba(0,0,0,0.8)', 
+                          border: 'none', 
+                          borderRadius: '8px',
+                          color: '#fff' 
+                        }}
+                      />
                       <Legend />
                       <Line type="monotone" dataKey="body_fat_percentage" name="Grasso (%)" stroke="#ff9800" strokeWidth={2} connectNulls />
                       <Line type="monotone" dataKey="muscle_mass_percentage" name="Muscolo (%)" stroke="#4caf50" strokeWidth={2} connectNulls />
@@ -239,15 +254,22 @@ const BodyStats = () => {
             <Card elevation={3} sx={{ borderRadius: 2 }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                  <StraightenIcon sx={{ mr: 1, color: '#d50000' }} /> Misure Corporee (cm)
+                  <StraightenIcon sx={{ mr: 1, color: 'primary.main' }} /> Misure Corporee (cm)
                 </Typography>
                 <Box sx={{ height: 350, mt: 2 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                      <XAxis dataKey="dateFormatted" stroke="#666" fontSize={12} />
-                      <YAxis stroke="#666" fontSize={12} />
-                      <Tooltip />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(128,128,128,0.2)" />
+                      <XAxis dataKey="dateFormatted" stroke="currentColor" fontSize={12} />
+                      <YAxis stroke="currentColor" fontSize={12} />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'rgba(0,0,0,0.8)', 
+                          border: 'none', 
+                          borderRadius: '8px',
+                          color: '#fff' 
+                        }}
+                      />
                       <Legend />
                       <Line type="monotone" dataKey="chest_size" name="Petto" stroke="#2196f3" strokeWidth={2} connectNulls />
                       <Line type="monotone" dataKey="arm_size" name="Braccio" stroke="#9c27b0" strokeWidth={2} connectNulls />
@@ -264,17 +286,17 @@ const BodyStats = () => {
           <Grid item xs={12}>
             <TableContainer component={Paper} elevation={3} sx={{ borderRadius: 2 }}>
               <Table>
-                <TableHead sx={{ bgcolor: '#f5f5f5' }}>
+                <TableHead sx={{ bgcolor: (theme) => theme.palette.mode === 'light' ? '#f5f5f5' : 'rgba(255,255,255,0.05)' }}>
                   <TableRow>
-                    <TableCell>Data</TableCell>
-                    <TableCell align="right">Peso</TableCell>
-                    <TableCell align="right">Grasso %</TableCell>
-                    <TableCell align="right">Muscolo %</TableCell>
-                    <TableCell align="right">Petto</TableCell>
-                    <TableCell align="right">Braccio</TableCell>
-                    <TableCell align="right">Vita</TableCell>
-                    <TableCell align="right">Gamba</TableCell>
-                    <TableCell align="center">Azioni</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Data</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>Peso</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>Grasso %</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>Muscolo %</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>Petto</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>Braccio</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>Vita</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>Gamba</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>Azioni</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -316,7 +338,7 @@ const BodyStats = () => {
               label="Data"
               value={formData.date}
               onChange={handleDateChange}
-              renderInput={(params) => <TextField {...params} fullWidth sx={{ mb: 3, mt: 1 }} />}
+              slotProps={{ textField: { fullWidth: true, sx: { mb: 3, mt: 1 } } }}
             />
           </LocalizationProvider>
           
@@ -398,12 +420,14 @@ const BodyStats = () => {
           <Button 
             variant="contained" 
             onClick={handleSubmit} 
-            sx={{ bgcolor: '#d50000', '&:hover': { bgcolor: '#9b0000' } }}
+            color="primary"
+            sx={{ fontWeight: 'bold' }}
           >
             Salva
           </Button>
         </DialogActions>
       </Dialog>
+
 
       <Snackbar 
         open={snackbar.open} 
