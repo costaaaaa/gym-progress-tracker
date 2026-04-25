@@ -31,7 +31,11 @@ import {
   DialogActions,
   Fade,
   Slide,
-  Divider
+  Divider,
+  createTheme,
+  ThemeProvider,
+  CssBaseline,
+  GlobalStyles
 } from '@mui/material';
 import {
   PlayArrow as PlayArrowIcon,
@@ -46,7 +50,8 @@ import {
   NavigateNext as NavigateNextIcon,
   Info as InfoIcon,
   EmojiEvents as TrophyIcon,
-  AccessTime as AccessTimeIcon
+  AccessTime as AccessTimeIcon,
+  History as HistoryIcon
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
@@ -70,6 +75,44 @@ const focusTheme = {
   border: '#333333',
   timerBg: 'rgba(229, 57, 53, 0.08)',
 };
+
+const darkFocusTheme = createTheme({
+  palette: {
+    mode: 'dark',
+    primary: {
+      main: focusTheme.primary,
+      light: focusTheme.primaryLight,
+      dark: focusTheme.primaryDark,
+    },
+    background: {
+      default: focusTheme.bg,
+      paper: focusTheme.bgCard,
+    },
+    text: {
+      primary: focusTheme.text,
+      secondary: focusTheme.textSecondary,
+    },
+    success: {
+      main: focusTheme.success,
+    },
+    warning: {
+      main: focusTheme.warning,
+    },
+    divider: focusTheme.border,
+  },
+  typography: {
+    fontFamily: '"Roboto Condensed", "Helvetica", "Arial", sans-serif',
+  },
+  components: {
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none', // Rimuove il gradiente di elevazione di MUI dark mode
+        },
+      },
+    },
+  },
+});
 
 const DRAFT_STORAGE_KEY = 'gym_focus_workout_draft';
 
@@ -181,6 +224,31 @@ const FocusWorkout = () => {
         fetch(`${API_BASE_URL}api/user/read.php`, { method: 'GET', credentials: 'include' })
       ]);
 
+      if (!plansRes.ok) {
+        let errorMessage = `Errore caricamento piani (${plansRes.status})`;
+        try {
+          const errorData = await plansRes.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          // Se non è JSON, prova a leggere come testo
+          const errorText = await plansRes.text().catch(() => '');
+          console.error('Risposta non-JSON dai piani:', errorText);
+        }
+        throw new Error(errorMessage);
+      }
+      
+      if (!userRes.ok) {
+        let errorMessage = `Errore caricamento utente (${userRes.status})`;
+        try {
+          const errorData = await userRes.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          const errorText = await userRes.text().catch(() => '');
+          console.error('Risposta non-JSON dall\'utente:', errorText);
+        }
+        throw new Error(errorMessage);
+      }
+
       const plansData = await plansRes.json();
       const userData = await userRes.json();
 
@@ -211,7 +279,7 @@ const FocusWorkout = () => {
       }
     } catch (error) {
       console.error('Errore nel caricamento dati:', error);
-      setSnackbar({ open: true, message: 'Errore nel caricamento dei dati', severity: 'error' });
+      setSnackbar({ open: true, message: 'Errore nel caricamento dei dati: ' + error.message, severity: 'error' });
       if (phase !== 'resume_prompt') {
         setPhase('select_day');
       }
@@ -649,15 +717,6 @@ const FocusWorkout = () => {
                       value={selectedDayId}
                       label="Seleziona Giorno"
                       onChange={handleDayChange}
-                      MenuProps={{
-                        PaperProps: {
-                          sx: {
-                            bgcolor: focusTheme.bgElevated,
-                            color: focusTheme.text,
-                            '& .MuiMenuItem-root:hover': { bgcolor: 'rgba(229, 57, 53, 0.15)' }
-                          }
-                        }
-                      }}
                     >
                       {activePlan.days?.map((day) => (
                         <MenuItem key={day.id} value={day.id}>{day.name}</MenuItem>
@@ -839,15 +898,6 @@ const FocusWorkout = () => {
                   value={intensityTechniqueInput}
                   label="Tecnica di Intensità"
                   onChange={(e) => setIntensityTechniqueInput(e.target.value)}
-                  MenuProps={{
-                    PaperProps: {
-                      sx: {
-                        bgcolor: focusTheme.bgElevated,
-                        color: focusTheme.text,
-                        '& .MuiMenuItem-root:hover': { bgcolor: 'rgba(229, 57, 53, 0.15)' }
-                      }
-                    }
-                  }}
                 >
                   <MenuItem value=""><em>Nessuna</em></MenuItem>
                   {INTENSITY_TECHNIQUES.filter(t => t !== 'Nessuna (Normale)').map((tech) => (
@@ -1020,10 +1070,27 @@ const FocusWorkout = () => {
       </Box>
     );
   };
-
-  return (
-    <>
-      {renderContent()}
+return (
+  <ThemeProvider theme={darkFocusTheme}>
+    <CssBaseline />
+    <GlobalStyles styles={{
+      '.MuiPaper-root.MuiMenu-paper': {
+        backgroundColor: `${focusTheme.bgElevated} !important`,
+        color: `${focusTheme.text} !important`,
+        border: `1px solid ${focusTheme.border} !important`,
+      },
+      '.MuiMenuItem-root': {
+        color: `${focusTheme.text} !important`,
+      },
+      '.MuiMenuItem-root:hover': {
+        backgroundColor: 'rgba(229, 57, 53, 0.2) !important',
+      },
+      '.MuiTypography-root': {
+        color: 'inherit', // Permette al tema di gestire il colore
+      }
+    }} />
+    {renderContent()}
+...
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
@@ -1038,7 +1105,7 @@ const FocusWorkout = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </>
+    </ThemeProvider>
   );
 };
 
