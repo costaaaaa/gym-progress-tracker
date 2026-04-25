@@ -87,6 +87,10 @@ const Progress = () => {
   const [dataFormat, setDataFormat] = useState({ valid: false, message: '' });
   const [apiResponseData, setApiResponseData] = useState(null);
 
+  // Stati per le nuove statistiche globali
+  const [frequencyData, setFrequencyData] = useState([]);
+  const [totalVolumeData, setTotalVolumeData] = useState([]);
+
   // Stato per tracciare le metriche visibili nel grafico
   const [visibleMetrics, setVisibleMetrics] = useState({
     volume: true,
@@ -96,9 +100,36 @@ const Progress = () => {
     trendLines: true
   });
 
+  const fetchGlobalStats = async () => {
+    try {
+      const [freqRes, volRes] = await Promise.all([
+        fetch(`${API_BASE_URL}api/workout_stats/frequency.php`, { credentials: 'include' }),
+        fetch(`${API_BASE_URL}api/workout_stats/volume.php`, { credentials: 'include' })
+      ]);
+      const freqData = await freqRes.json();
+      const volData = await volRes.json();
+      
+      if (freqData.records) {
+        setFrequencyData(freqData.records.map(r => ({
+          ...r,
+          label: `Settimana ${r.year_week.toString().slice(-2)}`
+        })));
+      }
+      if (volData.records) {
+        setTotalVolumeData(volData.records.map(r => ({
+          ...r,
+          dateFormatted: new Date(r.workout_date).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching global stats:', error);
+    }
+  };
+
   // Carica gli esercizi dal database all'avvio del componente
   useEffect(() => {
     fetchExercises();
+    fetchGlobalStats();
   }, []);
 
   // Imposta il gruppo muscolare predefinito dopo che gli esercizi sono stati caricati
@@ -1089,6 +1120,51 @@ const Progress = () => {
         )}
         */}
         
+        {/* Nuove Statistiche Globali */}
+        <Grid item xs={12} md={6}>
+          <Card elevation={3} sx={{ borderRadius: 2, height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CalendarTodayIcon color="primary" /> Frequenza Allenamenti
+              </Typography>
+              <Typography variant="caption" color="text.secondary">Allenamenti per settimana (ultime 12 settimane)</Typography>
+              <Box sx={{ height: 250, mt: 2 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={frequencyData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="label" fontSize={10} />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Line type="stepAfter" dataKey="workout_count" name="Allenamenti" stroke="#1976d2" strokeWidth={3} dot={{ r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <Card elevation={3} sx={{ borderRadius: 2, height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <FitnessCenterIcon color="error" /> Volume Totale Allenamento
+              </Typography>
+              <Typography variant="caption" color="text.secondary">Kg totali sollevati per sessione (ultimi 3 mesi)</Typography>
+              <Box sx={{ height: 250, mt: 2 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={totalVolumeData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="dateFormatted" fontSize={10} />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="total_volume" name="Volume (kg)" stroke="#d32f2f" strokeWidth={2} dot={{ r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
         {/* Selettori gruppo muscolare e esercizio */}
         <Grid container spacing={3}>
           <Grid item xs={12}>
