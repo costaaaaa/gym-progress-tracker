@@ -89,7 +89,8 @@ if ($num > 0) {
                     $exercise_item["sets"][] = array(
                         "set_number" => $set['set_number'],
                         "weight" => $set['weight'],
-                        "reps" => $set['reps']
+                        "reps" => $set['reps'],
+                        "intensity_technique" => isset($set['intensity_technique']) ? $set['intensity_technique'] : null
                     );
                 }
                 

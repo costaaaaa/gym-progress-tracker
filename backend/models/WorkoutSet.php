@@ -12,6 +12,7 @@ class WorkoutSet
     public $set_number;
     public $weight;
     public $reps;
+    public $intensity_technique;
 
     // Extra properties for joins
     public $exercise_name;
@@ -34,7 +35,8 @@ class WorkoutSet
                         exercise_id = :exercise_id,
                         set_number = :set_number,
                         weight = :weight,
-                        reps = :reps";
+                        reps = :reps,
+                        intensity_technique = :intensity_technique";
 
             // Prepare query
             $stmt = $this->conn->prepare($query);
@@ -45,6 +47,7 @@ class WorkoutSet
             $this->set_number = htmlspecialchars(strip_tags($this->set_number));
             $this->weight = htmlspecialchars(strip_tags($this->weight));
             $this->reps = htmlspecialchars(strip_tags($this->reps));
+            $this->intensity_technique = isset($this->intensity_technique) ? htmlspecialchars(strip_tags($this->intensity_technique)) : null;
 
             // Bind values
             $stmt->bindParam(":workout_history_id", $this->workout_history_id);
@@ -52,6 +55,7 @@ class WorkoutSet
             $stmt->bindParam(":set_number", $this->set_number);
             $stmt->bindParam(":weight", $this->weight);
             $stmt->bindParam(":reps", $this->reps);
+            $stmt->bindParam(":intensity_technique", $this->intensity_technique);
 
             // Execute query
             if ($stmt->execute()) {
@@ -70,7 +74,7 @@ class WorkoutSet
     public function readByWorkoutId()
     {
         // Query to read sets with exercise info
-        $query = "SELECT ws.id, ws.workout_history_id, ws.exercise_id, ws.set_number, ws.weight, ws.reps,
+        $query = "SELECT ws.id, ws.workout_history_id, ws.exercise_id, ws.set_number, ws.weight, ws.reps, ws.intensity_technique,
                        e.name as exercise_name, e.muscle_group
                 FROM " . $this->table_name . " ws
                 LEFT JOIN gym_exercises e ON ws.exercise_id = e.id
@@ -130,7 +134,8 @@ class WorkoutSet
                 $current_group['sets'][] = [
                     'set_number' => $set['set_number'],
                     'weight' => $set['weight'],
-                    'reps' => $set['reps']
+                    'reps' => $set['reps'],
+                    'intensity_technique' => $set['intensity_technique']
                 ];
             }
         }
@@ -152,7 +157,8 @@ class WorkoutSet
                     exercise_id = :exercise_id,
                     set_number = :set_number,
                     weight = :weight,
-                    reps = :reps
+                    reps = :reps,
+                    intensity_technique = :intensity_technique
                 WHERE id = :id";
 
         // Prepare query
@@ -164,6 +170,7 @@ class WorkoutSet
         $this->set_number = htmlspecialchars(strip_tags($this->set_number));
         $this->weight = htmlspecialchars(strip_tags($this->weight));
         $this->reps = htmlspecialchars(strip_tags($this->reps));
+        $this->intensity_technique = isset($this->intensity_technique) ? htmlspecialchars(strip_tags($this->intensity_technique)) : null;
 
         // Bind values
         $stmt->bindParam(":id", $this->id);
@@ -171,6 +178,7 @@ class WorkoutSet
         $stmt->bindParam(":set_number", $this->set_number);
         $stmt->bindParam(":weight", $this->weight);
         $stmt->bindParam(":reps", $this->reps);
+        $stmt->bindParam(":intensity_technique", $this->intensity_technique);
 
         // Execute query
         if ($stmt->execute()) {

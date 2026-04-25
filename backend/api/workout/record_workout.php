@@ -64,6 +64,7 @@ try {
             $workout_set->set_number = $record->set_number;
             $workout_set->weight = $record->weight;
             $workout_set->reps = $record->reps;
+            $workout_set->intensity_technique = isset($record->intensity_technique) && $record->intensity_technique !== "" ? $record->intensity_technique : null;
             
             try {
                 if ($workout_set->create()) {

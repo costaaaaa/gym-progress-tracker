@@ -13,6 +13,7 @@ class WorkoutExercise
     public $reps;
     public $rest;
     public $notes;
+    public $intensity_technique;
     public $created_at;
     public $updated_at;
 
@@ -36,6 +37,7 @@ class WorkoutExercise
         $this->reps = htmlspecialchars(strip_tags($this->reps));
         $this->rest = htmlspecialchars(strip_tags($this->rest));
         $this->notes = isset($this->notes) ? htmlspecialchars(strip_tags($this->notes)) : null;
+        $this->intensity_technique = isset($this->intensity_technique) ? htmlspecialchars(strip_tags($this->intensity_technique)) : null;
 
         // Query to insert record
         $query = "INSERT INTO " . $this->table_name . "
@@ -45,7 +47,8 @@ class WorkoutExercise
                     sets = :sets,
                     reps = :reps,
                     rest = :rest,
-                    notes = :notes";
+                    notes = :notes,
+                    intensity_technique = :intensity_technique";
 
         // Prepare query
         $stmt = $this->conn->prepare($query);
@@ -57,6 +60,7 @@ class WorkoutExercise
         $stmt->bindParam(":reps", $this->reps);
         $stmt->bindParam(":rest", $this->rest);
         $stmt->bindParam(":notes", $this->notes);
+        $stmt->bindParam(":intensity_technique", $this->intensity_technique);
 
         // Execute query
         if ($stmt->execute()) {
@@ -71,7 +75,7 @@ class WorkoutExercise
     public function readByDay()
     {
         // Query to read all records with exercise details
-        $query = "SELECT we.id, we.day_id, we.exercise_id, we.sets, we.reps, we.rest, we.notes, 
+        $query = "SELECT we.id, we.day_id, we.exercise_id, we.sets, we.reps, we.rest, we.notes, we.intensity_technique, 
                     we.created_at, we.updated_at, e.name as exercise_name, e.muscle_group
                 FROM " . $this->table_name . " we
                 LEFT JOIN gym_exercises e ON we.exercise_id = e.id
@@ -94,7 +98,7 @@ class WorkoutExercise
     public function readOne()
     {
         // Query to read single record with exercise details
-        $query = "SELECT we.id, we.day_id, we.exercise_id, we.sets, we.reps, we.rest, we.notes, 
+        $query = "SELECT we.id, we.day_id, we.exercise_id, we.sets, we.reps, we.rest, we.notes, we.intensity_technique, 
                     we.created_at, we.updated_at, e.name as exercise_name, e.muscle_group
                 FROM " . $this->table_name . " we
                 LEFT JOIN gym_exercises e ON we.exercise_id = e.id
@@ -122,6 +126,7 @@ class WorkoutExercise
             $this->reps = $row['reps'];
             $this->rest = $row['rest'];
             $this->notes = $row['notes'];
+            $this->intensity_technique = $row['intensity_technique'];
             $this->created_at = $row['created_at'];
             $this->updated_at = $row['updated_at'];
             $this->exercise_name = $row['exercise_name'];
@@ -140,6 +145,7 @@ class WorkoutExercise
         $this->reps = htmlspecialchars(strip_tags($this->reps));
         $this->rest = htmlspecialchars(strip_tags($this->rest));
         $this->notes = isset($this->notes) ? htmlspecialchars(strip_tags($this->notes)) : null;
+        $this->intensity_technique = isset($this->intensity_technique) ? htmlspecialchars(strip_tags($this->intensity_technique)) : null;
         $this->id = htmlspecialchars(strip_tags($this->id));
 
         // Query to update record
@@ -148,7 +154,8 @@ class WorkoutExercise
                     sets = :sets,
                     reps = :reps,
                     rest = :rest,
-                    notes = :notes
+                    notes = :notes,
+                    intensity_technique = :intensity_technique
                 WHERE id = :id";
 
         // Prepare query
@@ -159,6 +166,7 @@ class WorkoutExercise
         $stmt->bindParam(":reps", $this->reps);
         $stmt->bindParam(":rest", $this->rest);
         $stmt->bindParam(":notes", $this->notes);
+        $stmt->bindParam(":intensity_technique", $this->intensity_technique);
         $stmt->bindParam(":id", $this->id);
 
         // Execute query
@@ -253,7 +261,8 @@ class WorkoutExercise
                       sets = :sets,
                       reps = :reps,
                       rest = :rest,
-                      notes = :notes
+                      notes = :notes,
+                      intensity_technique = :intensity_technique
                       WHERE id = :id";
 
             // Update esercizio corrente
@@ -263,6 +272,7 @@ class WorkoutExercise
             $stmt->bindParam(':reps', $previous_exercise['reps']);
             $stmt->bindParam(':rest', $previous_exercise['rest']);
             $stmt->bindParam(':notes', $previous_exercise['notes']);
+            $stmt->bindParam(':intensity_technique', $previous_exercise['intensity_technique']);
             $stmt->bindParam(':id', $this->id);
             $stmt->execute();
 
@@ -273,6 +283,7 @@ class WorkoutExercise
             $stmt->bindParam(':reps', $current_exercise['reps']);
             $stmt->bindParam(':rest', $current_exercise['rest']);
             $stmt->bindParam(':notes', $current_exercise['notes']);
+            $stmt->bindParam(':intensity_technique', $current_exercise['intensity_technique']);
             $stmt->bindParam(':id', $previous_id);
             $stmt->execute();
 
@@ -351,7 +362,8 @@ class WorkoutExercise
                       sets = :sets,
                       reps = :reps,
                       rest = :rest,
-                      notes = :notes
+                      notes = :notes,
+                      intensity_technique = :intensity_technique
                       WHERE id = :id";
 
             // Update esercizio corrente
@@ -361,6 +373,7 @@ class WorkoutExercise
             $stmt->bindParam(':reps', $next_exercise['reps']);
             $stmt->bindParam(':rest', $next_exercise['rest']);
             $stmt->bindParam(':notes', $next_exercise['notes']);
+            $stmt->bindParam(':intensity_technique', $next_exercise['intensity_technique']);
             $stmt->bindParam(':id', $this->id);
             $stmt->execute();
 
@@ -371,6 +384,7 @@ class WorkoutExercise
             $stmt->bindParam(':reps', $current_exercise['reps']);
             $stmt->bindParam(':rest', $current_exercise['rest']);
             $stmt->bindParam(':notes', $current_exercise['notes']);
+            $stmt->bindParam(':intensity_technique', $current_exercise['intensity_technique']);
             $stmt->bindParam(':id', $next_id);
             $stmt->execute();
 

@@ -61,7 +61,8 @@ const WorkoutDetailDialog = ({ open, onClose, workout }) => {
         exerciseCopy.sets = [{
           set_number: exercise.set_number || 1,
           weight: exercise.weight || 0,
-          reps: exercise.reps || 0
+          reps: exercise.reps || 0,
+          intensity_technique: exercise.intensity_technique || null
         }];
       }
       
@@ -162,11 +163,14 @@ const WorkoutDetailDialog = ({ open, onClose, workout }) => {
                                 <Grid item xs={2}>
                                   <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'bold' }}>Serie</Typography>
                                 </Grid>
-                                <Grid item xs={5}>
+                                <Grid item xs={3}>
                                   <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'bold' }}>Peso (kg)</Typography>
                                 </Grid>
-                                <Grid item xs={5}>
+                                <Grid item xs={3}>
                                   <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'bold' }}>Ripetizioni</Typography>
+                                </Grid>
+                                <Grid item xs={4}>
+                                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'bold' }}>Tecnica</Typography>
                                 </Grid>
                               </Grid>
                             </Box>
@@ -175,14 +179,19 @@ const WorkoutDetailDialog = ({ open, onClose, workout }) => {
                               <Box key={idx} sx={{ px: 2, py: 1.5 }}>
                                 <Grid container alignItems="center">
                                   <Grid item xs={2}>
-                                    <Typography variant="body2">{set.set_number || idx + 1}</Typography>
+                                    <Typography variant="body2">{idx + 1}</Typography>
                                   </Grid>
-                                  <Grid item xs={5}>
+                                  <Grid item xs={3}>
                                     <Typography variant="body2">{set.weight || 0}</Typography>
                                   </Grid>
-                                  <Grid item xs={5}>
+                                  <Grid item xs={3}>
+                                    <Typography variant="body2">
+                                      {set.reps}
+                                    </Typography>
+                                  </Grid>
+                                  <Grid item xs={4}>
                                     <Typography variant="body2" color="text.secondary">
-                                      {set.weight} kg x {set.reps} reps
+                                      {set.intensity_technique || '-'}
                                     </Typography>
                                     {exercise.notes && (
                                       <Box mt={1} sx={{ bgcolor: 'action.hover', p: 1, borderRadius: 1 }}>

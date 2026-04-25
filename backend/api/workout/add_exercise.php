@@ -57,6 +57,7 @@ if (
             $workout_exercise->reps = $data->reps;
             $workout_exercise->rest = $data->rest;
             $workout_exercise->notes = isset($data->notes) ? $data->notes : null; // Aggiungiamo il campo notes
+            $workout_exercise->intensity_technique = isset($data->intensity_technique) ? $data->intensity_technique : null; // Aggiungiamo tecnica di intensità
 
             // Create the workout exercise
             if ($workout_exercise->create()) {
@@ -79,7 +80,8 @@ if (
                         "muscle_group" => $exercise->muscle_group,
                         "sets" => $workout_exercise->sets,
                         "reps" => $workout_exercise->reps,
-                        "rest" => $workout_exercise->rest
+                        "rest" => $workout_exercise->rest,
+                        "intensity_technique" => $workout_exercise->intensity_technique
                     )
                 ));
             } else {

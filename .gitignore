@@ -131,4 +131,16 @@ dist
 backend/api/.DS_Store
 backend/.DS_Store
 build/.DS_Store
+backend/reset_password_temp.php
 .DS_Store
+# Database
+backend/database/*.sql
+!backend/database/gym_progress_tracker_new.sql
+
+# Experimental
+backend_v2/
+
+PIANO.md 
+GEMINI.md 
+ 
+

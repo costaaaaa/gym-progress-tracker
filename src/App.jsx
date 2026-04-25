@@ -13,6 +13,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import WorkoutHistory from './pages/WorkoutHistory';
 import Account from './pages/Account';
+import FocusWorkout from './pages/FocusWorkout';
 
 // Import Auth Provider
 import { AuthProvider } from './context/AuthContext';
@@ -24,17 +25,25 @@ function App() {
   return (
     <AuthProvider>
       <Router basename="/gym-progress-tracker-v2">
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/workout-plans" element={<WorkoutPlans />} />
-            <Route path="/progress" element={<Progress />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/workout-history" element={<WorkoutHistory />} />
-            <Route path="/account" element={<Account />} />
-          </Routes>
-        </Layout>
+        <Routes>
+          {/* Focus mode — full-screen senza Navbar */}
+          <Route path="/focus" element={<FocusWorkout />} />
+          
+          {/* Tutte le altre pagine con Layout (Navbar + Container) */}
+          <Route path="*" element={
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/workout-plans" element={<WorkoutPlans />} />
+                <Route path="/progress" element={<Progress />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/workout-history" element={<WorkoutHistory />} />
+                <Route path="/account" element={<Account />} />
+              </Routes>
+            </Layout>
+          } />
+        </Routes>
       </Router>
     </AuthProvider>
   );

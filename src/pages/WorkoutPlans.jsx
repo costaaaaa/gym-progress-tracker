@@ -21,7 +21,11 @@ import {
   CircularProgress,
   Chip,
   Stack,
-  ButtonGroup
+  ButtonGroup,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -31,7 +35,8 @@ import InfoIcon from '@mui/icons-material/Info';
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import ExerciseDialog from '../components/ExerciseDialog';
+import WhatshotIcon from '@mui/icons-material/Whatshot';
+import ExerciseDialog, { INTENSITY_TECHNIQUES } from '../components/ExerciseDialog';
 import { API_BASE_URL } from '../config';
 
 const WorkoutPlans = () => {
@@ -63,17 +68,15 @@ const WorkoutPlans = () => {
   const [editedExerciseValues, setEditedExerciseValues] = useState({
     sets: '',
     reps: '',
-    rest: ''
+    rest: '',
+    notes: '',
+    intensity_technique: ''
   });
   
   const [newPlan, setNewPlan] = useState({
-    name: '',
-    days: [
-      { name: 'Giorno 1', exercises: [] },
-      { name: 'Giorno 2', exercises: [] },
-      { name: 'Giorno 3', exercises: [] }
-    ]
+    name: ''
   });
+  const [numDays, setNumDays] = useState(3);
 
   useEffect(() => {
     fetchWorkoutPlans();
@@ -126,6 +129,11 @@ const WorkoutPlans = () => {
         throw new Error(data.message || 'Errore nella creazione della scheda');
       }
 
+      const daysToCreate = Array.from({ length: numDays }, (_, i) => ({
+        name: `Giorno ${i + 1}`,
+        exercises: []
+      }));
+
       // Create workout days
       const daysResponse = await fetch(`${API_BASE_URL}api/workout/create_days.php`, {
         method: 'POST',
@@ -134,7 +142,7 @@ const WorkoutPlans = () => {
         },
         body: JSON.stringify({
           plan_id: data.plan.id,
-          days: newPlan.days
+          days: daysToCreate
         })
       });
 
@@ -151,13 +159,9 @@ const WorkoutPlans = () => {
       fetchWorkoutPlans();
       setOpenDialog(false);
       setNewPlan({
-        name: '',
-        days: [
-          { name: 'Giorno 1', exercises: [] },
-          { name: 'Giorno 2', exercises: [] },
-          { name: 'Giorno 3', exercises: [] }
-        ]
+        name: ''
       });
+      setNumDays(3);
     } catch (error) {
       console.error('Error creating workout plan:', error);
       setSnackbar({
@@ -221,7 +225,9 @@ const WorkoutPlans = () => {
           exercise_id: selectedExerciseId, // Questo è l'ID dell'esercizio dalla tabella gym_exercises
           sets: parseInt(exercise.sets),
           reps: exercise.reps,
-          rest: parseInt(exercise.rest)
+          rest: parseInt(exercise.rest),
+          notes: exercise.notes,
+          intensity_technique: exercise.intensity_technique
         })
       });
 
@@ -402,7 +408,8 @@ const WorkoutPlans = () => {
       sets: exercise.sets,
       reps: exercise.reps,
       rest: exercise.rest,
-      notes: exercise.notes || ''
+      notes: exercise.notes || '',
+      intensity_technique: exercise.intensity_technique || ''
     });
     setOpenEditExerciseDialog(true);
   };
@@ -417,7 +424,8 @@ const WorkoutPlans = () => {
         sets: '',
         reps: '',
         rest: '',
-        notes: ''
+        notes: '',
+        intensity_technique: ''
       });
     }, 200);
   };
@@ -443,7 +451,8 @@ const WorkoutPlans = () => {
         sets: parseInt(editedExerciseValues.sets) || 0,
         reps: editedExerciseValues.reps || '',
         rest: parseInt(editedExerciseValues.rest) || 0,
-        notes: editedExerciseValues.notes || ''
+        notes: editedExerciseValues.notes || '',
+        intensity_technique: editedExerciseValues.intensity_technique || ''
       };
       
       // Log dei dati che stiamo per inviare per debugging
@@ -801,10 +810,19 @@ const WorkoutPlans = () => {
                               <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
                                 {exercise.exercise_name}
                               </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                {exercise.sets} serie x {exercise.reps} - Recupero: {exercise.rest}s
-                              </Typography>
-                              {exercise.notes && (
+                                <Typography variant="body2" color="text.secondary">
+                                  {exercise.sets} serie x {exercise.reps} - Recupero: {exercise.rest}s
+                                </Typography>
+                                {exercise.intensity_technique && (
+                                  <Chip 
+                                    icon={<WhatshotIcon />}
+                                    label={exercise.intensity_technique} 
+                                    size="small" 
+                                    color="secondary" 
+                                    sx={{ mt: 1, mb: 0.5 }} 
+                                  />
+                                )}
+                                {exercise.notes && (
                                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
                                   Note: {exercise.notes}
                                 </Typography>
@@ -929,7 +947,23 @@ const WorkoutPlans = () => {
             fullWidth
             value={newPlan.name}
             onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })}
+            sx={{ mb: 3 }}
           />
+          <FormControl fullWidth>
+            <InputLabel id="num-days-label">Numero di Giorni</InputLabel>
+            <Select
+              labelId="num-days-label"
+              value={numDays}
+              label="Numero di Giorni"
+              onChange={(e) => setNumDays(parseInt(e.target.value, 10))}
+            >
+              {[1, 2, 3, 4, 5, 6, 7].map((num) => (
+                <MenuItem key={num} value={num}>
+                  {num} Giorn{num === 1 ? 'o' : 'i'}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDialog(false)}>Annulla</Button>
@@ -1061,6 +1095,23 @@ const WorkoutPlans = () => {
                 fullWidth
                 InputProps={{ inputProps: { min: 0 } }}
               />
+              
+              <FormControl fullWidth>
+                <InputLabel>Tecnica di Intensità (Opzionale)</InputLabel>
+                <Select
+                  name="intensity_technique"
+                  value={editedExerciseValues.intensity_technique}
+                  label="Tecnica di Intensità (Opzionale)"
+                  onChange={handleEditExerciseChange}
+                >
+                  {INTENSITY_TECHNIQUES.map((tech) => (
+                    <MenuItem key={tech} value={tech === 'Nessuna (Normale)' ? '' : tech}>
+                      {tech}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
               <TextField
                 name="notes"
                 label="Note"
