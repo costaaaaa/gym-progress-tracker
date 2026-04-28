@@ -9,6 +9,8 @@ import HistoryIcon from '@mui/icons-material/History';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import LinearProgress from '@mui/material/LinearProgress';
+import BodyVisualizer from '../components/BodyVisualizer';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 
@@ -17,6 +19,7 @@ const Home = () => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [lastWorkout, setLastWorkout] = useState(null);
   const [activePlan, setActivePlan] = useState(null);
+  const [dashboardStats, setDashboardStats] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -45,6 +48,15 @@ const Home = () => {
       if (plansData.records) {
         const active = plansData.records.find(plan => plan.is_active);
         setActivePlan(active || null);
+      }
+
+      // Fetch dashboard stats
+      const statsResponse = await fetch(`${API_BASE_URL}api/workout_stats/dashboard.php`, {
+        credentials: 'include'
+      });
+      const statsData = await statsResponse.json();
+      if (statsData.success) {
+        setDashboardStats(statsData);
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -110,6 +122,60 @@ const Home = () => {
             </Grid>
           ) : (
             <>
+              {/* Riepilogo Settimanale */}
+              <Grid item xs={12} md={8}>
+                <Card sx={{ height: '100%', borderRadius: 3 }}>
+                  <CardContent>
+                    <Typography variant="h6" sx={{ fontWeight: 800, mb: 3 }}>Riepilogo Settimanale</Typography>
+                    <Grid container spacing={4}>
+                      <Grid item xs={12} sm={6}>
+                        <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="body2" color="text.secondary">Allenamenti effettuati</Typography>
+                          <Typography variant="body2" fontWeight="bold">
+                            {dashboardStats?.weekly_workouts || 0} / {dashboardStats?.plan_days_total || '-'}
+                          </Typography>
+                        </Box>
+                        <LinearProgress 
+                          variant="determinate" 
+                          value={dashboardStats?.plan_days_total ? Math.min(100, (dashboardStats.weekly_workouts / dashboardStats.plan_days_total) * 100) : 0} 
+                          sx={{ height: 10, borderRadius: 5, mb: 3 }}
+                        />
+                        <Typography variant="caption" color="text.secondary">
+                          {dashboardStats?.weekly_workouts >= dashboardStats?.plan_days_total 
+                            ? "Obiettivo settimanale raggiunto! Ottimo lavoro." 
+                            : `Ti mancano ${Math.max(0, (dashboardStats?.plan_days_total || 0) - (dashboardStats?.weekly_workouts || 0))} sessioni per completare il piano.`}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                          <Box sx={{ flex: 1, p: 2, bgcolor: 'action.hover', borderRadius: 2, textAlign: 'center' }}>
+                            <Typography variant="h5" fontWeight="bold" color="primary">
+                              {dashboardStats?.weekly_volume?.total_weight.toLocaleString() || 0} <small style={{fontSize: '0.6em'}}>kg</small>
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">Volume Totale</Typography>
+                          </Box>
+                          <Box sx={{ flex: 1, p: 2, bgcolor: 'action.hover', borderRadius: 2, textAlign: 'center' }}>
+                            <Typography variant="h5" fontWeight="bold" color="primary">
+                              {dashboardStats?.weekly_volume?.total_reps.toLocaleString() || 0}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">Reps Totali</Typography>
+                          </Box>
+                        </Box>
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Stato Muscolare Visuale */}
+              <Grid item xs={12} md={4}>
+                <Card sx={{ height: '100%', borderRadius: 3 }}>
+                  <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <BodyVisualizer recoveryData={dashboardStats?.recovery} />
+                  </CardContent>
+                </Card>
+              </Grid>
+
               {/* Ultimo Allenamento */}
               <Grid item xs={12} md={6}>
                 <Card sx={{ height: '100%', borderLeft: (theme) => `6px solid ${theme.palette.primary.main}` }}>

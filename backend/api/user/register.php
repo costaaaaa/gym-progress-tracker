@@ -35,6 +35,9 @@ try {
         $user->username = $data->username;
         $user->email = $data->email;
         $user->password = $data->password;
+        $user->age = isset($data->age) ? intval($data->age) : null;
+        $user->gender = isset($data->gender) ? $data->gender : 'M';
+        $user->experience_years = isset($data->experience_years) ? floatval($data->experience_years) : 0;
         
         // Check if password is already hashed from client
         $user->is_hashed = isset($data->is_hashed) && $data->is_hashed === true;

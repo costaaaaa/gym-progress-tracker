@@ -28,7 +28,11 @@ import {
   ListItemIcon,
   ListItemText,
   FormGroup,
-  CircularProgress
+  CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
 import Switch from '@mui/material/Switch';
 import { 
@@ -47,7 +51,8 @@ import {
   FileDownload as FileDownloadIcon,
   History as HistoryIcon,
   Description as DescriptionIcon,
-  Timer as TimerIcon
+  Timer as TimerIcon,
+  Wc as WcIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -72,6 +77,12 @@ const Account = () => {
   const [loading, setLoading] = useState(true);
   const [workoutCount, setWorkoutCount] = useState(0);
   const [joinDate, setJoinDate] = useState(null);
+  
+  // Stati per il profilo fisico
+  const [age, setAge] = useState('');
+  const [gender, setGender] = useState('M');
+  const [experienceYears, setExperienceYears] = useState('');
+  const [updatingProfile, setUpdatingProfile] = useState(false);
   
   // Stati per la modifica della password
   const [openPasswordDialog, setOpenPasswordDialog] = useState(false);
@@ -208,21 +219,24 @@ const Account = () => {
     setOpenExportDialog(true);
     setExportWorkouts(true);
     setExportPlans(true);
+    // Non resettiamo tutto qui per permettere all'utente di riprovare senza ricaricare
+  };
+  
+  const handleCloseExportDialog = () => {
+    setOpenExportDialog(false);
+    // Resettiamo i dati caricati per liberare memoria se il download è finito o annullato
     setDataLoaded(false);
     setWorkoutData([]);
     setPlansData([]);
   };
   
-  const handleCloseExportDialog = () => {
-    setOpenExportDialog(false);
-  };
-  
 const fetchExportData = React.useCallback(async () => {
-  if (dataLoaded) return;
-  
   setExportLoading(true);
   
   try {
+    let loadedWorkouts = [];
+    let loadedPlans = [];
+
     // Recupero dati allenamenti
     if (exportWorkouts) {
       const workoutResponse = await fetch(`${API_BASE_URL}api/workout_history/read.php`, {
@@ -231,9 +245,10 @@ const fetchExportData = React.useCallback(async () => {
       });
       
       if (workoutResponse.ok) {
-        const workoutData = await workoutResponse.json();
-        if (workoutData.records && Array.isArray(workoutData.records)) {
-          setWorkoutData(workoutData.records);
+        const data = await workoutResponse.json();
+        if (data.records && Array.isArray(data.records)) {
+          loadedWorkouts = data.records;
+          setWorkoutData(data.records);
         }
       }
     }
@@ -246,14 +261,16 @@ const fetchExportData = React.useCallback(async () => {
       });
       
       if (plansResponse.ok) {
-        const plansData = await plansResponse.json();
-        if (plansData.records && Array.isArray(plansData.records)) {
-          setPlansData(plansData.records);
+        const data = await plansResponse.json();
+        if (data.records && Array.isArray(data.records)) {
+          loadedPlans = data.records;
+          setPlansData(data.records);
         }
       }
     }
     
     setDataLoaded(true);
+    return { workouts: loadedWorkouts, plans: loadedPlans };
   } catch (error) {
     console.error('Errore nel recupero dei dati per l\'esportazione:', error);
     setSnackbar({
@@ -261,22 +278,40 @@ const fetchExportData = React.useCallback(async () => {
       message: 'Errore nel recupero dei dati per l\'esportazione',
       severity: 'error'
     });
+    return null;
   } finally {
     setExportLoading(false);
   }
-}, [dataLoaded, exportWorkouts, exportPlans, setWorkoutData, setPlansData, setDataLoaded, setExportLoading]);
+}, [exportWorkouts, exportPlans, setWorkoutData, setPlansData, setDataLoaded, setExportLoading]);
   
   // Funzione per scaricare i dati selezionati
-  const handleDownloadData = () => {
+  const handleDownloadData = async () => {
+    let currentWorkoutData = workoutData;
+    let currentPlansData = plansData;
+
+    // Se i dati non sono caricati, li scarichiamo ora
+    if (!dataLoaded) {
+      const results = await fetchExportData();
+      if (!results) return;
+      currentWorkoutData = results.workouts;
+      currentPlansData = results.plans;
+    }
+
     // Prepara i dati da scaricare
-    const dataToExport = {};
+    const dataToExport = {
+      utente: {
+        username: userData?.username,
+        email: userData?.email,
+        data_esportazione: new Date().toISOString()
+      }
+    };
     
-    if (exportWorkouts && workoutData.length > 0) {
-      dataToExport.allenamenti = workoutData;
+    if (exportWorkouts) {
+      dataToExport.allenamenti = currentWorkoutData;
     }
     
-    if (exportPlans && plansData.length > 0) {
-      dataToExport.schede = plansData;
+    if (exportPlans) {
+      dataToExport.schede = currentPlansData;
     }
     
     // Converti in JSON
@@ -303,12 +338,7 @@ const fetchExportData = React.useCallback(async () => {
     handleCloseExportDialog();
   };
   
-  // Effetto per caricare i dati quando si apre il dialog di esportazione
-  useEffect(() => {
-    if (openExportDialog && !dataLoaded) {
-      fetchExportData();
-    }
-  }, [openExportDialog, dataLoaded, fetchExportData]);
+  // Effetto per caricare i dati rimosso (ora on-demand)
   
   // Stato per le notifiche
   const [snackbar, setSnackbar] = useState({
@@ -350,6 +380,11 @@ const fetchExportData = React.useCallback(async () => {
         created_at: userDetails.created_at
       });
 
+      // Impostazione dati profilo
+      setAge(userDetails.age || '');
+      setGender(userDetails.gender || 'M');
+      setExperienceYears(userDetails.experience_years || '');
+
       // Impostazione timer
       if (userDetails.rest_timer_enabled !== undefined) {
         setRestTimerEnabled(userDetails.rest_timer_enabled);
@@ -375,24 +410,58 @@ const fetchExportData = React.useCallback(async () => {
   // Funzione per recuperare il conteggio degli allenamenti
   const fetchWorkoutCount = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}api/workout_history/read.php`, {
+      const response = await fetch(`${API_BASE_URL}api/workout_stats/total_count.php`, {
         method: 'GET',
         credentials: 'include'
       });
-      
+
       if (!response.ok) {
-        throw new Error('Errore nel recupero degli allenamenti');
+        throw new Error('Errore nel recupero del conteggio allenamenti');
       }
-      
+
       const data = await response.json();
-      if (data.records && Array.isArray(data.records)) {
-        setWorkoutCount(data.records.length);
+      if (data.success) {
+        setWorkoutCount(data.total);
       } else {
         setWorkoutCount(0);
       }
     } catch (error) {
       console.error('Errore nel conteggio degli allenamenti:', error);
       setWorkoutCount(0);
+    }
+  };
+  const handleUpdateProfile = async () => {
+    setUpdatingProfile(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}api/user/update_settings.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          rest_timer_enabled: restTimerEnabled,
+          age: age === '' ? null : parseInt(age),
+          gender: gender,
+          experience_years: experienceYears === '' ? null : parseFloat(experienceYears)
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
+
+      setSnackbar({
+        open: true,
+        message: 'Profilo aggiornato con successo',
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('Errore aggiornamento profilo:', error);
+      setSnackbar({
+        open: true,
+        message: 'Errore nel salvataggio del profilo',
+        severity: 'error'
+      });
+    } finally {
+      setUpdatingProfile(false);
     }
   };
   
@@ -617,6 +686,94 @@ const fetchExportData = React.useCallback(async () => {
                 {userData?.email || 'Non disponibile'}
               </Typography>
             </Box>
+
+            <Divider sx={{ my: 2 }} />
+
+            <Typography variant="subtitle1" gutterBottom sx={{ 
+              fontWeight: 'bold', 
+              mt: 1, 
+              color: 'primary.main',
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              <FitnessCenterIcon sx={{ mr: 1, fontSize: '1.2rem' }} />
+              Profilo Fisico ed Esperienza
+            </Typography>
+
+            <Box sx={{ 
+              p: 2, 
+              borderRadius: 2, 
+              bgcolor: (theme) => theme.palette.mode === 'light' ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.03)',
+              border: '1px border',
+              borderColor: 'divider',
+              mb: 2
+            }}>
+              <Grid container spacing={2} alignItems="flex-start">
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label="Età"
+                    type="number"
+                    fullWidth
+                    size="small"
+                    value={age}
+                    onChange={(e) => setAge(e.target.value)}
+                    sx={{
+                      '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                        display: 'none',
+                      },
+                      '& input[type=number]': {
+                        MozAppearance: 'textfield',
+                      },
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="gender-label">Sesso</InputLabel>
+                    <Select
+                      labelId="gender-label"
+                      value={gender}
+                      label="Sesso"
+                      onChange={(e) => setGender(e.target.value)}
+                    >
+                      <MenuItem value="M">Maschio</MenuItem>
+                      <MenuItem value="F">Femmina</MenuItem>
+                      <MenuItem value="O">Altro</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label="Anni Esperienza"
+                    type="number"
+                    fullWidth
+                    size="small"
+                    value={experienceYears}
+                    onChange={(e) => setExperienceYears(e.target.value)}
+                    inputProps={{ step: 0.5 }}
+                    sx={{
+                      '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                        display: 'none',
+                      },
+                      '& input[type=number]': {
+                        MozAppearance: 'textfield',
+                      },
+                    }}
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+
+            <Button
+              variant="contained"
+              startIcon={<SaveIcon />}
+              onClick={handleUpdateProfile}
+              disabled={updatingProfile}
+              sx={{ mb: 3 }}
+              fullWidth
+            >
+              {updatingProfile ? 'Salvataggio...' : 'Salva Profilo'}
+            </Button>
             
             <Box sx={{ mt: 2, display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, flexWrap: 'wrap', gap: 2 }}>
               <Button

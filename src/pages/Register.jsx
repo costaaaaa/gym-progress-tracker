@@ -1,5 +1,20 @@
 import React, { useState } from 'react';
-import { Typography, Paper, TextField, Button, Box, Alert, Link, InputAdornment, IconButton } from '@mui/material';
+import { 
+  Typography, 
+  Paper, 
+  TextField, 
+  Button, 
+  Box, 
+  Alert, 
+  Link, 
+  InputAdornment, 
+  IconButton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Grid 
+} from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +27,9 @@ const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [age, setAge] = useState('');
+  const [gender, setGender] = useState('M');
+  const [experienceYears, setExperienceYears] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -59,6 +77,9 @@ const Register = () => {
           username,
           email,
           password: passwordHash,
+          age: age === '' ? null : parseInt(age),
+          gender,
+          experience_years: experienceYears === '' ? null : parseFloat(experienceYears),
           is_hashed: true
         }),
         credentials: 'include'
@@ -131,6 +152,51 @@ const Register = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
+
+          <Typography variant="subtitle2" sx={{ mt: 2, mb: 1, fontWeight: 'bold' }}>
+            Profilo per il recupero muscolare
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={4}>
+              <TextField
+                required
+                fullWidth
+                id="age"
+                label="Età"
+                name="age"
+                type="number"
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+              />
+            </Grid>
+            <Grid item xs={4}>
+              <FormControl fullWidth>
+                <InputLabel>Sesso</InputLabel>
+                <Select
+                  value={gender}
+                  label="Sesso"
+                  onChange={(e) => setGender(e.target.value)}
+                >
+                  <MenuItem value="M">M</MenuItem>
+                  <MenuItem value="F">F</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={4}>
+              <TextField
+                required
+                fullWidth
+                id="experienceYears"
+                label="Anni Esp."
+                name="experienceYears"
+                type="number"
+                inputProps={{ step: 0.5 }}
+                value={experienceYears}
+                onChange={(e) => setExperienceYears(e.target.value)}
+              />
+            </Grid>
+          </Grid>
+
           <TextField
             margin="normal"
             required
