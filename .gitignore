@@ -136,6 +136,7 @@ backend/reset_password_temp.php
 # Database
 backend/database/*.sql
 !backend/database/gym_progress_tracker_new.sql
+backend/database/update_user_recovery_fields.sql
 backend/config/database.php
 
 # Experimental

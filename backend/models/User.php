@@ -14,6 +14,9 @@ class User
     public $updated_at;
     public $is_hashed; // Nuova proprietà per indicare se la password è già hashata
     public $rest_timer_enabled; // Preferenza timer di recupero nella modalità Focus
+    public $age;
+    public $gender;
+    public $experience_years;
 
     // Constructor with database connection
     public function __construct($db)
@@ -59,7 +62,10 @@ class User
                     SET
                         username = :username,
                         email = :email,
-                        password = :password";
+                        password = :password,
+                        age = :age,
+                        gender = :gender,
+                        experience_years = :experience_years";
 
             // Prepare query
             $stmt = $this->conn->prepare($query);
@@ -68,6 +74,9 @@ class User
             $stmt->bindParam(":username", $this->username);
             $stmt->bindParam(":email", $this->email);
             $stmt->bindParam(":password", $password_hash);
+            $stmt->bindParam(":age", $this->age);
+            $stmt->bindParam(":gender", $this->gender);
+            $stmt->bindParam(":experience_years", $this->experience_years);
 
             // Execute query
             if ($stmt->execute()) {
@@ -281,7 +290,7 @@ class User
     }
     public function readById($id)
     {
-        $query = "SELECT id, username, email, created_at, rest_timer_enabled FROM " . $this->table_name . " WHERE id = ? LIMIT 1";
+        $query = "SELECT id, username, email, created_at, rest_timer_enabled, age, gender, experience_years FROM " . $this->table_name . " WHERE id = ? LIMIT 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(1, $id);
         $stmt->execute();
@@ -293,33 +302,48 @@ class User
             $this->email = $row['email'];
             $this->created_at = $row['created_at'];
             $this->rest_timer_enabled = (bool)$row['rest_timer_enabled'];
+            $this->age = $row['age'];
+            $this->gender = $row['gender'];
+            $this->experience_years = $row['experience_years'];
             return true;
         }
         return false;
     }
 
-    // Aggiorna le impostazioni dell'utente (timer di recupero)
-    public function updateSettings($rest_timer_enabled)
+    // Aggiorna le impostazioni del profilo dell'utente
+    public function updateProfile($rest_timer_enabled, $age = null, $gender = null, $experience_years = null)
     {
         if (!$this->id) {
-            error_log("Update settings failed: No user ID provided");
+            error_log("Update profile failed: No user ID provided");
             return false;
         }
 
-        $query = "UPDATE " . $this->table_name . " SET rest_timer_enabled = :rest_timer_enabled, updated_at = NOW() WHERE id = :id";
+        $query = "UPDATE " . $this->table_name . " 
+                 SET rest_timer_enabled = :rest_timer_enabled, 
+                     age = :age, 
+                     gender = :gender, 
+                     experience_years = :experience_years,
+                     updated_at = NOW() 
+                 WHERE id = :id";
 
         $stmt = $this->conn->prepare($query);
 
         $timer_value = $rest_timer_enabled ? 1 : 0;
         $stmt->bindParam(':rest_timer_enabled', $timer_value, PDO::PARAM_INT);
+        $stmt->bindParam(':age', $age, PDO::PARAM_INT);
+        $stmt->bindParam(':gender', $gender);
+        $stmt->bindParam(':experience_years', $experience_years);
         $stmt->bindParam(':id', $this->id);
 
         if ($stmt->execute()) {
             $this->rest_timer_enabled = (bool)$rest_timer_enabled;
+            $this->age = $age;
+            $this->gender = $gender;
+            $this->experience_years = $experience_years;
             return true;
         }
 
-        error_log("Update settings failed: Database error for user ID {$this->id}");
+        error_log("Update profile failed: Database error for user ID {$this->id}");
         return false;
     }
 

@@ -43,13 +43,19 @@ try {
 
     // Aggiorna le impostazioni
     $rest_timer_enabled = (bool)$data->rest_timer_enabled;
+    $age = isset($data->age) ? intval($data->age) : null;
+    $gender = isset($data->gender) ? $data->gender : null;
+    $experience_years = isset($data->experience_years) ? floatval($data->experience_years) : null;
 
-    if ($user->updateSettings($rest_timer_enabled)) {
+    if ($user->updateProfile($rest_timer_enabled, $age, $gender, $experience_years)) {
         http_response_code(200);
         echo json_encode([
             'success' => true,
-            'message' => 'Impostazioni aggiornate con successo',
-            'rest_timer_enabled' => $rest_timer_enabled
+            'message' => 'Profilo aggiornato con successo',
+            'rest_timer_enabled' => $rest_timer_enabled,
+            'age' => $age,
+            'gender' => $gender,
+            'experience_years' => $experience_years
         ]);
     } else {
         http_response_code(500);

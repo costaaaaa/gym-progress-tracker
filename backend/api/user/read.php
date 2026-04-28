@@ -32,7 +32,10 @@ try {
             'username' => $user->username,
             'email' => $user->email,
             'created_at' => $user->created_at,
-            'rest_timer_enabled' => $user->rest_timer_enabled
+            'rest_timer_enabled' => $user->rest_timer_enabled,
+            'age' => $user->age,
+            'gender' => $user->gender,
+            'experience_years' => $user->experience_years
         ));
     } else {
         http_response_code(404);

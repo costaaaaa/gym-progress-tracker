@@ -28,7 +28,6 @@ class WorkoutSet
     public function create()
     {
         try {
-            // Query to insert record
             $query = "INSERT INTO " . $this->table_name . "
                     SET
                         workout_history_id = :workout_history_id,
