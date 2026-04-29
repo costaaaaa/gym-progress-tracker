@@ -4,23 +4,43 @@
  * Supporta sia il caricamento singolo che il caricamento massivo (bulk).
  */
 
-header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: POST");
-header("Access-Control-Max-Age: 3600");
-header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
-
+include_once '../../config/cors_headers.php';
 include_once '../../config/database.php';
 include_once '../../models/UserStat.php';
 
-define('SYNC_TOKEN', 'FH6OysawMh524rjD6x9R');
-
 $data = json_decode(file_get_contents("php://input"));
 
-// 1. Validazione Token
-if (empty($data->sync_token) || $data->sync_token !== SYNC_TOKEN) {
+if (empty($data->user_id) || empty($data->sync_token)) {
+    http_response_code(400);
+    echo json_encode(array("success" => false, "message" => "user_id e sync_token sono obbligatori."));
+    exit;
+}
+
+$user_id = filter_var($data->user_id, FILTER_VALIDATE_INT);
+if (!$user_id) {
+    http_response_code(400);
+    echo json_encode(array("success" => false, "message" => "user_id non valido."));
+    exit;
+}
+
+$APPLE_HEALTH_SYNC_TOKENS = [];
+$config_path = __DIR__ . '/../../config/apple_health.php';
+if (file_exists($config_path)) {
+    include $config_path;
+}
+
+$expected_token = isset($APPLE_HEALTH_SYNC_TOKENS[$user_id]) ? $APPLE_HEALTH_SYNC_TOKENS[$user_id] : null;
+
+if (!$expected_token) {
+    error_log("Apple Health sync token missing for user_id {$user_id}");
+    http_response_code(503);
+    echo json_encode(array("success" => false, "message" => "Sincronizzazione non configurata."));
+    exit;
+}
+
+if (!is_string($data->sync_token) || !hash_equals((string)$expected_token, $data->sync_token)) {
     http_response_code(401);
-    echo json_encode(array("message" => "Token non valido o mancante."));
+    echo json_encode(array("success" => false, "message" => "Token non valido o mancante."));
     exit;
 }
 
@@ -28,7 +48,7 @@ if (empty($data->sync_token) || $data->sync_token !== SYNC_TOKEN) {
 $database = new Database();
 $db = $database->getConnection();
 $user_stat = new UserStat($db);
-$user_stat->user_id = 1; // Utente predefinito
+$user_stat->user_id = $user_id;
 
 // Determina se è un caricamento massivo o singolo
 $records = [];
@@ -43,7 +63,7 @@ if (!empty($data->records) && is_array($data->records)) {
 
 if (empty($records)) {
     http_response_code(400);
-    echo json_encode(array("message" => "Nessun dato valido ricevuto."));
+    echo json_encode(array("success" => false, "message" => "Nessun dato valido ricevuto."));
     exit;
 }
 
@@ -85,6 +105,7 @@ foreach ($records as $item) {
             }
         }
     } catch (Exception $e) {
+        error_log("Apple Health sync error for user_id {$user_id}: " . $e->getMessage());
         $summary['errors']++;
     }
 }
@@ -92,6 +113,7 @@ foreach ($records as $item) {
 // Risposta finale
 http_response_code(200);
 echo json_encode(array(
+    "success" => true,
     "message" => "Sincronizzazione completata.",
     "summary" => $summary
 ));

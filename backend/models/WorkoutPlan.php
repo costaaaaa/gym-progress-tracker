@@ -9,6 +9,7 @@ class WorkoutPlan
     public $id;
     public $user_id;
     public $name;
+    public $description;
     public $is_active;
     public $created_at;
     public $updated_at;
@@ -24,7 +25,8 @@ class WorkoutPlan
     public function create()
     {
         // Sanitize inputs
-        $this->name = htmlspecialchars(strip_tags($this->name));
+        $this->name = trim($this->name);
+        $this->description = trim($this->description);
         $this->user_id = htmlspecialchars(strip_tags($this->user_id));
 
         // Query to insert record
@@ -32,6 +34,7 @@ class WorkoutPlan
                 SET
                     user_id = :user_id,
                     name = :name,
+                    description = :description,
                     is_active = :is_active";
 
         // Prepare query
@@ -40,6 +43,7 @@ class WorkoutPlan
         // Bind values
         $stmt->bindParam(":user_id", $this->user_id);
         $stmt->bindParam(":name", $this->name);
+        $stmt->bindParam(":description", $this->description);
         $stmt->bindParam(":is_active", $this->is_active);
 
         // Execute query
@@ -55,7 +59,7 @@ class WorkoutPlan
     public function readAllByUser()
     {
         // Query to read all records
-        $query = "SELECT id, name, is_active, created_at, updated_at
+        $query = "SELECT id, name, description, is_active, created_at, updated_at
                 FROM " . $this->table_name . "
                 WHERE user_id = ?
                 ORDER BY created_at DESC";
@@ -96,7 +100,7 @@ class WorkoutPlan
     public function readOne()
     {
         // Query to read single record
-        $query = "SELECT id, user_id, name, is_active, created_at, updated_at
+        $query = "SELECT id, user_id, name, description, is_active, created_at, updated_at
                 FROM " . $this->table_name . "
                 WHERE id = ? AND user_id = ?
                 LIMIT 0,1";
@@ -119,6 +123,7 @@ class WorkoutPlan
             $this->id = $row['id'];
             $this->user_id = $row['user_id'];
             $this->name = $row['name'];
+            $this->description = $row['description'];
             $this->is_active = $row['is_active'];
             $this->created_at = $row['created_at'];
             $this->updated_at = $row['updated_at'];
@@ -132,7 +137,8 @@ class WorkoutPlan
     public function update()
     {
         // Sanitize inputs
-        $this->name = htmlspecialchars(strip_tags($this->name));
+        $this->name = trim($this->name);
+        $this->description = trim($this->description);
         $this->is_active = htmlspecialchars(strip_tags($this->is_active));
         $this->id = htmlspecialchars(strip_tags($this->id));
         $this->user_id = htmlspecialchars(strip_tags($this->user_id));
@@ -141,6 +147,7 @@ class WorkoutPlan
         $query = "UPDATE " . $this->table_name . "
                 SET
                     name = :name,
+                    description = :description,
                     is_active = :is_active
                 WHERE id = :id AND user_id = :user_id";
 
@@ -149,6 +156,7 @@ class WorkoutPlan
 
         // Bind values
         $stmt->bindParam(":name", $this->name);
+        $stmt->bindParam(":description", $this->description);
         $stmt->bindParam(":is_active", $this->is_active);
         $stmt->bindParam(":id", $this->id);
         $stmt->bindParam(":user_id", $this->user_id);
@@ -212,7 +220,7 @@ class WorkoutPlan
     public function getActive()
     {
         // Query to read single record
-        $query = "SELECT id, user_id, name, created_at, updated_at
+        $query = "SELECT id, user_id, name, description, created_at, updated_at
                 FROM " . $this->table_name . "
                 WHERE user_id = ? AND is_active = 1
                 LIMIT 0,1";
@@ -234,6 +242,7 @@ class WorkoutPlan
             $this->id = $row['id'];
             $this->user_id = $row['user_id'];
             $this->name = $row['name'];
+            $this->description = $row['description'];
             $this->is_active = 1;
             $this->created_at = $row['created_at'];
             $this->updated_at = $row['updated_at'];

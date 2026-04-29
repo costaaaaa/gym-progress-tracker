@@ -41,7 +41,9 @@ try {
         // Attempt to login
         if ($user->login()) {
             // Create session
-            session_start();
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
             $_SESSION['user_id'] = $user->id;
             $_SESSION['username'] = $user->username;
 
@@ -75,15 +77,10 @@ try {
     // Log the error
     error_log("Login Error: " . $e->getMessage());
 
-    // Check if error message is already JSON encoded
-    $error_message = $e->getMessage();
-    $decoded_error = json_decode($error_message);
-
     // Return error response
     http_response_code(500);
     echo json_encode(array(
         "success" => false,
-        "message" => "An error occurred during login.",
-        "error" => (json_last_error() === JSON_ERROR_NONE) ? $decoded_error : $error_message
+        "message" => "An error occurred during login."
     ));
 }

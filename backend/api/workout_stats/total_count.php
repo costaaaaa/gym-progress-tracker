@@ -32,10 +32,11 @@ try {
         'total' => (int)$total
     ]);
 } catch (Exception $e) {
+    error_log("Workout total count error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'Errore nel recupero del conteggio allenamenti: ' . $e->getMessage()
+        'message' => 'Errore nel recupero del conteggio allenamenti.'
     ]);
 }
 ?>

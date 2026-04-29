@@ -93,6 +93,6 @@ try {
     http_response_code(500);
     echo json_encode(array(
         "success" => false,
-        "message" => "Si è verificato un errore durante il cambio password: " . $e->getMessage()
+        "message" => "Si è verificato un errore durante il cambio password."
     ));
 }

@@ -4,6 +4,7 @@ include_once '../../config/cors_headers.php';
 
 // Include database and workout models
 include_once '../../config/database.php';
+include_once '../../config/api_helpers.php';
 include_once '../../models/WorkoutPlan.php';
 include_once '../../models/WorkoutExercise.php';
 
@@ -35,6 +36,10 @@ if (!empty($data->exercise_id) && !empty($data->day_id)) {
     // Set properties
     $workout_exercise->id = $data->exercise_id;
     $workout_exercise->day_id = $data->day_id;
+
+    if (!workout_exercise_belongs_to_user($db, $data->exercise_id, $data->day_id, $_SESSION['user_id'])) {
+        api_not_found();
+    }
     
     // Delete the exercise
     if ($workout_exercise->delete()) {

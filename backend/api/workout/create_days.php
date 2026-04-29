@@ -4,7 +4,9 @@ include_once '../../config/cors_headers.php';
 
 // Include database and workout model
 include_once '../../config/database.php';
+include_once '../../config/api_helpers.php';
 include_once '../../models/WorkoutDay.php';
+include_once '../../models/WorkoutPlan.php';
 
 // Start session
 session_start();
@@ -28,6 +30,10 @@ $data = json_decode(file_get_contents("php://input"));
 
 // Make sure data is not empty
 if (!empty($data->plan_id) && !empty($data->days)) {
+    if (!workout_plan_belongs_to_user($db, $data->plan_id, $_SESSION['user_id'])) {
+        api_not_found();
+    }
+
     $workout_day = new WorkoutDay($db);
     $created_days = array();
 

@@ -42,9 +42,10 @@ try {
         echo json_encode(array('success' => false, 'message' => 'Utente non trovato'));
     }
 } catch (Exception $e) {
+    error_log("Read User Error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode(array(
         'success' => false,
-        'message' => 'Errore del server: ' . $e->getMessage()
+        'message' => 'Errore del server.'
     ));
 }

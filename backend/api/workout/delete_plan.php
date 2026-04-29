@@ -4,6 +4,7 @@ include_once '../../config/cors_headers.php';
 
 // Include database and workout model
 include_once '../../config/database.php';
+include_once '../../config/api_helpers.php';
 include_once '../../models/WorkoutPlan.php';
 
 // Start session
@@ -34,6 +35,10 @@ if (!empty($data->plan_id)) {
     // Set properties
     $workout_plan->id = $data->plan_id;
     $workout_plan->user_id = $_SESSION['user_id'];
+
+    if (!$workout_plan->readOne()) {
+        api_not_found();
+    }
 
     // Delete the workout plan
     if ($workout_plan->delete()) {

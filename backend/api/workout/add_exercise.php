@@ -4,6 +4,7 @@ include_once '../../config/cors_headers.php';
 
 // Include database and workout model
 include_once '../../config/database.php';
+include_once '../../config/api_helpers.php';
 include_once '../../models/WorkoutExercise.php';
 include_once '../../models/WorkoutDay.php';
 include_once '../../models/WorkoutPlan.php';
@@ -92,18 +93,10 @@ if (
                 echo json_encode(array("message" => "Impossibile aggiungere l'esercizio. Riprova più tardi."));
             }
         } else {
-            // Set response code - 403 forbidden
-            http_response_code(403);
-
-            // Tell the user
-            echo json_encode(array("message" => "Non hai il permesso di modificare questa scheda di allenamento."));
+            api_not_found();
         }
     } else {
-        // Set response code - 404 not found
-        http_response_code(404);
-
-        // Tell the user
-        echo json_encode(array("message" => "Giorno di allenamento non trovato."));
+        api_not_found();
     }
 } else {
     // Set response code - 400 bad request

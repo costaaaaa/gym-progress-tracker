@@ -74,9 +74,19 @@ const WorkoutPlans = () => {
   });
   
   const [newPlan, setNewPlan] = useState({
-    name: ''
+    name: '',
+    description: ''
   });
   const [numDays, setNumDays] = useState(3);
+  
+  // Stati per la modifica della scheda
+  const [openEditPlanDialog, setOpenEditPlanDialog] = useState(false);
+  const [planToEdit, setPlanToEdit] = useState(null);
+  const [editedPlanValues, setEditedPlanValues] = useState({
+    name: '',
+    description: ''
+  });
+  const [updatePlanLoading, setUpdatePlanLoading] = useState(false);
 
   useEffect(() => {
     fetchWorkoutPlans();
@@ -159,7 +169,8 @@ const WorkoutPlans = () => {
       fetchWorkoutPlans();
       setOpenDialog(false);
       setNewPlan({
-        name: ''
+        name: '',
+        description: ''
       });
       setNumDays(3);
     } catch (error) {
@@ -170,6 +181,68 @@ const WorkoutPlans = () => {
         severity: 'error'
       });
     }
+  };
+
+  const handleEditPlan = async () => {
+    if (!editedPlanValues.name.trim() || !planToEdit) return;
+
+    setUpdatePlanLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}api/workout/update_plan.php`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          plan_id: planToEdit.id,
+          name: editedPlanValues.name,
+          description: editedPlanValues.description,
+          is_active: planToEdit.is_active
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Errore nell\'aggiornamento della scheda');
+      }
+
+      setSnackbar({
+        open: true,
+        message: 'Scheda aggiornata con successo',
+        severity: 'success'
+      });
+      fetchWorkoutPlans();
+      handleCloseEditPlanDialog();
+    } catch (error) {
+      console.error('Error updating workout plan:', error);
+      setSnackbar({
+        open: true,
+        message: error.message || 'Errore nell\'aggiornamento della scheda',
+        severity: 'error'
+      });
+    } finally {
+      setUpdatePlanLoading(false);
+    }
+  };
+
+  const handleCloseEditPlanDialog = () => {
+    setOpenEditPlanDialog(false);
+    setTimeout(() => {
+      setPlanToEdit(null);
+      setEditedPlanValues({
+        name: '',
+        description: ''
+      });
+    }, 200);
+  };
+
+  const handleOpenEditPlanDialog = (plan) => {
+    setPlanToEdit(plan);
+    setEditedPlanValues({
+      name: plan.name,
+      description: plan.description || ''
+    });
+    setOpenEditPlanDialog(true);
   };
 
   const handleActivatePlan = async (planId) => {
@@ -701,14 +774,28 @@ const WorkoutPlans = () => {
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                   <Typography variant="h6">{plan.name}</Typography>
-                  <IconButton 
-                    onClick={() => handleOpenDeletePlanDialog(plan)}
-                    color="error"
-                    aria-label="delete plan"
-                  >
-                    <DeleteIcon />
-                  </IconButton>
+                  <Box>
+                    <IconButton 
+                      onClick={() => handleOpenEditPlanDialog(plan)}
+                      color="primary"
+                      aria-label="edit plan"
+                    >
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton 
+                      onClick={() => handleOpenDeletePlanDialog(plan)}
+                      color="error"
+                      aria-label="delete plan"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
                 </Box>
+                {plan.description && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontStyle: 'italic' }}>
+                    {plan.description}
+                  </Typography>
+                )}
                 {plan.days && plan.days.map((day, dayIndex) => (
                   <Box key={day.id} sx={{ mb: 2 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
@@ -947,6 +1034,17 @@ const WorkoutPlans = () => {
             fullWidth
             value={newPlan.name}
             onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="Descrizione (Opzionale)"
+            type="text"
+            fullWidth
+            multiline
+            rows={2}
+            value={newPlan.description}
+            onChange={(e) => setNewPlan({ ...newPlan, description: e.target.value })}
             sx={{ mb: 3 }}
           />
           <FormControl fullWidth>
@@ -969,6 +1067,45 @@ const WorkoutPlans = () => {
           <Button onClick={() => setOpenDialog(false)}>Annulla</Button>
           <Button onClick={handleAddPlan} variant="contained" disabled={!newPlan.name}>
             Crea
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog Modifica Scheda */}
+      <Dialog open={openEditPlanDialog} onClose={handleCloseEditPlanDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>Modifica Scheda</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Nome Scheda"
+            type="text"
+            fullWidth
+            value={editedPlanValues.name}
+            onChange={(e) => setEditedPlanValues({ ...editedPlanValues, name: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="Descrizione (Opzionale)"
+            type="text"
+            fullWidth
+            multiline
+            rows={2}
+            value={editedPlanValues.description}
+            onChange={(e) => setEditedPlanValues({ ...editedPlanValues, description: e.target.value })}
+            sx={{ mb: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseEditPlanDialog} disabled={updatePlanLoading}>Annulla</Button>
+          <Button 
+            onClick={handleEditPlan} 
+            variant="contained" 
+            disabled={!editedPlanValues.name || updatePlanLoading}
+            startIcon={updatePlanLoading ? <CircularProgress size={20} /> : null}
+          >
+            {updatePlanLoading ? 'Salvataggio...' : 'Salva'}
           </Button>
         </DialogActions>
       </Dialog>

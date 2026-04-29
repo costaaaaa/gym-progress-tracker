@@ -69,7 +69,6 @@ try {
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'Errore durante l\'aggiornamento delle impostazioni',
-        'error' => $e->getMessage()
+        'message' => 'Errore durante l\'aggiornamento delle impostazioni'
     ]);
 }

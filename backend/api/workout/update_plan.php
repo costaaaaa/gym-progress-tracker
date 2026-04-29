@@ -30,21 +30,25 @@ $workout_plan = new WorkoutPlan($db);
 $data = json_decode(file_get_contents("php://input"));
 
 // Make sure data is not empty
-if (!empty($data->name)) {
+if (!empty($data->plan_id) && !empty($data->name)) {
     // Set workout plan property values
+    $workout_plan->id = $data->plan_id;
     $workout_plan->user_id = $_SESSION['user_id'];
     $workout_plan->name = $data->name;
     $workout_plan->description = isset($data->description) ? $data->description : "";
+    
+    // Set is_active if provided, otherwise default to current status (handled by the model if we had a more flexible update, 
+    // but here we expect the frontend to send it or we use 0 as fallback if missing entirely from request)
     $workout_plan->is_active = isset($data->is_active) ? $data->is_active : 0;
     
-    // Create the workout plan
-    if ($workout_plan->create()) {
-        // Set response code - 201 created
-        http_response_code(201);
+    // Update the workout plan
+    if ($workout_plan->update()) {
+        // Set response code - 200 OK
+        http_response_code(200);
 
         // Tell the user
         echo json_encode(array(
-            "message" => "Scheda di allenamento creata con successo.",
+            "message" => "Scheda di allenamento aggiornata con successo.",
             "plan" => array(
                 "id" => $workout_plan->id,
                 "name" => $workout_plan->name,
@@ -53,16 +57,16 @@ if (!empty($data->name)) {
             )
         ));
     } else {
-        // Set response code - 503 service unavailable
-        http_response_code(503);
+        // Set response code - 500 internal server error
+        http_response_code(500);
 
         // Tell the user
-        echo json_encode(array("message" => "Impossibile creare la scheda di allenamento. Riprova più tardi."));
+        echo json_encode(array("message" => "Impossibile aggiornare la scheda di allenamento. Riprova più tardi."));
     }
 } else {
     // Set response code - 400 bad request
     http_response_code(400);
 
     // Tell the user
-    echo json_encode(array("message" => "Impossibile creare la scheda di allenamento. Dati incompleti."));
+    echo json_encode(array("message" => "Impossibile aggiornare la scheda di allenamento. Dati incompleti."));
 }

@@ -1,0 +1,11 @@
+RewriteEngine On
+RewriteBase /gym-progress-tracker-v2/
+
+# Se la richiesta è per la cartella backend, non fare nulla e lascia che PHP la gestisca
+RewriteCond %{REQUEST_URI} ^/gym-progress-tracker-v2/backend/ [NC]
+RewriteRule .* - [L]
+
+# Per tutto il resto, se il file o la cartella non esistono, rimanda a index.html (SPA)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /gym-progress-tracker-v2/index.html [L]
