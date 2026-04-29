@@ -1,112 +1,103 @@
 import React from 'react';
-import { Box, Typography, Tooltip } from '@mui/material';
+import { Box, Typography } from '@mui/material';
+import Model from 'react-body-highlighter';
 
-const BodyVisualizer = ({ recoveryData }) => {
-  // Colori in base allo stato
-  const getColor = (mg) => {
-    const data = recoveryData && recoveryData[mg];
-    if (!data) return '#e0e0e0'; // Grigio se non ci sono dati
-    if (data.status === 'PRONTO') return '#4caf50'; // Verde
-    if (data.status === 'IN RECUPERO') return '#ff9800'; // Arancio
-    if (data.status === 'AFFATICATO') return '#f44336'; // Rosso
-    return '#e0e0e0';
+const BodyVisualizer = ({ recoveryData, gender = 'male' }) => {
+  // Mappa il genere dell'utente a quello della libreria
+  const getGender = () => {
+    if (!gender) return 'male';
+    const g = gender.toLowerCase();
+    if (g === 'femmina' || g === 'female' || g === 'donna') return 'female';
+    return 'male';
   };
 
-  const getPercent = (mg) => {
-    return recoveryData && recoveryData[mg] ? recoveryData[mg].percent : 0;
+  const modelGender = getGender();
+
+  // Mappatura dei nostri gruppi muscolari sugli slug della libreria
+  const muscleMapping = {
+    petto: ['chest'],
+    spalle: ['front-deltoids', 'back-deltoids'],
+    addome: ['abs', 'obliques'],
+    bicipiti: ['biceps'],
+    tricipiti: ['triceps'],
+    schiena: ['upper-back', 'lower-back', 'trapezius'],
+    quadricipiti: ['quadriceps'],
+    femorali: ['hamstring'],
+    polpacci: ['calves'],
+    glutei: ['gluteal']
   };
 
-  const renderMuscle = (id, label, path, mgKey) => (
-    <Tooltip title={`${label}: ${getPercent(mgKey)}% (${recoveryData?.[mgKey]?.status || 'Sconosciuto'})`} arrow>
-      <path
-        id={id}
-        d={path}
-        fill={getColor(mgKey)}
-        stroke="#fff"
-        strokeWidth="1"
-        style={{ transition: 'fill 0.3s ease', cursor: 'pointer' }}
-      />
-    </Tooltip>
-  );
+  // Converti lo stato in intensità (indice per l'array colori)
+  const getIntensity = (mgKey) => {
+    const data = recoveryData && recoveryData[mgKey];
+    if (!data) return 0;
+    if (data.status === 'PRONTO') return 1;
+    if (data.status === 'IN RECUPERO') return 2;
+    if (data.status === 'AFFATICATO') return 3;
+    return 0;
+  };
+
+  // Prepara i dati per la libreria
+  const getBodyData = () => {
+    const data = [];
+    Object.keys(muscleMapping).forEach(myMg => {
+      const intensity = getIntensity(myMg);
+      if (intensity > 0) {
+        muscleMapping[myMg].forEach(slug => {
+          data.push({ slug, intensity });
+        });
+      }
+    });
+    return data;
+  };
+
+  const bodyData = getBodyData();
+  
+  // Colori corrispondenti agli indici di intensità
+  const colors = ['#e0e0e0', '#4caf50', '#ff9800', '#f44336'];
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
       <Typography variant="subtitle2" color="text.secondary" gutterBottom>
         Mappa Stato Muscolare
       </Typography>
-      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 4, width: '100%', maxWidth: '500px' }}>
-        {/* Vista Frontale (Semplificata) */}
-        <svg viewBox="0 0 100 200" width="150" height="300">
-          <title>Vista Frontale</title>
-          {/* Testa */}
-          <circle cx="50" cy="15" r="10" fill="#e0e0e0" />
-          {/* Collo */}
-          <rect x="47" y="25" width="6" height="5" fill="#e0e0e0" />
-          
-          {/* Petto */}
-          {renderMuscle('petto-l', 'Petto', 'M 50 30 L 30 35 L 30 55 L 50 50 Z', 'petto')}
-          {renderMuscle('petto-r', 'Petto', 'M 50 30 L 70 35 L 70 55 L 50 50 Z', 'petto')}
-          
-          {/* Spalle */}
-          {renderMuscle('spalla-l', 'Spalle', 'M 30 35 L 20 40 L 25 55 L 30 55 Z', 'spalle')}
-          {renderMuscle('spalla-r', 'Spalle', 'M 70 35 L 80 40 L 75 55 L 70 55 Z', 'spalle')}
-          
-          {/* Addome */}
-          {renderMuscle('addome', 'Addome', 'M 35 55 L 65 55 L 60 85 L 40 85 Z', 'addome')}
-          
-          {/* Braccia (Bicipiti frontali) */}
-          {renderMuscle('bicipite-l', 'Bicipiti', 'M 25 55 L 18 75 L 25 80 L 30 55 Z', 'bicipiti')}
-          {renderMuscle('bicipite-r', 'Bicipiti', 'M 75 55 L 82 75 L 75 80 L 70 55 Z', 'bicipiti')}
-          
-          {/* Avambracci */}
-          <path d="M 18 75 L 15 105 L 22 105 L 25 80 Z" fill="#e0e0e0" />
-          <path d="M 82 75 L 85 105 L 78 105 L 75 80 Z" fill="#e0e0e0" />
-          
-          {/* Quadricipiti */}
-          {renderMuscle('quad-l', 'Quadricipiti', 'M 35 85 L 48 90 L 45 140 L 30 140 Z', 'quadricipiti')}
-          {renderMuscle('quad-r', 'Quadricipiti', 'M 65 85 L 52 90 L 55 140 L 70 140 Z', 'quadricipiti')}
-          
-          {/* Polpacci (Frontali) */}
-          {renderMuscle('polp-f-l', 'Polpacci', 'M 30 150 L 42 150 L 40 190 L 32 190 Z', 'polpacci')}
-          {renderMuscle('polp-f-r', 'Polpacci', 'M 70 150 L 58 150 L 60 190 L 68 190 Z', 'polpacci')}
-          
-          {/* Ginocchia */}
-          <circle cx="37" cy="145" r="5" fill="#e0e0e0" />
-          <circle cx="63" cy="145" r="5" fill="#e0e0e0" />
-        </svg>
+      
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        gap: { xs: 1, sm: 4 }, 
+        width: '100%', 
+        maxWidth: '600px',
+        flexWrap: 'nowrap',
+        overflowX: 'auto',
+        py: 2
+      }}>
+        {/* Vista Frontale */}
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="caption" display="block" color="text.secondary">Fronte</Typography>
+          <Model 
+            data={bodyData} 
+            side="front" 
+            gender={modelGender}
+            highlightedColors={colors}
+            scale={1.2}
+          />
+        </Box>
 
-        {/* Vista Posteriore (Semplificata) */}
-        <svg viewBox="0 0 100 200" width="150" height="300">
-          <title>Vista Posteriore</title>
-          <circle cx="50" cy="15" r="10" fill="#e0e0e0" />
-          <rect x="47" y="25" width="6" height="5" fill="#e0e0e0" />
-          
-          {/* Schiena (Alta/Media) */}
-          {renderMuscle('schiena-high', 'Schiena', 'M 50 30 L 25 40 L 35 60 L 50 65 L 65 60 L 75 40 Z', 'schiena')}
-          {/* Schiena Bassa / Lombari */}
-          {renderMuscle('schiena-low', 'Schiena', 'M 35 60 L 65 60 L 60 85 L 40 85 Z', 'schiena')}
-          
-          {/* Spalle Postariori */}
-          {renderMuscle('spalla-p-l', 'Spalle', 'M 25 40 L 20 45 L 23 55 L 25 55 Z', 'spalle')}
-          {renderMuscle('spalla-p-r', 'Spalle', 'M 75 40 L 80 45 L 77 55 L 75 55 Z', 'spalle')}
-          
-          {/* Tricipiti */}
-          {renderMuscle('tricipite-l', 'Tricipiti', 'M 23 55 L 18 75 L 25 80 L 30 60 Z', 'tricipiti')}
-          {renderMuscle('tricipite-r', 'Tricipiti', 'M 77 55 L 82 75 L 75 80 L 70 60 Z', 'tricipiti')}
-          
-          {/* Glutei */}
-          {renderMuscle('glutei-l', 'Glutei', 'M 35 85 L 50 85 L 50 105 L 30 105 Z', 'glutei')}
-          {renderMuscle('glutei-r', 'Glutei', 'M 65 85 L 50 85 L 50 105 L 70 105 Z', 'glutei')}
-          
-          {/* Femorali */}
-          {renderMuscle('fem-l', 'Femorali', 'M 30 105 L 48 105 L 45 140 L 32 140 Z', 'femorali')}
-          {renderMuscle('fem-r', 'Femorali', 'M 70 105 L 52 105 L 55 140 L 68 140 Z', 'femorali')}
-          
-          {/* Polpacci */}
-          {renderMuscle('polp-l', 'Polpacci', 'M 32 150 L 45 150 L 42 190 L 35 190 Z', 'polpacci')}
-          {renderMuscle('polp-r', 'Polpacci', 'M 68 150 L 55 150 L 58 190 L 65 190 Z', 'polpacci')}
-        </svg>
+        {/* Vista Posteriore */}
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="caption" display="block" color="text.secondary">Retro</Typography>
+          <Model 
+            data={bodyData} 
+            side="back" 
+            gender={modelGender}
+            highlightedColors={colors}
+            scale={1.2}
+          />
+        </Box>
       </Box>
+
+      {/* Legenda */}
       <Box sx={{ mt: 2, display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#4caf50' }} />

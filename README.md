@@ -28,13 +28,16 @@ With this tool you can:
 * 🔥 **Focus Mode**: immersive interface for real-time workout tracking with rest timers
 * 💾 **Autosave**: local persistence to prevent data loss in Focus Mode
 * 📈 Visual progress tracking
+* 👤 **Body Stats**: track body measurements and visualize progress
+* 🍎 **Apple Health Sync**: integration for syncing health data (backend ready)
 * 🏋️ Add and edit exercises
 * 📊 Detailed stats for each exercise
 * 📌 Ability to select an active workout plan
 
 ## Technologies Used
 
-* **React (v18)** with **Material UI (MUI)**
+* **React (v18)** with **Vite**
+* **Material UI (MUI)** for the user interface
 * **Recharts** for data visualization
 * **PHP** (Legacy PDO / Modern experimental with Eloquent)
 * **MySQL** for data storage
@@ -110,19 +113,23 @@ Con questo strumento è possibile:
 ## Funzionalità principali
 
 * ✅ Gestione multi-scheda
-* 🔥 **Modalità Focus**: interfaccia dedicata per l'allenamento in tempo reale
+* 🔥 **Modalità Focus**: interfaccia dedicata per l'allenamento in tempo reale con timer di recupero integrati
 * 💾 **Autosave**: salvataggio locale automatico per non perdere mai i progressi in Focus Mode
 * 📈 Visualizzazione dei progressi nel tempo
+* 👤 **Body Stats**: tracciamento delle misure corporee e visualizzazione grafica
+* 🍎 **Apple Health Sync**: predisposizione per la sincronizzazione dei dati salute (backend)
 * 🏋️ Aggiunta e modifica di esercizi
 * 📊 Statistiche dettagliate per ogni esercizio
 * 📌 Possibilità di selezionare una scheda attiva
 
 ## Tecnologie utilizzate
 
-* **React (v18)** con **Material UI (MUI)**
+* **React (v18)** con **Vite**
+* **Material UI (MUI)** per l'interfaccia utente
 * **Recharts** per la visualizzazione dei dati
 * **PHP** (Legacy PDO / Moderno sperimentale con Eloquent)
 * **MySQL** per il salvataggio dei dati utente
+
 
 ## Come provarlo
 

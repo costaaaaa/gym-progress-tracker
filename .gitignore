@@ -142,11 +142,14 @@ backend/config/database.php
 # Experimental
 backend_v2/
 
+# AI
 PIANO.md 
-GEMINI.md 
+GEMINI.md
+AGENTS.md
+.gemini/
+.gemini/settings.json
  
 # Old heavy assets
 src/assets/images/gym-background.jpg
 
-.gemini/
-.gemini/settings.json
+build/

@@ -15,7 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 
 const Home = () => {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, user } = useAuth();
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [lastWorkout, setLastWorkout] = useState(null);
   const [activePlan, setActivePlan] = useState(null);
@@ -171,7 +171,10 @@ const Home = () => {
               <Grid item xs={12} md={4}>
                 <Card sx={{ height: '100%', borderRadius: 3 }}>
                   <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                    <BodyVisualizer recoveryData={dashboardStats?.recovery} />
+                    <BodyVisualizer 
+                      recoveryData={dashboardStats?.recovery} 
+                      gender={user?.gender}
+                    />
                   </CardContent>
                 </Card>
               </Grid>
