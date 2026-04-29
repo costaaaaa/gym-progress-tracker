@@ -35,28 +35,42 @@ const Home = () => {
       const historyResponse = await fetch(`${API_BASE_URL}api/workout_history/read.php`, {
         credentials: 'include'
       });
-      const historyData = await historyResponse.json();
-      if (historyData.records && historyData.records.length > 0) {
-        setLastWorkout(historyData.records[0]);
+      if (historyResponse.ok) {
+        const historyData = await historyResponse.json();
+        if (historyData.records && historyData.records.length > 0) {
+          setLastWorkout(historyData.records[0]);
+        }
       }
 
       // Fetch plans for the active plan
       const plansResponse = await fetch(`${API_BASE_URL}api/workout/read_plans.php`, {
         credentials: 'include'
       });
-      const plansData = await plansResponse.json();
-      if (plansData.records) {
-        const active = plansData.records.find(plan => plan.is_active);
-        setActivePlan(active || null);
+      if (plansResponse.ok) {
+        const plansData = await plansResponse.json();
+        if (plansData.records) {
+          const active = plansData.records.find(plan => plan.is_active);
+          setActivePlan(active || null);
+        }
       }
 
       // Fetch dashboard stats
       const statsResponse = await fetch(`${API_BASE_URL}api/workout_stats/dashboard.php`, {
         credentials: 'include'
       });
-      const statsData = await statsResponse.json();
-      if (statsData.success) {
-        setDashboardStats(statsData);
+      if (statsResponse.ok) {
+        const text = await statsResponse.text();
+        try {
+          const statsData = JSON.parse(text);
+          if (statsData.success) {
+            setDashboardStats(statsData);
+          }
+        } catch (parseError) {
+          console.error('Failed to parse dashboard JSON. Response text:', text);
+          throw parseError;
+        }
+      } else {
+        console.error('Dashboard stats API returned error:', statsResponse.status);
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -173,7 +187,6 @@ const Home = () => {
                   <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <BodyVisualizer 
                       recoveryData={dashboardStats?.recovery} 
-                      gender={user?.gender}
                     />
                   </CardContent>
                 </Card>
@@ -235,7 +248,19 @@ const Home = () => {
                           <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 700, mb: 1 }}>
                             {activePlan.name}
                           </Typography>
-                          <Typography variant="body1" color="text.secondary">
+                          <Typography 
+                            variant="body1" 
+                            color="text.secondary"
+                            sx={{
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              lineHeight: 1.5,
+                              height: '3em' // Assicura altezza fissa per 2 righe
+                            }}
+                          >
                             {activePlan.description || "Nessuna descrizione disponibile per questo piano."}
                           </Typography>
                         </>

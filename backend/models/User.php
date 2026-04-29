@@ -386,50 +386,27 @@ class User
             return false;
         }
 
-        // Iniziamo una transazione per garantire l'integrità dei dati
-        $this->conn->beginTransaction();
-
         try {
-            // Eliminiamo prima i dati correlati (allenamenti, progressi, ecc.)
-            // Nota: questo dipende dalla struttura del database e dalle relazioni
-            // Qui assumiamo che ci siano tabelle correlate con chiavi esterne
+            // Iniziamo una transazione per garantire l'integrità dei dati.
+            // I dati correlati sono rimossi dai vincoli ON DELETE CASCADE.
+            $this->conn->beginTransaction();
 
-            // Eliminiamo i dati degli allenamenti dell'utente
-            $query = "DELETE FROM workout_history WHERE user_id = ?";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(1, $this->id);
-            $stmt->execute();
-
-            // Eliminiamo le schede di allenamento dell'utente
-            $query = "DELETE FROM workout_plans WHERE user_id = ?";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(1, $this->id);
-            $stmt->execute();
-
-            // Eliminiamo i progressi dell'utente
-            $query = "DELETE FROM progress WHERE user_id = ?";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(1, $this->id);
-            $stmt->execute();
-
-            // Infine, eliminiamo l'account utente
             $query = "DELETE FROM " . $this->table_name . " WHERE id = ?";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(1, $this->id);
 
-            if ($stmt->execute()) {
-                // Confermiamo la transazione
+            if ($stmt->execute() && $stmt->rowCount() === 1) {
                 $this->conn->commit();
                 return true;
-            } else {
-                // Annulliamo la transazione in caso di errore
-                $this->conn->rollBack();
-                error_log("Delete account failed: Database error for user ID {$this->id}");
-                return false;
             }
-        } catch (Exception $e) {
-            // Annulliamo la transazione in caso di eccezione
+
             $this->conn->rollBack();
+            error_log("Delete account failed: Database error for user ID {$this->id}");
+            return false;
+        } catch (Exception $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
             error_log("Delete account failed: " . $e->getMessage());
             return false;
         }

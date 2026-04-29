@@ -2,18 +2,8 @@ import React from 'react';
 import { Box, Typography } from '@mui/material';
 import Model from 'react-body-highlighter';
 
-const BodyVisualizer = ({ recoveryData, gender = 'male' }) => {
-  // Mappa il genere dell'utente a quello della libreria
-  const getGender = () => {
-    if (!gender) return 'male';
-    const g = gender.toLowerCase();
-    if (g === 'femmina' || g === 'female' || g === 'donna') return 'female';
-    return 'male';
-  };
-
-  const modelGender = getGender();
-
-  // Mappatura dei nostri gruppi muscolari sugli slug della libreria
+const BodyVisualizer = ({ recoveryData }) => {
+  // Mappatura dei nostri gruppi muscolari sugli slug della libreria react-body-highlighter
   const muscleMapping = {
     petto: ['chest'],
     spalle: ['front-deltoids', 'back-deltoids'],
@@ -27,8 +17,9 @@ const BodyVisualizer = ({ recoveryData, gender = 'male' }) => {
     glutei: ['gluteal']
   };
 
-  // Converti lo stato in intensità (indice per l'array colori)
-  const getIntensity = (mgKey) => {
+  // Converti lo stato in frequenza (intensity level) per la libreria
+  // La libreria usa "frequency" per scegliere il colore dall'array highlightedColors
+  const getFrequency = (mgKey) => {
     const data = recoveryData && recoveryData[mgKey];
     if (!data) return 0;
     if (data.status === 'PRONTO') return 1;
@@ -37,14 +28,17 @@ const BodyVisualizer = ({ recoveryData, gender = 'male' }) => {
     return 0;
   };
 
-  // Prepara i dati per la libreria
+  // Prepara i dati nel formato atteso dalla libreria:
+  // [{ name: string, muscles: string[], frequency: number }]
   const getBodyData = () => {
     const data = [];
     Object.keys(muscleMapping).forEach(myMg => {
-      const intensity = getIntensity(myMg);
-      if (intensity > 0) {
-        muscleMapping[myMg].forEach(slug => {
-          data.push({ slug, intensity });
+      const frequency = getFrequency(myMg);
+      if (frequency > 0) {
+        data.push({
+          name: myMg,
+          muscles: muscleMapping[myMg],
+          frequency: frequency
         });
       }
     });
@@ -52,9 +46,10 @@ const BodyVisualizer = ({ recoveryData, gender = 'male' }) => {
   };
 
   const bodyData = getBodyData();
-  
-  // Colori corrispondenti agli indici di intensità
-  const colors = ['#e0e0e0', '#4caf50', '#ff9800', '#f44336'];
+
+  // Colori corrispondenti ai livelli di frequenza:
+  // index 0 = frequency 1 (PRONTO), index 1 = frequency 2 (IN RECUPERO), index 2 = frequency 3 (AFFATICATO)
+  const colors = ['#4caf50', '#ff9800', '#f44336'];
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
@@ -77,10 +72,8 @@ const BodyVisualizer = ({ recoveryData, gender = 'male' }) => {
           <Typography variant="caption" display="block" color="text.secondary">Fronte</Typography>
           <Model 
             data={bodyData} 
-            side="front" 
-            gender={modelGender}
+            type="anterior"
             highlightedColors={colors}
-            scale={1.2}
           />
         </Box>
 
@@ -89,10 +82,8 @@ const BodyVisualizer = ({ recoveryData, gender = 'male' }) => {
           <Typography variant="caption" display="block" color="text.secondary">Retro</Typography>
           <Model 
             data={bodyData} 
-            side="back" 
-            gender={modelGender}
+            type="posterior"
             highlightedColors={colors}
-            scale={1.2}
           />
         </Box>
       </Box>
@@ -112,7 +103,7 @@ const BodyVisualizer = ({ recoveryData, gender = 'male' }) => {
           <Typography variant="caption">Affaticato</Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#e0e0e0' }} />
+          <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#B6BDC3' }} />
           <Typography variant="caption">Nessun dato</Typography>
         </Box>
       </Box>

@@ -2,6 +2,11 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /gym-progress-tracker-v2/
+
+  # Let backend PHP requests pass through without SPA fallback
+  RewriteCond %{REQUEST_URI} ^/gym-progress-tracker-v2/backend/ [NC]
+  RewriteRule .* - [L]
+
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d

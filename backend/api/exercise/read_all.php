@@ -57,9 +57,10 @@ try {
         echo json_encode(array("message" => "Nessun esercizio trovato."));
     }
 } catch (Exception $e) {
+    error_log("Read exercises error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode(array(
-        "message" => "Errore del server: " . $e->getMessage(),
+        "message" => "Errore del server.",
         "success" => false
     ));
 }

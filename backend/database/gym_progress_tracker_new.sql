@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS `gym_workout_plans` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `name` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '0',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -91,6 +92,26 @@ CREATE TABLE IF NOT EXISTS `gym_progress` (
   KEY `exercise_id` (`exercise_id`),
   CONSTRAINT `gym_progress_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `gym_progress_ibfk_2` FOREIGN KEY (`exercise_id`) REFERENCES `gym_exercises` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- User body stats table
+CREATE TABLE IF NOT EXISTS `gym_user_stats` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `date` date NOT NULL,
+  `weight` decimal(5,2) DEFAULT NULL,
+  `body_fat_percentage` decimal(5,2) DEFAULT NULL,
+  `muscle_mass_percentage` decimal(5,2) DEFAULT NULL,
+  `chest_size` decimal(5,2) DEFAULT NULL,
+  `arm_size` decimal(5,2) DEFAULT NULL,
+  `waist_size` decimal(5,2) DEFAULT NULL,
+  `leg_size` decimal(5,2) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_date` (`user_id`, `date`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `gym_user_stats_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Workout history table

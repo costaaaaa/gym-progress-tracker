@@ -9,7 +9,6 @@ class Database
     private $db_name = "NOME_DATABASE";
     private $username = "USERNAME_DATABASE";
     private $password = "PASSWORD_DATABASE";
-    private $port = 3306;
     public $conn;
 
     public function getConnection()
@@ -21,7 +20,7 @@ class Database
                 throw new Exception("Errore: estensione MySQL PDO non installata");
             }
 
-            $dsn = "mysql:host={$this->host};port={$this->port};dbname={$this->db_name};charset=utf8mb4";
+            $dsn = "mysql:host=" . $this->host . ";dbname=" . $this->db_name . ";charset=utf8mb4";
             $options = [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

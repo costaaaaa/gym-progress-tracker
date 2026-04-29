@@ -70,15 +70,10 @@ try {
     // Log the error
     error_log("Registration Error: " . $e->getMessage());
 
-    // Check if error message is already JSON encoded
-    $error_message = $e->getMessage();
-    $decoded_error = json_decode($error_message);
-
     // Return error response
     http_response_code(500);
     echo json_encode(array(
         "success" => false,
-        "message" => "Si è verificato un errore durante la registrazione.",
-        "error" => (json_last_error() === JSON_ERROR_NONE) ? $decoded_error : $error_message
+        "message" => "Si è verificato un errore durante la registrazione."
     ));
 }

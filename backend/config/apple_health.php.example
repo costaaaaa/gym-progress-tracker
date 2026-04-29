@@ -1,0 +1,7 @@
+<?php
+
+// Copy this file to apple_health.php and keep the real tokens out of Git.
+// Map each allowed user_id to its iOS Shortcut sync token.
+$APPLE_HEALTH_SYNC_TOKENS = [
+    // 123 => 'replace-with-a-long-random-token'
+];

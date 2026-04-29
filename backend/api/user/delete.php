@@ -1,10 +1,6 @@
 <?php
 // Required headers
-header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: POST");
-header("Access-Control-Max-Age: 3600");
-header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+include_once '../../config/cors_headers.php';
 
 // Include database and object files
 include_once '../../config/database.php';
@@ -81,10 +77,11 @@ try {
         ));
     }
 } catch (Exception $e) {
+    error_log("Delete User Error: " . $e->getMessage());
     // Set response code - 500 Internal Server Error
     http_response_code(500);
     echo json_encode(array(
         "success" => false,
-        "message" => $e->getMessage()
+        "message" => "Errore interno del server."
     ));
 }

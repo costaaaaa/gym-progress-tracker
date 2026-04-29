@@ -1,13 +1,15 @@
 <?php
 // Includi i file di configurazione e le classi necessarie
+include_once '../../config/cors_headers.php';
 include_once '../../config/database.php';
+include_once '../../config/api_helpers.php';
 include_once '../../models/WorkoutExercise.php';
 
-// Headers
-header('Access-Control-Allow-Origin: *');
-header('Content-Type: application/json');
-header('Access-Control-Allow-Methods: POST');
-header('Access-Control-Allow-Headers: Access-Control-Allow-Headers, Content-Type, Access-Control-Allow-Methods, Authorization, X-Requested-With');
+if (!isset($_SESSION['user_id'])) {
+    http_response_code(401);
+    echo json_encode(array('success' => false, 'message' => 'Utente non autenticato.'));
+    exit;
+}
 
 // Inizializza il database
 $database = new Database();
@@ -28,11 +30,16 @@ if (
     isset($data->rest)
     // notes è opzionale, quindi non lo verifichiamo qui
 ) {
+    if (!workout_exercise_belongs_to_user($db, $data->exercise_id, $data->day_id, $_SESSION['user_id'])) {
+        api_not_found('Esercizio non trovato.');
+    }
+
     // Prima di aggiornare, dobbiamo trovare l'ID dell'esercizio nella scheda
     // Il frontend invia direttamente l'ID dell'esercizio nella tabella gym_workout_exercises
-    $query = "SELECT id FROM gym_workout_exercises WHERE id = ? LIMIT 0,1";
+    $query = "SELECT id FROM gym_workout_exercises WHERE id = ? AND day_id = ? LIMIT 0,1";
     $stmt = $db->prepare($query);
     $stmt->bindParam(1, $data->exercise_id);
+    $stmt->bindParam(2, $data->day_id);
     $stmt->execute();
 
     // Debug: Registriamo i parametri della query e il risultato

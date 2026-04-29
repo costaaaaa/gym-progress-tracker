@@ -66,10 +66,10 @@ try {
     }
 } catch (Exception $e) {
     // Errore interno del server
+    error_log("Read workout history error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'Errore nel recupero della cronologia allenamenti',
-        'error' => $e->getMessage()
+        'message' => 'Errore nel recupero della cronologia allenamenti'
     ]);
 }

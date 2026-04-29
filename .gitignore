@@ -138,6 +138,7 @@ backend/database/*.sql
 !backend/database/gym_progress_tracker_new.sql
 backend/database/update_user_recovery_fields.sql
 backend/config/database.php
+backend/config/apple_health.php
 
 # Experimental
 backend_v2/
@@ -148,6 +149,7 @@ GEMINI.md
 AGENTS.md
 .gemini/
 .gemini/settings.json
+.cursor/
  
 # Old heavy assets
 src/assets/images/gym-background.jpg

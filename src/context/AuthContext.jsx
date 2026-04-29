@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import { API_BASE_URL } from '../config';
 
 // Crea il contesto di autenticazione
 const AuthContext = createContext(null);
@@ -18,7 +19,7 @@ export const AuthProvider = ({ children }) => {
           return;
         }
 
-        const response = await fetch(`${process.env.PUBLIC_URL}/backend/api/user/validate-session.php`, {
+        const response = await fetch(`${API_BASE_URL}api/user/read.php`, {
           method: 'GET',
           credentials: 'include'
         });
@@ -27,9 +28,13 @@ export const AuthProvider = ({ children }) => {
           throw new Error('Sessione non valida');
         }
 
-        const userData = JSON.parse(localStorage.getItem('user'));
-        setUser(userData);
-        setIsLoggedIn(true);
+        const userData = await response.json();
+        if (userData.success) {
+          setUser(userData);
+          setIsLoggedIn(true);
+        } else {
+          throw new Error('Validazione fallita');
+        }
       } catch (error) {
         console.error('Errore verifica sessione:', error);
         logout();
@@ -54,8 +59,8 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('isLoggedIn');
     setIsLoggedIn(false);
     setUser(null);
-    // Utilizzo il basename corretto per il reindirizzamento
-    window.location.href = process.env.PUBLIC_URL ? `${process.env.PUBLIC_URL}/login` : '/gym-progress-tracker-v2/login';
+    // Utilizzo il path assoluto per il reindirizzamento
+    window.location.href = '/gym-progress-tracker-v2/login';
   };
 
   // Intercetta le chiamate fetch per gestire sessioni scadute
@@ -64,12 +69,12 @@ export const AuthProvider = ({ children }) => {
     
     window.fetch = async (...args) => {
       const response = await originalFetch(...args);
+      // Se 401 Unauthorized e non è una chiamata di login o verifica sessione
       if (response.status === 401 && 
           localStorage.getItem('isLoggedIn') === 'true' && 
-          !response.url.includes('validate-session.php')) {
+          !args[0].includes('login.php') && 
+          !args[0].includes('api/user/read.php')) {
         logout();
-        // Utilizzo il basename corretto per il reindirizzamento
-        window.location.href = process.env.PUBLIC_URL ? `${process.env.PUBLIC_URL}/login` : '/gym-progress-tracker-v2/login';
       }
       return response;
     };
