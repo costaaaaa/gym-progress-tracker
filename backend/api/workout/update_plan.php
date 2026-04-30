@@ -5,6 +5,7 @@ include_once '../../config/cors_headers.php';
 // Include database and workout model
 include_once '../../config/database.php';
 include_once '../../models/WorkoutPlan.php';
+include_once '../../config/api_helpers.php';
 
 // Start session
 session_start();
@@ -31,6 +32,11 @@ $data = json_decode(file_get_contents("php://input"));
 
 // Make sure data is not empty
 if (!empty($data->plan_id) && !empty($data->name)) {
+    // Check if plan exists and belongs to user
+    if (!workout_plan_belongs_to_user($db, $data->plan_id, $_SESSION['user_id'])) {
+        api_not_found("Scheda di allenamento non trovata.");
+    }
+
     // Set workout plan property values
     $workout_plan->id = $data->plan_id;
     $workout_plan->user_id = $_SESSION['user_id'];

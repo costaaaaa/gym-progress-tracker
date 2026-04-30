@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Box, CircularProgress } from '@mui/material';
 import './App.css';
 
@@ -11,24 +11,19 @@ import { AuthProvider } from './context/AuthContext';
 
 // Lazy load Pages
 const Home = lazy(() => import('./pages/Home'));
-const WorkoutPlans = lazy(() => import('./pages/WorkoutPlans'));
-const Progress = lazy(() => import('./pages/Progress'));
+const Workouts = lazy(() => import('./pages/Workouts'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
-const WorkoutHistory = lazy(() => import('./pages/WorkoutHistory'));
 const Account = lazy(() => import('./pages/Account'));
 const FocusWorkout = lazy(() => import('./pages/FocusWorkout'));
-const BodyStats = lazy(() => import('./pages/BodyStats'));
 
 // Fallback component while loading chunks
 const PageLoader = () => (
   <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-    <CircularProgress />
+    <CircularProgress color="primary" />
   </Box>
 );
-
-// With homepage set to '/gym-progress-tracker-v2/' in package.json, we need to set the basename
-// This ensures all routes work correctly when hosted in the subfolder
 
 function App() {
   return (
@@ -45,13 +40,20 @@ function App() {
                 <Suspense fallback={<PageLoader />}>
                   <Routes>
                     <Route path="/" element={<Home />} />
-                    <Route path="/workout-plans" element={<WorkoutPlans />} />
-                    <Route path="/progress" element={<Progress />} />
+                    <Route path="/workouts" element={<Workouts />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/account" element={<Account />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
-                    <Route path="/workout-history" element={<WorkoutHistory />} />
-                    <Route path="/body-stats" element={<BodyStats />} />
-                    <Route path="/account" element={<Account />} />
+                    
+                    {/* Redirect per retrocompatibilità */}
+                    <Route path="/workout-plans" element={<Navigate to="/workouts?tab=plans" replace />} />
+                    <Route path="/workout-history" element={<Navigate to="/workouts?tab=history" replace />} />
+                    <Route path="/progress" element={<Navigate to="/dashboard?tab=progress" replace />} />
+                    <Route path="/body-stats" element={<Navigate to="/dashboard?tab=body" replace />} />
+                    
+                    {/* Fallback a Home per rotte non trovate */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </Suspense>
               </Layout>

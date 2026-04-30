@@ -195,7 +195,7 @@ const Home = () => {
               {/* Ultimo Allenamento */}
               <Grid item xs={12} md={6}>
                 <Card sx={{ height: '100%', borderLeft: (theme) => `6px solid ${theme.palette.primary.main}` }}>
-                  <CardActionArea component={RouterLink} to="/workout-history" sx={{ height: '100%', p: 1 }}>
+                  <CardActionArea component={RouterLink} to="/workouts?tab=history" sx={{ height: '100%', p: 1 }}>
                     <CardContent>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                         <Box sx={{ p: 1.5, borderRadius: 3, bgcolor: (theme) => theme.palette.mode === 'light' ? 'rgba(213, 0, 0, 0.05)' : 'rgba(213, 0, 0, 0.15)', mr: 2 }}>
@@ -235,7 +235,7 @@ const Home = () => {
               {/* Piano Attivo */}
               <Grid item xs={12} md={6}>
                 <Card sx={{ height: '100%', borderLeft: (theme) => `6px solid ${theme.palette.primary.main}` }}>
-                  <CardActionArea component={RouterLink} to="/workout-plans" sx={{ height: '100%', p: 1 }}>
+                  <CardActionArea component={RouterLink} to="/workouts?tab=plans" sx={{ height: '100%', p: 1 }}>
                     <CardContent>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                         <Box sx={{ p: 1.5, borderRadius: 3, bgcolor: (theme) => theme.palette.mode === 'light' ? 'rgba(213, 0, 0, 0.05)' : 'rgba(213, 0, 0, 0.15)', mr: 2 }}>
@@ -278,7 +278,7 @@ const Home = () => {
                 <Grid container spacing={2}>
                   <Grid item xs={6} sm={3}>
                     <Button 
-                      fullWidth variant="outlined" component={RouterLink} to="/progress" 
+                      fullWidth variant="outlined" component={RouterLink} to="/dashboard?tab=progress" 
                       startIcon={<AssessmentIcon />} sx={{ py: 4, flexDirection: 'column', gap: 2, borderWidth: 2, '&:hover': { borderWidth: 2 } }}
                     >
                       Progressi
@@ -286,7 +286,7 @@ const Home = () => {
                   </Grid>
                   <Grid item xs={6} sm={3}>
                     <Button 
-                      fullWidth variant="outlined" component={RouterLink} to="/body-stats" 
+                      fullWidth variant="outlined" component={RouterLink} to="/dashboard?tab=body" 
                       startIcon={<StraightenIcon />} sx={{ py: 4, flexDirection: 'column', gap: 2, borderWidth: 2, '&:hover': { borderWidth: 2 } }}
                     >
                       Misure
@@ -294,7 +294,7 @@ const Home = () => {
                   </Grid>
                   <Grid item xs={6} sm={3}>
                     <Button 
-                      fullWidth variant="outlined" component={RouterLink} to="/workout-history" 
+                      fullWidth variant="outlined" component={RouterLink} to="/workouts?tab=history" 
                       startIcon={<CalendarTodayIcon />} sx={{ py: 4, flexDirection: 'column', gap: 2, borderWidth: 2, '&:hover': { borderWidth: 2 } }}
                     >
                       Storia

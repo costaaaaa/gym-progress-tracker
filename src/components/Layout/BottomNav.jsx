@@ -40,11 +40,11 @@ const BottomNav = () => {
       elevation={3}
     >
       <BottomNavigation
-        value={location.pathname}
+        value={location.pathname === '/focus' ? '/focus' : location.pathname}
         onChange={handleChange}
         showLabels
         sx={{
-          height: 65,
+          height: 70,
           '& .Mui-selected': {
             color: theme.palette.primary.main,
             '& .MuiSvgIcon-root': {
@@ -55,29 +55,26 @@ const BottomNav = () => {
         }}
       >
         <BottomNavigationAction
-          label="Focus"
-          value="/focus"
-          icon={<PlayArrowIcon />}
-        />
-        <BottomNavigationAction
-          label="Schede"
-          value="/workout-plans"
+          label="Allenamenti"
+          value="/workouts"
           icon={<FitnessCenterIcon />}
         />
         <BottomNavigationAction
-          label="Progressi"
-          value="/progress"
-          icon={<DirectionsRunIcon />}
+          label="Focus"
+          value="/focus"
+          icon={<PlayArrowIcon sx={{ 
+            fontSize: 32, 
+            bgcolor: 'primary.main', 
+            color: 'white', 
+            borderRadius: '50%',
+            p: 0.5,
+            boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
+          }} />}
         />
         <BottomNavigationAction
-          label="Misure"
-          value="/body-stats"
+          label="Statistiche"
+          value="/dashboard"
           icon={<StraightenIcon />}
-        />
-        <BottomNavigationAction
-          label="Storia"
-          value="/workout-history"
-          icon={<CalendarTodayIcon />}
         />
       </BottomNavigation>
     </Paper>

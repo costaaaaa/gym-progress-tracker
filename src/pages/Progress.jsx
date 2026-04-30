@@ -46,7 +46,7 @@ import EventNoteIcon from '@mui/icons-material/EventNote';
 import AllInclusiveIcon from '@mui/icons-material/AllInclusive';
 import TuneIcon from '@mui/icons-material/Tune';
 
-const Progress = () => {
+const Progress = ({ isEmbedded = false }) => {
   // Configurazione dei gruppi muscolari
   const muscleGroups = ['Petto', 'Schiena', 'Gambe', 'Spalle', 'Bicipiti', 'Tricipiti', 'Polpacci', 'Addominali'];
   
@@ -1081,16 +1081,17 @@ const Progress = () => {
     );
   }
 
-  return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Grid container spacing={3}>
-        {/* Intestazione della pagina */}
+  const renderContent = () => (
+    <Grid container spacing={3}>
+      {/* Intestazione della pagina */}
+      {!isEmbedded && (
         <Grid item xs={12}>
           <Typography variant="h4" gutterBottom>Tracciamento Progressi</Typography>
           <Typography variant="body1" paragraph>
             Seleziona un gruppo muscolare e un esercizio per visualizzare il tuo progresso nel tempo.
           </Typography>
         </Grid>
+      )}
         
         {/* 
           Stato di debug, visibile solo se ci sono problemi nei dati 
@@ -2092,7 +2093,16 @@ const Progress = () => {
             )}
           </Paper>
         </Grid>
-      </Grid>
+    </Grid>
+  );
+
+  return (
+    <>
+      {isEmbedded ? (
+        <Box sx={{ py: 2 }}>{renderContent()}</Box>
+      ) : (
+        <Container maxWidth="lg" sx={{ py: 4 }}>{renderContent()}</Container>
+      )}
       
       <Snackbar
         open={snackbar.open}
@@ -2107,7 +2117,7 @@ const Progress = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Container>
+    </>
   );
 };
 

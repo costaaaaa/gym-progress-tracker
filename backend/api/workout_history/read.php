@@ -103,6 +103,7 @@ try {
     http_response_code(500);
     if (ob_get_length()) ob_clean();
     header('Content-Type: application/json');
-    echo json_encode(array("message" => "Errore del server: " . $e->getMessage()));
+    error_log("Errore in workout_history/read.php: " . $e->getMessage());
+    echo json_encode(array("message" => "Errore interno del server."));
 }
 ob_end_flush();

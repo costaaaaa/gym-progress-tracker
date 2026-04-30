@@ -504,9 +504,9 @@ const FocusWorkout = () => {
       setSnackbar({ open: true, message: 'Allenamento salvato con successo! 💪', severity: 'success' });
       clearDraft();
 
-      // Redirect dopo un breve delay
+      // Redirect dopo un breve delay verso la cronologia negli hub
       setTimeout(() => {
-        navigate('/workout-history');
+        navigate('/workouts?tab=history', { state: { refreshHistory: Date.now() } });
       }, 1500);
 
     } catch (error) {
@@ -644,7 +644,7 @@ const FocusWorkout = () => {
                 </Typography>
                 <Button
                   variant="outlined"
-                  onClick={() => navigate('/workout-plans')}
+                  onClick={() => navigate('/workouts?tab=plans')}
                   sx={{ color: colors.primary, borderColor: colors.primary }}
                 >
                   Vai alle Schede

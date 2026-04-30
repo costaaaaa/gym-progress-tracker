@@ -35,7 +35,7 @@ import AddIcon from '@mui/icons-material/Add';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import MonitorWeightIcon from '@mui/icons-material/MonitorWeight';
 
-const BodyStats = () => {
+const BodyStats = ({ isEmbedded = false }) => {
   const [stats, setStats] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -158,22 +158,37 @@ const BodyStats = () => {
 
   const chartData = formatChartData(stats);
 
-  return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-          Statistiche Fisiche
-        </Typography>
-        <Button 
-          variant="contained" 
-          startIcon={<AddIcon />} 
-          onClick={() => setIsDialogOpen(true)}
-          color="primary"
-          sx={{ fontWeight: 'bold' }}
-        >
-          Nuova Misurazione
-        </Button>
-      </Box>
+  const renderContent = () => (
+    <>
+      {!isEmbedded && (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+            Statistiche Fisiche
+          </Typography>
+          <Button 
+            variant="contained" 
+            startIcon={<AddIcon />} 
+            onClick={() => setIsDialogOpen(true)}
+            color="primary"
+            sx={{ fontWeight: 'bold' }}
+          >
+            Nuova Misurazione
+          </Button>
+        </Box>
+      )}
+
+      {isEmbedded && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+          <Button 
+            variant="contained" 
+            startIcon={<AddIcon />} 
+            onClick={() => setIsDialogOpen(true)}
+            color="primary"
+          >
+            Nuova Misurazione
+          </Button>
+        </Box>
+      )}
 
       {isLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 10 }}>
@@ -181,6 +196,7 @@ const BodyStats = () => {
         </Box>
       ) : (
         <Grid container spacing={3}>
+          {/* ... (rest of grid content) */}
           {/* Grafico Peso */}
           <Grid item xs={12} md={6}>
             <Card elevation={3} sx={{ borderRadius: 2 }}>
@@ -329,6 +345,17 @@ const BodyStats = () => {
         </Grid>
       )}
 
+    </>
+  );
+
+  return (
+    <>
+      {isEmbedded ? (
+        <Box sx={{ mt: 2 }}>{renderContent()}</Box>
+      ) : (
+        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>{renderContent()}</Container>
+      )}
+
       {/* Dialog Nuova Misurazione */}
       <Dialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: 'bold' }}>Aggiungi Misurazioni</DialogTitle>
@@ -428,7 +455,6 @@ const BodyStats = () => {
         </DialogActions>
       </Dialog>
 
-
       <Snackbar 
         open={snackbar.open} 
         autoHideDuration={4000} 
@@ -438,7 +464,7 @@ const BodyStats = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Container>
+    </>
   );
 };
 

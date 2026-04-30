@@ -68,11 +68,9 @@ const Navbar = () => {
 
   const navItems = [
     ...(authVerified && isLoggedIn ? [
-      { label: 'Focus', path: '/focus' },
-      { label: 'Schede', path: '/workout-plans' },
-      { label: 'Progressi', path: '/progress' },
-      { label: 'Misure', path: '/body-stats' },
-      { label: 'Cronologia', path: '/workout-history' }
+      { label: 'Focus', path: '/focus', variant: 'contained', icon: <PlayArrowIcon /> },
+      { label: 'Allenamenti', path: '/workouts', icon: <FitnessCenterIcon /> },
+      { label: 'Statistiche', path: '/dashboard', icon: <StraightenIcon /> }
     ] : [])
   ];
 
@@ -114,7 +112,7 @@ const Navbar = () => {
           <Box sx={{ bgcolor: 'white', p: 0.8, borderRadius: 2, display: 'flex' }}>
             <FitnessCenterIcon sx={{ fontSize: 24, transform: 'rotate(-20deg)', color: '#d50000' }} />
           </Box>
-          <Box>
+          <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
             <Typography 
               variant="h6" 
               component="div" 
@@ -192,8 +190,6 @@ const Navbar = () => {
                   }
                 }}
               >
-                {/* Rimosso navItems dal menu mobile poiché presente nella Bottom Navigation */}
-                
                 {authVerified && isLoggedIn && (
                   <MenuItem 
                     component={RouterLink} 
@@ -256,7 +252,6 @@ const Navbar = () => {
                     </MenuItem>
                    </>
                  )}
-                
               </Menu>
             </>
           ) : (
@@ -265,61 +260,28 @@ const Navbar = () => {
                 display: 'flex',
                 alignItems: 'center',
                 flexShrink: 1,
-                minWidth: 0,
-                overflowX: 'auto',
-                '& > *': {
-                  flexShrink: 0,
-                  mx: theme.spacing(0.5),
-                  [theme.breakpoints.between('sm', 'md')]: {
-                    padding: '6px 12px',
-                    fontSize: '0.875rem',
-                    minWidth: 'auto'
-                  }
-                },
-                [theme.breakpoints.between('sm', 'md')]: {
-                  maxWidth: '85vw',
-                  margin: '0 auto',
-                  scrollSnapType: 'x mandatory',
-                  '&::-webkit-scrollbar': {
-                    display: 'none'
-                  }
-                }
+                gap: 1.5
               }}
             >
               {navItems.map((item) => (
                 <Button 
                   key={item.path}
-                  color="inherit" 
+                  color={item.variant === 'contained' ? 'inherit' : 'inherit'}
+                  variant={item.variant || 'text'}
                   component={RouterLink} 
                   to={item.path}
-                  startIcon={
-                    item.path === '/focus' ? <PlayArrowIcon sx={{ color: 'white' }} /> :
-                    item.path === '/workout-plans' ? <FitnessCenterIcon sx={{ color: 'white' }} /> : 
-                    item.path === '/progress' ? <DirectionsRunIcon sx={{ color: 'white' }} /> : 
-                    item.path === '/body-stats' ? <StraightenIcon sx={{ color: 'white' }} /> : 
-                    item.path === '/workout-history' ? <CalendarTodayIcon sx={{ color: 'white' }} /> : null
-                  }
+                  startIcon={item.icon}
                   sx={{
-                    mx: 0.5,
                     px: 2,
-                    borderRadius: '8px',
-                    position: 'relative',
                     fontWeight: 'bold',
                     transition: 'all 0.3s',
-                    color: 'white',
+                    color: item.variant === 'contained' ? (mode === 'light' ? '#d50000' : 'white') : 'white',
+                    backgroundColor: item.variant === 'contained' ? (mode === 'light' ? 'white' : 'rgba(255, 255, 255, 0.15)') : 'transparent',
                     '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.15)'
+                      backgroundColor: item.variant === 'contained' ? (mode === 'light' ? 'rgba(255,255,255,0.9)' : 'rgba(255, 255, 255, 0.25)') : 'rgba(255, 255, 255, 0.15)'
                     },
-                    '&::after': isActive(item.path) ? {
-                      content: '""',
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '3px',
-                      backgroundColor: 'white',
-                      borderRadius: '3px 3px 0 0',
-                    } : {}
+                    borderBottom: !item.variant && isActive(item.path) ? '3px solid white' : 'none',
+                    borderRadius: item.variant ? '8px' : '0'
                   }}
                 >
                   {item.label}
@@ -328,67 +290,41 @@ const Navbar = () => {
               
               {isLoggedIn && (
                 <Tooltip title="Account">
-                  <Button 
+                  <IconButton 
                     color="inherit" 
                     component={RouterLink} 
                     to="/account"
                     sx={{
-                      mx: 0.5,
                       width: '40px',
                       height: '40px',
-                      minWidth: '40px',
-                      padding: 0,
                       borderRadius: '8px',
-                      position: 'relative',
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      transition: 'all 0.3s',
-                      color: 'white',
+                      backgroundColor: isActive('/account') ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
                       '&:hover': {
                         backgroundColor: 'rgba(255, 255, 255, 0.15)'
-                      },
-                      '&::after': isActive('/account') ? {
-                        content: '""',
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '3px',
-                        backgroundColor: 'white',
-                        borderRadius: '3px 3px 0 0',
-                      } : {}
+                      }
                     }}
                   >
                     <PersonIcon sx={{ color: 'white' }} />
-                  </Button>
+                  </IconButton>
                 </Tooltip>
                 )}
                 
                 {isLoggedIn ? (
                   <Tooltip title="Logout">
-                    <Button
+                    <IconButton
                       color="inherit"
                       onClick={handleLogout}
                       sx={{
-                        mx: 0.5,
                         width: '40px',
                         height: '40px',
-                        minWidth: '40px',
-                        padding: 0,
                         borderRadius: '8px',
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        transition: 'all 0.3s',
-                        color: 'white',
                         '&:hover': {
                           backgroundColor: 'rgba(255, 255, 255, 0.15)'
                         }
                       }}
                     >
                       <LogoutIcon sx={{ color: 'white' }} />
-                    </Button>
+                    </IconButton>
                   </Tooltip>
                 ) : (
                   <>
