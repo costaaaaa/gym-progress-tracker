@@ -155,3 +155,5 @@ AGENTS.md
 src/assets/images/gym-background.jpg
 
 build/
+backend/api/user_stats/sync_apple_health.php
+dati.sql

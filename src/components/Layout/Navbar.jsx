@@ -276,9 +276,9 @@ const Navbar = () => {
                     fontWeight: 'bold',
                     transition: 'all 0.3s',
                     color: item.variant === 'contained' ? (mode === 'light' ? '#d50000' : 'white') : 'white',
-                    backgroundColor: item.variant === 'contained' ? (mode === 'light' ? 'white' : 'rgba(255, 255, 255, 0.15)') : 'transparent',
+                    backgroundColor: item.variant === 'contained' ? (mode === 'light' ? 'white' : '#d50000') : 'transparent',
                     '&:hover': {
-                      backgroundColor: item.variant === 'contained' ? (mode === 'light' ? 'rgba(255,255,255,0.9)' : 'rgba(255, 255, 255, 0.25)') : 'rgba(255, 255, 255, 0.15)'
+                      backgroundColor: item.variant === 'contained' ? (mode === 'light' ? 'rgba(255,255,255,0.9)' : 'rgba(213, 0, 0, 0.8)') : 'rgba(255, 255, 255, 0.15)'
                     },
                     borderBottom: !item.variant && isActive(item.path) ? '3px solid white' : 'none',
                     borderRadius: item.variant ? '8px' : '0'
