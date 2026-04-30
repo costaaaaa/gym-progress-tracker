@@ -36,11 +36,14 @@ import CloseIcon from '@mui/icons-material/Close';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExerciseDialog, { INTENSITY_TECHNIQUES } from '../components/ExerciseDialog';
 import { API_BASE_URL } from '../config';
 
-const WorkoutPlans = () => {
+const WorkoutPlans = ({ isEmbedded = false }) => {
   const [workoutPlans, setWorkoutPlans] = useState([]);
+  const [expandedPlans, setExpandedPlans] = useState({});
   const [openDialog, setOpenDialog] = useState(false);
   const [openExerciseDialog, setOpenExerciseDialog] = useState(false);
   const [selectedDayIndex, setSelectedDayIndex] = useState(null);
@@ -122,6 +125,13 @@ const WorkoutPlans = () => {
         severity: 'error'
       });
     }
+  };
+
+  const togglePlanExpansion = (planId) => {
+    setExpandedPlans(prev => ({
+      ...prev,
+      [planId]: !prev[planId]
+    }));
   };
 
   const handleAddPlan = async () => {
@@ -754,109 +764,152 @@ const WorkoutPlans = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Le Mie Schede
-      </Typography>
-      <Button
-        variant="contained"
-        startIcon={<AddIcon sx={{ color: "white" }} />}
-        onClick={() => setOpenDialog(true)}
-        sx={{ mb: 3 }}
-      >
-        Nuova Scheda
-      </Button>
+    <Box sx={{ p: isEmbedded ? 0 : 3 }}>
+      {!isEmbedded && (
+        <Typography variant="h4" gutterBottom>
+          Le Mie Schede
+        </Typography>
+      )}
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+          Gestione Schede
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon sx={{ color: "white" }} />}
+          onClick={() => setOpenDialog(true)}
+        >
+          Nuova Scheda
+        </Button>
+      </Box>
 
       <Grid container spacing={3}>
-        {workoutPlans.map((plan, planIndex) => (
-          <Grid item xs={12} md={6} key={plan.id}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h6">{plan.name}</Typography>
-                  <Box>
-                    <IconButton 
-                      onClick={() => handleOpenEditPlanDialog(plan)}
-                      color="primary"
-                      aria-label="edit plan"
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton 
-                      onClick={() => handleOpenDeletePlanDialog(plan)}
-                      color="error"
-                      aria-label="delete plan"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Box>
-                </Box>
-                {plan.description && (
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontStyle: 'italic' }}>
-                    {plan.description}
-                  </Typography>
-                )}
-                {plan.days && plan.days.map((day, dayIndex) => (
-                  <Box key={day.id} sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                        {day.name}
-                      </Typography>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={<InfoIcon />}
-                        onClick={() => handleOpenDayDetails(day)}
-                      >
-                        Dettagli
-                      </Button>
-                    </Box>
-                    
-                    {/* Vista compatta dei gruppi muscolari */}
-                    <Box sx={{ mb: 2 }}>
-                      {day.exercises && day.exercises.length > 0 ? (
-                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                          {groupExercisesByMuscleGroup(day.exercises).map((group, idx) => (
-                            <Chip 
-                              key={idx}
-                              icon={<FitnessCenterIcon />}
-                              label={`${group.name} (${group.count})`} 
-                              color="primary"
-                              variant="outlined"
-                              onClick={() => handleOpenDayDetails(day)}
-                              sx={{ m: 0.5 }}
-                            />
-                          ))}
-                        </Stack>
-                      ) : (
-                        <Typography variant="body2" color="text.secondary">
-                          Nessun esercizio aggiunto
+        {workoutPlans.map((plan, planIndex) => {
+          const isExpanded = expandedPlans[plan.id];
+          
+          return (
+            <Grid item xs={12} md={6} key={plan.id}>
+              <Card sx={{ 
+                borderLeft: plan.is_active ? '6px solid' : 'none', 
+                borderColor: 'primary.main',
+                transition: 'all 0.3s'
+              }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{plan.name}</Typography>
+                        {plan.is_active && <Chip label="ATTIVA" color="primary" size="small" sx={{ fontWeight: 'bold', height: 20 }} />}
+                      </Box>
+                      {plan.description && (
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontStyle: 'italic' }}>
+                          {plan.description}
                         </Typography>
                       )}
                     </Box>
-                    
-                    <Button
-                      startIcon={<AddIcon />}
-                      onClick={() => handleOpenExerciseDialog(planIndex, dayIndex)}
-                      size="small"
-                    >
-                      Aggiungi Esercizio
-                    </Button>
+                    <Box sx={{ display: 'flex' }}>
+                      <IconButton 
+                        onClick={() => handleOpenEditPlanDialog(plan)}
+                        color="primary"
+                        size="small"
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton 
+                        onClick={() => handleOpenDeletePlanDialog(plan)}
+                        color="error"
+                        size="small"
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
                   </Box>
-                ))}
-              </CardContent>
-              <CardActions>
-                <Button
-                  variant={plan.is_active ? "contained" : "outlined"}
-                  onClick={() => handleActivatePlan(plan.id)}
-                  fullWidth
-                >
-                  {plan.is_active ? "Scheda Attiva" : "Attiva Scheda"}
-                </Button>
-              </CardActions>
-            </Card>
-          </Grid>
-        ))}
+
+                  {isExpanded ? (
+                    <Box sx={{ mt: 2 }}>
+                      <Divider sx={{ mb: 2 }} />
+                      {plan.days && plan.days.map((day, dayIndex) => (
+                        <Box key={day.id} sx={{ mb: 2 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                              {day.name}
+                            </Typography>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              startIcon={<InfoIcon />}
+                              onClick={() => handleOpenDayDetails(day)}
+                            >
+                              Dettagli
+                            </Button>
+                          </Box>
+                          
+                          <Box sx={{ mb: 1 }}>
+                            {day.exercises && day.exercises.length > 0 ? (
+                              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                                {groupExercisesByMuscleGroup(day.exercises).map((group, idx) => (
+                                  <Chip 
+                                    key={idx}
+                                    icon={<FitnessCenterIcon />}
+                                    label={`${group.name} (${group.count})`} 
+                                    color="primary"
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={() => handleOpenDayDetails(day)}
+                                    sx={{ m: 0.5 }}
+                                  />
+                                ))}
+                              </Stack>
+                            ) : (
+                              <Typography variant="body2" color="text.secondary">
+                                Nessun esercizio aggiunto
+                              </Typography>
+                            )}
+                          </Box>
+                          
+                          <Button
+                            startIcon={<AddIcon />}
+                            onClick={() => handleOpenExerciseDialog(planIndex, dayIndex)}
+                            size="small"
+                          >
+                            Aggiungi Esercizio
+                          </Button>
+                        </Box>
+                      ))}
+                    </Box>
+                  ) : (
+                    <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
+                       <Typography variant="body2" color="text.secondary">
+                        {plan.days?.length || 0} Giorni • {plan.days?.reduce((acc, day) => acc + (day.exercises?.length || 0), 0)} Esercizi
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+                <CardActions sx={{ px: 2, pb: 2, pt: 0, justifyContent: 'space-between' }}>
+                  <Button
+                    size="small"
+                    variant="text"
+                    onClick={() => togglePlanExpansion(plan.id)}
+                    startIcon={isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                  >
+                    {isExpanded ? "Nascondi dettagli" : "Mostra dettagli"}
+                  </Button>
+                  
+                  {!plan.is_active && (
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => handleActivatePlan(plan.id)}
+                    >
+                      Attiva Scheda
+                    </Button>
+                  )}
+                </CardActions>
+              </Card>
+            </Grid>
+          );
+        })}
       </Grid>
       
       {/* Dialog Dettagli Giorno */}
