@@ -27,11 +27,11 @@ With this tool you can:
 * ✅ Multi-plan management
 * 🔥 **Focus Mode**: immersive interface for real-time workout tracking with rest timers
 * 💾 **Autosave**: local persistence to prevent data loss in Focus Mode
-* 📈 Visual progress tracking
+* 📈 **Advanced Dashboard**: redesigned interface with interactive charts
+* 📊 **Global Stats**: track workout frequency (weekly) and total volume (monthly)
 * 👤 **Body Stats**: track body measurements and visualize progress
-* 🍎 **Apple Health Sync**: integration for syncing health data (backend ready)
 * 🏋️ Add and edit exercises
-* 📊 Detailed stats for each exercise
+* 🎯 **Smart Progress**: detailed metrics (Volume, Avg Weight, Progress Index) for each exercise
 * 📌 Ability to select an active workout plan
 
 ## Technologies Used
@@ -68,7 +68,7 @@ You can test the app directly here: 👉 [Gym Progress Tracker Live](https://and
    npm run build
    ```
 3. Import the MySQL database using the unified schema:
-   * Use `backend/database/gym_progress_tracker_new.sql`
+   * Use `backend/database/gym_progress_tracker.sql`
 4. Configure database access in the `backend/config/database.php` file;
 5. Launch a local server (e.g., with XAMPP) and make sure the PHP files are correctly served.
 6. Start the React app:
@@ -115,11 +115,11 @@ Con questo strumento è possibile:
 * ✅ Gestione multi-scheda
 * 🔥 **Modalità Focus**: interfaccia dedicata per l'allenamento in tempo reale con timer di recupero integrati
 * 💾 **Autosave**: salvataggio locale automatico per non perdere mai i progressi in Focus Mode
-* 📈 Visualizzazione dei progressi nel tempo
+* 📈 **Dashboard Avanzata**: interfaccia ridisegnata per una consultazione rapida e chiara
+* 📊 **Statistiche Globali**: tracciamento frequenza (settimanale) e volume totale (mensile)
 * 👤 **Body Stats**: tracciamento delle misure corporee e visualizzazione grafica
-* 🍎 **Apple Health Sync**: predisposizione per la sincronizzazione dei dati salute (backend)
 * 🏋️ Aggiunta e modifica di esercizi
-* 📊 Statistiche dettagliate per ogni esercizio
+* 🎯 **Progressi Mirati**: metriche di dettaglio (Volume, Peso Medio, Indice Progresso) per ogni singolo esercizio
 * 📌 Possibilità di selezionare una scheda attiva
 
 ## Tecnologie utilizzate
@@ -157,7 +157,7 @@ Puoi testare l'app direttamente al seguente link: 👉 [Gym Progress Tracker Liv
    npm run build
    ```
 3. Importa il database MySQL usando lo schema unificato:
-   * Usa il file `backend/database/gym_progress_tracker_new.sql`
+   * Usa il file `backend/database/gym_progress_tracker.sql`
 4. Configura i dati di accesso al database nel file `backend/config/database.php`;
 5. Avvia il server locale (es. con XAMPP) e assicurati che i file PHP siano serviti correttamente.
 6. Avvia l'app React:

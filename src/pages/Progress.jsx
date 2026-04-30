@@ -1167,28 +1167,33 @@ const Progress = ({ isEmbedded = false }) => {
         </Grid>
 
         {/* Selettori gruppo muscolare e esercizio */}
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <Paper 
-              elevation={2} 
-              sx={{ 
-                p: 3, 
-                borderRadius: 2,
-                background: (theme) => theme.palette.mode === 'light' 
-                  ? 'linear-gradient(to right, rgba(250,250,250,1) 0%, rgba(245,245,245,1) 100%)'
-                  : 'linear-gradient(to right, rgba(30,30,32,1) 0%, rgba(20,20,22,1) 100%)',
-                boxShadow: (theme) => theme.palette.mode === 'light'
-                  ? '0 3px 5px rgba(0,0,0,0.05)'
-                  : '0 3px 5px rgba(0,0,0,0.3)',
-                border: (theme) => theme.palette.mode === 'light' ? 'none' : '1px solid rgba(255,255,255,0.05)'
-              }}
-            >
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-                <FitnessCenterIcon color="primary" />
+        <Grid item xs={12} sx={{ mt: 5, mb: 2 }}>
+          <Paper 
+            elevation={4} 
+            sx={{ 
+              p: { xs: 2, md: 4 }, 
+              borderRadius: 3,
+              borderTop: '4px solid',
+              borderColor: 'primary.main',
+              background: (theme) => theme.palette.mode === 'light' 
+                ? 'linear-gradient(to bottom right, rgba(255,255,255,1) 0%, rgba(248,249,250,1) 100%)'
+                : 'linear-gradient(to bottom right, rgba(40,40,45,1) 0%, rgba(25,25,30,1) 100%)',
+              boxShadow: (theme) => theme.palette.mode === 'light'
+                ? '0 10px 30px rgba(0,0,0,0.08)'
+                : '0 10px 30px rgba(0,0,0,0.4)',
+            }}
+          >
+            <Box sx={{ textAlign: 'center', mb: 4 }}>
+              <Typography variant="h5" gutterBottom sx={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, fontWeight: 'bold', color: 'primary.main' }}>
+                <FitnessCenterIcon sx={{ fontSize: 32 }} />
                 Seleziona esercizio
               </Typography>
-              
-              <Grid container spacing={3}>
+              <Typography variant="body2" color="text.secondary">
+                Scegli il gruppo muscolare e l'esercizio per visualizzare le tue statistiche
+              </Typography>
+            </Box>
+            
+            <Grid container spacing={3} justifyContent="center">
                 <Grid item xs={12} md={6}>
                   <Typography variant="subtitle2" gutterBottom sx={{ ml: 1 }}>
                     Gruppo Muscolare
@@ -1387,12 +1392,11 @@ const Progress = ({ isEmbedded = false }) => {
               </Grid>
             </Paper>
           </Grid>
-        </Grid>
         
         {/* Filtri temporali */}
         {chartData.length > 0 && (
           <Grid item xs={12}>
-            <Paper elevation={2} sx={{ p: 2, mt: 2 }}>
+            <Paper elevation={2} sx={{ p: { xs: 1.5, md: 2 }, mt: 2 }}>
               <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <DateRangeIcon fontSize="small" />
                 Intervallo di date
@@ -1405,10 +1409,19 @@ const Progress = ({ isEmbedded = false }) => {
                   aria-label="intervallo di date"
                   size="small"
                   sx={{ 
+                    display: 'flex',
                     flexWrap: 'wrap',
+                    gap: 0.5,
+                    border: 'none',
+                    '& .MuiToggleButtonGroup-grouped': {
+                      border: '1px solid rgba(0, 0, 0, 0.12) !important',
+                      borderRadius: '4px !important',
+                      mx: '2px !important',
+                      my: '2px !important'
+                    },
                     '& .MuiToggleButton-root': {
-                      borderRadius: '4px',
-                      mx: 0.3,
+                      px: 1.5,
+                      py: 0.5,
                       '&.Mui-selected': {
                         borderColor: 'primary.main',
                         borderWidth: 2,
@@ -1418,29 +1431,23 @@ const Progress = ({ isEmbedded = false }) => {
                     }
                   }}
                 >
-                  <ToggleButton value="30" aria-label="ultimi 30 giorni" sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                    <CalendarTodayIcon fontSize="small" />
-                    Ultimi 30 giorni
+                  <ToggleButton value="30" aria-label="ultimi 30 giorni">
+                    30gg
                   </ToggleButton>
-                  <ToggleButton value="90" aria-label="ultimi 90 giorni" sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                    <CalendarTodayIcon fontSize="small" />
-                    Ultimi 90 giorni
+                  <ToggleButton value="90" aria-label="ultimi 90 giorni">
+                    90gg
                   </ToggleButton>
-                  <ToggleButton value="180" aria-label="ultimi 180 giorni" sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                    <CalendarTodayIcon fontSize="small" />
-                    Ultimi 6 mesi
+                  <ToggleButton value="180" aria-label="ultimi 180 giorni">
+                    6 mesi
                   </ToggleButton>
-                  <ToggleButton value="365" aria-label="ultimo anno" sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                    <DateRangeIcon fontSize="small" />
-                    Ultimo anno
+                  <ToggleButton value="365" aria-label="ultimo anno">
+                    1 anno
                   </ToggleButton>
-                  <ToggleButton value="all" aria-label="tutte le date" sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                    <AllInclusiveIcon fontSize="small" />
-                    Tutti i dati
+                  <ToggleButton value="all" aria-label="tutte le date">
+                    Tutto
                   </ToggleButton>
-                  <ToggleButton value="custom" aria-label="personalizzato" sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+                  <ToggleButton value="custom" aria-label="personalizzato">
                     <TuneIcon fontSize="small" />
-                    Personalizzato
                   </ToggleButton>
                 </ToggleButtonGroup>
                 
@@ -1449,82 +1456,66 @@ const Progress = ({ isEmbedded = false }) => {
                     display: 'flex', 
                     flexWrap: 'wrap', 
                     alignItems: 'center', 
-                    gap: 2, 
-                    mt: { xs: 2, md: 0 },
-                    ml: { md: 2 },
+                    gap: 1.5, 
+                    mt: 1,
                     p: 2,
                     border: '1px dashed',
                     borderColor: 'primary.main',
                     borderRadius: 1,
-                    bgcolor: 'rgba(25, 118, 210, 0.04)'
+                    bgcolor: 'rgba(25, 118, 210, 0.04)',
+                    width: '100%'
                   }}>
                     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={itLocale}>
                       <DatePicker
-                        label="Data inizio"
+                        label="Inizio"
                         value={customStartDate}
                         onChange={setCustomStartDate}
-                        sx={{ width: 200 }}
-                        slotProps={{ 
-                          textField: { 
-                            size: 'small',
-                            InputProps: {
-                              startAdornment: (
-                                <CalendarTodayIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
-                              )
-                            }
-                          } 
-                        }}
+                        sx={{ flex: 1, minWidth: 120 }}
+                        slotProps={{ textField: { size: 'small' } }}
                       />
                       <DatePicker
-                        label="Data fine"
+                        label="Fine"
                         value={customEndDate}
                         onChange={setCustomEndDate}
-                        sx={{ width: 200 }}
-                        slotProps={{ 
-                          textField: { 
-                            size: 'small',
-                            InputProps: {
-                              startAdornment: (
-                                <CalendarTodayIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
-                              )
-                            }
-                          } 
-                        }}
+                        sx={{ flex: 1, minWidth: 120 }}
+                        slotProps={{ textField: { size: 'small' } }}
                       />
                     </LocalizationProvider>
                   </Box>
                 )}
               </Box>
-              
-              {/* Messaggio sul filtro applicato */}
-              {filteredChartData.length < chartData.length && (
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                  Filtro applicato: visualizzazione di {filteredChartData.length} allenamenti su {chartData.length} totali.
-                </Typography>
-              )}
             </Paper>
           </Grid>
         )}
         
         {/* Grafico e statistiche */}
         <Grid item xs={12}>
-          <Paper elevation={3} sx={{ p: 3, mt: 2 }}>
-            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
-              <Typography variant="h6" gutterBottom>
+          <Paper elevation={3} sx={{ p: { xs: 1.5, md: 3 }, mt: 2 }}>
+            <Box sx={{ mb: 2, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2 }}>
+              <Typography variant="h6">
                 Grafico Progressione
               </Typography>
               
               {chartData.length > 0 && (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                <Box sx={{ width: { xs: '100%', sm: 'auto' } }}>
                   <ToggleButtonGroup
                     size="small"
                     aria-label="metriche visibili"
                     sx={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 0.5,
+                      border: 'none',
+                      '& .MuiToggleButtonGroup-grouped': {
+                        border: '1px solid rgba(0, 0, 0, 0.12) !important',
+                        borderRadius: '4px !important',
+                        mx: '2px !important',
+                        my: '2px !important'
+                      },
                       '& .MuiToggleButton-root': {
-                        borderRadius: '4px',
-                        px: 1.5,
+                        px: 1.2,
                         py: 0.5,
-                        fontSize: '0.85rem',
+                        fontSize: '0.75rem',
                         '&.Mui-selected': {
                           fontWeight: 'bold',
                           boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
@@ -1539,16 +1530,10 @@ const Progress = ({ isEmbedded = false }) => {
                       sx={{ 
                         color: visibleMetrics.volume ? '#8884d8' : 'text.secondary',
                         bgcolor: visibleMetrics.volume ? 'rgba(136,132,216,0.1)' : 'transparent',
-                        '&.Mui-selected': { 
-                          bgcolor: 'rgba(136,132,216,0.1)', 
-                          borderColor: '#8884d8' 
-                        }
+                        borderColor: '#8884d8 !important'
                       }}
                     >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#8884d8' }}></Box>
-                        Volume Totale
-                      </Box>
+                      Vol
                     </ToggleButton>
                     <ToggleButton 
                       value="volumePerSet" 
@@ -1557,16 +1542,10 @@ const Progress = ({ isEmbedded = false }) => {
                       sx={{ 
                         color: visibleMetrics.volumePerSet ? '#ff9800' : 'text.secondary',
                         bgcolor: visibleMetrics.volumePerSet ? 'rgba(255,152,0,0.1)' : 'transparent',
-                        '&.Mui-selected': { 
-                          bgcolor: 'rgba(255,152,0,0.1)', 
-                          borderColor: '#ff9800' 
-                        }
+                        borderColor: '#ff9800 !important'
                       }}
                     >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#ff9800' }}></Box>
-                        Volume/Serie
-                      </Box>
+                      Vol/Set
                     </ToggleButton>
                     <ToggleButton 
                       value="avgWeight" 
@@ -1575,16 +1554,10 @@ const Progress = ({ isEmbedded = false }) => {
                       sx={{ 
                         color: visibleMetrics.avgWeight ? '#82ca9d' : 'text.secondary',
                         bgcolor: visibleMetrics.avgWeight ? 'rgba(130,202,157,0.1)' : 'transparent',
-                        '&.Mui-selected': { 
-                          bgcolor: 'rgba(130,202,157,0.1)', 
-                          borderColor: '#82ca9d' 
-                        }
+                        borderColor: '#82ca9d !important'
                       }}
                     >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#82ca9d' }}></Box>
-                        Peso Medio
-                      </Box>
+                      Peso
                     </ToggleButton>
                     <ToggleButton 
                       value="compositeIndex" 
@@ -1593,16 +1566,10 @@ const Progress = ({ isEmbedded = false }) => {
                       sx={{ 
                         color: visibleMetrics.compositeIndex ? '#9c27b0' : 'text.secondary',
                         bgcolor: visibleMetrics.compositeIndex ? 'rgba(156,39,176,0.1)' : 'transparent',
-                        '&.Mui-selected': { 
-                          bgcolor: 'rgba(156,39,176,0.1)', 
-                          borderColor: '#9c27b0' 
-                        }
+                        borderColor: '#9c27b0 !important'
                       }}
                     >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#9c27b0' }}></Box>
-                        Indice Progresso
-                      </Box>
+                      Index
                     </ToggleButton>
                     <ToggleButton 
                       value="trendLines" 
@@ -1611,22 +1578,16 @@ const Progress = ({ isEmbedded = false }) => {
                       sx={{ 
                         color: visibleMetrics.trendLines ? 'primary.main' : 'text.secondary',
                         bgcolor: visibleMetrics.trendLines ? 'rgba(25,118,210,0.1)' : 'transparent',
-                        '&.Mui-selected': { 
-                          bgcolor: 'rgba(25,118,210,0.1)', 
-                          borderColor: 'primary.main' 
-                        }
+                        borderColor: 'primary.main !important'
                       }}
                     >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Box sx={{ width: 14, height: 2, bgcolor: 'primary.main', mx: 0.5 }}></Box>
-                        Linee Tendenza
-                      </Box>
+                      Trend
                     </ToggleButton>
                   </ToggleButtonGroup>
                 </Box>
               )}
             </Box>
-            <Box sx={{ height: 300, width: '100%', position: 'relative' }}>
+            <Box sx={{ height: { xs: 450, md: 400 }, width: '100%', position: 'relative' }}>
               {isLoading ? (
                 <Box display="flex" justifyContent="center" alignItems="center" height="100%">
                   <CircularProgress />
@@ -1653,15 +1614,15 @@ const Progress = ({ isEmbedded = false }) => {
                 </Box>
               ) : (
                 <>
-                  <Typography variant="caption" color="textSecondary" sx={{ mb: 1 }}>
-                    {`Visualizzazione di ${filteredChartData.length} allenamenti dal ${filteredChartData[0]?.date} al ${filteredChartData[filteredChartData.length-1]?.date}`}
+                  <Typography variant="caption" color="textSecondary" sx={{ mb: 1, display: 'block' }}>
+                    {`Dal ${filteredChartData[0]?.date} al ${filteredChartData[filteredChartData.length-1]?.date}`}
                   </Typography>
-                  <ResponsiveContainer width="100%" height={280}>
-                    <LineChart data={filteredChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
-                      <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
+                  <ResponsiveContainer width="100%" height="90%">
+                    <LineChart data={filteredChartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="date" fontSize={10} tick={{ fontSize: 10 }} />
+                      <YAxis yAxisId="left" orientation="left" stroke="#8884d8" fontSize={10} tick={{ fontSize: 10 }} width={35} />
+                      <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" fontSize={10} tick={{ fontSize: 10 }} width={35} />
                       <Tooltip 
                         content={({ active, payload, label }) => {
                           if (!active || !payload || !payload.length) return null;
@@ -1673,11 +1634,12 @@ const Progress = ({ isEmbedded = false }) => {
                           
                           return (
                             <div style={{ 
-                              backgroundColor: 'white', 
-                              padding: '10px', 
+                              backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                              padding: '8px', 
                               border: '1px solid #ccc',
                               borderRadius: '4px',
-                              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                              fontSize: '0.8rem'
                             }}>
                               <p style={{ margin: '0 0 5px 0', fontWeight: 'bold' }}>{label}</p>
                               {filteredPayload.map((entry, index) => {
@@ -1689,24 +1651,26 @@ const Progress = ({ isEmbedded = false }) => {
                                 } else if (entry.name === "Peso Medio") {
                                   valueDisplay = `${entry.value} kg/rep`;
                                 } else if (entry.name === "Indice di Progresso") {
-                                  valueDisplay = `${entry.value} (base 100)`;
+                                  valueDisplay = `${entry.value}`;
                                 } else if (entry.name === "Volume Medio per Serie") {
                                   valueDisplay = `${entry.value} kg/serie`;
                                 }
                                 
                                 return (
                                   <p key={`tooltip-${index}`} style={{ 
-                                    margin: '3px 0',
-                                    color: entry.color
+                                    margin: '2px 0',
+                                    color: entry.color,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '5px'
                                   }}>
                                     <span style={{ 
                                       display: 'inline-block', 
-                                      width: '10px', 
-                                      height: '10px', 
-                                      backgroundColor: entry.color,
-                                      marginRight: '5px'
+                                      width: '8px', 
+                                      height: '8px', 
+                                      backgroundColor: entry.color
                                     }}></span>
-                                    {nameDisplay}: {valueDisplay}
+                                    {nameDisplay}: <strong>{valueDisplay}</strong>
                                   </p>
                                 );
                               })}
@@ -1714,7 +1678,16 @@ const Progress = ({ isEmbedded = false }) => {
                           );
                         }}
                       />
-                      <Legend />
+                      <Legend 
+                        wrapperStyle={{ 
+                          fontSize: '10px', 
+                          paddingTop: '15px',
+                          display: 'flex',
+                          justifyContent: 'center',
+                          flexWrap: 'wrap'
+                        }} 
+                        iconSize={10}
+                      />
                       {visibleMetrics.volume && (
                         <Line
                           yAxisId="left"
@@ -1722,7 +1695,9 @@ const Progress = ({ isEmbedded = false }) => {
                           dataKey="volume"
                           name="Volume Totale"
                           stroke="#8884d8"
-                          activeDot={{ r: 8 }}
+                          strokeWidth={2}
+                          dot={{ r: 3 }}
+                          activeDot={{ r: 6 }}
                         />
                       )}
                       {visibleMetrics.avgWeight && (
@@ -1732,6 +1707,8 @@ const Progress = ({ isEmbedded = false }) => {
                           dataKey="avgWeight"
                           name="Peso Medio"
                           stroke="#82ca9d"
+                          strokeWidth={2}
+                          dot={{ r: 3 }}
                           activeDot={{ r: 6 }}
                         />
                       )}
@@ -1742,6 +1719,8 @@ const Progress = ({ isEmbedded = false }) => {
                           dataKey="volumePerSet"
                           name="Volume Medio per Serie"
                           stroke="#ff9800"
+                          strokeWidth={2}
+                          dot={{ r: 3 }}
                           activeDot={{ r: 6 }}
                         />
                       )}
@@ -1750,9 +1729,9 @@ const Progress = ({ isEmbedded = false }) => {
                           yAxisId="left"
                           type="monotone"
                           dataKey="trendVolume"
-                          name="Linea di Tendenza Volume"
+                          name="Tendenza Volume"
                           stroke="#8884d8"
-                          strokeWidth={2}
+                          strokeWidth={1}
                           strokeOpacity={0.6}
                           dot={false}
                           activeDot={false}
@@ -1764,9 +1743,9 @@ const Progress = ({ isEmbedded = false }) => {
                           yAxisId="right"
                           type="monotone"
                           dataKey="trendAvgWeight"
-                          name="Linea di Tendenza Peso Medio"
+                          name="Tendenza Peso Medio"
                           stroke="#82ca9d"
-                          strokeWidth={2}
+                          strokeWidth={1}
                           strokeOpacity={0.6}
                           dot={false}
                           activeDot={false}
@@ -1778,9 +1757,9 @@ const Progress = ({ isEmbedded = false }) => {
                           yAxisId="left"
                           type="monotone"
                           dataKey="trendVolumePerSet"
-                          name="Linea di Tendenza Volume per Serie"
+                          name="Tendenza Volume per Serie"
                           stroke="#ff9800"
-                          strokeWidth={2}
+                          strokeWidth={1}
                           strokeOpacity={0.6}
                           dot={false}
                           activeDot={false}
@@ -1794,8 +1773,9 @@ const Progress = ({ isEmbedded = false }) => {
                           dataKey="compositeIndex"
                           name="Indice di Progresso"
                           stroke="#9c27b0"
-                          strokeWidth={3}
-                          activeDot={{ r: 8 }}
+                          strokeWidth={2}
+                          dot={{ r: 3 }}
+                          activeDot={{ r: 6 }}
                         />
                       )}
                       {visibleMetrics.trendLines && visibleMetrics.compositeIndex && (
@@ -1803,9 +1783,9 @@ const Progress = ({ isEmbedded = false }) => {
                           yAxisId="left"
                           type="monotone"
                           dataKey="trendComposite"
-                          name="Linea di Tendenza Progresso"
+                          name="Tendenza Progresso"
                           stroke="#9c27b0"
-                          strokeWidth={2}
+                          strokeWidth={1}
                           strokeOpacity={0.6}
                           dot={false}
                           activeDot={false}
