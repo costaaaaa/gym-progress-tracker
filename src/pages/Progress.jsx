@@ -47,8 +47,8 @@ import AllInclusiveIcon from '@mui/icons-material/AllInclusive';
 import TuneIcon from '@mui/icons-material/Tune';
 
 const Progress = ({ isEmbedded = false }) => {
-  // Configurazione dei gruppi muscolari
-  const muscleGroups = ['Petto', 'Schiena', 'Gambe', 'Spalle', 'Bicipiti', 'Tricipiti', 'Polpacci', 'Addominali'];
+  // Configurazione dei gruppi muscolari (inizialmente vuota, popolata dal DB)
+  const [muscleGroups, setMuscleGroups] = useState([]);
   
   // Stati per gli esercizi caricati dal database
   const [exercisesByMuscleGroup, setExercisesByMuscleGroup] = useState({});
@@ -134,10 +134,10 @@ const Progress = ({ isEmbedded = false }) => {
 
   // Imposta il gruppo muscolare predefinito dopo che gli esercizi sono stati caricati
   useEffect(() => {
-    if (!loadingExercises && Object.keys(exercisesByMuscleGroup).length > 0) {
+    if (!loadingExercises && muscleGroups.length > 0) {
       setSelectedMuscleGroup(muscleGroups[0]);
     }
-  }, [loadingExercises, exercisesByMuscleGroup]);
+  }, [loadingExercises, muscleGroups]);
 
   // Imposta l'esercizio predefinito quando cambia il gruppo muscolare
   useEffect(() => {
@@ -202,6 +202,9 @@ const Progress = ({ isEmbedded = false }) => {
     updateVisibleWorkouts(exerciseStats);
   }, [exerciseStats, showAllWorkouts]);
 
+  // Funzione helper per rendere maiuscola la prima lettera
+  const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
+
   // Funzione per caricare gli esercizi dal database
   const fetchExercises = async () => {
     setLoadingExercises(true);
@@ -214,36 +217,30 @@ const Progress = ({ isEmbedded = false }) => {
       const data = await response.json();
       
       if (data.records && Array.isArray(data.records)) {
+        // Estraiamo i gruppi muscolari univoci e formattiamoli
+        const uniqueGroups = [...new Set(data.records.map(ex => capitalize(ex.muscle_group)))]
+          .filter(Boolean)
+          .sort();
+        
+        setMuscleGroups(uniqueGroups);
+
         // Organizziamo gli esercizi per gruppo muscolare
         const exercisesByGroup = {};
         
         // Inizializziamo i gruppi muscolari
-        muscleGroups.forEach(group => {
+        uniqueGroups.forEach(group => {
           exercisesByGroup[group] = [];
         });
         
         // Aggiungiamo gli esercizi ai rispettivi gruppi
         data.records.forEach(exercise => {
-          const muscleGroup = exercise.muscle_group;
+          const groupToUse = capitalize(exercise.muscle_group);
           
-          // Mappiamo i gruppi muscolari dal database ai gruppi dell'UI
-          let groupToUse = null;
-          
-          if (muscleGroup === 'petto') groupToUse = 'Petto';
-          else if (muscleGroup === 'schiena') groupToUse = 'Schiena';
-          else if (muscleGroup === 'spalle') groupToUse = 'Spalle';
-          else if (muscleGroup === 'bicipiti') groupToUse = 'Bicipiti';
-          else if (muscleGroup === 'tricipiti') groupToUse = 'Tricipiti';
-          else if (muscleGroup === 'gambe') groupToUse = 'Gambe';
-          else if (muscleGroup === 'polpacci') groupToUse = 'Polpacci';
-          else if (muscleGroup === 'addominali') groupToUse = 'Addominali';
-          
-          // Se il gruppo è mappato, aggiungiamo l'esercizio
-          if (groupToUse && muscleGroups.includes(groupToUse)) {
+          if (groupToUse && uniqueGroups.includes(groupToUse)) {
             exercisesByGroup[groupToUse].push({
               id: exercise.id,
               name: exercise.name,
-              originalGroup: muscleGroup // Conserviamo il gruppo originale per debugging
+              originalGroup: exercise.muscle_group
             });
           }
         });
@@ -255,12 +252,8 @@ const Progress = ({ isEmbedded = false }) => {
         
         setExercisesByMuscleGroup(exercisesByGroup);
       } else {
-        // Se non ci sono dati, utilizziamo una struttura vuota
-        const emptyExercises = {};
-        muscleGroups.forEach(group => {
-          emptyExercises[group] = [];
-        });
-        setExercisesByMuscleGroup(emptyExercises);
+        setMuscleGroups([]);
+        setExercisesByMuscleGroup({});
         
         setSnackbar({
           open: true,
@@ -276,12 +269,8 @@ const Progress = ({ isEmbedded = false }) => {
         severity: 'error'
       });
       
-      // In caso di errore, inizializziamo comunque la struttura
-      const emptyExercises = {};
-      muscleGroups.forEach(group => {
-        emptyExercises[group] = [];
-      });
-      setExercisesByMuscleGroup(emptyExercises);
+      setMuscleGroups([]);
+      setExercisesByMuscleGroup({});
     } finally {
       setLoadingExercises(false);
     }
@@ -1058,7 +1047,12 @@ const Progress = ({ isEmbedded = false }) => {
 
   // Funzione per ottenere il colore per ogni gruppo muscolare
   const getMuscleGroupColor = (group) => {
-    switch(group) {
+    if (!group) return 'primary.main';
+    
+    // Normalizziamo il gruppo per il confronto (Capitalized)
+    const normalizedGroup = capitalize(group);
+    
+    switch(normalizedGroup) {
       case 'Petto': return '#ef5350'; // rosso
       case 'Schiena': return '#42a5f5'; // blu
       case 'Gambe': return '#66bb6a'; // verde
@@ -1067,7 +1061,15 @@ const Progress = ({ isEmbedded = false }) => {
       case 'Tricipiti': return '#7e57c2'; // indaco
       case 'Polpacci': return '#26a69a'; // verde acqua
       case 'Addominali': return '#ffa726'; // ambra
-      default: return 'primary.main';
+      default: {
+        // Genera un colore deterministico basato sul nome se non è tra quelli predefiniti
+        let hash = 0;
+        for (let i = 0; i < normalizedGroup.length; i++) {
+          hash = normalizedGroup.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+        return "#" + "00000".substring(0, 6 - c.length) + c;
+      }
     }
   };
 

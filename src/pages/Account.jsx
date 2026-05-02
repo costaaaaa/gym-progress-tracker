@@ -55,7 +55,8 @@ import {
   Wc as WcIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { format, parseISO, subYears, startOfToday } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
@@ -76,12 +77,15 @@ const Account = () => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [workoutCount, setWorkoutCount] = useState(0);
+  const [plansCount, setPlansCount] = useState(0);
   const [joinDate, setJoinDate] = useState(null);
   
   // Stati per il profilo fisico
   const [age, setAge] = useState('');
   const [gender, setGender] = useState('M');
   const [experienceYears, setExperienceYears] = useState('');
+  const [birthDate, setBirthDate] = useState(null);
+  const [trainingStartDate, setTrainingStartDate] = useState(null);
   const [updatingProfile, setUpdatingProfile] = useState(false);
   
   // Stati per la modifica della password
@@ -219,7 +223,10 @@ const Account = () => {
     setOpenExportDialog(true);
     setExportWorkouts(true);
     setExportPlans(true);
-    // Non resettiamo tutto qui per permettere all'utente di riprovare senza ricaricare
+    // Avviamo il caricamento dei dati se non sono già stati caricati
+    if (!dataLoaded) {
+      fetchExportData();
+    }
   };
   
   const handleCloseExportDialog = () => {
@@ -249,6 +256,10 @@ const fetchExportData = React.useCallback(async () => {
         if (data.records && Array.isArray(data.records)) {
           loadedWorkouts = data.records;
           setWorkoutData(data.records);
+          setWorkoutCount(data.records.length);
+        } else {
+          setWorkoutData([]);
+          setWorkoutCount(0);
         }
       }
     }
@@ -265,6 +276,10 @@ const fetchExportData = React.useCallback(async () => {
         if (data.records && Array.isArray(data.records)) {
           loadedPlans = data.records;
           setPlansData(data.records);
+          setPlansCount(data.records.length);
+        } else {
+          setPlansData([]);
+          setPlansCount(0);
         }
       }
     }
@@ -282,7 +297,7 @@ const fetchExportData = React.useCallback(async () => {
   } finally {
     setExportLoading(false);
   }
-}, [exportWorkouts, exportPlans, setWorkoutData, setPlansData, setDataLoaded, setExportLoading]);
+}, [exportWorkouts, exportPlans, setWorkoutData, setPlansData, setDataLoaded, setExportLoading, setWorkoutCount, setPlansCount]);
   
   // Funzione per scaricare i dati selezionati
   const handleDownloadData = async () => {
@@ -352,6 +367,7 @@ const fetchExportData = React.useCallback(async () => {
     if (user) {
       fetchUserData();
       fetchWorkoutCount();
+      fetchPlansCount();
     } else {
       // Se l'utente non è autenticato, imposta loading a false per evitare il caricamento infinito
       setLoading(false);
@@ -384,6 +400,8 @@ const fetchExportData = React.useCallback(async () => {
       setAge(userDetails.age || '');
       setGender(userDetails.gender || 'M');
       setExperienceYears(userDetails.experience_years || '');
+      setBirthDate(userDetails.birth_date ? parseISO(userDetails.birth_date) : null);
+      setTrainingStartDate(userDetails.training_start_date ? parseISO(userDetails.training_start_date) : null);
 
       // Impostazione timer
       if (userDetails.rest_timer_enabled !== undefined) {
@@ -430,6 +448,28 @@ const fetchExportData = React.useCallback(async () => {
       setWorkoutCount(0);
     }
   };
+
+  // Funzione per recuperare il conteggio delle schede
+  const fetchPlansCount = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}api/workout/read_plans.php`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.records && Array.isArray(data.records)) {
+          setPlansCount(data.records.length);
+        } else {
+          setPlansCount(0);
+        }
+      }
+    } catch (error) {
+      console.error('Errore nel conteggio delle schede:', error);
+      setPlansCount(0);
+    }
+  };
   const handleUpdateProfile = async () => {
     setUpdatingProfile(true);
     try {
@@ -439,14 +479,18 @@ const fetchExportData = React.useCallback(async () => {
         credentials: 'include',
         body: JSON.stringify({
           rest_timer_enabled: restTimerEnabled,
-          age: age === '' ? null : parseInt(age),
+          birth_date: birthDate ? format(birthDate, 'yyyy-MM-dd') : null,
           gender: gender,
-          experience_years: experienceYears === '' ? null : parseFloat(experienceYears)
+          training_start_date: trainingStartDate ? format(trainingStartDate, 'yyyy-MM-01') : null
         })
       });
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
+      
+      // Aggiorna i valori calcolati restituiti dal server
+      if (data.age !== undefined) setAge(data.age);
+      if (data.experience_years !== undefined) setExperienceYears(data.experience_years);
 
       setSnackbar({
         open: true,
@@ -477,6 +521,22 @@ const fetchExportData = React.useCallback(async () => {
   const handleClosePasswordDialog = () => {
     setOpenPasswordDialog(false);
   };
+
+  // Validazione sicurezza password
+  const validatePassword = (pass) => {
+    const minLength = pass.length >= 8;
+    const hasUpper = /[A-Z]/.test(pass);
+    const hasLower = /[a-z]/.test(pass);
+    const hasNumber = /[0-9]/.test(pass);
+    const hasSpecial = /[!@#$%^&*]/.test(pass);
+
+    if (!minLength) return "La password deve contenere almeno 8 caratteri";
+    if (!hasUpper) return "La password deve contenere almeno una lettera maiuscola";
+    if (!hasLower) return "La password deve contenere almeno una lettera minuscola";
+    if (!hasNumber) return "La password deve contenere almeno un numero";
+    if (!hasSpecial) return "La password deve contenere almeno un carattere speciale (!@#$%^&*)";
+    return null;
+  };
   
   const handleChangePassword = async () => {
     // Validazione
@@ -490,8 +550,10 @@ const fetchExportData = React.useCallback(async () => {
       return;
     }
     
-    if (newPassword.length < 8) {
-      setPasswordError('La nuova password deve essere lunga almeno 8 caratteri');
+    // Validazione sicurezza nuova password
+    const passwordValidationError = validatePassword(newPassword);
+    if (passwordValidationError) {
+      setPasswordError(passwordValidationError);
       return;
     }
     
@@ -709,25 +771,23 @@ const fetchExportData = React.useCallback(async () => {
               mb: 2
             }}>
               <Grid container spacing={2} alignItems="flex-start">
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    label="Età"
-                    type="number"
-                    fullWidth
-                    size="small"
-                    value={age}
-                    onChange={(e) => setAge(e.target.value)}
-                    sx={{
-                      '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
-                        display: 'none',
-                      },
-                      '& input[type=number]': {
-                        MozAppearance: 'textfield',
-                      },
+                <Grid item xs={12} sm={6}>
+                  <DatePicker
+                    label="Data di Nascita"
+                    value={birthDate}
+                    onChange={(newValue) => setBirthDate(newValue)}
+                    minDate={subYears(startOfToday(), 100)}
+                    maxDate={startOfToday()}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        size: "small",
+                        helperText: age ? `Età attuale: ${age} anni` : 'Calcolata automaticamente'
+                      }
                     }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid item xs={12} sm={6}>
                   <FormControl fullWidth size="small">
                     <InputLabel id="gender-label">Sesso</InputLabel>
                     <Select
@@ -742,22 +802,21 @@ const fetchExportData = React.useCallback(async () => {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    label="Anni Esperienza"
-                    type="number"
-                    fullWidth
-                    size="small"
-                    value={experienceYears}
-                    onChange={(e) => setExperienceYears(e.target.value)}
-                    inputProps={{ step: 0.5 }}
-                    sx={{
-                      '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
-                        display: 'none',
-                      },
-                      '& input[type=number]': {
-                        MozAppearance: 'textfield',
-                      },
+                <Grid item xs={12}>
+                  <DatePicker
+                    label="Mese Inizio Allenamento"
+                    value={trainingStartDate}
+                    onChange={(newValue) => setTrainingStartDate(newValue)}
+                    views={['year', 'month']}
+                    openTo="month"
+                    minDate={birthDate || undefined}
+                    maxDate={startOfToday()}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        size: "small",
+                        helperText: experienceYears ? `Esperienza: ${experienceYears} anni` : 'Mese e anno di inizio'
+                      }
                     }}
                   />
                 </Grid>
@@ -1170,7 +1229,7 @@ const fetchExportData = React.useCallback(async () => {
               label={
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   <DescriptionIcon sx={{ mr: 1, color: 'primary.main' }} />
-                  <Typography>Schede di Allenamento ({plansData.length})</Typography>
+                  <Typography>Schede di Allenamento ({plansData.length || plansCount})</Typography>
                 </Box>
               }
             />

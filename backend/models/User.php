@@ -17,6 +17,28 @@ class User
     public $age;
     public $gender;
     public $experience_years;
+    public $birth_date;
+    public $training_start_date;
+
+    // Helper per calcolare l'età dalla data di nascita
+    public function calculateAge()
+    {
+        if (!$this->birth_date) return null;
+        $birthDate = new DateTime($this->birth_date);
+        $today = new DateTime();
+        return $today->diff($birthDate)->y;
+    }
+
+    // Helper per calcolare gli anni di esperienza dalla data di inizio allenamento
+    public function calculateExperienceYears()
+    {
+        if (!$this->training_start_date) return 0;
+        $startDate = new DateTime($this->training_start_date);
+        $today = new DateTime();
+        $diff = $today->diff($startDate);
+        // Calcola anni + frazione di anno (mesi / 12)
+        return $diff->y + round($diff->m / 12, 1);
+    }
 
     // Constructor with database connection
     public function __construct($db)
@@ -63,9 +85,9 @@ class User
                         username = :username,
                         email = :email,
                         password = :password,
-                        age = :age,
+                        birth_date = :birth_date,
                         gender = :gender,
-                        experience_years = :experience_years";
+                        training_start_date = :training_start_date";
 
             // Prepare query
             $stmt = $this->conn->prepare($query);
@@ -74,9 +96,9 @@ class User
             $stmt->bindParam(":username", $this->username);
             $stmt->bindParam(":email", $this->email);
             $stmt->bindParam(":password", $password_hash);
-            $stmt->bindParam(":age", $this->age);
+            $stmt->bindParam(":birth_date", $this->birth_date);
             $stmt->bindParam(":gender", $this->gender);
-            $stmt->bindParam(":experience_years", $this->experience_years);
+            $stmt->bindParam(":training_start_date", $this->training_start_date);
 
             // Execute query
             if ($stmt->execute()) {
@@ -290,7 +312,7 @@ class User
     }
     public function readById($id)
     {
-        $query = "SELECT id, username, email, created_at, rest_timer_enabled, age, gender, experience_years FROM " . $this->table_name . " WHERE id = ? LIMIT 1";
+        $query = "SELECT id, username, email, created_at, rest_timer_enabled, birth_date, gender, training_start_date FROM " . $this->table_name . " WHERE id = ? LIMIT 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(1, $id);
         $stmt->execute();
@@ -302,16 +324,20 @@ class User
             $this->email = $row['email'];
             $this->created_at = $row['created_at'];
             $this->rest_timer_enabled = (bool)$row['rest_timer_enabled'];
-            $this->age = $row['age'];
+            $this->birth_date = $row['birth_date'];
             $this->gender = $row['gender'];
-            $this->experience_years = $row['experience_years'];
+            $this->training_start_date = $row['training_start_date'];
+            
+            // Calcolo dinamico per il frontend
+            $this->age = $this->calculateAge();
+            $this->experience_years = $this->calculateExperienceYears();
             return true;
         }
         return false;
     }
 
     // Aggiorna le impostazioni del profilo dell'utente
-    public function updateProfile($rest_timer_enabled, $age = null, $gender = null, $experience_years = null)
+    public function updateProfile($rest_timer_enabled, $birth_date = null, $gender = null, $training_start_date = null)
     {
         if (!$this->id) {
             error_log("Update profile failed: No user ID provided");
@@ -320,9 +346,9 @@ class User
 
         $query = "UPDATE " . $this->table_name . " 
                  SET rest_timer_enabled = :rest_timer_enabled, 
-                     age = :age, 
+                     birth_date = :birth_date, 
                      gender = :gender, 
-                     experience_years = :experience_years,
+                     training_start_date = :training_start_date,
                      updated_at = NOW() 
                  WHERE id = :id";
 
@@ -330,16 +356,20 @@ class User
 
         $timer_value = $rest_timer_enabled ? 1 : 0;
         $stmt->bindParam(':rest_timer_enabled', $timer_value, PDO::PARAM_INT);
-        $stmt->bindParam(':age', $age, PDO::PARAM_INT);
+        $stmt->bindParam(':birth_date', $birth_date);
         $stmt->bindParam(':gender', $gender);
-        $stmt->bindParam(':experience_years', $experience_years);
+        $stmt->bindParam(':training_start_date', $training_start_date);
         $stmt->bindParam(':id', $this->id);
 
         if ($stmt->execute()) {
             $this->rest_timer_enabled = (bool)$rest_timer_enabled;
-            $this->age = $age;
+            $this->birth_date = $birth_date;
             $this->gender = $gender;
-            $this->experience_years = $experience_years;
+            $this->training_start_date = $training_start_date;
+            
+            // Aggiorna i calcoli
+            $this->age = $this->calculateAge();
+            $this->experience_years = $this->calculateExperienceYears();
             return true;
         }
 

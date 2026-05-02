@@ -137,6 +137,7 @@ backend/reset_password_temp.php
 backend/database/*.sql
 !backend/database/gym_progress_tracker_new.sql
 backend/database/update_user_recovery_fields.sql
+backend/database/run_migration.php
 backend/config/database.php
 backend/config/apple_health.php
 

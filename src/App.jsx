@@ -8,6 +8,9 @@ import Layout from './components/Layout';
 
 // Import Auth Provider
 import { AuthProvider } from './context/AuthContext';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { it } from 'date-fns/locale';
 
 // Lazy load Pages
 const Home = lazy(() => import('./pages/Home'));
@@ -27,41 +30,37 @@ const PageLoader = () => (
 
 function App() {
   return (
-    <AuthProvider>
-      <Router basename="/gym-progress-tracker-v2">
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            {/* Focus mode — full-screen senza Navbar */}
-            <Route path="/focus" element={<FocusWorkout />} />
-            
-            {/* Tutte le altre pagine con Layout (Navbar + Container) */}
-            <Route path="*" element={
-              <Layout>
-                <Suspense fallback={<PageLoader />}>
-                  <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/workouts" element={<Workouts />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/account" element={<Account />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    
-                    {/* Redirect per retrocompatibilità */}
-                    <Route path="/workout-plans" element={<Navigate to="/workouts?tab=plans" replace />} />
-                    <Route path="/workout-history" element={<Navigate to="/workouts?tab=history" replace />} />
-                    <Route path="/progress" element={<Navigate to="/dashboard?tab=progress" replace />} />
-                    <Route path="/body-stats" element={<Navigate to="/dashboard?tab=body" replace />} />
-                    
-                    {/* Fallback a Home per rotte non trovate */}
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
-                </Suspense>
-              </Layout>
-            } />
-          </Routes>
-        </Suspense>
-      </Router>
-    </AuthProvider>
+    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={it}>
+      <AuthProvider>
+        <Router basename="/gym-progress-tracker-v2">
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              {/* Focus mode — full-screen senza Navbar */}
+              <Route path="/focus" element={<FocusWorkout />} />
+              
+              {/* Tutte le altre pagine con Layout (Navbar + Container) */}
+              <Route element={<Layout />}>
+                <Route path="/" element={<Home />} />
+                <Route path="/workouts" element={<Workouts />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/account" element={<Account />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                
+                {/* Redirect per retrocompatibilità */}
+                <Route path="/workout-plans" element={<Navigate to="/workouts?tab=plans" replace />} />
+                <Route path="/workout-history" element={<Navigate to="/workouts?tab=history" replace />} />
+                <Route path="/progress" element={<Navigate to="/dashboard?tab=progress" replace />} />
+                <Route path="/body-stats" element={<Navigate to="/dashboard?tab=body" replace />} />
+                
+                {/* Fallback a Home per rotte non trovate */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Route>
+            </Routes>
+          </Suspense>
+        </Router>
+      </AuthProvider>
+    </LocalizationProvider>
   );
 }
 

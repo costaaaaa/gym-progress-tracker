@@ -245,6 +245,14 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                             onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'weight', e.target.value)}
                             fullWidth
                             size="small"
+                            sx={{
+                              '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                                display: 'none',
+                              },
+                              '& input[type=number]': {
+                                MozAppearance: 'textfield',
+                              },
+                            }}
                           />
                           <TextField
                             label="Ripetizioni"
