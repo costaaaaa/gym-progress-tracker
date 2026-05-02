@@ -54,13 +54,24 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Funzione di logout
-  const logout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('isLoggedIn');
-    setIsLoggedIn(false);
-    setUser(null);
-    // Utilizzo il path assoluto per il reindirizzamento
-    window.location.href = '/gym-progress-tracker-v2/login';
+  const logout = async () => {
+    try {
+      // Chiamata al backend per distruggere la sessione
+      await fetch(`${API_BASE_URL}api/user/logout.php`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.error('Errore durante il logout dal server:', error);
+    } finally {
+      // In ogni caso, puliamo lo stato locale
+      localStorage.removeItem('user');
+      localStorage.removeItem('isLoggedIn');
+      setIsLoggedIn(false);
+      setUser(null);
+      // Reindirizzamento alla pagina di login
+      window.location.href = '/gym-progress-tracker-v2/login';
+    }
   };
 
   // Intercetta le chiamate fetch per gestire sessioni scadute

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Typography, Paper, TextField, Button, Box, Alert, Link, InputAdornment, IconButton } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import SHA256 from 'crypto-js/sha256';
 import { useAuth } from '../context/AuthContext';
@@ -123,7 +123,7 @@ const Login = () => {
           <Box sx={{ textAlign: 'center', mt: 2 }}>
             <Typography variant="body2">
               Non hai un account?{' '}
-              <Link href="/register" variant="body2">
+              <Link component={RouterLink} to="/register" variant="body2">
                 Registrati
               </Link>
             </Typography>

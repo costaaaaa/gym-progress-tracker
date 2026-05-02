@@ -17,7 +17,9 @@ import {
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { format, subYears, startOfToday } from 'date-fns';
 import { API_BASE_URL } from '../config';
 import SHA256 from 'crypto-js/sha256';
 import { useAuth } from '../context/AuthContext';
@@ -27,14 +29,31 @@ const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [age, setAge] = useState('');
+  const [birthDate, setBirthDate] = useState(null);
   const [gender, setGender] = useState('M');
-  const [experienceYears, setExperienceYears] = useState('');
+  const [trainingStartDate, setTrainingStartDate] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Validazione sicurezza password
+  const validatePassword = (pass) => {
+    const minLength = pass.length >= 8;
+    const hasUpper = /[A-Z]/.test(pass);
+    const hasLower = /[a-z]/.test(pass);
+    const hasNumber = /[0-9]/.test(pass);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
+    
+    if (!minLength) return "La password deve contenere almeno 8 caratteri";
+    if (!hasUpper) return "La password deve contenere almeno una lettera maiuscola";
+    if (!hasLower) return "La password deve contenere almeno una lettera minuscola";
+    if (!hasNumber) return "La password deve contenere almeno un numero";
+    if (!hasSpecial) return "La password deve contenere almeno un carattere speciale (!@#$%^&*)";
+    
+    return null;
+  };
   
   const handleTogglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -51,14 +70,15 @@ const Register = () => {
     setError('');
     setSuccess('');
     
-    // Validate form
-    if (password !== confirmPassword) {
-      setError('Le password non corrispondono');
+    // Validazione sicurezza password
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
-    
-    if (password.length < 8) {
-      setError('La password deve contenere almeno 8 caratteri');
+
+    if (password !== confirmPassword) {
+      setError('Le password non corrispondono');
       return;
     }
     
@@ -77,9 +97,9 @@ const Register = () => {
           username,
           email,
           password: passwordHash,
-          age: age === '' ? null : parseInt(age),
+          birth_date: birthDate ? format(birthDate, 'yyyy-MM-dd') : null,
           gender,
-          experience_years: experienceYears === '' ? null : parseFloat(experienceYears),
+          training_start_date: trainingStartDate ? format(trainingStartDate, 'yyyy-MM-01') : null,
           is_hashed: true
         }),
         credentials: 'include'
@@ -157,19 +177,24 @@ const Register = () => {
             Profilo per il recupero muscolare
           </Typography>
           <Grid container spacing={2}>
-            <Grid item xs={4}>
-              <TextField
-                required
-                fullWidth
-                id="age"
-                label="Età"
-                name="age"
-                type="number"
-                value={age}
-                onChange={(e) => setAge(e.target.value)}
+            <Grid item xs={12} sm={6}>
+              <DatePicker
+                label="Data di Nascita"
+                value={birthDate}
+                onChange={(newValue) => setBirthDate(newValue)}
+                minDate={subYears(startOfToday(), 100)}
+                maxDate={startOfToday()}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    required: true,
+                    id: "birthDate",
+                    name: "birthDate"
+                  }
+                }}
               />
             </Grid>
-            <Grid item xs={4}>
+            <Grid item xs={12} sm={6}>
               <FormControl fullWidth>
                 <InputLabel>Sesso</InputLabel>
                 <Select
@@ -177,22 +202,29 @@ const Register = () => {
                   label="Sesso"
                   onChange={(e) => setGender(e.target.value)}
                 >
-                  <MenuItem value="M">M</MenuItem>
-                  <MenuItem value="F">F</MenuItem>
+                  <MenuItem value="M">Maschio</MenuItem>
+                  <MenuItem value="F">Femmina</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={4}>
-              <TextField
-                required
-                fullWidth
-                id="experienceYears"
-                label="Anni Esp."
-                name="experienceYears"
-                type="number"
-                inputProps={{ step: 0.5 }}
-                value={experienceYears}
-                onChange={(e) => setExperienceYears(e.target.value)}
+            <Grid item xs={12}>
+              <DatePicker
+                label="Mese Inizio Allenamento"
+                value={trainingStartDate}
+                onChange={(newValue) => setTrainingStartDate(newValue)}
+                views={['year', 'month']}
+                openTo="month"
+                minDate={birthDate || undefined}
+                maxDate={startOfToday()}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    required: true,
+                    id: "trainingStartDate",
+                    name: "trainingStartDate",
+                    helperText: "Seleziona mese e anno in cui hai iniziato"
+                  }
+                }}
               />
             </Grid>
           </Grid>
@@ -258,7 +290,7 @@ const Register = () => {
           <Box sx={{ textAlign: 'center', mt: 2 }}>
             <Typography variant="body2">
               Hai già un account?{' '}
-              <Link href="/login" variant="body2">
+              <Link component={RouterLink} to="/login" variant="body2">
                 Accedi
               </Link>
             </Typography>

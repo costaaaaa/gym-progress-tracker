@@ -378,6 +378,14 @@ const BodyStats = ({ isEmbedded = false }) => {
                 fullWidth 
                 value={formData.weight} 
                 onChange={handleInputChange} 
+                sx={{
+                  '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                    display: 'none',
+                  },
+                  '& input[type=number]': {
+                    MozAppearance: 'textfield',
+                  },
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={4}>
@@ -388,6 +396,14 @@ const BodyStats = ({ isEmbedded = false }) => {
                 fullWidth 
                 value={formData.body_fat_percentage} 
                 onChange={handleInputChange} 
+                sx={{
+                  '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                    display: 'none',
+                  },
+                  '& input[type=number]': {
+                    MozAppearance: 'textfield',
+                  },
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={4}>
@@ -398,6 +414,14 @@ const BodyStats = ({ isEmbedded = false }) => {
                 fullWidth 
                 value={formData.muscle_mass_percentage} 
                 onChange={handleInputChange} 
+                sx={{
+                  '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                    display: 'none',
+                  },
+                  '& input[type=number]': {
+                    MozAppearance: 'textfield',
+                  },
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={3}>
@@ -408,6 +432,14 @@ const BodyStats = ({ isEmbedded = false }) => {
                 fullWidth 
                 value={formData.chest_size} 
                 onChange={handleInputChange} 
+                sx={{
+                  '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                    display: 'none',
+                  },
+                  '& input[type=number]': {
+                    MozAppearance: 'textfield',
+                  },
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={3}>
@@ -418,6 +450,14 @@ const BodyStats = ({ isEmbedded = false }) => {
                 fullWidth 
                 value={formData.arm_size} 
                 onChange={handleInputChange} 
+                sx={{
+                  '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                    display: 'none',
+                  },
+                  '& input[type=number]': {
+                    MozAppearance: 'textfield',
+                  },
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={3}>
@@ -428,6 +468,14 @@ const BodyStats = ({ isEmbedded = false }) => {
                 fullWidth 
                 value={formData.waist_size} 
                 onChange={handleInputChange} 
+                sx={{
+                  '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                    display: 'none',
+                  },
+                  '& input[type=number]': {
+                    MozAppearance: 'textfield',
+                  },
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={3}>
@@ -438,6 +486,14 @@ const BodyStats = ({ isEmbedded = false }) => {
                 fullWidth 
                 value={formData.leg_size} 
                 onChange={handleInputChange} 
+                sx={{
+                  '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                    display: 'none',
+                  },
+                  '& input[type=number]': {
+                    MozAppearance: 'textfield',
+                  },
+                }}
               />
             </Grid>
           </Grid>

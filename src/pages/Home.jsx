@@ -279,32 +279,36 @@ const Home = () => {
                   <Grid item xs={6} sm={3}>
                     <Button 
                       fullWidth variant="outlined" component={RouterLink} to="/dashboard?tab=progress" 
-                      startIcon={<AssessmentIcon />} sx={{ py: 4, flexDirection: 'column', gap: 2, borderWidth: 2, '&:hover': { borderWidth: 2 } }}
+                      sx={{ py: 4, flexDirection: 'column', gap: 2, borderWidth: 2, '&:hover': { borderWidth: 2 } }}
                     >
+                      <AssessmentIcon fontSize="large" />
                       Progressi
                     </Button>
                   </Grid>
                   <Grid item xs={6} sm={3}>
                     <Button 
                       fullWidth variant="outlined" component={RouterLink} to="/dashboard?tab=body" 
-                      startIcon={<StraightenIcon />} sx={{ py: 4, flexDirection: 'column', gap: 2, borderWidth: 2, '&:hover': { borderWidth: 2 } }}
+                      sx={{ py: 4, flexDirection: 'column', gap: 2, borderWidth: 2, '&:hover': { borderWidth: 2 } }}
                     >
+                      <StraightenIcon fontSize="large" />
                       Misure
                     </Button>
                   </Grid>
                   <Grid item xs={6} sm={3}>
                     <Button 
                       fullWidth variant="outlined" component={RouterLink} to="/workouts?tab=history" 
-                      startIcon={<CalendarTodayIcon />} sx={{ py: 4, flexDirection: 'column', gap: 2, borderWidth: 2, '&:hover': { borderWidth: 2 } }}
+                      sx={{ py: 4, flexDirection: 'column', gap: 2, borderWidth: 2, '&:hover': { borderWidth: 2 } }}
                     >
+                      <CalendarTodayIcon fontSize="large" />
                       Storia
                     </Button>
                   </Grid>
                   <Grid item xs={6} sm={3}>
                     <Button 
                       fullWidth variant="outlined" component={RouterLink} to="/account" 
-                      startIcon={<HealthAndSafetyIcon />} sx={{ py: 4, flexDirection: 'column', gap: 2, borderWidth: 2, '&:hover': { borderWidth: 2 } }}
+                      sx={{ py: 4, flexDirection: 'column', gap: 2, borderWidth: 2, '&:hover': { borderWidth: 2 } }}
                     >
+                      <HealthAndSafetyIcon fontSize="large" />
                       Account
                     </Button>
                   </Grid>

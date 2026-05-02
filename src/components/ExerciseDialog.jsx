@@ -17,17 +17,8 @@ import {
 } from '@mui/material';
 import { API_BASE_URL } from '../config';
 
-// Normalizzo i nomi dei gruppi muscolari per essere coerenti con il resto dell'applicazione
-const muscleGroups = [
-  'Petto',
-  'Schiena',
-  'Spalle',
-  'Bicipiti',
-  'Tricipiti',
-  'Gambe',
-  'Polpacci',
-  'Addominali'
-];
+// Helper per rendere maiuscola la prima lettera
+const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
 
 export const INTENSITY_TECHNIQUES = [
   'Nessuna (Normale)',
@@ -54,23 +45,36 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
   });
 
   // Stato per gli esercizi caricati dal database
+  const [allExercises, setAllExercises] = useState([]);
+  const [availableMuscleGroups, setAvailableMuscleGroups] = useState([]);
   const [exercises, setExercises] = useState([]);
   const [loadingExercises, setLoadingExercises] = useState(false);
   const [filteredExercises, setFilteredExercises] = useState([]);
   const [inputValue, setInputValue] = useState('');
 
-  // Carica gli esercizi quando cambia il gruppo muscolare
+  // Carica tutti gli esercizi quando il dialog viene aperto per estrarre i gruppi muscolari
   useEffect(() => {
-    if (exercise.muscleGroup) {
-      fetchExercises(exercise.muscleGroup);
+    if (open) {
+      fetchAllExercises();
+    }
+  }, [open]);
+
+  // Filtra gli esercizi quando cambia il gruppo muscolare selezionato
+  useEffect(() => {
+    if (exercise.muscleGroup && allExercises.length > 0) {
+      const filtered = allExercises.filter(ex => 
+        capitalize(ex.muscle_group) === exercise.muscleGroup
+      );
+      setExercises(filtered);
+      setFilteredExercises(filtered);
     } else {
       setExercises([]);
       setFilteredExercises([]);
     }
-  }, [exercise.muscleGroup]);
+  }, [exercise.muscleGroup, allExercises]);
 
-  // Funzione per caricare gli esercizi dal database
-  const fetchExercises = async (muscleGroup) => {
+  // Funzione per caricare tutti gli esercizi dal database
+  const fetchAllExercises = async () => {
     setLoadingExercises(true);
     try {
       const response = await fetch(`${API_BASE_URL}api/exercise/read_all.php`, {
@@ -81,30 +85,22 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
       const data = await response.json();
       
       if (data.records && Array.isArray(data.records)) {
-        // Filtriamo gli esercizi per il gruppo muscolare selezionato
-        const filteredExercises = data.records.filter(ex => {
-          // Mappatura diretta dei gruppi muscolari
-          if (muscleGroup === 'Bicipiti') {
-            return ex.muscle_group === 'bicipiti';
-          } else if (muscleGroup === 'Tricipiti') {
-            return ex.muscle_group === 'tricipiti';
-          } else if (muscleGroup === 'Polpacci') {
-            return ex.muscle_group === 'polpacci';
-          }
-          // Per gli altri gruppi muscolari, confronto normale
-          return ex.muscle_group.toLowerCase() === muscleGroup.toLowerCase();
-        });
+        setAllExercises(data.records);
         
-        setExercises(filteredExercises);
-        setFilteredExercises(filteredExercises);
+        // Estraiamo i gruppi muscolari univoci e formattiamoli
+        const groups = [...new Set(data.records.map(ex => capitalize(ex.muscle_group)))]
+          .filter(Boolean)
+          .sort();
+        
+        setAvailableMuscleGroups(groups);
       } else {
-        setExercises([]);
-        setFilteredExercises([]);
+        setAllExercises([]);
+        setAvailableMuscleGroups([]);
       }
     } catch (error) {
       console.error('Errore nel caricamento degli esercizi:', error);
-      setExercises([]);
-      setFilteredExercises([]);
+      setAllExercises([]);
+      setAvailableMuscleGroups([]);
     } finally {
       setLoadingExercises(false);
     }
@@ -176,7 +172,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
               label="Gruppo Muscolare"
               onChange={handleChange}
             >
-              {muscleGroups.map((group) => (
+              {availableMuscleGroups.map((group) => (
                 <MenuItem key={group} value={group}>
                   {group}
                 </MenuItem>
@@ -221,6 +217,14 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
               value={exercise.sets}
               onChange={handleChange}
               fullWidth
+              sx={{
+                '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                  display: 'none',
+                },
+                '& input[type=number]': {
+                  MozAppearance: 'textfield',
+                },
+              }}
             />
             <TextField
               name="reps"
@@ -237,6 +241,14 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
               fullWidth
               value={exercise.rest}
               onChange={(e) => setExercise({ ...exercise, rest: e.target.value })}
+              sx={{
+                '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                  display: 'none',
+                },
+                '& input[type=number]': {
+                  MozAppearance: 'textfield',
+                },
+              }}
             />
           </Box>
           

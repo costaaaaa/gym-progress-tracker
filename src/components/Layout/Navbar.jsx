@@ -43,23 +43,9 @@ const Navbar = () => {
     setAnchorEl(null);
   };
 
-  const handleLogout = async () => {
-    try {
-      // Use process.env.PUBLIC_URL to ensure the API path is correct for the prova-gym subfolder
-      const apiUrl = `${process.env.PUBLIC_URL || ''}/backend/api/user/logout.php`;
-      await fetch(apiUrl, {
-        method: 'POST',
-        credentials: 'include'
-      });
-      
-      // Utilizziamo la funzione di logout dal context
-      logout();
-      
-      // Redirect to home
-      navigate('/');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+  const handleLogout = () => {
+    // Utilizziamo la funzione di logout dal context che gestisce tutto
+    logout();
   };
 
   const isActive = (path) => {
