@@ -29,6 +29,7 @@ import {
 } from '@mui/material';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { API_BASE_URL } from '../config';
+import { extractReps, estimateOneRepMax } from '../utils/workoutMetrics';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -97,6 +98,7 @@ const Progress = ({ isEmbedded = false }) => {
     volumePerSet: true,
     avgWeight: true,
     compositeIndex: true,
+    est1RM: true,
     trendLines: true
   });
 
@@ -656,43 +658,17 @@ const Progress = ({ isEmbedded = false }) => {
     };
   };
 
-  // Funzione per estrarre il numero di ripetizioni da una stringa
-  const extractRepsFromString = (repsString) => {
-    if (!repsString) return 0;
-    
-    // Se è già un numero, lo ritorniamo
-    if (!isNaN(repsString)) {
-      return parseInt(repsString) || 0;
-    }
-    
-    // Casi comuni: "8-10" prende il valore massimo (10)
-    if (repsString.includes('-')) {
-      const parts = repsString.split('-');
-      if (parts.length === 2) {
-        const max = parseInt(parts[1].trim());
-        if (!isNaN(max)) return max;
-      }
-    }
-    
-    // Estrai il primo numero che compare nella stringa
-    // Questo gestisce casi come "1 rest pause a 20" prendendo il 20 come numero di ripetizioni
-    const matches = repsString.match(/\d+/g);
-    if (matches && matches.length > 0) {
-      // Se ci sono più numeri, prendiamo il più grande come stima migliore
-      return Math.max(...matches.map(m => parseInt(m)));
-    }
-    
-    // Se non troviamo numeri, ritorniamo 0
-    return 0;
-  };
-  
+  // La logica di parsing delle ripetizioni è ora condivisa in utils/workoutMetrics.js
+  // (importata come `extractReps`).
+
   // Calcola la linea di tendenza (regressione lineare)
   const calculateTrendLine = (data) => {
-    if (data.length < 2) return data.map(point => ({ 
-      ...point, 
+    if (data.length < 2) return data.map(point => ({
+      ...point,
       trendVolume: point.volume,
       trendAvgWeight: point.avgWeight,
       trendVolumePerSet: point.volumePerSet,
+      trendOneRM: point.est1RM,
       compositeIndex: 100
     }));
     
@@ -751,6 +727,7 @@ const Progress = ({ isEmbedded = false }) => {
     const avgWeightRegression = calculateRegression(dataWithComposite, 'avgWeight');
     const volumePerSetRegression = calculateRegression(dataWithComposite, 'volumePerSet');
     const compositeRegression = calculateRegression(dataWithComposite, 'compositeIndex');
+    const oneRMRegression = calculateRegression(dataWithComposite, 'est1RM');
     
     console.log(`📈 Linea di tendenza volume: y = ${volumeRegression.m.toFixed(2)}x + ${volumeRegression.b.toFixed(2)}`);
     console.log(`📈 Linea di tendenza peso medio: y = ${avgWeightRegression.m.toFixed(2)}x + ${avgWeightRegression.b.toFixed(2)}`);
@@ -763,6 +740,7 @@ const Progress = ({ isEmbedded = false }) => {
       trendVolume: parseFloat((volumeRegression.m * index + volumeRegression.b).toFixed(2)),
       trendAvgWeight: parseFloat((avgWeightRegression.m * index + avgWeightRegression.b).toFixed(2)),
       trendVolumePerSet: parseFloat((volumePerSetRegression.m * index + volumePerSetRegression.b).toFixed(2)),
+      trendOneRM: parseFloat((oneRMRegression.m * index + oneRMRegression.b).toFixed(1)),
       trendComposite: parseFloat((compositeRegression.m * index + compositeRegression.b).toFixed(1))
     }));
   };
@@ -817,23 +795,28 @@ const Progress = ({ isEmbedded = false }) => {
         let totalWeight = 0;
         let totalReps = 0;
         let validSets = 0;
-        
+        let bestOneRM = 0;
+
         exerciseData.sets.forEach((set, i) => {
           const weight = parseFloat(set.weight) || 0;
-          // Utilizziamo la nuova funzione per estrarre le ripetizioni da stringhe di testo
-          const reps = extractRepsFromString(set.reps);
-          
+          // Utilizziamo la funzione condivisa per estrarre le ripetizioni da stringhe di testo
+          const reps = extractReps(set.reps);
+
           if (weight <= 0 || reps <= 0) {
             console.warn(`    ⚠️ Set ${i+1}: dati non validi - peso: ${set.weight}, ripetizioni: ${set.reps} (estratto: ${reps})`);
             return; // Salta questo set
           }
-          
+
           const setVolume = weight * reps;
           totalVolume += setVolume;
           totalWeight += weight;
           totalReps += reps;
           validSets++;
-          
+
+          // 1RM stimato (Epley): teniamo il migliore tra i set della sessione
+          const oneRM = estimateOneRepMax(weight, reps);
+          if (oneRM > bestOneRM) bestOneRM = oneRM;
+
           console.log(`    ✅ Set ${i+1}: ${reps} reps (da "${set.reps}") x ${weight} kg = ${setVolume} kg (volume)`);
         });
         
@@ -853,6 +836,7 @@ const Progress = ({ isEmbedded = false }) => {
           volume: parseFloat(totalVolume.toFixed(2)),
           avgWeight: parseFloat(avgWeightPerRep.toFixed(2)),
           volumePerSet: parseFloat(volumePerSet.toFixed(2)),
+          est1RM: parseFloat(bestOneRM.toFixed(1)),
           sets: validSets,
           totalReps
         });
@@ -1573,8 +1557,20 @@ const Progress = ({ isEmbedded = false }) => {
                     >
                       Index
                     </ToggleButton>
-                    <ToggleButton 
-                      value="trendLines" 
+                    <ToggleButton
+                      value="est1RM"
+                      selected={visibleMetrics.est1RM}
+                      onClick={() => setVisibleMetrics({...visibleMetrics, est1RM: !visibleMetrics.est1RM})}
+                      sx={{
+                        color: visibleMetrics.est1RM ? '#00897b' : 'text.secondary',
+                        bgcolor: visibleMetrics.est1RM ? 'rgba(0,137,123,0.1)' : 'transparent',
+                        borderColor: '#00897b !important'
+                      }}
+                    >
+                      1RM
+                    </ToggleButton>
+                    <ToggleButton
+                      value="trendLines"
                       selected={visibleMetrics.trendLines}
                       onClick={() => setVisibleMetrics({...visibleMetrics, trendLines: !visibleMetrics.trendLines})}
                       sx={{ 
@@ -1787,6 +1783,32 @@ const Progress = ({ isEmbedded = false }) => {
                           dataKey="trendComposite"
                           name="Tendenza Progresso"
                           stroke="#9c27b0"
+                          strokeWidth={1}
+                          strokeOpacity={0.6}
+                          dot={false}
+                          activeDot={false}
+                          strokeDasharray="5 5"
+                        />
+                      )}
+                      {visibleMetrics.est1RM && (
+                        <Line
+                          yAxisId="right"
+                          type="monotone"
+                          dataKey="est1RM"
+                          name="1RM stimato (kg)"
+                          stroke="#00897b"
+                          strokeWidth={2}
+                          dot={{ r: 3 }}
+                          activeDot={{ r: 6 }}
+                        />
+                      )}
+                      {visibleMetrics.trendLines && visibleMetrics.est1RM && (
+                        <Line
+                          yAxisId="right"
+                          type="monotone"
+                          dataKey="trendOneRM"
+                          name="Tendenza 1RM"
+                          stroke="#00897b"
                           strokeWidth={1}
                           strokeOpacity={0.6}
                           dot={false}
