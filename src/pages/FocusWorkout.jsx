@@ -57,6 +57,9 @@ import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeModeContext';
 import { useTheme } from '@mui/material/styles';
 import { API_BASE_URL } from '../config';
+import { hapticFeedback } from '../utils/vibration';
+import { INTENSITY_TECHNIQUES } from '../components/ExerciseDialog';
+import { buildExerciseHistoryIndex, detectPersonalRecords } from '../utils/workoutMetrics';
 
 const DRAFT_STORAGE_KEY = 'gym_focus_workout_draft';
 
@@ -92,6 +95,10 @@ const FocusWorkout = () => {
   const [selectedDayId, setSelectedDayId] = useState('');
   const [selectedDay, setSelectedDay] = useState(null);
   const [timerEnabled, setTimerEnabled] = useState(true);
+  // Indice dello storico per esercizio (ultima sessione + record personali),
+  // calcolato dallo storico allenamenti. Usato per il riferimento "Ultima volta"
+  // e per il rilevamento dei record (PR) nel riepilogo.
+  const [historyIndex, setHistoryIndex] = useState({});
 
   // Workout state
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
@@ -182,11 +189,23 @@ const FocusWorkout = () => {
         }
       }
 
-      // Carica piano attivo e impostazioni in parallelo
-      const [plansRes, userRes] = await Promise.all([
+      // Carica piano attivo, impostazioni e storico allenamenti in parallelo
+      const [plansRes, userRes, historyRes] = await Promise.all([
         fetch(`${API_BASE_URL}api/workout/read_plans.php`, { method: 'GET', credentials: 'include' }),
-        fetch(`${API_BASE_URL}api/user/read.php`, { method: 'GET', credentials: 'include' })
+        fetch(`${API_BASE_URL}api/user/read.php`, { method: 'GET', credentials: 'include' }),
+        fetch(`${API_BASE_URL}api/workout_history/read.php`, { method: 'GET', credentials: 'include' })
       ]);
+
+      // Lo storico è opzionale: se manca (404 = nessun allenamento) o fallisce,
+      // proseguiamo senza riferimenti/PR, senza bloccare il Focus Mode.
+      try {
+        if (historyRes.ok) {
+          const historyData = await historyRes.json();
+          setHistoryIndex(buildExerciseHistoryIndex(historyData.records || []));
+        }
+      } catch (e) {
+        console.warn('Storico non disponibile per i riferimenti:', e);
+      }
 
       if (!plansRes.ok) {
         let errorMessage = `Errore caricamento piani (${plansRes.status})`;
@@ -291,6 +310,28 @@ const FocusWorkout = () => {
     setSelectedDay(day || null);
   };
 
+  // ================================================
+  // RIFERIMENTO ULTIMA SESSIONE (SOVRACCARICO PROGRESSIVO)
+  // ================================================
+  // Ritorna i set dell'ultima sessione registrata per l'esercizio (o null).
+  // Match sul campo catalogo `exercise_id` (non `ex.id` che è il workout_exercise).
+  const getLastSession = useCallback((exercise) => {
+    if (!exercise) return null;
+    const entry = historyIndex[exercise.exercise_id];
+    return entry?.lastSession || null;
+  }, [historyIndex]);
+
+  // Peso suggerito = top set (peso più alto) dell'ultima sessione, come stringa.
+  const getSuggestedWeight = useCallback((exercise) => {
+    const last = getLastSession(exercise);
+    if (!last || !Array.isArray(last.sets) || last.sets.length === 0) return '';
+    const maxWeight = last.sets.reduce((m, s) => {
+      const w = parseFloat(s.weight) || 0;
+      return w > m ? w : m;
+    }, 0);
+    return maxWeight > 0 ? maxWeight.toString() : '';
+  }, [getLastSession]);
+
   const handleStartWorkout = () => {
     if (!selectedDay || !selectedDay.exercises || selectedDay.exercises.length === 0) return;
 
@@ -302,11 +343,11 @@ const FocusWorkout = () => {
     setWorkoutNotes('');
     setStartTime(new Date());
 
-    // Pre-compila reps dal piano
+    // Pre-compila reps dal piano e peso dall'ultima sessione (sovraccarico progressivo)
     const firstExercise = selectedDay.exercises[0];
     setRepsInput(firstExercise.reps || '');
     setIntensityTechniqueInput(firstExercise.intensity_technique || '');
-    setWeightInput('');
+    setWeightInput(getSuggestedWeight(firstExercise));
 
     setPhase('workout');
     hapticFeedback.medium();
@@ -383,16 +424,27 @@ const FocusWorkout = () => {
         const nextExercise = selectedDay.exercises[nextIndex];
         setRepsInput(nextExercise?.reps || '');
         setIntensityTechniqueInput(nextExercise?.intensity_technique || '');
-        setWeightInput('');
+        setWeightInput(getSuggestedWeight(nextExercise));
         setExerciseTransition(true);
       }, 200);
     }
-  }, [currentExerciseIndex, totalExercises, skippedExercises, selectedDay]);
+  }, [currentExerciseIndex, totalExercises, skippedExercises, selectedDay, getSuggestedWeight]);
 
   const handleSkipExercise = () => {
     setSkippedExercises(prev => [...prev, currentExerciseIndex]);
     goToNextExercise();
   };
+
+  // Feedback aptico extra quando si entra nel riepilogo con almeno un record personale
+  useEffect(() => {
+    if (phase !== 'summary' || !selectedDay) return;
+    const hasPR = selectedDay.exercises?.some((ex) => {
+      const sets = completedSets[ex.id];
+      if (!sets || sets.length === 0) return false;
+      return detectPersonalRecords(sets, historyIndex[ex.exercise_id]).isPR;
+    });
+    if (hasPR) hapticFeedback.success();
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ================================================
   // TIMER DI RECUPERO
@@ -835,6 +887,30 @@ const FocusWorkout = () => {
                 SERIE {currentSetIndex + 1} DI {totalSetsForCurrentExercise}
               </Typography>
 
+              {(() => {
+                const last = getLastSession(currentExercise);
+                if (!last || !Array.isArray(last.sets) || last.sets.length === 0) return null;
+                const summary = last.sets
+                  .map(s => `${parseFloat(s.weight)}kg×${s.reps}`)
+                  .join('  ·  ');
+                return (
+                  <Box sx={{
+                    display: 'flex', alignItems: 'center', gap: 1, mb: 2, px: 1.5, py: 1,
+                    borderRadius: 2, bgcolor: colors.bgElevated, border: `1px solid ${colors.border}`
+                  }}>
+                    <HistoryIcon sx={{ fontSize: 18, color: colors.textMuted }} />
+                    <Box>
+                      <Typography variant="caption" sx={{ color: colors.textMuted, letterSpacing: 0.5 }}>
+                        ULTIMA VOLTA
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: colors.textSecondary, fontWeight: 600 }}>
+                        {summary}
+                      </Typography>
+                    </Box>
+                  </Box>
+                );
+              })()}
+
               <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                 <TextField label="Peso (kg)" type="number" value={weightInput} onChange={(e) => setWeightInput(e.target.value)}
                   fullWidth autoFocus inputProps={{ step: 0.5, min: 0, inputMode: 'decimal' }}
@@ -965,9 +1041,25 @@ const FocusWorkout = () => {
               {selectedDay?.exercises?.map((exercise) => {
                 const sets = completedSets[exercise.id];
                 if (!sets || sets.length === 0) return null;
+                // Confronto con lo storico PRIMA di questa sessione → record personali
+                const pr = detectPersonalRecords(sets, historyIndex[exercise.exercise_id]);
+                const prParts = [];
+                if (pr.weight) prParts.push('peso');
+                if (pr.oneRM) prParts.push('1RM');
+                if (pr.volume) prParts.push('volume');
                 return (
                   <Box key={exercise.id} sx={{ px: 2, py: 2, borderBottom: `1px solid ${colors.border}` }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1, color: colors.text }}>{exercise.exercise_name}</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, mb: 1 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600, color: colors.text }}>{exercise.exercise_name}</Typography>
+                      {pr.isPR && (
+                        <Chip
+                          icon={<TrophyIcon sx={{ fontSize: 16, color: `${colors.warning} !important` }} />}
+                          label={`Nuovo record${prParts.length ? ` (${prParts.join(', ')})` : ''}`}
+                          size="small"
+                          sx={{ bgcolor: 'rgba(255, 167, 38, 0.15)', color: colors.warning, fontWeight: 700, fontSize: '0.7rem' }}
+                        />
+                      )}
+                    </Box>
                     <TableContainer>
                       <Table size="small">
                         <TableHead>
@@ -1052,7 +1144,6 @@ const FocusWorkout = () => {
       }
     }} />
     {renderContent()}
-...
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
