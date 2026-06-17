@@ -47,6 +47,76 @@ import EventNoteIcon from '@mui/icons-material/EventNote';
 import AllInclusiveIcon from '@mui/icons-material/AllInclusive';
 import TuneIcon from '@mui/icons-material/Tune';
 
+// ============================================================================
+// Configurazione dei grafici di progressione.
+// Le metriche sono raggruppate per FAMIGLIA di unità di misura, così ogni
+// grafico usa un solo asse Y coerente ed evita lo schiacciamento delle scale
+// (es. l'indice 0-100 non viene più appiattito dal volume in migliaia di kg).
+// ============================================================================
+
+// Definizione di ogni serie: chiave dato, chiave linea di tendenza, etichetta,
+// colore (palette invariata) e unità mostrata nel tooltip.
+const METRIC_SERIES = {
+  est1RM:         { dataKey: 'est1RM',         trendKey: 'trendOneRM',        name: '1RM stimato (kg)',       color: '#00897b', unit: 'kg' },
+  avgWeight:      { dataKey: 'avgWeight',      trendKey: 'trendAvgWeight',    name: 'Peso Medio',             color: '#82ca9d', unit: 'kg/rep' },
+  volume:         { dataKey: 'volume',         trendKey: 'trendVolume',       name: 'Volume Totale',          color: '#8884d8', unit: 'kg' },
+  volumePerSet:   { dataKey: 'volumePerSet',   trendKey: 'trendVolumePerSet', name: 'Volume Medio per Serie', color: '#ff9800', unit: 'kg/serie' },
+  compositeIndex: { dataKey: 'compositeIndex', trendKey: 'trendComposite',    name: 'Indice di Progresso',    color: '#9c27b0', unit: '' },
+};
+
+// Gruppi di grafici: ogni gruppo diventa un grafico separato con asse dedicato.
+const CHART_GROUPS = [
+  { id: 'forza',  title: 'Forza',               metrics: ['est1RM', 'avgWeight'] },
+  { id: 'volume', title: 'Volume',              metrics: ['volume', 'volumePerSet'] },
+  { id: 'indice', title: 'Indice di Progresso', metrics: ['compositeIndex'] },
+];
+
+// Tooltip condiviso da tutti i grafici: nasconde le linee di tendenza e
+// formatta i valori con l'unità corretta (incluso il 1RM in kg).
+const NAME_TO_UNIT = Object.values(METRIC_SERIES).reduce((acc, s) => {
+  acc[s.name] = s.unit;
+  return acc;
+}, {});
+
+const renderChartTooltip = ({ active, payload, label }) => {
+  if (!active || !payload || !payload.length) return null;
+  const filteredPayload = payload.filter((p) => !p.name.includes('Tendenza'));
+  if (filteredPayload.length === 0) return null;
+  return (
+    <div style={{
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      padding: '8px',
+      border: '1px solid #ccc',
+      borderRadius: '4px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      fontSize: '0.8rem'
+    }}>
+      <p style={{ margin: '0 0 5px 0', fontWeight: 'bold' }}>{label}</p>
+      {filteredPayload.map((entry, index) => {
+        const unit = NAME_TO_UNIT[entry.name];
+        const valueDisplay = unit ? `${entry.value} ${unit}` : `${entry.value}`;
+        return (
+          <p key={`tooltip-${index}`} style={{
+            margin: '2px 0',
+            color: entry.color,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px'
+          }}>
+            <span style={{
+              display: 'inline-block',
+              width: '8px',
+              height: '8px',
+              backgroundColor: entry.color
+            }}></span>
+            {entry.name}: <strong>{valueDisplay}</strong>
+          </p>
+        );
+      })}
+    </div>
+  );
+};
+
 const Progress = ({ isEmbedded = false }) => {
   // Configurazione dei gruppi muscolari (inizialmente vuota, popolata dal DB)
   const [muscleGroups, setMuscleGroups] = useState([]);
@@ -1585,13 +1655,13 @@ const Progress = ({ isEmbedded = false }) => {
                 </Box>
               )}
             </Box>
-            <Box sx={{ height: { xs: 450, md: 400 }, width: '100%', position: 'relative' }}>
+            <Box sx={{ minHeight: 400, width: '100%', position: 'relative' }}>
               {isLoading ? (
-                <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+                <Box display="flex" justifyContent="center" alignItems="center" height={400}>
                   <CircularProgress />
                 </Box>
               ) : chartData.length === 0 ? (
-                <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" height="100%">
+                <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" height={400}>
                   <FitnessCenterIcon sx={{ fontSize: 50, color: 'text.secondary', mb: 2, opacity: 0.5 }} />
                   <Typography align="center" color="textSecondary" variant="h6" sx={{ mb: 1 }}>
                     {debugMessage || "Nessun allenamento registrato"}
@@ -1601,7 +1671,7 @@ const Progress = ({ isEmbedded = false }) => {
                   </Typography>
                 </Box>
               ) : filteredChartData.length === 0 ? (
-                <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" height="100%">
+                <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" height={400}>
                   <FitnessCenterIcon sx={{ fontSize: 50, color: 'text.secondary', mb: 2, opacity: 0.5 }} />
                   <Typography align="center" color="textSecondary" variant="h6" sx={{ mb: 1 }}>
                     Nessun dato nell'intervallo selezionato
@@ -1615,209 +1685,69 @@ const Progress = ({ isEmbedded = false }) => {
                   <Typography variant="caption" color="textSecondary" sx={{ mb: 1, display: 'block' }}>
                     {`Dal ${filteredChartData[0]?.date} al ${filteredChartData[filteredChartData.length-1]?.date}`}
                   </Typography>
-                  <ResponsiveContainer width="100%" height="90%">
-                    <LineChart data={filteredChartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="date" fontSize={10} tick={{ fontSize: 10 }} />
-                      <YAxis yAxisId="left" orientation="left" stroke="#8884d8" fontSize={10} tick={{ fontSize: 10 }} width={35} />
-                      <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" fontSize={10} tick={{ fontSize: 10 }} width={35} />
-                      <Tooltip 
-                        content={({ active, payload, label }) => {
-                          if (!active || !payload || !payload.length) return null;
-                          
-                          // Filtra i payload per rimuovere le linee di tendenza
-                          const filteredPayload = payload.filter(p => !p.name.includes("Tendenza"));
-                          
-                          if (filteredPayload.length === 0) return null;
-                          
-                          return (
-                            <div style={{ 
-                              backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                              padding: '8px', 
-                              border: '1px solid #ccc',
-                              borderRadius: '4px',
-                              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                              fontSize: '0.8rem'
-                            }}>
-                              <p style={{ margin: '0 0 5px 0', fontWeight: 'bold' }}>{label}</p>
-                              {filteredPayload.map((entry, index) => {
-                                let valueDisplay = `${entry.value}`;
-                                let nameDisplay = entry.name;
-                                
-                                if (entry.name === "Volume Totale") {
-                                  valueDisplay = `${entry.value} kg`;
-                                } else if (entry.name === "Peso Medio") {
-                                  valueDisplay = `${entry.value} kg/rep`;
-                                } else if (entry.name === "Indice di Progresso") {
-                                  valueDisplay = `${entry.value}`;
-                                } else if (entry.name === "Volume Medio per Serie") {
-                                  valueDisplay = `${entry.value} kg/serie`;
-                                }
-                                
-                                return (
-                                  <p key={`tooltip-${index}`} style={{ 
-                                    margin: '2px 0',
-                                    color: entry.color,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '5px'
-                                  }}>
-                                    <span style={{ 
-                                      display: 'inline-block', 
-                                      width: '8px', 
-                                      height: '8px', 
-                                      backgroundColor: entry.color
-                                    }}></span>
-                                    {nameDisplay}: <strong>{valueDisplay}</strong>
-                                  </p>
-                                );
-                              })}
-                            </div>
-                          );
-                        }}
-                      />
-                      <Legend 
-                        wrapperStyle={{ 
-                          fontSize: '10px', 
-                          paddingTop: '15px',
-                          display: 'flex',
-                          justifyContent: 'center',
-                          flexWrap: 'wrap'
-                        }} 
-                        iconSize={10}
-                      />
-                      {visibleMetrics.volume && (
-                        <Line
-                          yAxisId="left"
-                          type="monotone"
-                          dataKey="volume"
-                          name="Volume Totale"
-                          stroke="#8884d8"
-                          strokeWidth={2}
-                          dot={{ r: 3 }}
-                          activeDot={{ r: 6 }}
-                        />
-                      )}
-                      {visibleMetrics.avgWeight && (
-                        <Line
-                          yAxisId="right" 
-                          type="monotone"
-                          dataKey="avgWeight"
-                          name="Peso Medio"
-                          stroke="#82ca9d"
-                          strokeWidth={2}
-                          dot={{ r: 3 }}
-                          activeDot={{ r: 6 }}
-                        />
-                      )}
-                      {visibleMetrics.volumePerSet && (
-                        <Line
-                          yAxisId="left"
-                          type="monotone"
-                          dataKey="volumePerSet"
-                          name="Volume Medio per Serie"
-                          stroke="#ff9800"
-                          strokeWidth={2}
-                          dot={{ r: 3 }}
-                          activeDot={{ r: 6 }}
-                        />
-                      )}
-                      {visibleMetrics.trendLines && visibleMetrics.volume && (
-                        <Line
-                          yAxisId="left"
-                          type="monotone"
-                          dataKey="trendVolume"
-                          name="Tendenza Volume"
-                          stroke="#8884d8"
-                          strokeWidth={1}
-                          strokeOpacity={0.6}
-                          dot={false}
-                          activeDot={false}
-                          strokeDasharray="5 5"
-                        />
-                      )}
-                      {visibleMetrics.trendLines && visibleMetrics.avgWeight && (
-                        <Line
-                          yAxisId="right"
-                          type="monotone"
-                          dataKey="trendAvgWeight"
-                          name="Tendenza Peso Medio"
-                          stroke="#82ca9d"
-                          strokeWidth={1}
-                          strokeOpacity={0.6}
-                          dot={false}
-                          activeDot={false}
-                          strokeDasharray="5 5"
-                        />
-                      )}
-                      {visibleMetrics.trendLines && visibleMetrics.volumePerSet && (
-                        <Line
-                          yAxisId="left"
-                          type="monotone"
-                          dataKey="trendVolumePerSet"
-                          name="Tendenza Volume per Serie"
-                          stroke="#ff9800"
-                          strokeWidth={1}
-                          strokeOpacity={0.6}
-                          dot={false}
-                          activeDot={false}
-                          strokeDasharray="5 5"
-                        />
-                      )}
-                      {visibleMetrics.compositeIndex && (
-                        <Line
-                          yAxisId="left"
-                          type="monotone"
-                          dataKey="compositeIndex"
-                          name="Indice di Progresso"
-                          stroke="#9c27b0"
-                          strokeWidth={2}
-                          dot={{ r: 3 }}
-                          activeDot={{ r: 6 }}
-                        />
-                      )}
-                      {visibleMetrics.trendLines && visibleMetrics.compositeIndex && (
-                        <Line
-                          yAxisId="left"
-                          type="monotone"
-                          dataKey="trendComposite"
-                          name="Tendenza Progresso"
-                          stroke="#9c27b0"
-                          strokeWidth={1}
-                          strokeOpacity={0.6}
-                          dot={false}
-                          activeDot={false}
-                          strokeDasharray="5 5"
-                        />
-                      )}
-                      {visibleMetrics.est1RM && (
-                        <Line
-                          yAxisId="right"
-                          type="monotone"
-                          dataKey="est1RM"
-                          name="1RM stimato (kg)"
-                          stroke="#00897b"
-                          strokeWidth={2}
-                          dot={{ r: 3 }}
-                          activeDot={{ r: 6 }}
-                        />
-                      )}
-                      {visibleMetrics.trendLines && visibleMetrics.est1RM && (
-                        <Line
-                          yAxisId="right"
-                          type="monotone"
-                          dataKey="trendOneRM"
-                          name="Tendenza 1RM"
-                          stroke="#00897b"
-                          strokeWidth={1}
-                          strokeOpacity={0.6}
-                          dot={false}
-                          activeDot={false}
-                          strokeDasharray="5 5"
-                        />
-                      )}
-                    </LineChart>
-                  </ResponsiveContainer>
+                  {CHART_GROUPS.map((group) => {
+                    // Un grafico per famiglia: mostriamo solo le metriche attive
+                    // del gruppo; se nessuna è attiva, saltiamo il grafico.
+                    const activeMetrics = group.metrics.filter((m) => visibleMetrics[m]);
+                    if (activeMetrics.length === 0) return null;
+                    return (
+                      <Box key={group.id} sx={{ mb: 2 }}>
+                        <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', display: 'block', mb: 0.5 }}>
+                          {group.title}
+                        </Typography>
+                        <ResponsiveContainer width="100%" height={200}>
+                          <LineChart data={filteredChartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="date" fontSize={10} tick={{ fontSize: 10 }} />
+                            <YAxis fontSize={10} tick={{ fontSize: 10 }} width={35} />
+                            <Tooltip content={renderChartTooltip} />
+                            <Legend
+                              wrapperStyle={{
+                                fontSize: '10px',
+                                paddingTop: '8px',
+                                display: 'flex',
+                                justifyContent: 'center',
+                                flexWrap: 'wrap'
+                              }}
+                              iconSize={10}
+                            />
+                            {activeMetrics.map((m) => {
+                              const s = METRIC_SERIES[m];
+                              return (
+                                <Line
+                                  key={s.dataKey}
+                                  type="monotone"
+                                  dataKey={s.dataKey}
+                                  name={s.name}
+                                  stroke={s.color}
+                                  strokeWidth={2}
+                                  dot={{ r: 3 }}
+                                  activeDot={{ r: 6 }}
+                                />
+                              );
+                            })}
+                            {visibleMetrics.trendLines && activeMetrics.map((m) => {
+                              const s = METRIC_SERIES[m];
+                              return (
+                                <Line
+                                  key={s.trendKey}
+                                  type="monotone"
+                                  dataKey={s.trendKey}
+                                  name={`Tendenza ${s.name}`}
+                                  stroke={s.color}
+                                  strokeWidth={1}
+                                  strokeOpacity={0.6}
+                                  dot={false}
+                                  activeDot={false}
+                                  strokeDasharray="5 5"
+                                />
+                              );
+                            })}
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </Box>
+                    );
+                  })}
                 </>
               )}
             </Box>
