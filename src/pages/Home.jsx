@@ -11,6 +11,7 @@ import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import LinearProgress from '@mui/material/LinearProgress';
 import BodyVisualizer from '../components/BodyVisualizer';
+import StreakCard from '../components/StreakCard';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 
@@ -136,6 +137,11 @@ const Home = () => {
             </Grid>
           ) : (
             <>
+              {/* Streak Gamification */}
+              <Grid item xs={12}>
+                <StreakCard />
+              </Grid>
+
               {/* Riepilogo Settimanale */}
               <Grid item xs={12} md={8}>
                 <Card sx={{ height: '100%', borderRadius: 3 }}>

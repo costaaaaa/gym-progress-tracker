@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useMemo, useEffect } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { red, grey } from '@mui/material/colors';
+import { grey } from '@mui/material/colors';
 import { GlobalStyles } from '@mui/material';
 
 const ThemeModeContext = createContext();
