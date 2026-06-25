@@ -18,8 +18,11 @@ import {
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { format, subYears, startOfToday } from 'date-fns';
+import { it } from 'date-fns/locale';
 import { API_BASE_URL } from '../config';
 import SHA256 from 'crypto-js/sha256';
 import { useAuth } from '../context/AuthContext';
@@ -176,6 +179,7 @@ const Register = () => {
           <Typography variant="subtitle2" sx={{ mt: 2, mb: 1, fontWeight: 'bold' }}>
             Profilo per il recupero muscolare
           </Typography>
+          <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={it}>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
               <DatePicker
@@ -228,6 +232,7 @@ const Register = () => {
               />
             </Grid>
           </Grid>
+          </LocalizationProvider>
 
           <TextField
             margin="normal"

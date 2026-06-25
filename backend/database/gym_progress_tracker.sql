@@ -144,6 +144,18 @@ CREATE TABLE IF NOT EXISTS `gym_workout_sets` (
   CONSTRAINT `gym_workout_sets_ibfk_2` FOREIGN KEY (`exercise_id`) REFERENCES `gym_exercises` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Gamification: streak tracking (one row per user)
+CREATE TABLE IF NOT EXISTS `gym_user_gamification` (
+  `user_id`               INT          NOT NULL,
+  `current_streak_weeks`  INT          NOT NULL DEFAULT 0,
+  `longest_streak_weeks`  INT          NOT NULL DEFAULT 0,
+  `last_completed_week`   INT          NULL     DEFAULT NULL,
+  `updated_at`            DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_id`),
+  CONSTRAINT `fk_gamification_user`
+    FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Insert default exercises
 INSERT INTO `gym_exercises` (`name`, `muscle_group`) VALUES
 ('Panca Piana', 'petto'),

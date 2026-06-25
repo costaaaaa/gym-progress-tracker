@@ -8,9 +8,6 @@ import Layout from './components/Layout';
 
 // Import Auth Provider
 import { AuthProvider } from './context/AuthContext';
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { it } from 'date-fns/locale';
 
 // Lazy load Pages
 const Home = lazy(() => import('./pages/Home'));
@@ -30,11 +27,10 @@ const PageLoader = () => (
 
 function App() {
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={it}>
-      <AuthProvider>
-        <Router basename="/gym-progress-tracker-v2">
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
+    <AuthProvider>
+      <Router basename="/gym-progress-tracker-v2">
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
               {/* Focus mode — full-screen senza Navbar */}
               <Route path="/focus" element={<FocusWorkout />} />
               
@@ -57,10 +53,9 @@ function App() {
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
             </Routes>
-          </Suspense>
-        </Router>
-      </AuthProvider>
-    </LocalizationProvider>
+        </Suspense>
+      </Router>
+    </AuthProvider>
   );
 }
 

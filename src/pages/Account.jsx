@@ -55,6 +55,8 @@ import {
   Wc as WcIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { format, parseISO, subYears, startOfToday } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -770,6 +772,7 @@ const fetchExportData = React.useCallback(async () => {
               borderColor: 'divider',
               mb: 2
             }}>
+              <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={it}>
               <Grid container spacing={2} alignItems="flex-start">
                 <Grid item xs={12} sm={6}>
                   <DatePicker
@@ -821,6 +824,7 @@ const fetchExportData = React.useCallback(async () => {
                   />
                 </Grid>
               </Grid>
+              </LocalizationProvider>
             </Box>
 
             <Button

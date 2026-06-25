@@ -51,7 +51,9 @@ import {
   Info as InfoIcon,
   EmojiEvents as TrophyIcon,
   AccessTime as AccessTimeIcon,
-  History as HistoryIcon
+  History as HistoryIcon,
+  Share as ShareIcon,
+  LocalFireDepartment as FireIcon
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeModeContext';
@@ -60,6 +62,7 @@ import { API_BASE_URL } from '../config';
 import { hapticFeedback } from '../utils/vibration';
 import { INTENSITY_TECHNIQUES } from '../components/ExerciseDialog';
 import { buildExerciseHistoryIndex, detectPersonalRecords } from '../utils/workoutMetrics';
+import { celebrate, celebratePR, celebrateStreak } from '../utils/celebrate';
 
 const DRAFT_STORAGE_KEY = 'gym_focus_workout_draft';
 
@@ -118,6 +121,8 @@ const FocusWorkout = () => {
   const [workoutNotes, setWorkoutNotes] = useState('');
   const [startTime, setStartTime] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [savedResult, setSavedResult] = useState(null); // streak flags after successful save
+  const [shareTextOpen, setShareTextOpen] = useState(false);
 
   // UI state
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -443,7 +448,10 @@ const FocusWorkout = () => {
       if (!sets || sets.length === 0) return false;
       return detectPersonalRecords(sets, historyIndex[ex.exercise_id]).isPR;
     });
-    if (hasPR) hapticFeedback.success();
+    if (hasPR) {
+      hapticFeedback.success();
+      celebratePR();
+    }
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ================================================
@@ -543,7 +551,8 @@ const FocusWorkout = () => {
         credentials: 'include',
         body: JSON.stringify({
           workout_records: workoutRecords,
-          notes: workoutNotes || ''
+          notes: workoutNotes || '',
+          start_time: startTime ? startTime.toISOString() : null
         })
       });
 
@@ -553,13 +562,14 @@ const FocusWorkout = () => {
         throw new Error(data.message || 'Errore durante il salvataggio');
       }
 
-      setSnackbar({ open: true, message: 'Allenamento salvato con successo! 💪', severity: 'success' });
       clearDraft();
+      setSavedResult(data);
 
-      // Redirect dopo un breve delay verso la cronologia negli hub
-      setTimeout(() => {
-        navigate('/workouts?tab=history', { state: { refreshHistory: Date.now() } });
-      }, 1500);
+      // Streak/milestone celebration
+      if (data.week_completed_now || data.new_longest || data.streak_milestone) {
+        hapticFeedback.success();
+        celebrateStreak();
+      }
 
     } catch (error) {
       console.error('Errore salvataggio:', error);
@@ -1087,20 +1097,145 @@ const FocusWorkout = () => {
               })}
             </Paper>
 
-            <TextField label="Note sull'allenamento (opzionale)" multiline rows={3} value={workoutNotes}
-              onChange={(e) => setWorkoutNotes(e.target.value)} fullWidth placeholder="Come ti sei sentito? Qualcosa da ricordare?"
-              sx={{ mb: 3, '& .MuiOutlinedInput-root': { color: colors.text, '& fieldset': { borderColor: colors.border }, '&:hover fieldset': { borderColor: colors.primary }, '&.Mui-focused fieldset': { borderColor: colors.primary } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.primary } }} />
+            {savedResult ? (
+              <>
+                {/* Streak banner */}
+                {(savedResult.week_completed_now || savedResult.streak_milestone || savedResult.new_longest) && (
+                  <Paper sx={{
+                    bgcolor: isDarkMode ? 'rgba(213, 0, 0, 0.12)' : 'rgba(213, 0, 0, 0.06)',
+                    border: `1px solid ${colors.primary}`,
+                    borderRadius: 3, p: 2.5, mb: 3, textAlign: 'center'
+                  }}>
+                    <FireIcon sx={{ fontSize: 40, color: colors.primary, mb: 0.5 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: colors.primary }}>
+                      {savedResult.new_longest
+                        ? `Nuovo record! 🏆 ${savedResult.current_streak_weeks} settimane consecutive`
+                        : savedResult.streak_milestone && savedResult.current_streak_weeks > 1
+                          ? `${savedResult.current_streak_weeks} settimane di fila! 🔥`
+                          : 'Settimana completata! 🔥'}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: colors.textSecondary, mt: 0.5 }}>
+                      Streak: {savedResult.current_streak_weeks} {savedResult.current_streak_weeks === 1 ? 'settimana' : 'settimane'}
+                    </Typography>
+                  </Paper>
+                )}
 
-            <Button variant="contained" fullWidth size="large"
-              startIcon={saving ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : <SaveIcon />}
-              onClick={handleSave} disabled={saving || getTotalCompletedSets() === 0}
-              sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.primary, color: '#fff', borderRadius: 3,
-                boxShadow: isDarkMode ? '0 4px 20px rgba(0, 0, 0, 0.4)' : '0 4px 20px rgba(213, 0, 0, 0.2)', '&:hover': { bgcolor: colors.primaryDark },
-                '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted }, mb: 2 }}>
-              {saving ? 'Salvataggio...' : 'Salva Allenamento'}
-            </Button>
+                {/* Recap card */}
+                {(() => {
+                  const prList = selectedDay?.exercises
+                    ?.filter(ex => {
+                      const sets = completedSets[ex.id];
+                      return sets?.length && detectPersonalRecords(sets, historyIndex[ex.exercise_id]).isPR;
+                    })
+                    .map(ex => ex.exercise_name) || [];
 
-            <Button variant="text" fullWidth onClick={handleQuit} disabled={saving} sx={{ color: colors.textMuted, py: 1.5 }}>Annulla</Button>
+                  const handleShare = async () => {
+                    const date = new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
+                    const lines = [
+                      `🏋️ Allenamento del ${date}`,
+                      `${activePlan?.name || ''}${selectedDay?.name ? ' · ' + selectedDay.name : ''}`,
+                      `⏱ ${getElapsedTime()} · ${exercisesCompleted} esercizi · ${totalSets} serie`,
+                    ];
+                    if (prList.length) lines.push(`🏆 Nuovi record: ${prList.join(', ')}`);
+                    if (savedResult.current_streak_weeks > 0) lines.push(`🔥 Streak: ${savedResult.current_streak_weeks} settimane`);
+                    lines.push('', 'Tracciato con Gym Progress Tracker');
+                    const text = lines.join('\n');
+
+                    if (navigator.share) {
+                      try { await navigator.share({ title: 'Il mio allenamento', text }); } catch (_) {}
+                    } else if (navigator.clipboard) {
+                      await navigator.clipboard.writeText(text);
+                      setSnackbar({ open: true, message: 'Copiato negli appunti!', severity: 'success' });
+                    } else {
+                      setShareTextOpen(true);
+                    }
+                  };
+
+                  return (
+                    <Paper sx={{ bgcolor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: 3, p: 2.5, mb: 3 }}>
+                      <Typography variant="subtitle2" sx={{ color: colors.textMuted, mb: 1.5, letterSpacing: 1 }}>
+                        RIEPILOGO SESSIONE
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 0.5 }}>
+                        {activePlan?.name}{selectedDay?.name ? ` · ${selectedDay.name}` : ''}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 0.5 }}>
+                        ⏱ {getElapsedTime()} · {exercisesCompleted} esercizi · {totalSets} serie
+                      </Typography>
+                      {prList.length > 0 && (
+                        <Typography variant="body2" sx={{ color: colors.warning, mb: 0.5 }}>
+                          🏆 Nuovi record: {prList.join(', ')}
+                        </Typography>
+                      )}
+                      {savedResult.current_streak_weeks > 0 && (
+                        <Typography variant="body2" sx={{ color: colors.primary }}>
+                          🔥 Streak: {savedResult.current_streak_weeks} settimane
+                        </Typography>
+                      )}
+                      <Button
+                        variant="outlined" fullWidth size="small"
+                        startIcon={<ShareIcon />}
+                        onClick={handleShare}
+                        sx={{ mt: 2, borderColor: colors.border, color: colors.textSecondary }}
+                      >
+                        Condividi
+                      </Button>
+                    </Paper>
+                  );
+                })()}
+
+                <Button
+                  variant="contained" fullWidth size="large"
+                  onClick={() => navigate('/workouts?tab=history', { state: { refreshHistory: Date.now() } })}
+                  sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.primary, color: '#fff', borderRadius: 3, mb: 2 }}
+                >
+                  Vai alla Cronologia
+                </Button>
+
+                <Button variant="text" fullWidth onClick={() => navigate('/')} sx={{ color: colors.textMuted, py: 1.5 }}>
+                  Torna alla Home
+                </Button>
+
+                {/* Fallback share dialog */}
+                <Dialog open={shareTextOpen} onClose={() => setShareTextOpen(false)}
+                  PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: 3 } }}>
+                  <DialogTitle>Copia il testo</DialogTitle>
+                  <DialogContent>
+                    <TextField
+                      multiline fullWidth variant="outlined" InputProps={{ readOnly: true }}
+                      value={[
+                        `🏋️ Allenamento del ${new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}`,
+                        `${activePlan?.name || ''}${selectedDay?.name ? ' · ' + selectedDay.name : ''}`,
+                        `⏱ ${getElapsedTime()} · ${exercisesCompleted} esercizi · ${totalSets} serie`,
+                        ...(savedResult.current_streak_weeks > 0 ? [`🔥 Streak: ${savedResult.current_streak_weeks} settimane`] : []),
+                        '', 'Tracciato con Gym Progress Tracker'
+                      ].join('\n')}
+                      sx={{ '& .MuiOutlinedInput-root': { color: colors.text, '& fieldset': { borderColor: colors.border } } }}
+                    />
+                  </DialogContent>
+                  <DialogActions>
+                    <Button onClick={() => setShareTextOpen(false)} sx={{ color: colors.primary }}>Chiudi</Button>
+                  </DialogActions>
+                </Dialog>
+              </>
+            ) : (
+              <>
+                <TextField label="Note sull'allenamento (opzionale)" multiline rows={3} value={workoutNotes}
+                  onChange={(e) => setWorkoutNotes(e.target.value)} fullWidth placeholder="Come ti sei sentito? Qualcosa da ricordare?"
+                  sx={{ mb: 3, '& .MuiOutlinedInput-root': { color: colors.text, '& fieldset': { borderColor: colors.border }, '&:hover fieldset': { borderColor: colors.primary }, '&.Mui-focused fieldset': { borderColor: colors.primary } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.primary } }} />
+
+                <Button variant="contained" fullWidth size="large"
+                  startIcon={saving ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : <SaveIcon />}
+                  onClick={handleSave} disabled={saving || getTotalCompletedSets() === 0}
+                  sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.primary, color: '#fff', borderRadius: 3,
+                    boxShadow: isDarkMode ? '0 4px 20px rgba(0, 0, 0, 0.4)' : '0 4px 20px rgba(213, 0, 0, 0.2)', '&:hover': { bgcolor: colors.primaryDark },
+                    '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted }, mb: 2 }}>
+                  {saving ? 'Salvataggio...' : 'Salva Allenamento'}
+                </Button>
+
+                <Button variant="text" fullWidth onClick={handleQuit} disabled={saving} sx={{ color: colors.textMuted, py: 1.5 }}>Annulla</Button>
+              </>
+            )}
           </Container>
 
           <Dialog open={confirmQuitDialog} onClose={() => setConfirmQuitDialog(false)}
