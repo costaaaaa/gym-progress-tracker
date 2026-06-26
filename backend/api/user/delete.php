@@ -53,9 +53,6 @@ try {
         exit;
     }
 
-    // Set property for hashed passwords
-    $user->is_hashed = isset($data->is_hashed) && $data->is_hashed === true;
-
     // Try to delete account
     if ($user->deleteAccount($data->password)) {
         // Clear session data

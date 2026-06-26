@@ -38,9 +38,6 @@ try {
         $user->birth_date = isset($data->birth_date) ? $data->birth_date : null;
         $user->gender = isset($data->gender) ? $data->gender : 'M';
         $user->training_start_date = isset($data->training_start_date) ? $data->training_start_date : null;
-        
-        // Check if password is already hashed from client
-        $user->is_hashed = isset($data->is_hashed) && $data->is_hashed === true;
 
         // Create the user
         if ($user->create()) {

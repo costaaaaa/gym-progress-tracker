@@ -62,7 +62,7 @@ import { API_BASE_URL } from '../config';
 import { hapticFeedback } from '../utils/vibration';
 import { INTENSITY_TECHNIQUES } from '../components/ExerciseDialog';
 import { buildExerciseHistoryIndex, detectPersonalRecords } from '../utils/workoutMetrics';
-import { celebrate, celebratePR, celebrateStreak } from '../utils/celebrate';
+import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../utils/celebrate';
 
 const DRAFT_STORAGE_KEY = 'gym_focus_workout_draft';
 
@@ -569,6 +569,22 @@ const FocusWorkout = () => {
       if (data.week_completed_now || data.new_longest || data.streak_milestone) {
         hapticFeedback.success();
         celebrateStreak();
+      }
+
+      // Level-up + achievement celebration (unified to avoid snackbar overwrite)
+      if (data.leveled_up) {
+        celebrateLevelUp();
+      } else if (data.unlocked_achievements?.length) {
+        celebrate();
+      }
+
+      const notifyParts = [];
+      if (data.leveled_up) notifyParts.push(`Livello ${data.new_level} raggiunto! 🎉`);
+      if (data.unlocked_achievements?.length) {
+        notifyParts.push(`Achievement: ${data.unlocked_achievements.map(a => a.label).join(', ')}`);
+      }
+      if (notifyParts.length) {
+        setSnackbar({ open: true, message: notifyParts.join(' · '), severity: 'success' });
       }
 
     } catch (error) {

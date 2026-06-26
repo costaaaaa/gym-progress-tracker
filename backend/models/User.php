@@ -12,7 +12,6 @@ class User
     public $password;
     public $created_at;
     public $updated_at;
-    public $is_hashed; // Nuova proprietà per indicare se la password è già hashata
     public $rest_timer_enabled; // Preferenza timer di recupero nella modalità Focus
     public $age;
     public $gender;
@@ -44,7 +43,6 @@ class User
     public function __construct($db)
     {
         $this->conn = $db;
-        $this->is_hashed = false; // Default a false
     }
 
     // Create new user record
@@ -57,10 +55,9 @@ class User
                 return false;
             }
 
-            // Sanitize inputs
+            // Sanitize inputs (la password NON va sanitizzata: viene hashata, mai stampata)
             $this->username = htmlspecialchars(strip_tags($this->username));
             $this->email = htmlspecialchars(strip_tags($this->email));
-            $this->password = htmlspecialchars(strip_tags($this->password));
 
             // Check if username or email already exists
             if ($this->usernameExists() || $this->emailExists()) {
@@ -68,16 +65,8 @@ class User
                 return false;
             }
 
-            // Se la password non è già hashata, hashala
-            if (!$this->is_hashed) {
-                // Hash the password
-                $password_hash = password_hash($this->password, PASSWORD_BCRYPT);
-            } else {
-                // La password è già un hash SHA-256 dal client
-                // Possiamo salvarla direttamente o aggiungere ulteriore sicurezza con un secondo hashing
-                // In questo caso la salviamo direttamente per mantenere compatibilità con il login
-                $password_hash = $this->password;
-            }
+            // Hash the password with bcrypt before storing
+            $password_hash = password_hash($this->password, PASSWORD_BCRYPT);
 
             // Query to insert record
             $query = "INSERT INTO " . $this->table_name . "
@@ -195,20 +184,40 @@ class User
             $this->username = $row['username'];
             $this->email = $row['email'];
 
-            // Se la password è già stata hashata lato client
-            if ($this->is_hashed) {
-                // Verifica diretta dell'hash ricevuto con l'hash salvato nel DB
-                // Questa verifica richiede che nel database vengano salvati
-                // gli hash delle password e non password hashate con salt
-                // Non è l'approccio ideale ma supporta il client-side hashing
-                return hash_equals($this->password, $row['password']);
-            } else {
-                // Metodo standard: verifica la password con password_verify
-                return password_verify($this->password, $row['password']);
+            // Verifica standard contro l'hash bcrypt
+            if (password_verify($this->password, $row['password'])) {
+                return true;
+            }
+
+            // Legacy: password salvata come SHA-256 grezzo (client-side hashing).
+            // Se combacia, migra in modo trasparente a bcrypt.
+            if (hash_equals($row['password'], hash('sha256', $this->password))) {
+                $this->persistPasswordHash(password_hash($this->password, PASSWORD_BCRYPT));
+                return true;
             }
         }
 
         return false;
+    }
+
+    // Verifica una password in chiaro contro l'hash salvato.
+    // Supporta sia bcrypt (nuovo) sia il legacy SHA-256 grezzo lato client.
+    private function verifyPassword($plain_password, $stored_hash)
+    {
+        if (password_verify($plain_password, $stored_hash)) {
+            return true;
+        }
+        return hash_equals($stored_hash, hash('sha256', $plain_password));
+    }
+
+    // Aggiorna l'hash della password salvato (migrazione trasparente a bcrypt).
+    private function persistPasswordHash($password_hash)
+    {
+        $query = "UPDATE " . $this->table_name . " SET password = :password, updated_at = NOW() WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':password', $password_hash);
+        $stmt->bindParam(':id', $this->id);
+        $stmt->execute();
     }
 
     // Get user by ID
@@ -276,22 +285,13 @@ class User
         $saved_password = $row['password'];
 
         // Verifichiamo che la password corrente sia corretta
-        $password_is_correct = false;
-
-        // Se la password attuale è già hashata lato client
-        if ($this->is_hashed) {
-            $password_is_correct = hash_equals($current_password, $saved_password);
-        } else {
-            $password_is_correct = password_verify($current_password, $saved_password);
-        }
-
-        if (!$password_is_correct) {
+        if (!$this->verifyPassword($current_password, $saved_password)) {
             error_log("Change password failed: Current password is incorrect for user ID {$this->id}");
             return false;
         }
 
-        // Se la nuova password non è già hashata, hashala
-        $password_hash = $this->is_hashed ? $new_password : password_hash($new_password, PASSWORD_BCRYPT);
+        // La nuova password viene sempre salvata come hash bcrypt
+        $password_hash = password_hash($new_password, PASSWORD_BCRYPT);
 
         // Aggiorniamo la password nel database
         $query = "UPDATE " . $this->table_name . " SET password = :password, updated_at = NOW() WHERE id = :id";
@@ -402,16 +402,7 @@ class User
         $saved_password = $row['password'];
 
         // Verifichiamo che la password sia corretta
-        $password_is_correct = false;
-
-        // Se la password è già hashata lato client
-        if ($this->is_hashed) {
-            $password_is_correct = hash_equals($password, $saved_password);
-        } else {
-            $password_is_correct = password_verify($password, $saved_password);
-        }
-
-        if (!$password_is_correct) {
+        if (!$this->verifyPassword($password, $saved_password)) {
             error_log("Delete account failed: Password is incorrect for user ID {$this->id}");
             return false;
         }

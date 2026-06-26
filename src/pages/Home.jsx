@@ -12,6 +12,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import LinearProgress from '@mui/material/LinearProgress';
 import BodyVisualizer from '../components/BodyVisualizer';
 import StreakCard from '../components/StreakCard';
+import LevelCard from '../components/LevelCard';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 
@@ -137,9 +138,12 @@ const Home = () => {
             </Grid>
           ) : (
             <>
-              {/* Streak Gamification */}
-              <Grid item xs={12}>
+              {/* Gamification */}
+              <Grid item xs={12} md={6}>
                 <StreakCard />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <LevelCard />
               </Grid>
 
               {/* Riepilogo Settimanale */}

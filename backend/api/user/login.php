@@ -34,9 +34,6 @@ try {
         // Set user property values
         $user->username = $data->username;
         $user->password = $data->password;
-        
-        // Check if password is already hashed from client
-        $user->is_hashed = isset($data->is_hashed) && $data->is_hashed === true;
 
         // Attempt to login
         if ($user->login()) {

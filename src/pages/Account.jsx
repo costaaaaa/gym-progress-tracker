@@ -62,7 +62,6 @@ import { format, parseISO, subYears, startOfToday } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
-import SHA256 from 'crypto-js/sha256';
 
 const Account = () => {
   const { user, logout, isLoggedIn, loading: authLoading } = useAuth();
@@ -168,18 +167,14 @@ const Account = () => {
     setDeleteError('');
     
     try {
-      // Generiamo l'hash della password
-      const passwordHash = SHA256(deletePassword).toString();
-      
-      // Chiamata API al backend (da implementare nel backend)
+      // Password inviata in chiaro su HTTPS; la verifica avviene lato server
       const response = await fetch(`${API_BASE_URL}api/user/delete.php`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          password: passwordHash,
-          is_hashed: true
+          password: deletePassword
         }),
         credentials: 'include'
       });
@@ -569,20 +564,15 @@ const fetchExportData = React.useCallback(async () => {
     setPasswordError('');
     
     try {
-      // Generiamo gli hash delle password
-      const currentPasswordHash = SHA256(currentPassword).toString();
-      const newPasswordHash = SHA256(newPassword).toString();
-      
-      // Chiamata API al backend
+      // Password inviate in chiaro su HTTPS; l'hashing bcrypt avviene lato server
       const response = await fetch(`${API_BASE_URL}api/user/change_password.php`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          current_password: currentPasswordHash,
-          new_password: newPasswordHash,
-          is_hashed: true
+          current_password: currentPassword,
+          new_password: newPassword
         }),
         credentials: 'include'
       });

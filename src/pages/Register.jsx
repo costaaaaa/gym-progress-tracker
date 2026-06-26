@@ -24,7 +24,6 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { format, subYears, startOfToday } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { API_BASE_URL } from '../config';
-import SHA256 from 'crypto-js/sha256';
 import { useAuth } from '../context/AuthContext';
 
 const Register = () => {
@@ -88,9 +87,7 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Genera l'hash della password
-      const passwordHash = SHA256(password).toString();
-      
+      // Password inviata in chiaro su HTTPS; l'hashing bcrypt avviene lato server
       const response = await fetch(`${API_BASE_URL}api/user/register.php`, {
         method: 'POST',
         headers: {
@@ -99,11 +96,10 @@ const Register = () => {
         body: JSON.stringify({
           username,
           email,
-          password: passwordHash,
+          password,
           birth_date: birthDate ? format(birthDate, 'yyyy-MM-dd') : null,
           gender,
-          training_start_date: trainingStartDate ? format(trainingStartDate, 'yyyy-MM-01') : null,
-          is_hashed: true
+          training_start_date: trainingStartDate ? format(trainingStartDate, 'yyyy-MM-01') : null
         }),
         credentials: 'include'
       });

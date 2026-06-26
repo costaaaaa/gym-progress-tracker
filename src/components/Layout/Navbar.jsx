@@ -56,7 +56,8 @@ const Navbar = () => {
     ...(authVerified && isLoggedIn ? [
       { label: 'Focus', path: '/focus', variant: 'contained', icon: <PlayArrowIcon /> },
       { label: 'Allenamenti', path: '/workouts', icon: <FitnessCenterIcon /> },
-      { label: 'Statistiche', path: '/dashboard', icon: <StraightenIcon /> }
+      { label: 'Statistiche', path: '/dashboard', icon: <StraightenIcon /> },
+      { label: 'Profilo', path: '/profilo', icon: <PersonIcon /> },
     ] : [])
   ];
 
@@ -177,8 +178,23 @@ const Navbar = () => {
                 }}
               >
                 {authVerified && isLoggedIn && (
-                  <MenuItem 
-                    component={RouterLink} 
+                  <MenuItem
+                    component={RouterLink}
+                    to="/profilo"
+                    onClick={handleClose}
+                    sx={{
+                      backgroundColor: isActive('/profilo') ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                      color: 'white'
+                    }}
+                  >
+                    <PersonIcon fontSize="small" sx={{ mr: 1, color: 'white' }} />
+                    Profilo
+                  </MenuItem>
+                )}
+
+                {authVerified && isLoggedIn && (
+                  <MenuItem
+                    component={RouterLink}
                     to="/account"
                     onClick={handleClose}
                     sx={{
