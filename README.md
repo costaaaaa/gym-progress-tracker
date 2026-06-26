@@ -33,6 +33,7 @@ With this tool you can:
 * 🏋️ Add and edit exercises
 * 🎯 **Smart Progress**: detailed metrics (Volume, Avg Weight, Progress Index) for each exercise
 * 📌 Ability to select an active workout plan
+* 🔒 **Secure Authentication**: session-based login with server-side **bcrypt** password hashing
 
 ## Technologies Used
 
@@ -41,6 +42,12 @@ With this tool you can:
 * **Recharts** for data visualization
 * **PHP** (Legacy PDO / Modern experimental with Eloquent)
 * **MySQL** for data storage
+
+## Security
+
+* **Passwords are hashed server-side with bcrypt** (`password_hash` / `password_verify`); the plaintext is sent only over HTTPS and is never stored.
+* **Transparent migration**: accounts created before this change are automatically re-hashed to bcrypt on their next successful login.
+* **Session-based authentication** via PHP sessions; every request uses `credentials: 'include'`.
 
 ## Try it Out
 
@@ -121,6 +128,7 @@ Con questo strumento è possibile:
 * 🏋️ Aggiunta e modifica di esercizi
 * 🎯 **Progressi Mirati**: metriche di dettaglio (Volume, Peso Medio, Indice Progresso) per ogni singolo esercizio
 * 📌 Possibilità di selezionare una scheda attiva
+* 🔒 **Autenticazione sicura**: login basato su sessione con hashing **bcrypt** lato server
 
 ## Tecnologie utilizzate
 
@@ -130,6 +138,11 @@ Con questo strumento è possibile:
 * **PHP** (Legacy PDO / Moderno sperimentale con Eloquent)
 * **MySQL** per il salvataggio dei dati utente
 
+## Sicurezza
+
+* **Le password sono hashate lato server con bcrypt** (`password_hash` / `password_verify`); il testo in chiaro viaggia solo su HTTPS e non viene mai memorizzato.
+* **Migrazione trasparente**: gli account creati prima di questa modifica vengono ri-hashati automaticamente in bcrypt al primo login andato a buon fine.
+* **Autenticazione basata su sessione** tramite sessioni PHP; ogni richiesta usa `credentials: 'include'`.
 
 ## Come provarlo
 

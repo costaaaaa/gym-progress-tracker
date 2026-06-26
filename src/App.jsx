@@ -17,6 +17,7 @@ const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const Account = lazy(() => import('./pages/Account'));
 const FocusWorkout = lazy(() => import('./pages/FocusWorkout'));
+const Profile = lazy(() => import('./pages/Profile'));
 
 // Fallback component while loading chunks
 const PageLoader = () => (
@@ -40,6 +41,7 @@ function App() {
                 <Route path="/workouts" element={<Workouts />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/account" element={<Account />} />
+                <Route path="/profilo" element={<Profile />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 

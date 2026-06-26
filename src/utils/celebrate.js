@@ -13,3 +13,6 @@ export const celebratePR = () =>
 
 export const celebrateStreak = () =>
   celebrate({ particleCount: 160, spread: 90, origin: { y: 0.5 }, colors: ['#ef5350', '#ff7043', '#ffa726', '#66bb6a'] });
+
+export const celebrateLevelUp = () =>
+  celebrate({ particleCount: 200, spread: 120, origin: { y: 0.4 }, colors: ['#1565c0', '#1976d2', '#42a5f5', '#ffd54f', '#fff'] });

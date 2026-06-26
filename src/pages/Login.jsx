@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Typography, Paper, TextField, Button, Box, Alert, Link, InputAdornment, IconButton } from '@mui/material';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
-import SHA256 from 'crypto-js/sha256';
 import { useAuth } from '../context/AuthContext';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
@@ -26,9 +25,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      // Genera l'hash della password invece di inviarla in chiaro
-      const passwordHash = SHA256(password).toString();
-      
+      // Password inviata in chiaro su HTTPS; l'hashing bcrypt avviene lato server
       const response = await fetch(`${API_BASE_URL}api/user/login.php`, {
         method: 'POST',
         headers: {
@@ -36,8 +33,7 @@ const Login = () => {
         },
         body: JSON.stringify({
           username,
-          password: passwordHash, // Invio l'hash invece della password
-          is_hashed: true // Segnala al server che la password è già hashata
+          password
         }),
         credentials: 'include'
       });

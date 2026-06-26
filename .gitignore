@@ -137,6 +137,10 @@ backend/reset_password_temp.php
 backend/database/*.sql
 !backend/database/gym_progress_tracker_new.sql
 !backend/database/gamification_setup.sql
+!backend/database/gamification_levels_setup.sql
+
+# Backfill gamification (seed una-tantum, non va in git)
+backend/scripts/backfill_gamification.php
 backend/database/update_user_recovery_fields.sql
 backend/database/run_migration.php
 backend/config/database.php
@@ -147,6 +151,7 @@ backend_v2/
 
 # AI
 PIANO.md 
+REPORT.md
 GEMINI.md
 CLAUDE.md
 AGENTS.md

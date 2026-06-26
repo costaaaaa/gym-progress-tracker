@@ -66,9 +66,6 @@ try {
         exit;
     }
 
-    // Set property for hashed passwords
-    $user->is_hashed = isset($data->is_hashed) && $data->is_hashed === true;
-    
     // Try to change password
     if ($user->changePassword($data->current_password, $data->new_password)) {
         // Set response code - 200 OK
