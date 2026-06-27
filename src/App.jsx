@@ -15,7 +15,6 @@ const Workouts = lazy(() => import('./pages/Workouts'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
-const Account = lazy(() => import('./pages/Account'));
 const FocusWorkout = lazy(() => import('./pages/FocusWorkout'));
 const Profile = lazy(() => import('./pages/Profile'));
 
@@ -40,12 +39,12 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/workouts" element={<Workouts />} />
                 <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/account" element={<Account />} />
                 <Route path="/profilo" element={<Profile />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 
                 {/* Redirect per retrocompatibilità */}
+                <Route path="/account" element={<Navigate to="/profilo?tab=settings" replace />} />
                 <Route path="/workout-plans" element={<Navigate to="/workouts?tab=plans" replace />} />
                 <Route path="/workout-history" element={<Navigate to="/workouts?tab=history" replace />} />
                 <Route path="/progress" element={<Navigate to="/dashboard?tab=progress" replace />} />

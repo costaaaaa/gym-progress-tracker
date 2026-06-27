@@ -2,11 +2,11 @@
 -- Eseguire una sola volta, dopo gamification_setup.sql.
 
 -- 1. Estendi gym_user_gamification con XP e tonnellaggio
-ALTER TABLE `gym_user_gamification`
-  ADD COLUMN IF NOT EXISTS `total_xp`             INT           NOT NULL DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS `level`                INT           NOT NULL DEFAULT 1,
-  ADD COLUMN IF NOT EXISTS `lifetime_volume_kg`   DECIMAL(12,2) NOT NULL DEFAULT 0;
-
+                                                                                                                     
+ALTER TABLE gym_user_gamification                                                                                    
+  ADD COLUMN total_xp INT NOT NULL DEFAULT 0,                                                                        
+  ADD COLUMN level INT NOT NULL DEFAULT 1,                                                                           
+  ADD COLUMN lifetime_volume_kg DECIMAL(12,2) NOT NULL DEFAULT 0;   
 -- 2. Progressione XP per esercizio
 CREATE TABLE IF NOT EXISTS `gym_exercise_gamification` (
   `user_id`     INT NOT NULL,

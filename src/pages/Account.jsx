@@ -63,7 +63,7 @@ import { it } from 'date-fns/locale';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 
-const Account = () => {
+const Account = ({ isEmbedded = false }) => {
   const { user, logout, isLoggedIn, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   
@@ -618,7 +618,7 @@ const fetchExportData = React.useCallback(async () => {
   // Rendering condizionale durante il caricamento o se l'utente non è autenticato
   if (loading || authLoading || !isLoggedIn) {
     return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
+      <Container maxWidth="md" sx={{ py: isEmbedded ? 0 : 4 }} disableGutters={isEmbedded}>
         <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
             <Skeleton variant="circular" width={60} height={60} sx={{ mr: 2 }} />
@@ -648,15 +648,17 @@ const fetchExportData = React.useCallback(async () => {
   }
   
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom sx={{ 
-        fontWeight: 700,
-        mb: 3,
-        textAlign: { xs: 'center', sm: 'left' },
-        fontSize: { xs: '1.8rem', sm: '2.125rem' }
-      }}>
-        Il mio Account
-      </Typography>
+    <Container maxWidth="md" sx={{ py: isEmbedded ? 0 : 4 }} disableGutters={isEmbedded}>
+      {!isEmbedded && (
+        <Typography variant="h4" component="h1" gutterBottom sx={{
+          fontWeight: 700,
+          mb: 3,
+          textAlign: { xs: 'center', sm: 'left' },
+          fontSize: { xs: '1.8rem', sm: '2.125rem' }
+        }}>
+          Il mio Account
+        </Typography>
+      )}
       
       <Paper elevation={3} sx={{ 
         p: { xs: 2, sm: 3, md: 4 }, 

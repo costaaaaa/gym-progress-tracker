@@ -194,21 +194,6 @@ const Navbar = () => {
 
                 {authVerified && isLoggedIn && (
                   <MenuItem
-                    component={RouterLink}
-                    to="/account"
-                    onClick={handleClose}
-                    sx={{
-                      backgroundColor: isActive('/account') ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-                      color: 'white'
-                    }}
-                  >
-                    <PersonIcon fontSize="small" sx={{ mr: 1, color: 'white' }} />
-                    Account
-                  </MenuItem>
-                )}
-
-                {authVerified && isLoggedIn && (
-                  <MenuItem 
                     onClick={() => { handleClose(); handleLogout(); }}
                     sx={{
                       '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
@@ -290,27 +275,6 @@ const Navbar = () => {
                 </Button>
               ))}
               
-              {isLoggedIn && (
-                <Tooltip title="Account">
-                  <IconButton 
-                    color="inherit" 
-                    component={RouterLink} 
-                    to="/account"
-                    sx={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '8px',
-                      backgroundColor: isActive('/account') ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
-                      '&:hover': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.15)'
-                      }
-                    }}
-                  >
-                    <PersonIcon sx={{ color: 'white' }} />
-                  </IconButton>
-                </Tooltip>
-                )}
-                
                 {isLoggedIn ? (
                   <Tooltip title="Logout">
                     <IconButton

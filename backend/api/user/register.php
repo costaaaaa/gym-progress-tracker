@@ -4,6 +4,7 @@ include_once '../../config/cors_headers.php';
 
 // Include database and user model
 include_once '../../config/database.php';
+include_once '../../config/rate_limiter.php';
 include_once '../../models/User.php';
 
 try {
@@ -25,12 +26,34 @@ try {
     // Instantiate user object
     $user = new User($db);
 
+    // Rate limiter (DB-backed, swappable a Redis)
+    $limiter = rate_limiter($db);
+
     // Make sure data is not empty and contains all required fields
     if (
         !empty($data) &&
         isset($data->username) && isset($data->email) && isset($data->password) &&
         !empty($data->username) && !empty($data->email) && !empty($data->password)
     ) {
+        // Throttling per-IP: anti registrazioni di massa
+        $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
+        $regKey = 'register:ip:' . $ip;
+        list($regMax, $regDecay) = rate_limit_rule('register_ip');
+
+        if ($limiter->tooManyAttempts($regKey, $regMax)) {
+            $retryAfter = $limiter->availableIn($regKey);
+            header('Retry-After: ' . $retryAfter);
+            http_response_code(429);
+            echo json_encode(array(
+                "success" => false,
+                "message" => "Troppe registrazioni da questo indirizzo. Riprova tra " . $retryAfter . " secondi."
+            ));
+            exit;
+        }
+
+        // Conta questo tentativo di registrazione
+        $limiter->hit($regKey, $regDecay);
+
         // Set user property values
         $user->username = $data->username;
         $user->email = $data->email;
