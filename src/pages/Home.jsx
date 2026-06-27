@@ -314,12 +314,12 @@ const Home = () => {
                     </Button>
                   </Grid>
                   <Grid item xs={6} sm={3}>
-                    <Button 
-                      fullWidth variant="outlined" component={RouterLink} to="/account" 
+                    <Button
+                      fullWidth variant="outlined" component={RouterLink} to="/profilo?tab=settings"
                       sx={{ py: 4, flexDirection: 'column', gap: 2, borderWidth: 2, '&:hover': { borderWidth: 2 } }}
                     >
                       <HealthAndSafetyIcon fontSize="large" />
-                      Account
+                      Impostazioni
                     </Button>
                   </Grid>
                 </Grid>

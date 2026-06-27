@@ -74,14 +74,44 @@ You can test the app directly here: 👉 [Gym Progress Tracker Live](https://and
    npm install
    npm run build
    ```
-3. Import the MySQL database using the unified schema:
-   * Use `backend/database/gym_progress_tracker.sql`
+3. Import the MySQL database — see [Database setup & updates](#database-setup--updates) below.
 4. Configure database access in the `backend/config/database.php` file;
 5. Launch a local server (e.g., with XAMPP) and make sure the PHP files are correctly served.
 6. Start the React app:
    ```bash
    npm start
    ```
+
+## Database setup & updates
+
+The complete schema lives in `backend/database/gym_progress_tracker.sql`. The other
+`.sql` files in that folder are **incremental migrations**, kept only to upgrade older databases.
+
+### Fresh install (cloned from scratch)
+
+Import **`backend/database/gym_progress_tracker.sql`** and you are done. It already includes
+everything: auth, workout plans, history, body stats, **gamification (weekly streak + XP, levels,
+per-exercise progression, achievements)** and **rate limiting**. No other script is needed.
+
+### Updating an existing database
+
+Run only the migrations you have **not** applied yet, in this order (all in `backend/database/`):
+
+| # | File | Adds |
+|---|------|------|
+| 1 | `add_notes_column.sql` | `notes` field on plan exercises |
+| 2 | `create_history_table.sql` | workout history table |
+| 3 | `database_update.sql` | per-set workout logging |
+| 4 | `gamification_setup.sql` | weekly streak tracking |
+| 5 | `gamification_levels_setup.sql` | XP, levels, per-exercise progression, achievements |
+| 6 | `create_rate_limits_table.sql` | login/register rate limiting |
+
+The `CREATE TABLE IF NOT EXISTS` migrations are safe to re-run. The `ALTER TABLE` ones (**1** and
+**5**) must run **once** — re-running them throws a harmless "duplicate column" error you can ignore.
+
+After step 5, gamification stats accumulate from **newly recorded** workouts. Seeding XP and
+achievements from a user's existing history is optional and done with a one-time server-side script
+(run locally; not included in the repository).
 
 ## Author
 
@@ -169,14 +199,45 @@ Puoi testare l'app direttamente al seguente link: 👉 [Gym Progress Tracker Liv
    npm install
    npm run build
    ```
-3. Importa il database MySQL usando lo schema unificato:
-   * Usa il file `backend/database/gym_progress_tracker.sql`
+3. Importa il database MySQL — vedi [Setup e aggiornamento del database](#setup-e-aggiornamento-del-database) più sotto.
 4. Configura i dati di accesso al database nel file `backend/config/database.php`;
 5. Avvia il server locale (es. con XAMPP) e assicurati che i file PHP siano serviti correttamente.
 6. Avvia l'app React:
    ```bash
    npm start
    ```
+
+## Setup e aggiornamento del database
+
+Lo schema completo è in `backend/database/gym_progress_tracker.sql`. Gli altri file `.sql` nella
+stessa cartella sono **migration incrementali**, mantenute solo per aggiornare database più vecchi.
+
+### Installazione pulita (repo scaricata da zero)
+
+Importa **`backend/database/gym_progress_tracker.sql`** e basta. Contiene già tutto: autenticazione,
+schede, storico, body stats, **gamification (streak settimanale + XP, livelli, progressione per
+esercizio, achievement)** e **rate limiting**. Non serve eseguire altro.
+
+### Aggiornare un database esistente
+
+Esegui solo le migration che **non** hai ancora applicato, in quest'ordine (tutte in `backend/database/`):
+
+| # | File | Aggiunge |
+|---|------|----------|
+| 1 | `add_notes_column.sql` | campo `notes` sugli esercizi della scheda |
+| 2 | `create_history_table.sql` | tabella storico allenamenti |
+| 3 | `database_update.sql` | registrazione per singolo set |
+| 4 | `gamification_setup.sql` | streak settimanale |
+| 5 | `gamification_levels_setup.sql` | XP, livelli, progressione per esercizio, achievement |
+| 6 | `create_rate_limits_table.sql` | rate limiting su login/register |
+
+Le migration `CREATE TABLE IF NOT EXISTS` si possono rieseguire senza rischi. Quelle `ALTER TABLE`
+(**1** e **5**) vanno eseguite **una sola volta**: rieseguirle dà un innocuo errore "duplicate column"
+che puoi ignorare.
+
+Dopo lo step 5, le statistiche di gamification si accumulano dai nuovi allenamenti registrati. Il
+ricalcolo di XP e achievement dallo storico esistente è opzionale e si fa con uno script una-tantum
+lato server (eseguito in locale; non incluso nella repository).
 
 ## Autore
 

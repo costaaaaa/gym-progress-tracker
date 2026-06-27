@@ -6,6 +6,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
 import StraightenIcon from '@mui/icons-material/Straighten';
+import PersonIcon from '@mui/icons-material/Person';
 import { useAuth } from '../../context/AuthContext';
 
 const BottomNav = () => {
@@ -75,6 +76,11 @@ const BottomNav = () => {
           label="Statistiche"
           value="/dashboard"
           icon={<StraightenIcon />}
+        />
+        <BottomNavigationAction
+          label="Profilo"
+          value="/profilo"
+          icon={<PersonIcon />}
         />
       </BottomNavigation>
     </Paper>

@@ -4,6 +4,7 @@ include_once '../../config/cors_headers.php';
 
 // Include database and user model
 include_once '../../config/database.php';
+include_once '../../config/rate_limiter.php';
 include_once '../../models/User.php';
 
 try {
@@ -25,11 +26,34 @@ try {
     // Instantiate user object
     $user = new User($db);
 
+    // Rate limiter (DB-backed, swappable a Redis)
+    $limiter = rate_limiter($db);
+
     // Make sure data is not empty and properties are defined
     if (
         !empty($data) && isset($data->username) && isset($data->password) &&
         !empty($data->username) && !empty($data->password)
     ) {
+
+        // Chiavi di throttling per questo tentativo
+        $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
+        $ipKey = 'login:ip:' . $ip;
+        $userKey = 'login:user:' . $ip . '|' . strtolower($data->username);
+
+        list($ipMax, $ipDecay) = rate_limit_rule('login_ip');
+        list($userMax, $userDecay) = rate_limit_rule('login_user');
+
+        // Blocca se una delle due soglie è già superata
+        if ($limiter->tooManyAttempts($ipKey, $ipMax) || $limiter->tooManyAttempts($userKey, $userMax)) {
+            $retryAfter = max($limiter->availableIn($ipKey), $limiter->availableIn($userKey));
+            header('Retry-After: ' . $retryAfter);
+            http_response_code(429);
+            echo json_encode(array(
+                "success" => false,
+                "message" => "Troppi tentativi di accesso. Riprova tra " . $retryAfter . " secondi."
+            ));
+            exit;
+        }
 
         // Set user property values
         $user->username = $data->username;
@@ -37,6 +61,9 @@ try {
 
         // Attempt to login
         if ($user->login()) {
+            // Accesso riuscito: azzera il contatore del bersaglio specifico
+            $limiter->clear($userKey);
+
             // Create session
             if (session_status() === PHP_SESSION_NONE) {
                 session_start();
@@ -55,6 +82,10 @@ try {
                 )
             ));
         } else {
+            // Tentativo fallito: incrementa entrambi i contatori
+            $limiter->hit($ipKey, $ipDecay);
+            $limiter->hit($userKey, $userDecay);
+
             // Set response code - 401 Unauthorized
             http_response_code(401);
             echo json_encode(array(

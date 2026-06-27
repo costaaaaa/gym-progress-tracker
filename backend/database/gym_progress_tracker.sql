@@ -144,16 +144,51 @@ CREATE TABLE IF NOT EXISTS `gym_workout_sets` (
   CONSTRAINT `gym_workout_sets_ibfk_2` FOREIGN KEY (`exercise_id`) REFERENCES `gym_exercises` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Gamification: streak tracking (one row per user)
+-- Gamification: streak, XP, livelli e tonnellaggio (one row per user)
 CREATE TABLE IF NOT EXISTS `gym_user_gamification` (
-  `user_id`               INT          NOT NULL,
-  `current_streak_weeks`  INT          NOT NULL DEFAULT 0,
-  `longest_streak_weeks`  INT          NOT NULL DEFAULT 0,
-  `last_completed_week`   INT          NULL     DEFAULT NULL,
-  `updated_at`            DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `user_id`               INT           NOT NULL,
+  `current_streak_weeks`  INT           NOT NULL DEFAULT 0,
+  `longest_streak_weeks`  INT           NOT NULL DEFAULT 0,
+  `last_completed_week`   INT           NULL     DEFAULT NULL,
+  `total_xp`              INT           NOT NULL DEFAULT 0,
+  `level`                 INT           NOT NULL DEFAULT 1,
+  `lifetime_volume_kg`    DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `updated_at`            DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`user_id`),
   CONSTRAINT `fk_gamification_user`
     FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Gamification: progressione XP per esercizio (one row per user+exercise)
+CREATE TABLE IF NOT EXISTS `gym_exercise_gamification` (
+  `user_id`     INT NOT NULL,
+  `exercise_id` INT NOT NULL,
+  `xp`          INT NOT NULL DEFAULT 0,
+  `level`       INT NOT NULL DEFAULT 1,
+  `updated_at`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_id`, `exercise_id`),
+  CONSTRAINT `fk_exgam_user`     FOREIGN KEY (`user_id`)     REFERENCES `gym_users`(`id`)      ON DELETE CASCADE,
+  CONSTRAINT `fk_exgam_exercise` FOREIGN KEY (`exercise_id`) REFERENCES `gym_exercises`(`id`)  ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Gamification: achievement sbloccati (UNIQUE garantisce no-doppio)
+CREATE TABLE IF NOT EXISTS `gym_achievements` (
+  `id`              INT          NOT NULL AUTO_INCREMENT,
+  `user_id`         INT          NOT NULL,
+  `achievement_key` VARCHAR(50)  NOT NULL,
+  `unlocked_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_user_achievement` (`user_id`, `achievement_key`),
+  CONSTRAINT `fk_ach_user` FOREIGN KEY (`user_id`) REFERENCES `gym_users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Rate limiting per gli endpoint di autenticazione (login/register)
+CREATE TABLE IF NOT EXISTS `gym_rate_limits` (
+  `rate_key` varchar(191) NOT NULL,
+  `attempts` int(10) unsigned NOT NULL DEFAULT 0,
+  `expires_at` datetime NOT NULL,
+  PRIMARY KEY (`rate_key`),
+  KEY `idx_expires_at` (`expires_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Insert default exercises
