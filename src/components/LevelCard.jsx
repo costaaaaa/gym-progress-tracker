@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Card, CardActionArea, CardContent, LinearProgress, Typography } from '@mui/material';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import { Box, Card, CardActionArea, LinearProgress, Typography } from '@mui/material';
+import StarIcon from '@mui/icons-material/Star';
 import { Link as RouterLink } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 
@@ -24,46 +24,51 @@ const LevelCard = () => {
     : 100;
 
   return (
-    <Card sx={{ borderRadius: 3 }}>
-      <CardActionArea component={RouterLink} to="/profilo">
-        <CardContent>
-          <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>Livello</Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <EmojiEventsIcon sx={{ fontSize: 40, color: 'primary.main' }} />
-              <Box>
-                <Typography variant="h4" sx={{ fontWeight: 800, color: 'primary.main', lineHeight: 1 }}>
-                  {level}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">livello</Typography>
-              </Box>
-            </Box>
+    <Card sx={{ height: '100%' }}>
+      <CardActionArea component={RouterLink} to="/profilo" sx={{ height: '100%', p: '22px' }}>
+        <Typography
+          sx={{ textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 700, fontSize: 12, color: 'text.secondary', mb: 2 }}
+        >
+          Livello
+        </Typography>
 
-            <Box sx={{ flex: 1, minWidth: 120 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                <Typography variant="caption" color="text.secondary">{xp_into_level} XP</Typography>
-                <Typography variant="caption" color="text.secondary">{xp_for_next_level} XP</Typography>
-              </Box>
-              <LinearProgress
-                variant="determinate"
-                value={progress}
-                sx={{ height: 8, borderRadius: 4 }}
-              />
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                {progress}% al livello {level + 1}
-              </Typography>
-            </Box>
-
-            <Box>
-              <Typography variant="body2" color="text.secondary">
-                {total_xp.toLocaleString()} XP totali
-              </Typography>
-              <Typography variant="caption" color="primary.main" sx={{ fontWeight: 600 }}>
-                Vedi profilo →
-              </Typography>
-            </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <StarIcon sx={{ fontSize: 30, color: 'primary.main' }} />
+            <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 30, lineHeight: 1, color: 'primary.main' }}>
+              {level}
+            </Typography>
           </Box>
-        </CardContent>
+
+          <Box sx={{ flex: 1, minWidth: 120 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+              <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{xp_into_level} XP</Typography>
+              <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{xp_for_next_level} XP</Typography>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={progress}
+              sx={{
+                height: 8,
+                borderRadius: 4,
+                bgcolor: 'divider',
+                '& .MuiLinearProgress-bar': {
+                  borderRadius: 4,
+                  background: 'linear-gradient(90deg, #d50000, #ff5131)',
+                },
+              }}
+            />
+          </Box>
+
+          <Box>
+            <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
+              {total_xp.toLocaleString()} XP totali
+            </Typography>
+            <Typography sx={{ fontSize: 12, color: 'primary.main', fontWeight: 600 }}>
+              Vedi profilo →
+            </Typography>
+          </Box>
+        </Box>
       </CardActionArea>
     </Card>
   );

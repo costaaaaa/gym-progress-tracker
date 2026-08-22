@@ -12,7 +12,17 @@ const Layout = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Navbar />
-      <Container component="main" sx={{ mt: 4, mb: isLoggedIn ? 10 : 4, flexGrow: 1 }}>
+      <Container
+        component="main"
+        disableGutters
+        sx={{
+          mt: 4,
+          mb: isLoggedIn ? 10 : 4,
+          flexGrow: 1,
+          maxWidth: { xs: '100%', md: '1180px' },
+          px: { xs: 2, md: '32px' },
+        }}
+      >
         <Outlet />
       </Container>
       <BottomNav />

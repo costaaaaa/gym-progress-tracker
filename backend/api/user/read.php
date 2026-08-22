@@ -35,7 +35,8 @@ try {
             'rest_timer_enabled' => $user->rest_timer_enabled,
             'age' => $user->age,
             'gender' => $user->gender,
-            'experience_years' => $user->experience_years
+            'experience_years' => $user->experience_years,
+            'password_changed_at' => $user->password_changed_at
         ));
     } else {
         http_response_code(404);

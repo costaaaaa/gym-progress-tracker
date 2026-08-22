@@ -144,6 +144,7 @@ backend/database/*.sql
 !backend/database/gamification_setup.sql
 !backend/database/gamification_levels_setup.sql
 !backend/database/create_rate_limits_table.sql
+!backend/database/add_password_changed_at.sql
 
 # Backfill gamification (seed una-tantum, non va in git)
 backend/scripts/backfill_gamification.php

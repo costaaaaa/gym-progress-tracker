@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { Box, Tabs, Tab, CircularProgress, Container } from '@mui/material';
+import { Box, Tabs, Tab, CircularProgress } from '@mui/material';
 import { useSearchParams } from 'react-router-dom';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import StraightenIcon from '@mui/icons-material/Straighten';
@@ -51,50 +51,59 @@ const Dashboard = () => {
   }, [currentTab, setSearchParams]);
 
   return (
-    <Container maxWidth="lg" sx={{ py: 3 }}>
-      <Box sx={{ width: '100%' }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-          <Tabs 
-            value={tabToIndex[currentTab] || 0} 
-            onChange={handleTabChange} 
-            aria-label="dashboard hub tabs"
-            variant="fullWidth"
-          >
-            <Tab 
-              icon={<BarChartIcon />} 
-              iconPosition="start" 
-              label="Progressi Workout" 
-              id="dashboard-tab-0" 
-            />
-            <Tab 
-              icon={<StraightenIcon />} 
-              iconPosition="start" 
-              label="Misure Corporee" 
-              id="dashboard-tab-1" 
-            />
-          </Tabs>
-        </Box>
-        
-        <Box sx={{ mt: 2 }}>
-          <Suspense fallback={
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}>
-              <CircularProgress />
-            </Box>
-          }>
-            {visitedTabs.progress && (
-              <Box sx={{ display: currentTab === 'progress' ? 'block' : 'none' }}>
-                <Progress isEmbedded={true} />
-              </Box>
-            )}
-            {visitedTabs.body && (
-              <Box sx={{ display: currentTab === 'body' ? 'block' : 'none' }}>
-                <BodyStats isEmbedded={true} />
-              </Box>
-            )}
-          </Suspense>
-        </Box>
+    <Box sx={{ width: '100%' }}>
+      <Box sx={{ borderBottom: '1px solid', borderColor: 'divider', mb: 2 }}>
+        <Tabs
+          value={tabToIndex[currentTab] || 0}
+          onChange={handleTabChange}
+          aria-label="dashboard hub tabs"
+          TabIndicatorProps={{ sx: { height: 2, bgcolor: 'primary.main' } }}
+          sx={{
+            minHeight: 0,
+            '& .MuiTab-root': {
+              textTransform: 'none',
+              fontSize: 14,
+              fontWeight: 500,
+              minHeight: 44,
+              color: 'text.secondary',
+              '&.Mui-selected': { color: 'primary.main', fontWeight: 600 },
+            },
+          }}
+        >
+          <Tab
+            icon={<BarChartIcon fontSize="small" />}
+            iconPosition="start"
+            label="Progressi Workout"
+            id="dashboard-tab-0"
+          />
+          <Tab
+            icon={<StraightenIcon fontSize="small" />}
+            iconPosition="start"
+            label="Misure Corporee"
+            id="dashboard-tab-1"
+          />
+        </Tabs>
       </Box>
-    </Container>
+
+      <Box sx={{ mt: 2 }}>
+        <Suspense fallback={
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}>
+            <CircularProgress />
+          </Box>
+        }>
+          {visitedTabs.progress && (
+            <Box sx={{ display: currentTab === 'progress' ? 'block' : 'none' }}>
+              <Progress isEmbedded={true} />
+            </Box>
+          )}
+          {visitedTabs.body && (
+            <Box sx={{ display: currentTab === 'body' ? 'block' : 'none' }}>
+              <BodyStats isEmbedded={true} />
+            </Box>
+          )}
+        </Suspense>
+      </Box>
+    </Box>
   );
 };
 

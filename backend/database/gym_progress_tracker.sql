@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS `gym_users` (
   `training_start_date` DATE DEFAULT NULL,
   `experience_years` float DEFAULT '0',
   `rest_timer_enabled` tinyint(1) NOT NULL DEFAULT 1,
+  `password_changed_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),

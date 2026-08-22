@@ -1,40 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { AppBar, Toolbar, Typography, Button, Box, useMediaQuery, IconButton, Menu, MenuItem, useTheme, Tooltip, CircularProgress } from '@mui/material';
-import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
+import { AppBar, Toolbar, Typography, Button, Box, Avatar, useMediaQuery, IconButton, Menu, MenuItem, useTheme, Tooltip, CircularProgress } from '@mui/material';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import MenuIcon from '@mui/icons-material/Menu';
 import PersonIcon from '@mui/icons-material/Person';
 import LogoutIcon from '@mui/icons-material/Logout';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
-import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import StraightenIcon from '@mui/icons-material/Straighten';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import { useAuth } from '../../context/AuthContext';
 import { useThemeMode } from '../../context/ThemeModeContext';
 
+// Voci del centro nav desktop: Home / Allenamenti / Dashboard.
+// "Profilo" non ha più un link testuale: l'avatar a destra è l'unico ingresso.
+const navItems = [
+  { label: 'Home', path: '/' },
+  { label: 'Allenamenti', path: '/workouts' },
+  { label: 'Dashboard', path: '/dashboard' },
+];
+
 const Navbar = () => {
   const location = useLocation();
   const theme = useTheme();
-  const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [anchorEl, setAnchorEl] = useState(null);
   const { mode, toggleThemeMode } = useThemeMode();
-  
+
   // Utilizziamo il context invece della logica locale
-  const { isLoggedIn, logout, loading } = useAuth();
-  
+  const { isLoggedIn, user, logout, loading } = useAuth();
+
   // Stato locale per tracciare se l'autenticazione è stata verificata
   const [authVerified, setAuthVerified] = useState(false);
-  
+
   // Aggiorniamo lo stato locale quando cambia lo stato di loading
   useEffect(() => {
     if (!loading) {
       setAuthVerified(true);
     }
   }, [loading]);
-  
+
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -52,73 +55,108 @@ const Navbar = () => {
     return location.pathname === path;
   };
 
-  const navItems = [
-    ...(authVerified && isLoggedIn ? [
-      { label: 'Focus', path: '/focus', variant: 'contained', icon: <PlayArrowIcon /> },
-      { label: 'Allenamenti', path: '/workouts', icon: <FitnessCenterIcon /> },
-      { label: 'Statistiche', path: '/dashboard', icon: <StraightenIcon /> },
-      { label: 'Profilo', path: '/profilo', icon: <PersonIcon /> },
-    ] : [])
-  ];
+  const onProfilePage = location.pathname === '/profilo';
+  const initials = user?.username ? user.username.charAt(0).toUpperCase() : '?';
 
   return (
-    <AppBar position="sticky" elevation={0} sx={{ 
-      boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-      overflowX: 'hidden',
-      backgroundColor: mode === 'light' ? '#d50000 !important' : '#141416 !important',
-      borderBottom: mode === 'light' ? 'none' : '1px solid rgba(255, 255, 255, 0.05)',
-      '& .MuiToolbar-root': {
-        minHeight: '72px!important'
-      }
-    }}>
-      <Toolbar sx={{ 
-        py: 0.5,
-        maxWidth: '1200px',
-        mx: 'auto',
-        width: '100%',
-        px: { xs: 2, md: 3 },
-        overflowX: 'hidden',
-        '.MuiBox-root': { flexWrap: 'nowrap' }
-      }}>
-        <Box 
-          sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            flexGrow: 1, 
+    <AppBar position="sticky" elevation={0} sx={{ overflowX: 'hidden' }}>
+      <Toolbar
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr auto', md: '1fr auto 1fr' },
+          alignItems: 'center',
+          minHeight: '64px !important',
+          maxWidth: '1180px',
+          mx: 'auto',
+          width: '100%',
+          px: { xs: 2, md: '32px' },
+        }}
+      >
+        {/* Sinistra: logo */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.2,
+            justifySelf: 'start',
             cursor: 'pointer',
-            '&:hover': {
-              opacity: 0.95
-            },
             textDecoration: 'none',
-            color: 'white',
-            gap: 1.5
+            color: 'text.primary',
           }}
           component={RouterLink}
           to="/"
         >
-          <Box sx={{ bgcolor: 'white', p: 0.8, borderRadius: 2, display: 'flex' }}>
-            <FitnessCenterIcon sx={{ fontSize: 24, transform: 'rotate(-20deg)', color: '#d50000' }} />
+          <Box
+            sx={{
+              width: 34,
+              height: 34,
+              borderRadius: '9px',
+              bgcolor: 'primary.main',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <FitnessCenterIcon sx={{ fontSize: 18, color: '#fff' }} />
           </Box>
-          <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-            <Typography 
-              variant="h6" 
-              component="div" 
-              sx={{ 
-                fontWeight: 800,
-                letterSpacing: '-0.02em',
-                lineHeight: 1.1,
-                fontSize: { xs: '1rem', md: '1.25rem' }
+          <Typography
+            sx={{
+              display: { xs: 'none', sm: 'block' },
+              fontFamily: '"Lexend", sans-serif',
+              fontWeight: 700,
+              fontSize: 16,
+              lineHeight: 1,
+            }}
+          >
+            Gym Progress
+          </Typography>
+        </Box>
+
+        {/* Centro: nav desktop, nascosta su mobile */}
+        {!isMobile && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, justifySelf: 'center' }}>
+            {authVerified && isLoggedIn && navItems.map((item) => (
+              <Button
+                key={item.path}
+                component={RouterLink}
+                to={item.path}
+                disableRipple
+                sx={{
+                  minWidth: 0,
+                  px: 0,
+                  py: 1,
+                  fontSize: 14,
+                  fontWeight: isActive(item.path) ? 600 : 500,
+                  color: isActive(item.path) ? 'primary.main' : 'text.secondary',
+                  borderRadius: 0,
+                  borderBottom: '2px solid',
+                  borderColor: isActive(item.path) ? 'primary.main' : 'transparent',
+                  '&:hover': {
+                    backgroundColor: 'transparent',
+                    color: 'primary.main',
+                  },
+                }}
+              >
+                {item.label}
+              </Button>
+            ))}
+          </Box>
+        )}
+
+        {/* Destra: toggle tema, avatar / auth */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifySelf: 'end' }}>
+          <Tooltip title={mode === 'light' ? 'Modalità Scura' : 'Modalità Chiara'}>
+            <IconButton
+              onClick={toggleThemeMode}
+              size="small"
+              sx={{
+                color: 'text.secondary',
+                bgcolor: mode === 'light' ? '#f7f6f5' : 'rgba(255,255,255,0.06)',
+                '&:hover': { bgcolor: mode === 'light' ? '#ececea' : 'rgba(255,255,255,0.12)' },
               }}
             >
-              GYM TRACKER
-            </Typography>
-          </Box>
-        </Box>
-        
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Tooltip title={mode === 'light' ? 'Modalità Scura' : 'Modalità Chiara'}>
-            <IconButton color="inherit" onClick={toggleThemeMode} sx={{ bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}>
-              {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
+              {mode === 'light' ? <DarkModeIcon fontSize="small" /> : <LightModeIcon fontSize="small" />}
             </IconButton>
           </Tooltip>
 
@@ -126,210 +164,132 @@ const Navbar = () => {
             <>
               <IconButton
                 edge="end"
-                color="inherit"
-                aria-label="menu"
                 onClick={handleMenu}
-                sx={{ ml: 1, bgcolor: 'rgba(255,255,255,0.1)' }}
+                sx={{ color: 'text.primary' }}
+                aria-label="menu"
               >
-                <MenuIcon sx={{ color: 'white' }} />
+                <MenuIcon />
               </IconButton>
               <Menu
                 id="menu-appbar"
                 anchorEl={anchorEl}
-                anchorOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
+                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
                 keepMounted
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
                 open={Boolean(anchorEl)}
                 onClose={handleClose}
-                sx={{ 
-                  '& .MuiPaper-root': {
-                    backgroundColor: mode === 'light' ? '#d50000 !important' : '#141416 !important',
-                    color: 'white !important',
-                    borderRadius: 3,
-                    mt: 1.5,
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-                    minWidth: '200px'
-                  }
-                }}
-                PaperProps={{
-                  sx:{
-                    backgroundColor: mode === 'light' ? '#d50000 !important' : '#141416 !important',
-                    color: 'white !important',
-                    '& .MuiMenuItem-root': {
-                      color: 'white !important',
-                      py: 1.5,
-                      fontWeight: 600,
-                      '& svg': {
-                        color: 'white !important',
-                        mr: 1.5
-                      }
+                slotProps={{
+                  paper: {
+                    sx: {
+                      mt: 1.5,
+                      minWidth: '200px',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+                      '& .MuiMenuItem-root': { py: 1.25, fontWeight: 500 },
                     },
-                    '& .MuiListItemIcon-root': {
-                      color: 'white !important'
-                    },
-                    boxShadow: '0px 8px 32px rgba(0, 0, 0, 0.2)'
-                  }
+                  },
                 }}
               >
-                {authVerified && isLoggedIn && (
+                {authVerified && isLoggedIn && navItems.map((item) => (
                   <MenuItem
+                    key={item.path}
                     component={RouterLink}
-                    to="/profilo"
+                    to={item.path}
                     onClick={handleClose}
-                    sx={{
-                      backgroundColor: isActive('/profilo') ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-                      color: 'white'
-                    }}
+                    selected={isActive(item.path)}
                   >
-                    <PersonIcon fontSize="small" sx={{ mr: 1, color: 'white' }} />
+                    {item.label}
+                  </MenuItem>
+                ))}
+
+                {authVerified && isLoggedIn && (
+                  <MenuItem component={RouterLink} to="/profilo" onClick={handleClose} selected={isActive('/profilo')}>
+                    <PersonIcon fontSize="small" sx={{ mr: 1.5 }} />
                     Profilo
                   </MenuItem>
                 )}
 
                 {authVerified && isLoggedIn && (
-                  <MenuItem
-                    onClick={() => { handleClose(); handleLogout(); }}
-                    sx={{
-                      '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
-                      color: 'white'
-                    }}
-                  >
-                    <LogoutIcon fontSize="small" sx={{ mr: 1, color: 'white' }} />
+                  <MenuItem onClick={() => { handleClose(); handleLogout(); }}>
+                    <LogoutIcon fontSize="small" sx={{ mr: 1.5 }} />
                     Esci
                   </MenuItem>
                 )}
-                 
-                  {loading && (
-                   <MenuItem disabled sx={{ color: 'white' }}>
-                     <CircularProgress size={20} sx={{ mr: 1, color: 'white' }} />
-                     Verifica sessione...
-                   </MenuItem>
-                 )}
-                 
-                 {authVerified && !isLoggedIn && (
-                   <>
-                    <MenuItem 
-                      component={RouterLink} 
-                      to="/login"
-                      onClick={handleClose}
-                      sx={{
-                        backgroundColor: isActive('/login') ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-                        color: 'white'
-                      }}
-                    >
-                      <PersonIcon fontSize="small" sx={{ mr: 1, color: 'white' }} />
+
+                {loading && (
+                  <MenuItem disabled>
+                    <CircularProgress size={20} sx={{ mr: 1.5 }} />
+                    Verifica sessione...
+                  </MenuItem>
+                )}
+
+                {authVerified && !isLoggedIn && (
+                  <>
+                    <MenuItem component={RouterLink} to="/login" onClick={handleClose} selected={isActive('/login')}>
                       Accedi
                     </MenuItem>
-                    <MenuItem 
-                      component={RouterLink} 
-                      to="/register"
-                      onClick={handleClose}
-                      sx={{
-                        backgroundColor: isActive('/register') ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-                        color: 'white'
-                      }}
-                    >
+                    <MenuItem component={RouterLink} to="/register" onClick={handleClose} selected={isActive('/register')}>
                       Registrati
                     </MenuItem>
-                   </>
-                 )}
+                  </>
+                )}
               </Menu>
             </>
           ) : (
-            <Box 
-              sx={{ 
-                display: 'flex',
-                alignItems: 'center',
-                flexShrink: 1,
-                gap: 1.5
-              }}
-            >
-              {navItems.map((item) => (
-                <Button 
-                  key={item.path}
-                  color={item.variant === 'contained' ? 'inherit' : 'inherit'}
-                  variant={item.variant || 'text'}
-                  component={RouterLink} 
-                  to={item.path}
-                  startIcon={item.icon}
-                  sx={{
-                    px: 2,
-                    fontWeight: 'bold',
-                    transition: 'all 0.3s',
-                    color: item.variant === 'contained' ? (mode === 'light' ? '#d50000' : 'white') : 'white',
-                    backgroundColor: item.variant === 'contained' ? (mode === 'light' ? 'white' : '#d50000') : 'transparent',
-                    '&:hover': {
-                      backgroundColor: item.variant === 'contained' ? (mode === 'light' ? 'rgba(255,255,255,0.9)' : 'rgba(213, 0, 0, 0.8)') : 'rgba(255, 255, 255, 0.15)'
-                    },
-                    borderBottom: !item.variant && isActive(item.path) ? '3px solid white' : 'none',
-                    borderRadius: item.variant ? '8px' : '0'
-                  }}
-                >
-                  {item.label}
-                </Button>
-              ))}
-              
-                {isLoggedIn ? (
-                  <Tooltip title="Logout">
-                    <IconButton
-                      color="inherit"
-                      onClick={handleLogout}
+            <>
+              {authVerified && isLoggedIn && (
+                <Tooltip title="Profilo">
+                  <IconButton
+                    component={RouterLink}
+                    to="/profilo"
+                    sx={{
+                      p: 0,
+                      boxShadow: onProfilePage ? '0 0 0 2px #fff, 0 0 0 4px #d50000' : 'none',
+                    }}
+                  >
+                    <Avatar
                       sx={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '8px',
-                        '&:hover': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.15)'
-                        }
+                        width: 34,
+                        height: 34,
+                        bgcolor: '#1a1816',
+                        color: '#fff',
+                        fontSize: 14,
+                        fontWeight: 700,
+                        fontFamily: '"Lexend", sans-serif',
                       }}
                     >
-                      <LogoutIcon sx={{ color: 'white' }} />
-                    </IconButton>
-                  </Tooltip>
-                ) : (
-                  <>
-                    {loading && (
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <CircularProgress size={24} color="inherit" sx={{ mx: 2, color: 'white' }} />
-                      </Box>
-                    )}
-                    
-                    {authVerified && !isLoggedIn && (
-                      <>
-                        <Button 
-                          color="inherit"
-                          component={RouterLink} 
-                          to="/login"
-                          sx={{
-                            backgroundColor: isActive('/login') ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-                            color: 'white'
-                          }}
-                        >
-                          Accedi
-                        </Button>
-                        <Button 
-                          color="inherit"
-                          component={RouterLink} 
-                          to="/register"
-                          sx={{
-                            backgroundColor: isActive('/register') ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-                            color: 'white'
-                          }}
-                        >
-                          Registrati
-                        </Button>
-                      </>
-                    )}
-                  </>
-                )}
-              </Box>
-            )}
+                      {initials}
+                    </Avatar>
+                  </IconButton>
+                </Tooltip>
+              )}
+
+              {!isLoggedIn && loading && (
+                <CircularProgress size={22} sx={{ color: 'text.secondary' }} />
+              )}
+
+              {authVerified && !isLoggedIn && (
+                <>
+                  <Button
+                    component={RouterLink}
+                    to="/login"
+                    sx={{ color: 'text.secondary', fontWeight: 500, fontSize: 14 }}
+                  >
+                    Accedi
+                  </Button>
+                  <Button
+                    variant="contained"
+                    component={RouterLink}
+                    to="/register"
+                    sx={{ fontSize: 14 }}
+                  >
+                    Registrati
+                  </Button>
+                </>
+              )}
+            </>
+          )}
         </Box>
       </Toolbar>
     </AppBar>
