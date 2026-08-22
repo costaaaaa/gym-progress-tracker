@@ -37,16 +37,39 @@ export const ThemeModeProvider = ({ children }) => {
             dark: mode === 'light' ? grey[900] : grey[100],
           },
           background: {
-            default: mode === 'light' ? '#f8f9fa' : '#0a0a0b',
+            default: mode === 'light' ? '#f7f6f5' : '#0a0a0b',
             paper: mode === 'light' ? '#ffffff' : '#141416',
           },
           text: {
-            primary: mode === 'light' ? '#1a1a1b' : '#ffffff',
-            secondary: mode === 'light' ? '#4a4a4b' : '#a0a0a2',
-          }
+            primary: mode === 'light' ? '#1a1816' : '#ffffff',
+            secondary: mode === 'light' ? '#6b6663' : '#a0a0a2',
+          },
+          divider: mode === 'light' ? '#ececea' : 'rgba(255, 255, 255, 0.08)',
+          success: {
+            main: mode === 'light' ? '#16a34a' : '#22c55e',
+          },
+          warning: {
+            main: mode === 'light' ? '#d97706' : '#f59e0b',
+          },
+          error: {
+            main: mode === 'light' ? '#d50000' : '#ff5252',
+          },
+          info: {
+            main: mode === 'light' ? '#4f46e5' : '#818cf8',
+          },
+          // Token extra usato dal redesign per l'Indice di Progresso (non uno slot MUI standard)
+          violet: {
+            main: mode === 'light' ? '#7c3aed' : '#a78bfa',
+            light: mode === 'light' ? '#a78bfa' : '#c4b5fd',
+            dark: mode === 'light' ? '#5b21b6' : '#7c3aed',
+            contrastText: '#ffffff',
+          },
+        },
+        shape: {
+          borderRadius: 16,
         },
         typography: {
-          fontFamily: '"Lexend", "Inter", "Roboto", sans-serif',
+          fontFamily: '"Inter", "Roboto", sans-serif',
           h1: { fontFamily: '"Lexend", sans-serif', fontWeight: 800, letterSpacing: '-0.02em' },
           h2: { fontFamily: '"Lexend", sans-serif', fontWeight: 800, letterSpacing: '-0.02em' },
           h3: { fontFamily: '"Lexend", sans-serif', fontWeight: 700, letterSpacing: '-0.01em' },
@@ -54,7 +77,7 @@ export const ThemeModeProvider = ({ children }) => {
           h5: { fontFamily: '"Lexend", sans-serif', fontWeight: 700 },
           h6: { fontFamily: '"Lexend", sans-serif', fontWeight: 700 },
           button: {
-            fontFamily: '"Lexend", sans-serif',
+            fontFamily: '"Inter", sans-serif',
             fontWeight: 600,
             letterSpacing: '0.02em',
             textTransform: 'none',
@@ -71,29 +94,26 @@ export const ThemeModeProvider = ({ children }) => {
           MuiAppBar: {
             styleOverrides: {
               root: {
-                background: mode === 'light' 
-                  ? `linear-gradient(135deg, #d50000 0%, #9b0000 100%)`
-                  : `linear-gradient(135deg, #141416 0%, #0a0a0b 100%)`,
-                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+                background: mode === 'light' ? '#ffffff' : '#141416',
+                color: mode === 'light' ? '#1a1816' : '#ffffff',
+                boxShadow: 'none',
                 borderRadius: 0,
-                borderBottom: mode === 'light' ? 'none' : '1px solid rgba(255, 255, 255, 0.05)',
+                borderBottom: mode === 'light' ? '1px solid #ececea' : '1px solid rgba(255, 255, 255, 0.08)',
               },
             },
           },
           MuiButton: {
             styleOverrides: {
               root: {
-                borderRadius: 12,
-                padding: '10px 24px',
+                borderRadius: 10,
+                padding: '10px 18px',
                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
               },
-              containedPrimary: {
-                '&:hover': {
-                  boxShadow: '0 4px 12px rgba(213, 0, 0, 0.4)',
-                },
-              },
               contained: {
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                boxShadow: 'none',
+                '&:hover': {
+                  boxShadow: 'none',
+                },
               },
             },
           },
@@ -102,10 +122,8 @@ export const ThemeModeProvider = ({ children }) => {
               root: {
                 borderRadius: 16,
                 backgroundImage: 'none',
-                boxShadow: mode === 'light' 
-                  ? '0 4px 20px rgba(0, 0, 0, 0.03)'
-                  : '0 4px 20px rgba(0, 0, 0, 0.4)',
-                border: mode === 'light' ? '1px solid #f1f3f5' : '1px solid rgba(255, 255, 255, 0.05)',
+                boxShadow: 'none',
+                border: mode === 'light' ? '1px solid #ececea' : '1px solid rgba(255, 255, 255, 0.08)',
               },
             },
           },
@@ -114,17 +132,8 @@ export const ThemeModeProvider = ({ children }) => {
               root: {
                 borderRadius: 16,
                 backgroundImage: 'none',
-                boxShadow: mode === 'light'
-                  ? '0 4px 20px rgba(0, 0, 0, 0.03)'
-                  : '0 4px 20px rgba(0, 0, 0, 0.4)',
-                border: mode === 'light' ? '1px solid #f1f3f5' : '1px solid rgba(255, 255, 255, 0.05)',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                '&:hover': {
-                  transform: 'translateY(-4px)',
-                  boxShadow: mode === 'light'
-                    ? '0 12px 28px rgba(0, 0, 0, 0.08)'
-                    : '0 12px 28px rgba(0, 0, 0, 0.6)',
-                },
+                boxShadow: 'none',
+                border: mode === 'light' ? '1px solid #ececea' : '1px solid rgba(255, 255, 255, 0.08)',
               },
             },
           },
@@ -132,7 +141,7 @@ export const ThemeModeProvider = ({ children }) => {
             styleOverrides: {
               root: {
                 backgroundColor: mode === 'light' ? '#ffffff' : '#141416',
-                borderTop: mode === 'light' ? '1px solid #f1f3f5' : '1px solid rgba(255, 255, 255, 0.05)',
+                borderTop: mode === 'light' ? '1px solid #ececea' : '1px solid rgba(255, 255, 255, 0.08)',
               }
             }
           },
@@ -158,7 +167,6 @@ export const ThemeModeProvider = ({ children }) => {
           ':root': {
             '--primary-main': '#d50000',
             '--primary-light': '#ff5131',
-            '--bg-overlay': mode === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.85)',
           },
         }}
       />
@@ -168,4 +176,3 @@ export const ThemeModeProvider = ({ children }) => {
     </ThemeModeContext.Provider>
   );
 };
-

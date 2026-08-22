@@ -1,17 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Container, 
-  Typography, 
-  Paper, 
-  Box, 
-  Grid, 
-  Avatar, 
+import {
+  Box,
+  Typography,
+  Card,
+  Avatar,
   TextField,
   Button,
-  Divider,
-  Card,
-  CardContent,
-  Skeleton,
   IconButton,
   Snackbar,
   Alert,
@@ -23,42 +17,30 @@ import {
   InputAdornment,
   Checkbox,
   FormControlLabel,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  FormGroup,
   CircularProgress,
   FormControl,
   InputLabel,
   Select,
-  MenuItem
+  MenuItem,
+  Grid,
+  Collapse,
 } from '@mui/material';
 import Switch from '@mui/material/Switch';
-import { 
-  Person as PersonIcon,
-  Email as EmailIcon,
+import {
   Lock as LockIcon,
-  FitnessCenter as FitnessCenterIcon,
-  CalendarToday as CalendarIcon,
   Save as SaveIcon,
   Cancel as CancelIcon,
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
   DeleteForever as DeleteForeverIcon,
-  Warning as WarningIcon,
   Download as DownloadIcon,
-  FileDownload as FileDownloadIcon,
-  History as HistoryIcon,
-  Description as DescriptionIcon,
-  Timer as TimerIcon,
-  Wc as WcIcon
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { format, parseISO, subYears, startOfToday } from 'date-fns';
+import { format, parseISO, subYears, startOfToday, formatDistanceToNow } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
@@ -66,7 +48,7 @@ import { API_BASE_URL } from '../config';
 const Account = ({ isEmbedded = false }) => {
   const { user, logout, isLoggedIn, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  
+
   // Reindirizza alla pagina di login se l'utente non è autenticato e l'autenticazione è stata verificata
   useEffect(() => {
     if (!authLoading && !isLoggedIn) {
@@ -77,10 +59,12 @@ const Account = ({ isEmbedded = false }) => {
   // Stati per i dati dell'utente
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [workoutCount, setWorkoutCount] = useState(0);
-  const [plansCount, setPlansCount] = useState(0);
   const [joinDate, setJoinDate] = useState(null);
-  
+
+  // Toggle per mostrare le card "Profilo fisico" e "Allenamento", non presenti nel design
+  // ma funzionalità reali: restano collassate finché l'utente non clicca "Modifica".
+  const [editOpen, setEditOpen] = useState(false);
+
   // Stati per il profilo fisico
   const [age, setAge] = useState('');
   const [gender, setGender] = useState('M');
@@ -88,7 +72,7 @@ const Account = ({ isEmbedded = false }) => {
   const [birthDate, setBirthDate] = useState(null);
   const [trainingStartDate, setTrainingStartDate] = useState(null);
   const [updatingProfile, setUpdatingProfile] = useState(false);
-  
+
   // Stati per la modifica della password
   const [openPasswordDialog, setOpenPasswordDialog] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -99,7 +83,7 @@ const Account = ({ isEmbedded = false }) => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   // Stati per l'eliminazione dell'account
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
@@ -107,38 +91,32 @@ const Account = ({ isEmbedded = false }) => {
   const [deleteConfirmed, setDeleteConfirmed] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteError, setDeleteError] = useState('');
-  
-  // Stati per l'esportazione dei dati
-  const [openExportDialog, setOpenExportDialog] = useState(false);
-  const [exportWorkouts, setExportWorkouts] = useState(true);
-  const [exportPlans, setExportPlans] = useState(true);
+
+  // Stato per l'esportazione dei dati (client-side, nessun endpoint dedicato)
   const [exportLoading, setExportLoading] = useState(false);
-  const [workoutData, setWorkoutData] = useState([]);
-  const [plansData, setPlansData] = useState([]);
-  const [dataLoaded, setDataLoaded] = useState(false);
-  
+
   // Stato per le impostazioni allenamento
   const [restTimerEnabled, setRestTimerEnabled] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
-  
+
   // Funzioni per gestire la visibilità delle password
   const handleToggleCurrentPasswordVisibility = () => {
     setShowCurrentPassword(!showCurrentPassword);
   };
-  
+
   const handleToggleNewPasswordVisibility = () => {
     setShowNewPassword(!showNewPassword);
   };
-  
+
   const handleToggleConfirmPasswordVisibility = () => {
     setShowConfirmPassword(!showConfirmPassword);
   };
-  
+
   // Funzione per gestire la visibilità della password per l'eliminazione dell'account
   const handleToggleDeletePasswordVisibility = () => {
     setShowDeletePassword(!showDeletePassword);
   };
-  
+
   // Funzioni per la gestione dell'eliminazione dell'account
   const handleOpenDeleteDialog = () => {
     setOpenDeleteDialog(true);
@@ -146,26 +124,26 @@ const Account = ({ isEmbedded = false }) => {
     setDeleteConfirmed(false);
     setDeleteError('');
   };
-  
+
   const handleCloseDeleteDialog = () => {
     setOpenDeleteDialog(false);
   };
-  
+
   const handleDeleteAccount = async () => {
     // Validazione
     if (!deletePassword) {
       setDeleteError('La password è obbligatoria');
       return;
     }
-    
+
     if (!deleteConfirmed) {
       setDeleteError('Devi confermare di essere consapevole delle conseguenze');
       return;
     }
-    
+
     setDeletingAccount(true);
     setDeleteError('');
-    
+
     try {
       // Password inviata in chiaro su HTTPS; la verifica avviene lato server
       const response = await fetch(`${API_BASE_URL}api/user/delete.php`, {
@@ -178,14 +156,14 @@ const Account = ({ isEmbedded = false }) => {
         }),
         credentials: 'include'
       });
-      
+
       // Analisi della risposta
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Errore durante l\'eliminazione dell\'account');
       }
-      
+
       // Chiudiamo il dialog e mostriamo il messaggio di successo
       handleCloseDeleteDialog();
       setSnackbar({
@@ -193,7 +171,7 @@ const Account = ({ isEmbedded = false }) => {
         message: 'Account eliminato con successo',
         severity: 'success'
       });
-      
+
       // Logout e redirect alla home dopo un breve delay
       setTimeout(() => {
         logout();
@@ -201,7 +179,7 @@ const Account = ({ isEmbedded = false }) => {
       }, 2000);
     } catch (error) {
       console.error('Errore durante l\'eliminazione dell\'account:', error);
-      
+
       // Gestione dei diversi tipi di errore
       if (error.message.includes('password')) {
         setDeleteError('La password non è corretta');
@@ -214,163 +192,78 @@ const Account = ({ isEmbedded = false }) => {
       setDeletingAccount(false);
     }
   };
-  
-  // Funzioni per la gestione dell'esportazione dei dati
-  const handleOpenExportDialog = () => {
-    setOpenExportDialog(true);
-    setExportWorkouts(true);
-    setExportPlans(true);
-    // Avviamo il caricamento dei dati se non sono già stati caricati
-    if (!dataLoaded) {
-      fetchExportData();
-    }
-  };
-  
-  const handleCloseExportDialog = () => {
-    setOpenExportDialog(false);
-    // Resettiamo i dati caricati per liberare memoria se il download è finito o annullato
-    setDataLoaded(false);
-    setWorkoutData([]);
-    setPlansData([]);
-  };
-  
-const fetchExportData = React.useCallback(async () => {
-  setExportLoading(true);
-  
-  try {
-    let loadedWorkouts = [];
-    let loadedPlans = [];
 
-    // Recupero dati allenamenti
-    if (exportWorkouts) {
-      const workoutResponse = await fetch(`${API_BASE_URL}api/workout_history/read.php`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-      
-      if (workoutResponse.ok) {
-        const data = await workoutResponse.json();
-        if (data.records && Array.isArray(data.records)) {
-          loadedWorkouts = data.records;
-          setWorkoutData(data.records);
-          setWorkoutCount(data.records.length);
-        } else {
-          setWorkoutData([]);
-          setWorkoutCount(0);
-        }
-      }
-    }
-    
-    // Recupero dati schede
-    if (exportPlans) {
-      const plansResponse = await fetch(`${API_BASE_URL}api/workout/read_plans.php`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-      
-      if (plansResponse.ok) {
-        const data = await plansResponse.json();
-        if (data.records && Array.isArray(data.records)) {
-          loadedPlans = data.records;
-          setPlansData(data.records);
-          setPlansCount(data.records.length);
-        } else {
-          setPlansData([]);
-          setPlansCount(0);
-        }
-      }
-    }
-    
-    setDataLoaded(true);
-    return { workouts: loadedWorkouts, plans: loadedPlans };
-  } catch (error) {
-    console.error('Errore nel recupero dei dati per l\'esportazione:', error);
-    setSnackbar({
-      open: true,
-      message: 'Errore nel recupero dei dati per l\'esportazione',
-      severity: 'error'
-    });
-    return null;
-  } finally {
-    setExportLoading(false);
-  }
-}, [exportWorkouts, exportPlans, setWorkoutData, setPlansData, setDataLoaded, setExportLoading, setWorkoutCount, setPlansCount]);
-  
-  // Funzione per scaricare i dati selezionati
+  // Esportazione dati: scarica subito schede + storico + misure in JSON, nessun dialog di selezione.
   const handleDownloadData = async () => {
-    let currentWorkoutData = workoutData;
-    let currentPlansData = plansData;
+    setExportLoading(true);
 
-    // Se i dati non sono caricati, li scarichiamo ora
-    if (!dataLoaded) {
-      const results = await fetchExportData();
-      if (!results) return;
-      currentWorkoutData = results.workouts;
-      currentPlansData = results.plans;
-    }
+    try {
+      const [workoutResponse, plansResponse, statsResponse] = await Promise.all([
+        fetch(`${API_BASE_URL}api/workout_history/read.php`, { method: 'GET', credentials: 'include' }),
+        fetch(`${API_BASE_URL}api/workout/read_plans.php`, { method: 'GET', credentials: 'include' }),
+        fetch(`${API_BASE_URL}api/user_stats/read.php`, { method: 'GET', credentials: 'include' }),
+      ]);
 
-    // Prepara i dati da scaricare
-    const dataToExport = {
-      utente: {
-        username: userData?.username,
-        email: userData?.email,
-        data_esportazione: new Date().toISOString()
-      }
-    };
-    
-    if (exportWorkouts) {
-      dataToExport.allenamenti = currentWorkoutData;
+      const workoutJson = workoutResponse.ok ? await workoutResponse.json() : null;
+      const plansJson = plansResponse.ok ? await plansResponse.json() : null;
+      const statsJson = statsResponse.ok ? await statsResponse.json() : null;
+
+      const dataToExport = {
+        utente: {
+          username: userData?.username,
+          email: userData?.email,
+          data_esportazione: new Date().toISOString()
+        },
+        allenamenti: Array.isArray(workoutJson?.records) ? workoutJson.records : [],
+        schede: Array.isArray(plansJson?.records) ? plansJson.records : [],
+        misure: Array.isArray(statsJson?.records) ? statsJson.records : [],
+      };
+
+      const jsonData = JSON.stringify(dataToExport, null, 2);
+      const blob = new Blob([jsonData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `dati_fitness_${userData?.username || 'utente'}_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      setSnackbar({
+        open: true,
+        message: 'Download completato con successo',
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('Errore nell\'esportazione dei dati:', error);
+      setSnackbar({
+        open: true,
+        message: 'Errore nell\'esportazione dei dati',
+        severity: 'error'
+      });
+    } finally {
+      setExportLoading(false);
     }
-    
-    if (exportPlans) {
-      dataToExport.schede = currentPlansData;
-    }
-    
-    // Converti in JSON
-    const jsonData = JSON.stringify(dataToExport, null, 2);
-    
-    // Crea un blob e un link per il download
-    const blob = new Blob([jsonData], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `dati_fitness_${userData?.username || 'utente'}_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Mostra notifica di successo
-    setSnackbar({
-      open: true,
-      message: 'Download completato con successo',
-      severity: 'success'
-    });
-    
-    // Chiudi il dialog
-    handleCloseExportDialog();
   };
-  
-  // Effetto per caricare i dati rimosso (ora on-demand)
-  
+
   // Stato per le notifiche
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
     severity: 'info'
   });
-  
+
   // Caricamento dei dati dell'utente al mount del componente
   useEffect(() => {
     if (user) {
       fetchUserData();
-      fetchWorkoutCount();
-      fetchPlansCount();
     } else {
       // Se l'utente non è autenticato, imposta loading a false per evitare il caricamento infinito
       setLoading(false);
     }
   }, [user]);
-  
+
   // Funzione per recuperare i dati completi dell'utente
   const fetchUserData = async () => {
     setLoading(true);
@@ -385,12 +278,13 @@ const fetchExportData = React.useCallback(async () => {
       }
 
       const userDetails = await response.json();
-      
+
       setUserData({
         id: userDetails.id,
         username: userDetails.username,
         email: userDetails.email,
-        created_at: userDetails.created_at
+        created_at: userDetails.created_at,
+        password_changed_at: userDetails.password_changed_at
       });
 
       // Impostazione dati profilo
@@ -421,52 +315,7 @@ const fetchExportData = React.useCallback(async () => {
       setLoading(false);
     }
   };
-  
-  // Funzione per recuperare il conteggio degli allenamenti
-  const fetchWorkoutCount = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}api/workout_stats/total_count.php`, {
-        method: 'GET',
-        credentials: 'include'
-      });
 
-      if (!response.ok) {
-        throw new Error('Errore nel recupero del conteggio allenamenti');
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        setWorkoutCount(data.total);
-      } else {
-        setWorkoutCount(0);
-      }
-    } catch (error) {
-      console.error('Errore nel conteggio degli allenamenti:', error);
-      setWorkoutCount(0);
-    }
-  };
-
-  // Funzione per recuperare il conteggio delle schede
-  const fetchPlansCount = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}api/workout/read_plans.php`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.records && Array.isArray(data.records)) {
-          setPlansCount(data.records.length);
-        } else {
-          setPlansCount(0);
-        }
-      }
-    } catch (error) {
-      console.error('Errore nel conteggio delle schede:', error);
-      setPlansCount(0);
-    }
-  };
   const handleUpdateProfile = async () => {
     setUpdatingProfile(true);
     try {
@@ -484,7 +333,7 @@ const fetchExportData = React.useCallback(async () => {
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
-      
+
       // Aggiorna i valori calcolati restituiti dal server
       if (data.age !== undefined) setAge(data.age);
       if (data.experience_years !== undefined) setExperienceYears(data.experience_years);
@@ -505,7 +354,7 @@ const fetchExportData = React.useCallback(async () => {
       setUpdatingProfile(false);
     }
   };
-  
+
   // Funzioni per la gestione del dialog di cambio password
   const handleOpenPasswordDialog = () => {
     setOpenPasswordDialog(true);
@@ -514,7 +363,7 @@ const fetchExportData = React.useCallback(async () => {
     setConfirmPassword('');
     setPasswordError('');
   };
-  
+
   const handleClosePasswordDialog = () => {
     setOpenPasswordDialog(false);
   };
@@ -534,35 +383,35 @@ const fetchExportData = React.useCallback(async () => {
     if (!hasSpecial) return "La password deve contenere almeno un carattere speciale (!@#$%^&*)";
     return null;
   };
-  
+
   const handleChangePassword = async () => {
     // Validazione
     if (!currentPassword || !newPassword || !confirmPassword) {
       setPasswordError('Tutti i campi sono obbligatori');
       return;
     }
-    
+
     if (newPassword !== confirmPassword) {
       setPasswordError('Le nuove password non corrispondono');
       return;
     }
-    
+
     // Validazione sicurezza nuova password
     const passwordValidationError = validatePassword(newPassword);
     if (passwordValidationError) {
       setPasswordError(passwordValidationError);
       return;
     }
-    
+
     // Verifica che la nuova password sia diversa da quella attuale
     if (currentPassword === newPassword) {
       setPasswordError('La nuova password deve essere diversa da quella attuale');
       return;
     }
-    
+
     setChangingPassword(true);
     setPasswordError('');
-    
+
     try {
       // Password inviate in chiaro su HTTPS; l'hashing bcrypt avviene lato server
       const response = await fetch(`${API_BASE_URL}api/user/change_password.php`, {
@@ -576,14 +425,14 @@ const fetchExportData = React.useCallback(async () => {
         }),
         credentials: 'include'
       });
-      
+
       // Analisi della risposta
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Errore durante il cambio password');
       }
-      
+
       // Chiudiamo il dialog e mostriamo il messaggio di successo
       handleClosePasswordDialog();
       setSnackbar({
@@ -591,9 +440,12 @@ const fetchExportData = React.useCallback(async () => {
         message: 'Password modificata con successo',
         severity: 'success'
       });
+
+      // Aggiorna la data di ultima modifica mostrata nella card Sicurezza
+      setUserData(prev => prev ? { ...prev, password_changed_at: new Date().toISOString() } : prev);
     } catch (error) {
       console.error('Errore durante il cambio password:', error);
-      
+
       // Gestione dei diversi tipi di errore
       if (error.message.includes('password attuale')) {
         setPasswordError('La password attuale non è corretta');
@@ -606,7 +458,7 @@ const fetchExportData = React.useCallback(async () => {
       setChangingPassword(false);
     }
   };
-  
+
   // Chiusura dello snackbar
   const handleCloseSnackbar = () => {
     setSnackbar({
@@ -614,379 +466,250 @@ const fetchExportData = React.useCallback(async () => {
       open: false
     });
   };
-  
+
   // Rendering condizionale durante il caricamento o se l'utente non è autenticato
   if (loading || authLoading || !isLoggedIn) {
     return (
-      <Container maxWidth="md" sx={{ py: isEmbedded ? 0 : 4 }} disableGutters={isEmbedded}>
-        <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-            <Skeleton variant="circular" width={60} height={60} sx={{ mr: 2 }} />
-            <Box>
-              <Skeleton variant="text" width={150} height={40} />
-              <Skeleton variant="text" width={220} height={24} />
-            </Box>
-          </Box>
-          <Divider sx={{ my: 2 }} />
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
-              <Skeleton variant="rectangular" height={80} sx={{ mb: 2, borderRadius: 1 }} />
-              <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 1 }} />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Skeleton variant="rectangular" height={170} sx={{ borderRadius: 1 }} />
-            </Grid>
-          </Grid>
-        </Paper>
-      </Container>
+      <Box sx={{ display: 'flex', justifyContent: 'center', pt: 8 }}>
+        <CircularProgress />
+      </Box>
     );
   }
-  
+
   // Non renderizzare nulla se non c'è un utente autenticato
   if (!user) {
     return null;
   }
-  
+
+  const passwordChangedLabel = userData?.password_changed_at
+    ? `Ultima modifica ${formatDistanceToNow(parseISO(userData.password_changed_at), { locale: it, addSuffix: true })}`
+    : 'Non ancora modificata';
+
   return (
-    <Container maxWidth="md" sx={{ py: isEmbedded ? 0 : 4 }} disableGutters={isEmbedded}>
+    <Box sx={{ maxWidth: 640, mx: 'auto', display: 'flex', flexDirection: 'column', gap: 3, pb: 4 }}>
       {!isEmbedded && (
-        <Typography variant="h4" component="h1" gutterBottom sx={{
-          fontWeight: 700,
-          mb: 3,
-          textAlign: { xs: 'center', sm: 'left' },
-          fontSize: { xs: '1.8rem', sm: '2.125rem' }
-        }}>
+        <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 22 }}>
           Il mio Account
         </Typography>
       )}
-      
-      <Paper elevation={3} sx={{ 
-        p: { xs: 2, sm: 3, md: 4 }, 
-        borderRadius: 2,
-        mb: 4,
-        background: (theme) => theme.palette.mode === 'light' 
-          ? 'linear-gradient(to right bottom, #ffffff, #f8f9fa)'
-          : 'linear-gradient(to right bottom, #141416, #1a1a1b)',
-        border: (theme) => theme.palette.mode === 'light' ? 'none' : '1px solid rgba(255,255,255,0.05)'
-      }}>
-        {/* Intestazione con avatar e nome utente */}
-        <Box sx={{ 
-          display: 'flex', 
-          flexDirection: { xs: 'column', sm: 'row' },
-          alignItems: { xs: 'center', sm: 'flex-start' },
-          mb: 3 
-        }}>
-          <Avatar 
-            sx={{ 
-              width: { xs: 80, sm: 100 }, 
-              height: { xs: 80, sm: 100 },
-              bgcolor: 'primary.main',
-              mb: { xs: 2, sm: 0 },
-              mr: { xs: 0, sm: 3 },
-              fontSize: { xs: '2rem', sm: '2.5rem' },
-              boxShadow: (theme) => theme.palette.mode === 'light' ? '0 4px 12px rgba(213, 0, 0, 0.2)' : '0 4px 20px rgba(0, 0, 0, 0.4)'
-            }}
-          >
-            {userData?.username?.charAt(0).toUpperCase() || <PersonIcon fontSize="large" />}
+
+      {/* Card profilo */}
+      <Card sx={{ p: '24px' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Avatar sx={{
+            width: 64, height: 64,
+            bgcolor: '#1a1816',
+            fontFamily: '"Lexend", sans-serif',
+            fontWeight: 700,
+            fontSize: 20,
+            flexShrink: 0,
+          }}>
+            {userData?.username?.charAt(0).toUpperCase() || '?'}
           </Avatar>
-          
-          <Box sx={{ textAlign: { xs: 'center', sm: 'left' } }}>
-            <Typography variant="h5" component="h2" gutterBottom fontWeight="bold">
+
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography sx={{ fontSize: 18, fontWeight: 700, lineHeight: 1.3 }} noWrap>
               {userData?.username || 'Utente'}
             </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', justifyContent: { xs: 'center', sm: 'flex-start' } }}>
-              <EmailIcon fontSize="small" sx={{ mr: 1, color: 'primary.main' }} />
+            <Typography sx={{ fontSize: 13, color: 'text.secondary' }} noWrap>
               {userData?.email || 'Email non disponibile'}
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ 
-              mt: 1, 
-              display: 'flex', 
-              alignItems: 'center',
-              justifyContent: { xs: 'center', sm: 'flex-start' }
-            }}>
-              <CalendarIcon fontSize="small" sx={{ mr: 1, color: 'primary.main' }} />
-              Iscritto dal {joinDate ? format(joinDate, 'd MMMM yyyy', { locale: it }) : 'Non disponibile'}
+            <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
+              Membro da {joinDate ? format(joinDate, 'MMMM yyyy', { locale: it }) : 'data non disponibile'}
             </Typography>
           </Box>
+
+          <Button
+            variant="outlined"
+            startIcon={<EditIcon />}
+            onClick={() => setEditOpen(o => !o)}
+            sx={{ flexShrink: 0 }}
+          >
+            Modifica
+          </Button>
         </Box>
-        
-        <Divider sx={{ my: 3 }} />
-        
-        {/* Statistiche */}
-        <Grid container spacing={3}>
-          {/* Colonna informazioni */}
-          <Grid item xs={12} sm={6}>
-            <Typography variant="h6" gutterBottom sx={{ 
-              display: 'flex', 
-              alignItems: 'center',
-              mb: 2
-            }}>
-              <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
-              Informazioni Personali
-            </Typography>
-            
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Username
-              </Typography>
-              <Typography variant="body1" fontWeight="medium">
-                {userData?.username || 'Non disponibile'}
-              </Typography>
-            </Box>
-            
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Email
-              </Typography>
-              <Typography variant="body1" fontWeight="medium">
-                {userData?.email || 'Non disponibile'}
-              </Typography>
-            </Box>
 
-            <Divider sx={{ my: 2 }} />
-
-            <Typography variant="subtitle1" gutterBottom sx={{ 
-              fontWeight: 'bold', 
-              mt: 1, 
-              color: 'primary.main',
-              display: 'flex',
-              alignItems: 'center'
-            }}>
-              <FitnessCenterIcon sx={{ mr: 1, fontSize: '1.2rem' }} />
-              Profilo Fisico ed Esperienza
-            </Typography>
-
-            <Box sx={{ 
-              p: 2, 
-              borderRadius: 2, 
-              bgcolor: (theme) => theme.palette.mode === 'light' ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.03)',
-              border: '1px border',
-              borderColor: 'divider',
-              mb: 2
-            }}>
+        {/* Card "Profilo fisico" e "Allenamento": fuori dal design, restano collassate */}
+        <Collapse in={editOpen}>
+          <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Box>
+              <Typography sx={{ fontSize: 13, fontWeight: 700, mb: 1.5 }}>Profilo fisico</Typography>
               <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={it}>
-              <Grid container spacing={2} alignItems="flex-start">
-                <Grid item xs={12} sm={6}>
-                  <DatePicker
-                    label="Data di Nascita"
-                    value={birthDate}
-                    onChange={(newValue) => setBirthDate(newValue)}
-                    minDate={subYears(startOfToday(), 100)}
-                    maxDate={startOfToday()}
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                        size: "small",
-                        helperText: age ? `Età attuale: ${age} anni` : 'Calcolata automaticamente'
-                      }
-                    }}
-                  />
+                <Grid container spacing={2} alignItems="flex-start">
+                  <Grid item xs={12} sm={6}>
+                    <DatePicker
+                      label="Data di Nascita"
+                      value={birthDate}
+                      onChange={(newValue) => setBirthDate(newValue)}
+                      minDate={subYears(startOfToday(), 100)}
+                      maxDate={startOfToday()}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          size: 'small',
+                          helperText: age ? `Età attuale: ${age} anni` : 'Calcolata automaticamente'
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel id="gender-label">Sesso</InputLabel>
+                      <Select
+                        labelId="gender-label"
+                        value={gender}
+                        label="Sesso"
+                        onChange={(e) => setGender(e.target.value)}
+                      >
+                        <MenuItem value="M">Maschio</MenuItem>
+                        <MenuItem value="F">Femmina</MenuItem>
+                        <MenuItem value="O">Altro</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <DatePicker
+                      label="Mese Inizio Allenamento"
+                      value={trainingStartDate}
+                      onChange={(newValue) => setTrainingStartDate(newValue)}
+                      views={['year', 'month']}
+                      openTo="month"
+                      minDate={birthDate || undefined}
+                      maxDate={startOfToday()}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          size: 'small',
+                          helperText: experienceYears ? `Esperienza: ${experienceYears} anni` : 'Mese e anno di inizio'
+                        }
+                      }}
+                    />
+                  </Grid>
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel id="gender-label">Sesso</InputLabel>
-                    <Select
-                      labelId="gender-label"
-                      value={gender}
-                      label="Sesso"
-                      onChange={(e) => setGender(e.target.value)}
-                    >
-                      <MenuItem value="M">Maschio</MenuItem>
-                      <MenuItem value="F">Femmina</MenuItem>
-                      <MenuItem value="O">Altro</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12}>
-                  <DatePicker
-                    label="Mese Inizio Allenamento"
-                    value={trainingStartDate}
-                    onChange={(newValue) => setTrainingStartDate(newValue)}
-                    views={['year', 'month']}
-                    openTo="month"
-                    minDate={birthDate || undefined}
-                    maxDate={startOfToday()}
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                        size: "small",
-                        helperText: experienceYears ? `Esperienza: ${experienceYears} anni` : 'Mese e anno di inizio'
-                      }
-                    }}
-                  />
-                </Grid>
-              </Grid>
               </LocalizationProvider>
+              <Button
+                variant="contained"
+                startIcon={<SaveIcon />}
+                onClick={handleUpdateProfile}
+                disabled={updatingProfile}
+                sx={{ mt: 2 }}
+              >
+                {updatingProfile ? 'Salvataggio...' : 'Salva Profilo'}
+              </Button>
             </Box>
 
-            <Button
-              variant="contained"
-              startIcon={<SaveIcon />}
-              onClick={handleUpdateProfile}
-              disabled={updatingProfile}
-              sx={{ mb: 3 }}
-              fullWidth
-            >
-              {updatingProfile ? 'Salvataggio...' : 'Salva Profilo'}
-            </Button>
-            
-            <Box sx={{ mt: 2, display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, flexWrap: 'wrap', gap: 2 }}>
-              <Button
-                variant="outlined"
-                startIcon={<LockIcon />}
-                onClick={handleOpenPasswordDialog}
-                fullWidth={false}
-              >
-                Cambia Password
-              </Button>
-              
-              <Button
-                variant="outlined"
-                startIcon={<DownloadIcon />}
-                onClick={handleOpenExportDialog}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
+              <Box>
+                <Typography sx={{ fontSize: 13, fontWeight: 700 }}>Timer di recupero</Typography>
+                <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
+                  Disattiva se usi un timer dedicato o l'orologio della palestra
+                </Typography>
+              </Box>
+              <Switch
+                checked={restTimerEnabled}
+                onChange={async (e) => {
+                  const newValue = e.target.checked;
+                  setRestTimerEnabled(newValue);
+                  setSavingSettings(true);
+                  try {
+                    const response = await fetch(`${API_BASE_URL}api/user/update_settings.php`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      credentials: 'include',
+                      body: JSON.stringify({ rest_timer_enabled: newValue })
+                    });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.message);
+                    setSnackbar({
+                      open: true,
+                      message: newValue ? 'Timer di recupero attivato' : 'Timer di recupero disattivato',
+                      severity: 'success'
+                    });
+                  } catch (error) {
+                    console.error('Errore aggiornamento impostazioni:', error);
+                    setRestTimerEnabled(!newValue); // Rollback
+                    setSnackbar({
+                      open: true,
+                      message: 'Errore nel salvataggio delle impostazioni',
+                      severity: 'error'
+                    });
+                  } finally {
+                    setSavingSettings(false);
+                  }
+                }}
+                disabled={savingSettings}
                 color="primary"
-                fullWidth={false}
-              >
-                Esporta Dati
-              </Button>
-              
-              <Button
-                variant="outlined"
-                startIcon={<DeleteForeverIcon />}
-                onClick={handleOpenDeleteDialog}
-                color="error"
-                fullWidth={false}
-              >
-                Elimina Account
-              </Button>
+              />
             </Box>
-          </Grid>
-          
-          {/* Colonna statistiche */}
-          <Grid item xs={12} sm={6}>
-            <Typography variant="h6" gutterBottom sx={{ 
-              display: 'flex', 
-              alignItems: 'center',
-              mb: 2
-            }}>
-              <FitnessCenterIcon sx={{ mr: 1, color: 'primary.main' }} />
-              Le tue Statistiche
-            </Typography>
-            
-            <Card sx={{ 
-              mb: 2, 
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              bgcolor: (theme) => theme.palette.mode === 'light' ? 'rgba(25, 118, 210, 0.04)' : 'rgba(213, 0, 0, 0.08)',
-              border: (theme) => theme.palette.mode === 'light' ? '1px solid rgba(25, 118, 210, 0.12)' : '1px solid rgba(213, 0, 0, 0.2)'
-            }}>
-              <CardContent>
-                <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-                  Allenamenti Totali
-                </Typography>
-                <Typography variant="h3" component="div" color="primary.main" fontWeight="bold">
-                  {workoutCount}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  Allenamenti registrati sulla piattaforma
-                </Typography>
-              </CardContent>
-            </Card>
-            
-            <Card sx={{ 
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              bgcolor: (theme) => theme.palette.mode === 'light' ? 'rgba(76, 175, 80, 0.04)' : 'rgba(76, 175, 80, 0.08)',
-              border: (theme) => theme.palette.mode === 'light' ? '1px solid rgba(76, 175, 80, 0.12)' : '1px solid rgba(76, 175, 80, 0.2)'
-            }}>
-              <CardContent>
-                <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-                  Data Iscrizione
-                </Typography>
-                <Typography variant="h5" component="div" color="success.main" fontWeight="bold">
-                  {joinDate ? format(joinDate, 'd MMMM yyyy', { locale: it }) : 'Non disponibile'}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  {joinDate ? `Utente da ${Math.floor((new Date() - joinDate) / (1000 * 60 * 60 * 24))} giorni` : ''}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      </Paper>
-      
-      {/* Sezione Impostazioni Allenamento */}
-      <Paper elevation={3} sx={{ 
-        p: { xs: 2, sm: 3, md: 4 }, 
-        borderRadius: 2,
-        mb: 4,
-        background: (theme) => theme.palette.mode === 'light' 
-          ? 'linear-gradient(to right bottom, #ffffff, #f8f9fa)'
-          : 'linear-gradient(to right bottom, #141416, #1a1a1b)',
-        border: (theme) => theme.palette.mode === 'light' ? 'none' : '1px solid rgba(255,255,255,0.05)'
-      }}>
-        <Typography variant="h6" gutterBottom sx={{ 
-          display: 'flex', 
-          alignItems: 'center',
-          mb: 2
-        }}>
-          <TimerIcon sx={{ mr: 1, color: 'primary.main' }} />
-          Impostazioni Allenamento
-        </Typography>
-        
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between',
-          p: 2,
-          borderRadius: 2,
-          bgcolor: (theme) => theme.palette.mode === 'light' ? 'rgba(25, 118, 210, 0.04)' : 'rgba(255, 255, 255, 0.03)',
-          border: (theme) => theme.palette.mode === 'light' ? '1px solid rgba(25, 118, 210, 0.12)' : '1px solid rgba(255, 255, 255, 0.08)'
-        }}>
+          </Box>
+        </Collapse>
+      </Card>
+
+      {/* Card Sicurezza */}
+      <Card sx={{ p: '24px' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
           <Box>
-            <Typography variant="subtitle1" fontWeight="medium">
-              Timer di recupero
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Disattiva se usi un timer dedicato o l'orologio della palestra
+            <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Password</Typography>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>{passwordChangedLabel}</Typography>
+          </Box>
+          <Button variant="outlined" startIcon={<LockIcon />} onClick={handleOpenPasswordDialog}>
+            Cambia Password
+          </Button>
+        </Box>
+      </Card>
+
+      {/* Card Dati */}
+      <Card sx={{ p: '24px' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+          <Box>
+            <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Esporta i tuoi dati</Typography>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
+              Scarica schede, storico e misure in formato JSON
             </Typography>
           </Box>
-          <Switch
-            checked={restTimerEnabled}
-            onChange={async (e) => {
-              const newValue = e.target.checked;
-              setRestTimerEnabled(newValue);
-              setSavingSettings(true);
-              try {
-                const response = await fetch(`${API_BASE_URL}api/user/update_settings.php`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  credentials: 'include',
-                  body: JSON.stringify({ rest_timer_enabled: newValue })
-                });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message);
-                setSnackbar({
-                  open: true,
-                  message: newValue ? 'Timer di recupero attivato' : 'Timer di recupero disattivato',
-                  severity: 'success'
-                });
-              } catch (error) {
-                console.error('Errore aggiornamento impostazioni:', error);
-                setRestTimerEnabled(!newValue); // Rollback
-                setSnackbar({
-                  open: true,
-                  message: 'Errore nel salvataggio delle impostazioni',
-                  severity: 'error'
-                });
-              } finally {
-                setSavingSettings(false);
-              }
-            }}
-            disabled={savingSettings}
-            color="primary"
-          />
+          <Button
+            variant="outlined"
+            startIcon={exportLoading ? <CircularProgress size={16} /> : <DownloadIcon />}
+            onClick={handleDownloadData}
+            disabled={exportLoading}
+          >
+            Esporta
+          </Button>
         </Box>
-      </Paper>
-      
+      </Card>
+
+      {/* Zona Pericolosa */}
+      <Card sx={{
+        p: '24px',
+        borderRadius: '16px',
+        bgcolor: (theme) => theme.palette.mode === 'light' ? '#fdf3f3' : 'rgba(213, 0, 0, 0.08)',
+        border: (theme) => theme.palette.mode === 'light' ? '1px solid #f5c6c6' : '1px solid rgba(213, 0, 0, 0.3)',
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+          <Box>
+            <Typography sx={{
+              fontFamily: '"Lexend", sans-serif',
+              fontWeight: 700,
+              fontSize: 15,
+              color: (theme) => theme.palette.mode === 'light' ? '#9b0000' : 'error.main',
+            }}>
+              Zona Pericolosa
+            </Typography>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
+              Elimina definitivamente il tuo account e tutti i tuoi dati
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={<DeleteForeverIcon />}
+            onClick={handleOpenDeleteDialog}
+          >
+            Elimina Account
+          </Button>
+        </Box>
+      </Card>
+
       {/* Dialog per cambio password */}
       <Dialog open={openPasswordDialog} onClose={handleClosePasswordDialog} fullWidth maxWidth="sm">
         <DialogTitle>Cambia Password</DialogTitle>
@@ -994,13 +717,13 @@ const fetchExportData = React.useCallback(async () => {
           <DialogContentText sx={{ mb: 2 }}>
             Per modificare la tua password, inserisci la password attuale seguita dalla nuova password.
           </DialogContentText>
-          
+
           {passwordError && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {passwordError}
             </Alert>
           )}
-          
+
           <TextField
             margin="dense"
             label="Password Attuale"
@@ -1027,7 +750,7 @@ const fetchExportData = React.useCallback(async () => {
               ),
             }}
           />
-          
+
           <TextField
             margin="dense"
             label="Nuova Password"
@@ -1054,7 +777,7 @@ const fetchExportData = React.useCallback(async () => {
               ),
             }}
           />
-          
+
           <TextField
             margin="dense"
             label="Conferma Nuova Password"
@@ -1082,16 +805,16 @@ const fetchExportData = React.useCallback(async () => {
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button 
-            onClick={handleClosePasswordDialog} 
+          <Button
+            onClick={handleClosePasswordDialog}
             startIcon={<CancelIcon />}
             disabled={changingPassword}
           >
             Annulla
           </Button>
-          <Button 
-            onClick={handleChangePassword} 
-            variant="contained" 
+          <Button
+            onClick={handleChangePassword}
+            variant="contained"
             startIcon={<SaveIcon />}
             disabled={changingPassword}
           >
@@ -1099,7 +822,7 @@ const fetchExportData = React.useCallback(async () => {
           </Button>
         </DialogActions>
       </Dialog>
-      
+
       {/* Dialog per eliminazione account */}
       <Dialog open={openDeleteDialog} onClose={handleCloseDeleteDialog} fullWidth maxWidth="sm">
         <DialogTitle sx={{ color: 'error.main', display: 'flex', alignItems: 'center' }}>
@@ -1109,7 +832,7 @@ const fetchExportData = React.useCallback(async () => {
           <DialogContentText sx={{ mb: 2 }}>
             Stai per eliminare definitivamente il tuo account. Questa operazione non può essere annullata e comporterà la perdita di tutti i tuoi dati.
           </DialogContentText>
-          
+
           <Alert severity="warning" sx={{ mb: 3 }}>
             <Typography variant="subtitle2" fontWeight="bold">
               Attenzione: questa azione è irreversibile!
@@ -1118,13 +841,13 @@ const fetchExportData = React.useCallback(async () => {
               Tutti i tuoi dati, inclusi allenamenti e schede, verranno eliminati permanentemente.
             </Typography>
           </Alert>
-          
+
           {deleteError && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {deleteError}
             </Alert>
           )}
-          
+
           <TextField
             margin="dense"
             label="Password"
@@ -1151,10 +874,10 @@ const fetchExportData = React.useCallback(async () => {
               ),
             }}
           />
-          
+
           <FormControlLabel
             control={
-              <Checkbox 
+              <Checkbox
                 checked={deleteConfirmed}
                 onChange={(e) => setDeleteConfirmed(e.target.checked)}
                 disabled={deletingAccount}
@@ -1166,16 +889,16 @@ const fetchExportData = React.useCallback(async () => {
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button 
-            onClick={handleCloseDeleteDialog} 
+          <Button
+            onClick={handleCloseDeleteDialog}
             startIcon={<CancelIcon />}
             disabled={deletingAccount}
           >
             Annulla
           </Button>
-          <Button 
-            onClick={handleDeleteAccount} 
-            variant="contained" 
+          <Button
+            onClick={handleDeleteAccount}
+            variant="contained"
             color="error"
             startIcon={<DeleteForeverIcon />}
             disabled={deletingAccount || !deleteConfirmed}
@@ -1184,129 +907,7 @@ const fetchExportData = React.useCallback(async () => {
           </Button>
         </DialogActions>
       </Dialog>
-      
-      {/* Dialog per esportazione dati */}
-      <Dialog open={openExportDialog} onClose={handleCloseExportDialog} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center' }}>
-          <FileDownloadIcon sx={{ mr: 1 }} /> Esporta i tuoi dati
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ mb: 3 }}>
-            Seleziona quali dati desideri esportare. I dati verranno scaricati in formato JSON.
-          </DialogContentText>
-          
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Checkbox 
-                  checked={exportWorkouts}
-                  onChange={(e) => setExportWorkouts(e.target.checked)}
-                  disabled={exportLoading}
-                  color="primary"
-                />
-              }
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <HistoryIcon sx={{ mr: 1, color: 'primary.main' }} />
-                  <Typography>Cronologia Allenamenti ({workoutData.length || workoutCount})</Typography>
-                </Box>
-              }
-            />
-            
-            <FormControlLabel
-              control={
-                <Checkbox 
-                  checked={exportPlans}
-                  onChange={(e) => setExportPlans(e.target.checked)}
-                  disabled={exportLoading}
-                  color="primary"
-                />
-              }
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <DescriptionIcon sx={{ mr: 1, color: 'primary.main' }} />
-                  <Typography>Schede di Allenamento ({plansData.length || plansCount})</Typography>
-                </Box>
-              }
-            />
-          </FormGroup>
-          
-          {exportLoading && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
-              <CircularProgress size={30} sx={{ color: 'primary.main' }} />
-              <Typography variant="body2" sx={{ ml: 2 }}>
-                Preparazione dei dati in corso...
-              </Typography>
-            </Box>
-          )}
-          
-          {dataLoaded && (
-            <Box sx={{ mt: 3 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Dati pronti per il download:
-              </Typography>
-              
-              <List dense>
-                {exportWorkouts && workoutData.length > 0 && (
-                  <ListItem>
-                    <ListItemIcon>
-                      <HistoryIcon color="primary" />
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary={`${workoutData.length} allenamenti`}
-                      secondary="Cronologia completa dei tuoi allenamenti"
-                    />
-                  </ListItem>
-                )}
-                
-                {exportPlans && plansData.length > 0 && (
-                  <ListItem>
-                    <ListItemIcon>
-                      <DescriptionIcon color="primary" />
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary={`${plansData.length} schede di allenamento`}
-                      secondary="Le tue schede personalizzate"
-                    />
-                  </ListItem>
-                )}
-                
-                {((exportWorkouts && workoutData.length === 0) || (exportPlans && plansData.length === 0)) && (
-                  <ListItem>
-                    <ListItemIcon>
-                      <WarningIcon color="warning" />
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary="Nessun dato disponibile per alcune selezioni"
-                      secondary="Seleziona altre opzioni o verifica di avere dati salvati"
-                    />
-                  </ListItem>
-                )}
-              </List>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button 
-            onClick={handleCloseExportDialog} 
-            startIcon={<CancelIcon />}
-            disabled={exportLoading}
-          >
-            Annulla
-          </Button>
-          <Button 
-            onClick={handleDownloadData} 
-            variant="contained" 
-            color="primary"
-            startIcon={<FileDownloadIcon />}
-            disabled={exportLoading || !dataLoaded || (!exportWorkouts && !exportPlans) || 
-              (exportWorkouts && workoutData.length === 0 && exportPlans && plansData.length === 0)}
-          >
-            Scarica Dati
-          </Button>
-        </DialogActions>
-      </Dialog>
-      
+
       {/* Snackbar per notifiche */}
       <Snackbar
         open={snackbar.open}
@@ -1318,7 +919,7 @@ const fetchExportData = React.useCallback(async () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Container>
+    </Box>
   );
 };
 

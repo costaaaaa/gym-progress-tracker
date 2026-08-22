@@ -1,20 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Paper, Grid, Button, Box, Divider, Alert, Snackbar, CircularProgress, Card, CardContent, CardActionArea } from '@mui/material';
+import { Typography, Paper, Grid, Button, Box, Divider, Alert, Snackbar, CircularProgress, Card, CardActionArea } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import CalendarTodayOutlined from '@mui/icons-material/CalendarTodayOutlined';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import StraightenOutlined from '@mui/icons-material/StraightenOutlined';
+import HistoryOutlined from '@mui/icons-material/HistoryOutlined';
+import AssessmentOutlined from '@mui/icons-material/AssessmentOutlined';
+import HealthAndSafetyOutlined from '@mui/icons-material/HealthAndSafetyOutlined';
+import AssignmentOutlined from '@mui/icons-material/AssignmentOutlined';
 import StraightenIcon from '@mui/icons-material/Straighten';
-import HistoryIcon from '@mui/icons-material/History';
-import AssessmentIcon from '@mui/icons-material/Assessment';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import LinearProgress from '@mui/material/LinearProgress';
 import BodyVisualizer from '../components/BodyVisualizer';
 import StreakCard from '../components/StreakCard';
 import LevelCard from '../components/LevelCard';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
+
+// Pillola di Azioni Rapide: fondo bianco, bordo 1px, icona stroked rossa.
+const QuickActionPill = ({ to, icon, label }) => (
+  <Box
+    component={RouterLink}
+    to={to}
+    sx={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 1,
+      px: '20px',
+      py: '11px',
+      borderRadius: '999px',
+      bgcolor: 'background.paper',
+      border: '1px solid',
+      borderColor: 'divider',
+      textDecoration: 'none',
+      color: 'text.primary',
+      fontSize: 13,
+      fontWeight: 600,
+      transition: 'border-color .2s ease',
+      '&:hover': { borderColor: 'primary.main' },
+    }}
+  >
+    {React.cloneElement(icon, { sx: { fontSize: 18, color: 'primary.main' } })}
+    {label}
+  </Box>
+);
 
 const Home = () => {
   const { isLoggedIn, user } = useAuth();
@@ -88,47 +117,63 @@ const Home = () => {
 
   return (
     <>
-      <Paper elevation={0} sx={{ p: 6, mb: 4, borderRadius: 4, textAlign: 'center', background: (theme) => theme.palette.mode === 'light' ? 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)' : 'linear-gradient(135deg, #141416 0%, #0a0a0b 100%)', border: (theme) => theme.palette.mode === 'light' ? '1px solid #e9ecef' : '1px solid rgba(255,255,255,0.05)' }}>
-        <Typography 
-          variant="h3" 
-          component="h1" 
-          gutterBottom 
-          sx={{ fontWeight: 800, mb: 2 }}
+      <Box
+        sx={{
+          p: { xs: 4, md: '48px 44px' },
+          mb: 4,
+          borderRadius: '20px',
+          textAlign: 'left',
+          background: 'linear-gradient(135deg, #d50000 0%, #9b0000 100%)',
+          color: '#fff',
+        }}
+      >
+        <Typography
+          variant="h1"
+          sx={{ fontSize: { xs: '1.75rem', md: '2.25rem' }, mb: 1.5, color: '#fff' }}
         >
-          Gym Progress Tracker
+          {isLoggedIn ? `Bentornato, ${user?.username || ''}` : 'Gym Progress Tracker'}
         </Typography>
-        <Typography variant="h6" color="text.secondary" sx={{ mb: 4, maxWidth: '700px', mx: 'auto', lineHeight: 1.6 }}>
-          {isLoggedIn 
-            ? "Bentornato! La tua evoluzione fisica, monitorata con precisione millimetrica."
-            : "La piattaforma definitiva per atleti. Gestisci allenamenti, traccia i carichi e analizza i progressi con sincronizzazione Apple Health."
-          }
+        <Typography sx={{ fontSize: 16, color: 'rgba(255,255,255,.85)', mb: 3, maxWidth: 560, lineHeight: 1.6 }}>
+          {isLoggedIn
+            ? 'La tua evoluzione fisica, monitorata con precisione millimetrica.'
+            : 'La piattaforma definitiva per atleti. Gestisci allenamenti, traccia i carichi e analizza i progressi.'}
         </Typography>
-        
-        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', gap: 2 }}>
-          {isLoggedIn ? (
-            <Button 
-              variant="contained" 
-              color="primary" 
-              component={RouterLink} 
-              to="/focus"
-              startIcon={<PlayArrowIcon />}
-              sx={{ py: 1.5, px: 4, fontWeight: 800, fontSize: '1.1rem' }}
-            >
-              Inizia Allenamento
-            </Button>
-          ) : (
-            <Button 
-              variant="contained" 
-              color="primary" 
-              component={RouterLink} 
-              to="/login"
-              sx={{ py: 1.5, px: 6, fontWeight: 800, fontSize: '1.1rem' }}
-            >
-              Accedi / Registrati
-            </Button>
-          )}
-        </Box>
-      </Paper>
+
+        {isLoggedIn ? (
+          <Button
+            component={RouterLink}
+            to="/focus"
+            startIcon={<PlayArrowIcon />}
+            sx={{
+              bgcolor: '#fff',
+              color: '#9b0000',
+              borderRadius: '12px',
+              px: 3,
+              py: 1.25,
+              fontWeight: 700,
+              '&:hover': { bgcolor: 'rgba(255,255,255,.9)' },
+            }}
+          >
+            Inizia Allenamento
+          </Button>
+        ) : (
+          <Button
+            component={RouterLink}
+            to="/login"
+            sx={{
+              bgcolor: '#fff',
+              color: '#9b0000',
+              borderRadius: '12px',
+              px: 3,
+              py: 1.25,
+              fontWeight: 700,
+              '&:hover': { bgcolor: 'rgba(255,255,255,.9)' },
+            }}
+          >
+            Accedi / Registrati
+          </Button>
+        )}
+      </Box>
 
       {isLoggedIn ? (
         <Grid container spacing={3}>
@@ -138,7 +183,7 @@ const Home = () => {
             </Grid>
           ) : (
             <>
-              {/* Gamification */}
+              {/* Streak / Livello */}
               <Grid item xs={12} md={6}>
                 <StreakCard />
               </Grid>
@@ -147,182 +192,146 @@ const Home = () => {
               </Grid>
 
               {/* Riepilogo Settimanale */}
-              <Grid item xs={12} md={8}>
-                <Card sx={{ height: '100%', borderRadius: 3 }}>
-                  <CardContent>
-                    <Typography variant="h6" sx={{ fontWeight: 800, mb: 3 }}>Riepilogo Settimanale</Typography>
-                    <Grid container spacing={4}>
-                      <Grid item xs={12} sm={6}>
-                        <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="body2" color="text.secondary">Allenamenti effettuati</Typography>
-                          <Typography variant="body2" fontWeight="bold">
-                            {dashboardStats?.weekly_workouts || 0} / {dashboardStats?.plan_days_total || '-'}
-                          </Typography>
-                        </Box>
-                        <LinearProgress 
-                          variant="determinate" 
-                          value={dashboardStats?.plan_days_total ? Math.min(100, (dashboardStats.weekly_workouts / dashboardStats.plan_days_total) * 100) : 0} 
-                          sx={{ height: 10, borderRadius: 5, mb: 3 }}
-                        />
-                        <Typography variant="caption" color="text.secondary">
-                          {dashboardStats?.weekly_workouts >= dashboardStats?.plan_days_total 
-                            ? "Obiettivo settimanale raggiunto! Ottimo lavoro." 
-                            : `Ti mancano ${Math.max(0, (dashboardStats?.plan_days_total || 0) - (dashboardStats?.weekly_workouts || 0))} sessioni per completare il piano.`}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <Box sx={{ display: 'flex', gap: 2 }}>
-                          <Box sx={{ flex: 1, p: 2, bgcolor: 'action.hover', borderRadius: 2, textAlign: 'center' }}>
-                            <Typography variant="h5" fontWeight="bold" color="primary">
-                              {dashboardStats?.weekly_volume?.total_weight.toLocaleString() || 0} <small style={{fontSize: '0.6em'}}>kg</small>
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">Volume Totale</Typography>
-                          </Box>
-                          <Box sx={{ flex: 1, p: 2, bgcolor: 'action.hover', borderRadius: 2, textAlign: 'center' }}>
-                            <Typography variant="h5" fontWeight="bold" color="primary">
-                              {dashboardStats?.weekly_volume?.total_reps.toLocaleString() || 0}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">Reps Totali</Typography>
-                          </Box>
-                        </Box>
-                      </Grid>
-                    </Grid>
-                  </CardContent>
+              <Grid item xs={12} md={6}>
+                <Card sx={{ height: '100%', p: '22px' }}>
+                  <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2.5 }}>
+                    Riepilogo Settimanale
+                  </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Allenamenti effettuati</Typography>
+                    <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
+                      {dashboardStats?.weekly_workouts || 0} / {dashboardStats?.plan_days_total || '-'}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ height: 9, borderRadius: '5px', bgcolor: 'divider', overflow: 'hidden' }}>
+                    <Box
+                      sx={{
+                        height: '100%',
+                        width: `${dashboardStats?.plan_days_total ? Math.min(100, (dashboardStats.weekly_workouts / dashboardStats.plan_days_total) * 100) : 0}%`,
+                        background: 'linear-gradient(90deg, #d50000, #ff5131)',
+                        borderRadius: '5px',
+                      }}
+                    />
+                  </Box>
+                  <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 1, mb: 2.5 }}>
+                    {dashboardStats?.weekly_workouts >= dashboardStats?.plan_days_total
+                      ? 'Obiettivo settimanale raggiunto! Ottimo lavoro.'
+                      : `Ti mancano ${Math.max(0, (dashboardStats?.plan_days_total || 0) - (dashboardStats?.weekly_workouts || 0))} sessioni per completare il piano.`}
+                  </Typography>
+
+                  <Box sx={{ display: 'flex', gap: 1.5 }}>
+                    <Box sx={{ flex: 1, p: 2, bgcolor: (theme) => theme.palette.mode === 'light' ? '#faf5f5' : 'rgba(213, 0, 0, 0.08)', borderRadius: '10px', textAlign: 'center' }}>
+                      <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 22, color: 'primary.main' }}>
+                        {dashboardStats?.weekly_volume?.total_weight?.toLocaleString() || 0}
+                        <Box component="span" sx={{ fontSize: 13, fontWeight: 600, ml: 0.5 }}>kg</Box>
+                      </Typography>
+                      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Volume Totale</Typography>
+                    </Box>
+                    <Box sx={{ flex: 1, p: 2, bgcolor: (theme) => theme.palette.mode === 'light' ? '#faf5f5' : 'rgba(213, 0, 0, 0.08)', borderRadius: '10px', textAlign: 'center' }}>
+                      <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 22, color: 'primary.main' }}>
+                        {dashboardStats?.weekly_volume?.total_reps?.toLocaleString() || 0}
+                      </Typography>
+                      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Reps Totali</Typography>
+                    </Box>
+                  </Box>
                 </Card>
               </Grid>
 
-              {/* Stato Muscolare Visuale */}
-              <Grid item xs={12} md={4}>
-                <Card sx={{ height: '100%', borderRadius: 3 }}>
-                  <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                    <BodyVisualizer 
-                      recoveryData={dashboardStats?.recovery} 
-                    />
-                  </CardContent>
+              {/* Stato Muscolare */}
+              <Grid item xs={12} md={6}>
+                <Card sx={{ height: '100%', p: '22px' }}>
+                  <BodyVisualizer recoveryData={dashboardStats?.recovery} />
                 </Card>
               </Grid>
 
               {/* Ultimo Allenamento */}
               <Grid item xs={12} md={6}>
-                <Card sx={{ height: '100%', borderLeft: (theme) => `6px solid ${theme.palette.primary.main}` }}>
-                  <CardActionArea component={RouterLink} to="/workouts?tab=history" sx={{ height: '100%', p: 1 }}>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                        <Box sx={{ p: 1.5, borderRadius: 3, bgcolor: (theme) => theme.palette.mode === 'light' ? 'rgba(213, 0, 0, 0.05)' : 'rgba(213, 0, 0, 0.15)', mr: 2 }}>
-                          <HistoryIcon sx={{ color: 'primary.main', fontSize: '1.8rem' }} />
-                        </Box>
-                        <Typography variant="h5" sx={{ fontWeight: 800 }}>Ultimo Allenamento</Typography>
+                <Card sx={{ height: '100%', borderLeft: '4px solid #d50000' }}>
+                  <CardActionArea component={RouterLink} to="/workouts?tab=history" sx={{ height: '100%', p: '26px' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2.5 }}>
+                      <Box sx={{ width: 42, height: 42, borderRadius: '10px', bgcolor: (theme) => theme.palette.mode === 'light' ? '#fbebeb' : 'rgba(213, 0, 0, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', mr: 2 }}>
+                        <HistoryOutlined sx={{ color: 'primary.main', fontSize: 22 }} />
                       </Box>
-                      {lastWorkout ? (
-                        <>
-                          <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 700, mb: 1 }}>
-                            {formatDate(lastWorkout.date)}
-                          </Typography>
-                          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                            Hai completato <strong>{lastWorkout.exercises?.length || 0}</strong> esercizi. Ottimo lavoro!
-                          </Typography>
-                          <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                            {lastWorkout.exercises?.slice(0, 3).map((ex, i) => (
-                              <Paper key={i} variant="outlined" sx={{ px: 2, py: 0.75, borderRadius: 2, fontSize: '0.85rem', fontWeight: 600 }}>
-                                {ex.name}
-                              </Paper>
-                            ))}
-                            {lastWorkout.exercises?.length > 3 && (
-                              <Typography variant="caption" sx={{ alignSelf: 'center', ml: 1, fontWeight: 800, color: 'text.secondary' }}>
-                                + {lastWorkout.exercises.length - 3} ALTRI
-                              </Typography>
-                            )}
-                          </Box>
-                        </>
-                      ) : (
-                        <Typography variant="body1" color="text.secondary">Nessun allenamento recente. È ora di tornare in palestra!</Typography>
-                      )}
-                    </CardContent>
+                      <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17 }}>Ultimo Allenamento</Typography>
+                    </Box>
+                    {lastWorkout ? (
+                      <>
+                        <Typography sx={{ color: 'primary.main', fontWeight: 700, fontSize: 15, mb: 1 }}>
+                          {formatDate(lastWorkout.date)}
+                        </Typography>
+                        <Typography sx={{ color: 'text.secondary', fontSize: 14, mb: 2 }}>
+                          Hai completato <strong>{lastWorkout.exercises?.length || 0}</strong> esercizi. Ottimo lavoro!
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+                          {lastWorkout.exercises?.slice(0, 3).map((ex, i) => (
+                            <Box
+                              key={i}
+                              sx={{ px: 1.5, py: 0.6, borderRadius: '8px', border: '1px solid', borderColor: 'divider', fontSize: 12, fontWeight: 600 }}
+                            >
+                              {ex.name}
+                            </Box>
+                          ))}
+                          {lastWorkout.exercises?.length > 3 && (
+                            <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary' }}>
+                              +{lastWorkout.exercises.length - 3} ALTRI
+                            </Typography>
+                          )}
+                        </Box>
+                      </>
+                    ) : (
+                      <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>Nessun allenamento recente. È ora di tornare in palestra!</Typography>
+                    )}
                   </CardActionArea>
                 </Card>
               </Grid>
 
               {/* Piano Attivo */}
               <Grid item xs={12} md={6}>
-                <Card sx={{ height: '100%', borderLeft: (theme) => `6px solid ${theme.palette.primary.main}` }}>
-                  <CardActionArea component={RouterLink} to="/workouts?tab=plans" sx={{ height: '100%', p: 1 }}>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                        <Box sx={{ p: 1.5, borderRadius: 3, bgcolor: (theme) => theme.palette.mode === 'light' ? 'rgba(213, 0, 0, 0.05)' : 'rgba(213, 0, 0, 0.15)', mr: 2 }}>
-                          <AssignmentIcon sx={{ color: 'primary.main', fontSize: '1.8rem' }} />
-                        </Box>
-                        <Typography variant="h5" sx={{ fontWeight: 800 }}>Piano Attivo</Typography>
+                <Card sx={{ height: '100%', borderLeft: '4px solid #d50000' }}>
+                  <CardActionArea component={RouterLink} to="/workouts?tab=plans" sx={{ height: '100%', p: '26px' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2.5 }}>
+                      <Box sx={{ width: 42, height: 42, borderRadius: '10px', bgcolor: (theme) => theme.palette.mode === 'light' ? '#fbebeb' : 'rgba(213, 0, 0, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', mr: 2 }}>
+                        <AssignmentOutlined sx={{ color: 'primary.main', fontSize: 22 }} />
                       </Box>
-                      {activePlan ? (
-                        <>
-                          <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 700, mb: 1 }}>
-                            {activePlan.name}
-                          </Typography>
-                          <Typography 
-                            variant="body1" 
-                            color="text.secondary"
-                            sx={{
-                              display: '-webkit-box',
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: 'vertical',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              lineHeight: 1.5,
-                              height: '3em' // Assicura altezza fissa per 2 righe
-                            }}
-                          >
-                            {activePlan.description || "Nessuna descrizione disponibile per questo piano."}
-                          </Typography>
-                        </>
-                      ) : (
-                        <Typography variant="body1" color="text.secondary">Nessun piano attivo. Scegline uno per ottimizzare i tuoi risultati.</Typography>
-                      )}
-                    </CardContent>
+                      <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17 }}>Piano Attivo</Typography>
+                    </Box>
+                    {activePlan ? (
+                      <>
+                        <Typography sx={{ color: 'primary.main', fontWeight: 700, fontSize: 15, mb: 1 }}>
+                          {activePlan.name}
+                        </Typography>
+                        <Typography
+                          sx={{
+                            color: 'text.secondary',
+                            fontSize: 14,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          {activePlan.description || 'Nessuna descrizione disponibile per questo piano.'}
+                        </Typography>
+                      </>
+                    ) : (
+                      <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>Nessun piano attivo. Scegline uno per ottimizzare i tuoi risultati.</Typography>
+                    )}
                   </CardActionArea>
                 </Card>
               </Grid>
 
-              {/* Link Rapidi */}
+              {/* Azioni Rapide */}
               <Grid item xs={12}>
-                <Typography variant="h5" sx={{ mb: 3, fontWeight: 800, mt: 4 }}>Azioni Rapide</Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={6} sm={3}>
-                    <Button 
-                      fullWidth variant="outlined" component={RouterLink} to="/dashboard?tab=progress" 
-                      sx={{ py: 4, flexDirection: 'column', gap: 2, borderWidth: 2, '&:hover': { borderWidth: 2 } }}
-                    >
-                      <AssessmentIcon fontSize="large" />
-                      Progressi
-                    </Button>
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <Button 
-                      fullWidth variant="outlined" component={RouterLink} to="/dashboard?tab=body" 
-                      sx={{ py: 4, flexDirection: 'column', gap: 2, borderWidth: 2, '&:hover': { borderWidth: 2 } }}
-                    >
-                      <StraightenIcon fontSize="large" />
-                      Misure
-                    </Button>
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <Button 
-                      fullWidth variant="outlined" component={RouterLink} to="/workouts?tab=history" 
-                      sx={{ py: 4, flexDirection: 'column', gap: 2, borderWidth: 2, '&:hover': { borderWidth: 2 } }}
-                    >
-                      <CalendarTodayIcon fontSize="large" />
-                      Storia
-                    </Button>
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <Button
-                      fullWidth variant="outlined" component={RouterLink} to="/profilo?tab=settings"
-                      sx={{ py: 4, flexDirection: 'column', gap: 2, borderWidth: 2, '&:hover': { borderWidth: 2 } }}
-                    >
-                      <HealthAndSafetyIcon fontSize="large" />
-                      Impostazioni
-                    </Button>
-                  </Grid>
-                </Grid>
+                <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2, mt: 2 }}>
+                  Azioni Rapide
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+                  <QuickActionPill to="/dashboard?tab=progress" icon={<AssessmentOutlined />} label="Progressi" />
+                  <QuickActionPill to="/dashboard?tab=body" icon={<StraightenOutlined />} label="Misure" />
+                  <QuickActionPill to="/workouts?tab=history" icon={<CalendarTodayOutlined />} label="Storia" />
+                  <QuickActionPill to="/profilo?tab=settings" icon={<HealthAndSafetyOutlined />} label="Impostazioni" />
+                </Box>
               </Grid>
             </>
           )}
@@ -330,7 +339,7 @@ const Home = () => {
       ) : (
         <Grid container spacing={3}>
           <Grid item xs={12} md={4}>
-            <Paper sx={{ p: 4, height: '100%', borderTop: (theme) => `6px solid ${theme.palette.primary.main}` }}>
+            <Paper sx={{ p: 4, height: '100%', borderTop: '4px solid #d50000' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <FitnessCenterIcon sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
                 <Typography variant="h5" sx={{ fontWeight: 800 }}>Allenamenti</Typography>
@@ -342,7 +351,7 @@ const Home = () => {
             </Paper>
           </Grid>
           <Grid item xs={12} md={4}>
-            <Paper sx={{ p: 4, height: '100%', borderTop: (theme) => `6px solid ${theme.palette.primary.main}` }}>
+            <Paper sx={{ p: 4, height: '100%', borderTop: '4px solid #d50000' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <StraightenIcon sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
                 <Typography variant="h5" sx={{ fontWeight: 800 }}>Misure</Typography>
@@ -354,7 +363,7 @@ const Home = () => {
             </Paper>
           </Grid>
           <Grid item xs={12} md={4}>
-            <Paper sx={{ p: 4, height: '100%', borderTop: (theme) => `6px solid ${theme.palette.primary.main}` }}>
+            <Paper sx={{ p: 4, height: '100%', borderTop: '4px solid #d50000' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <HealthAndSafetyIcon sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
                 <Typography variant="h5" sx={{ fontWeight: 800 }}>Health Sync</Typography>

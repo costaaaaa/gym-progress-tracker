@@ -13,6 +13,7 @@ class User
     public $created_at;
     public $updated_at;
     public $rest_timer_enabled; // Preferenza timer di recupero nella modalità Focus
+    public $password_changed_at;
     public $age;
     public $gender;
     public $experience_years;
@@ -294,7 +295,7 @@ class User
         $password_hash = password_hash($new_password, PASSWORD_BCRYPT);
 
         // Aggiorniamo la password nel database
-        $query = "UPDATE " . $this->table_name . " SET password = :password, updated_at = NOW() WHERE id = :id";
+        $query = "UPDATE " . $this->table_name . " SET password = :password, password_changed_at = NOW(), updated_at = NOW() WHERE id = :id";
 
         $stmt = $this->conn->prepare($query);
 
@@ -312,7 +313,7 @@ class User
     }
     public function readById($id)
     {
-        $query = "SELECT id, username, email, created_at, rest_timer_enabled, birth_date, gender, training_start_date FROM " . $this->table_name . " WHERE id = ? LIMIT 1";
+        $query = "SELECT id, username, email, created_at, rest_timer_enabled, birth_date, gender, training_start_date, password_changed_at FROM " . $this->table_name . " WHERE id = ? LIMIT 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(1, $id);
         $stmt->execute();
@@ -327,6 +328,7 @@ class User
             $this->birth_date = $row['birth_date'];
             $this->gender = $row['gender'];
             $this->training_start_date = $row['training_start_date'];
+            $this->password_changed_at = $row['password_changed_at'];
             
             // Calcolo dinamico per il frontend
             $this->age = $this->calculateAge();
