@@ -25,22 +25,26 @@ With this tool you can:
 ## Key Features
 
 * ✅ Multi-plan management
-* 🔥 **Focus Mode**: immersive interface for real-time workout tracking with rest timers
+* 🔥 **Focus Mode**: immersive interface for real-time workout tracking with rest timers and haptic feedback
 * 💾 **Autosave**: local persistence to prevent data loss in Focus Mode
-* 📈 **Advanced Dashboard**: redesigned interface with interactive charts
+* 📈 **Advanced Dashboard**: hub-based interface with interactive charts (Workout Progress & Body Stats)
 * 📊 **Global Stats**: track workout frequency (weekly) and total volume (monthly)
-* 👤 **Body Stats**: track body measurements and visualize progress
-* 🏋️ Add and edit exercises
-* 🎯 **Smart Progress**: detailed metrics (Volume, Avg Weight, Progress Index) for each exercise
+* 👤 **Body Stats**: track body measurements, circumferences, and visualize progress
+* 🏆 **Gamification**: XP points, athlete levels, per-exercise mastery, weekly streaks, and unlockable achievements
+* 🩺 **Muscle Recovery Visualizer**: anatomical map displaying muscle fatigue and recovery state
+* 🍎 **Apple Health Sync**: automated weight synchronization via iOS Shortcuts
+* 🏋️ Add and edit exercises with intensity techniques (Drop sets, Rest-pause, Super sets)
+* 🎯 **Smart Progress**: detailed metrics (Volume, Avg Weight, Estimated 1RM, Progress Index) for each exercise
 * 📌 Ability to select an active workout plan
-* 🔒 **Secure Authentication**: session-based login with server-side **bcrypt** password hashing
+* 🔒 **Secure Authentication**: session-based login with server-side **bcrypt** password hashing and rate limiting
+* 🌓 **Dark & Light Mode**: custom theme with persistent appearance toggle
 
 ## Technologies Used
 
 * **React (v18)** with **Vite**
 * **Material UI (MUI)** for the user interface
 * **Recharts** for data visualization
-* **PHP** (Legacy PDO / Modern experimental with Eloquent)
+* **PHP** (PDO REST API architecture)
 * **MySQL** for data storage
 
 ## Security
@@ -48,6 +52,7 @@ With this tool you can:
 * **Passwords are hashed server-side with bcrypt** (`password_hash` / `password_verify`); the plaintext is sent only over HTTPS and is never stored.
 * **Transparent migration**: accounts created before this change are automatically re-hashed to bcrypt on their next successful login.
 * **Session-based authentication** via PHP sessions; every request uses `credentials: 'include'`.
+* **Rate limiting** on authentication endpoints to prevent brute-force attacks.
 
 ## Try it Out
 
@@ -75,7 +80,7 @@ You can test the app directly here: 👉 [Gym Progress Tracker Live](https://and
    npm run build
    ```
 3. Import the MySQL database — see [Database setup & updates](#database-setup--updates) below.
-4. Configure database access in the `backend/config/database.php` file;
+4. Configure database access in the `backend/config/database.php` file (copy from `backend/config/database.php.example`);
 5. Launch a local server (e.g., with XAMPP) and make sure the PHP files are correctly served.
 6. Start the React app:
    ```bash
@@ -84,34 +89,15 @@ You can test the app directly here: 👉 [Gym Progress Tracker Live](https://and
 
 ## Database setup & updates
 
-The complete schema lives in `backend/database/gym_progress_tracker.sql`. The other
-`.sql` files in that folder are **incremental migrations**, kept only to upgrade older databases.
-
 ### Fresh install (cloned from scratch)
 
-Import **`backend/database/gym_progress_tracker.sql`** and you are done. It already includes
-everything: auth, workout plans, history, body stats, **gamification (weekly streak + XP, levels,
-per-exercise progression, achievements)** and **rate limiting**. No other script is needed.
+Import **`backend/database/gym_progress_tracker.sql`** and you are done. It includes the complete unified schema: auth, workout plans, history, relational sets, body stats, gamification (weekly streak, XP, levels, exercise progression, achievements), rate limiting, and default exercises.
 
 ### Updating an existing database
 
-Run only the migrations you have **not** applied yet, in this order (all in `backend/database/`):
+To upgrade an older database instance, execute:
 
-| # | File | Adds |
-|---|------|------|
-| 1 | `add_notes_column.sql` | `notes` field on plan exercises |
-| 2 | `create_history_table.sql` | workout history table |
-| 3 | `database_update.sql` | per-set workout logging |
-| 4 | `gamification_setup.sql` | weekly streak tracking |
-| 5 | `gamification_levels_setup.sql` | XP, levels, per-exercise progression, achievements |
-| 6 | `create_rate_limits_table.sql` | login/register rate limiting |
-
-The `CREATE TABLE IF NOT EXISTS` migrations are safe to re-run. The `ALTER TABLE` ones (**1** and
-**5**) must run **once** — re-running them throws a harmless "duplicate column" error you can ignore.
-
-After step 5, gamification stats accumulate from **newly recorded** workouts. Seeding XP and
-achievements from a user's existing history is optional and done with a one-time server-side script
-(run locally; not included in the repository).
+* **`backend/database/schema_alter_migrations.sql`**: contains all cumulative `ALTER TABLE` statements (user profile and recovery fields, notes, intensity techniques, gamification XP/levels, and password change timestamps).
 
 ## Author
 
@@ -150,22 +136,26 @@ Con questo strumento è possibile:
 ## Funzionalità principali
 
 * ✅ Gestione multi-scheda
-* 🔥 **Modalità Focus**: interfaccia dedicata per l'allenamento in tempo reale con timer di recupero integrati
+* 🔥 **Modalità Focus**: interfaccia dedicata per l'allenamento in tempo reale con timer di recupero integrati e feedback aptico
 * 💾 **Autosave**: salvataggio locale automatico per non perdere mai i progressi in Focus Mode
-* 📈 **Dashboard Avanzata**: interfaccia ridisegnata per una consultazione rapida e chiara
+* 📈 **Dashboard Avanzata**: interfaccia a hub per una consultazione rapida e chiara (Progressi Workout e Misure Corporee)
 * 📊 **Statistiche Globali**: tracciamento frequenza (settimanale) e volume totale (mensile)
-* 👤 **Body Stats**: tracciamento delle misure corporee e visualizzazione grafica
-* 🏋️ Aggiunta e modifica di esercizi
-* 🎯 **Progressi Mirati**: metriche di dettaglio (Volume, Peso Medio, Indice Progresso) per ogni singolo esercizio
+* 👤 **Body Stats**: tracciamento delle misure corporee, circonferenze e visualizzazione grafica
+* 🏆 **Gamification**: punti XP, livello atleta, maestria per singolo esercizio, streak settimanale e achievement sbloccabili
+* 🩺 **Visualizzatore Recupero Muscolare**: mappa anatomica per monitorare l'affaticamento e il recupero dei gruppi muscolari
+* 🍎 **Apple Health Sync**: sincronizzazione automatica del peso corporeo tramite Comandi Rapidi di iOS
+* 🏋️ Aggiunta e modifica di esercizi con supporto a tecniche di intensità (Drop set, Rest-pause, Super set)
+* 🎯 **Progressi Mirati**: metriche di dettaglio (Volume, Peso Medio, 1RM Stimato, Indice Progresso) per ogni singolo esercizio
 * 📌 Possibilità di selezionare una scheda attiva
-* 🔒 **Autenticazione sicura**: login basato su sessione con hashing **bcrypt** lato server
+* 🔒 **Autenticazione sicura**: login basato su sessione con hashing **bcrypt** lato server e rate limiting
+* 🌓 **Tema Chiaro / Scuro**: supporto al cambio tema personalizzato persistente
 
 ## Tecnologie utilizzate
 
 * **React (v18)** con **Vite**
 * **Material UI (MUI)** per l'interfaccia utente
 * **Recharts** per la visualizzazione dei dati
-* **PHP** (Legacy PDO / Moderno sperimentale con Eloquent)
+* **PHP** (Architettura REST API con PDO)
 * **MySQL** per il salvataggio dei dati utente
 
 ## Sicurezza
@@ -173,6 +163,7 @@ Con questo strumento è possibile:
 * **Le password sono hashate lato server con bcrypt** (`password_hash` / `password_verify`); il testo in chiaro viaggia solo su HTTPS e non viene mai memorizzato.
 * **Migrazione trasparente**: gli account creati prima di questa modifica vengono ri-hashati automaticamente in bcrypt al primo login andato a buon fine.
 * **Autenticazione basata su sessione** tramite sessioni PHP; ogni richiesta usa `credentials: 'include'`.
+* **Rate limiting** sugli endpoint di autenticazione per mitigare attacchi brute-force.
 
 ## Come provarlo
 
@@ -200,7 +191,7 @@ Puoi testare l'app direttamente al seguente link: 👉 [Gym Progress Tracker Liv
    npm run build
    ```
 3. Importa il database MySQL — vedi [Setup e aggiornamento del database](#setup-e-aggiornamento-del-database) più sotto.
-4. Configura i dati di accesso al database nel file `backend/config/database.php`;
+4. Configura i dati di accesso al database nel file `backend/config/database.php` (copiando da `backend/config/database.php.example`);
 5. Avvia il server locale (es. con XAMPP) e assicurati che i file PHP siano serviti correttamente.
 6. Avvia l'app React:
    ```bash
@@ -209,35 +200,15 @@ Puoi testare l'app direttamente al seguente link: 👉 [Gym Progress Tracker Liv
 
 ## Setup e aggiornamento del database
 
-Lo schema completo è in `backend/database/gym_progress_tracker.sql`. Gli altri file `.sql` nella
-stessa cartella sono **migration incrementali**, mantenute solo per aggiornare database più vecchi.
-
 ### Installazione pulita (repo scaricata da zero)
 
-Importa **`backend/database/gym_progress_tracker.sql`** e basta. Contiene già tutto: autenticazione,
-schede, storico, body stats, **gamification (streak settimanale + XP, livelli, progressione per
-esercizio, achievement)** e **rate limiting**. Non serve eseguire altro.
+Importa **`backend/database/gym_progress_tracker.sql`** e basta. Contiene lo schema unificato completo: autenticazione, schede, storico, serie relazionali, body stats, gamification (streak settimanale, XP, livelli, progressione per esercizio, achievement), rate limiting ed esercizi di base.
 
 ### Aggiornare un database esistente
 
-Esegui solo le migration che **non** hai ancora applicato, in quest'ordine (tutte in `backend/database/`):
+Per aggiornare un database preesistente creato con le versioni precedenti, esegui:
 
-| # | File | Aggiunge |
-|---|------|----------|
-| 1 | `add_notes_column.sql` | campo `notes` sugli esercizi della scheda |
-| 2 | `create_history_table.sql` | tabella storico allenamenti |
-| 3 | `database_update.sql` | registrazione per singolo set |
-| 4 | `gamification_setup.sql` | streak settimanale |
-| 5 | `gamification_levels_setup.sql` | XP, livelli, progressione per esercizio, achievement |
-| 6 | `create_rate_limits_table.sql` | rate limiting su login/register |
-
-Le migration `CREATE TABLE IF NOT EXISTS` si possono rieseguire senza rischi. Quelle `ALTER TABLE`
-(**1** e **5**) vanno eseguite **una sola volta**: rieseguirle dà un innocuo errore "duplicate column"
-che puoi ignorare.
-
-Dopo lo step 5, le statistiche di gamification si accumulano dai nuovi allenamenti registrati. Il
-ricalcolo di XP e achievement dallo storico esistente è opzionale e si fa con uno script una-tantum
-lato server (eseguito in locale; non incluso nella repository).
+* **`backend/database/schema_alter_migrations.sql`**: contiene tutti gli `ALTER TABLE` cumulativi (campi profilo utente e recupero, note, tecniche di intensità, estensioni XP/livelli gamification e timestamp cambio password).
 
 ## Autore
 
@@ -247,3 +218,4 @@ Andrea Costamagna
 ---
 
 Se trovi utile questo progetto, lascia una ⭐ sulla repository!
+
