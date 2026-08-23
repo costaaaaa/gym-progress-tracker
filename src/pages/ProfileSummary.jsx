@@ -98,10 +98,10 @@ const ProfileSummary = () => {
             value={progress}
             sx={{
               height: 9,
-              borderRadius: 5,
+              borderRadius: '5px',
               bgcolor: 'divider',
               '& .MuiLinearProgress-bar': {
-                borderRadius: 5,
+                borderRadius: '5px',
                 background: 'linear-gradient(90deg, #d50000, #ff5131)',
               },
             }}
@@ -153,10 +153,10 @@ const ProfileSummary = () => {
                     value={exProgressPct(ex.xp)}
                     sx={{
                       height: 6,
-                      borderRadius: 3,
+                      borderRadius: '3px',
                       bgcolor: 'divider',
                       mb: 0.75,
-                      '& .MuiLinearProgress-bar': { borderRadius: 3, background: 'linear-gradient(90deg, #d50000, #ff5131)' },
+                      '& .MuiLinearProgress-bar': { borderRadius: '3px', background: 'linear-gradient(90deg, #d50000, #ff5131)' },
                     }}
                   />
                   <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{ex.xp} XP</Typography>
