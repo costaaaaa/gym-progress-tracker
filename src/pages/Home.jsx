@@ -52,7 +52,7 @@ const PREVIEW_ACHIEVEMENTS = [
 // Etichetta "Anteprima" sovrapposta alle card demo della landing: le rende inequivocabilmente
 // non interattive/non reali, senza dover toccare lo stile delle card che avvolge.
 const PreviewOverlay = ({ children }) => (
-  <Box sx={{ position: 'relative' }}>
+  <Box sx={{ position: 'relative', height: '100%' }}>
     {children}
     <Chip
       icon={<VisibilityOutlined sx={{ fontSize: '14px !important' }} />}
