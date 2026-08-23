@@ -26,9 +26,6 @@ import {
   Fade,
   Slide,
   Divider,
-  createTheme,
-  ThemeProvider,
-  CssBaseline,
   GlobalStyles
 } from '@mui/material';
 import {
