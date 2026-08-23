@@ -56,24 +56,35 @@ const Workouts = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
       <Box sx={{ width: '100%' }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-          <Tabs 
-            value={tabToIndex[currentTab] || 0} 
-            onChange={handleTabChange} 
+        <Box sx={{ borderBottom: '1px solid', borderColor: 'divider', mb: 2 }}>
+          <Tabs
+            value={tabToIndex[currentTab] || 0}
+            onChange={handleTabChange}
             aria-label="workout hub tabs"
-            variant="fullWidth"
+            TabIndicatorProps={{ sx: { height: 2, bgcolor: 'primary.main' } }}
+            sx={{
+              minHeight: 0,
+              '& .MuiTab-root': {
+                textTransform: 'none',
+                fontSize: 14,
+                fontWeight: 500,
+                minHeight: 44,
+                color: 'text.secondary',
+                '&.Mui-selected': { color: 'primary.main', fontWeight: 600 },
+              },
+            }}
           >
-            <Tab 
-              icon={<FitnessCenterIcon />} 
-              iconPosition="start" 
-              label="Le tue Schede" 
-              id="workout-tab-0" 
+            <Tab
+              icon={<FitnessCenterIcon fontSize="small" />}
+              iconPosition="start"
+              label="Le tue Schede"
+              id="workout-tab-0"
             />
-            <Tab 
-              icon={<CalendarTodayIcon />} 
-              iconPosition="start" 
-              label="Cronologia" 
-              id="workout-tab-1" 
+            <Tab
+              icon={<CalendarTodayIcon fontSize="small" />}
+              iconPosition="start"
+              label="Cronologia"
+              id="workout-tab-1"
             />
           </Tabs>
         </Box>

@@ -110,8 +110,8 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Modifica Data Allenamento</DialogTitle>
       <DialogContent>
-        <Box sx={{ py: 2 }}>
-          <Typography variant="body1" gutterBottom>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+          <Typography variant="body1">
             Data attuale: {
               (() => {
                 try {
@@ -139,13 +139,12 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
             value={newDate}
             onChange={handleDateChange}
             fullWidth
-            margin="normal"
             InputLabelProps={{
               shrink: true,
             }}
           />
           {error && (
-            <Typography color="error" variant="body2" sx={{ mt: 1 }}>
+            <Typography color="error" variant="body2">
               {error}
             </Typography>
           )}

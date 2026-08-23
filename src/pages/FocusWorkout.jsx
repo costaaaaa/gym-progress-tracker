@@ -14,12 +14,6 @@ import {
   LinearProgress,
   CircularProgress,
   IconButton,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Chip,
   Collapse,
   Alert,
@@ -76,7 +70,7 @@ const FocusWorkout = () => {
   const colors = {
     bg: theme.palette.background.default,
     bgCard: theme.palette.background.paper,
-    bgElevated: isDarkMode ? '#2a2a2a' : '#f5f5f5',
+    bgElevated: theme.palette.action.hover,
     primary: theme.palette.primary.main,
     primaryLight: theme.palette.primary.light,
     primaryDark: theme.palette.primary.dark,
@@ -644,8 +638,8 @@ const FocusWorkout = () => {
           minHeight: '100vh', bgcolor: colors.bg, color: colors.text,
           display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3
         }}>
-          <Paper sx={{ 
-            bgcolor: colors.bgCard, p: 4, borderRadius: 4, maxWidth: 400, textAlign: 'center',
+          <Paper sx={{
+            bgcolor: colors.bgCard, p: 4, maxWidth: 400, textAlign: 'center',
             border: `1px solid ${colors.border}`,
             boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
           }}>
@@ -669,8 +663,8 @@ const FocusWorkout = () => {
                 size="large"
                 fullWidth
                 onClick={handleResumeDraft}
-                sx={{ 
-                  bgcolor: colors.primary, py: 1.5, fontWeight: 700, borderRadius: 2,
+                sx={{
+                  bgcolor: colors.primary, py: 1.5, fontWeight: 700,
                   '&:hover': { bgcolor: colors.primaryDark }
                 }}
               >
@@ -681,8 +675,8 @@ const FocusWorkout = () => {
                 size="large"
                 fullWidth
                 onClick={handleDiscardDraft}
-                sx={{ 
-                  color: colors.textSecondary, borderColor: colors.border, py: 1.5, borderRadius: 2,
+                sx={{
+                  color: colors.textSecondary, borderColor: colors.border, py: 1.5,
                   '&:hover': { borderColor: colors.primary, color: colors.primaryLight }
                 }}
               >
@@ -698,14 +692,19 @@ const FocusWorkout = () => {
       return (
         <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text }}>
           <Box sx={{
-            p: 2, display: 'flex', alignItems: 'center', gap: 1,
+            px: 2.5, py: 2, display: 'flex', alignItems: 'center', gap: 1.25,
             borderBottom: `1px solid ${colors.border}`
           }}>
             <IconButton onClick={() => navigate('/')} sx={{ color: colors.text }}>
               <ArrowBackIcon />
             </IconButton>
-            <FitnessCenterIcon sx={{ color: colors.primary }} />
-            <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: 1 }}>
+            <Box sx={{
+              width: 26, height: 26, borderRadius: '7px', bgcolor: colors.primary,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <FitnessCenterIcon sx={{ color: '#fff', fontSize: 15 }} />
+            </Box>
+            <Typography sx={{ fontFamily: "'Lexend', sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: '0.06em' }}>
               FOCUS MODE
             </Typography>
           </Box>
@@ -731,7 +730,7 @@ const FocusWorkout = () => {
             ) : (
               <>
                 <Paper sx={{
-                  bgcolor: colors.bgCard, p: 3, mb: 3, borderRadius: 3,
+                  bgcolor: colors.bgCard, p: 3, mb: 3,
                   border: `1px solid ${colors.border}`
                 }}>
                   <Typography variant="overline" sx={{ color: colors.textMuted, letterSpacing: 2 }}>
@@ -809,7 +808,7 @@ const FocusWorkout = () => {
                   onClick={handleStartWorkout}
                   sx={{
                     py: 2, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1,
-                    bgcolor: colors.primary, color: '#fff', borderRadius: 3, textTransform: 'uppercase',
+                    bgcolor: colors.primary, color: '#fff', borderRadius: '14px', textTransform: 'uppercase',
                     boxShadow: isDarkMode ? '0 4px 20px rgba(0, 0, 0, 0.4)' : '0 4px 20px rgba(213, 0, 0, 0.2)',
                     '&:hover': { bgcolor: colors.primaryDark, boxShadow: isDarkMode ? '0 6px 24px rgba(0, 0, 0, 0.5)' : '0 6px 24px rgba(213, 0, 0, 0.3)', transform: 'translateY(-2px)' },
                     '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted },
@@ -859,7 +858,7 @@ const FocusWorkout = () => {
           <Typography variant="body1" sx={{ color: colors.textSecondary, mb: 1 }}>{currentExercise?.exercise_name}</Typography>
           <Typography variant="body2" sx={{ color: colors.textMuted, mb: 4 }}>Prossima: Serie {currentSetIndex + 1} di {totalSetsForCurrentExercise}</Typography>
           <Button variant="outlined" size="large" startIcon={<SkipNextIcon />} onClick={handleSkipTimer}
-            sx={{ color: colors.text, borderColor: colors.border, borderRadius: 3, px: 4, py: 1.5, fontSize: '1rem',
+            sx={{ color: colors.text, borderColor: colors.border, borderRadius: '12px', px: 4, py: 1.5, fontSize: '1rem',
               '&:hover': { borderColor: colors.primary, bgcolor: colors.timerBg } }}>
             Salta Timer
           </Button>
@@ -889,7 +888,7 @@ const FocusWorkout = () => {
                 <Typography variant="h4" sx={{ fontWeight: 700, color: colors.text, lineHeight: 1.2 }}>{currentExercise.exercise_name}</Typography>
                 {currentExercise.notes && (
                   <Alert severity="info" icon={<InfoIcon sx={{ color: colors.primaryLight }} />}
-                    sx={{ mt: 2, bgcolor: colors.timerBg, color: colors.textSecondary, '& .MuiAlert-icon': { color: colors.primaryLight }, border: `1px solid ${colors.border}`, borderRadius: 2 }}>
+                    sx={{ mt: 2, bgcolor: colors.timerBg, color: colors.textSecondary, '& .MuiAlert-icon': { color: colors.primaryLight }, border: `1px solid ${colors.border}`, borderRadius: '8px' }}>
                     {currentExercise.notes}
                   </Alert>
                 )}
@@ -922,7 +921,7 @@ const FocusWorkout = () => {
                 return (
                   <Box sx={{
                     display: 'flex', alignItems: 'center', gap: 1, mb: 2, px: 1.5, py: 1,
-                    borderRadius: 2, bgcolor: colors.bgElevated, border: `1px solid ${colors.border}`
+                    borderRadius: '10px', bgcolor: colors.bgElevated, border: `1px solid ${colors.border}`
                   }}>
                     <HistoryIcon sx={{ fontSize: 18, color: colors.textMuted }} />
                     <Box>
@@ -972,8 +971,8 @@ const FocusWorkout = () => {
               </FormControl>
 
               <Button variant="contained" fullWidth size="large" startIcon={<CheckIcon />} onClick={handleConfirmSet} disabled={!weightInput || !repsInput}
-                sx={{ py: 2.5, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.success, color: '#fff', borderRadius: 3,
-                  boxShadow: '0 4px 16px rgba(76, 175, 80, 0.3)', '&:hover': { bgcolor: '#388e3c', boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)' },
+                sx={{ py: 2.5, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.success, color: '#fff', borderRadius: '14px',
+                  boxShadow: '0 4px 16px rgba(76, 175, 80, 0.3)', '&:hover': { bgcolor: 'success.dark', boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)' },
                   '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted }, mb: 2, transition: 'all 0.3s ease' }}>
                 Conferma Serie
               </Button>
@@ -984,39 +983,31 @@ const FocusWorkout = () => {
               </Button>
 
               {currentExerciseSets.length > 0 && (
-                <Paper sx={{ bgcolor: colors.bgCard, borderRadius: 2, overflow: 'hidden', border: `1px solid ${colors.border}` }}>
+                <Paper sx={{ bgcolor: colors.bgCard, overflow: 'hidden', border: `1px solid ${colors.border}` }}>
                   <Box sx={{ px: 2, py: 1.5, bgcolor: colors.bgElevated }}>
                     <Typography variant="subtitle2" sx={{ color: colors.textMuted, letterSpacing: 1 }}>SERIE COMPLETATE</Typography>
                   </Box>
-                  <TableContainer>
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell sx={{ color: colors.textMuted, borderColor: colors.border }}>#</TableCell>
-                          <TableCell sx={{ color: colors.textMuted, borderColor: colors.border }}>Peso</TableCell>
-                          <TableCell sx={{ color: colors.textMuted, borderColor: colors.border }}>Reps</TableCell>
-                          <TableCell sx={{ color: colors.textMuted, borderColor: colors.border }}>Tecnica</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {currentExerciseSets.map((set) => (
-                          <TableRow key={set.setNumber}>
-                            <TableCell sx={{ color: colors.text, borderColor: colors.border }}>{set.setNumber}</TableCell>
-                            <TableCell sx={{ color: colors.text, borderColor: colors.border, fontWeight: 600 }}>{set.weight} kg</TableCell>
-                            <TableCell sx={{ color: colors.text, borderColor: colors.border }}>{set.reps}</TableCell>
-                            <TableCell sx={{ color: colors.text, borderColor: colors.border }}>{set.intensity_technique || '-'}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
+                  {currentExerciseSets.map((set, idx) => (
+                    <Box key={set.setNumber} sx={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      px: 2, py: 1.25, borderTop: idx > 0 ? `1px solid ${colors.border}` : 'none',
+                    }}>
+                      <Typography variant="body2" sx={{ color: colors.textMuted }}>Serie {set.setNumber}</Typography>
+                      <Box sx={{ textAlign: 'right' }}>
+                        <Typography variant="body2" sx={{ color: colors.text, fontWeight: 600 }}>{set.weight} kg × {set.reps}</Typography>
+                        {set.intensity_technique && (
+                          <Typography variant="caption" sx={{ color: colors.textMuted, display: 'block' }}>{set.intensity_technique}</Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  ))}
                 </Paper>
               )}
             </Container>
           </Fade>
 
           <Dialog open={confirmQuitDialog} onClose={() => setConfirmQuitDialog(false)}
-            PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: 3 } }}>
+            PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: '16px' } }}>
             <DialogTitle sx={{ color: colors.text }}>Interrompere l'allenamento?</DialogTitle>
             <DialogContent>
               <DialogContentText sx={{ color: colors.textSecondary }}>Hai completato {getTotalCompletedSets()} serie. I dati non salvati andranno persi.</DialogContentText>
@@ -1060,7 +1051,7 @@ const FocusWorkout = () => {
               </Box>
             </Box>
 
-            <Paper sx={{ bgcolor: colors.bgCard, borderRadius: 3, overflow: 'hidden', mb: 3, border: `1px solid ${colors.border}` }}>
+            <Paper sx={{ bgcolor: colors.bgCard, overflow: 'hidden', mb: 3, border: `1px solid ${colors.border}` }}>
               <Box sx={{ px: 2, py: 1.5, bgcolor: colors.bgElevated }}>
                 <Typography variant="subtitle2" sx={{ color: colors.textMuted, letterSpacing: 1 }}>DETTAGLIO ESERCIZI</Typography>
               </Box>
@@ -1086,28 +1077,16 @@ const FocusWorkout = () => {
                         />
                       )}
                     </Box>
-                    <TableContainer>
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow>
-                            <TableCell sx={{ color: colors.textMuted, borderColor: colors.border, py: 0.5 }}>Serie</TableCell>
-                            <TableCell sx={{ color: colors.textMuted, borderColor: colors.border, py: 0.5 }}>Peso</TableCell>
-                            <TableCell sx={{ color: colors.textMuted, borderColor: colors.border, py: 0.5 }}>Reps</TableCell>
-                            <TableCell sx={{ color: colors.textMuted, borderColor: colors.border, py: 0.5 }}>Tecnica</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {sets.map((set) => (
-                            <TableRow key={set.setNumber}>
-                              <TableCell sx={{ color: colors.text, borderColor: colors.border, py: 0.5 }}>{set.setNumber}</TableCell>
-                              <TableCell sx={{ color: colors.text, borderColor: colors.border, py: 0.5, fontWeight: 600 }}>{set.weight} kg</TableCell>
-                              <TableCell sx={{ color: colors.text, borderColor: colors.border, py: 0.5 }}>{set.reps}</TableCell>
-                              <TableCell sx={{ color: colors.text, borderColor: colors.border, py: 0.5 }}>{set.intensity_technique || '-'}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      {sets.map((set) => (
+                        <Box key={set.setNumber} sx={{
+                          bgcolor: colors.bgElevated, borderRadius: '6px', px: 1.125, py: 0.625,
+                          fontSize: 12, fontWeight: 600, color: colors.textSecondary,
+                        }}>
+                          {set.weight}kg×{set.reps}{set.intensity_technique ? ` · ${set.intensity_technique}` : ''}
+                        </Box>
+                      ))}
+                    </Box>
                   </Box>
                 );
               })}
@@ -1120,7 +1099,7 @@ const FocusWorkout = () => {
                   <Paper sx={{
                     bgcolor: isDarkMode ? 'rgba(213, 0, 0, 0.12)' : 'rgba(213, 0, 0, 0.06)',
                     border: `1px solid ${colors.primary}`,
-                    borderRadius: 3, p: 2.5, mb: 3, textAlign: 'center'
+                    p: 2.5, mb: 3, textAlign: 'center'
                   }}>
                     <FireIcon sx={{ fontSize: 40, color: colors.primary, mb: 0.5 }} />
                     <Typography variant="h6" sx={{ fontWeight: 700, color: colors.primary }}>
@@ -1168,7 +1147,7 @@ const FocusWorkout = () => {
                   };
 
                   return (
-                    <Paper sx={{ bgcolor: colors.bgCard, border: `1px solid ${colors.border}`, borderRadius: 3, p: 2.5, mb: 3 }}>
+                    <Paper sx={{ bgcolor: colors.bgCard, border: `1px solid ${colors.border}`, p: 2.5, mb: 3 }}>
                       <Typography variant="subtitle2" sx={{ color: colors.textMuted, mb: 1.5, letterSpacing: 1 }}>
                         RIEPILOGO SESSIONE
                       </Typography>
@@ -1203,7 +1182,7 @@ const FocusWorkout = () => {
                 <Button
                   variant="contained" fullWidth size="large"
                   onClick={() => navigate('/workouts?tab=history', { state: { refreshHistory: Date.now() } })}
-                  sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.primary, color: '#fff', borderRadius: 3, mb: 2 }}
+                  sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.primary, color: '#fff', borderRadius: '14px', mb: 2 }}
                 >
                   Vai alla Cronologia
                 </Button>
@@ -1214,7 +1193,7 @@ const FocusWorkout = () => {
 
                 {/* Fallback share dialog */}
                 <Dialog open={shareTextOpen} onClose={() => setShareTextOpen(false)}
-                  PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: 3 } }}>
+                  PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: '16px' } }}>
                   <DialogTitle>Copia il testo</DialogTitle>
                   <DialogContent>
                     <TextField
@@ -1243,7 +1222,7 @@ const FocusWorkout = () => {
                 <Button variant="contained" fullWidth size="large"
                   startIcon={saving ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : <SaveIcon />}
                   onClick={handleSave} disabled={saving || getTotalCompletedSets() === 0}
-                  sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.primary, color: '#fff', borderRadius: 3,
+                  sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.primary, color: '#fff', borderRadius: '14px',
                     boxShadow: isDarkMode ? '0 4px 20px rgba(0, 0, 0, 0.4)' : '0 4px 20px rgba(213, 0, 0, 0.2)', '&:hover': { bgcolor: colors.primaryDark },
                     '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted }, mb: 2 }}>
                   {saving ? 'Salvataggio...' : 'Salva Allenamento'}
@@ -1255,7 +1234,7 @@ const FocusWorkout = () => {
           </Container>
 
           <Dialog open={confirmQuitDialog} onClose={() => setConfirmQuitDialog(false)}
-            PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: 3 } }}>
+            PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: '16px' } }}>
             <DialogTitle sx={{ color: colors.text }}>Scartare l'allenamento?</DialogTitle>
             <DialogContent>
               <DialogContentText sx={{ color: colors.textSecondary }}>Hai completato {getTotalCompletedSets()} serie. I dati non verranno salvati.</DialogContentText>
@@ -1304,7 +1283,7 @@ const FocusWorkout = () => {
         <Alert
           onClose={() => setSnackbar({ ...snackbar, open: false })}
           severity={snackbar.severity}
-          sx={{ width: '100%', borderRadius: 2 }}
+          sx={{ width: '100%' }}
         >
           {snackbar.message}
         </Alert>

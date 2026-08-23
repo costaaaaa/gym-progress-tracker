@@ -153,8 +153,8 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
     <Dialog open={open} onClose={() => onClose(false)} maxWidth="sm" fullWidth>
       <DialogTitle>Registra Allenamento</DialogTitle>
       <DialogContent>
-        <Box sx={{ mb: 3 }}>
-          <FormControl fullWidth sx={{ mb: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
+          <FormControl fullWidth>
             <InputLabel>Seleziona Giorno</InputLabel>
             <Select
               value={selectedDay}
@@ -169,21 +169,27 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
             </Select>
           </FormControl>
 
+          {exercises.length === 0 && (
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+              Seleziona un giorno per compilare le serie svolte.
+            </Typography>
+          )}
+
           {exercises.length > 0 && (
-            <List>
+            <List sx={{ p: 0 }}>
               {exercises.map((exercise, index) => (
                 <React.Fragment key={exercise.id}>
-                  {index > 0 && <Divider sx={{ my: 2 }} />}
-                  <ListItem sx={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                  {index > 0 && <Divider sx={{ my: 2.5 }} />}
+                  <ListItem sx={{ flexDirection: 'column', alignItems: 'stretch', p: 0 }}>
                     <ListItemText
                       primary={
-                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        <Typography sx={{ fontWeight: 700, fontSize: 14, mb: 0.25 }}>
                           {exercise.exercise_name}
                         </Typography>
                       }
                       secondary={
                         <Box>
-                          <Typography variant="body2">
+                          <Typography variant="body2" color="text.secondary">
                             {`${exercise.sets} serie x ${exercise.reps} - Recupero: ${exercise.rest}s`}
                           </Typography>
                           {exercise.notes && (

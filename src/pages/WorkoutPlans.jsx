@@ -14,14 +14,13 @@ import {
   DialogActions,
   TextField,
   IconButton,
-  List,
   Divider,
   Alert,
   Snackbar,
   CircularProgress,
   Chip,
-  Stack,
   ButtonGroup,
+  Collapse,
   FormControl,
   InputLabel,
   Select,
@@ -31,13 +30,9 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
-import InfoIcon from '@mui/icons-material/Info';
-import CloseIcon from '@mui/icons-material/Close';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExerciseDialog, { INTENSITY_TECHNIQUES } from '../components/ExerciseDialog';
 import { API_BASE_URL } from '../config';
 
@@ -61,9 +56,8 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
   const [dayIdToDeleteFrom, setDayIdToDeleteFrom] = useState(null);
   const [deleteExerciseLoading, setDeleteExerciseLoading] = useState(false);
   
-  // Nuovo stato per il dialog dei dettagli del giorno
-  const [openDayDetailsDialog, setOpenDayDetailsDialog] = useState(false);
-  const [selectedDay, setSelectedDay] = useState(null);
+  // Stato per l'espansione inline dei dettagli del giorno (ex dialog)
+  const [expandedDays, setExpandedDays] = useState({});
   
   // Nuovi stati per la modifica degli esercizi
   const [openEditExerciseDialog, setOpenEditExerciseDialog] = useState(false);
@@ -102,8 +96,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
         credentials: 'include'
       });
       const data = await response.json();
-      console.log('Dati delle schede recuperati:', data);
-      
+
       if (data.records) {
         // Ordina i piani in modo che quelli attivi appaiano per primi
         const sortedPlans = [...data.records].sort((a, b) => {
@@ -290,9 +283,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       // Non creiamo un nuovo esercizio, ma utilizziamo l'ID dell'esercizio esistente
       // Otteniamo l'ID dell'esercizio selezionato dall'autocomplete
       const selectedExerciseId = exercise.id;
-      
-      console.log('Aggiunta esercizio con ID originale:', selectedExerciseId);
-      
+
       if (!selectedExerciseId) {
         throw new Error('ID esercizio non valido. Seleziona un esercizio esistente.');
       }
@@ -469,18 +460,12 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
     }));
   };
   
-  // Funzione per aprire il dialog con i dettagli del giorno
-  const handleOpenDayDetails = (day) => {
-    setSelectedDay(day);
-    setOpenDayDetailsDialog(true);
-  };
-  
-  // Funzione per chiudere il dialog dei dettagli
-  const handleCloseDayDetails = () => {
-    setOpenDayDetailsDialog(false);
-    setTimeout(() => {
-      setSelectedDay(null);
-    }, 200);
+  // Espande/collassa i dettagli inline di un giorno (esercizi, riordino, modifica, eliminazione)
+  const toggleDayExpansion = (dayId) => {
+    setExpandedDays(prev => ({
+      ...prev,
+      [dayId]: !prev[dayId]
+    }));
   };
 
   // Nuova funzione per aprire il dialog di modifica esercizio
@@ -772,54 +757,71 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       )}
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
-          Gestione Schede
+        <Typography sx={{ fontFamily: "'Lexend', sans-serif", fontWeight: 700, fontSize: 20 }}>
+          Le tue Schede
         </Typography>
         <Button
           variant="contained"
-          startIcon={<AddIcon sx={{ color: "white" }} />}
+          startIcon={<AddIcon sx={{ color: "white" }} fontSize="small" />}
           onClick={() => setOpenDialog(true)}
+          sx={{ fontSize: 13, fontWeight: 600 }}
         >
           Nuova Scheda
         </Button>
       </Box>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={2.5}>
         {workoutPlans.map((plan, planIndex) => {
           const isExpanded = expandedPlans[plan.id];
-          
+          const totalDays = plan.days?.length || 0;
+          const totalExercises = plan.days?.reduce((acc, day) => acc + (day.exercises?.length || 0), 0) || 0;
+
           return (
             <Grid item xs={12} md={6} key={plan.id}>
-              <Card sx={{ 
-                borderLeft: plan.is_active ? '6px solid' : 'none', 
-                borderColor: 'primary.main',
-                transition: 'all 0.3s'
-              }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <Box sx={{ flexGrow: 1 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{plan.name}</Typography>
-                        {plan.is_active && <Chip label="ATTIVA" color="primary" size="small" sx={{ fontWeight: 'bold', height: 20 }} />}
+              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <CardContent sx={{ p: 3, flexGrow: 1 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1.5 }}>
+                    <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 0.75, flexWrap: 'wrap' }}>
+                        <Typography sx={{ fontFamily: "'Lexend', sans-serif", fontWeight: 700, fontSize: 16 }}>
+                          {plan.name}
+                        </Typography>
+                        {!!plan.is_active && (
+                          <Box
+                            component="span"
+                            sx={{
+                              bgcolor: (theme) => theme.palette.mode === 'light' ? '#fbebeb' : 'rgba(213, 0, 0, 0.12)',
+                              color: 'primary.main',
+                              fontSize: 11,
+                              fontWeight: 700,
+                              letterSpacing: '0.03em',
+                              px: 1.25,
+                              py: 0.5,
+                              borderRadius: '999px',
+                            }}
+                          >
+                            ATTIVA
+                          </Box>
+                        )}
                       </Box>
                       {plan.description && (
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontStyle: 'italic' }}>
+                        <Typography sx={{ fontSize: 13, color: 'text.secondary', fontStyle: 'italic', lineHeight: 1.5 }}>
                           {plan.description}
                         </Typography>
                       )}
                     </Box>
-                    <Box sx={{ display: 'flex' }}>
-                      <IconButton 
+                    <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
+                      <IconButton
                         onClick={() => handleOpenEditPlanDialog(plan)}
-                        color="primary"
                         size="small"
+                        sx={{ color: 'text.secondary' }}
                       >
                         <EditIcon fontSize="small" />
                       </IconButton>
-                      <IconButton 
+                      <IconButton
                         onClick={() => handleOpenDeletePlanDialog(plan)}
-                        color="error"
                         size="small"
+                        sx={{ color: 'text.secondary' }}
                       >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
@@ -827,80 +829,180 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                   </Box>
 
                   {isExpanded ? (
-                    <Box sx={{ mt: 2 }}>
-                      <Divider sx={{ mb: 2 }} />
-                      {plan.days && plan.days.map((day, dayIndex) => (
-                        <Box key={day.id} sx={{ mb: 2 }}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                              {day.name}
-                            </Typography>
+                    <Box sx={{ mt: 2.25, pt: 2.25, borderTop: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      {plan.days && plan.days.map((day, dayIndex) => {
+                        const dayExpanded = !!expandedDays[day.id];
+                        const dayPanelId = `day-details-panel-${day.id}`;
+                        return (
+                          <Box key={day.id}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                              <Typography sx={{ fontSize: 14, fontWeight: 600 }}>
+                                {day.name}
+                              </Typography>
+                              <Button
+                                variant="text"
+                                size="small"
+                                onClick={() => toggleDayExpansion(day.id)}
+                                aria-expanded={dayExpanded}
+                                aria-controls={dayPanelId}
+                                sx={{ fontSize: 12, fontWeight: 600, textTransform: 'none', minWidth: 0, p: 0 }}
+                              >
+                                {dayExpanded ? 'Nascondi' : 'Dettagli'}
+                              </Button>
+                            </Box>
+
+                            <Box sx={{ mb: 1 }}>
+                              {day.exercises && day.exercises.length > 0 ? (
+                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                  {groupExercisesByMuscleGroup(day.exercises).map((group, idx) => (
+                                    <Box
+                                      key={idx}
+                                      sx={{
+                                        border: '1px solid',
+                                        borderColor: 'divider',
+                                        borderRadius: '8px',
+                                        px: 1.5,
+                                        py: 0.75,
+                                        fontSize: 12,
+                                        fontWeight: 600,
+                                      }}
+                                    >
+                                      {group.name} ({group.count})
+                                    </Box>
+                                  ))}
+                                </Box>
+                              ) : (
+                                <Typography variant="body2" color="text.secondary">
+                                  Nessun esercizio aggiunto
+                                </Typography>
+                              )}
+                            </Box>
+
+                            <Collapse in={dayExpanded} id={dayPanelId} timeout="auto">
+                              <Box sx={{
+                                mt: 1.25, mb: 1.5, borderRadius: '10px', p: '12px 14px',
+                                bgcolor: (theme) => theme.palette.mode === 'light' ? '#faf9f8' : 'action.hover',
+                              }}>
+                                {day.exercises && day.exercises.length > 0 ? (
+                                  groupExercisesByMuscleGroup(day.exercises).map((group, groupIdx) => (
+                                    <Box key={groupIdx} sx={{ mb: 2, mt: groupIdx > 0 ? 2 : 0, '&:last-of-type': { mb: 0 } }}>
+                                      <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center' }}>
+                                        <FitnessCenterIcon fontSize="small" sx={{ mr: 1 }} /> {group.name}
+                                      </Typography>
+                                      <Divider sx={{ mt: 1, mb: 1.5 }} />
+                                      {group.exercises.map((exercise) => {
+                                        const exerciseGlobalIndex = day.exercises.findIndex(e => e.id === exercise.id);
+                                        return (
+                                          <Box key={exercise.id} sx={{ mb: 2 }}>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                              <div>
+                                                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                                                  {exercise.exercise_name}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.secondary">
+                                                  {exercise.sets} serie x {exercise.reps} - Recupero: {exercise.rest}s
+                                                </Typography>
+                                                {exercise.intensity_technique && (
+                                                  <Chip
+                                                    icon={<WhatshotIcon />}
+                                                    label={exercise.intensity_technique}
+                                                    size="small"
+                                                    color="secondary"
+                                                    sx={{ mt: 1, mb: 0.5 }}
+                                                  />
+                                                )}
+                                                {exercise.notes && (
+                                                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
+                                                    Note: {exercise.notes}
+                                                  </Typography>
+                                                )}
+                                              </div>
+                                              <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                                                <ButtonGroup size="small" sx={{ mr: 1 }}>
+                                                  <IconButton
+                                                    size="small"
+                                                    disabled={exerciseGlobalIndex <= 0}
+                                                    onClick={() => handleMoveExerciseUp(day.id, exercise, exerciseGlobalIndex)}
+                                                  >
+                                                    <ArrowUpwardIcon fontSize="small" />
+                                                  </IconButton>
+                                                  <IconButton
+                                                    size="small"
+                                                    disabled={exerciseGlobalIndex >= day.exercises.length - 1}
+                                                    onClick={() => handleMoveExerciseDown(day.id, exercise, exerciseGlobalIndex, day.exercises.length)}
+                                                  >
+                                                    <ArrowDownwardIcon fontSize="small" />
+                                                  </IconButton>
+                                                </ButtonGroup>
+                                                <IconButton
+                                                  size="small"
+                                                  color="primary"
+                                                  onClick={() => handleOpenEditExerciseDialog(day.id, exercise)}
+                                                  sx={{ mr: 1 }}
+                                                >
+                                                  <EditIcon fontSize="small" />
+                                                </IconButton>
+                                                <IconButton
+                                                  size="small"
+                                                  color="error"
+                                                  onClick={() => handleOpenDeleteExerciseDialog(day.id, exercise)}
+                                                >
+                                                  <DeleteIcon fontSize="small" />
+                                                </IconButton>
+                                              </Box>
+                                            </Box>
+                                          </Box>
+                                        );
+                                      })}
+                                    </Box>
+                                  ))
+                                ) : (
+                                  <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 1 }}>
+                                    Nessun esercizio aggiunto a questo giorno.
+                                  </Typography>
+                                )}
+                              </Box>
+                            </Collapse>
+
                             <Button
+                              startIcon={<AddIcon fontSize="small" />}
+                              onClick={() => handleOpenExerciseDialog(planIndex, dayIndex)}
                               size="small"
-                              variant="outlined"
-                              startIcon={<InfoIcon />}
-                              onClick={() => handleOpenDayDetails(day)}
+                              sx={{ fontSize: 12, fontWeight: 600, textTransform: 'none' }}
                             >
-                              Dettagli
+                              Aggiungi Esercizio
                             </Button>
                           </Box>
-                          
-                          <Box sx={{ mb: 1 }}>
-                            {day.exercises && day.exercises.length > 0 ? (
-                              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                                {groupExercisesByMuscleGroup(day.exercises).map((group, idx) => (
-                                  <Chip 
-                                    key={idx}
-                                    icon={<FitnessCenterIcon />}
-                                    label={`${group.name} (${group.count})`} 
-                                    color="primary"
-                                    variant="outlined"
-                                    size="small"
-                                    onClick={() => handleOpenDayDetails(day)}
-                                    sx={{ m: 0.5 }}
-                                  />
-                                ))}
-                              </Stack>
-                            ) : (
-                              <Typography variant="body2" color="text.secondary">
-                                Nessun esercizio aggiunto
-                              </Typography>
-                            )}
-                          </Box>
-                          
-                          <Button
-                            startIcon={<AddIcon />}
-                            onClick={() => handleOpenExerciseDialog(planIndex, dayIndex)}
-                            size="small"
-                          >
-                            Aggiungi Esercizio
-                          </Button>
-                        </Box>
-                      ))}
+                        );
+                      })}
                     </Box>
                   ) : (
-                    <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
-                       <Typography variant="body2" color="text.secondary">
-                        {plan.days?.length || 0} Giorni • {plan.days?.reduce((acc, day) => acc + (day.exercises?.length || 0), 0)} Esercizi
-                      </Typography>
-                    </Box>
+                    <Typography sx={{ mt: 1.75, fontSize: 13, color: 'text.secondary' }}>
+                      {totalDays} giorni · {totalExercises} esercizi
+                    </Typography>
                   )}
                 </CardContent>
-                <CardActions sx={{ px: 2, pb: 2, pt: 0, justifyContent: 'space-between' }}>
+                <CardActions sx={{ px: 3, pb: 2.5, pt: 2, mt: 'auto', borderTop: '1px solid', borderColor: 'divider', justifyContent: 'space-between' }}>
                   <Button
                     size="small"
                     variant="text"
                     onClick={() => togglePlanExpansion(plan.id)}
-                    startIcon={isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                    aria-expanded={isExpanded}
+                    sx={{ fontSize: 12, fontWeight: 600, textTransform: 'none', color: 'text.secondary', minWidth: 0, p: 0 }}
                   >
                     {isExpanded ? "Nascondi dettagli" : "Mostra dettagli"}
                   </Button>
-                  
+
                   {!plan.is_active && (
                     <Button
-                      variant="contained"
                       size="small"
                       onClick={() => handleActivatePlan(plan.id)}
+                      sx={{
+                        bgcolor: 'text.primary',
+                        color: (theme) => theme.palette.getContrastText(theme.palette.text.primary),
+                        borderRadius: '8px', px: 2, py: 1, fontSize: 12, fontWeight: 600, textTransform: 'none',
+                        '&:hover': { bgcolor: 'text.primary', opacity: 0.85 },
+                      }}
                     >
                       Attiva Scheda
                     </Button>
@@ -912,209 +1014,45 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
         })}
       </Grid>
       
-      {/* Dialog Dettagli Giorno */}
-      <Dialog
-        open={openDayDetailsDialog}
-        onClose={handleCloseDayDetails}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">
-              {selectedDay?.name || 'Dettagli Giorno'}
-            </Typography>
-            <IconButton onClick={handleCloseDayDetails}>
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers>
-          {selectedDay?.exercises && selectedDay.exercises.length > 0 ? (
-            <List>
-              {groupExercisesByMuscleGroup(selectedDay.exercises).map((group, groupIdx) => (
-                <React.Fragment key={groupIdx}>
-                  <Box sx={{ mb: 2, mt: groupIdx > 0 ? 2 : 0 }}>
-                    <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center' }}>
-                      <FitnessCenterIcon sx={{ mr: 1 }} /> {group.name}
-                    </Typography>
-                    <Divider sx={{ mt: 1, mb: 2 }} />
-                    
-                    {group.exercises.map((exercise, exerciseIdx) => {
-                      // Determiniamo l'indice globale dell'esercizio all'interno del giorno
-                      const exerciseGlobalIndex = selectedDay.exercises.findIndex(e => e.id === exercise.id);
-                      return (
-                        <Box key={exercise.id} sx={{ mb: 2, pl: 2 }}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
-                              <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                                {exercise.exercise_name}
-                              </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                  {exercise.sets} serie x {exercise.reps} - Recupero: {exercise.rest}s
-                                </Typography>
-                                {exercise.intensity_technique && (
-                                  <Chip 
-                                    icon={<WhatshotIcon />}
-                                    label={exercise.intensity_technique} 
-                                    size="small" 
-                                    color="secondary" 
-                                    sx={{ mt: 1, mb: 0.5 }} 
-                                  />
-                                )}
-                                {exercise.notes && (
-                                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
-                                  Note: {exercise.notes}
-                                </Typography>
-                              )}
-                            </div>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              {/* Pulsanti per riordinare */}
-                              <ButtonGroup size="small" sx={{ mr: 1 }}>
-                                <IconButton 
-                                  size="small"
-                                  disabled={exerciseGlobalIndex <= 0}
-                                  onClick={() => {
-                                    console.log("Clic su Move Up", {
-                                      dayId: selectedDay.id,
-                                      exerciseId: exercise.id,
-                                      exerciseName: exercise.exercise_name,
-                                      index: exerciseGlobalIndex
-                                    });
-                                    handleMoveExerciseUp(
-                                      selectedDay.id, 
-                                      exercise, 
-                                      exerciseGlobalIndex
-                                    );
-                                  }}
-                                >
-                                  <ArrowUpwardIcon fontSize="small" />
-                                </IconButton>
-                                <IconButton 
-                                  size="small"
-                                  disabled={exerciseGlobalIndex >= selectedDay.exercises.length - 1}
-                                  onClick={() => {
-                                    console.log("Clic su Move Down", {
-                                      dayId: selectedDay.id,
-                                      exerciseId: exercise.id,
-                                      exerciseName: exercise.exercise_name,
-                                      index: exerciseGlobalIndex,
-                                      total: selectedDay.exercises.length
-                                    });
-                                    handleMoveExerciseDown(
-                                      selectedDay.id, 
-                                      exercise, 
-                                      exerciseGlobalIndex, 
-                                      selectedDay.exercises.length
-                                    );
-                                  }}
-                                >
-                                  <ArrowDownwardIcon fontSize="small" />
-                                </IconButton>
-                              </ButtonGroup>
-                              
-                              {/* Pulsante per modificare */}
-                              <IconButton
-                                size="small"
-                                color="primary"
-                                onClick={() => handleOpenEditExerciseDialog(selectedDay.id, exercise)}
-                                sx={{ mr: 1 }}
-                              >
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                              
-                              {/* Pulsante per eliminare */}
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={() => {
-                                  handleCloseDayDetails();
-                                  setTimeout(() => {
-                                    handleOpenDeleteExerciseDialog(selectedDay.id, exercise);
-                                  }, 300);
-                                }}
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Box>
-                          </Box>
-                        </Box>
-                      );
-                    })}
-                  </Box>
-                </React.Fragment>
-              ))}
-            </List>
-          ) : (
-            <Typography variant="body1" align="center" sx={{ py: 2 }}>
-              Nessun esercizio aggiunto a questo giorno.
-            </Typography>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button 
-            variant="outlined" 
-            startIcon={<AddIcon />}
-            onClick={() => {
-              const planIndex = workoutPlans.findIndex(p => 
-                p.days && p.days.some(d => d.id === selectedDay?.id)
-              );
-              const dayIndex = planIndex >= 0 ? 
-                workoutPlans[planIndex].days.findIndex(d => d.id === selectedDay?.id) : -1;
-              
-              if (planIndex >= 0 && dayIndex >= 0) {
-                handleCloseDayDetails();
-                setTimeout(() => {
-                  handleOpenExerciseDialog(planIndex, dayIndex);
-                }, 300);
-              }
-            }}
-          >
-            Aggiungi Esercizio
-          </Button>
-          <Button onClick={handleCloseDayDetails}>Chiudi</Button>
-        </DialogActions>
-      </Dialog>
-
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Nuova Scheda</DialogTitle>
         <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Nome Scheda"
-            type="text"
-            fullWidth
-            value={newPlan.name}
-            onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })}
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            margin="dense"
-            label="Descrizione (Opzionale)"
-            type="text"
-            fullWidth
-            multiline
-            rows={2}
-            value={newPlan.description}
-            onChange={(e) => setNewPlan({ ...newPlan, description: e.target.value })}
-            sx={{ mb: 3 }}
-          />
-          <FormControl fullWidth>
-            <InputLabel id="num-days-label">Numero di Giorni</InputLabel>
-            <Select
-              labelId="num-days-label"
-              value={numDays}
-              label="Numero di Giorni"
-              onChange={(e) => setNumDays(parseInt(e.target.value, 10))}
-            >
-              {[1, 2, 3, 4, 5, 6, 7].map((num) => (
-                <MenuItem key={num} value={num}>
-                  {num} Giorn{num === 1 ? 'o' : 'i'}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <TextField
+              autoFocus
+              label="Nome Scheda"
+              type="text"
+              fullWidth
+              placeholder="Es. Forza 5x5"
+              value={newPlan.name}
+              onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })}
+            />
+            <TextField
+              label="Descrizione (Opzionale)"
+              type="text"
+              fullWidth
+              multiline
+              rows={2}
+              placeholder="Breve descrizione dell'obiettivo della scheda"
+              value={newPlan.description}
+              onChange={(e) => setNewPlan({ ...newPlan, description: e.target.value })}
+            />
+            <FormControl fullWidth>
+              <InputLabel id="num-days-label">Numero di Giorni</InputLabel>
+              <Select
+                labelId="num-days-label"
+                value={numDays}
+                label="Numero di Giorni"
+                onChange={(e) => setNumDays(parseInt(e.target.value, 10))}
+              >
+                {[1, 2, 3, 4, 5, 6, 7].map((num) => (
+                  <MenuItem key={num} value={num}>
+                    {num} Giorn{num === 1 ? 'o' : 'i'}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDialog(false)}>Annulla</Button>
@@ -1128,27 +1066,25 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       <Dialog open={openEditPlanDialog} onClose={handleCloseEditPlanDialog} maxWidth="sm" fullWidth>
         <DialogTitle>Modifica Scheda</DialogTitle>
         <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Nome Scheda"
-            type="text"
-            fullWidth
-            value={editedPlanValues.name}
-            onChange={(e) => setEditedPlanValues({ ...editedPlanValues, name: e.target.value })}
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            margin="dense"
-            label="Descrizione (Opzionale)"
-            type="text"
-            fullWidth
-            multiline
-            rows={2}
-            value={editedPlanValues.description}
-            onChange={(e) => setEditedPlanValues({ ...editedPlanValues, description: e.target.value })}
-            sx={{ mb: 1 }}
-          />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <TextField
+              autoFocus
+              label="Nome Scheda"
+              type="text"
+              fullWidth
+              value={editedPlanValues.name}
+              onChange={(e) => setEditedPlanValues({ ...editedPlanValues, name: e.target.value })}
+            />
+            <TextField
+              label="Descrizione (Opzionale)"
+              type="text"
+              fullWidth
+              multiline
+              rows={2}
+              value={editedPlanValues.description}
+              onChange={(e) => setEditedPlanValues({ ...editedPlanValues, description: e.target.value })}
+            />
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseEditPlanDialog} disabled={updatePlanLoading}>Annulla</Button>
