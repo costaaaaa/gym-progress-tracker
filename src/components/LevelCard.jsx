@@ -4,17 +4,20 @@ import StarIcon from '@mui/icons-material/Star';
 import { Link as RouterLink } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 
-const LevelCard = () => {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+// previewData: dati statici per mostrare la card senza autenticazione (es. landing page).
+// Quando presente salta la fetch autenticata e usa direttamente quei dati.
+const LevelCard = ({ previewData }) => {
+  const [data, setData] = useState(previewData || null);
+  const [loading, setLoading] = useState(!previewData);
 
   useEffect(() => {
+    if (previewData) return;
     fetch(`${API_BASE_URL}api/gamification/profile.php`, { credentials: 'include' })
       .then(r => r.ok ? r.json() : null)
       .then(json => { if (json?.success) setData(json); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [previewData]);
 
   if (loading || !data) return null;
 

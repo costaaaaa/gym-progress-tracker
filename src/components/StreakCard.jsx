@@ -8,18 +8,21 @@ const RING_RADIUS = 26;
 const RING_STROKE = 5;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
-const StreakCard = () => {
+// previewData: dati statici per mostrare la card senza autenticazione (es. landing page).
+// Quando presente salta la fetch autenticata e usa direttamente quei dati.
+const StreakCard = ({ previewData }) => {
   const theme = useTheme();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(previewData || null);
+  const [loading, setLoading] = useState(!previewData);
 
   useEffect(() => {
+    if (previewData) return;
     fetch(`${API_BASE_URL}api/gamification/streak.php`, { credentials: 'include' })
       .then(r => r.ok ? r.json() : null)
       .then(json => { if (json?.success) setData(json); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [previewData]);
 
   if (loading) return null;
   if (!data) return null;
