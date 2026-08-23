@@ -1259,6 +1259,7 @@ const FocusWorkout = () => {
         backgroundColor: `${colors.bgCard} !important`,
         color: `${colors.text} !important`,
         border: `1px solid ${colors.border} !important`,
+        boxShadow: isDarkMode ? '0 10px 40px rgba(0,0,0,0.5)' : '0 10px 40px rgba(0,0,0,0.15)',
       },
       '.MuiMenuItem-root': {
         color: `${colors.text} !important`,
