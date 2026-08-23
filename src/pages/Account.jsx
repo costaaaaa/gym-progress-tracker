@@ -574,6 +574,7 @@ const Account = ({ isEmbedded = false }) => {
                       value={trainingStartDate}
                       onChange={(newValue) => setTrainingStartDate(newValue)}
                       views={['year', 'month']}
+                      format="MM/yyyy"
                       openTo="month"
                       minDate={birthDate || undefined}
                       maxDate={startOfToday()}
