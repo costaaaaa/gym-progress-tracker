@@ -14,6 +14,7 @@ import StarIcon from '@mui/icons-material/Star';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import ShieldOutlined from '@mui/icons-material/ShieldOutlined';
 import LayersOutlined from '@mui/icons-material/LayersOutlined';
+import ShowChartOutlined from '@mui/icons-material/ShowChartOutlined';
 import VisibilityOutlined from '@mui/icons-material/VisibilityOutlined';
 import BodyVisualizer from '../components/BodyVisualizer';
 import StreakCard from '../components/StreakCard';
@@ -543,6 +544,32 @@ const Home = () => {
                 </Typography>
               </Paper>
             </Grid>
+            <Grid item xs={12} md={6}>
+              <Paper sx={{ p: 4, height: '100%', borderTop: '4px solid #d50000' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <ShowChartOutlined sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
+                  <Typography variant="h5" sx={{ fontWeight: 800 }}>Dashboard e Grafici</Typography>
+                </Box>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8 }}>
+                  Volume, ripetizioni e frequenza settimanale in grafici interattivi, per singolo
+                  esercizio e a livello globale.
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Paper sx={{ p: 4, height: '100%', borderTop: '4px solid #d50000' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <ShieldOutlined sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
+                  <Typography variant="h5" sx={{ fontWeight: 800 }}>Sicurezza</Typography>
+                </Box>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8 }}>
+                  Password protette con hashing bcrypt lato server e rate limiting sui tentativi
+                  di accesso.
+                </Typography>
+              </Paper>
+            </Grid>
           </Grid>
 
           <Box sx={{ textAlign: 'center', mt: 5, mb: 2 }}>
@@ -565,9 +592,6 @@ const Home = () => {
             >
               Registrati Gratis
             </Button>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 1.5 }}>
-              Gratuito, open source, password protette con bcrypt.
-            </Typography>
           </Box>
         </>
       )}
