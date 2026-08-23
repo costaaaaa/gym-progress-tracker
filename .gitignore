@@ -138,17 +138,10 @@ backend/database/*.sql
 # Whitelist: solo schema/migration DDL sicuri da committare (nessun dato sensibile).
 # Aggiungi qui ogni nuovo file di schema; i dump di dati restano ignorati di default.
 !backend/database/gym_progress_tracker.sql
-!backend/database/add_notes_column.sql
-!backend/database/create_history_table.sql
-!backend/database/database_update.sql
-!backend/database/gamification_setup.sql
-!backend/database/gamification_levels_setup.sql
-!backend/database/create_rate_limits_table.sql
-!backend/database/add_password_changed_at.sql
+!backend/database/schema_alter_migrations.sql
 
 # Backfill gamification (seed una-tantum, non va in git)
 backend/scripts/backfill_gamification.php
-backend/database/update_user_recovery_fields.sql
 backend/database/run_migration.php
 backend/config/database.php
 backend/config/apple_health.php
