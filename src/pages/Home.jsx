@@ -15,6 +15,7 @@ import StarIcon from '@mui/icons-material/Star';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import ShieldOutlined from '@mui/icons-material/ShieldOutlined';
 import LayersOutlined from '@mui/icons-material/LayersOutlined';
+import VisibilityOutlined from '@mui/icons-material/VisibilityOutlined';
 import BodyVisualizer from '../components/BodyVisualizer';
 import StreakCard from '../components/StreakCard';
 import LevelCard from '../components/LevelCard';
@@ -47,6 +48,31 @@ const PREVIEW_ACHIEVEMENTS = [
   { key: 'a3', label: 'Streak 8 Settimane', locked: true, threshold: '8 settimane' },
   { key: 'a4', label: '100 Allenamenti', locked: true, threshold: '100 sessioni' },
 ];
+
+// Etichetta "Anteprima" sovrapposta alle card demo della landing: le rende inequivocabilmente
+// non interattive/non reali, senza dover toccare lo stile delle card che avvolge.
+const PreviewOverlay = ({ children }) => (
+  <Box sx={{ position: 'relative' }}>
+    {children}
+    <Chip
+      icon={<VisibilityOutlined sx={{ fontSize: '14px !important' }} />}
+      label="Anteprima"
+      size="small"
+      sx={{
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        pointerEvents: 'none',
+        bgcolor: (theme) => (theme.palette.mode === 'light' ? 'rgba(255,255,255,.92)' : 'rgba(30,30,30,.85)'),
+        border: '1px solid',
+        borderColor: 'divider',
+        fontWeight: 700,
+        fontSize: 11,
+        color: 'text.secondary',
+      }}
+    />
+  </Box>
+);
 
 // Pillola di Azioni Rapide: fondo bianco, bordo 1px, icona stroked rossa.
 const QuickActionPill = ({ to, icon, label }) => (
@@ -387,62 +413,76 @@ const Home = () => {
       ) : (
         <>
           {/* Showcase: le stesse card che vede un utente loggato, con dati di esempio —
-              stessa UI reale dell'app, nessuno screenshot statico da mantenere allineato. */}
-          <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2 }}>
+              stessa UI reale dell'app, nessuno screenshot statico da mantenere allineato.
+              PreviewOverlay marca ogni card come non reale/non cliccabile, per non farla
+              scambiare per i dati effettivi del visitatore. */}
+          <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 0.5 }}>
             L'app in azione
+          </Typography>
+          <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 2 }}>
+            Dati di esempio — non sono i tuoi, registrati per vedere i numeri veri.
           </Typography>
           <Grid container spacing={3} sx={{ mb: 2 }}>
             <Grid item xs={12} md={6}>
-              <LevelCard previewData={PREVIEW_LEVEL} />
+              <PreviewOverlay>
+                <LevelCard previewData={PREVIEW_LEVEL} />
+              </PreviewOverlay>
             </Grid>
             <Grid item xs={12} md={6}>
-              <StreakCard previewData={PREVIEW_STREAK} />
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <Card sx={{ height: '100%', p: '22px' }}>
-                <BodyVisualizer recoveryData={PREVIEW_RECOVERY} />
-              </Card>
+              <PreviewOverlay>
+                <StreakCard previewData={PREVIEW_STREAK} />
+              </PreviewOverlay>
             </Grid>
 
             <Grid item xs={12} md={6}>
-              <Card sx={{ height: '100%', p: '22px' }}>
-                <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2 }}>
-                  Achievement
-                </Typography>
-                <Grid container spacing={1.5}>
-                  {PREVIEW_ACHIEVEMENTS.map((a) => (
-                    <Grid item xs={6} key={a.key}>
-                      <Tooltip title={a.locked ? `Soglia: ${a.threshold}` : 'Sbloccato'} placement="top">
-                        <Card
-                          sx={{
-                            borderRadius: '12px',
-                            p: '16px 10px',
-                            textAlign: 'center',
-                            opacity: a.locked ? 0.5 : 1,
-                            border: a.locked ? '1px solid' : '2px solid',
-                            borderColor: a.locked ? 'divider' : 'primary.main',
-                            cursor: 'default',
-                          }}
-                        >
-                          {a.locked
-                            ? <LockOutlinedIcon sx={{ fontSize: 24, color: 'text.disabled', mb: 0.75 }} />
-                            : <StarIcon sx={{ fontSize: 24, color: 'primary.main', mb: 0.75 }} />}
-                          <Typography sx={{ fontSize: 12, fontWeight: 600, lineHeight: 1.3 }}>
-                            {a.label}
-                          </Typography>
-                        </Card>
-                      </Tooltip>
-                    </Grid>
-                  ))}
-                </Grid>
-              </Card>
+              <PreviewOverlay>
+                <Card sx={{ height: '100%', p: '22px', '&:hover': { transform: 'none' } }}>
+                  <BodyVisualizer recoveryData={PREVIEW_RECOVERY} />
+                </Card>
+              </PreviewOverlay>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <PreviewOverlay>
+                <Card sx={{ height: '100%', p: '22px', '&:hover': { transform: 'none' } }}>
+                  <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2 }}>
+                    Achievement
+                  </Typography>
+                  <Grid container spacing={1.5}>
+                    {PREVIEW_ACHIEVEMENTS.map((a) => (
+                      <Grid item xs={6} key={a.key}>
+                        <Tooltip title={a.locked ? `Soglia: ${a.threshold}` : 'Sbloccato'} placement="top">
+                          <Card
+                            sx={{
+                              borderRadius: '12px',
+                              p: '16px 10px',
+                              textAlign: 'center',
+                              opacity: a.locked ? 0.5 : 1,
+                              border: a.locked ? '1px solid' : '2px solid',
+                              borderColor: a.locked ? 'divider' : 'primary.main',
+                              cursor: 'default',
+                              '&:hover': { transform: 'none' },
+                            }}
+                          >
+                            {a.locked
+                              ? <LockOutlinedIcon sx={{ fontSize: 24, color: 'text.disabled', mb: 0.75 }} />
+                              : <StarIcon sx={{ fontSize: 24, color: 'primary.main', mb: 0.75 }} />}
+                            <Typography sx={{ fontSize: 12, fontWeight: 600, lineHeight: 1.3 }}>
+                              {a.label}
+                            </Typography>
+                          </Card>
+                        </Tooltip>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Card>
+              </PreviewOverlay>
             </Grid>
           </Grid>
 
           {/* Teaser Focus Mode: stessa palette del timer di recupero reale (anello rosso,
               font Lexend), senza replicare la logica del countdown effettivo. */}
-          <Card sx={{ p: '26px', mb: 4, display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
+          <Card sx={{ p: '26px', mb: 4, display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap', '&:hover': { transform: 'none' } }}>
             <Box
               sx={{
                 width: 84,

@@ -35,7 +35,7 @@ const StreakCard = ({ previewData }) => {
   const remaining = Math.max(0, this_week.goal - this_week.count);
 
   return (
-    <Card sx={{ p: '22px', height: '100%' }}>
+    <Card sx={{ p: '22px', height: '100%', ...(previewData && { '&:hover': { transform: 'none' } }) }}>
       <Typography
         sx={{ textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 700, fontSize: 12, color: 'text.secondary', mb: 2 }}
       >
