@@ -9,7 +9,6 @@ import AssessmentOutlined from '@mui/icons-material/AssessmentOutlined';
 import HealthAndSafetyOutlined from '@mui/icons-material/HealthAndSafetyOutlined';
 import AssignmentOutlined from '@mui/icons-material/AssignmentOutlined';
 import StraightenIcon from '@mui/icons-material/Straighten';
-import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import TimerIcon from '@mui/icons-material/Timer';
 import StarIcon from '@mui/icons-material/Star';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
@@ -515,9 +514,11 @@ const Home = () => {
             <Chip label="Vibrazione a fine recupero" size="small" sx={{ fontWeight: 600 }} />
           </Card>
 
-          {/* Riepilogo funzionalità aggiuntive, non coperte dallo showcase sopra. */}
+          {/* Riepilogo funzionalità aggiuntive, non coperte dallo showcase sopra.
+              Health Sync volutamente non elencata: funzione beta (richiede setup manuale
+              di iOS Shortcuts), non abbastanza pronta per un claim in landing. */}
           <Grid container spacing={3}>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={6}>
               <Paper sx={{ p: 4, height: '100%', borderTop: '4px solid #d50000' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   <LayersOutlined sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
@@ -530,7 +531,7 @@ const Home = () => {
                 </Typography>
               </Paper>
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={6}>
               <Paper sx={{ p: 4, height: '100%', borderTop: '4px solid #d50000' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   <StraightenIcon sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
@@ -539,18 +540,6 @@ const Home = () => {
                 <Divider sx={{ my: 2 }} />
                 <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8 }}>
                   Peso, circonferenze e 1RM stimato per esercizio, con grafici sull'andamento nel tempo.
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Paper sx={{ p: 4, height: '100%', borderTop: '4px solid #d50000' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <HealthAndSafetyIcon sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
-                  <Typography variant="h5" sx={{ fontWeight: 800 }}>Health Sync</Typography>
-                </Box>
-                <Divider sx={{ my: 2 }} />
-                <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8 }}>
-                  Sincronizza automaticamente il peso con Apple Health via iOS Shortcuts.
                 </Typography>
               </Paper>
             </Grid>
