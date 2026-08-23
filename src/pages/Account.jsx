@@ -35,6 +35,7 @@ import {
   DeleteForever as DeleteForeverIcon,
   Download as DownloadIcon,
   Edit as EditIcon,
+  Logout as LogoutIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { LocalizationProvider } from '@mui/x-date-pickers';
@@ -674,6 +675,21 @@ const Account = ({ isEmbedded = false }) => {
             disabled={exportLoading}
           >
             Esporta
+          </Button>
+        </Box>
+      </Card>
+
+      {/* Sessione */}
+      <Card sx={{ p: '24px' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+          <Box>
+            <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Sessione</Typography>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
+              Esci dall'account su questo dispositivo
+            </Typography>
+          </Box>
+          <Button variant="outlined" startIcon={<LogoutIcon />} onClick={logout}>
+            Esci
           </Button>
         </Box>
       </Card>

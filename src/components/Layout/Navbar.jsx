@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { AppBar, Toolbar, Typography, Button, Box, Avatar, useMediaQuery, IconButton, Menu, MenuItem, useTheme, Tooltip, CircularProgress } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Box, Avatar, useMediaQuery, IconButton, useTheme, Tooltip, CircularProgress } from '@mui/material';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
-import MenuIcon from '@mui/icons-material/Menu';
-import PersonIcon from '@mui/icons-material/Person';
-import LogoutIcon from '@mui/icons-material/Logout';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
@@ -11,7 +8,9 @@ import { useAuth } from '../../context/AuthContext';
 import { useThemeMode } from '../../context/ThemeModeContext';
 
 // Voci del centro nav desktop: Home / Allenamenti / Dashboard.
-// "Profilo" non ha più un link testuale: l'avatar a destra è l'unico ingresso.
+// Su mobile la navigazione vive in BottomNav.jsx (Home/Allenamenti/Focus/Dashboard/Profilo);
+// qui restano solo logo, toggle tema e avatar — "Profilo" non ha un link testuale,
+// l'avatar è l'unico ingresso, sia su desktop che su mobile.
 const navItems = [
   { label: 'Home', path: '/' },
   { label: 'Allenamenti', path: '/workouts' },
@@ -22,11 +21,10 @@ const Navbar = () => {
   const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [anchorEl, setAnchorEl] = useState(null);
   const { mode, toggleThemeMode } = useThemeMode();
 
   // Utilizziamo il context invece della logica locale
-  const { isLoggedIn, user, logout, loading } = useAuth();
+  const { isLoggedIn, user, loading } = useAuth();
 
   // Stato locale per tracciare se l'autenticazione è stata verificata
   const [authVerified, setAuthVerified] = useState(false);
@@ -37,19 +35,6 @@ const Navbar = () => {
       setAuthVerified(true);
     }
   }, [loading]);
-
-  const handleMenu = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleLogout = () => {
-    // Utilizziamo la funzione di logout dal context che gestisce tutto
-    logout();
-  };
 
   const isActive = (path) => {
     return location.pathname === path;
@@ -102,7 +87,6 @@ const Navbar = () => {
           </Box>
           <Typography
             sx={{
-              display: { xs: 'none', sm: 'block' },
               fontFamily: '"Lexend", sans-serif',
               fontWeight: 700,
               fontSize: 16,
@@ -113,7 +97,7 @@ const Navbar = () => {
           </Typography>
         </Box>
 
-        {/* Centro: nav desktop, nascosta su mobile */}
+        {/* Centro: nav desktop, nascosta su mobile (su mobile la navigazione è in BottomNav) */}
         {!isMobile && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, justifySelf: 'center' }}>
             {authVerified && isLoggedIn && navItems.map((item) => (
@@ -144,7 +128,7 @@ const Navbar = () => {
           </Box>
         )}
 
-        {/* Destra: toggle tema, avatar / auth */}
+        {/* Destra: toggle tema, avatar / auth — stessa struttura su mobile e desktop */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifySelf: 'end' }}>
           <Tooltip title={mode === 'light' ? 'Modalità Scura' : 'Modalità Chiara'}>
             <IconButton
@@ -160,134 +144,54 @@ const Navbar = () => {
             </IconButton>
           </Tooltip>
 
-          {isMobile ? (
-            <>
+          {authVerified && isLoggedIn && (
+            <Tooltip title="Profilo">
               <IconButton
-                edge="end"
-                onClick={handleMenu}
-                sx={{ color: 'text.primary' }}
-                aria-label="menu"
-              >
-                <MenuIcon />
-              </IconButton>
-              <Menu
-                id="menu-appbar"
-                anchorEl={anchorEl}
-                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-                keepMounted
-                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                open={Boolean(anchorEl)}
-                onClose={handleClose}
-                slotProps={{
-                  paper: {
-                    sx: {
-                      mt: 1.5,
-                      minWidth: '200px',
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
-                      '& .MuiMenuItem-root': { py: 1.25, fontWeight: 500 },
-                    },
-                  },
+                component={RouterLink}
+                to="/profilo"
+                sx={{
+                  p: 0,
+                  boxShadow: onProfilePage ? '0 0 0 2px #fff, 0 0 0 4px #d50000' : 'none',
                 }}
               >
-                {authVerified && isLoggedIn && navItems.map((item) => (
-                  <MenuItem
-                    key={item.path}
-                    component={RouterLink}
-                    to={item.path}
-                    onClick={handleClose}
-                    selected={isActive(item.path)}
-                  >
-                    {item.label}
-                  </MenuItem>
-                ))}
+                <Avatar
+                  sx={{
+                    width: 34,
+                    height: 34,
+                    bgcolor: '#1a1816',
+                    color: '#fff',
+                    fontSize: 14,
+                    fontWeight: 700,
+                    fontFamily: '"Lexend", sans-serif',
+                  }}
+                >
+                  {initials}
+                </Avatar>
+              </IconButton>
+            </Tooltip>
+          )}
 
-                {authVerified && isLoggedIn && (
-                  <MenuItem component={RouterLink} to="/profilo" onClick={handleClose} selected={isActive('/profilo')}>
-                    <PersonIcon fontSize="small" sx={{ mr: 1.5 }} />
-                    Profilo
-                  </MenuItem>
-                )}
+          {!isLoggedIn && loading && (
+            <CircularProgress size={22} sx={{ color: 'text.secondary' }} />
+          )}
 
-                {authVerified && isLoggedIn && (
-                  <MenuItem onClick={() => { handleClose(); handleLogout(); }}>
-                    <LogoutIcon fontSize="small" sx={{ mr: 1.5 }} />
-                    Esci
-                  </MenuItem>
-                )}
-
-                {loading && (
-                  <MenuItem disabled>
-                    <CircularProgress size={20} sx={{ mr: 1.5 }} />
-                    Verifica sessione...
-                  </MenuItem>
-                )}
-
-                {authVerified && !isLoggedIn && (
-                  <>
-                    <MenuItem component={RouterLink} to="/login" onClick={handleClose} selected={isActive('/login')}>
-                      Accedi
-                    </MenuItem>
-                    <MenuItem component={RouterLink} to="/register" onClick={handleClose} selected={isActive('/register')}>
-                      Registrati
-                    </MenuItem>
-                  </>
-                )}
-              </Menu>
-            </>
-          ) : (
+          {authVerified && !isLoggedIn && (
             <>
-              {authVerified && isLoggedIn && (
-                <Tooltip title="Profilo">
-                  <IconButton
-                    component={RouterLink}
-                    to="/profilo"
-                    sx={{
-                      p: 0,
-                      boxShadow: onProfilePage ? '0 0 0 2px #fff, 0 0 0 4px #d50000' : 'none',
-                    }}
-                  >
-                    <Avatar
-                      sx={{
-                        width: 34,
-                        height: 34,
-                        bgcolor: '#1a1816',
-                        color: '#fff',
-                        fontSize: 14,
-                        fontWeight: 700,
-                        fontFamily: '"Lexend", sans-serif',
-                      }}
-                    >
-                      {initials}
-                    </Avatar>
-                  </IconButton>
-                </Tooltip>
-              )}
-
-              {!isLoggedIn && loading && (
-                <CircularProgress size={22} sx={{ color: 'text.secondary' }} />
-              )}
-
-              {authVerified && !isLoggedIn && (
-                <>
-                  <Button
-                    component={RouterLink}
-                    to="/login"
-                    sx={{ color: 'text.secondary', fontWeight: 500, fontSize: 14 }}
-                  >
-                    Accedi
-                  </Button>
-                  <Button
-                    variant="contained"
-                    component={RouterLink}
-                    to="/register"
-                    sx={{ fontSize: 14 }}
-                  >
-                    Registrati
-                  </Button>
-                </>
-              )}
+              <Button
+                component={RouterLink}
+                to="/login"
+                sx={{ color: 'text.secondary', fontWeight: 500, fontSize: 14 }}
+              >
+                Accedi
+              </Button>
+              <Button
+                variant="contained"
+                component={RouterLink}
+                to="/register"
+                sx={{ fontSize: 14 }}
+              >
+                Registrati
+              </Button>
             </>
           )}
         </Box>
