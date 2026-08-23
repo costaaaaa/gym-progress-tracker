@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Paper, Grid, Button, Box, Divider, Alert, Snackbar, CircularProgress, Card, CardActionArea } from '@mui/material';
+import { Typography, Paper, Grid, Button, Box, Divider, Alert, Snackbar, CircularProgress, Card, CardActionArea, Chip, Tooltip } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import CalendarTodayOutlined from '@mui/icons-material/CalendarTodayOutlined';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StraightenOutlined from '@mui/icons-material/StraightenOutlined';
@@ -11,11 +10,43 @@ import HealthAndSafetyOutlined from '@mui/icons-material/HealthAndSafetyOutlined
 import AssignmentOutlined from '@mui/icons-material/AssignmentOutlined';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
+import TimerIcon from '@mui/icons-material/Timer';
+import StarIcon from '@mui/icons-material/Star';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import ShieldOutlined from '@mui/icons-material/ShieldOutlined';
+import LayersOutlined from '@mui/icons-material/LayersOutlined';
 import BodyVisualizer from '../components/BodyVisualizer';
 import StreakCard from '../components/StreakCard';
 import LevelCard from '../components/LevelCard';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
+
+// Dati di esempio per mostrare le card reali (Livello, Streak, Recupero) anche a chi
+// non ha ancora effettuato l'accesso — stessa UI usata dagli utenti loggati, dati statici.
+const PREVIEW_LEVEL = { level: 12, xp_into_level: 340, xp_for_next_level: 500, total_xp: 15420 };
+const PREVIEW_STREAK = {
+  current_streak_weeks: 6,
+  longest_streak_weeks: 9,
+  this_week: { count: 3, goal: 4, completed: false },
+};
+const PREVIEW_RECOVERY = {
+  petto: { status: 'AFFATICATO' },
+  schiena: { status: 'PRONTO' },
+  spalle: { status: 'IN RECUPERO' },
+  bicipiti: { status: 'PRONTO' },
+  tricipiti: { status: 'IN RECUPERO' },
+  addome: { status: 'PRONTO' },
+  quadricipiti: { status: 'AFFATICATO' },
+  femorali: { status: 'IN RECUPERO' },
+  glutei: { status: 'PRONTO' },
+  polpacci: { status: 'PRONTO' },
+};
+const PREVIEW_ACHIEVEMENTS = [
+  { key: 'a1', label: '50 Allenamenti', locked: false },
+  { key: 'a2', label: '10 Tonnellate Sollevate', locked: false },
+  { key: 'a3', label: 'Streak 8 Settimane', locked: true, threshold: '8 settimane' },
+  { key: 'a4', label: '100 Allenamenti', locked: true, threshold: '100 sessioni' },
+];
 
 // Pillola di Azioni Rapide: fondo bianco, bordo 1px, icona stroked rossa.
 const QuickActionPill = ({ to, icon, label }) => (
@@ -136,7 +167,7 @@ const Home = () => {
         <Typography sx={{ fontSize: 16, color: 'rgba(255,255,255,.85)', mb: 3, maxWidth: 560, lineHeight: 1.6 }}>
           {isLoggedIn
             ? 'La tua evoluzione fisica, monitorata con precisione millimetrica.'
-            : 'La piattaforma definitiva per atleti. Gestisci allenamenti, traccia i carichi e analizza i progressi.'}
+            : 'Registra ogni set, sblocca livelli e achievement, e scopri quali muscoli sono pronti a tornare in palestra — tutto in un\'unica app, gratuita.'}
         </Typography>
 
         {isLoggedIn ? (
@@ -157,21 +188,38 @@ const Home = () => {
             Inizia Allenamento
           </Button>
         ) : (
-          <Button
-            component={RouterLink}
-            to="/login"
-            sx={{
-              bgcolor: '#fff',
-              color: '#9b0000',
-              borderRadius: '12px',
-              px: 3,
-              py: 1.25,
-              fontWeight: 700,
-              '&:hover': { bgcolor: 'rgba(255,255,255,.9)' },
-            }}
-          >
-            Accedi / Registrati
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
+            <Button
+              component={RouterLink}
+              to="/register"
+              sx={{
+                bgcolor: '#fff',
+                color: '#9b0000',
+                borderRadius: '12px',
+                px: 3,
+                py: 1.25,
+                fontWeight: 700,
+                '&:hover': { bgcolor: 'rgba(255,255,255,.9)' },
+              }}
+            >
+              Registrati Gratis
+            </Button>
+            <Button
+              component={RouterLink}
+              to="/login"
+              sx={{
+                color: '#fff',
+                border: '1px solid rgba(255,255,255,.6)',
+                borderRadius: '12px',
+                px: 3,
+                py: 1.25,
+                fontWeight: 700,
+                '&:hover': { bgcolor: 'rgba(255,255,255,.1)', borderColor: '#fff' },
+              }}
+            >
+              Accedi
+            </Button>
+          </Box>
         )}
       </Box>
 
@@ -337,44 +385,162 @@ const Home = () => {
           )}
         </Grid>
       ) : (
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={4}>
-            <Paper sx={{ p: 4, height: '100%', borderTop: '4px solid #d50000' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <FitnessCenterIcon sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
-                <Typography variant="h5" sx={{ fontWeight: 800 }}>Allenamenti</Typography>
-              </Box>
-              <Divider sx={{ my: 2 }} />
-              <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8 }}>
-                Registra ogni set, ripetizione e peso. Gestisci le tue schede in modo professionale.
-              </Typography>
-            </Paper>
+        <>
+          {/* Showcase: le stesse card che vede un utente loggato, con dati di esempio —
+              stessa UI reale dell'app, nessuno screenshot statico da mantenere allineato. */}
+          <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2 }}>
+            L'app in azione
+          </Typography>
+          <Grid container spacing={3} sx={{ mb: 2 }}>
+            <Grid item xs={12} md={6}>
+              <LevelCard previewData={PREVIEW_LEVEL} />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <StreakCard previewData={PREVIEW_STREAK} />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <Card sx={{ height: '100%', p: '22px' }}>
+                <BodyVisualizer recoveryData={PREVIEW_RECOVERY} />
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <Card sx={{ height: '100%', p: '22px' }}>
+                <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2 }}>
+                  Achievement
+                </Typography>
+                <Grid container spacing={1.5}>
+                  {PREVIEW_ACHIEVEMENTS.map((a) => (
+                    <Grid item xs={6} key={a.key}>
+                      <Tooltip title={a.locked ? `Soglia: ${a.threshold}` : 'Sbloccato'} placement="top">
+                        <Card
+                          sx={{
+                            borderRadius: '12px',
+                            p: '16px 10px',
+                            textAlign: 'center',
+                            opacity: a.locked ? 0.5 : 1,
+                            border: a.locked ? '1px solid' : '2px solid',
+                            borderColor: a.locked ? 'divider' : 'primary.main',
+                            cursor: 'default',
+                          }}
+                        >
+                          {a.locked
+                            ? <LockOutlinedIcon sx={{ fontSize: 24, color: 'text.disabled', mb: 0.75 }} />
+                            : <StarIcon sx={{ fontSize: 24, color: 'primary.main', mb: 0.75 }} />}
+                          <Typography sx={{ fontSize: 12, fontWeight: 600, lineHeight: 1.3 }}>
+                            {a.label}
+                          </Typography>
+                        </Card>
+                      </Tooltip>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Card>
+            </Grid>
           </Grid>
-          <Grid item xs={12} md={4}>
-            <Paper sx={{ p: 4, height: '100%', borderTop: '4px solid #d50000' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <StraightenIcon sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
-                <Typography variant="h5" sx={{ fontWeight: 800 }}>Misure</Typography>
-              </Box>
-              <Divider sx={{ my: 2 }} />
-              <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8 }}>
-                Tieni traccia del peso e delle circonferenze corporee per visualizzare il tuo cambiamento.
+
+          {/* Teaser Focus Mode: stessa palette del timer di recupero reale (anello rosso,
+              font Lexend), senza replicare la logica del countdown effettivo. */}
+          <Card sx={{ p: '26px', mb: 4, display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
+            <Box
+              sx={{
+                width: 84,
+                height: 84,
+                borderRadius: '50%',
+                border: '5px solid',
+                borderColor: 'primary.main',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 20, color: 'primary.main' }}>
+                01:30
               </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Paper sx={{ p: 4, height: '100%', borderTop: '4px solid #d50000' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <HealthAndSafetyIcon sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
-                <Typography variant="h5" sx={{ fontWeight: 800 }}>Health Sync</Typography>
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 220 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
+                <TimerIcon sx={{ fontSize: 20, color: 'primary.main' }} />
+                <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17 }}>
+                  Focus Mode
+                </Typography>
               </Box>
-              <Divider sx={{ my: 2 }} />
-              <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8 }}>
-                Sincronizza automaticamente i tuoi dati con Apple Health per un monitoraggio a 360 gradi.
+              <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>
+                Interfaccia a schermo intero per l'allenamento: timer di recupero automatico,
+                feedback aptico e autosave — non perdi mai un set nemmeno se il telefono si blocca.
               </Typography>
-            </Paper>
+            </Box>
+            <Chip label="Vibrazione a fine recupero" size="small" sx={{ fontWeight: 600 }} />
+          </Card>
+
+          {/* Riepilogo funzionalità aggiuntive, non coperte dallo showcase sopra. */}
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={4}>
+              <Paper sx={{ p: 4, height: '100%', borderTop: '4px solid #d50000' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <LayersOutlined sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
+                  <Typography variant="h5" sx={{ fontWeight: 800 }}>Piani Illimitati</Typography>
+                </Box>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8 }}>
+                  Gestisci più schede in parallelo, con tecniche di intensità come drop set,
+                  rest-pause e super set.
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Paper sx={{ p: 4, height: '100%', borderTop: '4px solid #d50000' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <StraightenIcon sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
+                  <Typography variant="h5" sx={{ fontWeight: 800 }}>Misure e 1RM</Typography>
+                </Box>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8 }}>
+                  Peso, circonferenze e 1RM stimato per esercizio, con grafici sull'andamento nel tempo.
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Paper sx={{ p: 4, height: '100%', borderTop: '4px solid #d50000' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <HealthAndSafetyIcon sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
+                  <Typography variant="h5" sx={{ fontWeight: 800 }}>Health Sync</Typography>
+                </Box>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8 }}>
+                  Sincronizza automaticamente il peso con Apple Health via iOS Shortcuts.
+                </Typography>
+              </Paper>
+            </Grid>
           </Grid>
-        </Grid>
+
+          <Box sx={{ textAlign: 'center', mt: 5, mb: 2 }}>
+            <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 20, mb: 2 }}>
+              Pronto a tracciare i tuoi progressi?
+            </Typography>
+            <Button
+              component={RouterLink}
+              to="/register"
+              startIcon={<ShieldOutlined />}
+              sx={{
+                bgcolor: 'primary.main',
+                color: '#fff',
+                borderRadius: '12px',
+                px: 4,
+                py: 1.5,
+                fontWeight: 700,
+                '&:hover': { bgcolor: 'primary.dark' },
+              }}
+            >
+              Registrati Gratis
+            </Button>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 1.5 }}>
+              Gratuito, open source, password protette con bcrypt.
+            </Typography>
+          </Box>
+        </>
       )}
 
       <Snackbar
