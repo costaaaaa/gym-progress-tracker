@@ -50,10 +50,10 @@ const LevelCard = () => {
               value={progress}
               sx={{
                 height: 8,
-                borderRadius: 4,
+                borderRadius: '4px',
                 bgcolor: 'divider',
                 '& .MuiLinearProgress-bar': {
-                  borderRadius: 4,
+                  borderRadius: '4px',
                   background: 'linear-gradient(90deg, #d50000, #ff5131)',
                 },
               }}
