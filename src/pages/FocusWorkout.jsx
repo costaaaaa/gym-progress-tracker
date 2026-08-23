@@ -1256,7 +1256,7 @@ const FocusWorkout = () => {
     <>
     <GlobalStyles styles={{
       '.MuiPaper-root.MuiMenu-paper': {
-        backgroundColor: `${colors.bgElevated} !important`,
+        backgroundColor: `${colors.bgCard} !important`,
         color: `${colors.text} !important`,
         border: `1px solid ${colors.border} !important`,
       },
