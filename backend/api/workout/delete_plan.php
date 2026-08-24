@@ -7,11 +7,13 @@ include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/WorkoutPlan.php';
 
-// Start session
-session_start();
+// Connessione creata prima del check di autenticazione: resolve_authenticated_user_id()
+// ne ha bisogno per validare sia la sessione web sia il token Bearer mobile.
+$database = new Database();
+$db = $database->getConnection();
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
+$user_id = resolve_authenticated_user_id($db);
+if (!$user_id) {
     // Set response code - 401 Unauthorized
     http_response_code(401);
 
@@ -19,10 +21,6 @@ if (!isset($_SESSION['user_id'])) {
     echo json_encode(array("message" => "Accesso non autorizzato. Effettua il login."));
     exit;
 }
-
-// Get database connection
-$database = new Database();
-$db = $database->getConnection();
 
 // Get posted data
 $data = json_decode(file_get_contents("php://input"));
@@ -34,7 +32,7 @@ if (!empty($data->plan_id)) {
 
     // Set properties
     $workout_plan->id = $data->plan_id;
-    $workout_plan->user_id = $_SESSION['user_id'];
+    $workout_plan->user_id = $user_id;
 
     if (!$workout_plan->readOne()) {
         api_not_found();
