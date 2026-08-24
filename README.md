@@ -97,7 +97,7 @@ Import **`backend/database/gym_progress_tracker.sql`** and you are done. It incl
 
 To upgrade an older database instance, execute:
 
-* **`backend/database/schema_alter_migrations.sql`**: contains all cumulative `ALTER TABLE` statements (user profile and recovery fields, notes, intensity techniques, gamification XP/levels, and password change timestamps), plus idempotent `CREATE TABLE IF NOT EXISTS` statements for tables introduced after the initial release (workout history/sets, gamification, rate limiting) for instances that predate them.
+* **`backend/database/schema_alter_migrations.sql`**: contains all cumulative `ALTER TABLE` statements (user profile and recovery fields, notes, intensity techniques, gamification XP/levels, and password change timestamps), plus idempotent `CREATE TABLE IF NOT EXISTS` statements for tables introduced after the initial release (workout history/sets, gamification, rate limiting, mobile API tokens) for instances that predate them.
 
 ## Author
 
@@ -208,7 +208,7 @@ Importa **`backend/database/gym_progress_tracker.sql`** e basta. Contiene lo sch
 
 Per aggiornare un database preesistente creato con le versioni precedenti, esegui:
 
-* **`backend/database/schema_alter_migrations.sql`**: contiene tutti gli `ALTER TABLE` cumulativi (campi profilo utente e recupero, note, tecniche di intensità, estensioni XP/livelli gamification e timestamp cambio password), più i `CREATE TABLE IF NOT EXISTS` idempotenti per le tabelle introdotte dopo la release iniziale (cronologia/set allenamenti, gamification, rate limiting) per le installazioni precedenti a queste.
+* **`backend/database/schema_alter_migrations.sql`**: contiene tutti gli `ALTER TABLE` cumulativi (campi profilo utente e recupero, note, tecniche di intensità, estensioni XP/livelli gamification e timestamp cambio password), più i `CREATE TABLE IF NOT EXISTS` idempotenti per le tabelle introdotte dopo la release iniziale (cronologia/set allenamenti, gamification, rate limiting, token API mobile) per le installazioni precedenti a queste.
 
 ## Autore
 

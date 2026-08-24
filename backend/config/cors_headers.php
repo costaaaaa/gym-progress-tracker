@@ -20,20 +20,29 @@ $allowed_origins = $configured_origins
     ? array_map('trim', explode(',', $configured_origins))
     : $default_allowed_origins;
 
-// Gestione centralizzata della sessione
-if (session_status() === PHP_SESSION_NONE) {
-    // Configura i parametri della sessione prima di avviarla (se necessario)
-    // ini_set('session.cookie_httponly', 1);
-    session_start();
-}
+// Client mobile (React Native): stateless, autenticati via header "Authorization: Bearer <token>",
+// non mandano mai il cookie di sessione. Avviare comunque session_start() per loro creerebbe un
+// file di sessione e un lock inutili ad ogni richiesta, quindi si salta l'intero blocco sessione
+// quando l'header è presente e sintatticamente valido — la validazione vera del token avviene poi
+// in resolve_authenticated_user_id() (backend/config/api_helpers.php).
+$has_bearer_token = isset($_SERVER['HTTP_AUTHORIZATION']) && stripos($_SERVER['HTTP_AUTHORIZATION'], 'Bearer ') === 0;
 
-// Verifica e pulizia sessione se dati inconsistenti
-if (isset($_SESSION['user_id']) && empty($_SESSION['username'])) {
-    // Se abbiamo ID ma non username, qualcosa non va
-    session_unset();
-    session_destroy();
+if (!$has_bearer_token) {
+    // Gestione centralizzata della sessione (percorso web, invariato)
     if (session_status() === PHP_SESSION_NONE) {
+        // Configura i parametri della sessione prima di avviarla (se necessario)
+        // ini_set('session.cookie_httponly', 1);
         session_start();
+    }
+
+    // Verifica e pulizia sessione se dati inconsistenti
+    if (isset($_SESSION['user_id']) && empty($_SESSION['username'])) {
+        // Se abbiamo ID ma non username, qualcosa non va
+        session_unset();
+        session_destroy();
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
     }
 }
 

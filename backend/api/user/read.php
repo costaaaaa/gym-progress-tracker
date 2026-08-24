@@ -3,9 +3,12 @@
 include_once '../../config/cors_headers.php';
 
 include_once '../../config/database.php';
+include_once '../../config/api_helpers.php';
 include_once '../../models/User.php';
 
-// La sessione è già gestita in cors_headers.php
+// La sessione (percorso web) è già gestita in cors_headers.php.
+// resolve_authenticated_user_id() copre sia il percorso web (sessione) sia quello mobile
+// (header Authorization: Bearer).
 
 try {
     $database = new Database();
@@ -17,7 +20,7 @@ try {
 
     $user = new User($db);
 
-    $user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+    $user_id = resolve_authenticated_user_id($db);
 
     if (!$user_id) {
         http_response_code(401);
