@@ -9,6 +9,7 @@ include_once '../../config/cors_headers.php';
 
 // Include database and models
 include_once '../../config/database.php';
+include_once '../../config/api_helpers.php';
 include_once '../../models/User.php';
 include_once '../../models/WorkoutHistory.php';
 include_once '../../models/WorkoutSet.php';
@@ -28,21 +29,22 @@ function parseReps($repsStr) {
     return 0;
 }
 
-// Check if user is authenticated (session is already started in cors_headers.php)
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    if (ob_get_length()) ob_clean();
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'Utente non autenticato']);
-    exit;
-}
-
 try {
     $database = new Database();
     $db = $database->getConnection();
     if (!$db) throw new Exception("Connessione al database fallita.");
 
-    $user_id = $_SESSION['user_id'];
+    // resolve_authenticated_user_id() copre sia il percorso web (sessione) sia quello
+    // mobile (header Authorization: Bearer).
+    $user_id = resolve_authenticated_user_id($db);
+
+    if (!$user_id) {
+        http_response_code(401);
+        if (ob_get_length()) ob_clean();
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => 'Utente non autenticato']);
+        exit;
+    }
 
     // 1. Dati Utente e Livello
     $user_model = new User($db);
