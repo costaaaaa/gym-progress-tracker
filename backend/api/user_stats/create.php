@@ -4,21 +4,20 @@ include_once '../../config/cors_headers.php';
 
 // Include database and model
 include_once '../../config/database.php';
+include_once '../../config/api_helpers.php';
 include_once '../../models/UserStat.php';
 
-// Start session
-session_start();
+// Connessione creata prima del check di autenticazione: resolve_authenticated_user_id()
+// ne ha bisogno per validare sia la sessione web sia il token Bearer mobile.
+$database = new Database();
+$db = $database->getConnection();
 
-// Check if user is logged in
-if(!isset($_SESSION['user_id'])) {
+$user_id = resolve_authenticated_user_id($db);
+if (!$user_id) {
     http_response_code(401);
     echo json_encode(array("message" => "Accesso non autorizzato. Effettua il login."));
     exit;
 }
-
-// Get database connection
-$database = new Database();
-$db = $database->getConnection();
 
 // Get posted data
 $data = json_decode(file_get_contents("php://input"));
@@ -29,7 +28,7 @@ if (!empty($data->date)) {
     $user_stat = new UserStat($db);
     
     // Set property values
-    $user_stat->user_id = $_SESSION['user_id'];
+    $user_stat->user_id = $user_id;
     $user_stat->date = $data->date;
     $user_stat->weight = isset($data->weight) ? $data->weight : null;
     $user_stat->body_fat_percentage = isset($data->body_fat_percentage) ? $data->body_fat_percentage : null;
