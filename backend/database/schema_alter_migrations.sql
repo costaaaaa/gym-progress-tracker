@@ -143,3 +143,22 @@ ALTER TABLE `gym_user_gamification`
   ADD COLUMN `total_xp` INT NOT NULL DEFAULT 0 AFTER `last_completed_week`,
   ADD COLUMN `level` INT NOT NULL DEFAULT 1 AFTER `total_xp`,
   ADD COLUMN `lifetime_volume_kg` DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER `level`;
+
+
+-- ------------------------------------------------------------------------------
+-- 6. Tabella gym_api_tokens: autenticazione Bearer per client mobile (React Native)
+-- ------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `gym_api_tokens` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `token_hash` char(64) NOT NULL,
+  `device_info` varchar(255) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `expires_at` datetime NOT NULL,
+  `revoked_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_token_hash` (`token_hash`),
+  KEY `idx_user_id` (`user_id`),
+  CONSTRAINT `gym_api_tokens_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

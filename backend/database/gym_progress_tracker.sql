@@ -192,6 +192,21 @@ CREATE TABLE IF NOT EXISTS `gym_rate_limits` (
   KEY `idx_expires_at` (`expires_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Token Bearer per client mobile (React Native), autenticazione additiva rispetto alla sessione web
+CREATE TABLE IF NOT EXISTS `gym_api_tokens` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `token_hash` char(64) NOT NULL,
+  `device_info` varchar(255) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `expires_at` datetime NOT NULL,
+  `revoked_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_token_hash` (`token_hash`),
+  KEY `idx_user_id` (`user_id`),
+  CONSTRAINT `gym_api_tokens_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Insert default exercises
 INSERT INTO `gym_exercises` (`name`, `muscle_group`) VALUES
 ('Panca Piana', 'petto'),

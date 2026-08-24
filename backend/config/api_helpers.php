@@ -1,5 +1,30 @@
 <?php
 
+include_once __DIR__ . '/../models/ApiToken.php';
+
+// Risolve l'utente autenticato provando prima la sessione web (percorso invariato),
+// poi — se assente — l'header "Authorization: Bearer <token>" usato dai client mobile.
+// Ritorna l'user_id (int) o null se non autenticato con nessuno dei due metodi.
+function resolve_authenticated_user_id($db)
+{
+    if (isset($_SESSION['user_id'])) {
+        return (int)$_SESSION['user_id'];
+    }
+
+    $auth_header = $_SERVER['HTTP_AUTHORIZATION'] ?? null;
+    if (!$auth_header || stripos($auth_header, 'Bearer ') !== 0) {
+        return null;
+    }
+
+    $plain_token = trim(substr($auth_header, 7));
+    if ($plain_token === '') {
+        return null;
+    }
+
+    $api_token = new ApiToken($db);
+    return $api_token->findValidByToken($plain_token);
+}
+
 function api_json_response($payload, $status_code = 200)
 {
     http_response_code($status_code);
