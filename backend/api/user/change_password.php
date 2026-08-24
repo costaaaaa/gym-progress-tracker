@@ -4,17 +4,17 @@ include_once '../../config/cors_headers.php';
 
 // Include database and user model
 include_once '../../config/database.php';
+include_once '../../config/api_helpers.php';
 include_once '../../models/User.php';
 
-// Start session to check if user is logged in
-session_start();
+// Connessione creata prima del check di autenticazione: resolve_authenticated_user_id()
+// ne ha bisogno per validare sia la sessione web sia il token Bearer mobile.
+$database = new Database();
+$db = $database->getConnection();
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['username'])) {
-    // Set response code - 401 Unauthorized
+$user_id = resolve_authenticated_user_id($db);
+if (!$user_id) {
     http_response_code(401);
-    
-    // Tell the user
     echo json_encode(array(
         "success" => false,
         "message" => "Sessione non valida. Effettua nuovamente il login."
@@ -34,15 +34,9 @@ try {
         throw new Exception("Formato JSON non valido: " . json_last_error_msg());
     }
 
-    // Get database connection
-    $database = new Database();
-    $db = $database->getConnection();
-
     // Instantiate user object
     $user = new User($db);
-    
-    // Set user ID from session
-    $user->id = $_SESSION['user_id'];
+    $user->id = $user_id;
 
     // Make sure data is not empty
     if (empty($data->current_password) || empty($data->new_password)) {

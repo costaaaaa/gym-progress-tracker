@@ -4,14 +4,16 @@ include_once '../../config/cors_headers.php';
 
 // Include database and object files
 include_once '../../config/database.php';
+include_once '../../config/api_helpers.php';
 include_once '../../models/User.php';
 
-// Start or resume session
-session_start();
+// Connessione creata prima del check di autenticazione: resolve_authenticated_user_id()
+// ne ha bisogno per validare sia la sessione web sia il token Bearer mobile.
+$database = new Database();
+$db = $database->getConnection();
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    // Set response code - 401 Unauthorized
+$user_id = resolve_authenticated_user_id($db);
+if (!$user_id) {
     http_response_code(401);
     echo json_encode(array(
         "success" => false,
@@ -32,15 +34,9 @@ try {
         throw new Exception("Formato JSON non valido: " . json_last_error_msg());
     }
 
-    // Get database connection
-    $database = new Database();
-    $db = $database->getConnection();
-
     // Instantiate user object
     $user = new User($db);
-
-    // Set user ID from session
-    $user->id = $_SESSION['user_id'];
+    $user->id = $user_id;
 
     // Make sure data is not empty
     if (empty($data->password)) {
@@ -55,9 +51,13 @@ try {
 
     // Try to delete account
     if ($user->deleteAccount($data->password)) {
-        // Clear session data
-        session_unset();
-        session_destroy();
+        // Pulizia sessione solo se presente (percorso web) — sul percorso
+        // mobile (token Bearer) non esiste una sessione da distruggere; il
+        // token stesso viene rimosso via ON DELETE CASCADE su gym_api_tokens.
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_unset();
+            session_destroy();
+        }
 
         // Set response code - 200 OK
         http_response_code(200);
