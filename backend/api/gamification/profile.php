@@ -1,19 +1,23 @@
 <?php
 include_once '../../config/cors_headers.php';
 include_once '../../config/database.php';
+include_once '../../config/api_helpers.php';
 require_once '../../lib/gamification_rules.php';
-
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    if (ob_get_length()) ob_clean();
-    echo json_encode(['success' => false, 'message' => 'Utente non autenticato']);
-    exit;
-}
 
 try {
     $database = new Database();
     $db       = $database->getConnection();
-    $user_id  = $_SESSION['user_id'];
+
+    // resolve_authenticated_user_id() copre sia il percorso web (sessione) sia quello
+    // mobile (header Authorization: Bearer).
+    $user_id = resolve_authenticated_user_id($db);
+
+    if (!$user_id) {
+        http_response_code(401);
+        if (ob_get_length()) ob_clean();
+        echo json_encode(['success' => false, 'message' => 'Utente non autenticato']);
+        exit;
+    }
 
     // Gamification utente
     $stmt = $db->prepare(
