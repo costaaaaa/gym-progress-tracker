@@ -1,13 +1,7 @@
 <?php
 include_once '../../config/cors_headers.php';
 include_once '../../config/database.php';
-
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    if (ob_get_length()) ob_clean();
-    echo json_encode(['success' => false, 'message' => 'Utente non autenticato']);
-    exit;
-}
+include_once '../../config/api_helpers.php';
 
 function nextWeekYearweek(int $yw): int {
     $year = intval(substr((string)$yw, 0, 4));
@@ -21,7 +15,17 @@ function nextWeekYearweek(int $yw): int {
 try {
     $database = new Database();
     $db = $database->getConnection();
-    $user_id = $_SESSION['user_id'];
+
+    // resolve_authenticated_user_id() copre sia il percorso web (sessione) sia quello
+    // mobile (header Authorization: Bearer).
+    $user_id = resolve_authenticated_user_id($db);
+
+    if (!$user_id) {
+        http_response_code(401);
+        if (ob_get_length()) ob_clean();
+        echo json_encode(['success' => false, 'message' => 'Utente non autenticato']);
+        exit;
+    }
 
     // Fetch or default gamification row
     $stmt = $db->prepare("SELECT * FROM gym_user_gamification WHERE user_id = ?");
