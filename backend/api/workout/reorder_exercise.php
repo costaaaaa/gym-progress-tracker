@@ -5,7 +5,13 @@ include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/WorkoutExercise.php';
 
-if (!isset($_SESSION['user_id'])) {
+// Connessione creata prima del check di autenticazione: resolve_authenticated_user_id()
+// ne ha bisogno per validare sia la sessione web sia il token Bearer mobile.
+$database = new Database();
+$db = $database->getConnection();
+
+$user_id = resolve_authenticated_user_id($db);
+if (!$user_id) {
     http_response_code(401);
     echo json_encode(array('success' => false, 'message' => 'Utente non autenticato.'));
     exit;
@@ -15,10 +21,6 @@ if (!isset($_SESSION['user_id'])) {
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 error_log("Inizio elaborazione riordinamento esercizi");
-
-// Inizializza il database
-$database = new Database();
-$db = $database->getConnection();
 
 // Inizializza il modello WorkoutExercise
 $workoutExercise = new WorkoutExercise($db);
@@ -40,7 +42,7 @@ try {
         $workoutExercise->id = $data->exercise_id;
         $direction = $data->direction;
 
-        if (!workout_exercise_belongs_to_user($db, $data->exercise_id, $data->day_id, $_SESSION['user_id'])) {
+        if (!workout_exercise_belongs_to_user($db, $data->exercise_id, $data->day_id, $user_id)) {
             api_not_found('Esercizio non trovato.');
         }
 
