@@ -1,13 +1,18 @@
 <?php
 include_once '../../config/cors_headers.php';
 include_once '../../config/database.php';
+include_once '../../config/api_helpers.php';
 include_once '../../models/WorkoutHistory.php';
 include_once '../../models/WorkoutSet.php';
 require_once '../../lib/gamification_rules.php';
 
-session_start();
+// Connessione creata prima del check di autenticazione: resolve_authenticated_user_id()
+// ne ha bisogno per validare sia la sessione web sia il token Bearer mobile.
+$database = new Database();
+$db = $database->getConnection();
 
-if (!isset($_SESSION['user_id'])) {
+$user_id = resolve_authenticated_user_id($db);
+if (!$user_id) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Utente non autenticato']);
     exit;
@@ -48,13 +53,9 @@ try {
         }
     }
 
-    $database = new Database();
-    $db = $database->getConnection();
     $db->beginTransaction();
 
     try {
-        $user_id = $_SESSION['user_id'];
-
         $workout_history = new WorkoutHistory($db);
         $workout_history->user_id = $user_id;
         $workout_history->date = $data_workout;
