@@ -12,18 +12,10 @@ ini_set('display_errors', 0);
 
 // Include database and workout model
 include_once '../../config/database.php';
+include_once '../../config/api_helpers.php';
 include_once '../../models/WorkoutPlan.php';
 include_once '../../models/WorkoutDay.php';
 include_once '../../models/WorkoutExercise.php';
-
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    if (ob_get_length()) ob_clean();
-    header('Content-Type: application/json');
-    echo json_encode(array("message" => "Accesso non autorizzato. Effettua il login."));
-    exit;
-}
 
 // Get database connection
 try {
@@ -34,12 +26,24 @@ try {
         throw new Exception("Impossibile stabilire una connessione al database.");
     }
 
+    // resolve_authenticated_user_id() copre sia il percorso web (sessione) sia quello
+    // mobile (header Authorization: Bearer).
+    $user_id = resolve_authenticated_user_id($db);
+
+    if (!$user_id) {
+        http_response_code(401);
+        if (ob_get_length()) ob_clean();
+        header('Content-Type: application/json');
+        echo json_encode(array("message" => "Accesso non autorizzato. Effettua il login."));
+        exit;
+    }
+
     $plans_query = "SELECT id, name, description, is_active, created_at, updated_at
                     FROM gym_workout_plans
                     WHERE user_id = ?
                     ORDER BY created_at DESC";
     $stmt = $db->prepare($plans_query);
-    $stmt->bindParam(1, $_SESSION['user_id']);
+    $stmt->bindParam(1, $user_id);
     $stmt->execute();
     $plans = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $num = count($plans);

@@ -12,27 +12,31 @@ ini_set('display_errors', 0);
 
 // Include database and object files
 include_once '../../config/database.php';
+include_once '../../config/api_helpers.php';
 include_once '../../models/WorkoutHistory.php';
 include_once '../../models/WorkoutSet.php';
 include_once '../../models/Exercise.php';
-
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    if (ob_get_length()) ob_clean();
-    header('Content-Type: application/json');
-    echo json_encode(array("message" => "Accesso non autorizzato. Effettua il login."));
-    exit;
-}
 
 try {
     // Instantiate database and workout_history object
     $database = new Database();
     $db = $database->getConnection();
 
+    // resolve_authenticated_user_id() copre sia il percorso web (sessione) sia quello
+    // mobile (header Authorization: Bearer).
+    $user_id = resolve_authenticated_user_id($db);
+
+    if (!$user_id) {
+        http_response_code(401);
+        if (ob_get_length()) ob_clean();
+        header('Content-Type: application/json');
+        echo json_encode(array("message" => "Accesso non autorizzato. Effettua il login."));
+        exit;
+    }
+
     // Initialize object
     $workout_history = new WorkoutHistory($db);
-    $workout_history->user_id = $_SESSION['user_id'];
+    $workout_history->user_id = $user_id;
 
     // Workout history query
     $stmt = $workout_history->readAllByUser();
@@ -44,7 +48,7 @@ try {
     if ($num > 0) {
         $workouts = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $workout_set = new WorkoutSet($db);
-        $sets_stmt = $workout_set->readAllByUserId($_SESSION['user_id']);
+        $sets_stmt = $workout_set->readAllByUserId($user_id);
         $all_sets = $sets_stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $sets_by_workout = [];
