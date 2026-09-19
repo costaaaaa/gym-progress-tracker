@@ -126,6 +126,7 @@ CREATE TABLE IF NOT EXISTS `gym_workout_history` (
   `notes` text DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
+  KEY `idx_user_date` (`user_id`, `date`),
   CONSTRAINT `gym_workout_history_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

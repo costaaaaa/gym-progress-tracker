@@ -3,6 +3,10 @@
 error_reporting(0);
 ini_set('display_errors', 0);
 
+// Un solo fuso orario per tutto il backend: le settimane ISO di streak e classifiche
+// dipendono dall'ora del server.
+date_default_timezone_set('Europe/Rome');
+
 // Avvia l'output buffering immediatamente
 ob_start();
 
@@ -30,8 +34,17 @@ $has_bearer_token = isset($_SERVER['HTTP_AUTHORIZATION']) && stripos($_SERVER['H
 if (!$has_bearer_token) {
     // Gestione centralizzata della sessione (percorso web, invariato)
     if (session_status() === PHP_SESSION_NONE) {
-        // Configura i parametri della sessione prima di avviarla (se necessario)
-        // ini_set('session.cookie_httponly', 1);
+        // Flag del cookie di sessione. Secure solo su HTTPS (anche dietro proxy), altrimenti
+        // il cookie non verrebbe mai inviato in sviluppo locale su http.
+        $is_https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https');
+        session_set_cookie_params([
+            'lifetime' => 0,
+            'path' => '/',
+            'secure' => $is_https,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
         session_start();
     }
 

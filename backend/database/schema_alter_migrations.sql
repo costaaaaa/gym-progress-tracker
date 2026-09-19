@@ -162,3 +162,12 @@ CREATE TABLE IF NOT EXISTS `gym_api_tokens` (
   KEY `idx_user_id` (`user_id`),
   CONSTRAINT `gym_api_tokens_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- ------------------------------------------------------------------------------
+-- 7. Tabella gym_workout_history: indice per le letture per intervallo di date
+--    (classifiche e riepiloghi settimanali filtrano per user_id e date)
+-- ------------------------------------------------------------------------------
+
+ALTER TABLE `gym_workout_history`
+  ADD KEY `idx_user_date` (`user_id`, `date`);

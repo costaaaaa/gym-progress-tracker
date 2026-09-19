@@ -28,6 +28,9 @@ class Database
             ];
 
             $this->conn = new PDO($dsn, $this->username, $this->password, $options);
+            // Stesso fuso di PHP (Europe/Rome, impostato in cors_headers.php): usa l'offset perché
+            // il nome del fuso richiede le tabelle timezone di MySQL, non sempre caricate.
+            $this->conn->exec("SET time_zone = '" . (new DateTime('now', new DateTimeZone('Europe/Rome')))->format('P') . "'");
             return $this->conn;
         } catch (PDOException $e) {
             throw new Exception("Errore di connessione al database: " . $e->getMessage());

@@ -72,9 +72,11 @@ function blog_render_page(array $opts)
     <meta name="twitter:description" content="<?php echo blog_e($description); ?>">
     <meta name="twitter:image" content="<?php echo blog_e(BLOG_LOGO_URL); ?>">
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lexend:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="preload" href="<?php echo blog_e(BLOG_APP_URL); ?>fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+    <style>
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 100 900; font-display: swap; src: url("<?php echo blog_e(BLOG_APP_URL); ?>fonts/inter-latin-wght-normal.woff2") format("woff2"); }
+@font-face { font-family: "Lexend"; font-style: normal; font-weight: 100 900; font-display: swap; src: url("<?php echo blog_e(BLOG_APP_URL); ?>fonts/lexend-latin-wght-normal.woff2") format("woff2"); }
+    </style>
     <style><?php echo blog_styles(); ?></style>
 <?php if ($jsonLd !== null): ?>
     <script type="application/ld+json">
