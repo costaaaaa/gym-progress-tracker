@@ -2,7 +2,7 @@
 // Invio email transazionali (recupero password). Driver scelto via env MAIL_DRIVER:
 //   log   (default) scrive l'email nel log degli errori PHP: solo per sviluppo, NON invia nulla;
 //   mail            mail() di PHP, cioè il sendmail del server (Postfix sulla VPS): nessun servizio esterno.
-//                   Setup e DNS (SPF, DKIM, DMARC) in backend/MAIL_SETUP.md;
+//                   Setup e DNS (SPF, DKIM, DMARC) nel repo privato gym-infra, cartella mail/;
 //   brevo           API transazionale Brevo (https://api.brevo.com/v3/smtp/email).
 // Per un altro provider basta aggiungere un case in mail_send().
 //
