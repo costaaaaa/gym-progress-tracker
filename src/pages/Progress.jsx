@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Container,
   Typography,
@@ -75,6 +75,73 @@ const formatDelta = (first, last) => {
   return { pct, up: pct >= 0 };
 };
 
+// Pura, nessun riferimento a stato/props: vive fuori dal componente cosi'
+// fetchExercises (sotto) puo' essere stabilizzata con useCallback([]) senza
+// che react-hooks/exhaustive-deps la richieda a sua volta come dipendenza.
+const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '');
+
+// Helper puri (solo parametri, nessuno stato): a livello di modulo per lo
+// stesso motivo di capitalize, cosi' calculateExerciseStats/fetchWorkoutHistory
+// possono essere stabilizzate con useCallback.
+
+// Trova l'esercizio selezionato in un allenamento: prima per ID, poi per nome esatto come fallback.
+const findExerciseInWorkout = (workout, exerciseId, exerciseName) => {
+  if (!workout?.exercises || !Array.isArray(workout.exercises)) return null;
+
+  if (exerciseId) {
+    const byId = workout.exercises.find(ex => ex.exercise_id && String(ex.exercise_id).trim() === String(exerciseId).trim());
+    if (byId) return byId;
+  }
+  if (exerciseName) {
+    const normalized = exerciseName.trim().toLowerCase();
+    const byName = workout.exercises.find(ex => ex.name && ex.name.trim().toLowerCase() === normalized);
+    if (byName) return byName;
+  }
+  return null;
+};
+
+// Regressione lineare (per la linea di tendenza dell'Indice di Progresso).
+const calculateRegression = (data, valueKey) => {
+  const n = data.length;
+  let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+  data.forEach((point, index) => {
+    sumX += index;
+    sumY += point[valueKey];
+    sumXY += index * point[valueKey];
+    sumXX += index * index;
+  });
+  const m = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+  const b = (sumY - m * sumX) / n;
+  return { m, b };
+};
+
+const calculateTrendLine = (data) => {
+  if (data.length < 2) {
+    return data.map(point => ({ ...point, compositeIndex: 100, trendComposite: 100 }));
+  }
+
+  const initialVolume = data[0].volume;
+  const initialAvgWeight = data[0].avgWeight;
+  const initialVolumePerSet = data[0].volumePerSet;
+
+  // Indice di Progresso: media ponderata di peso medio (50%), volume (25%), volume/serie (25%),
+  // ciascuno normalizzato al 100% del primo punto della serie.
+  const withComposite = data.map(point => {
+    const volumeNorm = (point.volume / initialVolume) * 100;
+    const avgWeightNorm = (point.avgWeight / initialAvgWeight) * 100;
+    const volumePerSetNorm = (point.volumePerSet / initialVolumePerSet) * 100;
+    const compositeIndex = avgWeightNorm * 0.5 + volumeNorm * 0.25 + volumePerSetNorm * 0.25;
+    return { ...point, compositeIndex: parseFloat(compositeIndex.toFixed(1)) };
+  });
+
+  const compositeRegression = calculateRegression(withComposite, 'compositeIndex');
+
+  return withComposite.map((point, index) => ({
+    ...point,
+    trendComposite: parseFloat((compositeRegression.m * index + compositeRegression.b).toFixed(1)),
+  }));
+};
+
 const Progress = ({ isEmbedded = false }) => {
   const theme = useTheme();
   const [muscleGroups, setMuscleGroups] = useState([]);
@@ -96,7 +163,8 @@ const Progress = ({ isEmbedded = false }) => {
 
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
 
-  const fetchGlobalStats = async () => {
+  // useCallback([]): legge solo setter e API_BASE_URL.
+  const fetchGlobalStats = useCallback(async () => {
     try {
       const [freqRes, volRes] = await Promise.all([
         fetch(`${API_BASE_URL}api/workout_stats/frequency.php`, { credentials: 'include' }),
@@ -120,35 +188,13 @@ const Progress = ({ isEmbedded = false }) => {
     } catch (error) {
       console.error('Errore nel caricamento delle statistiche globali:', error);
     }
-  };
-
-  useEffect(() => {
-    fetchExercises();
-    fetchGlobalStats();
   }, []);
 
-  useEffect(() => {
-    if (!loadingExercises && muscleGroups.length > 0) {
-      setSelectedMuscleGroup(muscleGroups[0]);
-    }
-  }, [loadingExercises, muscleGroups]);
-
-  useEffect(() => {
-    const exercises = exercisesByMuscleGroup[selectedMuscleGroup];
-    if (selectedMuscleGroup && exercises && exercises.length > 0) {
-      setSelectedExercise({ id: exercises[0].id, name: exercises[0].name });
-    }
-  }, [selectedMuscleGroup, exercisesByMuscleGroup]);
-
-  useEffect(() => {
-    if (selectedExercise.id && selectedExercise.name) {
-      fetchWorkoutHistory();
-    }
-  }, [selectedExercise]);
-
-  const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '');
-
-  const fetchExercises = async () => {
+  // useCallback([]): non legge mai stato reattivo (solo setter, stabili per
+  // garanzia di React, e capitalize, ora a livello di modulo) — riferimento
+  // stabile per tutta la vita del componente, sicuro da usare come dipendenza
+  // dell'effetto di mount sotto.
+  const fetchExercises = useCallback(async () => {
     setLoadingExercises(true);
     try {
       const response = await fetch(`${API_BASE_URL}api/exercise/read_all.php`, {
@@ -185,7 +231,7 @@ const Progress = ({ isEmbedded = false }) => {
     } finally {
       setLoadingExercises(false);
     }
-  };
+  }, []);
 
   const handleMuscleGroupChange = (event) => setSelectedMuscleGroup(event.target.value);
 
@@ -199,99 +245,11 @@ const Progress = ({ isEmbedded = false }) => {
     }
   };
 
-  // Trova l'esercizio selezionato in un allenamento: prima per ID, poi per nome esatto come fallback.
-  const findExerciseInWorkout = (workout, exerciseId, exerciseName) => {
-    if (!workout?.exercises || !Array.isArray(workout.exercises)) return null;
-
-    if (exerciseId) {
-      const byId = workout.exercises.find(ex => ex.exercise_id && String(ex.exercise_id).trim() === String(exerciseId).trim());
-      if (byId) return byId;
-    }
-    if (exerciseName) {
-      const normalized = exerciseName.trim().toLowerCase();
-      const byName = workout.exercises.find(ex => ex.name && ex.name.trim().toLowerCase() === normalized);
-      if (byName) return byName;
-    }
-    return null;
-  };
-
-  const fetchWorkoutHistory = async () => {
-    setIsLoading(true);
-    setEmptyMessage('');
-
-    try {
-      const response = await fetch(`${API_BASE_URL}api/workout_history/read.php`, {
-        method: 'GET',
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
-
-      const data = await response.json();
-      if (!data.records || !Array.isArray(data.records)) {
-        setChartData([]);
-        setExerciseStats([]);
-        return;
-      }
-
-      const sortedWorkouts = data.records.sort((a, b) => new Date(a.date) - new Date(b.date));
-      calculateExerciseStats(sortedWorkouts);
-    } catch (error) {
-      console.error('Errore nel caricamento della cronologia:', error);
-      const message = error.message.includes('404')
-        ? 'Nessun dato di allenamento disponibile. Registra il tuo primo allenamento!'
-        : 'Errore nel caricamento della cronologia: problema di connessione';
-      setEmptyMessage(message);
-      setChartData([]);
-      setExerciseStats([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Regressione lineare (per la linea di tendenza dell'Indice di Progresso).
-  const calculateRegression = (data, valueKey) => {
-    const n = data.length;
-    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
-    data.forEach((point, index) => {
-      sumX += index;
-      sumY += point[valueKey];
-      sumXY += index * point[valueKey];
-      sumXX += index * index;
-    });
-    const m = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-    const b = (sumY - m * sumX) / n;
-    return { m, b };
-  };
-
-  const calculateTrendLine = (data) => {
-    if (data.length < 2) {
-      return data.map(point => ({ ...point, compositeIndex: 100, trendComposite: 100 }));
-    }
-
-    const initialVolume = data[0].volume;
-    const initialAvgWeight = data[0].avgWeight;
-    const initialVolumePerSet = data[0].volumePerSet;
-
-    // Indice di Progresso: media ponderata di peso medio (50%), volume (25%), volume/serie (25%),
-    // ciascuno normalizzato al 100% del primo punto della serie.
-    const withComposite = data.map(point => {
-      const volumeNorm = (point.volume / initialVolume) * 100;
-      const avgWeightNorm = (point.avgWeight / initialAvgWeight) * 100;
-      const volumePerSetNorm = (point.volumePerSet / initialVolumePerSet) * 100;
-      const compositeIndex = avgWeightNorm * 0.5 + volumeNorm * 0.25 + volumePerSetNorm * 0.25;
-      return { ...point, compositeIndex: parseFloat(compositeIndex.toFixed(1)) };
-    });
-
-    const compositeRegression = calculateRegression(withComposite, 'compositeIndex');
-
-    return withComposite.map((point, index) => ({
-      ...point,
-      trendComposite: parseFloat((compositeRegression.m * index + compositeRegression.b).toFixed(1)),
-    }));
-  };
-
-  const calculateExerciseStats = (workouts) => {
-    if (!workouts || workouts.length === 0 || !selectedExercise.id) {
+  // Riceve l'esercizio come parametro invece di leggere selectedExercise dalla
+  // closure: cosi' non dipende da stato reattivo (solo setter e helper di
+  // modulo) e useCallback([]) resta stabile per tutta la vita del componente.
+  const calculateExerciseStats = useCallback((workouts, exercise) => {
+    if (!workouts || workouts.length === 0 || !exercise.id) {
       setExerciseStats([]);
       setChartData([]);
       return;
@@ -299,7 +257,7 @@ const Progress = ({ isEmbedded = false }) => {
 
     const relevant = [];
     for (const workout of workouts) {
-      const exerciseData = findExerciseInWorkout(workout, selectedExercise.id, selectedExercise.name);
+      const exerciseData = findExerciseInWorkout(workout, exercise.id, exercise.name);
       if (!exerciseData?.sets?.length) continue;
 
       let totalVolume = 0, totalReps = 0, validSets = 0, bestOneRM = 0;
@@ -328,7 +286,7 @@ const Progress = ({ isEmbedded = false }) => {
     }
 
     if (relevant.length === 0) {
-      setEmptyMessage(`Nessun allenamento trovato per "${selectedExercise.name}"`);
+      setEmptyMessage(`Nessun allenamento trovato per "${exercise.name}"`);
       setExerciseStats([]);
       setChartData([]);
       return;
@@ -337,7 +295,70 @@ const Progress = ({ isEmbedded = false }) => {
     const ascending = relevant.sort((a, b) => new Date(a.rawDate) - new Date(b.rawDate));
     setChartData(calculateTrendLine(ascending));
     setExerciseStats([...ascending].reverse());
-  };
+  }, []);
+
+  // Dichiarata dopo calculateExerciseStats: l'array di dipendenze viene
+  // valutato durante il render, nominarla prima della sua dichiarazione
+  // lancerebbe ReferenceError (temporal dead zone).
+  const fetchWorkoutHistory = useCallback(async (exercise) => {
+    setIsLoading(true);
+    setEmptyMessage('');
+
+    try {
+      const response = await fetch(`${API_BASE_URL}api/workout_history/read.php`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
+
+      const data = await response.json();
+      if (!data.records || !Array.isArray(data.records)) {
+        setChartData([]);
+        setExerciseStats([]);
+        return;
+      }
+
+      const sortedWorkouts = data.records.sort((a, b) => new Date(a.date) - new Date(b.date));
+      calculateExerciseStats(sortedWorkouts, exercise);
+    } catch (error) {
+      console.error('Errore nel caricamento della cronologia:', error);
+      const message = error.message.includes('404')
+        ? 'Nessun dato di allenamento disponibile. Registra il tuo primo allenamento!'
+        : 'Errore nel caricamento della cronologia: problema di connessione';
+      setEmptyMessage(message);
+      setChartData([]);
+      setExerciseStats([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [calculateExerciseStats]);
+
+  // Effetti sotto le dichiarazioni delle funzioni che nominano nelle
+  // dipendenze (vedi commento su fetchWorkoutHistory).
+  useEffect(() => {
+    fetchExercises();
+    fetchGlobalStats();
+  }, [fetchExercises, fetchGlobalStats]);
+
+  useEffect(() => {
+    if (!loadingExercises && muscleGroups.length > 0) {
+      setSelectedMuscleGroup(muscleGroups[0]);
+    }
+  }, [loadingExercises, muscleGroups]);
+
+  useEffect(() => {
+    const exercises = exercisesByMuscleGroup[selectedMuscleGroup];
+    if (selectedMuscleGroup && exercises && exercises.length > 0) {
+      setSelectedExercise({ id: exercises[0].id, name: exercises[0].name });
+    }
+  }, [selectedMuscleGroup, exercisesByMuscleGroup]);
+
+  // fetchWorkoutHistory e' stabile: l'effetto si riesegue solo al cambio di esercizio.
+  useEffect(() => {
+    if (selectedExercise.id && selectedExercise.name) {
+      fetchWorkoutHistory(selectedExercise);
+    }
+  }, [selectedExercise, fetchWorkoutHistory]);
 
   const metric = METRIC_OPTIONS.find(m => m.key === selectedMetric);
   const first = chartData[0];

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -15,7 +15,6 @@ import {
   CircularProgress,
   IconButton,
   Chip,
-  Collapse,
   Alert,
   Snackbar,
   Dialog,
@@ -24,8 +23,6 @@ import {
   DialogContentText,
   DialogActions,
   Fade,
-  Slide,
-  Divider,
   GlobalStyles
 } from '@mui/material';
 import {
@@ -38,7 +35,6 @@ import {
   ArrowBack as ArrowBackIcon,
   Save as SaveIcon,
   Close as CloseIcon,
-  NavigateNext as NavigateNextIcon,
   Info as InfoIcon,
   EmojiEvents as TrophyIcon,
   AccessTime as AccessTimeIcon,
@@ -165,13 +161,15 @@ const FocusWorkout = () => {
   // ================================================
   // CARICA PIANO ATTIVO E IMPOSTAZIONI UTENTE
   // ================================================
-  useEffect(() => {
-    if (isLoggedIn) {
-      loadInitialData();
-    }
-  }, [isLoggedIn]);
-
-  const loadInitialData = async () => {
+  // useCallback([clearDraft]): non legge stato reattivo (solo localStorage,
+  // setter e clearDraft, a sua volta stabile), quindi l'effetto sotto si
+  // riesegue solo al cambio di isLoggedIn.
+  const loadInitialData = useCallback(async () => {
+    // Variabile locale, non lo stato `phase`: dopo gli await la closure
+    // vedrebbe ancora 'loading' e sovrascriverebbe il prompt di ripresa con
+    // 'select_day', facendo perdere la bozza. Stesso pattern del mobile
+    // (FocusScreen.jsx).
+    let resuming = false;
     try {
       // Verifica prima se esiste una bozza
       const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
@@ -182,6 +180,7 @@ const FocusWorkout = () => {
           if (parsed.selectedDay && parsed.startTime) {
             setDraftToResume(parsed);
             setPhase('resume_prompt');
+            resuming = true;
             // Continuiamo comunque il caricamento per avere i dati aggiornati del piano
           }
         } catch (e) {
@@ -213,7 +212,7 @@ const FocusWorkout = () => {
         try {
           const errorData = await plansRes.json();
           errorMessage = errorData.message || errorMessage;
-        } catch (e) {
+        } catch {
           // Se non è JSON, prova a leggere come testo
           const errorText = await plansRes.text().catch(() => '');
           console.error('Risposta non-JSON dai piani:', errorText);
@@ -226,7 +225,7 @@ const FocusWorkout = () => {
         try {
           const errorData = await userRes.json();
           errorMessage = errorData.message || errorMessage;
-        } catch (e) {
+        } catch {
           const errorText = await userRes.text().catch(() => '');
           console.error('Risposta non-JSON dall\'utente:', errorText);
         }
@@ -247,28 +246,36 @@ const FocusWorkout = () => {
         if (active) {
           setActivePlan(active);
           // Se non c'è bozza, vai alla selezione giorno
-          if (phase !== 'resume_prompt') {
+          if (!resuming) {
             setPhase('select_day');
           }
         } else {
           setSnackbar({ open: true, message: 'Nessun piano attivo trovato. Attiva un piano dalle Schede.', severity: 'warning' });
-          if (phase !== 'resume_prompt') {
+          if (!resuming) {
             setPhase('select_day');
           }
         }
       } else {
-        if (phase !== 'resume_prompt') {
+        if (!resuming) {
           setPhase('select_day');
         }
       }
     } catch (error) {
       console.error('Errore nel caricamento dati:', error);
       setSnackbar({ open: true, message: 'Errore nel caricamento dei dati: ' + error.message, severity: 'error' });
-      if (phase !== 'resume_prompt') {
+      if (!resuming) {
         setPhase('select_day');
       }
     }
-  };
+  }, [clearDraft]);
+
+  // Dopo la dichiarazione di loadInitialData: l'array di dipendenze viene
+  // valutato durante il render (temporal dead zone se fosse sopra).
+  useEffect(() => {
+    if (isLoggedIn) {
+      loadInitialData();
+    }
+  }, [isLoggedIn, loadInitialData]);
 
   // ================================================
   // GESTIONE BOZZA
@@ -1139,7 +1146,7 @@ const FocusWorkout = () => {
                     const text = lines.join('\n');
 
                     if (navigator.share) {
-                      try { await navigator.share({ title: 'Il mio allenamento', text }); } catch (_) {}
+                      try { await navigator.share({ title: 'Il mio allenamento', text }); } catch { /* condivisione annullata dall'utente */ }
                     } else if (navigator.clipboard) {
                       await navigator.clipboard.writeText(text);
                       setSnackbar({ open: true, message: 'Copiato negli appunti!', severity: 'success' });
