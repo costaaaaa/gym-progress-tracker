@@ -171,3 +171,21 @@ CREATE TABLE IF NOT EXISTS `gym_api_tokens` (
 
 ALTER TABLE `gym_workout_history`
   ADD KEY `idx_user_date` (`user_id`, `date`);
+
+
+-- ------------------------------------------------------------------------------
+-- 8. Tabella gym_password_resets: recupero password via email
+-- ------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `gym_password_resets` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `token_hash` char(64) NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `expires_at` datetime NOT NULL,
+  `used_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_reset_token_hash` (`token_hash`),
+  KEY `idx_reset_user_id` (`user_id`),
+  CONSTRAINT `gym_password_resets_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

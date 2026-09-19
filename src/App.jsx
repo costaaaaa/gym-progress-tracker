@@ -15,6 +15,8 @@ const Workouts = lazy(() => import('./pages/Workouts'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const FocusWorkout = lazy(() => import('./pages/FocusWorkout'));
 const Profile = lazy(() => import('./pages/Profile'));
 
@@ -42,6 +44,8 @@ function App() {
                 <Route path="/profilo" element={<Profile />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 
                 {/* Redirect per retrocompatibilità */}
                 <Route path="/account" element={<Navigate to="/profilo?tab=settings" replace />} />

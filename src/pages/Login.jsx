@@ -121,6 +121,11 @@ const Login = () => {
           >
             {loading ? 'Accesso in corso...' : 'Accedi'}
           </Button>
+          <Box sx={{ textAlign: 'center' }}>
+            <Link component={RouterLink} to="/forgot-password" variant="body2">
+              Password dimenticata?
+            </Link>
+          </Box>
           <Box sx={{ textAlign: 'center', mt: 2 }}>
             <Typography variant="body2">
               Non hai un account?{' '}
