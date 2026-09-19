@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -127,7 +127,7 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
                   } else {
                     return workout.date || 'Data non disponibile';
                   }
-                } catch (e) {
+                } catch {
                   return workout.date || 'Data non disponibile';
                 }
               })()

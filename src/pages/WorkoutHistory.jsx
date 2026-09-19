@@ -58,6 +58,25 @@ const organizeExercises = (exercises) => {
   });
 };
 
+// Pura, dipende solo dal parametro: vive fuori dal componente per avere
+// un'identità stabile (react-hooks/exhaustive-deps altrimenti la vorrebbe
+// ricreata a ogni render nelle dipendenze del useMemo che la usa sotto).
+const groupWorkoutsByMonth = (workouts) => {
+  const grouped = {};
+  workouts.forEach(workout => {
+    const date = new Date(workout.date);
+    if (!isNaN(date.getTime())) {
+      const monthYear = `${date.getMonth() + 1}/${date.getFullYear()}`;
+      if (!grouped[monthYear]) grouped[monthYear] = [];
+      grouped[monthYear].push(workout);
+    } else {
+      if (!grouped['0/0']) grouped['0/0'] = [];
+      grouped['0/0'].push(workout);
+    }
+  });
+  return grouped;
+};
+
 const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
   const { isLoggedIn, loading: authLoading } = useAuth();
   const [workouts, setWorkouts] = useState([]);
@@ -221,22 +240,6 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
     setSnackbar({ open: true, message: 'Data aggiornata con successo', severity: 'success' });
   };
 
-  const groupWorkoutsByMonth = () => {
-    const grouped = {};
-    workouts.forEach(workout => {
-      const date = new Date(workout.date);
-      if (!isNaN(date.getTime())) {
-        const monthYear = `${date.getMonth() + 1}/${date.getFullYear()}`;
-        if (!grouped[monthYear]) grouped[monthYear] = [];
-        grouped[monthYear].push(workout);
-      } else {
-        if (!grouped['0/0']) grouped['0/0'] = [];
-        grouped['0/0'].push(workout);
-      }
-    });
-    return grouped;
-  };
-
   const getMonthName = (monthNum) => {
     const months = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
     return months[monthNum - 1];
@@ -246,7 +249,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
     setExpandedMonths(prev => ({ ...prev, [monthYear]: !prev[monthYear] }));
   };
 
-  const groupedWorkouts = useMemo(() => groupWorkoutsByMonth(), [workouts]);
+  const groupedWorkouts = useMemo(() => groupWorkoutsByMonth(workouts), [workouts]);
 
   // Dettaglio esercizi inline di un allenamento (ex contenuto di WorkoutDetailDialog)
   const renderWorkoutExerciseDetails = (workout) => {

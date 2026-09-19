@@ -21,7 +21,6 @@ import {
   Collapse
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
-import WhatshotIcon from '@mui/icons-material/Whatshot';
 import { API_BASE_URL } from '../config';
 import { INTENSITY_TECHNIQUES } from './ExerciseDialog';
 

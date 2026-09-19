@@ -1,4 +1,3 @@
-import React from 'react';
 import { Box, Typography } from '@mui/material';
 
 // Gruppi muscolari tracciati e relativa etichetta italiana (stesse chiavi usate da

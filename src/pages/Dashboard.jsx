@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { Box, Tabs, Tab, CircularProgress } from '@mui/material';
 import { useSearchParams } from 'react-router-dom';
 import BarChartIcon from '@mui/icons-material/BarChart';
@@ -8,6 +8,20 @@ import { usePageMeta } from '../hooks/usePageMeta';
 // Lazy loading dei componenti tab
 const Progress = lazy(() => import('./Progress'));
 const BodyStats = lazy(() => import('./BodyStats'));
+
+// Statiche: nessun riferimento a stato/props, per questo vivono fuori dal
+// componente. Ricrearle a ogni render romperebbe react-hooks/exhaustive-deps
+// (nuova identità a ogni render -> se incluse nelle dipendenze degli effetti
+// sotto, li farebbero rieseguire a ogni render, non solo al cambio di tab).
+const tabToIndex = {
+  'progress': 0,
+  'body': 1
+};
+
+const indexToTab = {
+  0: 'progress',
+  1: 'body'
+};
 
 const Dashboard = () => {
   usePageMeta(
@@ -20,23 +34,13 @@ const Dashboard = () => {
     progress: currentTab === 'progress',
     body: currentTab === 'body'
   }));
-  
-  const tabToIndex = {
-    'progress': 0,
-    'body': 1
-  };
-  
-  const indexToTab = {
-    0: 'progress',
-    1: 'body'
-  };
 
   const handleTabChange = (event, newValue) => {
     setSearchParams({ tab: indexToTab[newValue] });
   };
 
   useEffect(() => {
-    if (tabToIndex.hasOwnProperty(currentTab)) {
+    if (Object.prototype.hasOwnProperty.call(tabToIndex, currentTab)) {
       setVisitedTabs(prev => ({
         ...prev,
         [currentTab]: true
@@ -50,7 +54,7 @@ const Dashboard = () => {
   }, [currentTab]);
 
   useEffect(() => {
-    if (!tabToIndex.hasOwnProperty(currentTab)) {
+    if (!Object.prototype.hasOwnProperty.call(tabToIndex, currentTab)) {
       setSearchParams({ tab: 'progress' }, { replace: true });
     }
   }, [currentTab, setSearchParams]);

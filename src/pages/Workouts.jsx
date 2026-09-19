@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { Box, Tabs, Tab, CircularProgress, Container } from '@mui/material';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
@@ -8,6 +8,21 @@ import { usePageMeta } from '../hooks/usePageMeta';
 // Lazy loading dei componenti tab
 const WorkoutPlans = lazy(() => import('./WorkoutPlans'));
 const WorkoutHistory = lazy(() => import('./WorkoutHistory'));
+
+// Mappa dei tab a indici numerici per MUI Tabs. Statiche: nessun riferimento
+// a stato/props, per questo vivono fuori dal componente. Ricrearle a ogni
+// render romperebbe react-hooks/exhaustive-deps (nuova identità a ogni render
+// -> se incluse nelle dipendenze degli effetti sotto, li farebbero rieseguire
+// a ogni render, non solo al cambio di tab).
+const tabToIndex = {
+  'plans': 0,
+  'history': 1
+};
+
+const indexToTab = {
+  0: 'plans',
+  1: 'history'
+};
 
 const Workouts = () => {
   usePageMeta(
@@ -21,24 +36,13 @@ const Workouts = () => {
     plans: currentTab === 'plans',
     history: currentTab === 'history'
   }));
-  
-  // Mappa dei tab a indici numerici per MUI Tabs
-  const tabToIndex = {
-    'plans': 0,
-    'history': 1
-  };
-  
-  const indexToTab = {
-    0: 'plans',
-    1: 'history'
-  };
 
   const handleTabChange = (event, newValue) => {
     setSearchParams({ tab: indexToTab[newValue] });
   };
 
   useEffect(() => {
-    if (tabToIndex.hasOwnProperty(currentTab)) {
+    if (Object.prototype.hasOwnProperty.call(tabToIndex, currentTab)) {
       setVisitedTabs(prev => ({
         ...prev,
         [currentTab]: true
@@ -53,7 +57,7 @@ const Workouts = () => {
 
   // Normalizzazione URL se il tab non è valido
   useEffect(() => {
-    if (!tabToIndex.hasOwnProperty(currentTab)) {
+    if (!Object.prototype.hasOwnProperty.call(tabToIndex, currentTab)) {
       setSearchParams({ tab: 'plans' }, { replace: true });
     }
   }, [currentTab, setSearchParams]);

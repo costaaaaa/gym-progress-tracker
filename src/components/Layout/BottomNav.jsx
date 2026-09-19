@@ -1,4 +1,3 @@
-import React from 'react';
 import { Box, ButtonBase, useMediaQuery, useTheme } from '@mui/material';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';

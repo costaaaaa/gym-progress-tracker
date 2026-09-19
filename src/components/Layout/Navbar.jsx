@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { AppBar, Toolbar, Typography, Button, Box, Avatar, useMediaQuery, IconButton, useTheme, Tooltip, CircularProgress } from '@mui/material';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';

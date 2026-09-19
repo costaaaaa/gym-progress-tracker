@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Card, CardActionArea, LinearProgress, Typography } from '@mui/material';
 import StarIcon from '@mui/icons-material/Star';
 import { Link as RouterLink } from 'react-router-dom';
