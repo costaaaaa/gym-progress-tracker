@@ -25,8 +25,13 @@ import { format, subYears, startOfToday } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 const Register = () => {
+  usePageMeta(
+    'Registrati',
+    'Crea il tuo account e inizia a tracciare allenamenti, progressi e obiettivi in palestra.'
+  );
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

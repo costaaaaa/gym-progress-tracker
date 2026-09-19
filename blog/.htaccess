@@ -1,0 +1,31 @@
+# Routing del blog (URL puliti /blog/<slug>).
+#
+# Vive nella cartella blog/, quindi vale solo per le richieste sotto /blog/ e
+# non interferisce con l'.htaccess della SPA. Perche' abbia effetto, l'.htaccess
+# di root deve pero' escludere /blog/ dal fallback SPA, esattamente come fa gia'
+# per backend/ (vedi docs/seo/domain-migration-checklist.md).
+#
+# NOTA: il server built-in di PHP (php -S) ignora gli .htaccess — in locale si
+# testa chiamando direttamente index.php / article.php?slug=<slug>.
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /blog/
+
+  # I sorgenti Markdown e le librerie PHP non vanno mai serviti direttamente.
+  RewriteRule ^(content|lib)/ - [F,L]
+
+  # File e cartelle reali (asset futuri, index.php stesso) passano invariati.
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # /blog/ -> listing
+  RewriteRule ^$ index.php [L]
+
+  # /blog/<slug> -> articolo singolo
+  RewriteRule ^([a-z0-9-]+)/?$ article.php?slug=$1 [L,QSA]
+</IfModule>
+
+# Disable directory listing
+Options -Indexes

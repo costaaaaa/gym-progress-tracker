@@ -3,12 +3,17 @@ import { Box, Tabs, Tab, CircularProgress, Container } from '@mui/material';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 // Lazy loading dei componenti tab
 const WorkoutPlans = lazy(() => import('./WorkoutPlans'));
 const WorkoutHistory = lazy(() => import('./WorkoutHistory'));
 
 const Workouts = () => {
+  usePageMeta(
+    'Schede di Allenamento',
+    'Crea e gestisci le tue schede di allenamento in palestra: piani illimitati, esercizi personalizzati e storico completo delle sessioni.'
+  );
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const currentTab = searchParams.get('tab') || 'plans';

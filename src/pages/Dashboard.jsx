@@ -3,12 +3,17 @@ import { Box, Tabs, Tab, CircularProgress } from '@mui/material';
 import { useSearchParams } from 'react-router-dom';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import StraightenIcon from '@mui/icons-material/Straighten';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 // Lazy loading dei componenti tab
 const Progress = lazy(() => import('./Progress'));
 const BodyStats = lazy(() => import('./BodyStats'));
 
 const Dashboard = () => {
+  usePageMeta(
+    'Dashboard Progressi',
+    'Monitora i tuoi progressi in palestra: grafici sui carichi, statistiche corporee e andamento nel tempo per ogni esercizio.'
+  );
   const [searchParams, setSearchParams] = useSearchParams();
   const currentTab = searchParams.get('tab') || 'progress';
   const [visitedTabs, setVisitedTabs] = useState(() => ({

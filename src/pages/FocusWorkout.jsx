@@ -54,10 +54,15 @@ import { hapticFeedback } from '../utils/vibration';
 import { INTENSITY_TECHNIQUES } from '../components/ExerciseDialog';
 import { buildExerciseHistoryIndex, detectPersonalRecords } from '../utils/workoutMetrics';
 import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../utils/celebrate';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 const DRAFT_STORAGE_KEY = 'gym_focus_workout_draft';
 
 const FocusWorkout = () => {
+  usePageMeta(
+    'Focus Mode',
+    'Allenamento guidato con timer di recupero, storico "ultima volta" e rilevamento automatico dei record personali.'
+  );
   const navigate = useNavigate();
   const { isLoggedIn, loading: authLoading } = useAuth();
   const theme = useTheme();

@@ -163,6 +163,22 @@ AGENTS.md
 # Old heavy assets
 src/assets/images/gym-background.jpg
 
+# SEO planning interno (nome dominio non ancora registrato, strategia keyword
+# competitiva) — stesso trattamento dei file di planning AI qui sopra, non
+# destinato a un repo pubblico.
+docs/seo/
+
+# Testo degli articoli del blog: contenuto editoriale di brand, tenuto fuori dal
+# repo pubblico (evita anche che GitHub indicizzi una copia dell'articolo in
+# concorrenza con la pagina pubblicata). Il MOTORE del blog (blog/*.php,
+# blog/lib/, blog/.htaccess) resta versionato: e' codice di produzione.
+# NB: i .md vanno quindi caricati sul server a mano e tenuti in backup fuori dal
+# repo — vedi docs/seo/domain-migration-checklist.md.
+# NB: "blog/content/*" e non "blog/content/" — escludendo la directory git non
+# ci entra nemmeno, e l'eccezione sul README non avrebbe effetto.
+blog/content/*
+!blog/content/README.md
+
 build/
 backend/api/user_stats/sync_apple_health.php
 dati.sql

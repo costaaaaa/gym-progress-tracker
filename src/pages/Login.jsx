@@ -5,8 +5,13 @@ import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 const Login = () => {
+  usePageMeta(
+    'Accedi',
+    'Accedi al tuo diario di allenamento: riprendi i tuoi piani, il Focus Mode e i progressi in palestra.'
+  );
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');

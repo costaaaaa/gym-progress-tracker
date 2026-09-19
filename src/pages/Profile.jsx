@@ -3,12 +3,17 @@ import { Box, Tabs, Tab, CircularProgress } from '@mui/material';
 import { useSearchParams } from 'react-router-dom';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import SettingsIcon from '@mui/icons-material/Settings';
+import { usePageMeta } from '../hooks/usePageMeta';
 
 // Lazy loading dei componenti tab
 const ProfileSummary = lazy(() => import('./ProfileSummary'));
 const Account = lazy(() => import('./Account'));
 
 const Profile = () => {
+  usePageMeta(
+    'Profilo e Impostazioni',
+    'Gestisci il tuo profilo, i traguardi raggiunti e le impostazioni del tuo account Gym Progress Tracker.'
+  );
   const [searchParams, setSearchParams] = useSearchParams();
   const currentTab = searchParams.get('tab') || 'summary';
   const [visitedTabs, setVisitedTabs] = useState(() => ({
