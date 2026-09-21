@@ -1,5 +1,11 @@
 # Aggiornamento della struttura del database per Gym Progress Tracker
 
+> **Documento storico.** Descrive la migrazione una tantum verso `gym_workout_sets`. Oggi la
+> tabella è già nello schema completo (`backend/database/gym_progress_tracker.sql`) e nelle
+> migrazioni cumulative (`backend/database/schema_alter_migrations.sql`): per installare o
+> aggiornare il database segui la sezione "Setup e aggiornamento del database" del
+> [README](README.md). Il file `database_update.sql` citato qui sotto non esiste più.
+
 Questo aggiornamento risolve il problema degli ID inconsistenti degli esercizi tra le tabelle `gym_exercises` e `gym_workout_history` implementando una struttura relazionale più robusta.
 
 ## Panoramica dei cambiamenti
