@@ -104,4 +104,14 @@ class ApiToken
 
         return $stmt->execute();
     }
+
+    // Revoca tutti i token attivi di un utente (es. dopo il reset della password).
+    public function revokeAllForUser($user_id)
+    {
+        $stmt = $this->conn->prepare(
+            "UPDATE " . $this->table_name . " SET revoked_at = NOW() WHERE user_id = ? AND revoked_at IS NULL"
+        );
+        $stmt->bindParam(1, $user_id, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
 }

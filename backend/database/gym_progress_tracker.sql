@@ -126,6 +126,7 @@ CREATE TABLE IF NOT EXISTS `gym_workout_history` (
   `notes` text DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
+  KEY `idx_user_date` (`user_id`, `date`),
   CONSTRAINT `gym_workout_history_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -205,6 +206,20 @@ CREATE TABLE IF NOT EXISTS `gym_api_tokens` (
   UNIQUE KEY `uq_token_hash` (`token_hash`),
   KEY `idx_user_id` (`user_id`),
   CONSTRAINT `gym_api_tokens_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Token per il recupero password (salvato solo l'hash SHA-256, monouso, scadenza breve)
+CREATE TABLE IF NOT EXISTS `gym_password_resets` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `token_hash` char(64) NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `expires_at` datetime NOT NULL,
+  `used_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_reset_token_hash` (`token_hash`),
+  KEY `idx_reset_user_id` (`user_id`),
+  CONSTRAINT `gym_password_resets_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Insert default exercises

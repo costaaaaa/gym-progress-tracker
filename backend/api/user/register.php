@@ -54,12 +54,33 @@ try {
         // Conta questo tentativo di registrazione
         $limiter->hit($regKey, $regDecay);
 
+        // Data di nascita obbligatoria e valida: serve a verificare l'età minima (14 anni,
+        // art. 2-quinquies Codice privacy). Il sesso deve essere scelto, senza default lato server.
+        $birth = (isset($data->birth_date) && is_string($data->birth_date))
+            ? DateTime::createFromFormat('!Y-m-d', $data->birth_date)
+            : false;
+        if (!$birth || $birth->format('Y-m-d') !== $data->birth_date || $birth > new DateTime('today')) {
+            http_response_code(400);
+            echo json_encode(array("success" => false, "message" => "Data di nascita obbligatoria o non valida."));
+            exit;
+        }
+        if ($birth->diff(new DateTime('today'))->y < 14) {
+            http_response_code(400);
+            echo json_encode(array("success" => false, "message" => "Devi avere almeno 14 anni per registrarti."));
+            exit;
+        }
+        if (!isset($data->gender) || !in_array($data->gender, array('M', 'F'), true)) {
+            http_response_code(400);
+            echo json_encode(array("success" => false, "message" => "Seleziona il sesso."));
+            exit;
+        }
+
         // Set user property values
         $user->username = $data->username;
         $user->email = $data->email;
         $user->password = $data->password;
-        $user->birth_date = isset($data->birth_date) ? $data->birth_date : null;
-        $user->gender = isset($data->gender) ? $data->gender : 'M';
+        $user->birth_date = $data->birth_date;
+        $user->gender = $data->gender;
         $user->training_start_date = isset($data->training_start_date) ? $data->training_start_date : null;
 
         // Create the user
