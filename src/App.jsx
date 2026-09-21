@@ -30,7 +30,7 @@ const PageLoader = () => (
 function App() {
   return (
     <AuthProvider>
-      <Router basename="/gym-progress-tracker-v2">
+      <Router>
         <Suspense fallback={<PageLoader />}>
           <Routes>
               {/* Focus mode — full-screen senza Navbar */}

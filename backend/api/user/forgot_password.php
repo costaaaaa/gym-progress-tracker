@@ -49,8 +49,8 @@ try {
         $user = $reset->findUserByEmail($email);
         if ($user) {
             $token = $reset->create($user['id']);
-            // APP_PUBLIC_URL: indirizzo pubblico dell'app comprensivo del percorso base, es.
-            // https://esempio.it/gym-progress-tracker-v2 (env sul server, come MAIL_*).
+            // APP_PUBLIC_URL: indirizzo pubblico dell'app, es. https://liftindex.app
+            // (env sul server, come MAIL_*). L'app sta alla radice del dominio.
             $baseUrl = rtrim(getenv('APP_PUBLIC_URL') ?: 'http://localhost:3000', '/');
             $link = $baseUrl . '/reset-password?token=' . $token;
             $text = "Ciao " . $user['username'] . ",\n\n"

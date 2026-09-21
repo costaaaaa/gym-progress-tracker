@@ -11,11 +11,9 @@
  * migrazione, cosi' gli URL degli articoli nascono gia' puliti (/blog/<slug>).
  */
 
-// TODO migrazione: -> https://<nuovo-dominio>/blog
-define('BLOG_BASE_URL', 'https://andreacostamagna.altervista.org/gym-progress-tracker-v2/blog');
+define('BLOG_BASE_URL', 'https://liftindex.app/blog');
 
-// TODO migrazione: -> https://<nuovo-dominio>/
-define('BLOG_APP_URL', 'https://andreacostamagna.altervista.org/gym-progress-tracker-v2/');
+define('BLOG_APP_URL', 'https://liftindex.app/');
 
 define('BLOG_SITE_NAME', 'Gym Progress Tracker');
 define('BLOG_LOGO_URL', BLOG_APP_URL . 'logo512.png');

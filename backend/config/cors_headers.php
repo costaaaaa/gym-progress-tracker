@@ -14,7 +14,8 @@ ob_start();
 $default_allowed_origins = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
-    'https://andreacostamagna.altervista.org'
+    'https://liftindex.app',
+    'https://www.liftindex.app'
 ];
 
 // Get the origin from the request headers

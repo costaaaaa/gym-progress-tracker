@@ -9,8 +9,8 @@
     // string into just a query string, and then redirects the browser
     // to the new URL with only a query string and hash fragment.
     
-    // Since we're using "/gym-progress-tracker-v2/" as homepage in package.json, we need to set the basename
-    const basename = '/gym-progress-tracker-v2';
+    // L.app sta alla radice del dominio, quindi il basename e vuoto
+    const basename = '';
     
     // Redirect to the correct URL
     const redirect = () => {

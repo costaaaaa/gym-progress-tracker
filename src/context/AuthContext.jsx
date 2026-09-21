@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }) => {
       setIsLoggedIn(false);
       setUser(null);
       // Reindirizzamento alla pagina di login
-      window.location.href = '/gym-progress-tracker-v2/login';
+      window.location.href = '/login';
     }
   };
 
