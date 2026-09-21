@@ -28,6 +28,7 @@ import { it } from 'date-fns/locale';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import { validatePassword } from '../utils/passwordPolicy';
+import { track } from '../utils/analytics';
 import { usePageMeta } from '../hooks/usePageMeta';
 
 const Register = () => {
@@ -119,6 +120,8 @@ const Register = () => {
       if (!response.ok) {
         throw new Error(data.message || 'Errore durante la registrazione');
       }
+
+      track('signup');
 
       // Mostra messaggio di successo
       setSuccess('Registrazione completata con successo! Effettua il login...');

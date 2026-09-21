@@ -4,6 +4,9 @@ import './index.css';
 import App from './App';
 import { ThemeModeProvider } from './context/ThemeModeContext';
 import CssBaseline from '@mui/material/CssBaseline';
+import { initAnalytics } from './utils/analytics';
+
+initAnalytics();
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

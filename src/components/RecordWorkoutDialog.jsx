@@ -23,6 +23,7 @@ import {
 import InfoIcon from '@mui/icons-material/Info';
 import { API_BASE_URL } from '../config';
 import { INTENSITY_TECHNIQUES } from './ExerciseDialog';
+import { track } from '../utils/analytics';
 
 const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
   const [selectedDay, setSelectedDay] = useState('');
@@ -104,8 +105,8 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
         throw new Error(responseData.message || 'Errore durante il salvataggio dell\'allenamento');
       }
 
-      // Log dei dettagli della risposta per debug
-      console.log('Risposta dal server:', responseData);
+      track('workout_saved');
+      if (responseData.total_sessions === 1) track('first_workout');
 
       onClose(true); // Close with success flag
     } catch (error) {

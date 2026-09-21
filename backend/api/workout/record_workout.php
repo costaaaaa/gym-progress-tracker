@@ -316,6 +316,7 @@ try {
             'message'               => 'Allenamento registrato con successo',
             'id'                    => $workout_id,
             'sets_saved'            => $sets_saved,
+            'total_sessions'        => $total_sessions_cnt,
             'current_streak_weeks'  => $current_streak_val,
             'week_completed_now'    => $week_completed_now,
             'new_longest'           => $new_longest,

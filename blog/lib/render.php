@@ -78,6 +78,9 @@ function blog_render_page(array $opts)
 @font-face { font-family: "Lexend"; font-style: normal; font-weight: 100 900; font-display: swap; src: url("<?php echo blog_e(BLOG_APP_URL); ?>fonts/lexend-latin-wght-normal.woff2") format("woff2"); }
     </style>
     <style><?php echo blog_styles(); ?></style>
+<?php $umamiSrc = getenv('UMAMI_SRC'); $umamiId = getenv('UMAMI_WEBSITE_ID'); if ($umamiSrc && $umamiId): ?>
+    <script defer src="<?php echo blog_e($umamiSrc); ?>" data-website-id="<?php echo blog_e($umamiId); ?>" data-do-not-track="true"></script>
+<?php endif; ?>
 <?php if ($jsonLd !== null): ?>
     <script type="application/ld+json">
 <?php echo json_encode($jsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT); ?>

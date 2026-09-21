@@ -51,6 +51,7 @@ import { INTENSITY_TECHNIQUES } from '../components/ExerciseDialog';
 import { buildExerciseHistoryIndex, detectPersonalRecords } from '../utils/workoutMetrics';
 import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../utils/celebrate';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { track } from '../utils/analytics';
 
 const DRAFT_STORAGE_KEY = 'gym_focus_workout_draft';
 
@@ -567,6 +568,8 @@ const FocusWorkout = () => {
 
       clearDraft();
       setSavedResult(data);
+      track('workout_saved');
+      if (data.total_sessions === 1) track('first_workout');
 
       // Streak/milestone celebration
       if (data.week_completed_now || data.new_longest || data.streak_milestone) {
