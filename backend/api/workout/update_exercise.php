@@ -45,9 +45,7 @@ if (
     $stmt->execute();
 
     // Debug: Registriamo i parametri della query e il risultato
-    error_log("Parametri query update_exercise: exercise_id={$data->exercise_id}");
     error_log("Numero di righe trovate: " . $stmt->rowCount());
-    error_log("Parametri query update_exercise: day_id={$data->day_id}, exercise_id={$data->exercise_id}");
 
     if ($stmt->rowCount() > 0) {
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -64,8 +62,6 @@ if (
         $workoutExercise->intensity_technique = isset($data->intensity_technique) && $data->intensity_technique !== "" ? $data->intensity_technique : null;
 
         // Log per debug
-        error_log("Notes value: " . (isset($data->notes) ? $data->notes : 'null') . ", Final value: " . $workoutExercise->notes);
-        error_log("Intensity Technique value: " . (isset($data->intensity_technique) ? $data->intensity_technique : 'null') . ", Final value: " . $workoutExercise->intensity_technique);
 
         // Esegui l'aggiornamento
         if ($workoutExercise->update()) {

@@ -34,7 +34,6 @@ if (
     !empty($data->new_date)
 ) {
     // Log per debug
-    error_log("Richiesta di aggiornamento data per ID: " . $data->id . ", nuova data: " . $data->new_date);
 
     // Verifica e formatta la data
     $new_date = $data->new_date;

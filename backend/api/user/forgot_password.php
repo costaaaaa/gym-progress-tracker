@@ -28,8 +28,8 @@ try {
     $limiter = rate_limiter($db);
 
     $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
-    $ipKey = 'forgot:ip:' . $ip;
-    $emailKey = 'forgot:email:' . $email;
+    $ipKey = 'forgot:ip:' . hash('sha256', $ip);
+    $emailKey = 'forgot:email:' . hash('sha256', strtolower($email));
     list($ipMax, $ipDecay) = rate_limit_rule('forgot_ip');
     list($emailMax, $emailDecay) = rate_limit_rule('forgot_email');
 

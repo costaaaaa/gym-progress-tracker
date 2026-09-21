@@ -38,8 +38,8 @@ try {
 
         // Chiavi di throttling per questo tentativo
         $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
-        $ipKey = 'login:ip:' . $ip;
-        $userKey = 'login:user:' . $ip . '|' . strtolower($data->username);
+        $ipKey = 'login:ip:' . hash('sha256', $ip);
+        $userKey = 'login:user:' . hash('sha256', $ip . '|' . strtolower($data->username));
 
         list($ipMax, $ipDecay) = rate_limit_rule('login_ip');
         list($userMax, $userDecay) = rate_limit_rule('login_user');

@@ -31,7 +31,7 @@ try {
     $limiter = rate_limiter($db);
 
     $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
-    $ipKey = 'reset:ip:' . $ip;
+    $ipKey = 'reset:ip:' . hash('sha256', $ip);
     list($ipMax, $ipDecay) = rate_limit_rule('reset_ip');
     if ($limiter->tooManyAttempts($ipKey, $ipMax)) {
         header('Retry-After: ' . $limiter->availableIn($ipKey));

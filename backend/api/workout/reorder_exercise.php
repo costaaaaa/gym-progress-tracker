@@ -35,7 +35,6 @@ try {
         !empty($data->exercise_id) &&
         !empty($data->direction)
     ) {
-        error_log("Richiesta di riordinamento: day_id={$data->day_id}, exercise_id={$data->exercise_id}, direction={$data->direction}");
 
         // Assegna i valori alle proprietà del modello
         $workoutExercise->day_id = $data->day_id;

@@ -10,6 +10,10 @@ export default defineConfig({
   },
   build: {
     outDir: 'build',
+    // In produzione i console.* (log di debug, ma anche console.error) non finiscono nel bundle
+    rolldownOptions: {
+      output: { minify: { compress: { dropConsole: true } } },
+    },
     chunkSizeWarningLimit: 1000,
   },
 });

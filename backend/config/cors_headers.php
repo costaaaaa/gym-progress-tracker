@@ -1,7 +1,9 @@
 <?php
-// Forza la disattivazione degli errori per non sporcare l'output JSON
-error_reporting(0);
-ini_set('display_errors', 0);
+// Gli errori PHP non vanno mai a video (sporcherebbero l'output JSON e rivelerebbero
+// percorsi e query) ma restano nel log del server, per poterli diagnosticare.
+error_reporting(E_ALL & ~E_DEPRECATED);
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
 
 // Un solo fuso orario per tutto il backend: le settimane ISO di streak e classifiche
 // dipendono dall'ora del server.

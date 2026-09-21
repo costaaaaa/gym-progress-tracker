@@ -52,7 +52,7 @@ class User
         try {
             // Validate inputs
             if (!$this->validateInputs()) {
-                error_log("User validation failed for username: {$this->username}");
+                error_log("User validation failed");
                 return false;
             }
 
@@ -62,7 +62,7 @@ class User
 
             // Check if username or email already exists
             if ($this->usernameExists() || $this->emailExists()) {
-                error_log("Username or email already exists for: {$this->username}");
+                error_log("Registration rejected: username or email already exists");
                 return false;
             }
 
@@ -96,7 +96,7 @@ class User
                 return true;
             }
 
-            error_log("Failed to execute user creation query for username: {$this->username}");
+            error_log("Failed to execute user creation query");
             return false;
         } catch (PDOException $e) {
             error_log("Database error during user creation: " . $e->getMessage());
@@ -139,19 +139,19 @@ class User
     {
         // Validate username (alphanumeric, 3-50 characters)
         if (!preg_match('/^[a-zA-Z0-9]{3,50}$/', $this->username)) {
-            error_log("Username validation failed: {$this->username} - Must be alphanumeric, 3-50 characters");
+            error_log("Username validation failed: must be alphanumeric, 3-50 characters");
             return false;
         }
 
         // Validate email
         if (!filter_var($this->email, FILTER_VALIDATE_EMAIL)) {
-            error_log("Email validation failed: {$this->email} - Invalid email format");
+            error_log("Email validation failed: invalid format");
             return false;
         }
 
         // Validate password (at least 8 characters)
         if (strlen($this->password) < 8) {
-            error_log("Password validation failed for user {$this->username} - Must be at least 8 characters");
+            error_log("Password validation failed: too short");
             return false;
         }
 
