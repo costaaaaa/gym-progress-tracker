@@ -5,8 +5,7 @@ import { API_BASE_URL } from '../config';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { usePageMeta } from '../hooks/usePageMeta';
-
-const MIN_PASSWORD_LENGTH = 8;
+import { validatePassword } from '../utils/passwordPolicy';
 
 const ResetPassword = () => {
   usePageMeta('Nuova password', 'Scegli una nuova password per il tuo account.');
@@ -22,8 +21,9 @@ const ResetPassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      setError(`La password deve avere almeno ${MIN_PASSWORD_LENGTH} caratteri.`);
+    const policyError = validatePassword(password);
+    if (policyError) {
+      setError(policyError);
       return;
     }
     if (password !== confirm) {

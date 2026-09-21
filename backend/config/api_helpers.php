@@ -2,22 +2,52 @@
 
 include_once __DIR__ . '/../models/ApiToken.php';
 
+// Token Bearer in chiaro dall'header Authorization, o null.
+function bearer_token_from_request()
+{
+    $auth_header = $_SERVER['HTTP_AUTHORIZATION'] ?? null;
+    if (!$auth_header || stripos($auth_header, 'Bearer ') !== 0) {
+        return null;
+    }
+    $plain_token = trim(substr($auth_header, 7));
+    return $plain_token === '' ? null : $plain_token;
+}
+
+// True se la sessione web e' ancora valida: l'utente esiste e la password non e' cambiata
+// dopo l'accesso. Le sessioni aperte prima di questo controllo (senza auth_at) vengono
+// marcate al primo uso.
+function web_session_is_current($db, $user_id)
+{
+    $stmt = $db->prepare("SELECT UNIX_TIMESTAMP(password_changed_at) AS changed_at FROM gym_users WHERE id = ? LIMIT 1");
+    $stmt->execute([$user_id]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        return false;
+    }
+    if (!isset($_SESSION['auth_at'])) {
+        $_SESSION['auth_at'] = time();
+        return true;
+    }
+    return $row['changed_at'] === null || (int)$row['changed_at'] <= (int)$_SESSION['auth_at'];
+}
+
 // Risolve l'utente autenticato provando prima la sessione web (percorso invariato),
 // poi — se assente — l'header "Authorization: Bearer <token>" usato dai client mobile.
 // Ritorna l'user_id (int) o null se non autenticato con nessuno dei due metodi.
 function resolve_authenticated_user_id($db)
 {
     if (isset($_SESSION['user_id'])) {
-        return (int)$_SESSION['user_id'];
-    }
-
-    $auth_header = $_SERVER['HTTP_AUTHORIZATION'] ?? null;
-    if (!$auth_header || stripos($auth_header, 'Bearer ') !== 0) {
+        $user_id = (int)$_SESSION['user_id'];
+        if (web_session_is_current($db, $user_id)) {
+            return $user_id;
+        }
+        $_SESSION = array();
+        session_destroy();
         return null;
     }
 
-    $plain_token = trim(substr($auth_header, 7));
-    if ($plain_token === '') {
+    $plain_token = bearer_token_from_request();
+    if ($plain_token === null) {
         return null;
     }
 

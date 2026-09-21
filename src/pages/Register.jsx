@@ -25,6 +25,7 @@ import { format, subYears, startOfToday } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
+import { validatePassword } from '../utils/passwordPolicy';
 import { usePageMeta } from '../hooks/usePageMeta';
 
 const Register = () => {
@@ -45,23 +46,6 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Validazione sicurezza password
-  const validatePassword = (pass) => {
-    const minLength = pass.length >= 8;
-    const hasUpper = /[A-Z]/.test(pass);
-    const hasLower = /[a-z]/.test(pass);
-    const hasNumber = /[0-9]/.test(pass);
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
-    
-    if (!minLength) return "La password deve contenere almeno 8 caratteri";
-    if (!hasUpper) return "La password deve contenere almeno una lettera maiuscola";
-    if (!hasLower) return "La password deve contenere almeno una lettera minuscola";
-    if (!hasNumber) return "La password deve contenere almeno un numero";
-    if (!hasSpecial) return "La password deve contenere almeno un carattere speciale (!@#$%^&*)";
-    
-    return null;
-  };
-  
   const handleTogglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };

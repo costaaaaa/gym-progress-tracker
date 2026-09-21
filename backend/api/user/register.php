@@ -6,6 +6,7 @@ include_once '../../config/cors_headers.php';
 include_once '../../config/database.php';
 include_once '../../config/rate_limiter.php';
 include_once '../../config/api_helpers.php';
+include_once '../../lib/password_policy.php';
 include_once '../../models/User.php';
 
 try {
@@ -54,6 +55,13 @@ try {
 
         // Conta questo tentativo di registrazione
         $limiter->hit($regKey, $regDecay);
+
+        $passwordError = password_policy_error($data->password);
+        if ($passwordError !== null) {
+            http_response_code(400);
+            echo json_encode(array("success" => false, "message" => $passwordError));
+            exit;
+        }
 
         // Data di nascita obbligatoria e valida (eta' minima 14 anni) e sesso scelto dall'utente.
         $birthError = birth_date_error(isset($data->birth_date) ? $data->birth_date : null);

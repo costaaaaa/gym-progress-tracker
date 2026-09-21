@@ -114,4 +114,18 @@ class ApiToken
         $stmt->bindParam(1, $user_id, PDO::PARAM_INT);
         return $stmt->execute();
     }
+
+    // Revoca tutti i token attivi dell'utente tranne quello in uso (es. dopo un cambio password:
+    // il dispositivo che l'ha cambiata resta collegato, gli altri devono rifare il login).
+    public function revokeAllForUserExcept($user_id, $keep_plain_token)
+    {
+        $keep_hash = $keep_plain_token ? hash('sha256', $keep_plain_token) : '';
+        $stmt = $this->conn->prepare(
+            "UPDATE " . $this->table_name . " SET revoked_at = NOW()
+             WHERE user_id = ? AND revoked_at IS NULL AND token_hash <> ?"
+        );
+        $stmt->bindParam(1, $user_id, PDO::PARAM_INT);
+        $stmt->bindParam(2, $keep_hash);
+        return $stmt->execute();
+    }
 }

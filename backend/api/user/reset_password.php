@@ -4,6 +4,8 @@
 include_once '../../config/cors_headers.php';
 include_once '../../config/database.php';
 include_once '../../config/rate_limiter.php';
+include_once '../../config/api_helpers.php';
+include_once '../../lib/password_policy.php';
 include_once '../../models/ApiToken.php';
 include_once '../../models/PasswordReset.php';
 
@@ -17,9 +19,10 @@ try {
         echo json_encode(array("success" => false, "message" => "Token e nuova password sono obbligatori."));
         exit;
     }
-    if (strlen($newPassword) < 8) {
+    $policyError = password_policy_error($newPassword);
+    if ($policyError !== null) {
         http_response_code(400);
-        echo json_encode(array("success" => false, "message" => "La password deve avere almeno 8 caratteri."));
+        echo json_encode(array("success" => false, "message" => $policyError));
         exit;
     }
 

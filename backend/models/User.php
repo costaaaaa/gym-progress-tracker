@@ -162,7 +162,7 @@ class User
     public function login()
     {
         // Query to read single record
-        $query = "SELECT id, username, email, password
+        $query = "SELECT id, username, email, password, password_legacy
                 FROM " . $this->table_name . "
                 WHERE username = ?
                 LIMIT 0,1";
@@ -185,15 +185,12 @@ class User
             $this->username = $row['username'];
             $this->email = $row['email'];
 
-            // Verifica standard contro l'hash bcrypt
-            if (password_verify($this->password, $row['password'])) {
-                return true;
-            }
-
-            // Legacy: password salvata come SHA-256 grezzo (client-side hashing).
-            // Se combacia, migra in modo trasparente a bcrypt.
-            if (hash_equals($row['password'], hash('sha256', $this->password))) {
-                $this->persistPasswordHash(password_hash($this->password, PASSWORD_BCRYPT));
+            if ($this->verifyPassword($this->password, $row['password'], (bool)$row['password_legacy'])) {
+                // Hash legacy (bcrypt di SHA-256): al primo accesso torna a un bcrypt normale
+                if ($row['password_legacy']) {
+                    $this->persistPasswordHash(password_hash($this->password, PASSWORD_BCRYPT));
+                }
+                $this->touchLastLogin();
                 return true;
             }
         }
@@ -201,23 +198,32 @@ class User
         return false;
     }
 
-    // Verifica una password in chiaro contro l'hash salvato.
-    // Supporta sia bcrypt (nuovo) sia il legacy SHA-256 grezzo lato client.
-    private function verifyPassword($plain_password, $stored_hash)
+    // Verifica una password in chiaro contro l'hash salvato. Con $legacy = true l'hash e'
+    // bcrypt(sha256(password)): e' il vecchio SHA-256 senza salt avvolto in bcrypt dallo
+    // script tools/wrap_legacy_hashes.php.
+    private function verifyPassword($plain_password, $stored_hash, $legacy = false)
     {
-        if (password_verify($plain_password, $stored_hash)) {
-            return true;
+        if ($legacy) {
+            return password_verify(hash('sha256', $plain_password), $stored_hash);
         }
-        return hash_equals($stored_hash, hash('sha256', $plain_password));
+        return password_verify($plain_password, $stored_hash);
     }
 
-    // Aggiorna l'hash della password salvato (migrazione trasparente a bcrypt).
+    // Aggiorna l'hash della password salvato e azzera il flag legacy.
     private function persistPasswordHash($password_hash)
     {
-        $query = "UPDATE " . $this->table_name . " SET password = :password, updated_at = NOW() WHERE id = :id";
+        $query = "UPDATE " . $this->table_name . " SET password = :password, password_legacy = 0, updated_at = NOW() WHERE id = :id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':password', $password_hash);
         $stmt->bindParam(':id', $this->id);
+        $stmt->execute();
+    }
+
+    // Registra l'ultimo accesso (serve alla conservazione dei dati).
+    private function touchLastLogin()
+    {
+        $stmt = $this->conn->prepare("UPDATE " . $this->table_name . " SET last_login_at = NOW() WHERE id = ?");
+        $stmt->bindParam(1, $this->id);
         $stmt->execute();
     }
 
@@ -271,14 +277,14 @@ class User
         }
 
         // Recuperiamo la password corrente dal database
-        $query = "SELECT password FROM " . $this->table_name . " WHERE id = ? LIMIT 0,1";
+        $query = "SELECT password, password_legacy FROM " . $this->table_name . " WHERE id = ? LIMIT 0,1";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(1, $this->id);
         $stmt->execute();
 
         if ($stmt->rowCount() == 0) {
-            error_log("Change password failed: User not found with ID {$this->id}");
+            error_log("Change password failed: user not found");
             return false;
         }
 
@@ -286,8 +292,8 @@ class User
         $saved_password = $row['password'];
 
         // Verifichiamo che la password corrente sia corretta
-        if (!$this->verifyPassword($current_password, $saved_password)) {
-            error_log("Change password failed: Current password is incorrect for user ID {$this->id}");
+        if (!$this->verifyPassword($current_password, $saved_password, (bool)$row['password_legacy'])) {
+            error_log("Change password failed: current password is incorrect");
             return false;
         }
 
@@ -295,7 +301,7 @@ class User
         $password_hash = password_hash($new_password, PASSWORD_BCRYPT);
 
         // Aggiorniamo la password nel database
-        $query = "UPDATE " . $this->table_name . " SET password = :password, password_changed_at = NOW(), updated_at = NOW() WHERE id = :id";
+        $query = "UPDATE " . $this->table_name . " SET password = :password, password_legacy = 0, password_changed_at = NOW(), updated_at = NOW() WHERE id = :id";
 
         $stmt = $this->conn->prepare($query);
 
@@ -389,14 +395,14 @@ class User
         }
 
         // Recuperiamo la password corrente dal database
-        $query = "SELECT password FROM " . $this->table_name . " WHERE id = ? LIMIT 0,1";
+        $query = "SELECT password, password_legacy FROM " . $this->table_name . " WHERE id = ? LIMIT 0,1";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(1, $this->id);
         $stmt->execute();
 
         if ($stmt->rowCount() == 0) {
-            error_log("Delete account failed: User not found with ID {$this->id}");
+            error_log("Delete account failed: user not found");
             return false;
         }
 
@@ -404,8 +410,8 @@ class User
         $saved_password = $row['password'];
 
         // Verifichiamo che la password sia corretta
-        if (!$this->verifyPassword($password, $saved_password)) {
-            error_log("Delete account failed: Password is incorrect for user ID {$this->id}");
+        if (!$this->verifyPassword($password, $saved_password, (bool)$row['password_legacy'])) {
+            error_log("Delete account failed: password is incorrect");
             return false;
         }
 

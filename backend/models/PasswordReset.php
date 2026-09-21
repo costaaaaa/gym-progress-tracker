@@ -35,15 +35,15 @@ class PasswordReset
     {
         $plain_token = bin2hex(random_bytes(32));
         $token_hash = hash('sha256', $plain_token);
-        $expires_at = date('Y-m-d H:i:s', time() + self::TTL_SECONDS);
 
         $this->conn->beginTransaction();
         try {
             $this->invalidateForUser($user_id);
             $stmt = $this->conn->prepare(
-                "INSERT INTO " . $this->table_name . " (user_id, token_hash, expires_at) VALUES (?, ?, ?)"
+                "INSERT INTO " . $this->table_name . " (user_id, token_hash, expires_at)
+                 VALUES (?, ?, DATE_ADD(NOW(), INTERVAL " . (int)self::TTL_SECONDS . " SECOND))"
             );
-            $stmt->execute([$user_id, $token_hash, $expires_at]);
+            $stmt->execute([$user_id, $token_hash]);
             $this->conn->commit();
         } catch (Exception $e) {
             $this->conn->rollBack();
@@ -87,7 +87,7 @@ class PasswordReset
 
             $password_hash = password_hash($new_password, PASSWORD_BCRYPT);
             $upd = $this->conn->prepare(
-                "UPDATE gym_users SET password = ?, password_changed_at = NOW(), updated_at = NOW() WHERE id = ?"
+                "UPDATE gym_users SET password = ?, password_legacy = 0, password_changed_at = NOW(), updated_at = NOW() WHERE id = ?"
             );
             $upd->execute([$password_hash, $row['user_id']]);
 

@@ -68,8 +68,12 @@ try {
             if (session_status() === PHP_SESSION_NONE) {
                 session_start();
             }
+            // Nuovo id di sessione a ogni login (contro il session fixation); auth_at serve a
+            // invalidare la sessione se la password cambia dopo l'accesso
+            session_regenerate_id(true);
             $_SESSION['user_id'] = $user->id;
             $_SESSION['username'] = $user->username;
+            $_SESSION['auth_at'] = time();
 
             // Return success response
             http_response_code(200);

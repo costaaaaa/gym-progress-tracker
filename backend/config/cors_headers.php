@@ -39,8 +39,11 @@ if (!$has_bearer_token) {
         // il cookie non verrebbe mai inviato in sviluppo locale su http.
         $is_https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
             || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https');
+        // Sessione web di 30 giorni: cookie persistente e pulizia lato server allineata
+        $session_lifetime = 30 * 24 * 60 * 60;
+        ini_set('session.gc_maxlifetime', (string)$session_lifetime);
         session_set_cookie_params([
-            'lifetime' => 0,
+            'lifetime' => $session_lifetime,
             'path' => '/',
             'secure' => $is_https,
             'httponly' => true,

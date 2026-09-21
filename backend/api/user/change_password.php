@@ -5,6 +5,8 @@ include_once '../../config/cors_headers.php';
 // Include database and user model
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
+include_once '../../lib/password_policy.php';
+include_once '../../models/ApiToken.php';
 include_once '../../models/User.php';
 
 // Connessione creata prima del check di autenticazione: resolve_authenticated_user_id()
@@ -60,8 +62,22 @@ try {
         exit;
     }
 
+    $policyError = password_policy_error($data->new_password);
+    if ($policyError !== null) {
+        http_response_code(400);
+        echo json_encode(array("success" => false, "message" => $policyError));
+        exit;
+    }
+
     // Try to change password
     if ($user->changePassword($data->current_password, $data->new_password)) {
+        // Le altre sessioni e gli altri dispositivi devono rifare il login: la sessione web
+        // in uso riparte con un nuovo id, il token mobile in uso resta valido, gli altri no.
+        if (isset($_SESSION['user_id'])) {
+            session_regenerate_id(true);
+            $_SESSION['auth_at'] = time();
+        }
+        (new ApiToken($db))->revokeAllForUserExcept($user_id, bearer_token_from_request());
         // Set response code - 200 OK
         http_response_code(200);
         echo json_encode(array(
