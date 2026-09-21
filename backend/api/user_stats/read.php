@@ -5,6 +5,7 @@ include_once '../../config/cors_headers.php';
 // Include database and model
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
+include_once '../../models/Consent.php';
 include_once '../../models/UserStat.php';
 
 // Connessione creata prima del check di autenticazione: resolve_authenticated_user_id()
@@ -16,6 +17,13 @@ $user_id = resolve_authenticated_user_id($db);
 if (!$user_id) {
     http_response_code(401);
     echo json_encode(array("message" => "Accesso non autorizzato. Effettua il login."));
+    exit;
+}
+
+// Senza consenso attivo le misure non si leggono e il client mostra la richiesta di consenso
+if (!(new Consent($db))->isActive($user_id, 'health_data')) {
+    http_response_code(200);
+    echo json_encode(array("records" => array(), "consent_required" => true));
     exit;
 }
 
@@ -49,9 +57,10 @@ if ($num > 0) {
         array_push($user_stats_arr["records"], $user_stat_item);
     }
 
+    $user_stats_arr["consent_required"] = false;
     http_response_code(200);
     echo json_encode($user_stats_arr);
 } else {
     http_response_code(200); // Return 200 with empty array instead of 404 for easier frontend handling
-    echo json_encode(array("records" => array()));
+    echo json_encode(array("records" => array(), "consent_required" => false));
 }

@@ -7,6 +7,7 @@ include_once '../../config/database.php';
 include_once '../../config/rate_limiter.php';
 include_once '../../config/api_helpers.php';
 include_once '../../lib/password_policy.php';
+include_once '../../models/Consent.php';
 include_once '../../models/User.php';
 
 try {
@@ -76,6 +77,13 @@ try {
             exit;
         }
 
+        // Termini d'uso e informativa privacy vanno accettati esplicitamente
+        if (!isset($data->accept_terms) || $data->accept_terms !== true) {
+            http_response_code(400);
+            echo json_encode(array("success" => false, "message" => "Per registrarti devi accettare i termini d'uso e l'informativa privacy."));
+            exit;
+        }
+
         // Set user property values
         $user->username = $data->username;
         $user->email = $data->email;
@@ -86,6 +94,7 @@ try {
 
         // Create the user
         if ($user->create()) {
+            (new Consent($db))->grant((int)$user->id, 'terms');
             // Set response code - 201 created
             http_response_code(201);
             echo json_encode(array(

@@ -5,6 +5,7 @@ include_once '../../config/cors_headers.php';
 // Include database and model
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
+include_once '../../models/Consent.php';
 include_once '../../models/UserStat.php';
 
 // Connessione creata prima del check di autenticazione: resolve_authenticated_user_id()
@@ -19,8 +20,40 @@ if (!$user_id) {
     exit;
 }
 
+// Le misure corporee sono dati sulla salute: servono il consenso esplicito e ancora attivo
+if (!(new Consent($db))->isActive($user_id, 'health_data')) {
+    http_response_code(403);
+    echo json_encode(array(
+        "success" => false,
+        "code" => "consent_required",
+        "message" => "Per salvare le misure corporee serve il tuo consenso."
+    ));
+    exit;
+}
+
 // Get posted data
 $data = json_decode(file_get_contents("php://input"));
+
+// Valori plausibili: numeri finiti, non negativi, con un tetto ragionevole
+$limits = array(
+    'weight' => 500, 'body_fat_percentage' => 100, 'muscle_mass_percentage' => 100,
+    'chest_size' => 300, 'arm_size' => 150, 'waist_size' => 300, 'leg_size' => 200,
+);
+$dateObj = (isset($data->date) && is_string($data->date)) ? DateTime::createFromFormat('!Y-m-d', $data->date) : false;
+if (!empty($data->date) && (!$dateObj || $dateObj->format('Y-m-d') !== $data->date || $dateObj > new DateTime('today'))) {
+    http_response_code(400);
+    echo json_encode(array("message" => "Data non valida."));
+    exit;
+}
+foreach ($limits as $field => $max) {
+    if (isset($data->$field) && $data->$field !== '' && $data->$field !== null) {
+        if (!is_numeric($data->$field) || $data->$field < 0 || $data->$field > $max) {
+            http_response_code(400);
+            echo json_encode(array("message" => "Valore non valido per $field."));
+            exit;
+        }
+    }
+}
 
 // Make sure data is not empty (at least date is required)
 if (!empty($data->date)) {

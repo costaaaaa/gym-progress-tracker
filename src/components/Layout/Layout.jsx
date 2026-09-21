@@ -1,4 +1,4 @@
-import { Container, Box } from '@mui/material';
+import { Container, Box, Link, Typography } from '@mui/material';
 import Navbar from './Navbar';
 import BottomNav from './BottomNav';
 import { useAuth } from '../../context/AuthContext';
@@ -24,6 +24,16 @@ const Layout = () => {
       >
         <Outlet />
       </Container>
+      <Box
+        component="footer"
+        sx={{ textAlign: 'center', pb: { xs: isLoggedIn ? 10 : 2, md: 2 }, px: 2 }}
+      >
+        <Typography variant="caption" color="text.secondary">
+          <Link href="/privacy.html" color="inherit" underline="hover">Privacy</Link>
+          {' · '}
+          <Link href="/termini.html" color="inherit" underline="hover">Termini d&apos;uso</Link>
+        </Typography>
+      </Box>
       <BottomNav />
     </Box>
   );

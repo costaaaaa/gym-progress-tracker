@@ -13,7 +13,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Grid 
+  Grid,
+  Checkbox,
+  FormControlLabel
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
@@ -40,6 +42,7 @@ const Register = () => {
   const [birthDate, setBirthDate] = useState(null);
   const [gender, setGender] = useState('');
   const [trainingStartDate, setTrainingStartDate] = useState(null);
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -85,6 +88,10 @@ const Register = () => {
       setError('Seleziona il sesso');
       return;
     }
+    if (!acceptTerms) {
+      setError('Per registrarti devi accettare i termini d\'uso e l\'informativa privacy');
+      return;
+    }
     
     setLoading(true);
 
@@ -101,6 +108,7 @@ const Register = () => {
           password,
           birth_date: birthDate ? format(birthDate, 'yyyy-MM-dd') : null,
           gender,
+          accept_terms: true,
           training_start_date: trainingStartDate ? format(trainingStartDate, 'yyyy-MM-01') : null
         }),
         credentials: 'include'
@@ -283,6 +291,25 @@ const Register = () => {
                 </InputAdornment>
               ),
             }}
+          />
+          <FormControlLabel
+            sx={{ mt: 2, alignItems: 'flex-start' }}
+            control={
+              <Checkbox
+                checked={acceptTerms}
+                onChange={(e) => setAcceptTerms(e.target.checked)}
+                required
+                sx={{ pt: 0.5 }}
+              />
+            }
+            label={
+              <Typography variant="body2">
+                Ho letto e accetto i{' '}
+                <Link href="/termini.html" target="_blank" rel="noopener">termini d&apos;uso</Link>
+                {' '}e l&apos;
+                <Link href="/privacy.html" target="_blank" rel="noopener">informativa privacy</Link>.
+              </Typography>
+            }
           />
           <Button
             type="submit"

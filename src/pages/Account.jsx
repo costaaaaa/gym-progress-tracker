@@ -46,6 +46,7 @@ import { it } from 'date-fns/locale';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import { validatePassword } from '../utils/passwordPolicy';
+import { getConsents, setConsent } from '../utils/consent';
 
 const Account = ({ isEmbedded = false }) => {
   const { user, logout, isLoggedIn, loading: authLoading } = useAuth();
@@ -195,57 +196,83 @@ const Account = ({ isEmbedded = false }) => {
     }
   };
 
-  // Esportazione dati: scarica subito schede + storico + misure in JSON, nessun dialog di selezione.
+  // Esportazione dati: scarica un JSON completo generato dal server (profilo, schede, storico e
+  // serie, misure, gamification, dispositivi e consensi). Ritorna true se il download e' partito.
   const handleDownloadData = async () => {
     setExportLoading(true);
 
     try {
-      const [workoutResponse, plansResponse, statsResponse] = await Promise.all([
-        fetch(`${API_BASE_URL}api/workout_history/read.php`, { method: 'GET', credentials: 'include' }),
-        fetch(`${API_BASE_URL}api/workout/read_plans.php`, { method: 'GET', credentials: 'include' }),
-        fetch(`${API_BASE_URL}api/user_stats/read.php`, { method: 'GET', credentials: 'include' }),
-      ]);
+      const response = await fetch(`${API_BASE_URL}api/user/export.php`, { method: 'GET', credentials: 'include' });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Esportazione non riuscita');
 
-      const workoutJson = workoutResponse.ok ? await workoutResponse.json() : null;
-      const plansJson = plansResponse.ok ? await plansResponse.json() : null;
-      const statsJson = statsResponse.ok ? await statsResponse.json() : null;
-
-      const dataToExport = {
-        utente: {
-          username: userData?.username,
-          email: userData?.email,
-          data_esportazione: new Date().toISOString()
-        },
-        allenamenti: Array.isArray(workoutJson?.records) ? workoutJson.records : [],
-        schede: Array.isArray(plansJson?.records) ? plansJson.records : [],
-        misure: Array.isArray(statsJson?.records) ? statsJson.records : [],
-      };
-
-      const jsonData = JSON.stringify(dataToExport, null, 2);
-      const blob = new Blob([jsonData], { type: 'application/json' });
+      const { success, ...dataToExport } = data; // eslint-disable-line no-unused-vars
+      const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `dati_fitness_${userData?.username || 'utente'}_${new Date().toISOString().split('T')[0]}.json`;
+      link.download = `dati_liftindex_${userData?.username || 'utente'}_${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
+      setSnackbar({ open: true, message: 'Download completato con successo', severity: 'success' });
+      return true;
+    } catch (error) {
+      console.error('Errore nell\'esportazione dei dati:', error);
+      setSnackbar({ open: true, message: 'Errore nell\'esportazione dei dati', severity: 'error' });
+      return false;
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  // Consenso per le misure corporee (dati sulla salute): concessione e revoca. La revoca
+  // cancella le misure, quindi chiede conferma e propone prima l'export.
+  const [healthConsent, setHealthConsent] = useState(null); // null = non ancora caricato
+  const [consentBusy, setConsentBusy] = useState(false);
+  const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
+
+  useEffect(() => {
+    getConsents()
+      .then((consents) => setHealthConsent(consents.health_data.granted))
+      .catch((error) => console.error('Errore nel caricamento dei consensi:', error));
+  }, []);
+
+  const handleHealthConsentToggle = async (checked) => {
+    if (!checked) {
+      setRevokeDialogOpen(true);
+      return;
+    }
+    setConsentBusy(true);
+    try {
+      await setConsent('health_data', 'grant');
+      setHealthConsent(true);
+    } catch (error) {
+      setSnackbar({ open: true, message: error.message, severity: 'error' });
+    } finally {
+      setConsentBusy(false);
+    }
+  };
+
+  const handleConfirmRevoke = async () => {
+    setConsentBusy(true);
+    try {
+      const result = await setConsent('health_data', 'revoke');
+      setHealthConsent(false);
+      setRevokeDialogOpen(false);
       setSnackbar({
         open: true,
-        message: 'Download completato con successo',
+        message: result.deleted_stats > 0
+          ? 'Consenso revocato: le tue misure corporee sono state cancellate'
+          : 'Consenso revocato',
         severity: 'success'
       });
     } catch (error) {
-      console.error('Errore nell\'esportazione dei dati:', error);
-      setSnackbar({
-        open: true,
-        message: 'Errore nell\'esportazione dei dati',
-        severity: 'error'
-      });
+      setSnackbar({ open: true, message: error.message, severity: 'error' });
     } finally {
-      setExportLoading(false);
+      setConsentBusy(false);
     }
   };
 
@@ -652,7 +679,7 @@ const Account = ({ isEmbedded = false }) => {
           <Box>
             <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Esporta i tuoi dati</Typography>
             <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
-              Scarica schede, storico e misure in formato JSON
+              Scarica tutti i tuoi dati in formato JSON
             </Typography>
           </Box>
           <Button
@@ -664,6 +691,30 @@ const Account = ({ isEmbedded = false }) => {
             Esporta
           </Button>
         </Box>
+      </Card>
+
+      {/* Card Consenso misure corporee */}
+      <Card sx={{ p: '24px' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+          <Box sx={{ maxWidth: 520 }}>
+            <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Misure corporee</Typography>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
+              Peso e misure sono dati sulla salute e li trattiamo solo con il tuo consenso.
+              Se lo revochi, le tue misure vengono cancellate.
+            </Typography>
+          </Box>
+          <Switch
+            checked={healthConsent === true}
+            disabled={healthConsent === null || consentBusy}
+            onChange={(e) => handleHealthConsentToggle(e.target.checked)}
+            inputProps={{ 'aria-label': 'Consenso al trattamento delle misure corporee' }}
+          />
+        </Box>
+        <Typography sx={{ fontSize: 12, mt: 1.5 }}>
+          <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Informativa privacy</a>
+          {' · '}
+          <a href="/termini.html" target="_blank" rel="noopener noreferrer">Termini d&apos;uso</a>
+        </Typography>
       </Card>
 
       {/* Sessione */}
@@ -714,6 +765,30 @@ const Account = ({ isEmbedded = false }) => {
       </Card>
 
       {/* Dialog per cambio password */}
+      <Dialog open={revokeDialogOpen} onClose={() => !consentBusy && setRevokeDialogOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Revocare il consenso?</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            Se revochi il consenso <strong>tutte le tue misure corporee vengono cancellate</strong> e non
+            potrai più registrarne nuove finché non lo darai di nuovo. L&apos;operazione non si può annullare.
+          </DialogContentText>
+          <Button
+            variant="outlined"
+            startIcon={exportLoading ? <CircularProgress size={16} /> : <DownloadIcon />}
+            onClick={handleDownloadData}
+            disabled={exportLoading || consentBusy}
+          >
+            Scarica prima i miei dati
+          </Button>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setRevokeDialogOpen(false)} disabled={consentBusy}>Annulla</Button>
+          <Button onClick={handleConfirmRevoke} color="error" variant="contained" disabled={consentBusy}>
+            Revoca e cancella le misure
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Dialog open={openPasswordDialog} onClose={handleClosePasswordDialog} fullWidth maxWidth="sm">
         <DialogTitle>Cambia Password</DialogTitle>
         <DialogContent>

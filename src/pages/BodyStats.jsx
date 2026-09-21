@@ -30,6 +30,7 @@ import itLocale from 'date-fns/locale/it';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import ChartCard from '../components/ChartCard';
+import HealthConsentCard from '../components/HealthConsentCard';
 
 // Serie per il grafico "Composizione Corporea" e "Circonferenze": chiave dato, etichetta, colore.
 const BODY_COMPOSITION_SERIES = [
@@ -95,6 +96,8 @@ const numberFieldSx = {
 const BodyStats = ({ isEmbedded = false }) => {
   const [stats, setStats] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  // true finché l'utente non ha dato il consenso per i dati sulla salute
+  const [consentRequired, setConsentRequired] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
 
@@ -116,6 +119,7 @@ const BodyStats = ({ isEmbedded = false }) => {
         credentials: 'include',
       });
       const data = await response.json();
+      setConsentRequired(data.consent_required === true);
       if (data.records) {
         setStats(data.records);
       }
@@ -215,7 +219,9 @@ const BodyStats = ({ isEmbedded = false }) => {
   const firstWeight = weightSeries[0];
   const weightDelta = firstWeight && lastWeight ? lastWeight - firstWeight : null;
 
-  const renderContent = () => (
+  const renderContent = () => (consentRequired && !isLoading) ? (
+    <HealthConsentCard onGranted={fetchStats} />
+  ) : (
     <>
       <Box sx={{ display: 'flex', justifyContent: isEmbedded ? 'flex-end' : 'space-between', alignItems: 'center', mb: 3 }}>
         {!isEmbedded && (
