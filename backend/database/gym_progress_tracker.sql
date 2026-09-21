@@ -12,12 +12,14 @@ CREATE TABLE IF NOT EXISTS `gym_users` (
   `email` varchar(100) NOT NULL,
   `birth_date` DATE DEFAULT NULL,
   `password` varchar(255) NOT NULL,
+  `password_legacy` tinyint(1) NOT NULL DEFAULT 0,
   `age` int(11) DEFAULT NULL,
-  `gender` enum('M','F') DEFAULT 'M',
+  `gender` enum('M','F','O') DEFAULT NULL,
   `training_start_date` DATE DEFAULT NULL,
   `experience_years` float DEFAULT '0',
   `rest_timer_enabled` tinyint(1) NOT NULL DEFAULT 1,
   `password_changed_at` datetime DEFAULT NULL,
+  `last_login_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -353,3 +355,16 @@ INSERT INTO `gym_exercises` (`name`, `muscle_group`) VALUES
 ('Ab Wheel', 'addominali'),
 ('Mountain Climber', 'addominali'),
 ('Dragon Flag', 'addominali');
+
+-- Consents table (termini, dati sulla salute, ...)
+CREATE TABLE IF NOT EXISTS `gym_consents` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `purpose` varchar(30) NOT NULL,
+  `version` varchar(20) NOT NULL,
+  `granted_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `revoked_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_consent_user_purpose` (`user_id`, `purpose`),
+  CONSTRAINT `gym_consents_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

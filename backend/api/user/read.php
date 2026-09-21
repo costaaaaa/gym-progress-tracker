@@ -37,7 +37,9 @@ try {
             'created_at' => $user->created_at,
             'rest_timer_enabled' => $user->rest_timer_enabled,
             'age' => $user->age,
+            'birth_date' => $user->birth_date,
             'gender' => $user->gender,
+            'training_start_date' => $user->training_start_date,
             'experience_years' => $user->experience_years,
             'password_changed_at' => $user->password_changed_at
         ));

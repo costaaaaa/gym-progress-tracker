@@ -5,6 +5,7 @@ include_once '../../config/cors_headers.php';
 // Include database and user model
 include_once '../../config/database.php';
 include_once '../../config/rate_limiter.php';
+include_once '../../config/api_helpers.php';
 include_once '../../models/User.php';
 
 try {
@@ -54,22 +55,14 @@ try {
         // Conta questo tentativo di registrazione
         $limiter->hit($regKey, $regDecay);
 
-        // Data di nascita obbligatoria e valida: serve a verificare l'età minima (14 anni,
-        // art. 2-quinquies Codice privacy). Il sesso deve essere scelto, senza default lato server.
-        $birth = (isset($data->birth_date) && is_string($data->birth_date))
-            ? DateTime::createFromFormat('!Y-m-d', $data->birth_date)
-            : false;
-        if (!$birth || $birth->format('Y-m-d') !== $data->birth_date || $birth > new DateTime('today')) {
+        // Data di nascita obbligatoria e valida (eta' minima 14 anni) e sesso scelto dall'utente.
+        $birthError = birth_date_error(isset($data->birth_date) ? $data->birth_date : null);
+        if ($birthError !== null) {
             http_response_code(400);
-            echo json_encode(array("success" => false, "message" => "Data di nascita obbligatoria o non valida."));
+            echo json_encode(array("success" => false, "message" => $birthError));
             exit;
         }
-        if ($birth->diff(new DateTime('today'))->y < 14) {
-            http_response_code(400);
-            echo json_encode(array("success" => false, "message" => "Devi avere almeno 14 anni per registrarti."));
-            exit;
-        }
-        if (!isset($data->gender) || !in_array($data->gender, array('M', 'F'), true)) {
+        if (!isset($data->gender) || !valid_gender($data->gender)) {
             http_response_code(400);
             echo json_encode(array("success" => false, "message" => "Seleziona il sesso."));
             exit;

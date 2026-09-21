@@ -189,3 +189,50 @@ CREATE TABLE IF NOT EXISTS `gym_password_resets` (
   KEY `idx_reset_user_id` (`user_id`),
   CONSTRAINT `gym_password_resets_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- ------------------------------------------------------------------------------
+-- 9. gym_users.gender: aggiunto "O" (altro) e tolto il default "M": il sesso va scelto.
+--    I valori gia' presenti non cambiano. Rieseguibile senza errori.
+-- ------------------------------------------------------------------------------
+
+ALTER TABLE `gym_users`
+  MODIFY COLUMN `gender` ENUM('M', 'F', 'O') NULL DEFAULT NULL;
+
+
+-- ------------------------------------------------------------------------------
+-- 10. gym_users.password_legacy: 1 = la password e' bcrypt(sha256(password)),
+--     ottenuto dallo script backend/tools/wrap_legacy_hashes.php per i vecchi hash
+--     SHA-256 senza salt. Al primo login torna a 0 con un bcrypt normale.
+--     Da eseguire una sola volta (ADD COLUMN non e' idempotente).
+-- ------------------------------------------------------------------------------
+
+ALTER TABLE `gym_users`
+  ADD COLUMN `password_legacy` TINYINT(1) NOT NULL DEFAULT 0 AFTER `password`;
+
+
+-- ------------------------------------------------------------------------------
+-- 11. Tabella gym_consents: consensi dell'utente (termini, dati sulla salute, ...)
+--     con versione del testo accettato e data di concessione/revoca.
+-- ------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `gym_consents` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `purpose` varchar(30) NOT NULL,
+  `version` varchar(20) NOT NULL,
+  `granted_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `revoked_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_consent_user_purpose` (`user_id`, `purpose`),
+  CONSTRAINT `gym_consents_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- ------------------------------------------------------------------------------
+-- 12. gym_users.last_login_at: ultimo accesso, per la conservazione dei dati.
+--     Da eseguire una sola volta (ADD COLUMN non e' idempotente).
+-- ------------------------------------------------------------------------------
+
+ALTER TABLE `gym_users`
+  ADD COLUMN `last_login_at` DATETIME NULL AFTER `password_changed_at`;

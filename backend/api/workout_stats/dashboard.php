@@ -191,7 +191,9 @@ try {
             else $f_eta = 1.0;
 
             // D) Sesso
-            $f_sesso = (($user_model->gender ?? 'M') === 'F') ? 0.90 : 1.0;
+            // M = 1.0, F = 0.90, altro/non indicato = valore intermedio
+            $gender_value = $user_model->gender ?? null;
+            $f_sesso = ($gender_value === 'F') ? 0.90 : (($gender_value === 'O') ? 0.95 : 1.0);
 
             $recovery_h = $base_h * $f_volume * $f_cedimento * $f_eta * $f_sesso;
             $recovery_h = round($recovery_h / 6) * 6;

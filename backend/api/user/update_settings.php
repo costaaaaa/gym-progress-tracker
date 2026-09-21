@@ -30,9 +30,52 @@ try {
     // Recupera i dati inviati
     $data = json_decode(file_get_contents("php://input"));
 
-    if (!$data || !isset($data->rest_timer_enabled)) {
+    if (!$data || !is_object($data)) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Dati mancanti: rest_timer_enabled è obbligatorio']);
+        echo json_encode(['success' => false, 'message' => 'Dati mancanti']);
+        exit;
+    }
+
+    // Aggiornamento parziale: si modificano solo i campi presenti nella richiesta.
+    $fields = [];
+    if (isset($data->rest_timer_enabled)) {
+        $fields['rest_timer_enabled'] = (bool)$data->rest_timer_enabled;
+    }
+    // Data di nascita e sesso non si possono svuotare: se presenti devono essere validi.
+    if (property_exists($data, 'birth_date')) {
+        $error = birth_date_error($data->birth_date);
+        if ($error !== null) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => $error]);
+            exit;
+        }
+        $fields['birth_date'] = $data->birth_date;
+    }
+    if (property_exists($data, 'gender')) {
+        if (!valid_gender($data->gender)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Seleziona il sesso.']);
+            exit;
+        }
+        $fields['gender'] = $data->gender;
+    }
+    if (property_exists($data, 'training_start_date')) {
+        $tsd = $data->training_start_date;
+        if ($tsd !== null && $tsd !== '') {
+            $d = is_string($tsd) ? DateTime::createFromFormat('!Y-m-d', $tsd) : false;
+            if (!$d || $d->format('Y-m-d') !== $tsd || $d > new DateTime('today')) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Data di inizio allenamento non valida.']);
+                exit;
+            }
+            $fields['training_start_date'] = $tsd;
+        } else {
+            $fields['training_start_date'] = null;
+        }
+    }
+    if (empty($fields)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Nessun campo da aggiornare']);
         exit;
     }
 
@@ -40,21 +83,15 @@ try {
     $user = new User($db);
     $user->id = $user_id;
 
-    // Aggiorna le impostazioni
-    $rest_timer_enabled = (bool)$data->rest_timer_enabled;
-    $birth_date = isset($data->birth_date) ? $data->birth_date : null;
-    $gender = isset($data->gender) ? $data->gender : null;
-    $training_start_date = isset($data->training_start_date) ? $data->training_start_date : null;
-
-    if ($user->updateProfile($rest_timer_enabled, $birth_date, $gender, $training_start_date)) {
+    if ($user->updateProfile($fields)) {
         http_response_code(200);
         echo json_encode([
             'success' => true,
             'message' => 'Profilo aggiornato con successo',
-            'rest_timer_enabled' => $rest_timer_enabled,
-            'birth_date' => $birth_date,
-            'gender' => $gender,
-            'training_start_date' => $training_start_date,
+            'rest_timer_enabled' => $user->rest_timer_enabled,
+            'birth_date' => $user->birth_date,
+            'gender' => $user->gender,
+            'training_start_date' => $user->training_start_date,
             'age' => $user->age,
             'experience_years' => $user->experience_years
         ]);

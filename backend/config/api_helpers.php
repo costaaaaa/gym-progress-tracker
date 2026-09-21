@@ -95,3 +95,24 @@ function workout_exercise_belongs_to_user($db, $workout_exercise_id, $day_id, $u
 
     return $stmt->fetch(PDO::FETCH_ASSOC) !== false;
 }
+
+
+// Sesso ammesso: M, F o O (altro). Nessun valore predefinito lato server: va scelto.
+function valid_gender($gender)
+{
+    return is_string($gender) && in_array($gender, array('M', 'F', 'O'), true);
+}
+
+// Valida una data di nascita 'Y-m-d' e l'eta' minima (14 anni, art. 2-quinquies Codice privacy).
+// Ritorna null se valida, altrimenti il messaggio d'errore da mostrare all'utente.
+function birth_date_error($birth_date)
+{
+    $birth = is_string($birth_date) ? DateTime::createFromFormat('!Y-m-d', $birth_date) : false;
+    if (!$birth || $birth->format('Y-m-d') !== $birth_date || $birth > new DateTime('today')) {
+        return 'Data di nascita obbligatoria o non valida.';
+    }
+    if ($birth->diff(new DateTime('today'))->y < 14) {
+        return 'Devi avere almeno 14 anni per usare Liftindex.';
+    }
+    return null;
+}

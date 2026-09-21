@@ -37,7 +37,7 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [birthDate, setBirthDate] = useState(null);
-  const [gender, setGender] = useState('M');
+  const [gender, setGender] = useState('');
   const [trainingStartDate, setTrainingStartDate] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -86,6 +86,19 @@ const Register = () => {
 
     if (password !== confirmPassword) {
       setError('Le password non corrispondono');
+      return;
+    }
+
+    if (!birthDate) {
+      setError('Inserisci la data di nascita');
+      return;
+    }
+    if (birthDate > subYears(startOfToday(), 14)) {
+      setError('Devi avere almeno 14 anni per usare Liftindex');
+      return;
+    }
+    if (!gender) {
+      setError('Seleziona il sesso');
       return;
     }
     
@@ -188,11 +201,12 @@ const Register = () => {
                 value={birthDate}
                 onChange={(newValue) => setBirthDate(newValue)}
                 minDate={subYears(startOfToday(), 100)}
-                maxDate={startOfToday()}
+                maxDate={subYears(startOfToday(), 14)}
                 slotProps={{
                   textField: {
                     fullWidth: true,
                     required: true,
+                    helperText: 'Devi avere almeno 14 anni',
                     id: "birthDate",
                     name: "birthDate"
                   }
@@ -200,7 +214,7 @@ const Register = () => {
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
+              <FormControl fullWidth required>
                 <InputLabel>Sesso</InputLabel>
                 <Select
                   value={gender}
@@ -209,6 +223,7 @@ const Register = () => {
                 >
                   <MenuItem value="M">Maschio</MenuItem>
                   <MenuItem value="F">Femmina</MenuItem>
+                  <MenuItem value="O">Altro</MenuItem>
                 </Select>
               </FormControl>
             </Grid>

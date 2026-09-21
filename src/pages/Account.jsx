@@ -68,7 +68,7 @@ const Account = ({ isEmbedded = false }) => {
 
   // Stati per il profilo fisico
   const [age, setAge] = useState('');
-  const [gender, setGender] = useState('M');
+  const [gender, setGender] = useState('');
   const [experienceYears, setExperienceYears] = useState('');
   const [birthDate, setBirthDate] = useState(null);
   const [trainingStartDate, setTrainingStartDate] = useState(null);
@@ -290,7 +290,7 @@ const Account = ({ isEmbedded = false }) => {
 
       // Impostazione dati profilo
       setAge(userDetails.age || '');
-      setGender(userDetails.gender || 'M');
+      setGender(userDetails.gender || '');
       setExperienceYears(userDetails.experience_years || '');
       setBirthDate(userDetails.birth_date ? parseISO(userDetails.birth_date) : null);
       setTrainingStartDate(userDetails.training_start_date ? parseISO(userDetails.training_start_date) : null);
@@ -324,10 +324,11 @@ const Account = ({ isEmbedded = false }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
+        // Data di nascita e sesso si inviano solo se compilati: il server non li accetta vuoti
         body: JSON.stringify({
           rest_timer_enabled: restTimerEnabled,
-          birth_date: birthDate ? format(birthDate, 'yyyy-MM-dd') : null,
-          gender: gender,
+          ...(birthDate ? { birth_date: format(birthDate, 'yyyy-MM-dd') } : {}),
+          ...(gender ? { gender } : {}),
           training_start_date: trainingStartDate ? format(trainingStartDate, 'yyyy-MM-01') : null
         })
       });
@@ -543,7 +544,7 @@ const Account = ({ isEmbedded = false }) => {
                       value={birthDate}
                       onChange={(newValue) => setBirthDate(newValue)}
                       minDate={subYears(startOfToday(), 100)}
-                      maxDate={startOfToday()}
+                      maxDate={subYears(startOfToday(), 14)}
                       slotProps={{
                         textField: {
                           fullWidth: true,

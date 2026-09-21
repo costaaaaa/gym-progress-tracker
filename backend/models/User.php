@@ -338,41 +338,41 @@ class User
         return false;
     }
 
-    // Aggiorna le impostazioni del profilo dell'utente
-    public function updateProfile($rest_timer_enabled, $birth_date = null, $gender = null, $training_start_date = null)
+    // Aggiorna le impostazioni del profilo dell'utente. Aggiornamento parziale: si scrivono
+    // solo le chiavi presenti in $fields (rest_timer_enabled, birth_date, gender,
+    // training_start_date); quelle assenti restano come sono.
+    public function updateProfile(array $fields)
     {
         if (!$this->id) {
             error_log("Update profile failed: No user ID provided");
             return false;
         }
 
-        $query = "UPDATE " . $this->table_name . " 
-                 SET rest_timer_enabled = :rest_timer_enabled, 
-                     birth_date = :birth_date, 
-                     gender = :gender, 
-                     training_start_date = :training_start_date,
-                     updated_at = NOW() 
-                 WHERE id = :id";
+        $allowed = array('rest_timer_enabled', 'birth_date', 'gender', 'training_start_date');
+        $sets = array();
+        $values = array();
+        foreach ($allowed as $column) {
+            if (array_key_exists($column, $fields)) {
+                $sets[] = "$column = :$column";
+                $values[$column] = ($column === 'rest_timer_enabled')
+                    ? ($fields[$column] ? 1 : 0)
+                    : $fields[$column];
+            }
+        }
+        if (empty($sets)) {
+            return true;
+        }
 
+        $query = "UPDATE " . $this->table_name . " SET " . implode(', ', $sets) . ", updated_at = NOW() WHERE id = :id";
         $stmt = $this->conn->prepare($query);
-
-        $timer_value = $rest_timer_enabled ? 1 : 0;
-        $stmt->bindParam(':rest_timer_enabled', $timer_value, PDO::PARAM_INT);
-        $stmt->bindParam(':birth_date', $birth_date);
-        $stmt->bindParam(':gender', $gender);
-        $stmt->bindParam(':training_start_date', $training_start_date);
-        $stmt->bindParam(':id', $this->id);
+        foreach ($values as $column => $value) {
+            $stmt->bindValue(":$column", $value, $column === 'rest_timer_enabled' ? PDO::PARAM_INT : PDO::PARAM_STR);
+        }
+        $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
-            $this->rest_timer_enabled = (bool)$rest_timer_enabled;
-            $this->birth_date = $birth_date;
-            $this->gender = $gender;
-            $this->training_start_date = $training_start_date;
-            
-            // Aggiorna i calcoli
-            $this->age = $this->calculateAge();
-            $this->experience_years = $this->calculateExperienceYears();
-            return true;
+            // Rilegge il profilo: rest_timer_enabled, data, sesso, eta' e anni di esperienza aggiornati
+            return $this->readById($this->id);
         }
 
         error_log("Update profile failed: Database error for user ID {$this->id}");
