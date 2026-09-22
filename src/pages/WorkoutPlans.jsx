@@ -523,9 +523,6 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
         intensity_technique: editedExerciseValues.intensity_technique || ''
       };
       
-      // Log dei dati che stiamo per inviare per debugging
-      console.log('Invio richiesta di modifica esercizio con i seguenti dati:', exerciseData);
-      
       // Notifica l'utente che stiamo salvando le modifiche
       setSnackbar({
         open: true,
@@ -542,16 +539,12 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
         credentials: 'include' // Assicura che i cookie di sessione vengano inviati
       });
 
-      // Ottieni i dati di risposta e loggali
       const data = await response.json();
-      console.log('Risposta dalla modifica esercizio:', data);
-      
+
       if (response.ok) {
         // Chiudiamo il dialog
         handleCloseEditExerciseDialog();
-        
-        console.log('Esercizio aggiornato con successo, recupero i dati aggiornati...');
-        
+
         // Recupera i piani aggiornati
         const updatedPlansResponse = await fetch(`${API_BASE_URL}api/workout/read_plans.php`, {
           method: 'GET',
@@ -559,8 +552,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
         });
         
         const updatedPlansData = await updatedPlansResponse.json();
-        console.log('Dati delle schede recuperati dopo la modifica:', updatedPlansData);
-        
+
         // Verifica che i dati recuperati contengano la modifica effettuata
         let modificaVerificata = false;
         
@@ -572,21 +564,13 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                 if (day.id === dayIdToDeleteFrom && day.exercises) {
                   day.exercises.forEach(ex => {
                     if (ex.id === exerciseToEdit.id) {
-                      console.log('Esercizio trovato nei dati aggiornati:', ex);
-                      console.log('Confronto valori - sets:', ex.sets, 'vs', exerciseData.sets);
-                      console.log('Confronto valori - reps:', ex.reps, 'vs', exerciseData.reps);
-                      console.log('Confronto valori - rest:', ex.rest, 'vs', exerciseData.rest);
-                      
                       // Verifica se i valori sono stati aggiornati correttamente
-                      if (ex.sets === exerciseData.sets && 
-                          ex.reps === exerciseData.reps && 
+                      if (ex.sets === exerciseData.sets &&
+                          ex.reps === exerciseData.reps &&
                           ex.rest === exerciseData.rest &&
                           (ex.notes || '') === (exerciseData.notes || '')) {
                         modificaVerificata = true;
                       }
-                      
-                      // Log per debugging delle note
-                      console.log('Confronto valori - notes:', ex.notes, 'vs', exerciseData.notes);
                     }
                   });
                 }
@@ -596,8 +580,6 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
           
           // Se la verifica è andata a buon fine, aggiorna i dati locali
           if (modificaVerificata) {
-            console.log('La modifica è stata verificata nei dati recuperati, aggiorno lo stato locale');
-            
             // Ordina i piani in modo che quelli attivi appaiano per primi
             const sortedPlans = [...updatedPlansData.records].sort((a, b) => {
               if (a.is_active && !b.is_active) return -1;
@@ -619,7 +601,6 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
             
             // Riprova il recupero dopo un timeout più lungo
             setTimeout(async () => {
-              console.log('Nuovo tentativo di recupero dati dopo timeout...');
               await fetchWorkoutPlans();
               
               setSnackbar({
@@ -652,12 +633,6 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
     if (currentIndex <= 0) return; // Non può essere spostato più in alto
     
     try {
-      console.log(`Tentativo di spostare l'esercizio ${exercise.id} (${exercise.exercise_name}) su`, {
-        dayId,
-        exercise,
-        currentIndex
-      });
-      
       const response = await fetch(`${API_BASE_URL}api/workout/reorder_exercise.php`, {
         method: 'POST',
         headers: {
@@ -672,8 +647,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       });
 
       const data = await response.json();
-      console.log('Risposta dal server (moveUp):', data);
-      
+
       if (response.ok) {
         setSnackbar({
           open: true,
@@ -702,13 +676,6 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
     if (currentIndex >= totalExercises - 1) return; // Non può essere spostato più in basso
     
     try {
-      console.log(`Tentativo di spostare l'esercizio ${exercise.id} (${exercise.exercise_name}) giù`, {
-        dayId,
-        exercise,
-        currentIndex,
-        totalExercises
-      });
-      
       const response = await fetch(`${API_BASE_URL}api/workout/reorder_exercise.php`, {
         method: 'POST',
         headers: {
@@ -723,8 +690,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       });
 
       const data = await response.json();
-      console.log('Risposta dal server (moveDown):', data);
-      
+
       if (response.ok) {
         setSnackbar({
           open: true,

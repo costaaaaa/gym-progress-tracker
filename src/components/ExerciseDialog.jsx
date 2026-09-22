@@ -117,7 +117,6 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
   // Gestione dell'autocomplete per il nome dell'esercizio
   const handleExerciseChange = (event, newValue) => {
     if (newValue) {
-      console.log('Esercizio selezionato:', newValue);
       setExercise(prev => ({
         ...prev,
         name: newValue.name,

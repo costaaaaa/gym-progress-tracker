@@ -81,13 +81,6 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
           .filter(set => set.weight && !isNaN(set.weight) && set.reps && set.reps.toString().trim() !== '')
       );
 
-      // Debug per verificare gli ID corretti degli esercizi
-      console.log('WorkoutRecords con ID originali degli esercizi:', workoutRecords);
-      console.log('Dettaglio esercizi utilizzati:');
-      exercises.forEach(ex => {
-        console.log(`- Esercizio: "${ex.exercise_name}" (ID nel piano: ${ex.id}, ID originale: ${ex.exercise_id})`);
-      });
-
       const response = await fetch(`${API_BASE_URL}api/workout/record_workout.php`, {
         method: 'POST',
         headers: {

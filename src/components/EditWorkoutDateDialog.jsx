@@ -21,8 +21,6 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
   // Reinizializza la data quando cambia il workout
   useEffect(() => {
     if (workout) {
-      console.log("Data originale dell'allenamento:", workout.date);
-      
       // Gestione più robusta della data
       try {
         let dateObj;
@@ -38,7 +36,6 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
         // Verifica che la data sia valida
         if (isValid(dateObj)) {
           const formattedDate = format(dateObj, 'yyyy-MM-dd');
-          console.log("Data formattata per l'input:", formattedDate);
           setNewDate(formattedDate);
         } else {
           // Se la data non è valida, prendiamo la data corrente
@@ -70,8 +67,6 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
     setError('');
 
     try {
-      console.log("Invio aggiornamento data:", newDate);
-      
       const response = await fetch(`${API_BASE_URL}api/workout_history/update_date.php`, {
         method: 'POST',
         headers: {
@@ -85,7 +80,6 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
       });
 
       const data = await response.json();
-      console.log("Risposta dal server:", data);
 
       if (!response.ok) {
         throw new Error(data.message || 'Errore durante l\'aggiornamento della data');
