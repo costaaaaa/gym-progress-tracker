@@ -57,6 +57,19 @@ try {
         // Conta questo tentativo di registrazione
         $limiter->hit($regKey, $regDecay);
 
+        // Stesse regole di User::validateInputs(), ma con un messaggio preciso: altrimenti
+        // create() fallisce e l'utente legge "nome utente o email gia' in uso".
+        if (!is_string($data->username) || !preg_match('/^[a-zA-Z0-9]{3,50}$/', $data->username)) {
+            http_response_code(400);
+            echo json_encode(array("success" => false, "message" => "Il nome utente può contenere solo lettere e numeri (da 3 a 50 caratteri)."));
+            exit;
+        }
+        if (!is_string($data->email) || !filter_var($data->email, FILTER_VALIDATE_EMAIL)) {
+            http_response_code(400);
+            echo json_encode(array("success" => false, "message" => "Inserisci un indirizzo email valido."));
+            exit;
+        }
+
         $passwordError = password_policy_error($data->password);
         if ($passwordError !== null) {
             http_response_code(400);
