@@ -127,14 +127,21 @@ const Register = () => {
 
       track('signup');
 
-      // Mostra messaggio di successo
-      setSuccess('Registrazione completata con successo! Effettua il login...');
-      
-      // Auto-login opzionale
-      if (data.user) {
-        login(data.user);
-        setTimeout(() => navigate(next), 1500);
+      // Accesso automatico con le stesse credenziali, come fa l'app: chi arriva da un
+      // invito torna subito al gruppo senza ridigitare la password.
+      const loginResponse = await fetch(`${API_BASE_URL}api/user/login.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+        credentials: 'include'
+      });
+      const loginData = await loginResponse.json().catch(() => ({}));
+
+      if (loginResponse.ok && loginData.user) {
+        login(loginData.user);
+        navigate(next);
       } else {
+        setSuccess('Registrazione completata! Effettua il login...');
         setTimeout(() => navigate(next === '/' ? '/login' : `/login?next=${encodeURIComponent(next)}`), 1500);
       }
     } catch (err) {
