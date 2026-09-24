@@ -47,6 +47,7 @@ import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import { validatePassword } from '../utils/passwordPolicy';
 import { getConsents, setConsent } from '../utils/consent';
+import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
 
 const Account = ({ isEmbedded = false }) => {
   const { user, logout, isLoggedIn, loading: authLoading } = useAuth();
@@ -716,6 +717,8 @@ const Account = ({ isEmbedded = false }) => {
           <a href="/termini.html" target="_blank" rel="noopener noreferrer">Termini d&apos;uso</a>
         </Typography>
       </Card>
+
+      <GroupsVisibilityCard />
 
       {/* Sessione */}
       <Card sx={{ p: '24px' }}>

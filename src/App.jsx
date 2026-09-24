@@ -19,6 +19,9 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const FocusWorkout = lazy(() => import('./pages/FocusWorkout'));
 const Profile = lazy(() => import('./pages/Profile'));
+const Groups = lazy(() => import('./pages/Groups'));
+const GroupDetail = lazy(() => import('./pages/GroupDetail'));
+const JoinGroup = lazy(() => import('./pages/JoinGroup'));
 
 // Fallback component while loading chunks
 const PageLoader = () => (
@@ -42,6 +45,9 @@ function App() {
                 <Route path="/workouts" element={<Workouts />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profilo" element={<Profile />} />
+                <Route path="/gruppi" element={<Groups />} />
+                <Route path="/gruppi/:id" element={<GroupDetail />} />
+                <Route path="/entra" element={<JoinGroup />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />

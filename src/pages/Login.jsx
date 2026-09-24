@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Typography, Paper, TextField, Button, Box, Alert, Link, InputAdornment, IconButton } from '@mui/material';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { safeNext } from '../utils/safeNext';
 
 const Login = () => {
   usePageMeta(
@@ -18,6 +19,9 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  // Dove tornare dopo l'accesso, per esempio un link di invito a un gruppo
+  const next = safeNext(location.search);
   const { login } = useAuth();
   
   const handleTogglePasswordVisibility = () => {
@@ -52,8 +56,8 @@ const Login = () => {
       // Utilizziamo la funzione login dal context
       login(data.user);
       
-      // Redirect to home page
-      navigate('/');
+      // Torna alla pagina richiesta (di default la home)
+      navigate(next);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -129,7 +133,7 @@ const Login = () => {
           <Box sx={{ textAlign: 'center', mt: 2 }}>
             <Typography variant="body2">
               Non hai un account?{' '}
-              <Link component={RouterLink} to="/register" variant="body2">
+              <Link component={RouterLink} to={next === '/' ? '/register' : `/register?next=${encodeURIComponent(next)}`} variant="body2">
                 Registrati
               </Link>
             </Typography>

@@ -20,6 +20,7 @@ import VisibilityOutlined from '@mui/icons-material/VisibilityOutlined';
 import BodyVisualizer from '../components/BodyVisualizer';
 import StreakCard from '../components/StreakCard';
 import LevelCard from '../components/LevelCard';
+import GroupsHomeCard from '../components/Groups/GroupsHomeCard';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 
@@ -317,6 +318,11 @@ const Home = () => {
                 <Card sx={{ height: '100%', p: '22px' }}>
                   <BodyVisualizer recoveryData={dashboardStats?.recovery} />
                 </Card>
+              </Grid>
+
+              {/* Gruppi */}
+              <Grid item xs={12} md={6}>
+                <GroupsHomeCard />
               </Grid>
 
               {/* Ultimo Allenamento */}

@@ -7,7 +7,7 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import { useAuth } from '../../context/AuthContext';
 import { useThemeMode } from '../../context/ThemeModeContext';
 
-// Voci del centro nav desktop: Home / Allenamenti / Dashboard.
+// Voci del centro nav desktop: Home / Allenamenti / Dashboard / Gruppi.
 // Su mobile la navigazione vive in BottomNav.jsx (Home/Allenamenti/Focus/Dashboard/Profilo);
 // qui restano solo logo, toggle tema e avatar — "Profilo" non ha un link testuale,
 // l'avatar è l'unico ingresso, sia su desktop che su mobile.
@@ -15,6 +15,7 @@ const navItems = [
   { label: 'Home', path: '/' },
   { label: 'Allenamenti', path: '/workouts' },
   { label: 'Dashboard', path: '/dashboard' },
+  { label: 'Gruppi', path: '/gruppi' },
 ];
 
 const Navbar = () => {
@@ -37,7 +38,8 @@ const Navbar = () => {
   }, [loading]);
 
   const isActive = (path) => {
-    return location.pathname === path;
+    // /gruppi resta attivo anche dentro un gruppo (/gruppi/12)
+    return path === '/' ? location.pathname === '/' : location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
 
   const onProfilePage = location.pathname === '/profilo';

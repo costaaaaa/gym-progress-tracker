@@ -19,7 +19,7 @@ import {
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -28,6 +28,7 @@ import { it } from 'date-fns/locale';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import { validatePassword } from '../utils/passwordPolicy';
+import { safeNext } from '../utils/safeNext';
 import { track } from '../utils/analytics';
 import { usePageMeta } from '../hooks/usePageMeta';
 
@@ -58,6 +59,9 @@ const Register = () => {
     setShowConfirmPassword(!showConfirmPassword);
   };
   const navigate = useNavigate();
+  const location = useLocation();
+  // Dove tornare dopo la registrazione, per esempio un link di invito a un gruppo
+  const next = safeNext(location.search);
   const { login } = useAuth();
 
   const handleSubmit = async (e) => {
@@ -129,9 +133,9 @@ const Register = () => {
       // Auto-login opzionale
       if (data.user) {
         login(data.user);
-        setTimeout(() => navigate('/'), 1500);
+        setTimeout(() => navigate(next), 1500);
       } else {
-        setTimeout(() => navigate('/login'), 1500);
+        setTimeout(() => navigate(next === '/' ? '/login' : `/login?next=${encodeURIComponent(next)}`), 1500);
       }
     } catch (err) {
       setError(err.message);
@@ -326,7 +330,7 @@ const Register = () => {
           <Box sx={{ textAlign: 'center', mt: 2 }}>
             <Typography variant="body2">
               Hai già un account?{' '}
-              <Link component={RouterLink} to="/login" variant="body2">
+              <Link component={RouterLink} to={next === '/' ? '/login' : `/login?next=${encodeURIComponent(next)}`} variant="body2">
                 Accedi
               </Link>
             </Typography>
