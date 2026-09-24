@@ -6,6 +6,7 @@ import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import { useAuth } from '../../context/AuthContext';
 import { useThemeMode } from '../../context/ThemeModeContext';
+import { safeNext } from '../../utils/safeNext';
 
 // Voci del centro nav desktop: Home / Allenamenti / Dashboard / Gruppi.
 // Su mobile la navigazione vive in BottomNav.jsx (Home/Allenamenti/Focus/Dashboard/Profilo);
@@ -26,6 +27,14 @@ const Navbar = () => {
 
   // Utilizziamo il context invece della logica locale
   const { isLoggedIn, user, loading } = useAuth();
+
+  // Accedi e Registrati conservano la pagina a cui tornare: il ?next= già presente
+  // su login e registrazione, oppure il link di invito che si sta guardando.
+  const onAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  const authNext = onAuthPage
+    ? safeNext(location.search)
+    : location.pathname.startsWith('/entra') ? location.pathname + location.search : '/';
+  const withNext = (path) => (authNext === '/' ? path : `${path}?next=${encodeURIComponent(authNext)}`);
 
   // Stato locale per tracciare se l'autenticazione è stata verificata
   const [authVerified, setAuthVerified] = useState(false);
@@ -181,7 +190,7 @@ const Navbar = () => {
             <>
               <Button
                 component={RouterLink}
-                to="/login"
+                to={withNext('/login')}
                 sx={{ color: 'text.secondary', fontWeight: 500, fontSize: 14 }}
               >
                 Accedi
@@ -189,7 +198,7 @@ const Navbar = () => {
               <Button
                 variant="contained"
                 component={RouterLink}
-                to="/register"
+                to={withNext('/register')}
                 sx={{ fontSize: 14 }}
               >
                 Registrati

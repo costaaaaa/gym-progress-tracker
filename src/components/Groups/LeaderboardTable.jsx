@@ -41,6 +41,9 @@ const Metric = ({ row, board }) => {
 };
 
 const LeaderboardTable = ({ rows, board }) => {
+  // La barra della settimana è larga: sul telefono va sotto il nome, altrimenti il nome
+  // resta di due lettere.
+  const wide = board !== 'streak' && board !== 'level';
   if (!rows?.length) {
     return <Typography sx={{ color: 'text.secondary', py: 2 }}>Nessun membro in classifica.</Typography>;
   }
@@ -53,7 +56,9 @@ const LeaderboardTable = ({ rows, board }) => {
           sx={{
             display: 'flex',
             alignItems: 'center',
-            gap: 2,
+            flexWrap: wide ? { xs: 'wrap', sm: 'nowrap' } : 'nowrap',
+            columnGap: 2,
+            rowGap: 1,
             py: 1.5,
             px: 1.5,
             borderBottom: '1px solid',
@@ -80,7 +85,9 @@ const LeaderboardTable = ({ rows, board }) => {
             </Typography>
             {row.is_me && <Chip label="tu" size="small" color="primary" sx={{ height: 20, fontSize: 11 }} />}
           </Box>
-          <Metric row={row} board={board} />
+          <Box sx={wide ? { width: { xs: '100%', sm: 'auto' }, pl: { xs: '44px', sm: 0 } } : undefined}>
+            <Metric row={row} board={board} />
+          </Box>
         </Box>
       ))}
     </Box>

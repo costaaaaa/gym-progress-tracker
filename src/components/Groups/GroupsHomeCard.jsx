@@ -40,7 +40,7 @@ const GroupsHomeCard = () => {
             {groups.slice(0, 3).map((g) => (
               <Box key={g.id} sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
                 <Typography sx={{ fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</Typography>
-                <Typography sx={{ fontSize: 13, color: 'text.secondary', flexShrink: 0 }}>{g.members_count} membri</Typography>
+                <Typography sx={{ fontSize: 13, color: 'text.secondary', flexShrink: 0 }}>{g.members_count} {g.members_count === 1 ? 'membro' : 'membri'}</Typography>
               </Box>
             ))}
             {groups.length > 3 && (
