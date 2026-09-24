@@ -4,7 +4,7 @@ include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/WorkoutHistory.php';
 include_once '../../models/WorkoutSet.php';
-require_once '../../lib/gamification_rules.php';
+require_once '../../lib/weekly_stats.php';
 
 // Connessione creata prima del check di autenticazione: resolve_authenticated_user_id()
 // ne ha bisogno per validare sia la sessione web sia il token Bearer mobile.
@@ -16,16 +16,6 @@ if (!$user_id) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Utente non autenticato']);
     exit;
-}
-
-// Returns the YEARWEEK(ISO) integer of the week following $yw (e.g. 202426 → 202427, handles year wrap)
-function nextWeekYearweek(int $yw): int {
-    $year = intval(substr((string)$yw, 0, 4));
-    $week = intval(substr((string)$yw, 4));
-    $d = new DateTime();
-    $d->setISODate($year, $week);
-    $d->modify('+7 days');
-    return intval($d->format('oW'));
 }
 
 try {
@@ -91,34 +81,11 @@ try {
         $workout_dt = new DateTime($data_workout);
         $current_week = intval($workout_dt->format('oW')); // ISO YEARWEEK equivalent to YEARWEEK(date, 3)
 
-        // Count workouts this ISO week (Mon–Sun) — includes the workout just inserted
-        $week_monday = clone $workout_dt;
-        $week_monday->setISODate(intval($workout_dt->format('o')), intval($workout_dt->format('W')));
-        $week_monday->setTime(0, 0, 0);
-        $week_sunday = clone $week_monday;
-        $week_sunday->modify('+6 days')->setTime(23, 59, 59);
-
-        $stmt_count = $db->prepare(
-            "SELECT COUNT(*) as cnt FROM gym_workout_history
-             WHERE user_id = ? AND date >= ? AND date <= ?"
-        );
-        $stmt_count->execute([
-            $user_id,
-            $week_monday->format('Y-m-d H:i:s'),
-            $week_sunday->format('Y-m-d H:i:s')
-        ]);
-        $weekly_count = intval($stmt_count->fetch(PDO::FETCH_ASSOC)['cnt']);
+        // Workouts this ISO week (Mon–Sun) — includes the workout just inserted
+        $weekly_count = weekly_workout_counts($db, [$user_id], $workout_dt)[$user_id];
 
         // Goal = days in active plan, fallback 3
-        $stmt_goal = $db->prepare(
-            "SELECT COUNT(wd.id) as days_count
-             FROM gym_workout_plans wp
-             JOIN gym_workout_days wd ON wp.id = wd.plan_id
-             WHERE wp.user_id = ? AND wp.is_active = 1"
-        );
-        $stmt_goal->execute([$user_id]);
-        $goal = intval($stmt_goal->fetch(PDO::FETCH_ASSOC)['days_count'] ?? 0);
-        if ($goal === 0) $goal = 3;
+        $goal = weekly_goals($db, [$user_id])[$user_id];
 
         // Ensure gamification row exists
         $db->prepare(

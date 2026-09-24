@@ -135,3 +135,41 @@ function achievementsForTotals(array $totals): array {
 
     return $keys;
 }
+
+// ── Settimane ISO e streak ───────────────────────────────────────────────────
+
+// YEARWEEK ISO (formato 'oW', es. 202638) della settimana dopo $yw, anche a cavallo d'anno
+function nextWeekYearweek(int $yw): int {
+    $year = intval(substr((string)$yw, 0, 4));
+    $week = intval(substr((string)$yw, 4));
+    $d = new DateTime();
+    $d->setISODate($year, $week);
+    $d->modify('+7 days');
+    return intval($d->format('oW'));
+}
+
+// Lunedì 00:00:00 e domenica 23:59:59 della settimana ISO che contiene $dt
+function isoWeekBounds(DateTime $dt): array {
+    $monday = clone $dt;
+    $monday->setISODate(intval($dt->format('o')), intval($dt->format('W')));
+    $monday->setTime(0, 0, 0);
+    $sunday = clone $monday;
+    $sunday->modify('+6 days')->setTime(23, 59, 59);
+    return [$monday, $sunday];
+}
+
+// Streak valida adesso: se dopo l'ultima settimana completata ne è passata una intera
+// senza completarla, la streak è rotta. streak.php scrive l'azzeramento, le classifiche
+// usano solo questo valore calcolato.
+function effectiveStreakWeeks(int $current, $last_completed_week, DateTime $now): int {
+    if ($current <= 0 || $last_completed_week === null) return $current;
+    $current_week = intval($now->format('oW'));
+    return nextWeekYearweek(intval($last_completed_week)) < $current_week ? 0 : $current;
+}
+
+// Allenamenti a settimana da fare: giorni della scheda attiva, altrimenti 3
+const WEEKLY_GOAL_DEFAULT = 3;
+
+function goalFromPlanDays(int $days): int {
+    return $days > 0 ? $days : WEEKLY_GOAL_DEFAULT;
+}

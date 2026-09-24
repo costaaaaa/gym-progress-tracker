@@ -2,15 +2,7 @@
 include_once '../../config/cors_headers.php';
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
-
-function nextWeekYearweek(int $yw): int {
-    $year = intval(substr((string)$yw, 0, 4));
-    $week = intval(substr((string)$yw, 4));
-    $d = new DateTime();
-    $d->setISODate($year, $week);
-    $d->modify('+7 days');
-    return intval($d->format('oW'));
-}
+require_once '../../lib/weekly_stats.php';
 
 try {
     $database = new Database();
@@ -38,47 +30,18 @@ try {
 
     // Lazy-reset: if a full week was skipped without completing, streak is broken
     $now = new DateTime();
-    $current_week = intval($now->format('oW'));
-
-    if ($last_completed_week !== null && $current_streak > 0) {
-        $next_after_last = nextWeekYearweek(intval($last_completed_week));
-        if ($next_after_last < $current_week) {
-            $current_streak = 0;
-            if ($row) {
-                $db->prepare("UPDATE gym_user_gamification SET current_streak_weeks = 0 WHERE user_id = ?")
-                   ->execute([$user_id]);
-            }
+    $effective_streak = effectiveStreakWeeks($current_streak, $last_completed_week, $now);
+    if ($effective_streak !== $current_streak) {
+        $current_streak = $effective_streak;
+        if ($row) {
+            $db->prepare("UPDATE gym_user_gamification SET current_streak_weeks = 0 WHERE user_id = ?")
+               ->execute([$user_id]);
         }
     }
 
-    // Count this week's workouts (Mon–Sun)
-    $week_monday = new DateTime();
-    $week_monday->setISODate(intval($now->format('o')), intval($now->format('W')));
-    $week_monday->setTime(0, 0, 0);
-    $week_sunday = clone $week_monday;
-    $week_sunday->modify('+6 days')->setTime(23, 59, 59);
-
-    $stmt_count = $db->prepare(
-        "SELECT COUNT(*) as cnt FROM gym_workout_history
-         WHERE user_id = ? AND date >= ? AND date <= ?"
-    );
-    $stmt_count->execute([
-        $user_id,
-        $week_monday->format('Y-m-d H:i:s'),
-        $week_sunday->format('Y-m-d H:i:s')
-    ]);
-    $week_count = intval($stmt_count->fetch(PDO::FETCH_ASSOC)['cnt']);
-
-    // Goal = days in active plan, fallback 3
-    $stmt_goal = $db->prepare(
-        "SELECT COUNT(wd.id) as days_count
-         FROM gym_workout_plans wp
-         JOIN gym_workout_days wd ON wp.id = wd.plan_id
-         WHERE wp.user_id = ? AND wp.is_active = 1"
-    );
-    $stmt_goal->execute([$user_id]);
-    $goal = intval($stmt_goal->fetch(PDO::FETCH_ASSOC)['days_count'] ?? 0);
-    if ($goal === 0) $goal = 3;
+    // This week's workouts (Mon–Sun) and goal (days in active plan, fallback 3)
+    $week_count = weekly_workout_counts($db, [$user_id], $now)[$user_id];
+    $goal = weekly_goals($db, [$user_id])[$user_id];
 
     if (ob_get_length()) ob_clean();
     header('Content-Type: application/json');

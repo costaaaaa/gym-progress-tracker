@@ -368,3 +368,33 @@ CREATE TABLE IF NOT EXISTS `gym_consents` (
   KEY `idx_consent_user_purpose` (`user_id`, `purpose`),
   CONSTRAINT `gym_consents_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Gruppi (amici, palestra) con codice invito e classifica settimanale
+CREATE TABLE IF NOT EXISTS `gym_groups` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(60) NOT NULL,
+  `type` enum('friends','gym','coaching') NOT NULL DEFAULT 'friends',
+  `owner_user_id` int(11) NOT NULL,
+  `invite_code` char(10) NOT NULL,
+  `invite_enabled` tinyint(1) NOT NULL DEFAULT 1,
+  `max_members` smallint(6) NOT NULL DEFAULT 50,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_invite_code` (`invite_code`),
+  KEY `idx_owner` (`owner_user_id`),
+  CONSTRAINT `fk_groups_owner` FOREIGN KEY (`owner_user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `gym_group_members` (
+  `group_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `role` enum('owner','admin','coach','member') NOT NULL DEFAULT 'member',
+  `share_level` enum('summary','activity','full') NOT NULL DEFAULT 'summary',
+  `share_consent_at` datetime NOT NULL,
+  `joined_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`group_id`, `user_id`),
+  KEY `idx_user` (`user_id`),
+  CONSTRAINT `fk_gm_group` FOREIGN KEY (`group_id`) REFERENCES `gym_groups` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_gm_user` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

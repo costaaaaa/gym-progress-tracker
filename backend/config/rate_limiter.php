@@ -115,6 +115,10 @@ function rate_limit_rule($name)
         'forgot_email' => [(int)(getenv('RL_FORGOT_EMAIL_MAX') ?: 3),  (int)(getenv('RL_FORGOT_EMAIL_DECAY') ?: 3600)],
         // reset con token: tentativi per IP (il token ha 256 bit, è solo difesa in profondità)
         'reset_ip'     => [(int)(getenv('RL_RESET_IP_MAX')     ?: 20), (int)(getenv('RL_RESET_IP_DECAY')     ?: 900)],
+        // gruppi: anteprima e ingresso con codice per IP (anti tentativi sui codici),
+        // creazione per utente (anti spam di gruppi)
+        'group_join_ip'     => [(int)(getenv('RL_GROUP_JOIN_IP_MAX')     ?: 20), (int)(getenv('RL_GROUP_JOIN_IP_DECAY')     ?: 900)],
+        'group_create_user' => [(int)(getenv('RL_GROUP_CREATE_USER_MAX') ?: 5),  (int)(getenv('RL_GROUP_CREATE_USER_DECAY') ?: 3600)],
     ];
     return $rules[$name];
 }

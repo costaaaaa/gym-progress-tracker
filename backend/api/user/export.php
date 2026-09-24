@@ -128,6 +128,11 @@ try {
             array($user_id)),
         'consensi' => export_rows($db,
             "SELECT purpose, version, granted_at, revoked_at FROM gym_consents WHERE user_id = ? ORDER BY id", array($user_id)),
+        'gruppi' => export_rows($db,
+            "SELECT g.name AS nome, g.type AS tipo, m.role AS ruolo, m.share_level AS condivisione,
+                    m.share_consent_at AS consenso_condivisione, m.joined_at AS ingresso
+             FROM gym_group_members m JOIN gym_groups g ON g.id = m.group_id
+             WHERE m.user_id = ? ORDER BY m.joined_at", array($user_id)),
     );
 
     api_json_response($export);
