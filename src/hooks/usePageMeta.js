@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 
 // Default globali definiti staticamente in index.html (audit SEO 25/08/2026,
 // Deliverable 2) — tenuti qui in sync a mano per il ripristino on cleanup.
-const DEFAULT_TITLE = 'Gym Progress Tracker – Diario Allenamento Palestra Online';
+const DEFAULT_TITLE = 'LiftIndex – Diario Allenamento Palestra Online';
 const DEFAULT_DESCRIPTION =
   'Diario allenamento palestra online: piani illimitati, Focus Mode con timer recupero, gamification, mappa muscolare e grafici progressi.';
 
@@ -23,7 +23,7 @@ const DEFAULT_DESCRIPTION =
 export function usePageMeta(title, description) {
   useEffect(() => {
     const fullTitle = title
-      ? `${title} | Gym Progress Tracker`
+      ? `${title} | LiftIndex`
       : DEFAULT_TITLE;
     document.title = fullTitle;
 

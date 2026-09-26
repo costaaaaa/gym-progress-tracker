@@ -102,7 +102,7 @@ ob_start();
 
         <aside class="article-cta">
             <h2>Metti in pratica quello che hai letto</h2>
-            <p>Gym Progress Tracker registra i tuoi allenamenti e ti mostra volume, 1RM stimato e progressi nel tempo.</p>
+            <p>LiftIndex registra i tuoi allenamenti e ti mostra volume, 1RM stimato e progressi nel tempo.</p>
             <p><a class="cta" href="<?php echo blog_e(BLOG_APP_URL); ?>">Vai all'app</a></p>
         </aside>
 <?php

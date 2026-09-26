@@ -93,7 +93,7 @@ const JoinGroupContent = () => {
 };
 
 const JoinGroup = () => {
-  usePageMeta('Entra nel gruppo', 'Unisciti al gruppo su Liftindex e confronta la tua costanza con amici e compagni di palestra.');
+  usePageMeta('Entra nel gruppo', 'Unisciti al gruppo su LiftIndex e confronta la tua costanza con amici e compagni di palestra.');
   return <RequireLogin><JoinGroupContent /></RequireLogin>;
 };
 

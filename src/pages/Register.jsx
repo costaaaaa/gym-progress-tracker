@@ -86,7 +86,7 @@ const Register = () => {
       return;
     }
     if (birthDate > subYears(startOfToday(), 14)) {
-      setError('Devi avere almeno 14 anni per usare Liftindex');
+      setError('Devi avere almeno 14 anni per usare LiftIndex');
       return;
     }
     if (!gender) {

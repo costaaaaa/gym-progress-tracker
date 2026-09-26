@@ -142,7 +142,7 @@ function birth_date_error($birth_date)
         return 'Data di nascita obbligatoria o non valida.';
     }
     if ($birth->diff(new DateTime('today'))->y < 14) {
-        return 'Devi avere almeno 14 anni per usare Liftindex.';
+        return 'Devi avere almeno 14 anni per usare LiftIndex.';
     }
     return null;
 }

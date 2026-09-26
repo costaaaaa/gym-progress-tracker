@@ -15,6 +15,6 @@ define('BLOG_BASE_URL', 'https://liftindex.app/blog');
 
 define('BLOG_APP_URL', 'https://liftindex.app/');
 
-define('BLOG_SITE_NAME', 'Gym Progress Tracker');
+define('BLOG_SITE_NAME', 'LiftIndex');
 define('BLOG_LOGO_URL', BLOG_APP_URL . 'logo512.png');
 define('BLOG_CONTENT_DIR', dirname(__DIR__) . '/content');

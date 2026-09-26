@@ -8,7 +8,7 @@
 // Per un altro provider basta aggiungere un case in mail_send().
 //
 // Variabili d'ambiente: MAIL_FROM_EMAIL (mittente, con dominio configurato sul server o sul provider),
-// MAIL_FROM_NAME (opzionale, default "Liftindex"); solo per 'brevo' anche MAIL_API_KEY.
+// MAIL_FROM_NAME (opzionale, default "LiftIndex"); solo per 'brevo' anche MAIL_API_KEY.
 
 /**
  * Invia un'email. Ritorna true se il provider l'ha accettata, false altrimenti (mai eccezioni:
@@ -43,7 +43,7 @@ function mail_send_native($to, $subject, $text)
     }
     // Niente a-capo nei valori che finiscono negli header (header injection).
     $clean = function ($v) { return str_replace(["\r", "\n"], ' ', $v); };
-    $fromName = $clean(getenv('MAIL_FROM_NAME') ?: 'Liftindex');
+    $fromName = $clean(getenv('MAIL_FROM_NAME') ?: 'LiftIndex');
     $domain = substr(strrchr($fromEmail, '@'), 1);
 
     $headers = [
@@ -74,7 +74,7 @@ function mail_send_brevo($to, $subject, $text)
     }
 
     $payload = json_encode([
-        'sender' => ['email' => $fromEmail, 'name' => getenv('MAIL_FROM_NAME') ?: 'Liftindex'],
+        'sender' => ['email' => $fromEmail, 'name' => getenv('MAIL_FROM_NAME') ?: 'LiftIndex'],
         'to' => [['email' => $to]],
         'subject' => $subject,
         'textContent' => $text,

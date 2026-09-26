@@ -7,5 +7,5 @@ export const API_BASE_URL = window.location.hostname === 'localhost'
   : '/backend/';
 
 // Other configuration settings
-export const APP_NAME = 'Gym Progress Tracker';
+export const APP_NAME = 'LiftIndex';
 export const APP_VERSION = '2.0.0';
