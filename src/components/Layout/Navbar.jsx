@@ -104,7 +104,7 @@ const Navbar = () => {
               lineHeight: 1,
             }}
           >
-            Gym Progress
+            LiftIndex
           </Typography>
         </Box>
 
