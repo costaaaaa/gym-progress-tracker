@@ -1145,7 +1145,7 @@ const FocusWorkout = () => {
                     ];
                     if (prList.length) lines.push(`🏆 Nuovi record: ${prList.join(', ')}`);
                     if (savedResult.current_streak_weeks > 0) lines.push(`🔥 Streak: ${savedResult.current_streak_weeks} settimane`);
-                    lines.push('', 'Tracciato con Gym Progress Tracker');
+                    lines.push('', 'Tracciato con LiftIndex');
                     const text = lines.join('\n');
 
                     if (navigator.share) {
@@ -1215,7 +1215,7 @@ const FocusWorkout = () => {
                         `${activePlan?.name || ''}${selectedDay?.name ? ' · ' + selectedDay.name : ''}`,
                         `⏱ ${getElapsedTime()} · ${exercisesCompleted} esercizi · ${totalSets} serie`,
                         ...(savedResult.current_streak_weeks > 0 ? [`🔥 Streak: ${savedResult.current_streak_weeks} settimane`] : []),
-                        '', 'Tracciato con Gym Progress Tracker'
+                        '', 'Tracciato con LiftIndex'
                       ].join('\n')}
                       sx={{ '& .MuiOutlinedInput-root': { color: colors.text, '& fieldset': { borderColor: colors.border } } }}
                     />

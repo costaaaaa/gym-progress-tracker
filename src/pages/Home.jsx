@@ -190,7 +190,7 @@ const Home = () => {
           variant="h1"
           sx={{ fontSize: { xs: '1.75rem', md: '2.25rem' }, mb: 1.5, color: '#fff' }}
         >
-          {isLoggedIn ? `Bentornato, ${user?.username || ''}` : 'Gym Progress Tracker'}
+          {isLoggedIn ? `Bentornato, ${user?.username || ''}` : 'LiftIndex'}
         </Typography>
         <Typography sx={{ fontSize: 16, color: 'rgba(255,255,255,.85)', mb: 3, maxWidth: 560, lineHeight: 1.6 }}>
           {isLoggedIn

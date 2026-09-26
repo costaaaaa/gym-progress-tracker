@@ -26,7 +26,7 @@ const indexToTab = {
 const Profile = () => {
   usePageMeta(
     'Profilo e Impostazioni',
-    'Gestisci il tuo profilo, i traguardi raggiunti e le impostazioni del tuo account Gym Progress Tracker.'
+    'Gestisci il tuo profilo, i traguardi raggiunti e le impostazioni del tuo account LiftIndex.'
   );
   const [searchParams, setSearchParams] = useSearchParams();
   const currentTab = searchParams.get('tab') || 'summary';
