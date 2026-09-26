@@ -60,7 +60,7 @@ With this tool you can:
 
 ## Try it Out
 
-You can test the app directly here: 👉 [Gym Progress Tracker Live](https://andreacostamagna.altervista.org/gym-progress-tracker-v2/)
+You can test the app directly here: 👉 [LiftIndex](https://liftindex.app/)
 
 ## Local Installation (Optional)
 
@@ -187,7 +187,7 @@ Con questo strumento è possibile:
 
 ## Come provarlo
 
-Puoi testare l'app direttamente al seguente link: 👉 [Gym Progress Tracker Live](https://andreacostamagna.altervista.org/gym-progress-tracker-v2/)
+Puoi testare l'app direttamente al seguente link: 👉 [LiftIndex](https://liftindex.app/)
 
 ## Installazione locale (facoltativa)
 
