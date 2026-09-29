@@ -71,9 +71,10 @@ if (!empty($data->date)) {
     $user_stat->waist_size = isset($data->waist_size) ? $data->waist_size : null;
     $user_stat->leg_size = isset($data->leg_size) ? $data->leg_size : null;
     
-    // Create the record
-    if ($user_stat->create()) {
-        http_response_code(201);
+    // Una riga per giorno: se il giorno c'è già (per esempio dal peso di Apple Salute),
+    // i campi inseriti la completano
+    if ($user_stat->create() && $user_stat->readOne()) {
+        http_response_code($user_stat->created ? 201 : 200);
         echo json_encode(array(
             "message" => "Statistiche registrate con successo.",
             "user_stat" => array(
@@ -85,7 +86,8 @@ if (!empty($data->date)) {
                 "chest_size" => $user_stat->chest_size,
                 "arm_size" => $user_stat->arm_size,
                 "waist_size" => $user_stat->waist_size,
-                "leg_size" => $user_stat->leg_size
+                "leg_size" => $user_stat->leg_size,
+                "health_fields" => $user_stat->health_fields
             )
         ));
     } else {

@@ -273,3 +273,14 @@ CREATE TABLE IF NOT EXISTS `gym_group_members` (
   CONSTRAINT `fk_gm_group` FOREIGN KEY (`group_id`) REFERENCES `gym_groups` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_gm_user` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- ------------------------------------------------------------------------------
+-- 14. gym_user_stats.health_fields: i campi della riga arrivati da Apple Salute o
+--     Health Connect. Un valore inserito a mano non ci sta mai e vince sempre; una
+--     cancellazione in Salute svuota solo i campi segnati qui.
+--     Da eseguire una sola volta (ADD COLUMN non e' idempotente).
+-- ------------------------------------------------------------------------------
+
+ALTER TABLE `gym_user_stats`
+  ADD COLUMN `health_fields` SET('weight', 'body_fat_percentage', 'waist_size') NOT NULL DEFAULT '' AFTER `leg_size`;

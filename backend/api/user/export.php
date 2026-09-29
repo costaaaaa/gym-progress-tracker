@@ -108,7 +108,8 @@ try {
         'schede' => $schede,
         'allenamenti' => $allenamenti,
         'misure' => export_rows($db,
-            "SELECT date, weight, body_fat_percentage, muscle_mass_percentage, chest_size, arm_size, waist_size, leg_size, created_at
+            "SELECT date, weight, body_fat_percentage, muscle_mass_percentage, chest_size, arm_size, waist_size, leg_size,
+                    health_fields AS da_salute, created_at
              FROM gym_user_stats WHERE user_id = ? ORDER BY date", array($user_id)),
         'progressi_esercizi' => export_rows($db,
             "SELECT e.name AS esercizio, p.weight, p.date FROM gym_progress p

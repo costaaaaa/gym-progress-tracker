@@ -51,6 +51,8 @@ if ($num > 0) {
             "arm_size" => $arm_size,
             "waist_size" => $waist_size,
             "leg_size" => $leg_size,
+            // Campi arrivati da Apple Salute / Health Connect, separati da virgola ("" se nessuno)
+            "health_fields" => $health_fields,
             "created_at" => $created_at,
             "updated_at" => $updated_at
         );

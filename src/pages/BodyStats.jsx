@@ -29,8 +29,26 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import itLocale from 'date-fns/locale/it';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
+import FavoriteIcon from '@mui/icons-material/Favorite';
 import ChartCard from '../components/ChartCard';
 import HealthConsentCard from '../components/HealthConsentCard';
+
+// Valore della tabella, con un cuore se è arrivato da Apple Salute / Health Connect
+// (health_fields è l'elenco dei campi importati, separati da virgola).
+const StatValue = ({ row, field }) => {
+  if (!row[field]) return '-';
+  const fromHealth = (row.health_fields || '').split(',').includes(field);
+  return (
+    <>
+      {row[field]}
+      {fromHealth && (
+        <Box component="span" title="Da Apple Salute / Health Connect" sx={{ ml: 0.5, verticalAlign: 'middle' }}>
+          <FavoriteIcon sx={{ fontSize: 11, color: '#ff2d55' }} />
+        </Box>
+      )}
+    </>
+  );
+};
 
 // Serie per il grafico "Composizione Corporea" e "Circonferenze": chiave dato, etichetta, colore.
 const BODY_COMPOSITION_SERIES = [
@@ -295,12 +313,12 @@ const BodyStats = ({ isEmbedded = false }) => {
                   {stats.slice().reverse().map((row) => (
                     <TableRow key={row.id}>
                       <TableCell sx={{ fontSize: 13 }}>{new Date(row.date).toLocaleDateString('it-IT')}</TableCell>
-                      <TableCell align="right" sx={{ fontSize: 13, fontWeight: 700 }}>{row.weight || '-'}</TableCell>
-                      <TableCell align="right" sx={{ fontSize: 13 }}>{row.body_fat_percentage || '-'}</TableCell>
+                      <TableCell align="right" sx={{ fontSize: 13, fontWeight: 700 }}><StatValue row={row} field="weight" /></TableCell>
+                      <TableCell align="right" sx={{ fontSize: 13 }}><StatValue row={row} field="body_fat_percentage" /></TableCell>
                       <TableCell align="right" sx={{ fontSize: 13 }}>{row.muscle_mass_percentage || '-'}</TableCell>
                       <TableCell align="right" sx={{ fontSize: 13 }}>{row.chest_size || '-'}</TableCell>
                       <TableCell align="right" sx={{ fontSize: 13 }}>{row.arm_size || '-'}</TableCell>
-                      <TableCell align="right" sx={{ fontSize: 13 }}>{row.waist_size || '-'}</TableCell>
+                      <TableCell align="right" sx={{ fontSize: 13 }}><StatValue row={row} field="waist_size" /></TableCell>
                       <TableCell align="right" sx={{ fontSize: 13 }}>{row.leg_size || '-'}</TableCell>
                       <TableCell align="center">
                         <IconButton size="small" color="error" onClick={() => handleDelete(row.id)}>

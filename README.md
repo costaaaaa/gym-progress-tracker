@@ -32,7 +32,7 @@ With this tool you can:
 * 👤 **Body Stats**: track body measurements, circumferences, and visualize progress
 * 🏆 **Gamification**: XP points, athlete levels, per-exercise mastery, weekly streaks, and unlockable achievements
 * 🩺 **Muscle Recovery Visualizer**: anatomical map displaying muscle fatigue and recovery state
-* 🍎 **Apple Health Sync** *(beta)*: automated weight synchronization via iOS Shortcuts
+* 🍎 **Apple Health & Health Connect** *(mobile app)*: two-way sync of weight, body fat and waist; Focus Mode workouts are saved to Health
 * 🏋️ Add and edit exercises with intensity techniques (Drop sets, Rest-pause, Super sets)
 * 🎯 **Smart Progress**: detailed metrics (Volume, Avg Weight, Estimated 1RM, Progress Index) for each exercise
 * 📌 Ability to select an active workout plan
@@ -159,7 +159,7 @@ Con questo strumento è possibile:
 * 👤 **Body Stats**: tracciamento delle misure corporee, circonferenze e visualizzazione grafica
 * 🏆 **Gamification**: punti XP, livello atleta, maestria per singolo esercizio, streak settimanale e achievement sbloccabili
 * 🩺 **Visualizzatore Recupero Muscolare**: mappa anatomica per monitorare l'affaticamento e il recupero dei gruppi muscolari
-* 🍎 **Apple Health Sync** *(beta)*: sincronizzazione automatica del peso corporeo tramite Comandi Rapidi di iOS
+* 🍎 **Apple Salute e Health Connect** *(app mobile)*: peso, % grasso e girovita sincronizzati nei due sensi; gli allenamenti in Focus finiscono in Salute
 * 🏋️ Aggiunta e modifica di esercizi con supporto a tecniche di intensità (Drop set, Rest-pause, Super set)
 * 🎯 **Progressi Mirati**: metriche di dettaglio (Volume, Peso Medio, 1RM Stimato, Indice Progresso) per ogni singolo esercizio
 * 📌 Possibilità di selezionare una scheda attiva

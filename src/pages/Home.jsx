@@ -523,8 +523,8 @@ const Home = () => {
           </Card>
 
           {/* Riepilogo funzionalità aggiuntive, non coperte dallo showcase sopra.
-              Health Sync volutamente non elencata: funzione beta (richiede setup manuale
-              di iOS Shortcuts), non abbastanza pronta per un claim in landing. */}
+              Apple Salute / Health Connect volutamente non elencata: vive nell'app mobile,
+              da aggiungere quando l'app è sugli store. */}
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
               <Paper sx={{ p: 4, height: '100%', borderTop: '4px solid #d50000' }}>

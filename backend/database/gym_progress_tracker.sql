@@ -111,6 +111,8 @@ CREATE TABLE IF NOT EXISTS `gym_user_stats` (
   `arm_size` decimal(5,2) DEFAULT NULL,
   `waist_size` decimal(5,2) DEFAULT NULL,
   `leg_size` decimal(5,2) DEFAULT NULL,
+  -- Campi arrivati da Apple Salute / Health Connect (migrazione 14)
+  `health_fields` set('weight','body_fat_percentage','waist_size') NOT NULL DEFAULT '',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
