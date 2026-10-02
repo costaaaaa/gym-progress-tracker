@@ -10,7 +10,9 @@ class Consent
     // Cambiare la versione di una finalita' significa chiedere di nuovo il consenso.
     const VERSIONS = array(
         'terms' => '2026-09',        // termini d'uso e informativa privacy
-        'health_data' => '2026-09',  // misure corporee: dati sulla salute (art. 9 GDPR)
+        // misure corporee: dati sulla salute (art. 9 GDPR). 2026-10: anche da e verso Apple Salute
+        // e Health Connect, se l'utente li collega
+        'health_data' => '2026-10',
     );
 
     // Finalita' che l'utente puo' revocare da solo. I termini si ritirano cancellando l'account.

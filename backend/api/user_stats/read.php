@@ -20,10 +20,17 @@ if (!$user_id) {
     exit;
 }
 
-// Senza consenso attivo le misure non si leggono e il client mostra la richiesta di consenso
-if (!(new Consent($db))->isActive($user_id, 'health_data')) {
+// Senza consenso attivo le misure non si leggono e il client mostra la richiesta di consenso.
+// consent_updated: c'è un consenso a una versione precedente del testo, va ridato (le misure
+// restano salvate finché l'utente non lo revoca).
+$consent = new Consent($db);
+if (!$consent->isActive($user_id, 'health_data')) {
     http_response_code(200);
-    echo json_encode(array("records" => array(), "consent_required" => true));
+    echo json_encode(array(
+        "records" => array(),
+        "consent_required" => true,
+        "consent_updated" => $consent->isActive($user_id, 'health_data', false),
+    ));
     exit;
 }
 

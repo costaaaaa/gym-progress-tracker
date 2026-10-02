@@ -5,7 +5,8 @@ import { setConsent } from '../utils/consent';
 // Mostrata al posto delle misure corporee finché l'utente non dà il consenso esplicito.
 // Peso e misure sono dati sulla salute (art. 9 GDPR): il consenso è separato dai termini d'uso
 // e si può revocare in qualsiasi momento da Profilo > Impostazioni.
-const HealthConsentCard = ({ onGranted }) => {
+// updated: l'utente l'aveva già dato per una versione precedente del testo.
+const HealthConsentCard = ({ onGranted, updated = false }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -27,12 +28,22 @@ const HealthConsentCard = ({ onGranted }) => {
       <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>
         Le misure corporee sono dati sulla salute
       </Typography>
+      {updated && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Abbiamo aggiornato il consenso: ora comprende anche Apple Salute e Health Connect. Le tue misure
+          sono al sicuro e tornano visibili appena lo confermi.
+        </Alert>
+      )}
       <Typography sx={{ mb: 2 }}>
         Per tenere traccia di peso, massa grassa e circonferenze ho bisogno del tuo consenso esplicito.
       </Typography>
       <Box component="ul" sx={{ pl: 2.5, mt: 0, mb: 2, '& li': { mb: 0.75 } }}>
         <li>Li uso solo per mostrarti i tuoi grafici e l&apos;andamento nel tempo.</li>
         <li>Non sono visibili ad altri utenti.</li>
+        <li>
+          Nell&apos;app per iPhone e Android, solo se lo attivi tu, puoi importarli da Apple Salute o Health Connect
+          e, se scegli lettura e scrittura, mandarci le misure e gli allenamenti che registri qui.
+        </li>
         <li>Puoi revocare il consenso quando vuoi da Profilo &gt; Impostazioni: in quel caso le misure vengono cancellate.</li>
       </Box>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>

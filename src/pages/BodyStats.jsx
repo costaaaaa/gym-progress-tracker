@@ -116,6 +116,8 @@ const BodyStats = ({ isEmbedded = false }) => {
   const [isLoading, setIsLoading] = useState(true);
   // true finché l'utente non ha dato il consenso per i dati sulla salute
   const [consentRequired, setConsentRequired] = useState(false);
+  // true se il consenso era stato dato a una versione precedente del testo
+  const [consentUpdated, setConsentUpdated] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
 
@@ -138,6 +140,7 @@ const BodyStats = ({ isEmbedded = false }) => {
       });
       const data = await response.json();
       setConsentRequired(data.consent_required === true);
+      setConsentUpdated(data.consent_updated === true);
       if (data.records) {
         setStats(data.records);
       }
@@ -238,7 +241,7 @@ const BodyStats = ({ isEmbedded = false }) => {
   const weightDelta = firstWeight && lastWeight ? lastWeight - firstWeight : null;
 
   const renderContent = () => (consentRequired && !isLoading) ? (
-    <HealthConsentCard onGranted={fetchStats} />
+    <HealthConsentCard onGranted={fetchStats} updated={consentUpdated} />
   ) : (
     <>
       <Box sx={{ display: 'flex', justifyContent: isEmbedded ? 'flex-end' : 'space-between', alignItems: 'center', mb: 3 }}>

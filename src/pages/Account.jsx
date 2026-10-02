@@ -234,10 +234,15 @@ const Account = ({ isEmbedded = false }) => {
   const [healthConsent, setHealthConsent] = useState(null); // null = non ancora caricato
   const [consentBusy, setConsentBusy] = useState(false);
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
+  // Consenso dato a una versione precedente del testo: va riconfermato
+  const [healthConsentOutdated, setHealthConsentOutdated] = useState(false);
 
   useEffect(() => {
     getConsents()
-      .then((consents) => setHealthConsent(consents.health_data.granted))
+      .then((consents) => {
+        setHealthConsent(consents.health_data.granted);
+        setHealthConsentOutdated(!consents.health_data.granted && consents.health_data.version !== null);
+      })
       .catch((error) => console.error('Errore nel caricamento dei consensi:', error));
   }, []);
 
@@ -250,6 +255,7 @@ const Account = ({ isEmbedded = false }) => {
     try {
       await setConsent('health_data', 'grant');
       setHealthConsent(true);
+      setHealthConsentOutdated(false);
     } catch (error) {
       setSnackbar({ open: true, message: error.message, severity: 'error' });
     } finally {
@@ -262,6 +268,7 @@ const Account = ({ isEmbedded = false }) => {
     try {
       const result = await setConsent('health_data', 'revoke');
       setHealthConsent(false);
+      setHealthConsentOutdated(false);
       setRevokeDialogOpen(false);
       setSnackbar({
         open: true,
@@ -703,6 +710,12 @@ const Account = ({ isEmbedded = false }) => {
               Peso e misure sono dati sulla salute e li trattiamo solo con il tuo consenso.
               Se lo revochi, le tue misure vengono cancellate.
             </Typography>
+            {healthConsentOutdated && healthConsent !== true && (
+              <Typography sx={{ fontSize: 12, color: 'warning.main', mt: 0.5 }}>
+                Abbiamo aggiornato il testo (ora comprende Apple Salute e Health Connect): riattivalo per
+                rivedere le tue misure.
+              </Typography>
+            )}
           </Box>
           <Switch
             checked={healthConsent === true}
