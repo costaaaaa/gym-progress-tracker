@@ -13,7 +13,6 @@ import TimerIcon from '@mui/icons-material/Timer';
 import StarIcon from '@mui/icons-material/Star';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import ShieldOutlined from '@mui/icons-material/ShieldOutlined';
-import DarkModeOutlined from '@mui/icons-material/DarkModeOutlined';
 import LayersOutlined from '@mui/icons-material/LayersOutlined';
 import ShowChartOutlined from '@mui/icons-material/ShowChartOutlined';
 import VisibilityOutlined from '@mui/icons-material/VisibilityOutlined';
@@ -23,6 +22,7 @@ import LevelCard from '../components/LevelCard';
 import GroupsHomeCard from '../components/Groups/GroupsHomeCard';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
+import { track } from '../utils/analytics';
 
 // Dati di esempio per mostrare le card reali (Livello, Streak, Recupero) anche a chi
 // non ha ancora effettuato l'accesso — stessa UI usata dagli utenti loggati, dati statici.
@@ -190,12 +190,12 @@ const Home = () => {
           variant="h1"
           sx={{ fontSize: { xs: '1.75rem', md: '2.25rem' }, mb: 1.5, color: '#fff' }}
         >
-          {isLoggedIn ? `Bentornato, ${user?.username || ''}` : 'LiftIndex'}
+          {isLoggedIn ? `Bentornato, ${user?.username || ''}` : 'Allenati sapendo quali muscoli sono pronti'}
         </Typography>
         <Typography sx={{ fontSize: 16, color: 'rgba(255,255,255,.85)', mb: 3, maxWidth: 560, lineHeight: 1.6 }}>
           {isLoggedIn
             ? 'La tua evoluzione fisica, monitorata con precisione millimetrica.'
-            : 'Registra ogni set, sblocca livelli e achievement, e scopri quali muscoli sono pronti a tornare in palestra — tutto in un\'unica app, gratuita.'}
+            : 'Registra ogni serie in pochi secondi, con timer di recupero automatico. LiftIndex ti mostra cosa hai allenato, cosa è tornato pronto e i progressi nel tempo.'}
         </Typography>
 
         {isLoggedIn ? (
@@ -220,6 +220,7 @@ const Home = () => {
             <Button
               component={RouterLink}
               to="/register"
+              onClick={() => track('landing_cta_click', { position: 'hero' })}
               sx={{
                 bgcolor: '#fff',
                 color: '#9b0000',
@@ -230,7 +231,7 @@ const Home = () => {
                 '&:hover': { bgcolor: 'rgba(255,255,255,.9)' },
               }}
             >
-              Registrati Gratis
+              Inizia gratis
             </Button>
             <Button
               component={RouterLink}
@@ -247,6 +248,9 @@ const Home = () => {
             >
               Accedi
             </Button>
+            <Typography sx={{ width: '100%', fontSize: 13, color: 'rgba(255,255,255,.8)' }}>
+              Gratis · senza carta di credito · funziona da telefono e da computer
+            </Typography>
           </Box>
         )}
       </Box>
@@ -419,6 +423,28 @@ const Home = () => {
         </Grid>
       ) : (
         <>
+          {/* Come funziona: tre passi, per far capire il flusso prima delle card demo. */}
+          <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2 }}>
+            Come funziona
+          </Typography>
+          <Grid container spacing={2} sx={{ mb: 4 }}>
+            {[
+              ['1', 'Crea la tua scheda', 'Aggiungi esercizi e serie, anche con drop set e super set.'],
+              ['2', 'Registra in Focus Mode', 'Un tap per serie, timer di recupero automatico, salvataggio continuo.'],
+              ['3', 'Guarda i progressi', 'Mappa del recupero muscolare, grafici, livelli e streak settimanali.'],
+            ].map(([n, title, text]) => (
+              <Grid item xs={12} md={4} key={n}>
+                <Card sx={{ p: '22px', height: '100%', '&:hover': { transform: 'none' } }}>
+                  <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 28, color: 'primary.main', lineHeight: 1, mb: 1 }}>
+                    {n}
+                  </Typography>
+                  <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 0.5 }}>{title}</Typography>
+                  <Typography sx={{ fontSize: 13.5, color: 'text.secondary', lineHeight: 1.6 }}>{text}</Typography>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+
           {/* Showcase: le stesse card che vede un utente loggato, con dati di esempio —
               stessa UI reale dell'app, nessuno screenshot statico da mantenere allineato.
               PreviewOverlay marca ogni card come non reale/non cliccabile, per non farla
@@ -526,7 +552,7 @@ const Home = () => {
               Apple Salute / Health Connect volutamente non elencata: vive nell'app mobile,
               da aggiungere quando l'app è sugli store. */}
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={4}>
               <Paper sx={{ p: 4, height: '100%', borderTop: '4px solid #d50000' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   <LayersOutlined sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
@@ -539,7 +565,7 @@ const Home = () => {
                 </Typography>
               </Paper>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={4}>
               <Paper sx={{ p: 4, height: '100%', borderTop: '4px solid #d50000' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   <StraightenIcon sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
@@ -551,7 +577,7 @@ const Home = () => {
                 </Typography>
               </Paper>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={4}>
               <Paper sx={{ p: 4, height: '100%', borderTop: '4px solid #d50000' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   <ShowChartOutlined sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
@@ -564,19 +590,6 @@ const Home = () => {
                 </Typography>
               </Paper>
             </Grid>
-            <Grid item xs={12} md={6}>
-              <Paper sx={{ p: 4, height: '100%', borderTop: '4px solid #d50000' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <DarkModeOutlined sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
-                  <Typography variant="h5" sx={{ fontWeight: 800 }}>Tema Chiaro e Scuro</Typography>
-                </Box>
-                <Divider sx={{ my: 2 }} />
-                <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8 }}>
-                  Passa da tema chiaro a scuro in un tap: la preferenza resta salvata per le
-                  prossime sessioni.
-                </Typography>
-              </Paper>
-            </Grid>
           </Grid>
 
           <Box sx={{ textAlign: 'center', mt: 5, mb: 2 }}>
@@ -586,6 +599,7 @@ const Home = () => {
             <Button
               component={RouterLink}
               to="/register"
+              onClick={() => track('landing_cta_click', { position: 'footer' })}
               startIcon={<ShieldOutlined />}
               sx={{
                 bgcolor: 'primary.main',
@@ -597,7 +611,7 @@ const Home = () => {
                 '&:hover': { bgcolor: 'primary.dark' },
               }}
             >
-              Registrati Gratis
+              Inizia gratis
             </Button>
           </Box>
         </>

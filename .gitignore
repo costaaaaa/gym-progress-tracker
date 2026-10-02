@@ -159,6 +159,7 @@ AGENTS.md
 .gemini/
 .gemini/settings.json
 .cursor/
+.kilo/
  
 # Old heavy assets
 src/assets/images/gym-background.jpg
