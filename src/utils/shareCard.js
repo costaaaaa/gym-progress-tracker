@@ -136,6 +136,22 @@ export const TEMPLATES = [
   { id: 'foto', label: 'Foto' },
 ];
 
+// Sfondo del template Foto, visibile quando la foto è rimpicciolita. Solo toni scuri o
+// saturi: sopra ci sono testi bianchi. swatch = il colore da mostrare nel selettore.
+export const PHOTO_BACKGROUNDS = [
+  { id: 'grafite', label: 'Grafite', swatch: '#2a2a2e', stops: ['#3a3a3f', '#0a0a0b'] },
+  { id: 'nero', label: 'Nero', swatch: '#0a0a0b', stops: ['#0a0a0b', '#0a0a0b'] },
+  { id: 'rosso', label: 'Rosso', swatch: '#d50000', stops: ['#ff5131', '#7a0000'] },
+  { id: 'blu', label: 'Blu', swatch: '#1e3a8a', stops: ['#2547a8', '#0b1530'] },
+  { id: 'verde', label: 'Verde', swatch: '#166534', stops: ['#1f7a43', '#052e16'] },
+  { id: 'viola', label: 'Viola', swatch: '#5b21b6', stops: ['#6d28d9', '#1e0b3d'] },
+];
+
+const photoBackgroundFill = (id) => {
+  const bg = PHOTO_BACKGROUNDS.find((b) => b.id === id) || PHOTO_BACKGROUNDS[0];
+  return { gradient: { x0: 0, y0: 0, x1: 0, y1: CARD_HEIGHT, stops: [[0, bg.stops[0]], [1, bg.stops[1]]] } };
+};
+
 const THEMES = {
   scuro: {
     background: { gradient: { x0: 0, y0: 0, x1: 0, y1: CARD_HEIGHT, stops: [[0, '#2a0606'], [0.45, '#0a0a0b'], [1, '#0a0a0b']] } },
@@ -146,7 +162,7 @@ const THEMES = {
     text: '#ffffff', muted: 'rgba(255,255,255,0.78)', accent: '#ffe0b2', big: '#ffffff', tile: 'rgba(0,0,0,0.2)', mark: '#ffffff',
   },
   foto: {
-    background: { gradient: { x0: 0, y0: 0, x1: 0, y1: CARD_HEIGHT, stops: [[0, '#3a3a3f'], [1, '#0a0a0b']] } },
+    background: photoBackgroundFill('grafite'),
     text: '#ffffff', muted: 'rgba(255,255,255,0.8)', accent: '#ff5131', big: '#ffffff', tile: 'rgba(0,0,0,0.45)', mark: '#d50000',
   },
 };
@@ -349,10 +365,12 @@ const photoLayout = (stats, theme, hasPhoto) => {
  *   rect:  { x, y, w, h, r?, fill }   fill = colore | { gradient: { x0, y0, x1, y1, stops: [[offset, colore]] } }
  *   text:  { x, y (linea di base), text, size, weight, color, align: left|center|right, letterSpacing }
  *   photo: { x, y, w, h }              riquadro della foto dell'utente: dentro, photoRect() con lo zoom scelto
+ * photoBackground: id di PHOTO_BACKGROUNDS, solo per il template foto.
  */
-export const layoutShareCard = (stats, templateId, { hasPhoto = false } = {}) => {
+export const layoutShareCard = (stats, templateId, { hasPhoto = false, photoBackground } = {}) => {
   const theme = THEMES[templateId] || THEMES.scuro;
-  const elements = [{ type: 'rect', x: 0, y: 0, w: CARD_WIDTH, h: CARD_HEIGHT, fill: theme.background }];
+  const background = templateId === 'foto' ? photoBackgroundFill(photoBackground) : theme.background;
+  const elements = [{ type: 'rect', x: 0, y: 0, w: CARD_WIDTH, h: CARD_HEIGHT, fill: background }];
   if (templateId === 'foto') elements.push(...photoLayout(stats, theme, hasPhoto));
   else elements.push(...fullLayout(stats, theme));
   return { width: CARD_WIDTH, height: CARD_HEIGHT, elements };

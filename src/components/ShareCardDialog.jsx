@@ -13,7 +13,7 @@ import {
   CenterFocusStrong as CenterIcon,
 } from '@mui/icons-material';
 import {
-  TEMPLATES, CARD_WIDTH, PHOTO_BOX, PHOTO_ZOOM_MAX, DEFAULT_PHOTO_TRANSFORM,
+  TEMPLATES, PHOTO_BACKGROUNDS, CARD_WIDTH, PHOTO_BOX, PHOTO_ZOOM_MAX, DEFAULT_PHOTO_TRANSFORM,
   layoutShareCard, clampPhotoTransform, zoomPhotoAt, photoMinZoom,
 } from '../utils/shareCard';
 import { loadCardFonts, renderCardToCanvas, canvasToPngFile, loadPhoto } from '../utils/renderShareCard';
@@ -35,6 +35,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   const [template, setTemplate] = useState('scuro');
   const [photo, setPhoto] = useState(null);
   const [photoTransform, setPhotoTransform] = useState(DEFAULT_PHOTO_TRANSFORM);
+  const [photoBackground, setPhotoBackground] = useState(PHOTO_BACKGROUNDS[0].id);
   const [fontsReady, setFontsReady] = useState(false);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
@@ -42,6 +43,8 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   const pointersRef = useRef(new Map());
 
   const editable = template === 'foto' && !!photo;
+  // Lo sfondo si vede solo quando la foto, rimpicciolita, non copre più la card
+  const backgroundVisible = editable && photoTransform.zoom < 0.999;
 
   useEffect(() => {
     if (!open) return undefined;
@@ -55,7 +58,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   useEffect(() => {
     if (!open || !stats || !fontsReady || !canvasRef.current) return undefined;
     let cancelled = false;
-    const layout = layoutShareCard(stats, template, { hasPhoto: !!photo });
+    const layout = layoutShareCard(stats, template, { hasPhoto: !!photo, photoBackground });
     renderCardToCanvas(canvasRef.current, layout, photo, photoTransform);
     setReady(false);
     fileRef.current = null;
@@ -71,7 +74,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
       }
     }, 250);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [open, stats, template, photo, photoTransform, fontsReady]);
+  }, [open, stats, template, photo, photoTransform, photoBackground, fontsReady]);
 
   const movePhoto = (update) => {
     if (!photo) return;
@@ -243,6 +246,23 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
             <Typography variant="caption" color="text.secondary" component="p" sx={{ textAlign: 'center' }}>
               Trascina la foto per spostarla, usa due dita o la rotella per ingrandirla
             </Typography>
+            {backgroundVisible && (
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.25, mt: 1.5 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mr: 0.5 }}>Sfondo</Typography>
+                {PHOTO_BACKGROUNDS.map((bg) => (
+                  <Box key={bg.id} component="button" type="button" aria-label={`Sfondo ${bg.label}`}
+                    aria-pressed={photoBackground === bg.id} title={bg.label}
+                    onClick={() => setPhotoBackground(bg.id)}
+                    sx={{
+                      width: 28, height: 28, p: 0, borderRadius: '50%', cursor: 'pointer',
+                      background: `linear-gradient(${bg.stops[0]}, ${bg.stops[1]})`,
+                      border: '2px solid', borderColor: 'background.paper',
+                      outline: '2px solid',
+                      outlineColor: photoBackground === bg.id ? theme.palette.primary.main : theme.palette.divider,
+                    }} />
+                ))}
+              </Box>
+            )}
           </Box>
         )}
 
