@@ -32,6 +32,7 @@ import AddIcon from '@mui/icons-material/Add';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import ChartCard from '../components/ChartCard';
 import HealthConsentCard from '../components/HealthConsentCard';
+import HealthAppHint from '../components/HealthAppHint';
 
 // Valore della tabella, con un cuore se è arrivato da Apple Salute / Health Connect
 // (health_fields è l'elenco dei campi importati, separati da virgola).
@@ -254,6 +255,8 @@ const BodyStats = ({ isEmbedded = false }) => {
           Nuova Misurazione
         </Button>
       </Box>
+
+      {!isLoading && <HealthAppHint alreadySyncing={stats.some((s) => s.health_fields)} />}
 
       {isLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 10 }}>
