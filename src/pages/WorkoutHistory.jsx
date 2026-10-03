@@ -5,7 +5,9 @@ import {
   Box,
   List,
   ListItem,
+  ListItemButton,
   ListItemText,
+  ButtonBase,
   CircularProgress,
   IconButton,
   Alert,
@@ -380,21 +382,20 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
 
           return (
             <Box key={monthYear} sx={{ mb: 3.5 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.75 }}>
-                <Typography sx={{ fontFamily: "'Lexend', sans-serif", fontWeight: 700, fontSize: 16, borderBottom: '2px solid', borderColor: 'primary.main', pb: 0.75 }}>
+              {/* Tutta l'intestazione del mese apre e chiude, non solo la freccia */}
+              <ButtonBase
+                onClick={() => toggleMonthExpansion(monthYear)}
+                aria-expanded={isExpanded}
+                aria-controls={monthPanelId}
+                sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.75, py: 0.5, borderRadius: 1, textAlign: 'left' }}
+              >
+                <Typography component="span" sx={{ fontFamily: "'Lexend', sans-serif", fontWeight: 700, fontSize: 16, borderBottom: '2px solid', borderColor: 'primary.main', pb: 0.75 }}>
                   {isUnknownDate ? 'Data sconosciuta' : `${getMonthName(parseInt(month))} ${year}`}
                 </Typography>
-                <IconButton
-                  size="small"
-                  onClick={() => toggleMonthExpansion(monthYear)}
-                  aria-expanded={isExpanded}
-                  aria-controls={monthPanelId}
-                  aria-label={isExpanded ? 'Nascondi mese' : 'Mostra mese'}
-                  sx={{ color: 'text.secondary' }}
-                >
+                <Box component="span" sx={{ display: 'flex', p: 0.625, color: 'text.secondary' }}>
                   {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                </IconButton>
-              </Box>
+                </Box>
+              </ButtonBase>
               <Collapse in={isExpanded} id={monthPanelId} timeout="auto">
                 <Paper sx={{ overflow: 'hidden' }}>
                   <List sx={{ p: 0 }}>
@@ -403,27 +404,30 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                       const rowPanelId = `workout-detail-panel-${workout.id}`;
                       return (
                         <React.Fragment key={workout.id}>
-                          <ListItem sx={{ pr: 18 }} secondaryAction={
-                            <Box>
+                          {/* La card intera apre i dettagli. Condividi, modifica e cestino stanno in
+                              secondaryAction, fuori dal ListItemButton: il loro clic non apre la card. */}
+                          <ListItem disablePadding sx={{ '& > .MuiListItemButton-root': { pr: 19 } }} secondaryAction={
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
                               <IconButton onClick={() => handleShareClick(workout)} size="small" sx={{ color: 'text.secondary' }} aria-label="Condividi allenamento"><ShareIcon fontSize="small" /></IconButton>
-                              <IconButton onClick={(e) => handleEditDateClick(workout, e)} size="small" sx={{ color: 'text.secondary' }}><EditCalendarIcon fontSize="small" /></IconButton>
-                              <IconButton onClick={(e) => handleDeleteClick(workout, e)} size="small" sx={{ color: 'text.secondary' }}><DeleteIcon fontSize="small" /></IconButton>
-                              <IconButton
-                                onClick={() => toggleWorkoutExpansion(workout.id)}
-                                size="small"
-                                sx={{ color: 'text.secondary' }}
-                                aria-expanded={isRowExpanded}
-                                aria-controls={rowPanelId}
-                                aria-label={isRowExpanded ? 'Nascondi dettagli allenamento' : 'Mostra dettagli allenamento'}
-                              >
+                              <IconButton onClick={(e) => handleEditDateClick(workout, e)} size="small" sx={{ color: 'text.secondary' }} aria-label="Modifica data"><EditCalendarIcon fontSize="small" /></IconButton>
+                              <IconButton onClick={(e) => handleDeleteClick(workout, e)} size="small" sx={{ color: 'text.secondary' }} aria-label="Elimina allenamento"><DeleteIcon fontSize="small" /></IconButton>
+                              {/* Indicatore: per tastiera e lettori di schermo il comando è la card */}
+                              <Box component="span" aria-hidden onClick={() => toggleWorkoutExpansion(workout.id)}
+                                sx={{ display: 'flex', p: 0.625, color: 'text.secondary', cursor: 'pointer' }}>
                                 {isRowExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
-                              </IconButton>
+                              </Box>
                             </Box>
                           }>
-                            <ListItemText
-                              primary={<Typography sx={{ fontWeight: 600, fontSize: 14 }}>{new Date(workout.date).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}</Typography>}
-                              secondary={<Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.25 }}>{`${new Date(workout.date).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })} · ${workout.exercises?.length || 0} esercizi`}</Typography>}
-                            />
+                            <ListItemButton
+                              onClick={() => toggleWorkoutExpansion(workout.id)}
+                              aria-expanded={isRowExpanded}
+                              aria-controls={rowPanelId}
+                            >
+                              <ListItemText
+                                primary={<Typography sx={{ fontWeight: 600, fontSize: 14 }}>{new Date(workout.date).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}</Typography>}
+                                secondary={<Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.25 }}>{`${new Date(workout.date).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })} · ${workout.exercises?.length || 0} esercizi`}</Typography>}
+                              />
+                            </ListItemButton>
                           </ListItem>
                           <Collapse component="li" in={isRowExpanded} id={rowPanelId} timeout="auto" sx={{ listStyle: 'none' }}>
                             {renderWorkoutExerciseDetails(workout)}
