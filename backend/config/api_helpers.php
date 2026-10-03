@@ -252,3 +252,24 @@ function client_ip_key($prefix)
     $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
     return $prefix . ':ip:' . hash('sha256', $ip);
 }
+
+// ── Admin ───────────────────────────────────────────────────────────────────
+
+// True se l'utente è admin. Lo si diventa solo da riga di comando (backend/tools/admin.php).
+function user_is_admin($db, $user_id)
+{
+    $stmt = $db->prepare("SELECT is_admin FROM gym_users WHERE id = ? LIMIT 1");
+    $stmt->execute([(int)$user_id]);
+    return (int)$stmt->fetchColumn() === 1;
+}
+
+// Utente autenticato e admin, altrimenti 404: chi non è admin non deve sapere che l'area esiste.
+// Ritorna lo user_id.
+function require_admin($db)
+{
+    $user_id = resolve_authenticated_user_id($db);
+    if (!$user_id || !user_is_admin($db, $user_id)) {
+        api_not_found();
+    }
+    return (int)$user_id;
+}

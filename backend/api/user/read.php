@@ -41,7 +41,8 @@ try {
             'gender' => $user->gender,
             'training_start_date' => $user->training_start_date,
             'experience_years' => $user->experience_years,
-            'password_changed_at' => $user->password_changed_at
+            'password_changed_at' => $user->password_changed_at,
+            'is_admin' => user_is_admin($db, $user_id)
         ));
     } else {
         http_response_code(404);

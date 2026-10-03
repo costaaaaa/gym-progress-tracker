@@ -22,6 +22,7 @@ const Profile = lazy(() => import('./pages/Profile'));
 const Groups = lazy(() => import('./pages/Groups'));
 const GroupDetail = lazy(() => import('./pages/GroupDetail'));
 const JoinGroup = lazy(() => import('./pages/JoinGroup'));
+const Admin = lazy(() => import('./pages/Admin'));
 
 // Fallback component while loading chunks
 const PageLoader = () => (
@@ -48,6 +49,7 @@ function App() {
                 <Route path="/gruppi" element={<Groups />} />
                 <Route path="/gruppi/:id" element={<GroupDetail />} />
                 <Route path="/entra" element={<JoinGroup />} />
+                <Route path="/admin" element={<Admin />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />

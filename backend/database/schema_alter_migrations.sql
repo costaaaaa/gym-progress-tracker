@@ -295,3 +295,25 @@ ALTER TABLE `gym_user_stats`
 
 ALTER TABLE `gym_workout_history`
   ADD COLUMN `duration_seconds` INT UNSIGNED DEFAULT NULL AFTER `date`;
+
+
+-- ------------------------------------------------------------------------------
+-- 16. Esercizi personali e admin. gym_exercises.created_by e status: un esercizio
+--     creato da un utente nasce 'pending' e lo vede solo lui; diventa di tutti
+--     quando un admin lo approva ('rejected' = resta solo suo). Il default
+--     'approved' lascia com'e' il catalogo esistente e cio' che inserisce la
+--     versione precedente, cosi' il rollback resta possibile.
+--     gym_users.is_admin: si imposta solo da riga di comando (backend/tools/admin.php).
+--     Da eseguire una sola volta (ADD COLUMN non e' idempotente).
+-- ------------------------------------------------------------------------------
+
+ALTER TABLE `gym_exercises`
+  ADD COLUMN `created_by` int(11) DEFAULT NULL AFTER `muscle_group`,
+  ADD COLUMN `status` enum('pending','approved','rejected') NOT NULL DEFAULT 'approved' AFTER `created_by`,
+  ADD COLUMN `reviewed_at` datetime DEFAULT NULL AFTER `status`,
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_created_by` (`created_by`),
+  ADD CONSTRAINT `fk_exercises_creator` FOREIGN KEY (`created_by`) REFERENCES `gym_users` (`id`) ON DELETE SET NULL;
+
+ALTER TABLE `gym_users`
+  ADD COLUMN `is_admin` tinyint(1) NOT NULL DEFAULT 0 AFTER `rest_timer_enabled`;

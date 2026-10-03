@@ -119,6 +119,8 @@ function rate_limit_rule($name)
         // creazione per utente (anti spam di gruppi)
         'group_join_ip'     => [(int)(getenv('RL_GROUP_JOIN_IP_MAX')     ?: 20), (int)(getenv('RL_GROUP_JOIN_IP_DECAY')     ?: 900)],
         'group_create_user' => [(int)(getenv('RL_GROUP_CREATE_USER_MAX') ?: 5),  (int)(getenv('RL_GROUP_CREATE_USER_DECAY') ?: 3600)],
+        // esercizi personali: creazione per utente (anti spam nella coda di approvazione)
+        'exercise_create_user' => [(int)(getenv('RL_EXERCISE_CREATE_USER_MAX') ?: 10), (int)(getenv('RL_EXERCISE_CREATE_USER_DECAY') ?: 3600)],
     ];
     return $rules[$name];
 }

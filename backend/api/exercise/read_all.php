@@ -4,7 +4,11 @@ include_once '../../config/cors_headers.php';
 
 // Include database and exercise model
 include_once '../../config/database.php';
+include_once '../../config/api_helpers.php';
 include_once '../../models/Exercise.php';
+
+// Senza login: solo gli esercizi approvati. Con login (sessione web o Bearer mobile): anche quelli
+// personali dell'utente, ancora in attesa o rifiutati.
 
 try {
     // Get database connection
@@ -18,8 +22,8 @@ try {
     // Instantiate exercise object
     $exercise = new Exercise($db);
 
-    // Read all exercises
-    $stmt = $exercise->readAll();
+    $user_id = resolve_authenticated_user_id($db);
+    $stmt = $exercise->readVisibleTo($user_id ? (int)$user_id : null);
     $num = $stmt->rowCount();
 
     // Check if more than 0 record found
@@ -36,6 +40,8 @@ try {
                 "id" => $id,
                 "name" => $name,
                 "muscle_group" => $muscle_group,
+                "status" => $status,
+                "is_mine" => $user_id && (int)$created_by === (int)$user_id,
                 "created_at" => $created_at,
                 "updated_at" => $updated_at
             );

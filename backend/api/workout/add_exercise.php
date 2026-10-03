@@ -46,6 +46,11 @@ if (
         $workout_plan->user_id = $user_id;
 
         if ($workout_plan->readOne()) {
+            // Solo esercizi approvati o creati dall'utente: quelli in attesa degli altri non si usano
+            if (!Exercise::isVisibleTo($db, $data->exercise_id, $user_id)) {
+                api_not_found('Esercizio non trovato.');
+            }
+
             // Day belongs to user's plan, proceed with adding the exercise
             $workout_exercise = new WorkoutExercise($db);
 

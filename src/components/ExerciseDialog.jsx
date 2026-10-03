@@ -13,9 +13,13 @@ import {
   Box,
   CircularProgress,
   Autocomplete,
-  Typography
+  Typography,
+  Chip,
+  Alert
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import { API_BASE_URL } from '../config';
+import { createExercise, errorMessage, personalLabel } from '../api/exercises';
 
 // Helper per rendere maiuscola la prima lettera
 const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
@@ -51,6 +55,8 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
   const [loadingExercises, setLoadingExercises] = useState(false);
   const [filteredExercises, setFilteredExercises] = useState([]);
   const [inputValue, setInputValue] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
 
   // Carica tutti gli esercizi quando il dialog viene aperto per estrarre i gruppi muscolari
   useEffect(() => {
@@ -114,6 +120,11 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
     }));
   };
 
+  const handleMuscleGroupChange = (e) => {
+    setExercise(prev => ({ ...prev, muscleGroup: e.target.value, name: '', id: undefined }));
+    setCreateError('');
+  };
+
   // Gestione dell'autocomplete per il nome dell'esercizio
   const handleExerciseChange = (event, newValue) => {
     if (newValue) {
@@ -127,6 +138,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
 
   const handleInputChange = (event, newInputValue) => {
     setInputValue(newInputValue);
+    setCreateError('');
     // Filtriamo qui in modo che anche la digitazione parziale mostri risultati
     if (exercises.length > 0) {
       const filtered = exercises.filter(ex => 
@@ -134,6 +146,32 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
       );
       setFilteredExercises(filtered);
     }
+  };
+
+  // Il nome digitato non corrisponde a nessun esercizio del gruppo: si può creare come personale
+  const typedName = inputValue.trim();
+  const canCreate = typedName.length >= 2 &&
+    !exercises.some(ex => ex.name.toLowerCase() === typedName.toLowerCase());
+
+  const handleCreate = async () => {
+    setCreating(true);
+    setCreateError('');
+    const res = await createExercise(typedName, exercise.muscleGroup);
+    setCreating(false);
+    const created = res.data?.exercise;
+    // 409 duplicate: esiste già (anche con maiuscole diverse o in un altro gruppo), lo si seleziona
+    if (!created || !(res.ok || res.data?.code === 'duplicate')) {
+      setCreateError(errorMessage(res));
+      return;
+    }
+    setAllExercises(prev => prev.some(ex => ex.id === created.id) ? prev : [...prev, created]);
+    setExercise(prev => ({
+      ...prev,
+      muscleGroup: capitalize(created.muscle_group),
+      name: created.name,
+      id: created.id
+    }));
+    setInputValue(created.name);
   };
 
   const handleSubmit = () => {
@@ -148,6 +186,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
       intensity_technique: ''
     });
     setInputValue('');
+    setCreateError('');
     onClose();
   };
 
@@ -169,7 +208,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
               name="muscleGroup"
               value={exercise.muscleGroup}
               label="Gruppo Muscolare"
-              onChange={handleChange}
+              onChange={handleMuscleGroupChange}
             >
               {availableMuscleGroups.map((group) => (
                 <MenuItem key={group} value={group}>
@@ -194,12 +233,23 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
                 options={filteredExercises}
                 getOptionLabel={(option) => option.name}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
+                renderOption={(props, option) => {
+                  const { key, ...optionProps } = props;
+                  const label = personalLabel(option);
+                  return (
+                    <Box component="li" key={key} {...optionProps} sx={{ display: 'flex', gap: 1, justifyContent: 'space-between' }}>
+                      <span>{option.name}</span>
+                      {label && <Chip label={label} size="small" variant="outlined" />}
+                    </Box>
+                  );
+                }}
                 renderInput={(params) => (
                   <TextField 
                     {...params} 
                     label="Nome Esercizio" 
                     fullWidth
-                    helperText={filteredExercises.length === 0 && inputValue ? "Nessun esercizio trovato" : ""}
+                    helperText={personalLabel(exercises.find(ex => ex.id === exercise.id)) ||
+                      (filteredExercises.length === 0 && inputValue ? "Nessun esercizio trovato" : "")}
                   />
                 )}
                 noOptionsText="Nessun esercizio trovato"
@@ -207,6 +257,23 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
               />
             )
           )}
+
+          {exercise.muscleGroup && !loadingExercises && canCreate && (
+            <Box>
+              <Button
+                startIcon={creating ? <CircularProgress size={16} /> : <AddIcon />}
+                onClick={handleCreate}
+                disabled={creating}
+                sx={{ textTransform: 'none' }}
+              >
+                Crea «{typedName}» in {exercise.muscleGroup}
+              </Button>
+              <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
+                Lo vedi solo tu finché non viene controllato e aggiunto al catalogo di tutti.
+              </Typography>
+            </Box>
+          )}
+          {createError && <Alert severity="error">{createError}</Alert>}
           
           <Box sx={{ display: 'flex', gap: 2 }}>
             <TextField

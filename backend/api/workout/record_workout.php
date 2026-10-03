@@ -4,6 +4,7 @@ include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/WorkoutHistory.php';
 include_once '../../models/WorkoutSet.php';
+include_once '../../models/Exercise.php';
 require_once '../../lib/weekly_stats.php';
 
 // Connessione creata prima del check di autenticazione: resolve_authenticated_user_id()
@@ -25,6 +26,21 @@ try {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Dati mancanti o non validi']);
         exit;
+    }
+
+    // Solo esercizi approvati o creati dall'utente: quelli in attesa degli altri non si usano
+    $exercise_ids = array();
+    foreach ($data->workout_records as $record) {
+        if (isset($record->exercise_id) && !empty($record->exercise_id)) {
+            $exercise_ids[(int) $record->exercise_id] = true;
+        }
+    }
+    foreach (array_keys($exercise_ids) as $eid) {
+        if (!Exercise::isVisibleTo($db, $eid, $user_id)) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'Esercizio non trovato.']);
+            exit;
+        }
     }
 
     // Determine workout date: use start_time if gap <= 4h, else now

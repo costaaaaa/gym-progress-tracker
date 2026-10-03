@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS `gym_users` (
   `training_start_date` DATE DEFAULT NULL,
   `experience_years` float DEFAULT '0',
   `rest_timer_enabled` tinyint(1) NOT NULL DEFAULT 1,
+  `is_admin` tinyint(1) NOT NULL DEFAULT 0,
   `password_changed_at` datetime DEFAULT NULL,
   `last_login_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -59,9 +60,15 @@ CREATE TABLE IF NOT EXISTS `gym_exercises` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL,
   `muscle_group` varchar(50) NOT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `status` enum('pending','approved','rejected') NOT NULL DEFAULT 'approved',
+  `reviewed_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_created_by` (`created_by`),
+  CONSTRAINT `fk_exercises_creator` FOREIGN KEY (`created_by`) REFERENCES `gym_users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Workout exercises table (junction table between workout_days and exercises)

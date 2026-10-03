@@ -321,7 +321,8 @@ const Account = ({ isEmbedded = false }) => {
         username: userDetails.username,
         email: userDetails.email,
         created_at: userDetails.created_at,
-        password_changed_at: userDetails.password_changed_at
+        password_changed_at: userDetails.password_changed_at,
+        is_admin: userDetails.is_admin === true
       });
 
       // Impostazione dati profilo
@@ -732,6 +733,16 @@ const Account = ({ isEmbedded = false }) => {
       </Card>
 
       <GroupsVisibilityCard />
+
+      {userData?.is_admin && (
+        <Card sx={{ p: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+          <Box>
+            <Typography sx={{ fontSize: 15, fontWeight: 700 }}>Amministrazione</Typography>
+            <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Esercizi da approvare e catalogo</Typography>
+          </Box>
+          <Button variant="outlined" onClick={() => navigate('/admin')} sx={{ flexShrink: 0 }}>Apri</Button>
+        </Card>
+      )}
 
       {/* Sessione */}
       <Card sx={{ p: '24px' }}>

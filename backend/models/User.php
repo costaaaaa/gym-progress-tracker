@@ -420,6 +420,11 @@ class User
             // I dati correlati sono rimossi dai vincoli ON DELETE CASCADE.
             $this->conn->beginTransaction();
 
+            // Gli esercizi personali non approvati sono dati suoi e li vede solo lui: si cancellano.
+            // Quelli approvati restano nel catalogo di tutti (created_by diventa NULL).
+            $stmt = $this->conn->prepare("DELETE FROM gym_exercises WHERE created_by = ? AND status <> 'approved'");
+            $stmt->execute([$this->id]);
+
             $query = "DELETE FROM " . $this->table_name . " WHERE id = ?";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(1, $this->id);
