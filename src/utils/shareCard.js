@@ -253,11 +253,52 @@ const fullLayout = (stats, theme) => {
   return el;
 };
 
+// ── Foto: posizione e zoom scelti dall'utente ──────────────────────────────
+// transform = { zoom, dx, dy }: zoom 1 = la foto riempie il riquadro (cover), meno di 1
+// la rimpicciolisce fino a vederla tutta (contain); dx, dy spostano il centro, in px della card.
+
+export const PHOTO_BOX = { x: 0, y: 0, w: CARD_WIDTH, h: CARD_HEIGHT };
+export const PHOTO_ZOOM_MAX = 4;
+export const DEFAULT_PHOTO_TRANSFORM = { zoom: 1, dx: 0, dy: 0 };
+
+const coverScale = (iw, ih, box) => Math.max(box.w / iw, box.h / ih);
+
+export const photoMinZoom = (iw, ih, box = PHOTO_BOX) => Math.min(box.w / iw, box.h / ih) / coverScale(iw, ih, box);
+
+// Dove disegnare la foto: rettangolo in px della card, da ritagliare sul riquadro.
+export const photoRect = (iw, ih, transform = DEFAULT_PHOTO_TRANSFORM, box = PHOTO_BOX) => {
+  const scale = coverScale(iw, ih, box) * transform.zoom;
+  const w = iw * scale;
+  const h = ih * scale;
+  return { x: box.x + (box.w - w) / 2 + transform.dx, y: box.y + (box.h - h) / 2 + transform.dy, w, h };
+};
+
+const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
+// Tiene la foto al suo posto: se è più grande del riquadro non si scoprono i bordi,
+// se è più piccola non esce dal riquadro.
+export const clampPhotoTransform = (transform, iw, ih, box = PHOTO_BOX) => {
+  const zoom = clamp(transform.zoom, photoMinZoom(iw, ih, box), PHOTO_ZOOM_MAX);
+  const { w, h } = photoRect(iw, ih, { zoom, dx: 0, dy: 0 }, box);
+  const limX = Math.abs(w - box.w) / 2;
+  const limY = Math.abs(h - box.h) / 2;
+  return { zoom, dx: clamp(transform.dx, -limX, limX), dy: clamp(transform.dy, -limY, limY) };
+};
+
+// Zoom di un fattore tenendo fermo il punto (x, y) della card: quello sotto le dita o il cursore.
+export const zoomPhotoAt = (transform, factor, point, iw, ih, box = PHOTO_BOX) => {
+  const zoom = clamp(transform.zoom * factor, photoMinZoom(iw, ih, box), PHOTO_ZOOM_MAX);
+  const f = zoom / transform.zoom;
+  const ax = point.x - (box.x + box.w / 2);
+  const ay = point.y - (box.y + box.h / 2);
+  return clampPhotoTransform({ zoom, dx: ax + (transform.dx - ax) * f, dy: ay + (transform.dy - ay) * f }, iw, ih, box);
+};
+
 // Foto: la foto resta visibile in alto, i numeri stanno nella parte bassa su una sfumatura scura.
 const photoLayout = (stats, theme, hasPhoto) => {
   const el = [];
   if (hasPhoto) {
-    el.push({ type: 'photo', x: 0, y: 0, w: CARD_WIDTH, h: CARD_HEIGHT });
+    el.push({ type: 'photo', ...PHOTO_BOX });
     el.push({ type: 'rect', x: 0, y: 0, w: CARD_WIDTH, h: 520, fill: { gradient: { x0: 0, y0: 0, x1: 0, y1: 520, stops: [[0, 'rgba(0,0,0,0.55)'], [1, 'rgba(0,0,0,0)']] } } });
     el.push({ type: 'rect', x: 0, y: 560, w: CARD_WIDTH, h: CARD_HEIGHT - 560, fill: { gradient: { x0: 0, y0: 560, x1: 0, y1: CARD_HEIGHT, stops: [[0, 'rgba(0,0,0,0)'], [0.25, 'rgba(0,0,0,0.72)'], [1, 'rgba(0,0,0,0.94)']] } } });
   }
@@ -307,7 +348,7 @@ const photoLayout = (stats, theme, hasPhoto) => {
  * Elementi della card, in ordine di disegno. Coordinate in px su 1080×1920.
  *   rect:  { x, y, w, h, r?, fill }   fill = colore | { gradient: { x0, y0, x1, y1, stops: [[offset, colore]] } }
  *   text:  { x, y (linea di base), text, size, weight, color, align: left|center|right, letterSpacing }
- *   photo: { x, y, w, h }              la foto dell'utente, ritagliata per riempire (cover)
+ *   photo: { x, y, w, h }              riquadro della foto dell'utente: dentro, photoRect() con lo zoom scelto
  */
 export const layoutShareCard = (stats, templateId, { hasPhoto = false } = {}) => {
   const theme = THEMES[templateId] || THEMES.scuro;

@@ -1,5 +1,7 @@
 // Disegna su <canvas> la card descritta da layoutShareCard (shareCard.js).
 
+import { photoRect, DEFAULT_PHOTO_TRANSFORM } from './shareCard';
+
 const FONT_FAMILY = "Lexend, 'Roboto Condensed', sans-serif";
 
 const makeFill = (ctx, fill) => {
@@ -20,14 +22,15 @@ const roundedRect = (ctx, x, y, w, h, r) => {
   ctx.closePath();
 };
 
-// Ritaglia la foto al centro perché riempia il riquadro (come object-fit: cover).
-const drawCover = (ctx, image, x, y, w, h) => {
-  const iw = image.width;
-  const ih = image.height;
-  const scale = Math.max(w / iw, h / ih);
-  const sw = w / scale;
-  const sh = h / scale;
-  ctx.drawImage(image, (iw - sw) / 2, (ih - sh) / 2, sw, sh, x, y, w, h);
+// Foto con lo zoom e la posizione scelti, ritagliata sul suo riquadro.
+const drawPhoto = (ctx, image, box, transform) => {
+  const r = photoRect(image.width, image.height, transform, box);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(box.x, box.y, box.w, box.h);
+  ctx.clip();
+  ctx.drawImage(image, r.x, r.y, r.w, r.h);
+  ctx.restore();
 };
 
 /**
@@ -42,7 +45,7 @@ export const loadCardFonts = () => {
   ]).catch(() => {});
 };
 
-export const renderCardToCanvas = (canvas, layout, photo) => {
+export const renderCardToCanvas = (canvas, layout, photo, photoTransform = DEFAULT_PHOTO_TRANSFORM) => {
   canvas.width = layout.width;
   canvas.height = layout.height;
   const ctx = canvas.getContext('2d');
@@ -58,7 +61,7 @@ export const renderCardToCanvas = (canvas, layout, photo) => {
         ctx.fillRect(el.x, el.y, el.w, el.h);
       }
     } else if (el.type === 'photo') {
-      if (photo) drawCover(ctx, photo, el.x, el.y, el.w, el.h);
+      if (photo) drawPhoto(ctx, photo, el, photoTransform);
     } else if (el.type === 'text') {
       ctx.font = `${el.weight} ${el.size}px ${FONT_FAMILY}`;
       ctx.fillStyle = el.color;
