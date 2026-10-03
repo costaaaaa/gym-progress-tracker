@@ -49,6 +49,8 @@ import { API_BASE_URL } from '../config';
 import { hapticFeedback } from '../utils/vibration';
 import { INTENSITY_TECHNIQUES } from '../components/ExerciseDialog';
 import { buildExerciseHistoryIndex, detectPersonalRecords } from '../utils/workoutMetrics';
+import { buildShareStats } from '../utils/shareCard';
+import ShareCardDialog from '../components/ShareCardDialog';
 import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../utils/celebrate';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { track } from '../utils/analytics';
@@ -113,15 +115,21 @@ const FocusWorkout = () => {
   // Summary state
   const [workoutNotes, setWorkoutNotes] = useState('');
   const [startTime, setStartTime] = useState(null);
+  // Fine allenamento, fissata all'arrivo nel riepilogo: la durata non cresce più mentre si scrivono le note
+  const [endTime, setEndTime] = useState(null);
   const [saving, setSaving] = useState(false);
   const [savedResult, setSavedResult] = useState(null); // streak flags after successful save
-  const [shareTextOpen, setShareTextOpen] = useState(false);
+  const [shareStats, setShareStats] = useState(null); // card da condividere, null = dialog chiuso
 
   // UI state
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [confirmQuitDialog, setConfirmQuitDialog] = useState(false);
   const [exerciseTransition, setExerciseTransition] = useState(true);
   const [draftToResume, setDraftToResume] = useState(null);
+
+  useEffect(() => {
+    if (phase === 'summary') setEndTime((prev) => prev || new Date());
+  }, [phase]);
 
   // ================================================
   // AUTOSAVE LOGIC
@@ -351,6 +359,7 @@ const FocusWorkout = () => {
     setSkippedExercises([]);
     setWorkoutNotes('');
     setStartTime(new Date());
+    setEndTime(null);
 
     // Pre-compila reps dal piano e peso dall'ultima sessione (sovraccarico progressivo)
     const firstExercise = selectedDay.exercises[0];
@@ -507,9 +516,14 @@ const FocusWorkout = () => {
   };
 
   // Tempo totale allenamento
+  const getElapsedSeconds = () => {
+    if (!startTime) return 0;
+    return Math.floor(((endTime || new Date()) - startTime) / 1000);
+  };
+
   const getElapsedTime = () => {
     if (!startTime) return '00:00';
-    const elapsed = Math.floor((new Date() - startTime) / 1000);
+    const elapsed = getElapsedSeconds();
     const mins = Math.floor(elapsed / 60);
     const secs = elapsed % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -556,7 +570,8 @@ const FocusWorkout = () => {
         body: JSON.stringify({
           workout_records: workoutRecords,
           notes: workoutNotes || '',
-          start_time: startTime ? startTime.toISOString() : null
+          start_time: startTime ? startTime.toISOString() : null,
+          duration_seconds: startTime ? getElapsedSeconds() : null
         })
       });
 
@@ -1136,26 +1151,16 @@ const FocusWorkout = () => {
                     })
                     .map(ex => ex.exercise_name) || [];
 
-                  const handleShare = async () => {
-                    const date = new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
-                    const lines = [
-                      `🏋️ Allenamento del ${date}`,
-                      `${activePlan?.name || ''}${selectedDay?.name ? ' · ' + selectedDay.name : ''}`,
-                      `⏱ ${getElapsedTime()} · ${exercisesCompleted} esercizi · ${totalSets} serie`,
-                    ];
-                    if (prList.length) lines.push(`🏆 Nuovi record: ${prList.join(', ')}`);
-                    if (savedResult.current_streak_weeks > 0) lines.push(`🔥 Streak: ${savedResult.current_streak_weeks} settimane`);
-                    lines.push('', 'Tracciato con LiftIndex');
-                    const text = lines.join('\n');
-
-                    if (navigator.share) {
-                      try { await navigator.share({ title: 'Il mio allenamento', text }); } catch { /* condivisione annullata dall'utente */ }
-                    } else if (navigator.clipboard) {
-                      await navigator.clipboard.writeText(text);
-                      setSnackbar({ open: true, message: 'Copiato negli appunti!', severity: 'success' });
-                    } else {
-                      setShareTextOpen(true);
-                    }
+                  const handleShare = () => {
+                    setShareStats(buildShareStats({
+                      exercises: (selectedDay?.exercises || []).map(ex => ({ sets: completedSets[ex.id] || [] })),
+                      date: startTime || new Date(),
+                      durationSec: getElapsedSeconds(),
+                      title: `${activePlan?.name || ''}${selectedDay?.name ? ' · ' + selectedDay.name : ''}`,
+                      prNames: prList,
+                      streakWeeks: savedResult.current_streak_weeks,
+                    }));
+                    track('workout_card', { action: 'open', from: 'summary' });
                   };
 
                   return (
@@ -1203,27 +1208,7 @@ const FocusWorkout = () => {
                   Torna alla Home
                 </Button>
 
-                {/* Fallback share dialog */}
-                <Dialog open={shareTextOpen} onClose={() => setShareTextOpen(false)}
-                  PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: '16px' } }}>
-                  <DialogTitle>Copia il testo</DialogTitle>
-                  <DialogContent>
-                    <TextField
-                      multiline fullWidth variant="outlined" InputProps={{ readOnly: true }}
-                      value={[
-                        `🏋️ Allenamento del ${new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}`,
-                        `${activePlan?.name || ''}${selectedDay?.name ? ' · ' + selectedDay.name : ''}`,
-                        `⏱ ${getElapsedTime()} · ${exercisesCompleted} esercizi · ${totalSets} serie`,
-                        ...(savedResult.current_streak_weeks > 0 ? [`🔥 Streak: ${savedResult.current_streak_weeks} settimane`] : []),
-                        '', 'Tracciato con LiftIndex'
-                      ].join('\n')}
-                      sx={{ '& .MuiOutlinedInput-root': { color: colors.text, '& fieldset': { borderColor: colors.border } } }}
-                    />
-                  </DialogContent>
-                  <DialogActions>
-                    <Button onClick={() => setShareTextOpen(false)} sx={{ color: colors.primary }}>Chiudi</Button>
-                  </DialogActions>
-                </Dialog>
+                <ShareCardDialog open={!!shareStats} stats={shareStats} onClose={() => setShareStats(null)} />
               </>
             ) : (
               <>

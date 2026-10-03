@@ -127,6 +127,7 @@ CREATE TABLE IF NOT EXISTS `gym_workout_history` (
   `user_id` int(11) NOT NULL,
   `exercises` text NOT NULL, -- Keep for compatibility with legacy code
   `date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `duration_seconds` int unsigned DEFAULT NULL,
   `notes` text DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),

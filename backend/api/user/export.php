@@ -77,7 +77,7 @@ try {
 
     // Storico allenamenti con le serie
     $history = export_rows($db,
-        "SELECT id, date, notes, exercises FROM gym_workout_history WHERE user_id = ? ORDER BY date, id",
+        "SELECT id, date, duration_seconds, notes, exercises FROM gym_workout_history WHERE user_id = ? ORDER BY date, id",
         array($user_id));
     $sets = export_rows($db,
         "SELECT s.workout_history_id, e.name AS esercizio, s.set_number, s.weight, s.reps, s.intensity_technique
@@ -95,6 +95,7 @@ try {
     foreach ($history as $h) {
         $allenamenti[] = array(
             'data' => $h['date'],
+            'durata_secondi' => $h['duration_seconds'] !== null ? (int)$h['duration_seconds'] : null,
             'note' => $h['notes'],
             'esercizi_svolti' => $h['exercises'],
             'serie' => isset($setsByHistory[$h['id']]) ? $setsByHistory[$h['id']] : array(),

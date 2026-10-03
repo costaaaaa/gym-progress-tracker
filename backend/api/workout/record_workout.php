@@ -30,6 +30,7 @@ try {
     // Determine workout date: use start_time if gap <= 4h, else now
     $now = new DateTime();
     $data_workout = $now->format('Y-m-d H:i:s');
+    $start_gap = null;
 
     if (!empty($data->start_time)) {
         try {
@@ -37,10 +38,26 @@ try {
             $gap_seconds = $now->getTimestamp() - $start->getTimestamp();
             if ($gap_seconds >= 0 && $gap_seconds <= 4 * 3600) {
                 $data_workout = $start->format('Y-m-d H:i:s');
+                $start_gap = $gap_seconds;
             }
         } catch (Exception $e) {
             // invalid start_time — fall back to now
         }
+    }
+
+    // Durata: quella del client (fermata a fine allenamento, prima di note e salvataggio) se
+    // plausibile, altrimenti il tempo dall'inizio. Le app che non mandano duration_seconds
+    // ottengono così una durata comunque; senza start_time valido resta NULL.
+    $duration_seconds = null;
+    if ($start_gap !== null) {
+        $duration_seconds = $start_gap;
+        if (isset($data->duration_seconds) && is_numeric($data->duration_seconds)) {
+            $client_duration = (int) $data->duration_seconds;
+            if ($client_duration > 0 && $client_duration <= $start_gap + 300) {
+                $duration_seconds = $client_duration;
+            }
+        }
+        if ($duration_seconds < 60) $duration_seconds = null;
     }
 
     $db->beginTransaction();
@@ -49,6 +66,7 @@ try {
         $workout_history = new WorkoutHistory($db);
         $workout_history->user_id = $user_id;
         $workout_history->date = $data_workout;
+        $workout_history->duration_seconds = $duration_seconds;
         $workout_history->notes = isset($data->notes) ? $data->notes : '';
         $workout_history->exercises = json_encode($data->workout_records);
 
@@ -283,6 +301,8 @@ try {
             'message'               => 'Allenamento registrato con successo',
             'id'                    => $workout_id,
             'sets_saved'            => $sets_saved,
+            'duration_seconds'      => $duration_seconds,
+            'session_volume_kg'     => round($session_volume_kg, 2),
             'total_sessions'        => $total_sessions_cnt,
             'current_streak_weeks'  => $current_streak_val,
             'week_completed_now'    => $week_completed_now,

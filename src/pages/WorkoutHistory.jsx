@@ -26,9 +26,13 @@ import EditCalendarIcon from '@mui/icons-material/EditCalendar';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ShareIcon from '@mui/icons-material/Share';
 
 import RecordWorkoutDialog from '../components/RecordWorkoutDialog';
 import EditWorkoutDateDialog from '../components/EditWorkoutDateDialog';
+import ShareCardDialog from '../components/ShareCardDialog';
+import { buildShareStats, historyPrNames, muscleGroupsTitle } from '../utils/shareCard';
+import { track } from '../utils/analytics';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 
@@ -91,6 +95,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
   const [workoutToEdit, setWorkoutToEdit] = useState(null);
   const [expandedMonths, setExpandedMonths] = useState({});
   const [expandedWorkouts, setExpandedWorkouts] = useState({});
+  const [shareStats, setShareStats] = useState(null); // card da condividere, null = dialog chiuso
 
   useEffect(() => {
     if (authLoading) return;
@@ -222,6 +227,17 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
       setOpenDeleteDialog(false);
       setWorkoutToDelete(null);
     }
+  };
+
+  const handleShareClick = (workout) => {
+    setShareStats(buildShareStats({
+      exercises: workout.exercises,
+      date: workout.date,
+      durationSec: workout.duration_seconds,
+      title: muscleGroupsTitle(workout.exercises),
+      prNames: historyPrNames(workouts, workout),
+    }));
+    track('workout_card', { action: 'open', from: 'history' });
   };
 
   const handleEditDateClick = (workout, event) => {
@@ -387,8 +403,9 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                       const rowPanelId = `workout-detail-panel-${workout.id}`;
                       return (
                         <React.Fragment key={workout.id}>
-                          <ListItem secondaryAction={
+                          <ListItem sx={{ pr: 18 }} secondaryAction={
                             <Box>
+                              <IconButton onClick={() => handleShareClick(workout)} size="small" sx={{ color: 'text.secondary' }} aria-label="Condividi allenamento"><ShareIcon fontSize="small" /></IconButton>
                               <IconButton onClick={(e) => handleEditDateClick(workout, e)} size="small" sx={{ color: 'text.secondary' }}><EditCalendarIcon fontSize="small" /></IconButton>
                               <IconButton onClick={(e) => handleDeleteClick(workout, e)} size="small" sx={{ color: 'text.secondary' }}><DeleteIcon fontSize="small" /></IconButton>
                               <IconButton
@@ -437,6 +454,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
           <Button onClick={handleConfirmDelete} color="error" variant="contained" disabled={deleteLoading}>Elimina</Button>
         </DialogActions>
       </Dialog>
+      <ShareCardDialog open={!!shareStats} stats={shareStats} onClose={() => setShareStats(null)} />
       <EditWorkoutDateDialog open={openEditDateDialog} onClose={handleCloseEditDateDialog} workout={workoutToEdit} onUpdateSuccess={handleUpdateDateSuccess} />
       <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
         <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity}>{snackbar.message}</Alert>

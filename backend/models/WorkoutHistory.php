@@ -10,6 +10,7 @@ class WorkoutHistory
     public $user_id;
     public $exercises;
     public $date;
+    public $duration_seconds = null;
     public $notes;
 
     // Constructor with database connection
@@ -33,6 +34,7 @@ class WorkoutHistory
                         user_id = :user_id,
                         exercises = :exercises,
                         date = :date,
+                        duration_seconds = :duration_seconds,
                         notes = :notes";
 
             // Prepare query
@@ -42,6 +44,7 @@ class WorkoutHistory
             $stmt->bindParam(":user_id", $this->user_id);
             $stmt->bindParam(":exercises", $this->exercises);
             $stmt->bindParam(":date", $this->date);
+            $stmt->bindValue(":duration_seconds", $this->duration_seconds, $this->duration_seconds === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
             $stmt->bindParam(":notes", $this->notes);
 
             // Execute query
@@ -61,7 +64,7 @@ class WorkoutHistory
     public function readAllByUser()
     {
         // Query to read all records
-        $query = "SELECT id, exercises, date, notes
+        $query = "SELECT id, exercises, date, duration_seconds, notes
                 FROM " . $this->table_name . "
                 WHERE user_id = ?
                 ORDER BY date DESC";

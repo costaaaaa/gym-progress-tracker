@@ -87,6 +87,7 @@ try {
             $record_item = array(
                 "id" => $row['id'],
                 "date" => $row['date'],
+                "duration_seconds" => $row['duration_seconds'] !== null ? (int) $row['duration_seconds'] : null,
                 "notes" => $row['notes'],
                 "exercises" => isset($sets_by_workout[$row['id']]) ? $sets_by_workout[$row['id']] : []
             );

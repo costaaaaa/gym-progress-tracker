@@ -284,3 +284,14 @@ CREATE TABLE IF NOT EXISTS `gym_group_members` (
 
 ALTER TABLE `gym_user_stats`
   ADD COLUMN `health_fields` SET('weight', 'body_fat_percentage', 'waist_size') NOT NULL DEFAULT '' AFTER `leg_size`;
+
+
+-- ------------------------------------------------------------------------------
+-- 15. gym_workout_history.duration_seconds: durata dell'allenamento, salvata da
+--     record_workout.php (Focus Mode). NULL per gli allenamenti precedenti e per
+--     quelli inseriti a mano.
+--     Da eseguire una sola volta (ADD COLUMN non e' idempotente).
+-- ------------------------------------------------------------------------------
+
+ALTER TABLE `gym_workout_history`
+  ADD COLUMN `duration_seconds` INT UNSIGNED DEFAULT NULL AFTER `date`;
