@@ -99,6 +99,13 @@ check "A lo vede nel catalogo" "$(call GET api/exercise/read_all.php "$A")" "[.r
 check "B non lo vede" "$(call GET api/exercise/read_all.php "$B")" "[.records[] | select(.id == $EID)] | length == 0"
 check "senza login non si vede" "$(call GET api/exercise/read_all.php "")" "[.records[] | select(.id == $EID)] | length == 0"
 
+echo "Nomi simili (Forse cercavi)"
+SIMILAR="api/exercise/similar.php?name=$(jq -rn --arg n "curl atleta $SUFFIX" '$n|@uri')"
+check "ad A propone il suo esercizio" "$(call GET "$SIMILAR" "$A")" "[.records[] | select(.id == $EID and .is_mine)] | length == 1"
+check "a B non propone quello in attesa di A" "$(call GET "$SIMILAR" "$B")" "[.records[] | select(.id == $EID)] | length == 0"
+check "senza login nemmeno" "$(call GET "$SIMILAR" "")" "[.records[] | select(.id == $EID)] | length == 0"
+check "nome troppo corto: nessuna proposta" "$(call GET 'api/exercise/similar.php?name=ab' "$A")" ".records == []"
+
 PLAN_A="$(call POST api/workout/create_plan.php "$A" '{"name":"Scheda A"}' | cut -d' ' -f2- | jq -r '.plan.id')"
 DAY_A="$(call POST api/workout/create_days.php "$A" "{\"plan_id\":$PLAN_A,\"days\":[{\"name\":\"Giorno 1\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
 PLAN_B="$(call POST api/workout/create_plan.php "$B" '{"name":"Scheda B"}' | cut -d' ' -f2- | jq -r '.plan.id')"
@@ -124,6 +131,8 @@ if [[ -n "${ADMIN_USER:-}" && -n "${ADMIN_PASS:-}" ]]; then
         check "user/read dice che è admin" "$(call GET api/user/read.php "$ADM")" '.is_admin == true'
         check "l'esercizio di A è in coda, con creatore e utilizzi" "$(call GET api/admin/exercises.php "$ADM")" \
             "[.exercises[] | select(.id == $EID and .created_by_username == \"$A_USER\" and .uses > 0)] | length == 1"
+        check "in coda, con gli esercizi simili del catalogo" "$(call GET api/admin/exercises.php "$ADM")" \
+            "[.exercises[] | select(.id == $EID and (.similar | type) == \"array\")] | length == 1"
         expect "stato sconosciuto: 400" 400 "$(call GET 'api/admin/exercises.php?status=boh' "$ADM")"
         expect "rinomina con un link rifiutata" 400 "$(call POST api/admin/exercises.php "$ADM" "{\"action\":\"update\",\"id\":$EID,\"name\":\"www.spam.com\",\"muscle_group\":\"bicipiti\"}")"
         expect "rifiuta" 200 "$(call POST api/admin/exercises.php "$ADM" "{\"action\":\"reject\",\"id\":$EID}")"

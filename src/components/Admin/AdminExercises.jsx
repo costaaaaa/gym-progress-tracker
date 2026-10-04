@@ -155,6 +155,11 @@ const AdminExercises = () => {
                     {e.created_by_username ? `da ${e.created_by_username}` : 'catalogo'} · usato {e.uses} {e.uses === 1 ? 'volta' : 'volte'}
                   </Typography>
                 </Box>
+                {e.similar?.length > 0 && (
+                  <Typography sx={{ fontSize: 13, color: 'warning.dark', mt: 0.75 }}>
+                    Simile a: {e.similar.map((s) => `${s.name} (${s.muscle_group})`).join(' · ')}
+                  </Typography>
+                )}
               </Box>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 {status !== 'approved' && (

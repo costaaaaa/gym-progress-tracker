@@ -23,6 +23,10 @@ const post = (path, body) => request(path, { method: 'POST', body: JSON.stringif
 export const createExercise = (name, muscleGroup) =>
   post('exercise/create.php', { name, muscle_group: muscleGroup });
 
+// Fino a 3 esercizi visibili con un nome simile ("Forse cercavi"), per evitare doppioni
+export const findSimilarExercises = (name) =>
+  request(`exercise/similar.php?name=${encodeURIComponent(name)}`);
+
 export const listAdminExercises = (status = 'pending') =>
   request(`admin/exercises.php?status=${encodeURIComponent(status)}`);
 export const adminExerciseAction = (action, extra = {}) => post('admin/exercises.php', { action, ...extra });

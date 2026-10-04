@@ -19,7 +19,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { API_BASE_URL } from '../config';
-import { createExercise, errorMessage, personalLabel } from '../api/exercises';
+import { createExercise, errorMessage, findSimilarExercises, personalLabel } from '../api/exercises';
 
 // Helper per rendere maiuscola la prima lettera
 const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
@@ -58,6 +58,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
   const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
 
   // Carica tutti gli esercizi quando il dialog viene aperto per estrarre i gruppi muscolari
   useEffect(() => {
@@ -65,6 +66,21 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
       fetchAllExercises();
     }
   }, [open]);
+
+  // "Forse cercavi": esercizi con un nome simile a quello da creare, chiesti al server mentre si scrive
+  useEffect(() => {
+    const name = newName.trim();
+    if (name.length < 3) {
+      setSuggestions([]);
+      return undefined;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const res = await findSimilarExercises(name);
+      if (!cancelled) setSuggestions(res.ok ? res.data.records : []);
+    }, 300);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [newName]);
 
   // Filtra gli esercizi quando cambia il gruppo muscolare selezionato
   useEffect(() => {
@@ -135,6 +151,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
         name: newValue.name,
         id: newValue.id // Questo è l'ID originale dalla tabella gym_exercises
       }));
+      setNewName('');
     }
   };
 
@@ -176,6 +193,22 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
     }));
     setInputValue(created.name);
     setNewName('');
+  };
+
+  // Sceglie un esercizio proposto da "Forse cercavi", anche se è in un altro gruppo muscolare
+  const handleSuggestion = (suggestion) => {
+    const known = allExercises.find(ex => String(ex.id) === String(suggestion.id));
+    const chosen = known || suggestion;
+    if (!known) setAllExercises(prev => [...prev, suggestion]);
+    setExercise(prev => ({
+      ...prev,
+      muscleGroup: capitalize(chosen.muscle_group),
+      name: chosen.name,
+      id: chosen.id
+    }));
+    setInputValue(chosen.name);
+    setNewName('');
+    setCreateError('');
   };
 
   const handleSubmit = () => {
@@ -285,6 +318,21 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
                   Crea
                 </Button>
               </Box>
+              {suggestions.length > 0 && (
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap', mt: 1 }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 600 }}>Forse cercavi:</Typography>
+                  {suggestions.map(s => (
+                    <Chip
+                      key={s.id}
+                      label={`${s.name} · ${s.muscle_group}`}
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                      onClick={() => handleSuggestion(s)}
+                    />
+                  ))}
+                </Box>
+              )}
               <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
                 Lo vedi solo tu finché non viene controllato e aggiunto al catalogo di tutti.
               </Typography>

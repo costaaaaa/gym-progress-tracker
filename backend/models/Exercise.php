@@ -8,6 +8,13 @@ class Exercise
     // Esercizi personali non ancora approvati che un utente può avere
     const MAX_PERSONAL = 30;
     const STATUSES = array('pending', 'approved', 'rejected');
+    // Sopra questa somiglianza (0-1) due nomi sono proposti come possibile doppione
+    const SIMILAR_MIN = 0.6;
+    // Parole che non distinguono un esercizio da un altro
+    const STOPWORDS = array('a', 'ad', 'ai', 'al', 'all', 'alla', 'alle', 'agli', 'allo', 'con', 'col', 'coi',
+        'da', 'dal', 'dalla', 'dai', 'di', 'del', 'dell', 'della', 'delle', 'dei', 'degli', 'dello', 'e', 'ed',
+        'il', 'la', 'le', 'lo', 'i', 'gli', 'l', 'in', 'nel', 'nell', 'nella', 'su', 'sul', 'sull', 'sulla',
+        'per', 'the', 'of', 'with');
 
     // Object properties
     public $id;
@@ -132,6 +139,85 @@ class Exercise
         return $row ?: null;
     }
 
+    // ── Nomi simili (possibili doppioni) ─────────────────────────────────────
+
+    // Parole del nome senza maiuscole, accenti, punteggiatura e articoli/preposizioni
+    public static function nameTokens($name)
+    {
+        $s = mb_strtolower((string)$name, 'UTF-8');
+        $s = strtr($s, array('à' => 'a', 'á' => 'a', 'â' => 'a', 'ä' => 'a', 'è' => 'e', 'é' => 'e', 'ê' => 'e',
+            'ë' => 'e', 'ì' => 'i', 'í' => 'i', 'î' => 'i', 'ï' => 'i', 'ò' => 'o', 'ó' => 'o', 'ô' => 'o',
+            'ö' => 'o', 'ù' => 'u', 'ú' => 'u', 'û' => 'u', 'ü' => 'u', 'ñ' => 'n', 'ç' => 'c'));
+        $words = preg_split('~[^a-z0-9]+~', $s, -1, PREG_SPLIT_NO_EMPTY);
+        return array_values(array_diff($words, self::STOPWORDS));
+    }
+
+    // Stessa parola a meno di una lettera: refuso o desinenza (cavo/cavi, manubrio/manubri). Non di
+    // più, altrimenti inclinata/declinata risulterebbero la stessa parola.
+    private static function tokensMatch($a, $b)
+    {
+        if ($a === $b || rtrim($a, 's') === rtrim($b, 's')) return true; // plurali inglesi: dip/dips
+        if (min(strlen($a), strlen($b)) < 4) return false;
+        return levenshtein($a, $b) <= 1;
+    }
+
+    // Somiglianza tra due nomi, da 0 a 1: la migliore tra parole in comune (coefficiente di Dice,
+    // "Panca piana" ~ "Panca piana bilanciere") e distanza tra i nomi senza spazi, che conta solo se
+    // sono quasi uguali ("Pulldown" ~ "Pull down"): più in basso premierebbe ogni nome che ha in
+    // comune una parola lunga ("Curl con manubri" ~ "Calf con manubrio").
+    public static function nameSimilarity($a, $b)
+    {
+        $ta = self::nameTokens($a);
+        $tb = self::nameTokens($b);
+        if (!$ta || !$tb) return 0.0;
+
+        $matched = 0;
+        $used = array();
+        foreach ($ta as $x) {
+            foreach ($tb as $j => $y) {
+                if (!isset($used[$j]) && self::tokensMatch($x, $y)) {
+                    $used[$j] = true;
+                    $matched++;
+                    break;
+                }
+            }
+        }
+        $dice = 2 * $matched / (count($ta) + count($tb));
+
+        $sa = implode('', $ta);
+        $sb = implode('', $tb);
+        $edit = 1 - levenshtein($sa, $sb) / max(strlen($sa), strlen($sb));
+
+        return max($dice, $edit >= 0.85 ? $edit : 0.0);
+    }
+
+    // I $limit esercizi di $candidates (righe con id e name) più simili a $name, dal più simile
+    public static function mostSimilar($name, array $candidates, $limit = 3, $except_id = 0)
+    {
+        $found = array();
+        foreach ($candidates as $c) {
+            if ((int)$c['id'] === (int)$except_id) continue;
+            $score = self::nameSimilarity($name, $c['name']);
+            if ($score >= self::SIMILAR_MIN) {
+                $c['score'] = round($score, 2);
+                $found[] = $c;
+            }
+        }
+        usort($found, function ($x, $y) {
+            return $y['score'] <=> $x['score'] ?: strcmp($x['name'], $y['name']);
+        });
+        return array_slice($found, 0, $limit);
+    }
+
+    // Esercizi visibili all'utente (approvati + suoi; solo approvati se $user_id è null)
+    public function visibleRows($user_id)
+    {
+        $stmt = $this->conn->prepare("SELECT id, name, muscle_group, status, created_by FROM " . $this->table_name . "
+                WHERE status = 'approved' OR created_by = ?");
+        $stmt->execute([$user_id === null ? 0 : (int)$user_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     // Esercizi personali non approvati dell'utente (per il tetto MAX_PERSONAL)
     public function countPersonal($user_id)
     {
@@ -174,9 +260,14 @@ class Exercise
                 ORDER BY " . ($status === 'approved' ? "e.name ASC" : "e.created_at ASC, e.id ASC"));
         $stmt->execute([$status]);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Per gli esercizi da rivedere, quelli del catalogo con un nome simile: possibili doppioni
+        $catalog = $status === 'approved' ? array() : $this->visibleRows(null);
         foreach ($rows as &$r) {
             $r['id'] = (int)$r['id'];
             $r['uses'] = (int)$r['uses'];
+            $r['similar'] = array_map(function ($c) {
+                return array('id' => (int)$c['id'], 'name' => $c['name'], 'muscle_group' => $c['muscle_group']);
+            }, self::mostSimilar($r['name'], $catalog, 3, $r['id']));
         }
         return $rows;
     }
