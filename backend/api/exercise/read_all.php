@@ -39,7 +39,9 @@ try {
             $exercise_item = array(
                 "id" => $id,
                 "name" => $name,
+                "name_en" => $name_en,
                 "muscle_group" => $muscle_group,
+                "equipment" => $equipment,
                 "status" => $status,
                 "is_mine" => $user_id && (int)$created_by === (int)$user_id,
                 "created_at" => $created_at,

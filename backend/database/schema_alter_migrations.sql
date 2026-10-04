@@ -317,3 +317,20 @@ ALTER TABLE `gym_exercises`
 
 ALTER TABLE `gym_users`
   ADD COLUMN `is_admin` tinyint(1) NOT NULL DEFAULT 0 AFTER `rest_timer_enabled`;
+
+
+-- ------------------------------------------------------------------------------
+-- 17. Catalogo esercizi multilingua. gym_exercises.name_en: nome inglese (la lingua
+--     inglese ricade su name se e' NULL); equipment: attrezzo (bilanciere, manubri,
+--     cavi, macchina, multipower, corpo_libero, kettlebell); merged_into: l'esercizio
+--     che ha preso il posto di un doppione (il doppione resta nascosto, status
+--     'rejected', cosi' gli id vecchi non diventano orfani). Solo colonne nuove: il
+--     rollback del codice resta possibile. Da eseguire una sola volta.
+-- ------------------------------------------------------------------------------
+
+ALTER TABLE `gym_exercises`
+  ADD COLUMN `name_en` varchar(100) DEFAULT NULL AFTER `name`,
+  ADD COLUMN `equipment` varchar(30) DEFAULT NULL AFTER `muscle_group`,
+  ADD COLUMN `merged_into` int(11) DEFAULT NULL AFTER `reviewed_at`,
+  ADD KEY `idx_merged_into` (`merged_into`),
+  ADD CONSTRAINT `fk_exercises_merged` FOREIGN KEY (`merged_into`) REFERENCES `gym_exercises` (`id`) ON DELETE SET NULL;

@@ -25,7 +25,9 @@ try {
         return array(
             'id' => (int)$r['id'],
             'name' => $r['name'],
+            'name_en' => $r['name_en'],
             'muscle_group' => $r['muscle_group'],
+            'equipment' => $r['equipment'],
             'status' => $r['status'],
             'is_mine' => $user_id !== null && (int)$r['created_by'] === $user_id,
         );

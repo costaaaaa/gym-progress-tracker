@@ -32,6 +32,8 @@ try {
     $exercise_ids = array();
     foreach ($data->workout_records as $record) {
         if (isset($record->exercise_id) && !empty($record->exercise_id)) {
+            // Un doppione unito al catalogo (bozza offline, app vecchia) conta come l'esercizio che resta
+            $record->exercise_id = Exercise::canonicalId($db, $record->exercise_id);
             $exercise_ids[(int) $record->exercise_id] = true;
         }
     }

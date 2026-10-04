@@ -139,6 +139,7 @@ backend/database/*.sql
 # Aggiungi qui ogni nuovo file di schema; i dump di dati restano ignorati di default.
 !backend/database/gym_progress_tracker.sql
 !backend/database/schema_alter_migrations.sql
+!backend/database/catalog_20261004.sql
 
 # Backfill gamification (seed una-tantum, non va in git)
 backend/scripts/backfill_gamification.php

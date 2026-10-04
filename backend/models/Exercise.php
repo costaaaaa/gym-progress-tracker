@@ -90,7 +90,7 @@ class Exercise
     // Senza utente (null) solo gli approvati.
     public function readVisibleTo($user_id)
     {
-        $query = "SELECT id, name, muscle_group, status, created_by, created_at, updated_at
+        $query = "SELECT id, name, name_en, muscle_group, equipment, status, created_by, created_at, updated_at
                 FROM " . $this->table_name . "
                 WHERE status = 'approved' OR created_by = ?
                 ORDER BY name ASC";
@@ -105,6 +105,16 @@ class Exercise
         $stmt = $db->prepare("SELECT 1 FROM gym_exercises WHERE id = ? AND (status = 'approved' OR created_by = ?) LIMIT 1");
         $stmt->execute([(int)$exercise_id, (int)$user_id]);
         return $stmt->fetchColumn() !== false;
+    }
+
+    // Id dell'esercizio che ha preso il posto di un doppione unito (merged_into), altrimenti lo stesso id.
+    // Serve alle bozze offline e ai client vecchi che mandano ancora l'id del doppione.
+    public static function canonicalId($db, $exercise_id)
+    {
+        $stmt = $db->prepare("SELECT merged_into FROM gym_exercises WHERE id = ? LIMIT 1");
+        $stmt->execute([(int)$exercise_id]);
+        $merged = $stmt->fetchColumn();
+        return $merged ? (int)$merged : (int)$exercise_id;
     }
 
     // Nome pulito (spazi compressi) o null se non valido: 2-60 caratteri tra lettere, cifre,
@@ -131,10 +141,10 @@ class Exercise
     // Esercizio visibile all'utente con lo stesso nome (senza distinguere maiuscole), o null
     public function findVisibleByName($name, $user_id)
     {
-        $stmt = $this->conn->prepare("SELECT id, name, muscle_group, status, created_by FROM " . $this->table_name . "
-                WHERE LOWER(name) = LOWER(?) AND (status = 'approved' OR created_by = ?)
+        $stmt = $this->conn->prepare("SELECT id, name, name_en, muscle_group, equipment, status, created_by FROM " . $this->table_name . "
+                WHERE (LOWER(name) = LOWER(?) OR LOWER(name_en) = LOWER(?)) AND (status = 'approved' OR created_by = ?)
                 ORDER BY status = 'approved' DESC LIMIT 1");
-        $stmt->execute([$name, (int)$user_id]);
+        $stmt->execute([$name, $name, (int)$user_id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
     }
@@ -198,6 +208,7 @@ class Exercise
         foreach ($candidates as $c) {
             if ((int)$c['id'] === (int)$except_id) continue;
             $score = self::nameSimilarity($name, $c['name']);
+            if (!empty($c['name_en'])) $score = max($score, self::nameSimilarity($name, $c['name_en']));
             if ($score >= self::SIMILAR_MIN) {
                 $c['score'] = round($score, 2);
                 $found[] = $c;
@@ -212,7 +223,7 @@ class Exercise
     // Esercizi visibili all'utente (approvati + suoi; solo approvati se $user_id è null)
     public function visibleRows($user_id)
     {
-        $stmt = $this->conn->prepare("SELECT id, name, muscle_group, status, created_by FROM " . $this->table_name . "
+        $stmt = $this->conn->prepare("SELECT id, name, name_en, muscle_group, equipment, status, created_by FROM " . $this->table_name . "
                 WHERE status = 'approved' OR created_by = ?");
         $stmt->execute([$user_id === null ? 0 : (int)$user_id]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -284,8 +295,8 @@ class Exercise
     // True se un esercizio approvato diverso da $except_id ha già questo nome
     public function approvedNameTaken($name, $except_id = 0)
     {
-        $stmt = $this->conn->prepare("SELECT 1 FROM " . $this->table_name . " WHERE LOWER(name) = LOWER(?) AND status = 'approved' AND id <> ? LIMIT 1");
-        $stmt->execute([$name, (int)$except_id]);
+        $stmt = $this->conn->prepare("SELECT 1 FROM " . $this->table_name . " WHERE (LOWER(name) = LOWER(?) OR LOWER(name_en) = LOWER(?)) AND status = 'approved' AND id <> ? LIMIT 1");
+        $stmt->execute([$name, $name, (int)$except_id]);
         return $stmt->fetchColumn() !== false;
     }
 

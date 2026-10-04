@@ -47,6 +47,7 @@ if (
 
         if ($workout_plan->readOne()) {
             // Solo esercizi approvati o creati dall'utente: quelli in attesa degli altri non si usano
+            $data->exercise_id = Exercise::canonicalId($db, $data->exercise_id);
             if (!Exercise::isVisibleTo($db, $data->exercise_id, $user_id)) {
                 api_not_found('Esercizio non trovato.');
             }
