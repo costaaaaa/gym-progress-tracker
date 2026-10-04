@@ -55,6 +55,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
   const [loadingExercises, setLoadingExercises] = useState(false);
   const [filteredExercises, setFilteredExercises] = useState([]);
   const [inputValue, setInputValue] = useState('');
+  const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
 
@@ -122,6 +123,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
 
   const handleMuscleGroupChange = (e) => {
     setExercise(prev => ({ ...prev, muscleGroup: e.target.value, name: '', id: undefined }));
+    setNewName('');
     setCreateError('');
   };
 
@@ -136,8 +138,10 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
     }
   };
 
-  const handleInputChange = (event, newInputValue) => {
+  const handleInputChange = (event, newInputValue, reason) => {
     setInputValue(newInputValue);
+    // Quello che si cerca precompila "Non lo trovi? Crealo"
+    if (reason === 'input') setNewName(newInputValue);
     setCreateError('');
     // Filtriamo qui in modo che anche la digitazione parziale mostri risultati
     if (exercises.length > 0) {
@@ -148,10 +152,9 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
     }
   };
 
-  // Il nome digitato non corrisponde a nessun esercizio del gruppo: si può creare come personale
-  const typedName = inputValue.trim();
-  const canCreate = typedName.length >= 2 &&
-    !exercises.some(ex => ex.name.toLowerCase() === typedName.toLowerCase());
+  // Esercizio personale nel gruppo scelto. Se esiste già (409 duplicate) si seleziona quello.
+  const typedName = newName.trim();
+  const canCreate = typedName.length >= 2 && !creating;
 
   const handleCreate = async () => {
     setCreating(true);
@@ -172,6 +175,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
       id: created.id
     }));
     setInputValue(created.name);
+    setNewName('');
   };
 
   const handleSubmit = () => {
@@ -186,6 +190,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
       intensity_technique: ''
     });
     setInputValue('');
+    setNewName('');
     setCreateError('');
     onClose();
   };
@@ -258,16 +263,28 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
             )
           )}
 
-          {exercise.muscleGroup && !loadingExercises && canCreate && (
+          {exercise.muscleGroup && !loadingExercises && (
             <Box>
-              <Button
-                startIcon={creating ? <CircularProgress size={16} /> : <AddIcon />}
-                onClick={handleCreate}
-                disabled={creating}
-                sx={{ textTransform: 'none' }}
-              >
-                Crea «{typedName}» in {exercise.muscleGroup}
-              </Button>
+              <Typography sx={{ fontSize: 14, fontWeight: 600, mb: 1 }}>Non lo trovi? Crealo</Typography>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                <TextField
+                  size="small"
+                  fullWidth
+                  value={newName}
+                  onChange={(e) => { setNewName(e.target.value); setCreateError(''); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && canCreate) handleCreate(); }}
+                  placeholder={`Nuovo esercizio (${exercise.muscleGroup.toLowerCase()})`}
+                  inputProps={{ maxLength: 60 }}
+                />
+                <Button
+                  variant="outlined"
+                  startIcon={creating ? <CircularProgress size={16} /> : <AddIcon />}
+                  onClick={handleCreate}
+                  disabled={!canCreate}
+                >
+                  Crea
+                </Button>
+              </Box>
               <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
                 Lo vedi solo tu finché non viene controllato e aggiunto al catalogo di tutti.
               </Typography>
