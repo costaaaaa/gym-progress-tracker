@@ -107,16 +107,6 @@ class Exercise
         return $stmt->fetchColumn() !== false;
     }
 
-    // Id dell'esercizio che ha preso il posto di un doppione unito (merged_into), altrimenti lo stesso id.
-    // Serve alle bozze offline e ai client vecchi che mandano ancora l'id del doppione.
-    public static function canonicalId($db, $exercise_id)
-    {
-        $stmt = $db->prepare("SELECT merged_into FROM gym_exercises WHERE id = ? LIMIT 1");
-        $stmt->execute([(int)$exercise_id]);
-        $merged = $stmt->fetchColumn();
-        return $merged ? (int)$merged : (int)$exercise_id;
-    }
-
     // Nome pulito (spazi compressi) o null se non valido: 2-60 caratteri tra lettere, cifre,
     // spazi e un po' di punteggiatura; niente link né indirizzi. Il nome finisce nel catalogo
     // di tutti e nel contesto dell'AI Coach, per questo è più stretto del nome di un gruppo.
