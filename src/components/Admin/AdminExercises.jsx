@@ -5,22 +5,27 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { adminExerciseAction, errorMessage, listAdminExercises } from '../../api/exercises';
+import { equipmentLabel, exerciseMatches } from '../../utils/exerciseCatalog';
 
 const STATUS_LABELS = { pending: 'In attesa', approved: 'Approvati', rejected: 'Rifiutati' };
 
 const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
 
-// Nuovo esercizio ufficiale (exercise = null) o modifica di nome e gruppo muscolare
-const ExerciseFormDialog = ({ open, exercise, muscleGroups, onClose, onSaved }) => {
+// Nuovo esercizio ufficiale (exercise = null) o modifica di nome, nome inglese, gruppo muscolare e attrezzo
+const ExerciseFormDialog = ({ open, exercise, muscleGroups, equipment, onClose, onSaved }) => {
   const [name, setName] = useState('');
+  const [nameEn, setNameEn] = useState('');
   const [muscleGroup, setMuscleGroup] = useState('');
+  const [equipmentValue, setEquipmentValue] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
       setName(exercise?.name || '');
+      setNameEn(exercise?.name_en || '');
       setMuscleGroup(exercise?.muscle_group || '');
+      setEquipmentValue(exercise?.equipment || '');
       setError('');
     }
   }, [open, exercise]);
@@ -28,9 +33,10 @@ const ExerciseFormDialog = ({ open, exercise, muscleGroups, onClose, onSaved }) 
   const submit = async (e) => {
     e.preventDefault();
     setSaving(true);
+    const fields = { name: name.trim(), name_en: nameEn.trim(), muscle_group: muscleGroup, equipment: equipmentValue };
     const res = exercise
-      ? await adminExerciseAction('update', { id: exercise.id, name: name.trim(), muscle_group: muscleGroup })
-      : await adminExerciseAction('create', { name: name.trim(), muscle_group: muscleGroup });
+      ? await adminExerciseAction('update', { id: exercise.id, ...fields })
+      : await adminExerciseAction('create', fields);
     setSaving(false);
     if (!res.ok) {
       setError(errorMessage(res));
@@ -57,9 +63,22 @@ const ExerciseFormDialog = ({ open, exercise, muscleGroups, onClose, onSaved }) 
             autoFocus
             margin="dense"
           />
+          <TextField
+            label="Nome inglese"
+            value={nameEn}
+            onChange={(e) => setNameEn(e.target.value)}
+            inputProps={{ maxLength: 60 }}
+            fullWidth
+            margin="dense"
+          />
           <TextField select label="Gruppo muscolare" value={muscleGroup} onChange={(e) => setMuscleGroup(e.target.value)}
             fullWidth required margin="dense">
             {muscleGroups.map((g) => <MenuItem key={g} value={g}>{capitalize(g)}</MenuItem>)}
+          </TextField>
+          <TextField select label="Attrezzo" value={equipmentValue} onChange={(e) => setEquipmentValue(e.target.value)}
+            fullWidth margin="dense">
+            <MenuItem value="">Nessuno</MenuItem>
+            {equipment.map((q) => <MenuItem key={q} value={q}>{equipmentLabel(q) || q}</MenuItem>)}
           </TextField>
           {!exercise && (
             <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 1.5 }}>
@@ -81,6 +100,7 @@ const AdminExercises = () => {
   const [status, setStatus] = useState('pending');
   const [exercises, setExercises] = useState(null);
   const [muscleGroups, setMuscleGroups] = useState([]);
+  const [equipment, setEquipment] = useState([]);
   const [filter, setFilter] = useState('');
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState(null);
@@ -93,6 +113,7 @@ const AdminExercises = () => {
     if (res.ok) {
       setExercises(res.data.exercises);
       setMuscleGroups(res.data.muscle_groups);
+      setEquipment(res.data.equipment || []);
     } else {
       setExercises([]);
       setError(errorMessage(res, 'Impossibile caricare gli esercizi.'));
@@ -114,8 +135,7 @@ const AdminExercises = () => {
     setExercises((prev) => prev.filter((e) => e.id !== exercise.id));
   };
 
-  const query = filter.trim().toLowerCase();
-  const visible = (exercises || []).filter((e) => !query || e.name.toLowerCase().includes(query));
+  const visible = (exercises || []).filter((e) => exerciseMatches(e, filter));
 
   return (
     <Card sx={{ p: '24px' }}>
@@ -149,10 +169,14 @@ const AdminExercises = () => {
             <Box key={e.id} sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', py: 1, borderBottom: 1, borderColor: 'divider' }}>
               <Box sx={{ flex: 1, minWidth: 200 }}>
                 <Typography sx={{ fontWeight: 600, wordBreak: 'break-word' }}>{e.name}</Typography>
+                {e.name_en && (
+                  <Typography sx={{ fontSize: 13, color: 'text.secondary', wordBreak: 'break-word' }}>{e.name_en}</Typography>
+                )}
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap', mt: 0.5 }}>
                   <Chip label={capitalize(e.muscle_group)} size="small" />
+                  {e.equipment && <Chip label={equipmentLabel(e.equipment) || e.equipment} size="small" variant="outlined" />}
                   <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
-                    {e.created_by_username ? `da ${e.created_by_username}` : 'catalogo'} · usato {e.uses} {e.uses === 1 ? 'volta' : 'volte'}
+                    {e.merged_into ? `unito in «${e.merged_into_name}»` : e.created_by_username ? `da ${e.created_by_username}` : 'catalogo'} · usato {e.uses} {e.uses === 1 ? 'volta' : 'volte'}
                   </Typography>
                 </Box>
                 {e.similar?.length > 0 && (
@@ -162,13 +186,15 @@ const AdminExercises = () => {
                 )}
               </Box>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                {status !== 'approved' && (
+                {status !== 'approved' && !e.merged_into && (
                   <Button size="small" variant="contained" disabled={busyId === e.id} onClick={() => act('approve', e)}>Approva</Button>
                 )}
                 {status === 'pending' && (
                   <Button size="small" disabled={busyId === e.id} onClick={() => act('reject', e)}>Rifiuta</Button>
                 )}
-                <Button size="small" disabled={busyId === e.id} onClick={() => setForm({ open: true, exercise: e })}>Modifica</Button>
+                {!e.merged_into && (
+                  <Button size="small" disabled={busyId === e.id} onClick={() => setForm({ open: true, exercise: e })}>Modifica</Button>
+                )}
                 <Button size="small" color="error" disabled={busyId === e.id || e.uses > 0}
                   title={e.uses > 0 ? 'È usato in schede o allenamenti' : undefined}
                   onClick={() => act('delete', e)}>Elimina</Button>
@@ -182,6 +208,7 @@ const AdminExercises = () => {
         open={form.open}
         exercise={form.exercise}
         muscleGroups={muscleGroups}
+        equipment={equipment}
         onClose={() => setForm({ open: false, exercise: null })}
         onSaved={() => { setForm({ open: false, exercise: null }); load(); }}
       />

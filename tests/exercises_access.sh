@@ -144,10 +144,16 @@ if [[ -n "${ADMIN_USER:-}" && -n "${ADMIN_PASS:-}" ]]; then
         check "approvato: B lo vede" "$(call GET api/exercise/read_all.php "$B")" "[.records[] | select(.id == $EID and .status == \"approved\")] | length == 1"
         expect "approvato: B può usarlo" 201 "$(call POST api/workout/add_exercise.php "$B" "$(add_body "$DAY_B")")"
         expect "usato: non si elimina" 409 "$(call POST api/admin/exercises.php "$ADM" "{\"action\":\"delete\",\"id\":$EID}")"
-        res="$(call POST api/admin/exercises.php "$ADM" "$(jq -nc --arg n "Esercizio ufficiale $SUFFIX" '{action:"create", name:$n, muscle_group:"petto"}')")"
-        expect "crea un esercizio ufficiale" 201 "$res"
+        res="$(call POST api/admin/exercises.php "$ADM" "$(jq -nc --arg n "Esercizio ufficiale $SUFFIX" --arg e "Official exercise $SUFFIX" '{action:"create", name:$n, name_en:$e, muscle_group:"petto", equipment:"manubri"}')")"
+        expect "crea un esercizio ufficiale con nome inglese e attrezzo" 201 "$res"
         OID="$(echo "${res#* }" | jq -r '.id')"
-        check "ufficiale: B lo vede" "$(call GET api/exercise/read_all.php "$B")" "[.records[] | select(.id == $OID)] | length == 1"
+        check "ufficiale: B lo vede, con nome inglese e attrezzo" "$(call GET api/exercise/read_all.php "$B")" "[.records[] | select(.id == $OID and .name_en == \"Official exercise $SUFFIX\" and .equipment == \"manubri\")] | length == 1"
+        check "ufficiale: in catalogo con attrezzo per l'admin" "$(call GET 'api/admin/exercises.php?status=approved' "$ADM")" "[.exercises[] | select(.id == $OID and .equipment == \"manubri\" and .merged_into == null)] | length == 1"
+        check "gli attrezzi ammessi sono elencati" "$(call GET api/admin/exercises.php "$ADM")" '.equipment | index("manubri") != null'
+        expect "attrezzo sconosciuto: 400" 400 "$(call POST api/admin/exercises.php "$ADM" "{\"action\":\"update\",\"id\":$OID,\"name\":\"Esercizio ufficiale $SUFFIX\",\"muscle_group\":\"petto\",\"equipment\":\"trampolino\"}")"
+        expect "nome inglese con un link: 400" 400 "$(call POST api/admin/exercises.php "$ADM" "{\"action\":\"update\",\"id\":$OID,\"name\":\"Esercizio ufficiale $SUFFIX\",\"name_en\":\"www.spam.com\",\"muscle_group\":\"petto\"}")"
+        expect "nome inglese già nel catalogo: 409" 409 "$(call POST api/admin/exercises.php "$ADM" "$(jq -nc --arg n "Altro $SUFFIX" '{action:"create", name:$n, name_en:"Barbell Bench Press", muscle_group:"petto"}')")"
+        expect "senza nome inglese né attrezzo si può togliere" 200 "$(call POST api/admin/exercises.php "$ADM" "{\"action\":\"update\",\"id\":$OID,\"name\":\"Esercizio ufficiale $SUFFIX\",\"name_en\":\"\",\"muscle_group\":\"petto\",\"equipment\":\"\"}")"
         expect "non usato: si elimina" 200 "$(call POST api/admin/exercises.php "$ADM" "{\"action\":\"delete\",\"id\":$OID}")"
         # L'esercizio approvato di A è usato da B: resta nel catalogo anche dopo la cancellazione di A
         # (created_by → NULL). Lo si rinomina per riconoscerlo come residuo dei test.

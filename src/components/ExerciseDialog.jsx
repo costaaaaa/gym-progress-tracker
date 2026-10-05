@@ -20,6 +20,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import { API_BASE_URL } from '../config';
 import { createExercise, errorMessage, findSimilarExercises, personalLabel } from '../api/exercises';
+import { equipmentLabel, exerciseMatches } from '../utils/exerciseCatalog';
 
 // Helper per rendere maiuscola la prima lettera
 const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
@@ -52,8 +53,8 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
   const [allExercises, setAllExercises] = useState([]);
   const [availableMuscleGroups, setAvailableMuscleGroups] = useState([]);
   const [exercises, setExercises] = useState([]);
+  const [equipmentFilter, setEquipmentFilter] = useState('');
   const [loadingExercises, setLoadingExercises] = useState(false);
-  const [filteredExercises, setFilteredExercises] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
@@ -89,12 +90,13 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
         capitalize(ex.muscle_group) === exercise.muscleGroup
       );
       setExercises(filtered);
-      setFilteredExercises(filtered);
     } else {
       setExercises([]);
-      setFilteredExercises([]);
     }
   }, [exercise.muscleGroup, allExercises]);
+
+  // Attrezzi presenti nel gruppo scelto, per il filtro
+  const groupEquipment = [...new Set(exercises.map(ex => ex.equipment).filter(Boolean))];
 
   // Funzione per caricare tutti gli esercizi dal database
   const fetchAllExercises = async () => {
@@ -139,6 +141,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
 
   const handleMuscleGroupChange = (e) => {
     setExercise(prev => ({ ...prev, muscleGroup: e.target.value, name: '', id: undefined }));
+    setEquipmentFilter('');
     setNewName('');
     setCreateError('');
   };
@@ -160,13 +163,6 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
     // Quello che si cerca precompila "Non lo trovi? Crealo"
     if (reason === 'input') setNewName(newInputValue);
     setCreateError('');
-    // Filtriamo qui in modo che anche la digitazione parziale mostri risultati
-    if (exercises.length > 0) {
-      const filtered = exercises.filter(ex => 
-        ex.name.toLowerCase().includes(newInputValue.toLowerCase())
-      );
-      setFilteredExercises(filtered);
-    }
   };
 
   // Esercizio personale nel gruppo scelto. Se esiste già (409 duplicate) si seleziona quello.
@@ -256,6 +252,26 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
             </Select>
           </FormControl>
           
+          {exercise.muscleGroup && !loadingExercises && groupEquipment.length > 1 && (
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Chip
+                label="Tutti gli attrezzi"
+                size="small"
+                color={equipmentFilter ? 'default' : 'primary'}
+                onClick={() => setEquipmentFilter('')}
+              />
+              {groupEquipment.map(eq => (
+                <Chip
+                  key={eq}
+                  label={equipmentLabel(eq) || eq}
+                  size="small"
+                  color={equipmentFilter === eq ? 'primary' : 'default'}
+                  onClick={() => setEquipmentFilter(eq)}
+                />
+              ))}
+            </Box>
+          )}
+
           {exercise.muscleGroup && (
             loadingExercises ? (
               <Box display="flex" alignItems="center" justifyContent="center" p={2}>
@@ -268,7 +284,8 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
                 onChange={handleExerciseChange}
                 inputValue={inputValue}
                 onInputChange={handleInputChange}
-                options={filteredExercises}
+                options={exercises.filter(ex => !equipmentFilter || ex.equipment === equipmentFilter || ex.id === exercise.id)}
+                filterOptions={(options, { inputValue: typed }) => options.filter(ex => exerciseMatches(ex, typed))}
                 getOptionLabel={(option) => option.name}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
                 renderOption={(props, option) => {
@@ -276,7 +293,14 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
                   const label = personalLabel(option);
                   return (
                     <Box component="li" key={key} {...optionProps} sx={{ display: 'flex', gap: 1, justifyContent: 'space-between' }}>
-                      <span>{option.name}</span>
+                      <Box>
+                        <span>{option.name}</span>
+                        {option.name_en && (
+                          <Typography component="span" sx={{ display: 'block', fontSize: 12, color: 'text.secondary' }}>
+                            {option.name_en}
+                          </Typography>
+                        )}
+                      </Box>
                       {label && <Chip label={label} size="small" variant="outlined" />}
                     </Box>
                   );
@@ -286,8 +310,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
                     {...params} 
                     label="Nome Esercizio" 
                     fullWidth
-                    helperText={personalLabel(exercises.find(ex => ex.id === exercise.id)) ||
-                      (filteredExercises.length === 0 && inputValue ? "Nessun esercizio trovato" : "")}
+                    helperText={personalLabel(exercises.find(ex => ex.id === exercise.id)) || ''}
                   />
                 )}
                 noOptionsText="Nessun esercizio trovato"

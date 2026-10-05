@@ -8,6 +8,8 @@ class Exercise
     // Esercizi personali non ancora approvati che un utente può avere
     const MAX_PERSONAL = 30;
     const STATUSES = array('pending', 'approved', 'rejected');
+    // Attrezzi ammessi in gym_exercises.equipment (slug: le etichette le mettono i client)
+    const EQUIPMENT = array('bilanciere', 'manubri', 'cavi', 'macchina', 'multipower', 'corpo_libero', 'kettlebell');
     // Sopra questa somiglianza (0-1) due nomi sono proposti come possibile doppione
     const SIMILAR_MIN = 0.6;
     // Parole che non distinguono un esercizio da un altro
@@ -19,7 +21,9 @@ class Exercise
     // Object properties
     public $id;
     public $name;
+    public $name_en;
     public $muscle_group;
+    public $equipment;
     public $created_by;
     public $status;
     public $created_at;
@@ -227,17 +231,30 @@ class Exercise
         return (int)$stmt->fetchColumn();
     }
 
+    // Nome inglese pulito (stesse regole di cleanName), null se vuoto o non valido
+    public static function cleanNameEn($name)
+    {
+        if (!is_string($name) || trim($name) === '') return null;
+        return self::cleanName($name);
+    }
+
+    // Attrezzo valido (uno di EQUIPMENT) o null
+    public static function cleanEquipment($equipment)
+    {
+        return is_string($equipment) && in_array($equipment, self::EQUIPMENT, true) ? $equipment : null;
+    }
+
     // Crea l'esercizio con name, muscle_group, created_by e status già validati.
     // Niente htmlspecialchars: il nome è già passato da cleanName() e l'escape lo fa chi lo mostra
     // (con PHP 8.1+ "dell'atleta" diventerebbe "dell&#039;atleta").
     public function create()
     {
         $query = "INSERT INTO " . $this->table_name . "
-                (name, muscle_group, created_by, status)
-                VALUES (?, ?, ?, ?)";
+                (name, name_en, muscle_group, equipment, created_by, status)
+                VALUES (?, ?, ?, ?, ?, ?)";
         $stmt = $this->conn->prepare($query);
 
-        if ($stmt->execute([$this->name, $this->muscle_group, $this->created_by, $this->status])) {
+        if ($stmt->execute([$this->name, $this->name_en, $this->muscle_group, $this->equipment, $this->created_by, $this->status])) {
             $this->id = (int)$this->conn->lastInsertId();
             return true;
         }
@@ -250,13 +267,15 @@ class Exercise
     // Esercizi con un certo stato, con il creatore e quante volte sono usati (schede, set, progressi)
     public function adminList($status)
     {
-        $stmt = $this->conn->prepare("SELECT e.id, e.name, e.muscle_group, e.status, e.created_at, e.reviewed_at,
+        $stmt = $this->conn->prepare("SELECT e.id, e.name, e.name_en, e.muscle_group, e.equipment, e.status, e.created_at, e.reviewed_at,
+                       e.merged_into, m.name AS merged_into_name,
                        u.username AS created_by_username,
                        (SELECT COUNT(*) FROM gym_workout_exercises we WHERE we.exercise_id = e.id)
                      + (SELECT COUNT(*) FROM gym_workout_sets ws WHERE ws.exercise_id = e.id)
                      + (SELECT COUNT(*) FROM gym_progress p WHERE p.exercise_id = e.id) AS uses
                 FROM " . $this->table_name . " e
                 LEFT JOIN gym_users u ON u.id = e.created_by
+                LEFT JOIN " . $this->table_name . " m ON m.id = e.merged_into
                 WHERE e.status = ?
                 ORDER BY " . ($status === 'approved' ? "e.name ASC" : "e.created_at ASC, e.id ASC"));
         $stmt->execute([$status]);
@@ -266,6 +285,7 @@ class Exercise
         foreach ($rows as &$r) {
             $r['id'] = (int)$r['id'];
             $r['uses'] = (int)$r['uses'];
+            $r['merged_into'] = $r['merged_into'] === null ? null : (int)$r['merged_into'];
             $r['similar'] = array_map(function ($c) {
                 return array('id' => (int)$c['id'], 'name' => $c['name'], 'muscle_group' => $c['muscle_group']);
             }, self::mostSimilar($r['name'], $catalog, 3, $r['id']));
@@ -276,7 +296,7 @@ class Exercise
     // Riga dell'esercizio (con status) o null
     public function find($id)
     {
-        $stmt = $this->conn->prepare("SELECT id, name, muscle_group, status, created_by FROM " . $this->table_name . " WHERE id = ? LIMIT 1");
+        $stmt = $this->conn->prepare("SELECT id, name, name_en, muscle_group, equipment, status, created_by, merged_into FROM " . $this->table_name . " WHERE id = ? LIMIT 1");
         $stmt->execute([(int)$id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
@@ -296,10 +316,10 @@ class Exercise
         $stmt->execute([$status, (int)$id]);
     }
 
-    public function updateDetails($id, $name, $muscle_group)
+    public function updateDetails($id, $name, $name_en, $muscle_group, $equipment)
     {
-        $stmt = $this->conn->prepare("UPDATE " . $this->table_name . " SET name = ?, muscle_group = ? WHERE id = ?");
-        $stmt->execute([$name, $muscle_group, (int)$id]);
+        $stmt = $this->conn->prepare("UPDATE " . $this->table_name . " SET name = ?, name_en = ?, muscle_group = ?, equipment = ? WHERE id = ?");
+        $stmt->execute([$name, $name_en, $muscle_group, $equipment, (int)$id]);
     }
 
     // Quante volte è usato in schede, set e progressi (qualsiasi utente)

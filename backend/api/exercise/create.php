@@ -48,7 +48,9 @@ try {
             'exercise' => array(
                 'id' => (int)$existing['id'],
                 'name' => $existing['name'],
+                'name_en' => $existing['name_en'],
                 'muscle_group' => $existing['muscle_group'],
+                'equipment' => $existing['equipment'],
                 'status' => $existing['status'],
                 'is_mine' => (int)$existing['created_by'] === $user_id,
             ),
@@ -75,7 +77,9 @@ try {
         'exercise' => array(
             'id' => $exercise->id,
             'name' => $exercise->name,
+            'name_en' => null,
             'muscle_group' => $exercise->muscle_group,
+            'equipment' => null,
             'status' => 'pending',
             'is_mine' => true,
         ),
