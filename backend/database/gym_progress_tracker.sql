@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS `gym_users` (
   `experience_years` float DEFAULT '0',
   `rest_timer_enabled` tinyint(1) NOT NULL DEFAULT 1,
   `is_admin` tinyint(1) NOT NULL DEFAULT 0,
+  `locale` varchar(5) NOT NULL DEFAULT 'it',
   `password_changed_at` datetime DEFAULT NULL,
   `last_login_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,

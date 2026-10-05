@@ -293,14 +293,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
                   const label = personalLabel(option);
                   return (
                     <Box component="li" key={key} {...optionProps} sx={{ display: 'flex', gap: 1, justifyContent: 'space-between' }}>
-                      <Box>
-                        <span>{option.name}</span>
-                        {option.name_en && (
-                          <Typography component="span" sx={{ display: 'block', fontSize: 12, color: 'text.secondary' }}>
-                            {option.name_en}
-                          </Typography>
-                        )}
-                      </Box>
+                      <span>{option.name}</span>
                       {label && <Chip label={label} size="small" variant="outlined" />}
                     </Box>
                   );

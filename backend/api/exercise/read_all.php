@@ -34,22 +34,16 @@ try {
 
         // Retrieve table contents
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            extract($row);
-
-            $exercise_item = array(
-                "id" => $id,
-                "name" => $name,
-                "name_en" => $name_en,
-                "muscle_group" => $muscle_group,
-                "equipment" => $equipment,
-                "status" => $status,
-                "is_mine" => $user_id && (int)$created_by === (int)$user_id,
-                "created_at" => $created_at,
-                "updated_at" => $updated_at
-            );
-
-            // Add exercise to exercises array
+            $exercise_item = exercise_public($row, $user_id ? (int)$user_id : null);
+            $exercise_item["created_at"] = $row["created_at"];
+            $exercise_item["updated_at"] = $row["updated_at"];
             array_push($exercises_arr["records"], $exercise_item);
+        }
+        // In inglese l'ordine alfabetico cambia: la query ordina per nome italiano
+        if (request_locale() === 'en') {
+            usort($exercises_arr["records"], function ($x, $y) {
+                return strcasecmp($x['name'], $y['name']);
+            });
         }
 
         // Set response code - 200 OK

@@ -19,6 +19,7 @@ class User
     public $experience_years;
     public $birth_date;
     public $training_start_date;
+    public $locale = 'it';
 
     // Helper per calcolare l'età dalla data di nascita
     public function calculateAge()
@@ -77,7 +78,8 @@ class User
                         password = :password,
                         birth_date = :birth_date,
                         gender = :gender,
-                        training_start_date = :training_start_date";
+                        training_start_date = :training_start_date,
+                        locale = :locale";
 
             // Prepare query
             $stmt = $this->conn->prepare($query);
@@ -89,6 +91,7 @@ class User
             $stmt->bindParam(":birth_date", $this->birth_date);
             $stmt->bindParam(":gender", $this->gender);
             $stmt->bindParam(":training_start_date", $this->training_start_date);
+            $stmt->bindParam(":locale", $this->locale);
 
             // Execute query
             if ($stmt->execute()) {
@@ -319,7 +322,7 @@ class User
     }
     public function readById($id)
     {
-        $query = "SELECT id, username, email, created_at, rest_timer_enabled, birth_date, gender, training_start_date, password_changed_at FROM " . $this->table_name . " WHERE id = ? LIMIT 1";
+        $query = "SELECT id, username, email, created_at, rest_timer_enabled, birth_date, gender, training_start_date, locale, password_changed_at FROM " . $this->table_name . " WHERE id = ? LIMIT 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(1, $id);
         $stmt->execute();
@@ -334,6 +337,7 @@ class User
             $this->birth_date = $row['birth_date'];
             $this->gender = $row['gender'];
             $this->training_start_date = $row['training_start_date'];
+            $this->locale = $row['locale'];
             $this->password_changed_at = $row['password_changed_at'];
             
             // Calcolo dinamico per il frontend
@@ -346,7 +350,7 @@ class User
 
     // Aggiorna le impostazioni del profilo dell'utente. Aggiornamento parziale: si scrivono
     // solo le chiavi presenti in $fields (rest_timer_enabled, birth_date, gender,
-    // training_start_date); quelle assenti restano come sono.
+    // training_start_date, locale); quelle assenti restano come sono.
     public function updateProfile(array $fields)
     {
         if (!$this->id) {
@@ -354,7 +358,7 @@ class User
             return false;
         }
 
-        $allowed = array('rest_timer_enabled', 'birth_date', 'gender', 'training_start_date');
+        $allowed = array('rest_timer_enabled', 'birth_date', 'gender', 'training_start_date', 'locale');
         $sets = array();
         $values = array();
         foreach ($allowed as $column) {

@@ -34,7 +34,7 @@ function web_session_is_current($db, $user_id)
 // Risolve l'utente autenticato provando prima la sessione web (percorso invariato),
 // poi — se assente — l'header "Authorization: Bearer <token>" usato dai client mobile.
 // Ritorna l'user_id (int) o null se non autenticato con nessuno dei due metodi.
-function resolve_authenticated_user_id($db)
+function find_authenticated_user_id($db)
 {
     if (isset($_SESSION['user_id'])) {
         $user_id = (int)$_SESSION['user_id'];
@@ -53,6 +53,85 @@ function resolve_authenticated_user_id($db)
 
     $api_token = new ApiToken($db);
     return $api_token->findValidByToken($plain_token);
+}
+
+function resolve_authenticated_user_id($db)
+{
+    $user_id = find_authenticated_user_id($db);
+    request_user_context($db, $user_id);
+    return $user_id;
+}
+
+// ── Lingua ──────────────────────────────────────────────────────────────────
+
+const SUPPORTED_LOCALES = array('it', 'en');
+
+// 'it' o 'en' (anche da "en-US" o "EN"), null se non supportata
+function normalize_locale($value)
+{
+    if (!is_string($value)) return null;
+    $code = strtolower(substr(trim($value), 0, 2));
+    return in_array($code, SUPPORTED_LOCALES, true) ? $code : null;
+}
+
+// Utente della richiesta, ricordato da resolve_authenticated_user_id() per leggerne la lingua
+// quando serve (nomi degli esercizi) senza passare $db e l'id attraverso tutti i modelli.
+function request_user_context($db = null, $user_id = null)
+{
+    static $context = array('db' => null, 'user_id' => null);
+    if (func_num_args() > 0) {
+        $context = array('db' => $db, 'user_id' => $user_id ? (int)$user_id : null);
+    }
+    return $context;
+}
+
+// Lingua scelta dall'utente della richiesta (gym_users.locale); 'it' senza login o se la colonna
+// non c'è ancora (codice nuovo su database non ancora migrato).
+function request_locale()
+{
+    static $locale = null;
+    $context = request_user_context();
+    if ($locale === null || $context['user_id'] === null) {
+        $locale = 'it';
+        if ($context['user_id'] !== null) {
+            try {
+                $stmt = $context['db']->prepare("SELECT locale FROM gym_users WHERE id = ? LIMIT 1");
+                $stmt->execute(array($context['user_id']));
+                $locale = normalize_locale($stmt->fetchColumn()) ?? 'it';
+            } catch (PDOException $e) {
+                $locale = 'it';
+            }
+        }
+    }
+    return $locale;
+}
+
+// Nome da mostrare: quello inglese se l'utente ha scelto l'inglese e c'è, altrimenti l'italiano
+function exercise_display_name($name, $name_en)
+{
+    return request_locale() === 'en' && $name_en !== null && $name_en !== '' ? $name_en : $name;
+}
+
+// Espressione SQL del nome da mostrare per la tabella gym_exercises con alias $alias
+function exercise_name_sql($alias = 'e')
+{
+    return request_locale() === 'en' ? "COALESCE(NULLIF($alias.name_en, ''), $alias.name)" : "$alias.name";
+}
+
+// Esercizio nel formato dell'API: name è nella lingua dell'utente, name_it e name_en sono i due
+// nomi del catalogo (per cercare in entrambe le lingue)
+function exercise_public($row, $user_id)
+{
+    return array(
+        'id' => (int)$row['id'],
+        'name' => exercise_display_name($row['name'], $row['name_en']),
+        'name_it' => $row['name'],
+        'name_en' => $row['name_en'],
+        'muscle_group' => $row['muscle_group'],
+        'equipment' => $row['equipment'],
+        'status' => $row['status'],
+        'is_mine' => $user_id !== null && (int)$row['created_by'] === (int)$user_id,
+    );
 }
 
 function api_json_response($payload, $status_code = 200)

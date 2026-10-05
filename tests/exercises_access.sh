@@ -167,6 +167,18 @@ else
     echo "  (parte admin saltata: imposta ADMIN_USER e ADMIN_PASS)"
 fi
 
+echo "Lingua"
+check "di default è italiano" "$(call GET api/user/read.php "$B")" '.locale == "it"'
+expect "lingua non supportata: 400" 400 "$(call POST api/user/update_settings.php "$B" '{"locale":"xx"}')"
+expect "lingua inglese: 200" 200 "$(call POST api/user/update_settings.php "$B" '{"locale":"en"}')"
+check "user/read restituisce la lingua" "$(call GET api/user/read.php "$B")" '.locale == "en"'
+res="$(call GET api/exercise/read_all.php "$B")"
+check "in inglese il nome è quello inglese" "$res" '[.records[] | select(.name_en != null and .name != .name_en)] | length == 0'
+check "resta il nome italiano" "$res" '[.records[] | select(.name_en == "Barbell Bench Press" and .name_it != null and .name_it != .name)] | length == 1'
+check "in inglese l'ordine è alfabetico sul nome inglese" "$res" '[.records[].name | ascii_downcase] as $n | $n == ($n | sort)'
+call POST api/user/update_settings.php "$B" '{"locale":"it"}' >/dev/null
+check "tornato in italiano" "$(call GET api/exercise/read_all.php "$B")" '[.records[] | select(.name_en == "Barbell Bench Press" and .name == .name_it)] | length == 1'
+
 echo "Limiti"
 limited=0
 for i in $(seq 1 12); do

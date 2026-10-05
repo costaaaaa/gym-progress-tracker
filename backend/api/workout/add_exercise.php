@@ -80,7 +80,7 @@ if (
                         "id" => $workout_exercise->id,
                         "day_id" => $workout_exercise->day_id,
                         "exercise_id" => $workout_exercise->exercise_id,
-                        "exercise_name" => $exercise->name,
+                        "exercise_name" => exercise_display_name($exercise->name, $exercise->name_en),
                         "muscle_group" => $exercise->muscle_group,
                         "sets" => $workout_exercise->sets,
                         "reps" => $workout_exercise->reps,

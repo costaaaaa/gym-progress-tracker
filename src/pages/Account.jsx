@@ -101,6 +101,7 @@ const Account = ({ isEmbedded = false }) => {
 
   // Stato per le impostazioni allenamento
   const [restTimerEnabled, setRestTimerEnabled] = useState(true);
+  const [locale, setLocale] = useState('it');
   const [savingSettings, setSavingSettings] = useState(false);
 
   // Funzioni per gestire la visibilità delle password
@@ -335,6 +336,9 @@ const Account = ({ isEmbedded = false }) => {
       // Impostazione timer
       if (userDetails.rest_timer_enabled !== undefined) {
         setRestTimerEnabled(userDetails.rest_timer_enabled);
+      }
+      if (userDetails.locale) {
+        setLocale(userDetails.locale);
       }
 
       if (userDetails.created_at) {
@@ -664,6 +668,47 @@ const Account = ({ isEmbedded = false }) => {
                 disabled={savingSettings}
                 color="primary"
               />
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
+              <Box>
+                <Typography sx={{ fontSize: 13, fontWeight: 700 }}>Lingua</Typography>
+                <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
+                  Per ora cambia i nomi degli esercizi; il resto dell'app arriverà a breve
+                </Typography>
+              </Box>
+              <Select
+                size="small"
+                value={locale}
+                disabled={savingSettings}
+                inputProps={{ 'aria-label': 'Lingua' }}
+                onChange={async (e) => {
+                  const previous = locale;
+                  const next = e.target.value;
+                  setLocale(next);
+                  setSavingSettings(true);
+                  try {
+                    const response = await fetch(`${API_BASE_URL}api/user/update_settings.php`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      credentials: 'include',
+                      body: JSON.stringify({ locale: next })
+                    });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.message);
+                    setSnackbar({ open: true, message: 'Lingua aggiornata', severity: 'success' });
+                  } catch (error) {
+                    console.error('Errore aggiornamento lingua:', error);
+                    setLocale(previous);
+                    setSnackbar({ open: true, message: 'Errore nel salvataggio della lingua', severity: 'error' });
+                  } finally {
+                    setSavingSettings(false);
+                  }
+                }}
+              >
+                <MenuItem value="it">Italiano</MenuItem>
+                <MenuItem value="en">English</MenuItem>
+              </Select>
             </Box>
           </Box>
         </Collapse>

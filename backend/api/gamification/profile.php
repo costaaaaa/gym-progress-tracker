@@ -39,7 +39,7 @@ try {
 
     // Livelli per-esercizio (ordinati per XP desc)
     $stmt_ex = $db->prepare(
-        "SELECT eg.exercise_id, e.name, eg.xp, eg.level
+        "SELECT eg.exercise_id, " . exercise_name_sql() . " AS name, eg.xp, eg.level
          FROM gym_exercise_gamification eg
          JOIN gym_exercises e ON eg.exercise_id = e.id
          WHERE eg.user_id = ?

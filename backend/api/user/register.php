@@ -104,6 +104,7 @@ try {
         $user->birth_date = $data->birth_date;
         $user->gender = $data->gender;
         $user->training_start_date = isset($data->training_start_date) ? $data->training_start_date : null;
+        $user->locale = normalize_locale(isset($data->locale) ? $data->locale : null) ?: 'it';
 
         // Create the user
         if ($user->create()) {

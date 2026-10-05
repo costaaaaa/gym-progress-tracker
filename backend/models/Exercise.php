@@ -60,7 +60,7 @@ class Exercise
     public function readOne()
     {
         // Query to read single record
-        $query = "SELECT id, name, muscle_group, created_at, updated_at
+        $query = "SELECT id, name, name_en, muscle_group, created_at, updated_at
                 FROM " . $this->table_name . "
                 WHERE id = ?
                 LIMIT 0,1";
@@ -81,6 +81,7 @@ class Exercise
             // Set values to object properties
             $this->id = $row['id'];
             $this->name = $row['name'];
+            $this->name_en = $row['name_en'];
             $this->muscle_group = $row['muscle_group'];
             $this->created_at = $row['created_at'];
             $this->updated_at = $row['updated_at'];

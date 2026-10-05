@@ -76,7 +76,7 @@ class WorkoutExercise
     {
         // Query to read all records with exercise details
         $query = "SELECT we.id, we.day_id, we.exercise_id, we.sets, we.reps, we.rest, we.notes, we.intensity_technique, 
-                    we.created_at, we.updated_at, e.name as exercise_name, e.muscle_group
+                    we.created_at, we.updated_at, " . exercise_name_sql() . " as exercise_name, e.muscle_group
                 FROM " . $this->table_name . " we
                 LEFT JOIN gym_exercises e ON we.exercise_id = e.id
                 WHERE we.day_id = ?
@@ -99,7 +99,7 @@ class WorkoutExercise
     {
         // Query to read single record with exercise details
         $query = "SELECT we.id, we.day_id, we.exercise_id, we.sets, we.reps, we.rest, we.notes, we.intensity_technique, 
-                    we.created_at, we.updated_at, e.name as exercise_name, e.muscle_group
+                    we.created_at, we.updated_at, " . exercise_name_sql() . " as exercise_name, e.muscle_group
                 FROM " . $this->table_name . " we
                 LEFT JOIN gym_exercises e ON we.exercise_id = e.id
                 WHERE we.id = ?

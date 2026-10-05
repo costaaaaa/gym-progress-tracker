@@ -73,7 +73,7 @@ class WorkoutSet
     public function readAllByUserId($user_id)
     {
         $query = "SELECT ws.id, ws.workout_history_id, ws.exercise_id, ws.set_number, ws.weight, ws.reps, ws.intensity_technique,
-                       e.name as exercise_name, e.muscle_group
+                       " . exercise_name_sql() . " as exercise_name, e.muscle_group
                 FROM " . $this->table_name . " ws
                 LEFT JOIN gym_exercises e ON ws.exercise_id = e.id
                 JOIN gym_workout_history wh ON ws.workout_history_id = wh.id
@@ -92,7 +92,7 @@ class WorkoutSet
     {
         // Query to read sets with exercise info
         $query = "SELECT ws.id, ws.workout_history_id, ws.exercise_id, ws.set_number, ws.weight, ws.reps, ws.intensity_technique,
-                       e.name as exercise_name, e.muscle_group
+                       " . exercise_name_sql() . " as exercise_name, e.muscle_group
                 FROM " . $this->table_name . " ws
                 LEFT JOIN gym_exercises e ON ws.exercise_id = e.id
                 WHERE ws.workout_history_id = ?

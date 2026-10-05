@@ -22,15 +22,7 @@ try {
 
     $exercise = new Exercise($db);
     $records = array_map(function ($r) use ($user_id) {
-        return array(
-            'id' => (int)$r['id'],
-            'name' => $r['name'],
-            'name_en' => $r['name_en'],
-            'muscle_group' => $r['muscle_group'],
-            'equipment' => $r['equipment'],
-            'status' => $r['status'],
-            'is_mine' => $user_id !== null && (int)$r['created_by'] === $user_id,
-        );
+        return exercise_public($r, $user_id);
     }, Exercise::mostSimilar($name, $exercise->visibleRows($user_id), 3));
 
     api_json_response(array('success' => true, 'records' => $records));

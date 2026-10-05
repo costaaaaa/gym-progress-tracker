@@ -334,3 +334,14 @@ ALTER TABLE `gym_exercises`
   ADD COLUMN `merged_into` int(11) DEFAULT NULL AFTER `reviewed_at`,
   ADD KEY `idx_merged_into` (`merged_into`),
   ADD CONSTRAINT `fk_exercises_merged` FOREIGN KEY (`merged_into`) REFERENCES `gym_exercises` (`id`) ON DELETE SET NULL;
+
+
+-- ------------------------------------------------------------------------------
+-- 18. Lingua dell'utente. gym_users.locale: 'it' o 'en', scelta dal selettore in Account
+--     (o dalla lingua del dispositivo alla registrazione). Il server la usa per i nomi
+--     degli esercizi; in seguito per email e AI Coach. Colonna nuova con default: il
+--     rollback del codice resta possibile. Da eseguire una sola volta.
+-- ------------------------------------------------------------------------------
+
+ALTER TABLE `gym_users`
+  ADD COLUMN `locale` varchar(5) NOT NULL DEFAULT 'it' AFTER `is_admin`;

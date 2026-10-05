@@ -114,6 +114,7 @@ const Register = () => {
           birth_date: birthDate ? format(birthDate, 'yyyy-MM-dd') : null,
           gender,
           accept_terms: true,
+          locale: (navigator.language || 'it').toLowerCase().startsWith('en') ? 'en' : 'it',
           training_start_date: trainingStartDate ? format(trainingStartDate, 'yyyy-MM-01') : null
         }),
         credentials: 'include'

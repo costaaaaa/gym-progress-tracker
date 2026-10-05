@@ -45,15 +45,7 @@ try {
             'success' => false,
             'code' => 'duplicate',
             'message' => 'Esiste già un esercizio con questo nome.',
-            'exercise' => array(
-                'id' => (int)$existing['id'],
-                'name' => $existing['name'],
-                'name_en' => $existing['name_en'],
-                'muscle_group' => $existing['muscle_group'],
-                'equipment' => $existing['equipment'],
-                'status' => $existing['status'],
-                'is_mine' => (int)$existing['created_by'] === $user_id,
-            ),
+            'exercise' => exercise_public($existing, $user_id),
         ), 409);
     }
 
@@ -74,15 +66,15 @@ try {
     api_json_response(array(
         'success' => true,
         'message' => 'Esercizio creato: lo vedi solo tu finché non viene approvato.',
-        'exercise' => array(
+        'exercise' => exercise_public(array(
             'id' => $exercise->id,
             'name' => $exercise->name,
             'name_en' => null,
             'muscle_group' => $exercise->muscle_group,
             'equipment' => null,
             'status' => 'pending',
-            'is_mine' => true,
-        ),
+            'created_by' => $user_id,
+        ), $user_id),
     ), 201);
 } catch (Throwable $e) {
     api_log_exception('exercise/create.php', $e);

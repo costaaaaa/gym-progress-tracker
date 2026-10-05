@@ -60,7 +60,7 @@ class Progress {
     public function readByUserAndExercise() {
         // Query to read all records with exercise details
         $query = "SELECT p.id, p.user_id, p.exercise_id, p.weight, p.date, 
-                    p.created_at, p.updated_at, e.name as exercise_name, e.muscle_group
+                    p.created_at, p.updated_at, " . exercise_name_sql() . " as exercise_name, e.muscle_group
                 FROM " . $this->table_name . " p
                 LEFT JOIN gym_exercises e ON p.exercise_id = e.id
                 WHERE p.user_id = ? AND p.exercise_id = ?
@@ -83,7 +83,7 @@ class Progress {
     public function readByUserAndMuscleGroup() {
         // Query to read all records with exercise details
         $query = "SELECT p.id, p.user_id, p.exercise_id, p.weight, p.date, 
-                    p.created_at, p.updated_at, e.name as exercise_name, e.muscle_group
+                    p.created_at, p.updated_at, " . exercise_name_sql() . " as exercise_name, e.muscle_group
                 FROM " . $this->table_name . " p
                 LEFT JOIN gym_exercises e ON p.exercise_id = e.id
                 WHERE p.user_id = ? AND e.muscle_group = ?
@@ -106,7 +106,7 @@ class Progress {
     public function readLatestByUser() {
         // Query to read latest progress for each exercise
         $query = "SELECT p.id, p.user_id, p.exercise_id, p.weight, p.date, 
-                    p.created_at, p.updated_at, e.name as exercise_name, e.muscle_group
+                    p.created_at, p.updated_at, " . exercise_name_sql() . " as exercise_name, e.muscle_group
                 FROM " . $this->table_name . " p
                 INNER JOIN (
                     SELECT exercise_id, MAX(date) as max_date
@@ -135,7 +135,7 @@ class Progress {
     public function readOne() {
         // Query to read single record with exercise details
         $query = "SELECT p.id, p.user_id, p.exercise_id, p.weight, p.date, 
-                    p.created_at, p.updated_at, e.name as exercise_name, e.muscle_group
+                    p.created_at, p.updated_at, " . exercise_name_sql() . " as exercise_name, e.muscle_group
                 FROM " . $this->table_name . " p
                 LEFT JOIN gym_exercises e ON p.exercise_id = e.id
                 WHERE p.id = ? AND p.user_id = ?

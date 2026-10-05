@@ -11,9 +11,9 @@ export const EQUIPMENT_LABELS = {
 
 export const equipmentLabel = (slug) => EQUIPMENT_LABELS[slug] || null;
 
-// True se il testo cercato compare nel nome italiano o in quello inglese
+// True se il testo cercato compare nel nome mostrato, in quello italiano o in quello inglese
 export const exerciseMatches = (exercise, query) => {
   const q = query.trim().toLowerCase();
   if (!q) return true;
-  return exercise.name.toLowerCase().includes(q) || (exercise.name_en || '').toLowerCase().includes(q);
+  return [exercise.name, exercise.name_it, exercise.name_en].some((n) => (n || '').toLowerCase().includes(q));
 };

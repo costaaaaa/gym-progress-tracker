@@ -73,6 +73,14 @@ try {
             $fields['training_start_date'] = null;
         }
     }
+    if (property_exists($data, 'locale')) {
+        if (!is_string($data->locale) || !in_array($data->locale, SUPPORTED_LOCALES, true)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Lingua non supportata.']);
+            exit;
+        }
+        $fields['locale'] = $data->locale;
+    }
     if (empty($fields)) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Nessun campo da aggiornare']);
@@ -92,6 +100,7 @@ try {
             'birth_date' => $user->birth_date,
             'gender' => $user->gender,
             'training_start_date' => $user->training_start_date,
+            'locale' => $user->locale,
             'age' => $user->age,
             'experience_years' => $user->experience_years
         ]);

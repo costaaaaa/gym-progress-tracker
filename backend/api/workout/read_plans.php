@@ -104,7 +104,7 @@ try {
             $day_placeholders = implode(',', array_fill(0, count($day_ids), '?'));
             $exercises_query = "SELECT we.id, we.day_id, we.exercise_id, we.sets, we.reps, we.rest,
                                        we.notes, we.intensity_technique,
-                                       e.name AS exercise_name, e.muscle_group
+                                       " . exercise_name_sql() . " AS exercise_name, e.muscle_group
                                 FROM gym_workout_exercises we
                                 LEFT JOIN gym_exercises e ON we.exercise_id = e.id
                                 WHERE we.day_id IN ($day_placeholders)
