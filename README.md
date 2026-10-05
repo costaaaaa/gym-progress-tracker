@@ -28,6 +28,7 @@ With it you can:
 
 * ✅ Multi-plan management
 * 🔥 **Focus Mode**: immersive interface for real-time workout tracking with rest timers and haptic feedback
+* ⏭️ **Flexible sessions**: "last time" sets with their intensity techniques, skip a single set; *(Premium)* swap or add an exercise mid-workout (this session only)
 * 💾 **Autosave**: local persistence to prevent data loss in Focus Mode
 * ⏱️ **Workout duration**: saved with each session
 * 📈 **Advanced Dashboard**: hub-based interface with interactive charts (Workout Progress & Body Stats)
@@ -180,6 +181,7 @@ Con questo strumento è possibile:
 
 * ✅ Gestione multi-scheda
 * 🔥 **Modalità Focus**: interfaccia dedicata per l'allenamento in tempo reale con timer di recupero integrati e feedback aptico
+* ⏭️ **Sessione flessibile**: serie dell'ultima volta con le tecniche di intensità, salto di una singola serie; *(Premium)* cambio o aggiunta di un esercizio durante l'allenamento (solo per la sessione)
 * 💾 **Autosave**: salvataggio locale automatico per non perdere mai i progressi in Focus Mode
 * ⏱️ **Durata dell'allenamento**: salvata con ogni sessione
 * 📈 **Dashboard Avanzata**: interfaccia a hub per una consultazione rapida e chiara (Progressi Workout e Misure Corporee)

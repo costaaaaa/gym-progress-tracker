@@ -263,6 +263,34 @@ function user_is_admin($db, $user_id)
     return (int)$stmt->fetchColumn() === 1;
 }
 
+// ── Funzioni premium ────────────────────────────────────────────────────────
+
+// Funzioni premium abilitate per l'utente: è l'unico punto che lega il piano alle funzioni. I client
+// le usano solo per mostrare i comandi; dove conta (salvataggio, dati) le controlla il server.
+// Oggi l'unico livello premium è gym_users.ai_tier, creato dall'SQL dell'AI Coach: nelle installazioni
+// che non ce l'hanno la query fallisce e l'utente non ha funzioni premium.
+// Quando ci saranno i piani a pagamento cambia solo questa funzione.
+function user_features($db, $user_id)
+{
+    try {
+        $stmt = $db->prepare("SELECT ai_tier FROM gym_users WHERE id = ? LIMIT 1");
+        $stmt->execute([(int)$user_id]);
+        $tier = $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        return [];
+    }
+    if ($tier === 'premium') {
+        // focus_session_edit: cambiare o aggiungere esercizi durante il Focus Mode
+        return ['focus_session_edit'];
+    }
+    return [];
+}
+
+function user_has_feature($db, $user_id, $feature)
+{
+    return in_array($feature, user_features($db, $user_id), true);
+}
+
 // Utente autenticato e admin, altrimenti 404: chi non è admin non deve sapere che l'area esiste.
 // Ritorna lo user_id.
 function require_admin($db)

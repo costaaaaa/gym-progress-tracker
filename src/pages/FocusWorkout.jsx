@@ -40,7 +40,11 @@ import {
   AccessTime as AccessTimeIcon,
   History as HistoryIcon,
   Share as ShareIcon,
-  LocalFireDepartment as FireIcon
+  LocalFireDepartment as FireIcon,
+  SwapHoriz as SwapIcon,
+  Add as AddIcon,
+  Lock as LockIcon,
+  Remove as RemoveIcon
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeModeContext';
@@ -51,6 +55,11 @@ import { INTENSITY_TECHNIQUES } from '../components/ExerciseDialog';
 import { buildExerciseHistoryIndex, detectPersonalRecords } from '../utils/workoutMetrics';
 import { buildShareStats } from '../utils/shareCard';
 import ShareCardDialog from '../components/ShareCardDialog';
+import FocusExercisePicker from '../components/FocusExercisePicker';
+import {
+  FEATURE_SESSION_EDIT, lastSessionSets, setStatus, numberedSets,
+  buildSessionEntry, swapExercise, insertExercise
+} from '../utils/focusSession';
 import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../utils/celebrate';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { track } from '../utils/analytics';
@@ -106,6 +115,14 @@ const FocusWorkout = () => {
   const [repsInput, setRepsInput] = useState('');
   const [intensityTechniqueInput, setIntensityTechniqueInput] = useState('');
   const [skippedExercises, setSkippedExercises] = useState([]);
+  // Serie saltate per voce di sessione: { [ex.id]: [indice serie, ...] }
+  const [skippedSets, setSkippedSets] = useState({});
+  // Funzioni premium abilitate (user/read.php → features): qui solo per mostrare i comandi,
+  // il salvataggio lo controlla record_workout.php
+  const [features, setFeatures] = useState([]);
+  // Picker esercizi: null = chiuso, altrimenti { mode: 'swap' | 'add', from: 'workout' | 'summary' }
+  const [picker, setPicker] = useState(null);
+  const [premiumDialog, setPremiumDialog] = useState(false);
 
   // Timer state
   const [timerDuration, setTimerDuration] = useState(0);
@@ -143,6 +160,7 @@ const FocusWorkout = () => {
         selectedDayId,
         completedSets,
         skippedExercises,
+        skippedSets,
         currentExerciseIndex,
         currentSetIndex,
         workoutNotes,
@@ -152,7 +170,7 @@ const FocusWorkout = () => {
       };
       localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
     }
-  }, [phase, activePlan, selectedDay, selectedDayId, completedSets, skippedExercises, currentExerciseIndex, currentSetIndex, workoutNotes, startTime]);
+  }, [phase, activePlan, selectedDay, selectedDayId, completedSets, skippedExercises, skippedSets, currentExerciseIndex, currentSetIndex, workoutNotes, startTime]);
 
   const clearDraft = useCallback(() => {
     localStorage.removeItem(DRAFT_STORAGE_KEY);
@@ -248,6 +266,7 @@ const FocusWorkout = () => {
       if (userData.rest_timer_enabled !== undefined) {
         setTimerEnabled(userData.rest_timer_enabled);
       }
+      setFeatures(Array.isArray(userData.features) ? userData.features : []);
 
       // Trova piano attivo
       if (plansData.records) {
@@ -297,6 +316,7 @@ const FocusWorkout = () => {
     setSelectedDayId(draftToResume.selectedDayId);
     setCompletedSets(draftToResume.completedSets);
     setSkippedExercises(draftToResume.skippedExercises);
+    setSkippedSets(draftToResume.skippedSets || {});
     setCurrentExerciseIndex(draftToResume.currentExerciseIndex);
     setCurrentSetIndex(draftToResume.currentSetIndex);
     setWorkoutNotes(draftToResume.workoutNotes);
@@ -357,6 +377,7 @@ const FocusWorkout = () => {
     setCurrentSetIndex(0);
     setCompletedSets({});
     setSkippedExercises([]);
+    setSkippedSets({});
     setWorkoutNotes('');
     setStartTime(new Date());
     setEndTime(null);
@@ -378,6 +399,17 @@ const FocusWorkout = () => {
   const totalExercises = selectedDay?.exercises?.length || 0;
   const totalSetsForCurrentExercise = currentExercise?.sets || 0;
   const currentExerciseSets = completedSets[currentExercise?.id] || [];
+  const currentSkippedSets = skippedSets[currentExercise?.id] || [];
+  const canEditSession = features.includes(FEATURE_SESSION_EDIT);
+
+  // Porta il Focus su un esercizio: prima serie, reps e tecnica dal piano, peso dall'ultima sessione
+  const enterExercise = useCallback((index, exercise) => {
+    setCurrentExerciseIndex(index);
+    setCurrentSetIndex(0);
+    setRepsInput(exercise?.reps || '');
+    setIntensityTechniqueInput(exercise?.intensity_technique || '');
+    setWeightInput(getSuggestedWeight(exercise));
+  }, [getSuggestedWeight]);
 
   // ================================================
   // CONFERMA SERIE
@@ -437,20 +469,73 @@ const FocusWorkout = () => {
       // Transizione animata
       setExerciseTransition(false);
       setTimeout(() => {
-        setCurrentExerciseIndex(nextIndex);
-        setCurrentSetIndex(0);
-        const nextExercise = selectedDay.exercises[nextIndex];
-        setRepsInput(nextExercise?.reps || '');
-        setIntensityTechniqueInput(nextExercise?.intensity_technique || '');
-        setWeightInput(getSuggestedWeight(nextExercise));
+        enterExercise(nextIndex, selectedDay.exercises[nextIndex]);
         setExerciseTransition(true);
       }, 200);
     }
-  }, [currentExerciseIndex, totalExercises, skippedExercises, selectedDay, getSuggestedWeight]);
+  }, [currentExerciseIndex, totalExercises, skippedExercises, selectedDay, enterExercise]);
 
   const handleSkipExercise = () => {
     setSkippedExercises(prev => [...prev, currentExerciseIndex]);
     goToNextExercise();
+  };
+
+  // Salta solo la serie corrente: non viene registrata e non parte il recupero.
+  // Il peso già scritto resta, servirà per la serie dopo.
+  const handleSkipSet = () => {
+    hapticFeedback.light();
+    const exerciseId = currentExercise.id;
+    setSkippedSets(prev => ({ ...prev, [exerciseId]: [...(prev[exerciseId] || []), currentSetIndex] }));
+    const nextSetIndex = currentSetIndex + 1;
+    if (nextSetIndex >= totalSetsForCurrentExercise) {
+      goToNextExercise();
+    } else {
+      setCurrentSetIndex(nextSetIndex);
+      setRepsInput(currentExercise.reps || '');
+      setIntensityTechniqueInput(currentExercise.intensity_technique || '');
+    }
+  };
+
+  // ================================================
+  // CAMBIO / AGGIUNTA ESERCIZIO (premium, solo per questa sessione)
+  // ================================================
+  // Le modifiche vanno in selectedDay.exercises: bozza, salvataggio, riepilogo e
+  // barra di avanzamento le vedono senza altro codice.
+  const openPicker = (pickerMode, from = 'workout') => {
+    if (!canEditSession) {
+      setPremiumDialog(true);
+      return;
+    }
+    setPicker({ mode: pickerMode, from });
+  };
+
+  const handlePickExercise = (catalogEx, opts) => {
+    const exercises = selectedDay.exercises;
+    if (picker.mode === 'swap') {
+      const result = swapExercise(exercises, currentExerciseIndex, catalogEx, currentSetIndex);
+      setSelectedDay({ ...selectedDay, exercises: result.exercises });
+      enterExercise(result.index, result.exercises[result.index]);
+      setSnackbar({ open: true, message: `Ora: ${catalogEx.name}`, severity: 'success' });
+    } else {
+      const entry = buildSessionEntry(catalogEx, opts);
+      const fromSummary = picker.from === 'summary';
+      const position = fromSummary || opts.position === 'end' ? exercises.length : currentExerciseIndex + 1;
+      setSelectedDay({ ...selectedDay, exercises: insertExercise(exercises, position, entry) });
+      if (fromSummary) {
+        // Si torna ad allenarsi: la durata riparte (endTime era fissato all'arrivo nel riepilogo)
+        setEndTime(null);
+        enterExercise(position, entry);
+        setPhase('workout');
+      } else {
+        setSnackbar({
+          open: true,
+          message: `${catalogEx.name} aggiunto ${opts.position === 'end' ? 'alla fine' : 'dopo questo esercizio'}`,
+          severity: 'success'
+        });
+      }
+    }
+    hapticFeedback.medium();
+    setPicker(null);
   };
 
   // Feedback aptico extra quando si entra nel riepilogo con almeno un record personale
@@ -544,7 +629,8 @@ const FocusWorkout = () => {
         const exercise = selectedDay.exercises.find(e => e.id.toString() === exerciseId.toString());
         if (!exercise) return;
 
-        sets.forEach(set => {
+        // set_number consecutivi: le serie saltate non lasciano buchi
+        numberedSets(sets).forEach(set => {
           workoutRecords.push({
             exercise_id: exercise.exercise_id,
             exercise_name: exercise.exercise_name,
@@ -552,7 +638,7 @@ const FocusWorkout = () => {
             reps: set.reps,
             intensity_technique: set.intensity_technique,
             day_id: selectedDayId,
-            set_number: set.setNumber
+            set_number: set.set_number
           });
         });
       });
@@ -922,17 +1008,20 @@ const FocusWorkout = () => {
               </Box>
 
               <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1.5, mb: 3 }}>
-                {Array(totalSetsForCurrentExercise).fill(null).map((_, idx) => (
-                  <Box key={idx} sx={{
-                    width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: `2px solid ${idx < currentSetIndex ? colors.success : idx === currentSetIndex ? colors.primary : colors.border}`,
-                    bgcolor: idx < currentSetIndex ? colors.success : 'transparent',
-                    color: idx < currentSetIndex ? '#fff' : idx === currentSetIndex ? colors.primary : colors.textMuted,
-                    fontWeight: 700, fontSize: '0.875rem', transition: 'all 0.3s ease'
-                  }}>
-                    {idx < currentSetIndex ? <CheckIcon sx={{ fontSize: 18 }} /> : idx + 1}
-                  </Box>
-                ))}
+                {Array.from({ length: Number(totalSetsForCurrentExercise) || 0 }, (_, idx) => {
+                  const status = setStatus(idx, currentSetIndex, currentSkippedSets);
+                  return (
+                    <Box key={idx} title={status === 'skipped' ? 'Serie saltata' : undefined} sx={{
+                      width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      border: `2px ${status === 'skipped' ? 'dashed' : 'solid'} ${status === 'done' ? colors.success : status === 'active' ? colors.primary : colors.border}`,
+                      bgcolor: status === 'done' ? colors.success : status === 'skipped' ? colors.bgElevated : 'transparent',
+                      color: status === 'done' ? '#fff' : status === 'active' ? colors.primary : colors.textMuted,
+                      fontWeight: 700, fontSize: '0.875rem', transition: 'all 0.3s ease'
+                    }}>
+                      {status === 'done' ? <CheckIcon sx={{ fontSize: 18 }} /> : status === 'skipped' ? <RemoveIcon sx={{ fontSize: 18 }} /> : idx + 1}
+                    </Box>
+                  );
+                })}
               </Box>
 
               <Typography variant="subtitle2" sx={{ textAlign: 'center', color: colors.textMuted, mb: 3, letterSpacing: 1 }}>
@@ -940,24 +1029,39 @@ const FocusWorkout = () => {
               </Typography>
 
               {(() => {
-                const last = getLastSession(currentExercise);
-                if (!last || !Array.isArray(last.sets) || last.sets.length === 0) return null;
-                const summary = last.sets
-                  .map(s => `${parseFloat(s.weight)}kg×${s.reps}`)
-                  .join('  ·  ');
+                const lastSets = lastSessionSets(getLastSession(currentExercise));
+                if (lastSets.length === 0) return null;
                 return (
                   <Box sx={{
-                    display: 'flex', alignItems: 'center', gap: 1, mb: 2, px: 1.5, py: 1,
+                    display: 'flex', alignItems: 'flex-start', gap: 1, mb: 2, px: 1.5, py: 1,
                     borderRadius: '10px', bgcolor: colors.bgElevated, border: `1px solid ${colors.border}`
                   }}>
-                    <HistoryIcon sx={{ fontSize: 18, color: colors.textMuted }} />
-                    <Box>
+                    <HistoryIcon sx={{ fontSize: 18, color: colors.textMuted, mt: 0.25 }} />
+                    <Box sx={{ minWidth: 0 }}>
                       <Typography variant="caption" sx={{ color: colors.textMuted, letterSpacing: 0.5 }}>
                         ULTIMA VOLTA
                       </Typography>
-                      <Typography variant="body2" sx={{ color: colors.textSecondary, fontWeight: 600 }}>
-                        {summary}
-                      </Typography>
+                      {/* Una chip per serie, con la tecnica sotto; evidenziata quella pari alla serie in corso */}
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 0.5 }}>
+                        {lastSets.map((set, idx) => {
+                          const isCurrent = idx === currentSetIndex;
+                          return (
+                            <Box key={idx} sx={{
+                              px: 1, py: 0.5, borderRadius: '6px', bgcolor: colors.bgCard,
+                              border: `1px solid ${isCurrent ? colors.primary : colors.border}`,
+                            }}>
+                              <Typography variant="body2" sx={{ color: isCurrent ? colors.text : colors.textSecondary, fontWeight: isCurrent ? 700 : 600, lineHeight: 1.3 }}>
+                                {set.label}
+                              </Typography>
+                              {set.technique && (
+                                <Typography variant="caption" sx={{ color: colors.primaryLight, display: 'block', lineHeight: 1.2, fontWeight: 600 }}>
+                                  {set.technique}
+                                </Typography>
+                              )}
+                            </Box>
+                          );
+                        })}
+                      </Box>
                     </Box>
                   </Box>
                 );
@@ -1004,10 +1108,31 @@ const FocusWorkout = () => {
                 Conferma Serie
               </Button>
 
-              <Button variant="text" fullWidth startIcon={<SkipNextIcon />} onClick={handleSkipExercise}
-                sx={{ py: 1.5, color: colors.textMuted, '&:hover': { color: colors.textSecondary, bgcolor: 'rgba(255,255,255,0.05)' }, mb: 3 }}>
-                Salta Esercizio
-              </Button>
+              <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                <Button variant="text" fullWidth startIcon={<SkipNextIcon />} onClick={handleSkipSet}
+                  sx={{ py: 1.5, color: colors.textMuted, '&:hover': { color: colors.textSecondary, bgcolor: 'rgba(255,255,255,0.05)' } }}>
+                  Salta Serie
+                </Button>
+                <Button variant="text" fullWidth startIcon={<SkipNextIcon />} onClick={handleSkipExercise}
+                  sx={{ py: 1.5, color: colors.textMuted, '&:hover': { color: colors.textSecondary, bgcolor: 'rgba(255,255,255,0.05)' } }}>
+                  Salta Esercizio
+                </Button>
+              </Box>
+
+              <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
+                {[
+                  { mode: 'swap', label: 'Cambia', icon: <SwapIcon /> },
+                  { mode: 'add', label: 'Aggiungi', icon: <AddIcon /> },
+                ].map(({ mode: pickerMode, label, icon }) => (
+                  <Button key={pickerMode} variant="outlined" fullWidth startIcon={icon}
+                    endIcon={canEditSession ? null : <LockIcon sx={{ fontSize: '16px !important' }} />}
+                    onClick={() => openPicker(pickerMode)}
+                    sx={{ py: 1.25, color: colors.textSecondary, borderColor: colors.border, borderRadius: '12px',
+                      '&:hover': { borderColor: colors.primary, color: colors.primaryLight } }}>
+                    {label} esercizio
+                  </Button>
+                ))}
+              </Box>
 
               {currentExerciseSets.length > 0 && (
                 <Paper sx={{ bgcolor: colors.bgCard, overflow: 'hidden', border: `1px solid ${colors.border}` }}>
@@ -1095,6 +1220,9 @@ const FocusWorkout = () => {
                   <Box key={exercise.id} sx={{ px: 2, py: 2, borderBottom: `1px solid ${colors.border}` }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, mb: 1 }}>
                       <Typography variant="subtitle1" sx={{ fontWeight: 600, color: colors.text }}>{exercise.exercise_name}</Typography>
+                      {exercise.replaces && (
+                        <Typography variant="caption" sx={{ color: colors.textMuted }}>al posto di {exercise.replaces}</Typography>
+                      )}
                       {pr.isPR && (
                         <Chip
                           icon={<TrophyIcon sx={{ fontSize: 16, color: `${colors.warning} !important` }} />}
@@ -1212,6 +1340,15 @@ const FocusWorkout = () => {
               </>
             ) : (
               <>
+                {/* Esercizio dimenticato: si aggiunge in coda e si torna ad allenarsi */}
+                <Button variant="outlined" fullWidth startIcon={<AddIcon />}
+                  endIcon={canEditSession ? null : <LockIcon sx={{ fontSize: '16px !important' }} />}
+                  onClick={() => openPicker('add', 'summary')}
+                  sx={{ py: 1.25, mb: 3, color: colors.textSecondary, borderColor: colors.border, borderRadius: '12px',
+                    '&:hover': { borderColor: colors.primary, color: colors.primaryLight } }}>
+                  Aggiungi esercizio
+                </Button>
+
                 <TextField label="Note sull'allenamento (opzionale)" multiline rows={3} value={workoutNotes}
                   onChange={(e) => setWorkoutNotes(e.target.value)} fullWidth placeholder="Come ti sei sentito? Qualcosa da ricordare?"
                   sx={{ mb: 3, '& .MuiOutlinedInput-root': { color: colors.text, '& fieldset': { borderColor: colors.border }, '&:hover fieldset': { borderColor: colors.primary }, '&.Mui-focused fieldset': { borderColor: colors.primary } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.primary } }} />
@@ -1272,6 +1409,30 @@ const FocusWorkout = () => {
       }
     }} />
     {renderContent()}
+      <FocusExercisePicker
+        open={!!picker}
+        mode={picker?.mode || 'add'}
+        currentExercise={currentExercise}
+        allowPosition={picker?.from !== 'summary'}
+        onClose={() => setPicker(null)}
+        onPick={handlePickExercise}
+      />
+      <Dialog open={premiumDialog} onClose={() => setPremiumDialog(false)}
+        PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: '16px' } }}>
+        <DialogTitle sx={{ color: colors.text, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <LockIcon sx={{ color: colors.warning }} /> Funzione Premium
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ color: colors.textSecondary }}>
+            Con Premium puoi cambiare un esercizio al volo (es. cavi occupati, passi ai manubri) o aggiungerne
+            uno durante l'allenamento, anche per recuperare quello che hai saltato l'ultima volta.
+            Nel frattempo puoi aggiungere l'esercizio alla tua scheda dalla sezione Schede.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPremiumDialog(false)} sx={{ color: colors.primary }}>Ho capito</Button>
+        </DialogActions>
+      </Dialog>
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}

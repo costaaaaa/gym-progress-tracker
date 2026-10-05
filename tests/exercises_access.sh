@@ -114,9 +114,13 @@ DAY_B="$(call POST api/workout/create_days.php "$B" "{\"plan_id\":$PLAN_B,\"days
 add_body() { echo "{\"day_id\":$1,\"exercise_id\":$EID,\"sets\":3,\"reps\":\"10\",\"rest\":60}"; }
 expect "A lo aggiunge alla sua scheda" 201 "$(call POST api/workout/add_exercise.php "$A" "$(add_body "$DAY_A")")"
 expect "B non può aggiungerlo indovinando l'id" 404 "$(call POST api/workout/add_exercise.php "$B" "$(add_body "$DAY_B")")"
-set_body="{\"workout_records\":[{\"exercise_id\":$EID,\"set_number\":1,\"weight\":20,\"reps\":10}]}"
-expect "B non può registrare set con l'id" 404 "$(call POST api/workout/record_workout.php "$B" "$set_body")"
-expect "A registra un allenamento con il suo esercizio" 201 "$(call POST api/workout/record_workout.php "$A" "$set_body")"
+set_body() { echo "{\"workout_records\":[{\"exercise_id\":$EID,\"day_id\":$1,\"set_number\":1,\"weight\":20,\"reps\":10}]}"; }
+expect "B non può registrare set con l'id" 404 "$(call POST api/workout/record_workout.php "$B" "$(set_body "$DAY_B")")"
+expect "A registra un allenamento con il suo esercizio" 201 "$(call POST api/workout/record_workout.php "$A" "$(set_body "$DAY_A")")"
+# Esercizi fuori dal giorno di scheda: solo con la funzione premium focus_session_edit
+expect "A (free) non salva un esercizio fuori dal giorno" 403 "$(call POST api/workout/record_workout.php "$A" "$(set_body "$DAY_B")")"
+expect "A (free) non salva senza giorno" 403 "$(call POST api/workout/record_workout.php "$A" "{\"workout_records\":[{\"exercise_id\":$EID,\"set_number\":1,\"weight\":20,\"reps\":10}]}")"
+check "user/read: nessuna funzione premium per A" "$(call GET api/user/read.php "$A")" '.features == []'
 
 echo "Admin"
 expect "A (non admin) non vede l'area admin" 404 "$(call GET api/admin/exercises.php "$A")"

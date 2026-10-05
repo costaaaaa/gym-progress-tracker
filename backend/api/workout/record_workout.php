@@ -43,6 +43,41 @@ try {
         }
     }
 
+    // Cambiare o aggiungere esercizi rispetto alla scheda durante il Focus Mode è premium
+    // (focus_session_edit). Senza, ogni set deve essere di un esercizio presente nel giorno di
+    // scheda indicato (day_id), che sia dell'utente. Il controllo sta qui perché quello dei client
+    // si aggira: chi forza l'interfaccia vede l'esercizio a schermo ma non lo salva.
+    if (!user_has_feature($db, $user_id, 'focus_session_edit')) {
+        $pairs = array();
+        foreach ($data->workout_records as $record) {
+            if (!isset($record->exercise_id) || empty($record->exercise_id)) continue;
+            $day = isset($record->day_id) && is_numeric($record->day_id) ? (int) $record->day_id : 0;
+            $eid = (int) $record->exercise_id;
+            $pairs[$day . ':' . $eid] = array($day, $eid);
+        }
+        $stmt_in_plan = $db->prepare(
+            "SELECT 1
+             FROM gym_workout_exercises we
+             JOIN gym_workout_days d ON d.id = we.day_id
+             JOIN gym_workout_plans p ON p.id = d.plan_id
+             WHERE we.day_id = ? AND we.exercise_id = ? AND p.user_id = ?
+             LIMIT 1"
+        );
+        foreach ($pairs as $pair) {
+            $stmt_in_plan->execute(array($pair[0], $pair[1], $user_id));
+            if (!$stmt_in_plan->fetchColumn()) {
+                http_response_code(403);
+                echo json_encode([
+                    'success' => false,
+                    'code'    => 'premium_required',
+                    'message' => "Cambiare o aggiungere esercizi durante l'allenamento è una funzione Premium: "
+                        . "puoi salvare solo gli esercizi del giorno di scheda.",
+                ]);
+                exit;
+            }
+        }
+    }
+
     // Determine workout date: use start_time if gap <= 4h, else now
     $now = new DateTime();
     $data_workout = $now->format('Y-m-d H:i:s');
