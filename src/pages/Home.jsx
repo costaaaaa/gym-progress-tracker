@@ -23,6 +23,7 @@ import GroupsHomeCard from '../components/Groups/GroupsHomeCard';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import { track } from '../utils/analytics';
+import { useTranslation, Trans } from 'react-i18next';
 
 // Dati di esempio per mostrare le card reali (Livello, Streak, Recupero) anche a chi
 // non ha ancora effettuato l'accesso — stessa UI usata dagli utenti loggati, dati statici.
@@ -45,20 +46,22 @@ const PREVIEW_RECOVERY = {
   polpacci: { status: 'PRONTO' },
 };
 const PREVIEW_ACHIEVEMENTS = [
-  { key: 'a1', label: '50 Allenamenti', locked: false },
-  { key: 'a2', label: '10 Tonnellate Sollevate', locked: false },
-  { key: 'a3', label: 'Streak 8 Settimane', locked: true, threshold: '8 settimane' },
-  { key: 'a4', label: '100 Allenamenti', locked: true, threshold: '100 sessioni' },
+  { key: 'a1', label: 'home.ach.workouts_50', locked: false },
+  { key: 'a2', label: 'home.ach.tons_10', locked: false },
+  { key: 'a3', label: 'home.ach.streak_8', locked: true, threshold: ['home.ach.threshold_weeks', 8] },
+  { key: 'a4', label: 'home.ach.workouts_100', locked: true, threshold: ['home.ach.threshold_sessions', 100] },
 ];
 
 // Etichetta "Anteprima" sovrapposta alle card demo della landing: le rende inequivocabilmente
 // non interattive/non reali, senza dover toccare lo stile delle card che avvolge.
-const PreviewOverlay = ({ children }) => (
+const PreviewOverlay = ({ children }) => {
+  const { t } = useTranslation();
+  return (
   <Box sx={{ position: 'relative', height: '100%' }}>
     {children}
     <Chip
       icon={<VisibilityOutlined sx={{ fontSize: '14px !important' }} />}
-      label="Anteprima"
+      label={t('home.preview.badge')}
       size="small"
       sx={{
         position: 'absolute',
@@ -74,7 +77,8 @@ const PreviewOverlay = ({ children }) => (
       }}
     />
   </Box>
-);
+  );
+};
 
 // Pillola di Azioni Rapide: fondo bianco, bordo 1px, icona stroked rossa.
 const QuickActionPill = ({ to, icon, label }) => (
@@ -106,6 +110,8 @@ const QuickActionPill = ({ to, icon, label }) => (
 
 const Home = () => {
   const { isLoggedIn, user } = useAuth();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language;
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [lastWorkout, setLastWorkout] = useState(null);
   const [activePlan, setActivePlan] = useState(null);
@@ -171,7 +177,7 @@ const Home = () => {
 
   const formatDate = (dateString) => {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString('it-IT', options);
+    return new Date(dateString).toLocaleDateString(locale, options);
   };
 
   return (
@@ -190,12 +196,12 @@ const Home = () => {
           variant="h1"
           sx={{ fontSize: { xs: '1.75rem', md: '2.25rem' }, mb: 1.5, color: '#fff' }}
         >
-          {isLoggedIn ? `Bentornato, ${user?.username || ''}` : 'Allenati sapendo quali muscoli sono pronti'}
+          {isLoggedIn ? t('home.hero.welcome', { username: user?.username || '' }) : t('home.hero.title_guest')}
         </Typography>
         <Typography sx={{ fontSize: 16, color: 'rgba(255,255,255,.85)', mb: 3, maxWidth: 560, lineHeight: 1.6 }}>
           {isLoggedIn
-            ? 'La tua evoluzione fisica, monitorata con precisione millimetrica.'
-            : 'Registra ogni serie in pochi secondi, con timer di recupero automatico. LiftIndex ti mostra cosa hai allenato, cosa è tornato pronto e i progressi nel tempo.'}
+            ? t('home.hero.sub_user')
+            : t('home.hero.sub_guest')}
         </Typography>
 
         {isLoggedIn ? (
@@ -213,7 +219,7 @@ const Home = () => {
               '&:hover': { bgcolor: 'rgba(255,255,255,.9)' },
             }}
           >
-            Inizia Allenamento
+            {t('home.hero.start_workout')}
           </Button>
         ) : (
           <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -231,7 +237,7 @@ const Home = () => {
                 '&:hover': { bgcolor: 'rgba(255,255,255,.9)' },
               }}
             >
-              Inizia gratis
+              {t('home.hero.cta')}
             </Button>
             <Button
               component={RouterLink}
@@ -246,10 +252,10 @@ const Home = () => {
                 '&:hover': { bgcolor: 'rgba(255,255,255,.1)', borderColor: '#fff' },
               }}
             >
-              Accedi
+              {t('home.hero.login')}
             </Button>
             <Typography sx={{ width: '100%', fontSize: 13, color: 'rgba(255,255,255,.8)' }}>
-              Gratis · senza carta di credito · funziona da telefono e da computer
+              {t('home.hero.note')}
             </Typography>
           </Box>
         )}
@@ -275,10 +281,10 @@ const Home = () => {
               <Grid item xs={12} md={6}>
                 <Card sx={{ height: '100%', p: '22px' }}>
                   <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2.5 }}>
-                    Riepilogo Settimanale
+                    {t('home.weekly.title')}
                   </Typography>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Allenamenti effettuati</Typography>
+                    <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{t('home.weekly.done')}</Typography>
                     <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
                       {dashboardStats?.weekly_workouts || 0} / {dashboardStats?.plan_days_total || '-'}
                     </Typography>
@@ -295,8 +301,8 @@ const Home = () => {
                   </Box>
                   <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 1, mb: 2.5 }}>
                     {dashboardStats?.weekly_workouts >= dashboardStats?.plan_days_total
-                      ? 'Obiettivo settimanale raggiunto! Ottimo lavoro.'
-                      : `Ti mancano ${Math.max(0, (dashboardStats?.plan_days_total || 0) - (dashboardStats?.weekly_workouts || 0))} sessioni per completare il piano.`}
+                      ? t('home.weekly.goal_reached')
+                      : t('home.weekly.missing', { count: Math.max(0, (dashboardStats?.plan_days_total || 0) - (dashboardStats?.weekly_workouts || 0)) })}
                   </Typography>
 
                   <Box sx={{ display: 'flex', gap: 1.5 }}>
@@ -305,13 +311,13 @@ const Home = () => {
                         {dashboardStats?.weekly_volume?.total_weight?.toLocaleString() || 0}
                         <Box component="span" sx={{ fontSize: 13, fontWeight: 600, ml: 0.5 }}>kg</Box>
                       </Typography>
-                      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Volume Totale</Typography>
+                      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.volume')}</Typography>
                     </Box>
                     <Box sx={{ flex: 1, p: 2, bgcolor: (theme) => theme.palette.mode === 'light' ? '#faf5f5' : 'rgba(213, 0, 0, 0.08)', borderRadius: '10px', textAlign: 'center' }}>
                       <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 22, color: 'primary.main' }}>
                         {dashboardStats?.weekly_volume?.total_reps?.toLocaleString() || 0}
                       </Typography>
-                      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Reps Totali</Typography>
+                      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.reps')}</Typography>
                     </Box>
                   </Box>
                 </Card>
@@ -337,7 +343,7 @@ const Home = () => {
                       <Box sx={{ width: 42, height: 42, borderRadius: '10px', bgcolor: (theme) => theme.palette.mode === 'light' ? '#fbebeb' : 'rgba(213, 0, 0, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', mr: 2 }}>
                         <HistoryOutlined sx={{ color: 'primary.main', fontSize: 22 }} />
                       </Box>
-                      <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17 }}>Ultimo Allenamento</Typography>
+                      <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17 }}>{t('home.last.title')}</Typography>
                     </Box>
                     {lastWorkout ? (
                       <>
@@ -345,7 +351,7 @@ const Home = () => {
                           {formatDate(lastWorkout.date)}
                         </Typography>
                         <Typography sx={{ color: 'text.secondary', fontSize: 14, mb: 2 }}>
-                          Hai completato <strong>{lastWorkout.exercises?.length || 0}</strong> esercizi. Ottimo lavoro!
+                          <Trans i18nKey="home.last.done" values={{ count: lastWorkout.exercises?.length || 0 }} components={{ b: <strong /> }} />
                         </Typography>
                         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
                           {lastWorkout.exercises?.slice(0, 3).map((ex, i) => (
@@ -358,13 +364,13 @@ const Home = () => {
                           ))}
                           {lastWorkout.exercises?.length > 3 && (
                             <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary' }}>
-                              +{lastWorkout.exercises.length - 3} ALTRI
+                              {t('home.last.more', { count: lastWorkout.exercises.length - 3 })}
                             </Typography>
                           )}
                         </Box>
                       </>
                     ) : (
-                      <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>Nessun allenamento recente. È ora di tornare in palestra!</Typography>
+                      <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>{t('home.last.none')}</Typography>
                     )}
                   </CardActionArea>
                 </Card>
@@ -378,7 +384,7 @@ const Home = () => {
                       <Box sx={{ width: 42, height: 42, borderRadius: '10px', bgcolor: (theme) => theme.palette.mode === 'light' ? '#fbebeb' : 'rgba(213, 0, 0, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', mr: 2 }}>
                         <AssignmentOutlined sx={{ color: 'primary.main', fontSize: 22 }} />
                       </Box>
-                      <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17 }}>Piano Attivo</Typography>
+                      <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17 }}>{t('home.plan.title')}</Typography>
                     </Box>
                     {activePlan ? (
                       <>
@@ -396,11 +402,11 @@ const Home = () => {
                             lineHeight: 1.5,
                           }}
                         >
-                          {activePlan.description || 'Nessuna descrizione disponibile per questo piano.'}
+                          {activePlan.description || t('home.plan.no_description')}
                         </Typography>
                       </>
                     ) : (
-                      <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>Nessun piano attivo. Scegline uno per ottimizzare i tuoi risultati.</Typography>
+                      <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>{t('home.plan.none')}</Typography>
                     )}
                   </CardActionArea>
                 </Card>
@@ -409,13 +415,13 @@ const Home = () => {
               {/* Azioni Rapide */}
               <Grid item xs={12}>
                 <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2, mt: 2 }}>
-                  Azioni Rapide
+                  {t('home.quick.title')}
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-                  <QuickActionPill to="/dashboard?tab=progress" icon={<AssessmentOutlined />} label="Progressi" />
-                  <QuickActionPill to="/dashboard?tab=body" icon={<StraightenOutlined />} label="Misure" />
-                  <QuickActionPill to="/workouts?tab=history" icon={<CalendarTodayOutlined />} label="Storia" />
-                  <QuickActionPill to="/profilo?tab=settings" icon={<HealthAndSafetyOutlined />} label="Impostazioni" />
+                  <QuickActionPill to="/dashboard?tab=progress" icon={<AssessmentOutlined />} label={t('home.quick.progress')} />
+                  <QuickActionPill to="/dashboard?tab=body" icon={<StraightenOutlined />} label={t('home.quick.measures')} />
+                  <QuickActionPill to="/workouts?tab=history" icon={<CalendarTodayOutlined />} label={t('home.quick.history')} />
+                  <QuickActionPill to="/profilo?tab=settings" icon={<HealthAndSafetyOutlined />} label={t('home.quick.settings')} />
                 </Box>
               </Grid>
             </>
@@ -425,13 +431,13 @@ const Home = () => {
         <>
           {/* Come funziona: tre passi, per far capire il flusso prima delle card demo. */}
           <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2 }}>
-            Come funziona
+            {t('home.how.title')}
           </Typography>
           <Grid container spacing={2} sx={{ mb: 4 }}>
             {[
-              ['1', 'Crea la tua scheda', 'Aggiungi esercizi e serie, anche con drop set e super set.'],
-              ['2', 'Registra in Focus Mode', 'Un tap per serie, timer di recupero automatico, salvataggio continuo.'],
-              ['3', 'Guarda i progressi', 'Mappa del recupero muscolare, grafici, livelli e streak settimanali.'],
+              ['1', t('home.how.step1.title'), t('home.how.step1.text')],
+              ['2', t('home.how.step2.title'), t('home.how.step2.text')],
+              ['3', t('home.how.step3.title'), t('home.how.step3.text')],
             ].map(([n, title, text]) => (
               <Grid item xs={12} md={4} key={n}>
                 <Card sx={{ p: '22px', height: '100%', '&:hover': { transform: 'none' } }}>
@@ -450,10 +456,10 @@ const Home = () => {
               PreviewOverlay marca ogni card come non reale/non cliccabile, per non farla
               scambiare per i dati effettivi del visitatore. */}
           <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 0.5 }}>
-            L'app in azione
+            {t('home.showcase.title')}
           </Typography>
           <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 2 }}>
-            Dati di esempio — non sono i tuoi, registrati per vedere i numeri veri.
+            {t('home.showcase.subtitle')}
           </Typography>
           <Grid container spacing={3} sx={{ mb: 2 }}>
             <Grid item xs={12} md={6}>
@@ -479,12 +485,12 @@ const Home = () => {
               <PreviewOverlay>
                 <Card sx={{ height: '100%', p: '22px', '&:hover': { transform: 'none' } }}>
                   <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2 }}>
-                    Achievement
+                    {t('home.achievements.title')}
                   </Typography>
                   <Grid container spacing={1.5}>
                     {PREVIEW_ACHIEVEMENTS.map((a) => (
                       <Grid item xs={6} key={a.key}>
-                        <Tooltip title={a.locked ? `Soglia: ${a.threshold}` : 'Sbloccato'} placement="top">
+                        <Tooltip title={a.locked ? t('home.ach.threshold', { value: t(a.threshold[0], { count: a.threshold[1] }) }) : t('home.ach.unlocked')} placement="top">
                           <Card
                             sx={{
                               borderRadius: '12px',
@@ -501,7 +507,7 @@ const Home = () => {
                               ? <LockOutlinedIcon sx={{ fontSize: 24, color: 'text.disabled', mb: 0.75 }} />
                               : <StarIcon sx={{ fontSize: 24, color: 'primary.main', mb: 0.75 }} />}
                             <Typography sx={{ fontSize: 12, fontWeight: 600, lineHeight: 1.3 }}>
-                              {a.label}
+                              {t(a.label)}
                             </Typography>
                           </Card>
                         </Tooltip>
@@ -537,15 +543,14 @@ const Home = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
                 <TimerIcon sx={{ fontSize: 20, color: 'primary.main' }} />
                 <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17 }}>
-                  Focus Mode
+                  {t('home.focus.title')}
                 </Typography>
               </Box>
               <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>
-                Interfaccia a schermo intero per l'allenamento: timer di recupero automatico,
-                feedback aptico e autosave — non perdi mai un set nemmeno se il telefono si blocca.
+                {t('home.focus.text')}
               </Typography>
             </Box>
-            <Chip label="Vibrazione a fine recupero" size="small" sx={{ fontWeight: 600 }} />
+            <Chip label={t('home.focus.chip')} size="small" sx={{ fontWeight: 600 }} />
           </Card>
 
           {/* Riepilogo funzionalità aggiuntive, non coperte dallo showcase sopra.
@@ -556,12 +561,11 @@ const Home = () => {
               <Paper sx={{ p: 4, height: '100%', borderTop: '4px solid #d50000' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   <LayersOutlined sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
-                  <Typography variant="h5" sx={{ fontWeight: 800 }}>Piani Illimitati</Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 800 }}>{t('home.feat.plans.title')}</Typography>
                 </Box>
                 <Divider sx={{ my: 2 }} />
                 <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8 }}>
-                  Gestisci più schede in parallelo, con tecniche di intensità come drop set,
-                  rest-pause e super set.
+                  {t('home.feat.plans.text')}
                 </Typography>
               </Paper>
             </Grid>
@@ -569,11 +573,11 @@ const Home = () => {
               <Paper sx={{ p: 4, height: '100%', borderTop: '4px solid #d50000' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   <StraightenIcon sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
-                  <Typography variant="h5" sx={{ fontWeight: 800 }}>Misure e 1RM</Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 800 }}>{t('home.feat.measures.title')}</Typography>
                 </Box>
                 <Divider sx={{ my: 2 }} />
                 <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8 }}>
-                  Peso, circonferenze e 1RM stimato per esercizio, con grafici sull'andamento nel tempo.
+                  {t('home.feat.measures.text')}
                 </Typography>
               </Paper>
             </Grid>
@@ -581,12 +585,11 @@ const Home = () => {
               <Paper sx={{ p: 4, height: '100%', borderTop: '4px solid #d50000' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   <ShowChartOutlined sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
-                  <Typography variant="h5" sx={{ fontWeight: 800 }}>Dashboard e Grafici</Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 800 }}>{t('home.feat.charts.title')}</Typography>
                 </Box>
                 <Divider sx={{ my: 2 }} />
                 <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8 }}>
-                  Volume, ripetizioni e frequenza settimanale in grafici interattivi, per singolo
-                  esercizio e a livello globale.
+                  {t('home.feat.charts.text')}
                 </Typography>
               </Paper>
             </Grid>
@@ -594,7 +597,7 @@ const Home = () => {
 
           <Box sx={{ textAlign: 'center', mt: 5, mb: 2 }}>
             <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 20, mb: 2 }}>
-              Pronto a tracciare i tuoi progressi?
+              {t('home.footer.cta_title')}
             </Typography>
             <Button
               component={RouterLink}
@@ -611,7 +614,7 @@ const Home = () => {
                 '&:hover': { bgcolor: 'primary.dark' },
               }}
             >
-              Inizia gratis
+              {t('home.footer.cta')}
             </Button>
           </Box>
         </>

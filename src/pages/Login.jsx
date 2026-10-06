@@ -7,12 +7,11 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { safeNext } from '../utils/safeNext';
+import { useTranslation } from 'react-i18next';
 
 const Login = () => {
-  usePageMeta(
-    'Accedi',
-    'Accedi al tuo diario di allenamento: riprendi i tuoi piani, il Focus Mode e i progressi in palestra.'
-  );
+  const { t } = useTranslation();
+  usePageMeta(t('login.meta.title'), t('login.meta.description'));
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -50,7 +49,7 @@ const Login = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Errore durante il login');
+        throw new Error(data.message || t('login.error.generic'));
       }
 
       // Utilizziamo la funzione login dal context
@@ -69,7 +68,7 @@ const Login = () => {
     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
       <Paper elevation={3} sx={{ p: 4, width: '100%', maxWidth: 400 }}>
         <Typography variant="h4" component="h1" align="center" gutterBottom>
-          Accedi
+          {t('login.title')}
         </Typography>
         
         {error && (
@@ -84,7 +83,7 @@ const Login = () => {
             required
             fullWidth
             id="username"
-            label="Username"
+            label={t('login.username')}
             name="username"
             autoComplete="username"
             autoFocus
@@ -96,7 +95,7 @@ const Login = () => {
             required
             fullWidth
             name="password"
-            label="Password"
+            label={t('login.password')}
             type={showPassword ? "text" : "password"}
             id="password"
             autoComplete="current-password"
@@ -106,7 +105,7 @@ const Login = () => {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
-                    aria-label="toggle password visibility"
+                    aria-label={t('login.toggle_password')}
                     onClick={handleTogglePasswordVisibility}
                     edge="end"
                   >
@@ -123,18 +122,18 @@ const Login = () => {
             sx={{ mt: 3, mb: 2 }}
             disabled={loading}
           >
-            {loading ? 'Accesso in corso...' : 'Accedi'}
+            {loading ? t('login.submitting') : t('login.submit')}
           </Button>
           <Box sx={{ textAlign: 'center' }}>
             <Link component={RouterLink} to="/forgot-password" variant="body2">
-              Password dimenticata?
+              {t('login.forgot')}
             </Link>
           </Box>
           <Box sx={{ textAlign: 'center', mt: 2 }}>
             <Typography variant="body2">
-              Non hai un account?{' '}
+              {t('login.no_account')}{' '}
               <Link component={RouterLink} to={next === '/' ? '/register' : `/register?next=${encodeURIComponent(next)}`} variant="body2">
-                Registrati
+                {t('login.register')}
               </Link>
             </Typography>
           </Box>

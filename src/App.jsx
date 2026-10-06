@@ -8,6 +8,7 @@ import Layout from './components/Layout';
 
 // Import Auth Provider
 import { AuthProvider } from './context/AuthContext';
+import LocaleSync from './i18n/LocaleSync';
 
 // Lazy load Pages
 const Home = lazy(() => import('./pages/Home'));
@@ -34,6 +35,7 @@ const PageLoader = () => (
 function App() {
   return (
     <AuthProvider>
+      <LocaleSync />
       <Router>
         <Suspense fallback={<PageLoader />}>
           <Routes>
