@@ -4,8 +4,7 @@
 include_once '../../config/cors_headers.php';
 
 include_once '../../config/database.php';
-include_once '../../config/rate_limiter.php';
-include_once '../../models/User.php';
+include_once '../../lib/login_attempt.php';
 include_once '../../models/ApiToken.php';
 
 try {
@@ -22,82 +21,28 @@ try {
     $database = new Database();
     $db = $database->getConnection();
 
-    $user = new User($db);
+    $user = authenticate_login_request($db, $data);
 
-    // Rate limiter (stesse soglie di login.php: nessun percorso più permissivo per il mobile)
-    $limiter = rate_limiter($db);
+    // Crea il token Bearer al posto della sessione
+    $device_info = isset($data->device_info) ? substr((string)$data->device_info, 0, 255) : null;
+    $api_token = new ApiToken($db);
+    $token_result = $api_token->create($user->id, $device_info);
 
-    if (
-        !empty($data) && isset($data->username) && isset($data->password) &&
-        !empty($data->username) && !empty($data->password)
-    ) {
-
-        // Chiavi di throttling per questo tentativo
-        $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
-        $ipKey = 'login:ip:' . hash('sha256', $ip);
-        $userKey = 'login:user:' . hash('sha256', $ip . '|' . strtolower($data->username));
-
-        list($ipMax, $ipDecay) = rate_limit_rule('login_ip');
-        list($userMax, $userDecay) = rate_limit_rule('login_user');
-
-        // Blocca se una delle due soglie è già superata
-        if ($limiter->tooManyAttempts($ipKey, $ipMax) || $limiter->tooManyAttempts($userKey, $userMax)) {
-            $retryAfter = max($limiter->availableIn($ipKey), $limiter->availableIn($userKey));
-            header('Retry-After: ' . $retryAfter);
-            http_response_code(429);
-            echo json_encode(array(
-                "success" => false,
-                "message" => "Troppi tentativi di accesso. Riprova tra " . $retryAfter . " secondi."
-            ));
-            exit;
-        }
-
-        $user->username = $data->username;
-        $user->password = $data->password;
-
-        // Attempt to login
-        if ($user->login()) {
-            // Accesso riuscito: azzera il contatore del bersaglio specifico
-            $limiter->clear($userKey);
-
-            // Crea il token Bearer al posto della sessione
-            $device_info = isset($data->device_info) ? substr((string)$data->device_info, 0, 255) : null;
-            $api_token = new ApiToken($db);
-            $token_result = $api_token->create($user->id, $device_info);
-
-            if (!$token_result) {
-                throw new Exception("Impossibile generare il token di accesso.");
-            }
-
-            http_response_code(200);
-            echo json_encode(array(
-                "success" => true,
-                "message" => "Login successful.",
-                "token" => $token_result['token'],
-                "expires_at" => $token_result['expires_at'],
-                "user" => array(
-                    "id" => $user->id,
-                    "username" => $user->username
-                )
-            ));
-        } else {
-            // Tentativo fallito: incrementa entrambi i contatori
-            $limiter->hit($ipKey, $ipDecay);
-            $limiter->hit($userKey, $userDecay);
-
-            http_response_code(401);
-            echo json_encode(array(
-                "success" => false,
-                "message" => "Invalid username or password."
-            ));
-        }
-    } else {
-        http_response_code(400);
-        echo json_encode(array(
-            "success" => false,
-            "message" => "Username and password are required."
-        ));
+    if (!$token_result) {
+        throw new Exception("Impossibile generare il token di accesso.");
     }
+
+    http_response_code(200);
+    echo json_encode(array(
+        "success" => true,
+        "message" => "Login successful.",
+        "token" => $token_result['token'],
+        "expires_at" => $token_result['expires_at'],
+        "user" => array(
+            "id" => $user->id,
+            "username" => $user->username
+        )
+    ));
 } catch (Exception $e) {
     error_log("Mobile Login Error: " . $e->getMessage());
 
