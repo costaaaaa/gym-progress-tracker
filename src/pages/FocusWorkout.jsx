@@ -506,15 +506,19 @@ const FocusWorkout = () => {
       setPremiumDialog(true);
       return;
     }
+    if (pickerMode === 'swap' && currentSetIndex > 0) {
+      setSnackbar({ open: true, message: "Puoi cambiare l'esercizio solo prima della prima serie", severity: 'info' });
+      return;
+    }
     setPicker({ mode: pickerMode, from });
   };
 
   const handlePickExercise = (catalogEx, opts) => {
     const exercises = selectedDay.exercises;
     if (picker.mode === 'swap') {
-      const result = swapExercise(exercises, currentExerciseIndex, catalogEx, currentSetIndex);
-      setSelectedDay({ ...selectedDay, exercises: result.exercises });
-      enterExercise(result.index, result.exercises[result.index]);
+      const swapped = swapExercise(exercises, currentExerciseIndex, catalogEx);
+      setSelectedDay({ ...selectedDay, exercises: swapped });
+      enterExercise(currentExerciseIndex, swapped[currentExerciseIndex]);
       setSnackbar({ open: true, message: `Ora: ${catalogEx.name}`, severity: 'success' });
     } else {
       const entry = buildSessionEntry(catalogEx, opts);
@@ -1127,7 +1131,7 @@ const FocusWorkout = () => {
                   <Button key={pickerMode} variant="outlined" fullWidth startIcon={icon}
                     endIcon={canEditSession ? null : <LockIcon sx={{ fontSize: '16px !important' }} />}
                     onClick={() => openPicker(pickerMode)}
-                    sx={{ py: 1.25, color: colors.textSecondary, borderColor: colors.border, borderRadius: '12px',
+                    sx={{ py: 1.25, opacity: pickerMode === 'swap' && currentSetIndex > 0 ? 0.45 : 1, color: colors.textSecondary, borderColor: colors.border, borderRadius: '12px',
                       '&:hover': { borderColor: colors.primary, color: colors.primaryLight } }}>
                     {label} esercizio
                   </Button>

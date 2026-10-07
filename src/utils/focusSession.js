@@ -51,33 +51,24 @@ export const buildSessionEntry = (catalogEx, { sets, reps, rest }, extra = {}) =
   };
 };
 
-// Cambia l'esercizio in posizione `index` con `catalogEx`. `doneCount` = serie
-// già passate (fatte o saltate). Se è 0 la voce viene sostituita; altrimenti
-// (es. cavi occupati a metà) la voce attuale si chiude con le serie passate e
-// subito dopo arriva il sostituto con le serie rimanenti.
-// Ritorna { exercises, index } con l'indice da cui riprendere.
-//
-// Si va solo avanti, quindi gli indici degli esercizi saltati sono tutti
-// < index: inserire dopo `index` non li sposta.
-export const swapExercise = (exercises, index, catalogEx, doneCount) => {
+// Cambia l'esercizio in posizione `index` con `catalogEx`: la voce viene sostituita
+// (stessi serie/reps/recupero). Il cambio è consentito solo prima di iniziare
+// l'esercizio, quindi nessuna serie fatta va persa o attribuita all'esercizio sbagliato.
+// In `replaces` resta il nome dell'esercizio di scheda, anche dopo più cambi.
+export const swapExercise = (exercises, index, catalogEx) => {
   const current = exercises[index];
-  const total = parseInt(current.sets, 10) || 0;
   const entry = buildSessionEntry(
     catalogEx,
-    { sets: Math.max(1, total - doneCount), reps: current.reps, rest: current.rest },
-    { replaces: doneCount > 0 ? current.exercise_name : (current.replaces || current.exercise_name) }
+    { sets: current.sets, reps: current.reps, rest: current.rest },
+    { replaces: current.replaces || current.exercise_name }
   );
   const next = [...exercises];
-  if (doneCount <= 0) {
-    next[index] = entry;
-    return { exercises: next, index };
-  }
-  next[index] = { ...current, sets: doneCount };
-  next.splice(index + 1, 0, entry);
-  return { exercises: next, index: index + 1 };
+  next[index] = entry;
+  return next;
 };
 
-// Inserisce una voce in `position` (oltre la fine = in coda)
+// Inserisce una voce in `position` (oltre la fine = in coda). Si va solo avanti, quindi
+// gli indici di skippedExercises sono < esercizio corrente: inserire dopo non li sposta.
 export const insertExercise = (exercises, position, entry) => {
   const next = [...exercises];
   next.splice(Math.min(Math.max(0, position), next.length), 0, entry);
