@@ -173,6 +173,7 @@ CREATE TABLE IF NOT EXISTS `gym_user_gamification` (
   `total_xp`              INT           NOT NULL DEFAULT 0,
   `level`                 INT           NOT NULL DEFAULT 1,
   `lifetime_volume_kg`    DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `last_xp_session_at`    DATETIME      NULL     DEFAULT NULL,
   `updated_at`            DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`user_id`),
   CONSTRAINT `fk_gamification_user`

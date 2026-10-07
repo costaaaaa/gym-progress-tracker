@@ -345,3 +345,17 @@ ALTER TABLE `gym_exercises`
 
 ALTER TABLE `gym_users`
   ADD COLUMN `locale` varchar(5) NOT NULL DEFAULT 'it' AFTER `is_admin`;
+
+
+-- ------------------------------------------------------------------------------
+-- 19. XP di sessione con regole (60% della scheda, 20 minuti, 10 ore tra una sessione
+--     con XP e la successiva). gym_user_gamification.last_xp_session_at: quando e'
+--     stata data l'ultima sessione con XP. Il livello per esercizio passa alla curva
+--     25x(L-1)^2: i livelli gia' salvati si ricalcolano dagli XP (ricalcolo ripetibile).
+--     Colonna nuova con default: il rollback del codice resta possibile.
+-- ------------------------------------------------------------------------------
+
+ALTER TABLE `gym_user_gamification`
+  ADD COLUMN `last_xp_session_at` DATETIME NULL DEFAULT NULL AFTER `lifetime_volume_kg`;
+
+UPDATE `gym_exercise_gamification` SET `level` = FLOOR(SQRT(`xp` / 25)) + 1;

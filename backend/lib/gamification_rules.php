@@ -4,34 +4,61 @@
 
 // ── Economia XP ──────────────────────────────────────────────────────────────
 const XP_SESSION          = 20;  // per sessione completata
-const XP_PR_WEIGHT        = 15;  // PR di peso su un esercizio (generale)
-const XP_PR_1RM           = 15;  // PR di 1RM stimato (generale)
+const XP_PR               = 15;  // PR in una sessione (generale): una volta sola per sessione
 const XP_STREAK_WEEK      = 30;  // settimana di streak completata
 const XP_EXERCISE_SESSION = 10;  // esercizio allenato nella sessione (per-esercizio)
 const XP_EXERCISE_PR      = 15;  // PR su quell'esercizio (per-esercizio)
 
-// ── Curva livelli: XP cumulativi per il livello L = 100×(L−1)² ───────────────
+// ── Regole per gli XP di sessione ────────────────────────────────────────────
+// Gli XP di sessione (e quelli per-esercizio "allenato") si danno solo se la sessione è
+// sul giorno di una scheda, completa almeno al 60%, lunga almeno 20 minuti e a 10 ore o più
+// dall'ultima sessione che ha dato XP. PR e streak non dipendono da queste regole.
+const SESSION_MIN_COMPLETION = 0.6;
+const SESSION_MIN_SECONDS    = 20 * 60;
+const SESSION_COOLDOWN_HOURS = 10;
 
-function xpForLevel(int $level): int {
-    if ($level <= 1) return 0;
-    return 100 * ($level - 1) ** 2;
+// Percentuale (0-1) di serie fatte sulle serie previste dal giorno di scheda.
+// Le serie in più (esercizi aggiunti) non superano il 100%.
+function sessionCompletion(int $done_sets, int $planned_sets): float {
+    if ($planned_sets <= 0) return 0.0;
+    return min(1.0, $done_sets / $planned_sets);
 }
 
-function levelForXp(int $xp): int {
+// Esito delle regole: 'ok' oppure il motivo per cui la sessione non dà XP
+function sessionXpStatus(?int $planned_sets, int $done_sets, ?int $duration_seconds, ?int $seconds_since_last_xp): string {
+    if ($planned_sets === null || $planned_sets <= 0) return 'no_plan';
+    if (sessionCompletion($done_sets, $planned_sets) < SESSION_MIN_COMPLETION) return 'incomplete';
+    if ($duration_seconds === null || $duration_seconds < SESSION_MIN_SECONDS) return 'too_short';
+    if ($seconds_since_last_xp !== null && $seconds_since_last_xp < SESSION_COOLDOWN_HOURS * 3600) return 'cooldown';
+    return 'ok';
+}
+
+// ── Curve livelli: XP cumulativi per il livello L = unit×(L−1)² ──────────────
+// Livello generale: unit 100. Livello per esercizio: unit 25, perché gli XP per esercizio
+// (10 a sessione) sono molto meno di quelli generali.
+const LEVEL_UNIT_GENERAL  = 100;
+const LEVEL_UNIT_EXERCISE = 25;
+
+function xpForLevel(int $level, int $unit = LEVEL_UNIT_GENERAL): int {
+    if ($level <= 1) return 0;
+    return $unit * ($level - 1) ** 2;
+}
+
+function levelForXp(int $xp, int $unit = LEVEL_UNIT_GENERAL): int {
     if ($xp <= 0) return 1;
-    return (int) floor(sqrt($xp / 100)) + 1;
+    return (int) floor(sqrt($xp / $unit)) + 1;
 }
 
 // XP accumulati dentro il livello corrente (per la barra di progressione)
-function xpIntoLevel(int $xp): int {
-    $lvl = levelForXp($xp);
-    return $xp - xpForLevel($lvl);
+function xpIntoLevel(int $xp, int $unit = LEVEL_UNIT_GENERAL): int {
+    $lvl = levelForXp($xp, $unit);
+    return $xp - xpForLevel($lvl, $unit);
 }
 
 // XP totali necessari per completare il livello corrente (denominatore barra)
-function xpForNextLevel(int $xp): int {
-    $lvl = levelForXp($xp);
-    return xpForLevel($lvl + 1) - xpForLevel($lvl);
+function xpForNextLevel(int $xp, int $unit = LEVEL_UNIT_GENERAL): int {
+    $lvl = levelForXp($xp, $unit);
+    return xpForLevel($lvl + 1, $unit) - xpForLevel($lvl, $unit);
 }
 
 // ── Rep parsing (mirror di extractReps in workoutMetrics.js) ─────────────────

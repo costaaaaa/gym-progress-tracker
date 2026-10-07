@@ -63,6 +63,7 @@ import {
 import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../utils/celebrate';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { track } from '../utils/analytics';
+import { xpWithheldMessage } from '../utils/gamificationLevels';
 
 const DRAFT_STORAGE_KEY = 'gym_focus_workout_draft';
 
@@ -1276,6 +1277,12 @@ const FocusWorkout = () => {
                       Streak: {savedResult.current_streak_weeks} {savedResult.current_streak_weeks === 1 ? 'settimana' : 'settimane'}
                     </Typography>
                   </Paper>
+                )}
+
+                {xpWithheldMessage(savedResult) && (
+                  <Typography variant="body2" sx={{ color: colors.textSecondary, textAlign: 'center', mb: 2 }}>
+                    {xpWithheldMessage(savedResult)}
+                  </Typography>
                 )}
 
                 {/* Recap card */}

@@ -235,8 +235,37 @@ try {
             }
         }
 
+        // XP di sessione: solo se la sessione rispetta le regole (scheda, completamento, durata,
+        // distanza dall'ultima sessione con XP). Il salvataggio dell'allenamento non cambia.
+        $day_id = 0;
+        $done_sets = 0;
+        foreach ($data->workout_records as $rec) {
+            if (!isset($rec->exercise_id) || empty($rec->exercise_id)) continue;
+            if ($day_id === 0 && isset($rec->day_id) && is_numeric($rec->day_id)) $day_id = (int) $rec->day_id;
+            if (parseReps($rec->reps ?? '0') > 0) $done_sets++;
+        }
+        $planned_sets = null;
+        if ($day_id > 0) {
+            $stmt_plan = $db->prepare(
+                "SELECT COALESCE(SUM(CAST(we.sets AS UNSIGNED)), 0)
+                 FROM gym_workout_exercises we
+                 JOIN gym_workout_days d ON d.id = we.day_id
+                 JOIN gym_workout_plans p ON p.id = d.plan_id
+                 WHERE we.day_id = ? AND p.user_id = ?"
+            );
+            $stmt_plan->execute([$day_id, $user_id]);
+            $planned_sets = (int) $stmt_plan->fetchColumn();
+        }
+        $seconds_since_last_xp = null;
+        if (!empty($gam_row['last_xp_session_at'])) {
+            $seconds_since_last_xp = $now->getTimestamp() - (new DateTime($gam_row['last_xp_session_at']))->getTimestamp();
+        }
+        $xp_status  = sessionXpStatus($planned_sets, $done_sets, $duration_seconds, $seconds_since_last_xp);
+        $xp_session = $xp_status === 'ok';
+
         // Calcola XP guadagnati e volume sessione
-        $xp_gained_general  = XP_SESSION;
+        $xp_gained_general  = $xp_session ? XP_SESSION : 0;
+        $pr_in_session      = false;
         $session_volume_kg  = 0.0;
         $exercise_xp_deltas = [];
 
@@ -255,14 +284,16 @@ try {
             $is_weight_pr = $prev !== null && $ex_best_weight > $prev['best_weight'];
             $is_1rm_pr    = $prev !== null && $ex_best_1rm   > $prev['best_1rm'];
 
-            if ($is_weight_pr) $xp_gained_general += XP_PR_WEIGHT;
-            if ($is_1rm_pr)    $xp_gained_general += XP_PR_1RM;
-
-            $ex_xp = XP_EXERCISE_SESSION;
-            if ($is_weight_pr || $is_1rm_pr) $ex_xp += XP_EXERCISE_PR;
-            $exercise_xp_deltas[$eid] = $ex_xp;
+            $ex_xp = $xp_session ? XP_EXERCISE_SESSION : 0;
+            if ($is_weight_pr || $is_1rm_pr) {
+                $pr_in_session = true;
+                $ex_xp += XP_EXERCISE_PR;
+            }
+            if ($ex_xp > 0) $exercise_xp_deltas[$eid] = $ex_xp;
         }
 
+        // PR generale: una volta sola per sessione, comunque siano i PR
+        if ($pr_in_session) $xp_gained_general += XP_PR;
         if ($week_completed_now) $xp_gained_general += XP_STREAK_WEEK;
 
         // Aggiorna totali utente
@@ -276,9 +307,13 @@ try {
 
         $db->prepare(
             "UPDATE gym_user_gamification
-             SET total_xp = ?, level = ?, lifetime_volume_kg = ?, updated_at = NOW()
+             SET total_xp = ?, level = ?, lifetime_volume_kg = ?,
+                 last_xp_session_at = COALESCE(?, last_xp_session_at), updated_at = NOW()
              WHERE user_id = ?"
-        )->execute([$new_total_xp, $new_level_gam, $new_lifetime_vol, $user_id]);
+        )->execute([
+            $new_total_xp, $new_level_gam, $new_lifetime_vol,
+            $xp_session ? $now->format('Y-m-d H:i:s') : null, $user_id,
+        ]);
 
         // Upsert per-esercizio e rileva level-up
         $exercise_levelups = [];
@@ -296,7 +331,7 @@ try {
             $old_ex_xp = (int) ($ex_row['xp']    ?? 0);
             $old_ex_lv = (int) ($ex_row['level']  ?? 1);
             $new_ex_xp = $old_ex_xp + $xp_delta;
-            $new_ex_lv = levelForXp($new_ex_xp);
+            $new_ex_lv = levelForXp($new_ex_xp, LEVEL_UNIT_EXERCISE);
             if ($new_ex_lv > $old_ex_lv) $exercise_levelups[] = $eid;
             $stmt_ex_ups->execute([$user_id, $eid, $new_ex_xp, $new_ex_lv, $new_ex_xp, $new_ex_lv]);
         }
@@ -360,6 +395,9 @@ try {
             'new_longest'           => $new_longest,
             'streak_milestone'      => $streak_milestone,
             'xp_gained'             => $xp_gained_general,
+            'xp_session_awarded'    => $xp_session,
+            'xp_session_reason'     => $xp_status,
+            'completion_pct'        => $planned_sets > 0 ? (int) round(100 * sessionCompletion($done_sets, $planned_sets)) : null,
             'total_xp'              => $new_total_xp,
             'level'                 => $new_level_gam,
             'leveled_up'            => $leveled_up,
