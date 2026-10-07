@@ -483,6 +483,7 @@ const FocusWorkout = () => {
   // Salta solo la serie corrente: non viene registrata e non parte il recupero.
   // Il peso già scritto resta, servirà per la serie dopo.
   const handleSkipSet = () => {
+    if (currentSetIndex === 0) return;
     hapticFeedback.light();
     const exerciseId = currentExercise.id;
     setSkippedSets(prev => ({ ...prev, [exerciseId]: [...(prev[exerciseId] || []), currentSetIndex] }));
@@ -1113,10 +1114,13 @@ const FocusWorkout = () => {
               </Button>
 
               <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                <Button variant="text" fullWidth startIcon={<SkipNextIcon />} onClick={handleSkipSet}
-                  sx={{ py: 1.5, color: colors.textMuted, '&:hover': { color: colors.textSecondary, bgcolor: 'rgba(255,255,255,0.05)' } }}>
-                  Salta Serie
-                </Button>
+                {/* Dalla seconda serie: saltare la prima equivale a saltare l'esercizio */}
+                {currentSetIndex > 0 && (
+                  <Button variant="text" fullWidth startIcon={<SkipNextIcon />} onClick={handleSkipSet}
+                    sx={{ py: 1.5, color: colors.textMuted, '&:hover': { color: colors.textSecondary, bgcolor: 'rgba(255,255,255,0.05)' } }}>
+                    Salta Serie
+                  </Button>
+                )}
                 <Button variant="text" fullWidth startIcon={<SkipNextIcon />} onClick={handleSkipExercise}
                   sx={{ py: 1.5, color: colors.textMuted, '&:hover': { color: colors.textSecondary, bgcolor: 'rgba(255,255,255,0.05)' } }}>
                   Salta Esercizio
