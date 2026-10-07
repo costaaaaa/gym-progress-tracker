@@ -1,8 +1,6 @@
 <?php
-// Include common CORS headers
 include_once '../../config/cors_headers.php';
 
-// Include database and exercise model
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/Exercise.php';
@@ -11,7 +9,6 @@ include_once '../../models/Exercise.php';
 // personali dell'utente, ancora in attesa o rifiutati.
 
 try {
-    // Get database connection
     $database = new Database();
     $db = $database->getConnection();
 
@@ -19,7 +16,6 @@ try {
         throw new Exception("Impossibile stabilire una connessione al database.");
     }
 
-    // Instantiate exercise object
     $exercise = new Exercise($db);
 
     $user_id = resolve_authenticated_user_id($db);
@@ -46,13 +42,11 @@ try {
             });
         }
 
-        // Set response code - 200 OK
         http_response_code(200);
 
         // Show exercises data
         echo json_encode($exercises_arr);
     } else {
-        // Set response code - 404 Not found
         http_response_code(404);
 
         // Tell the user no exercises found

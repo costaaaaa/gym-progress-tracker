@@ -2,7 +2,6 @@
 // Required headers
 include_once '../../config/cors_headers.php';
 
-// Include database and object files
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/User.php';
@@ -13,7 +12,6 @@ $db = $database->getConnection();
 $user_id = require_authenticated_user($db);
 
 try {
-    // Get posted data
     $raw_data = file_get_contents("php://input");
     if (!$raw_data) {
         throw new Exception("Nessun dato fornito");
@@ -24,13 +22,10 @@ try {
         throw new Exception("Formato JSON non valido: " . json_last_error_msg());
     }
 
-    // Instantiate user object
     $user = new User($db);
     $user->id = $user_id;
 
-    // Make sure data is not empty
     if (empty($data->password)) {
-        // Set response code - 400 Bad Request
         http_response_code(400);
         echo json_encode(array(
             "success" => false,
@@ -49,14 +44,12 @@ try {
             session_destroy();
         }
 
-        // Set response code - 200 OK
         http_response_code(200);
         echo json_encode(array(
             "success" => true,
             "message" => "Account eliminato con successo."
         ));
     } else {
-        // Set response code - 401 Unauthorized
         http_response_code(401);
         echo json_encode(array(
             "success" => false,
@@ -65,7 +58,6 @@ try {
     }
 } catch (Exception $e) {
     error_log("Delete User Error: " . $e->getMessage());
-    // Set response code - 500 Internal Server Error
     http_response_code(500);
     echo json_encode(array(
         "success" => false,

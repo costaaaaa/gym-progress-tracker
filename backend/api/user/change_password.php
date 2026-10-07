@@ -1,8 +1,6 @@
 <?php
-// Include common CORS headers
 include_once '../../config/cors_headers.php';
 
-// Include database and user model
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../lib/password_policy.php';
@@ -15,7 +13,6 @@ $db = $database->getConnection();
 $user_id = require_authenticated_user($db);
 
 try {
-    // Get posted data
     $raw_data = file_get_contents("php://input");
     if (!$raw_data) {
         throw new Exception("Nessun dato fornito");
@@ -26,13 +23,10 @@ try {
         throw new Exception("Formato JSON non valido: " . json_last_error_msg());
     }
 
-    // Instantiate user object
     $user = new User($db);
     $user->id = $user_id;
 
-    // Make sure data is not empty
     if (empty($data->current_password) || empty($data->new_password)) {
-        // Set response code - 400 Bad Request
         http_response_code(400);
         echo json_encode(array(
             "success" => false,
@@ -43,7 +37,6 @@ try {
     
     // Verifica che la nuova password sia diversa dalla password attuale
     if ($data->current_password === $data->new_password) {
-        // Set response code - 400 Bad Request
         http_response_code(400);
         echo json_encode(array(
             "success" => false,
@@ -68,14 +61,12 @@ try {
             $_SESSION['auth_at'] = time();
         }
         (new ApiToken($db))->revokeAllForUserExcept($user_id, bearer_token_from_request());
-        // Set response code - 200 OK
         http_response_code(200);
         echo json_encode(array(
             "success" => true,
             "message" => "Password modificata con successo."
         ));
     } else {
-        // Set response code - 400 Bad Request
         http_response_code(400);
         echo json_encode(array(
             "success" => false,
@@ -83,10 +74,8 @@ try {
         ));
     }
 } catch (Exception $e) {
-    // Log the error
     error_log("Change Password Error: " . $e->getMessage());
 
-    // Return error response
     http_response_code(500);
     echo json_encode(array(
         "success" => false,

@@ -1,8 +1,6 @@
 <?php
-// Include common CORS headers
 include_once '../../config/cors_headers.php';
 
-// Include database and model
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/UserStat.php';
@@ -16,7 +14,6 @@ $user_id = require_authenticated_user($db);
 $data = json_decode(file_get_contents("php://input"));
 
 if (!empty($data->id)) {
-    // Instantiate user stat object
     $user_stat = new UserStat($db);
     $user_stat->id = $data->id;
     $user_stat->user_id = $user_id;

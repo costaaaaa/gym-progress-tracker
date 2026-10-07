@@ -1,8 +1,6 @@
 <?php
-// Include common CORS headers
 include_once '../../config/cors_headers.php';
 
-// Include database
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 

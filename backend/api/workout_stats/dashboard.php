@@ -7,7 +7,6 @@
 // Include common CORS headers (this also starts the session and output buffering)
 include_once '../../config/cors_headers.php';
 
-// Include database and models
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/User.php';

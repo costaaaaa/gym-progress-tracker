@@ -10,14 +10,12 @@ include_once '../../config/cors_headers.php';
 error_reporting(0);
 ini_set('display_errors', 0);
 
-// Include database and workout model
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/WorkoutPlan.php';
 include_once '../../models/WorkoutDay.php';
 include_once '../../models/WorkoutExercise.php';
 
-// Get database connection
 try {
     $database = new Database();
     $db = $database->getConnection();

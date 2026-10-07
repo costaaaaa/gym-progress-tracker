@@ -10,7 +10,6 @@ include_once '../../config/cors_headers.php';
 error_reporting(0);
 ini_set('display_errors', 0);
 
-// Include database and object files
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/WorkoutHistory.php';
@@ -18,7 +17,6 @@ include_once '../../models/WorkoutSet.php';
 include_once '../../models/Exercise.php';
 
 try {
-    // Instantiate database and workout_history object
     $database = new Database();
     $db = $database->getConnection();
 

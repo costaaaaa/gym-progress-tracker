@@ -1,8 +1,6 @@
 <?php
-// Include common CORS headers
 include_once '../../config/cors_headers.php';
 
-// Include database and model
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/Consent.php';
@@ -24,7 +22,6 @@ if (!(new Consent($db))->isActive($user_id, 'health_data')) {
     exit;
 }
 
-// Get posted data
 $data = json_decode(file_get_contents("php://input"));
 
 // Valori plausibili: numeri finiti, non negativi, con un tetto ragionevole
@@ -50,7 +47,6 @@ foreach ($limits as $field => $max) {
 
 // Make sure data is not empty (at least date is required)
 if (!empty($data->date)) {
-    // Instantiate user stat object
     $user_stat = new UserStat($db);
     
     // Set property values

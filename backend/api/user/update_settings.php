@@ -1,5 +1,4 @@
 <?php
-// Include common CORS headers
 include_once '../../config/cors_headers.php';
 
 // Include database e modelli

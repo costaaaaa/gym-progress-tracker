@@ -1,8 +1,6 @@
 <?php
-// Include common CORS headers
 include_once '../../config/cors_headers.php';
 
-// Include database and workout model
 include_once '../../config/database.php';
 include_once '../../models/WorkoutPlan.php';
 include_once '../../config/api_helpers.php';
@@ -12,20 +10,16 @@ $db = $database->getConnection();
 
 $user_id = require_authenticated_user($db);
 
-// Instantiate workout plan object
 $workout_plan = new WorkoutPlan($db);
 
-// Get posted data
 $data = json_decode(file_get_contents("php://input"));
 
-// Make sure data is not empty
 if (!empty($data->plan_id) && !empty($data->name)) {
     // Check if plan exists and belongs to user
     if (!workout_plan_belongs_to_user($db, $data->plan_id, $user_id)) {
         api_not_found("Scheda di allenamento non trovata.");
     }
 
-    // Set workout plan property values
     $workout_plan->id = $data->plan_id;
     $workout_plan->user_id = $user_id;
     $workout_plan->name = $data->name;
@@ -37,10 +31,8 @@ if (!empty($data->plan_id) && !empty($data->name)) {
     
     // Update the workout plan
     if ($workout_plan->update()) {
-        // Set response code - 200 OK
         http_response_code(200);
 
-        // Tell the user
         echo json_encode(array(
             "message" => "Scheda di allenamento aggiornata con successo.",
             "plan" => array(
@@ -51,16 +43,12 @@ if (!empty($data->plan_id) && !empty($data->name)) {
             )
         ));
     } else {
-        // Set response code - 500 internal server error
         http_response_code(500);
 
-        // Tell the user
         echo json_encode(array("message" => "Impossibile aggiornare la scheda di allenamento. Riprova più tardi."));
     }
 } else {
-    // Set response code - 400 bad request
     http_response_code(400);
 
-    // Tell the user
     echo json_encode(array("message" => "Impossibile aggiornare la scheda di allenamento. Dati incompleti."));
 }
