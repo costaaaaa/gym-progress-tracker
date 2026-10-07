@@ -62,6 +62,17 @@ function resolve_authenticated_user_id($db)
     return $user_id;
 }
 
+// Utente autenticato (sessione web o token Bearer), altrimenti 401. Ritorna lo user_id.
+// La connessione va aperta prima: la validazione di sessione e token legge dal database.
+function require_authenticated_user($db)
+{
+    $user_id = resolve_authenticated_user_id($db);
+    if (!$user_id) {
+        api_error(401, 'unauthenticated', 'Accesso non autorizzato. Effettua il login.');
+    }
+    return $user_id;
+}
+
 // ── Lingua ──────────────────────────────────────────────────────────────────
 
 const SUPPORTED_LOCALES = array('it', 'en');

@@ -6,10 +6,6 @@ include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/User.php';
 
-// La sessione (percorso web) è già gestita in cors_headers.php.
-// resolve_authenticated_user_id() copre sia il percorso web (sessione) sia quello mobile
-// (header Authorization: Bearer).
-
 try {
     $database = new Database();
     $db = $database->getConnection();
@@ -20,13 +16,7 @@ try {
 
     $user = new User($db);
 
-    $user_id = resolve_authenticated_user_id($db);
-
-    if (!$user_id) {
-        http_response_code(401);
-        echo json_encode(array('success' => false, 'message' => 'Utente non autenticato'));
-        exit;
-    }
+    $user_id = require_authenticated_user($db);
 
     if ($user->readById($user_id)) {
         echo json_encode(array(

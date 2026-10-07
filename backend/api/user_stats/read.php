@@ -8,17 +8,10 @@ include_once '../../config/api_helpers.php';
 include_once '../../models/Consent.php';
 include_once '../../models/UserStat.php';
 
-// Connessione creata prima del check di autenticazione: resolve_authenticated_user_id()
-// ne ha bisogno per validare sia la sessione web sia il token Bearer mobile.
 $database = new Database();
 $db = $database->getConnection();
 
-$user_id = resolve_authenticated_user_id($db);
-if (!$user_id) {
-    http_response_code(401);
-    echo json_encode(array("message" => "Accesso non autorizzato. Effettua il login."));
-    exit;
-}
+$user_id = require_authenticated_user($db);
 
 // Senza consenso attivo le misure non si leggono e il client mostra la richiesta di consenso.
 // consent_updated: c'è un consenso a una versione precedente del testo, va ridato (le misure

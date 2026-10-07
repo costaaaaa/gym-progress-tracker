@@ -11,10 +11,7 @@ include_once '../../models/Consent.php';
 $database = new Database();
 $db = $database->getConnection();
 
-$user_id = resolve_authenticated_user_id($db);
-if (!$user_id) {
-    api_json_response(array('success' => false, 'message' => 'Utente non autenticato'), 401);
-}
+$user_id = require_authenticated_user($db);
 
 try {
     $consent = new Consent($db);

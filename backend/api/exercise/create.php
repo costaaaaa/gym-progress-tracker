@@ -19,10 +19,7 @@ try {
     $database = new Database();
     $db = $database->getConnection();
 
-    $user_id = resolve_authenticated_user_id($db);
-    if (!$user_id) {
-        api_error(401, 'unauthenticated', 'Accesso non autorizzato. Effettua il login.');
-    }
+    $user_id = require_authenticated_user($db);
     $user_id = (int)$user_id;
 
     $data = json_decode(file_get_contents('php://input'), true);

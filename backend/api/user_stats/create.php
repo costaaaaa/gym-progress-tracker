@@ -8,17 +8,10 @@ include_once '../../config/api_helpers.php';
 include_once '../../models/Consent.php';
 include_once '../../models/UserStat.php';
 
-// Connessione creata prima del check di autenticazione: resolve_authenticated_user_id()
-// ne ha bisogno per validare sia la sessione web sia il token Bearer mobile.
 $database = new Database();
 $db = $database->getConnection();
 
-$user_id = resolve_authenticated_user_id($db);
-if (!$user_id) {
-    http_response_code(401);
-    echo json_encode(array("message" => "Accesso non autorizzato. Effettua il login."));
-    exit;
-}
+$user_id = require_authenticated_user($db);
 
 // Le misure corporee sono dati sulla salute: servono il consenso esplicito e ancora attivo
 if (!(new Consent($db))->isActive($user_id, 'health_data')) {

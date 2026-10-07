@@ -6,17 +6,10 @@ include_once '../../config/cors_headers.php';
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 
-// Connessione creata prima del check di autenticazione: resolve_authenticated_user_id()
-// ne ha bisogno per validare sia la sessione web sia il token Bearer mobile.
 $database = new Database();
 $db = $database->getConnection();
 
-$user_id = resolve_authenticated_user_id($db);
-if (!$user_id) {
-    http_response_code(401);
-    echo json_encode(array("message" => "Accesso non autorizzato."));
-    exit;
-}
+$user_id = require_authenticated_user($db);
 
 // Query for workout frequency (count workouts per week in the last 12 weeks)
 $query = "SELECT 

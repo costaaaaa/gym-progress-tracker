@@ -22,17 +22,7 @@ try {
     $database = new Database();
     $db = $database->getConnection();
 
-    // resolve_authenticated_user_id() copre sia il percorso web (sessione) sia quello
-    // mobile (header Authorization: Bearer).
-    $user_id = resolve_authenticated_user_id($db);
-
-    if (!$user_id) {
-        http_response_code(401);
-        if (ob_get_length()) ob_clean();
-        header('Content-Type: application/json');
-        echo json_encode(array("message" => "Accesso non autorizzato. Effettua il login."));
-        exit;
-    }
+    $user_id = require_authenticated_user($db);
 
     // Initialize object
     $workout_history = new WorkoutHistory($db);

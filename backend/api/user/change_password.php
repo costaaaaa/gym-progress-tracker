@@ -9,20 +9,10 @@ include_once '../../lib/password_policy.php';
 include_once '../../models/ApiToken.php';
 include_once '../../models/User.php';
 
-// Connessione creata prima del check di autenticazione: resolve_authenticated_user_id()
-// ne ha bisogno per validare sia la sessione web sia il token Bearer mobile.
 $database = new Database();
 $db = $database->getConnection();
 
-$user_id = resolve_authenticated_user_id($db);
-if (!$user_id) {
-    http_response_code(401);
-    echo json_encode(array(
-        "success" => false,
-        "message" => "Sessione non valida. Effettua nuovamente il login."
-    ));
-    exit;
-}
+$user_id = require_authenticated_user($db);
 
 try {
     // Get posted data

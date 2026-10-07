@@ -7,17 +7,10 @@ include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/User.php';
 
-// Connessione creata prima del check di autenticazione: resolve_authenticated_user_id()
-// ne ha bisogno per validare sia la sessione web sia il token Bearer mobile.
 $database = new Database();
 $db = $database->getConnection();
 
-$user_id = resolve_authenticated_user_id($db);
-if (!$user_id) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Utente non autenticato']);
-    exit;
-}
+$user_id = require_authenticated_user($db);
 
 // Solo richieste POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

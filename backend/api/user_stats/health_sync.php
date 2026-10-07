@@ -23,12 +23,7 @@ include_once '../../models/UserStat.php';
 $database = new Database();
 $db = $database->getConnection();
 
-$user_id = resolve_authenticated_user_id($db);
-if (!$user_id) {
-    http_response_code(401);
-    echo json_encode(array("message" => "Accesso non autorizzato. Effettua il login."));
-    exit;
-}
+$user_id = require_authenticated_user($db);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);

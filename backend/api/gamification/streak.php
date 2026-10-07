@@ -8,16 +8,7 @@ try {
     $database = new Database();
     $db = $database->getConnection();
 
-    // resolve_authenticated_user_id() copre sia il percorso web (sessione) sia quello
-    // mobile (header Authorization: Bearer).
-    $user_id = resolve_authenticated_user_id($db);
-
-    if (!$user_id) {
-        http_response_code(401);
-        if (ob_get_length()) ob_clean();
-        echo json_encode(['success' => false, 'message' => 'Utente non autenticato']);
-        exit;
-    }
+    $user_id = require_authenticated_user($db);
 
     // Fetch or default gamification row
     $stmt = $db->prepare("SELECT * FROM gym_user_gamification WHERE user_id = ?");
