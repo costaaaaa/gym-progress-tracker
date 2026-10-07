@@ -76,26 +76,6 @@ class WorkoutPlan
         return $stmt;
     }
 
-    public function readHistory()
-    {
-        // Query to fetch workout history
-        $query = "SELECT id, date, exercises, notes 
-                FROM gym_workout_history
-                WHERE user_id = ?
-                ORDER BY date DESC";
-
-        // Prepare query statement
-        $stmt = $this->conn->prepare($query);
-
-        // Bind user ID
-        $stmt->bindParam(1, $this->user_id);
-
-        // Execute query
-        $stmt->execute();
-
-        return $stmt;
-    }
-
     // Read one workout plan
     public function readOne()
     {
