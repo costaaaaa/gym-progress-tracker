@@ -1,28 +1,16 @@
-import { useState, useEffect, Suspense, lazy } from 'react';
+import { Suspense, lazy } from 'react';
 import { Box, Tabs, Tab, CircularProgress, Container } from '@mui/material';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { useTabbedPage } from '../hooks/useTabbedPage';
 
 // Lazy loading dei componenti tab
 const WorkoutPlans = lazy(() => import('./WorkoutPlans'));
 const WorkoutHistory = lazy(() => import('./WorkoutHistory'));
 
-// Mappa dei tab a indici numerici per MUI Tabs. Statiche: nessun riferimento
-// a stato/props, per questo vivono fuori dal componente. Ricrearle a ogni
-// render romperebbe react-hooks/exhaustive-deps (nuova identità a ogni render
-// -> se incluse nelle dipendenze degli effetti sotto, li farebbero rieseguire
-// a ogni render, non solo al cambio di tab).
-const tabToIndex = {
-  'plans': 0,
-  'history': 1
-};
-
-const indexToTab = {
-  0: 'plans',
-  1: 'history'
-};
+const TABS = ['plans', 'history'];
 
 const Workouts = () => {
   usePageMeta(
@@ -30,44 +18,14 @@ const Workouts = () => {
     'Crea e gestisci le tue schede di allenamento in palestra: piani illimitati, esercizi personalizzati e storico completo delle sessioni.'
   );
   const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const currentTab = searchParams.get('tab') || 'plans';
-  const [visitedTabs, setVisitedTabs] = useState(() => ({
-    plans: currentTab === 'plans',
-    history: currentTab === 'history'
-  }));
-
-  const handleTabChange = (event, newValue) => {
-    setSearchParams({ tab: indexToTab[newValue] });
-  };
-
-  useEffect(() => {
-    if (Object.prototype.hasOwnProperty.call(tabToIndex, currentTab)) {
-      setVisitedTabs(prev => ({
-        ...prev,
-        [currentTab]: true
-      }));
-    }
-  }, [currentTab]);
-
-  // Reset dello scroll al cambio tab
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [currentTab]);
-
-  // Normalizzazione URL se il tab non è valido
-  useEffect(() => {
-    if (!Object.prototype.hasOwnProperty.call(tabToIndex, currentTab)) {
-      setSearchParams({ tab: 'plans' }, { replace: true });
-    }
-  }, [currentTab, setSearchParams]);
+  const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS);
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
       <Box sx={{ width: '100%' }}>
         <Box sx={{ borderBottom: '1px solid', borderColor: 'divider', mb: 2 }}>
           <Tabs
-            value={tabToIndex[currentTab] || 0}
+            value={tabIndex}
             onChange={handleTabChange}
             aria-label="workout hub tabs"
             TabIndicatorProps={{ sx: { height: 2, bgcolor: 'primary.main' } }}

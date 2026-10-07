@@ -1,70 +1,28 @@
-import { useState, useEffect, Suspense, lazy } from 'react';
+import { Suspense, lazy } from 'react';
 import { Box, Tabs, Tab, CircularProgress } from '@mui/material';
-import { useSearchParams } from 'react-router-dom';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { useTabbedPage } from '../hooks/useTabbedPage';
 
 // Lazy loading dei componenti tab
 const ProfileSummary = lazy(() => import('./ProfileSummary'));
 const Account = lazy(() => import('./Account'));
 
-// Statiche: nessun riferimento a stato/props, per questo vivono fuori dal
-// componente. Ricrearle a ogni render romperebbe react-hooks/exhaustive-deps
-// (nuova identità a ogni render -> se incluse nelle dipendenze degli effetti
-// sotto, li farebbero rieseguire a ogni render, non solo al cambio di tab).
-const tabToIndex = {
-  'summary': 0,
-  'settings': 1
-};
-
-const indexToTab = {
-  0: 'summary',
-  1: 'settings'
-};
+const TABS = ['summary', 'settings'];
 
 const Profile = () => {
   usePageMeta(
     'Profilo e Impostazioni',
     'Gestisci il tuo profilo, i traguardi raggiunti e le impostazioni del tuo account LiftIndex.'
   );
-  const [searchParams, setSearchParams] = useSearchParams();
-  const currentTab = searchParams.get('tab') || 'summary';
-  const [visitedTabs, setVisitedTabs] = useState(() => ({
-    summary: currentTab === 'summary',
-    settings: currentTab === 'settings'
-  }));
-
-  const handleTabChange = (event, newValue) => {
-    setSearchParams({ tab: indexToTab[newValue] });
-  };
-
-  useEffect(() => {
-    if (Object.prototype.hasOwnProperty.call(tabToIndex, currentTab)) {
-      setVisitedTabs(prev => ({
-        ...prev,
-        [currentTab]: true
-      }));
-    }
-  }, [currentTab]);
-
-  // Reset dello scroll al cambio tab
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [currentTab]);
-
-  // Normalizzazione URL se il tab non è valido
-  useEffect(() => {
-    if (!Object.prototype.hasOwnProperty.call(tabToIndex, currentTab)) {
-      setSearchParams({ tab: 'summary' }, { replace: true });
-    }
-  }, [currentTab, setSearchParams]);
+  const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS);
 
   return (
     <Box sx={{ width: '100%' }}>
       <Box sx={{ borderBottom: '1px solid', borderColor: 'divider', mb: 2 }}>
         <Tabs
-          value={tabToIndex[currentTab] || 0}
+          value={tabIndex}
           onChange={handleTabChange}
           aria-label="profile hub tabs"
           TabIndicatorProps={{ sx: { height: 2, bgcolor: 'primary.main' } }}
