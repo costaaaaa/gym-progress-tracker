@@ -1,5 +1,6 @@
 import { Box, Chip, LinearProgress, Typography } from '@mui/material';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
+import { intlLocale } from '../../i18n/format';
 
 // Classifica del gruppo. Le righe arrivano già ordinate e con la posizione dal server
 // (api/groups/read.php); qui cambia solo cosa si mostra per ogni scheda.
@@ -20,7 +21,7 @@ const Metric = ({ row, board }) => {
     return (
       <Box sx={{ textAlign: 'right' }}>
         <Typography sx={{ fontWeight: 700 }}>Livello {row.level}</Typography>
-        <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{row.total_xp.toLocaleString('it-IT')} XP</Typography>
+        <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{row.total_xp.toLocaleString(intlLocale())} XP</Typography>
       </Box>
     );
   }
@@ -28,7 +29,7 @@ const Metric = ({ row, board }) => {
     <Box sx={{ minWidth: 150 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
         <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{row.workouts}/{row.goal}</Typography>
-        <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{row.volume_kg.toLocaleString('it-IT')} kg</Typography>
+        <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{row.volume_kg.toLocaleString(intlLocale())} kg</Typography>
       </Box>
       <LinearProgress
         variant="determinate"

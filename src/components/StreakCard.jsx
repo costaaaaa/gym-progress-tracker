@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Box, Card, Typography, useTheme } from '@mui/material';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import { API_BASE_URL } from '../config';
+import { useTranslation } from 'react-i18next';
 
 const RING_SIZE = 60;
 const RING_RADIUS = 26;
@@ -11,6 +12,7 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 // previewData: dati statici per mostrare la card senza autenticazione (es. landing page).
 // Quando presente salta la fetch autenticata e usa direttamente quei dati.
 const StreakCard = ({ previewData }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const [data, setData] = useState(previewData || null);
   const [loading, setLoading] = useState(!previewData);
@@ -39,7 +41,7 @@ const StreakCard = ({ previewData }) => {
       <Typography
         sx={{ textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 700, fontSize: 12, color: 'text.secondary', mb: 2 }}
       >
-        Streak
+        {t('streak.title')}
       </Typography>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, flexWrap: 'wrap' }}>
@@ -83,12 +85,12 @@ const StreakCard = ({ previewData }) => {
         <Box sx={{ minWidth: 120 }}>
           <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
             {this_week.completed
-              ? 'Settimana completata!'
-              : `${remaining} ${remaining === 1 ? 'sessione' : 'sessioni'} al traguardo`}
+              ? t('streak.week_done')
+              : t('streak.remaining', { count: remaining })}
           </Typography>
           {longest_streak_weeks > 0 && (
             <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
-              Record: {longest_streak_weeks} settimane
+              {t('streak.record', { count: longest_streak_weeks })}
             </Typography>
           )}
         </Box>

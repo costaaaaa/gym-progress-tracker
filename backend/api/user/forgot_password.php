@@ -3,6 +3,7 @@
 // La risposta è SEMPRE la stessa (successo generico) per non rivelare chi è registrato.
 include_once '../../config/cors_headers.php';
 include_once '../../config/database.php';
+include_once '../../config/api_helpers.php';
 include_once '../../config/rate_limiter.php';
 include_once '../../models/ApiToken.php';
 include_once '../../models/PasswordReset.php';
@@ -10,7 +11,7 @@ include_once '../../lib/mailer.php';
 
 $generic = array(
     "success" => true,
-    "message" => "Se l'indirizzo è registrato, ti abbiamo inviato un'email con le istruzioni per reimpostare la password."
+    "message" => t_server('forgot.sent')
 );
 
 try {
@@ -19,7 +20,7 @@ try {
 
     if ($email === '' || strlen($email) > 100 || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         http_response_code(400);
-        echo json_encode(array("success" => false, "message" => "Inserisci un indirizzo email valido."));
+        echo json_encode(array("success" => false, "message" => t_server('common.email_invalid')));
         exit;
     }
 
@@ -36,7 +37,7 @@ try {
     // Oltre soglia si risponde comunque col messaggio generico: 429 rivelerebbe che l'indirizzo esiste.
     if ($limiter->tooManyAttempts($ipKey, $ipMax)) {
         http_response_code(429);
-        echo json_encode(array("success" => false, "message" => "Troppe richieste. Riprova più tardi."));
+        echo json_encode(array("success" => false, "message" => t_server('forgot.too_many')));
         exit;
     }
     // Ogni richiesta conta, esista o no l'account.
@@ -50,14 +51,13 @@ try {
         if ($user) {
             $token = $reset->create($user['id']);
             // APP_PUBLIC_URL: indirizzo pubblico dell'app, es. https://liftindex.app
-            // (env sul server, come MAIL_*). L'app sta alla radice del dominio.
+            // (env sul server, come MAIL_*). L'app sta alla radice del dominio; la pagina
+            // inglese sta sotto /en. Email e link sono nella lingua dell'account.
+            $lang = normalize_locale($user['locale'] ?? null) ?? 'it';
             $baseUrl = rtrim(getenv('APP_PUBLIC_URL') ?: 'http://localhost:3000', '/');
-            $link = $baseUrl . '/reset-password?token=' . $token;
-            $text = "Ciao " . $user['username'] . ",\n\n"
-                . "abbiamo ricevuto una richiesta per reimpostare la password del tuo account.\n"
-                . "Apri questo link entro 1 ora:\n\n" . $link . "\n\n"
-                . "Se non l'hai chiesto tu, ignora questa email: la tua password non cambia.\n";
-            mail_send($email, 'Reimposta la tua password', $text);
+            $link = $baseUrl . ($lang === 'en' ? '/en' : '') . '/reset-password?token=' . $token;
+            $text = t_server('forgot.email_body', array('username' => $user['username'], 'link' => $link), $lang);
+            mail_send($email, t_server('forgot.email_subject', array(), $lang), $text);
         }
     }
 

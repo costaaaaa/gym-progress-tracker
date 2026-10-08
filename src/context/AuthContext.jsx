@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import { API_BASE_URL } from '../config';
+import i18n from '../i18n';
 
 // Crea il contesto di autenticazione
 const AuthContext = createContext(null);
@@ -79,6 +80,12 @@ export const AuthProvider = ({ children }) => {
     const originalFetch = window.fetch;
     
     window.fetch = async (...args) => {
+      // Lingua dell'interfaccia per i messaggi del server
+      if (typeof args[0] === 'string' && args[0].startsWith(API_BASE_URL)) {
+        const headers = new Headers(args[1]?.headers);
+        if (!headers.has('X-Locale')) headers.set('X-Locale', i18n.language);
+        args[1] = { ...args[1], headers };
+      }
       const response = await originalFetch(...args);
       // Se 401 Unauthorized e non è una chiamata di login o verifica sessione
       if (response.status === 401 && 
@@ -95,12 +102,22 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
+  // Aggiorna campi dell'utente già salvati sul server (es. la lingua)
+  const updateUser = (patch) => {
+    setUser((prev) => {
+      const next = { ...prev, ...patch };
+      localStorage.setItem('user', JSON.stringify(next));
+      return next;
+    });
+  };
+
   // Valore fornito dal context
   const authContextValue = {
     isLoggedIn,
     user,
     login,
     logout,
+    updateUser,
     loading
   };
 

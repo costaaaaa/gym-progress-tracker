@@ -64,6 +64,7 @@ import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../ut
 import { usePageMeta } from '../hooks/usePageMeta';
 import { track } from '../utils/analytics';
 import { xpWithheldMessage } from '../utils/gamificationLevels';
+import { intlLocale } from '../i18n/format';
 
 const DRAFT_STORAGE_KEY = 'gym_focus_workout_draft';
 
@@ -773,7 +774,7 @@ const FocusWorkout = () => {
               {draftToResume.selectedDay?.name}
             </Typography>
             <Typography variant="body2" sx={{ color: colors.textMuted, mb: 4 }}>
-              Iniziato il {new Date(draftToResume.startTime).toLocaleString('it-IT')}
+              Iniziato il {new Date(draftToResume.startTime).toLocaleString(intlLocale())}
             </Typography>
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>

@@ -68,7 +68,7 @@ function require_authenticated_user($db)
 {
     $user_id = resolve_authenticated_user_id($db);
     if (!$user_id) {
-        api_error(401, 'unauthenticated', 'Accesso non autorizzato. Effettua il login.');
+        api_error(401, 'unauthenticated', t_server('auth.unauthenticated'));
     }
     return $user_id;
 }
@@ -96,25 +96,52 @@ function request_user_context($db = null, $user_id = null)
     return $context;
 }
 
-// Lingua scelta dall'utente della richiesta (gym_users.locale); 'it' senza login o se la colonna
-// non c'è ancora (codice nuovo su database non ancora migrato).
-function request_locale()
+// Lingua della richiesta: quella dell'account (gym_users.locale) se c'è un utente, altrimenti
+// l'header X-Locale che il client web manda sulle pagine pubbliche (login, registrazione,
+// reset), altrimenti 'it'. X-Locale e non Accept-Language: le app mobile mandano il secondo da
+// sole e le build vecchie diventerebbero inglesi. $refresh rilegge l'account dopo che la
+// richiesta stessa ha cambiato lingua (update_settings).
+function request_locale($refresh = false)
 {
-    static $locale = null;
+    static $cache = array();
     $context = request_user_context();
-    if ($locale === null || $context['user_id'] === null) {
-        $locale = 'it';
+    $key = $context['user_id'] ?? 0;
+    if ($refresh || !isset($cache[$key])) {
+        $locale = null;
         if ($context['user_id'] !== null) {
             try {
                 $stmt = $context['db']->prepare("SELECT locale FROM gym_users WHERE id = ? LIMIT 1");
                 $stmt->execute(array($context['user_id']));
-                $locale = normalize_locale($stmt->fetchColumn()) ?? 'it';
+                $locale = normalize_locale($stmt->fetchColumn());
             } catch (PDOException $e) {
-                $locale = 'it';
+                // colonna non ancora migrata: si passa all'header
             }
         }
+        $cache[$key] = $locale ?? normalize_locale($_SERVER['HTTP_X_LOCALE'] ?? null) ?? 'it';
     }
-    return $locale;
+    return $cache[$key];
+}
+
+// Messaggio del server nella lingua della richiesta (o in $locale), da backend/lang/<lingua>.php.
+// I {segnaposto} si sostituiscono con $vars; una chiave mancante ricade sull'italiano.
+function t_server($key, $vars = array(), $locale = null)
+{
+    static $strings = array();
+    $locale = normalize_locale($locale) ?? request_locale();
+    foreach (array_unique(array($locale, 'it')) as $lang) {
+        if (!isset($strings[$lang])) {
+            $strings[$lang] = require __DIR__ . '/../lang/' . $lang . '.php';
+        }
+        if (isset($strings[$lang][$key])) {
+            $text = $strings[$lang][$key];
+            foreach ($vars as $name => $value) {
+                $text = str_replace('{' . $name . '}', (string)$value, $text);
+            }
+            return $text;
+        }
+    }
+    error_log("t_server: chiave mancante $key");
+    return $key;
 }
 
 // Nome da mostrare: quello inglese se l'utente ha scelto l'inglese e c'è, altrimenti l'italiano
@@ -229,10 +256,10 @@ function birth_date_error($birth_date)
 {
     $birth = is_string($birth_date) ? DateTime::createFromFormat('!Y-m-d', $birth_date) : false;
     if (!$birth || $birth->format('Y-m-d') !== $birth_date || $birth > new DateTime('today')) {
-        return 'Data di nascita obbligatoria o non valida.';
+        return t_server('birth.invalid');
     }
     if ($birth->diff(new DateTime('today'))->y < 14) {
-        return 'Devi avere almeno 14 anni per usare LiftIndex.';
+        return t_server('birth.too_young');
     }
     return null;
 }

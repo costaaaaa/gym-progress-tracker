@@ -26,21 +26,25 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { API_BASE_URL } from '../config';
 import { extractReps, estimateOneRepMax } from '../utils/workoutMetrics';
 import ChartCard from '../components/ChartCard';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
+import { formatDate, formatNumber } from '../i18n/format';
+import { muscleLabel } from '../i18n/labels';
 
 // Le tre metriche selezionabili tramite pill nella toolbar del grafico principale.
 // dataKey/secondaryKey sono già presenti in ogni punto di chartData (vedi calculateTrendLine).
 const METRIC_OPTIONS = [
   {
-    key: 'avgWeight', label: 'Peso Medio', unit: 'kg/rep', color: '#d50000',
-    secondaryKey: 'est1RM', secondaryLabel: 'Stima 1RM (kg)', secondaryColor: '#4f46e5',
+    key: 'avgWeight', label: 'progress.metric.avg_weight', unit: 'kg/rep', color: '#d50000',
+    secondaryKey: 'est1RM', secondaryLabel: 'progress.metric.est_1rm', secondaryColor: '#4f46e5',
   },
   {
-    key: 'volume', label: 'Volume Totale', unit: 'kg', color: '#d50000',
-    secondaryKey: 'volumePerSet', secondaryLabel: 'Volume medio per serie (kg)', secondaryColor: '#4f46e5',
+    key: 'volume', label: 'progress.metric.volume', unit: 'kg', color: '#d50000',
+    secondaryKey: 'volumePerSet', secondaryLabel: 'progress.metric.volume_per_set', secondaryColor: '#4f46e5',
   },
   {
-    key: 'compositeIndex', label: 'Indice di Progresso', unit: '', color: '#7c3aed',
-    secondaryKey: 'trendComposite', secondaryLabel: 'Linea di tendenza', secondaryColor: '#7c3aed', secondaryOpacity: 0.4,
+    key: 'compositeIndex', label: 'progress.metric.index', unit: '', color: '#7c3aed',
+    secondaryKey: 'trendComposite', secondaryLabel: 'progress.metric.trend', secondaryColor: '#7c3aed', secondaryOpacity: 0.4,
   },
 ];
 
@@ -75,14 +79,8 @@ const formatDelta = (first, last) => {
   return { pct, up: pct >= 0 };
 };
 
-// Pura, nessun riferimento a stato/props: vive fuori dal componente cosi'
-// fetchExercises (sotto) puo' essere stabilizzata con useCallback([]) senza
-// che react-hooks/exhaustive-deps la richieda a sua volta come dipendenza.
-const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '');
-
-// Helper puri (solo parametri, nessuno stato): a livello di modulo per lo
-// stesso motivo di capitalize, cosi' calculateExerciseStats/fetchWorkoutHistory
-// possono essere stabilizzate con useCallback.
+// Helper puri (solo parametri, nessuno stato): a livello di modulo cosi'
+// calculateExerciseStats/fetchWorkoutHistory possono essere stabilizzate con useCallback.
 
 // Trova l'esercizio selezionato in un allenamento: prima per ID, poi per nome esatto come fallback.
 const findExerciseInWorkout = (workout, exerciseId, exerciseName) => {
@@ -144,6 +142,7 @@ const calculateTrendLine = (data) => {
 
 const Progress = ({ isEmbedded = false }) => {
   const theme = useTheme();
+  const { t } = useTranslation();
   const [muscleGroups, setMuscleGroups] = useState([]);
   const [exercisesByMuscleGroup, setExercisesByMuscleGroup] = useState({});
   const [loadingExercises, setLoadingExercises] = useState(true);
@@ -176,13 +175,13 @@ const Progress = ({ isEmbedded = false }) => {
       if (freqData.records) {
         setFrequencyData(freqData.records.map(r => ({
           ...r,
-          label: `Sett. ${r.year_week.toString().slice(-2)}`,
+          label: i18n.t('progress.week_short', { week: r.year_week.toString().slice(-2) }),
         })));
       }
       if (volData.records) {
         setTotalVolumeData(volData.records.map(r => ({
           ...r,
-          dateFormatted: new Date(r.workout_date).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' }),
+          dateFormatted: formatDate(r.workout_date, { day: '2-digit', month: '2-digit' }),
         })));
       }
     } catch (error) {
@@ -191,7 +190,7 @@ const Progress = ({ isEmbedded = false }) => {
   }, []);
 
   // useCallback([]): non legge mai stato reattivo (solo setter, stabili per
-  // garanzia di React, e capitalize, ora a livello di modulo) — riferimento
+  // garanzia di React, e helper di modulo) — riferimento
   // stabile per tutta la vita del componente, sicuro da usare come dipendenza
   // dell'effetto di mount sotto.
   const fetchExercises = useCallback(async () => {
@@ -204,15 +203,15 @@ const Progress = ({ isEmbedded = false }) => {
       const data = await response.json();
 
       if (data.records && Array.isArray(data.records)) {
-        const uniqueGroups = [...new Set(data.records.map(ex => capitalize(ex.muscle_group)))]
+        const uniqueGroups = [...new Set(data.records.map(ex => ex.muscle_group?.toLowerCase()))]
           .filter(Boolean)
-          .sort();
+          .sort((a, b) => muscleLabel(a).localeCompare(muscleLabel(b)));
         setMuscleGroups(uniqueGroups);
 
         const exercisesByGroup = {};
         uniqueGroups.forEach(group => { exercisesByGroup[group] = []; });
         data.records.forEach(exercise => {
-          const group = capitalize(exercise.muscle_group);
+          const group = exercise.muscle_group?.toLowerCase();
           if (group && uniqueGroups.includes(group)) {
             exercisesByGroup[group].push({ id: exercise.id, name: exercise.name });
           }
@@ -221,11 +220,11 @@ const Progress = ({ isEmbedded = false }) => {
       } else {
         setMuscleGroups([]);
         setExercisesByMuscleGroup({});
-        setSnackbar({ open: true, message: 'Non sono stati trovati esercizi nel database', severity: 'warning' });
+        setSnackbar({ open: true, message: i18n.t('progress.error.no_exercises'), severity: 'warning' });
       }
     } catch (error) {
       console.error('Errore nel caricamento degli esercizi:', error);
-      setSnackbar({ open: true, message: 'Errore nel caricamento degli esercizi', severity: 'error' });
+      setSnackbar({ open: true, message: i18n.t('progress.error.load_exercises'), severity: 'error' });
       setMuscleGroups([]);
       setExercisesByMuscleGroup({});
     } finally {
@@ -275,7 +274,7 @@ const Progress = ({ isEmbedded = false }) => {
 
       relevant.push({
         id: workout.id || `workout-${workout.date}`,
-        date: new Date(workout.date).toLocaleDateString('it-IT'),
+        date: formatDate(workout.date),
         rawDate: workout.date,
         volume: parseFloat(totalVolume.toFixed(2)),
         avgWeight: parseFloat((totalVolume / totalReps).toFixed(2)),
@@ -286,7 +285,7 @@ const Progress = ({ isEmbedded = false }) => {
     }
 
     if (relevant.length === 0) {
-      setEmptyMessage(`Nessun allenamento trovato per "${exercise.name}"`);
+      setEmptyMessage(i18n.t('progress.empty_for_exercise', { name: exercise.name }));
       setExerciseStats([]);
       setChartData([]);
       return;
@@ -323,8 +322,8 @@ const Progress = ({ isEmbedded = false }) => {
     } catch (error) {
       console.error('Errore nel caricamento della cronologia:', error);
       const message = error.message.includes('404')
-        ? 'Nessun dato di allenamento disponibile. Registra il tuo primo allenamento!'
-        : 'Errore nel caricamento della cronologia: problema di connessione';
+        ? i18n.t('progress.error.no_history')
+        : i18n.t('progress.error.connection');
       setEmptyMessage(message);
       setChartData([]);
       setExerciseStats([]);
@@ -366,18 +365,18 @@ const Progress = ({ isEmbedded = false }) => {
   const visibleRows = showAllRows ? exerciseStats : exerciseStats.slice(0, 5);
 
   const statCards = [
-    { label: 'Volume Totale', unit: 'kg', value: last?.volume, delta: formatDelta(first?.volume, last?.volume) },
-    { label: 'Peso Medio', unit: 'kg/rep', value: last?.avgWeight, delta: formatDelta(first?.avgWeight, last?.avgWeight) },
-    { label: 'Indice di Progresso', unit: '', value: last?.compositeIndex, delta: formatDelta(first?.compositeIndex, last?.compositeIndex) },
+    { label: 'progress.metric.volume', unit: 'kg', value: last?.volume, delta: formatDelta(first?.volume, last?.volume) },
+    { label: 'progress.metric.avg_weight', unit: 'kg/rep', value: last?.avgWeight, delta: formatDelta(first?.avgWeight, last?.avgWeight) },
+    { label: 'progress.metric.index', unit: '', value: last?.compositeIndex, delta: formatDelta(first?.compositeIndex, last?.compositeIndex) },
   ];
 
   const renderContent = () => (
     <Grid container spacing={3}>
       {!isEmbedded && (
         <Grid item xs={12}>
-          <Typography variant="h4" gutterBottom>Tracciamento Progressi</Typography>
+          <Typography variant="h4" gutterBottom>{t('progress.title')}</Typography>
           <Typography variant="body1" color="text.secondary" paragraph>
-            Seleziona un gruppo muscolare e un esercizio per visualizzare il tuo progresso nel tempo.
+            {t('progress.intro')}
           </Typography>
         </Grid>
       )}
@@ -385,20 +384,20 @@ const Progress = ({ isEmbedded = false }) => {
       {/* Frequenza / Volume totale */}
       <Grid item xs={12} md={6}>
         <ChartCard
-          title="Frequenza Allenamenti"
+          title={t('progress.frequency')}
           data={frequencyData.map(r => r.workout_count)}
           color="#d50000"
           valueLabel={frequencyData.length ? `${frequencyData[frequencyData.length - 1].workout_count}` : '—'}
-          deltaText={frequencyData.length ? `${frequencyData.length} settimane monitorate` : undefined}
+          deltaText={frequencyData.length ? t('progress.weeks_tracked', { count: frequencyData.length }) : undefined}
         />
       </Grid>
       <Grid item xs={12} md={6}>
         <ChartCard
-          title="Volume Totale Allenamento"
+          title={t('progress.total_volume')}
           data={totalVolumeData.map(r => r.total_volume)}
           color="#4f46e5"
-          valueLabel={totalVolumeData.length ? `${Math.round(totalVolumeData[totalVolumeData.length - 1].total_volume).toLocaleString()} kg` : '—'}
-          deltaText={totalVolumeData.length ? `${totalVolumeData.length} sessioni registrate` : undefined}
+          valueLabel={totalVolumeData.length ? `${formatNumber(Math.round(totalVolumeData[totalVolumeData.length - 1].total_volume))} kg` : '—'}
+          deltaText={totalVolumeData.length ? t('progress.sessions_logged', { count: totalVolumeData.length }) : undefined}
         />
       </Grid>
 
@@ -408,7 +407,7 @@ const Progress = ({ isEmbedded = false }) => {
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center', mb: 2.5 }}>
             <FormControl size="small" sx={{ minWidth: 180 }}>
               <Select value={selectedMuscleGroup} onChange={handleMuscleGroupChange} displayEmpty disabled={loadingExercises}>
-                {muscleGroups.map(group => <MenuItem key={group} value={group}>{group}</MenuItem>)}
+                {muscleGroups.map(group => <MenuItem key={group} value={group}>{muscleLabel(group)}</MenuItem>)}
               </Select>
             </FormControl>
             <FormControl size="small" sx={{ minWidth: 220 }}>
@@ -446,7 +445,7 @@ const Progress = ({ isEmbedded = false }) => {
               }}
             >
               {METRIC_OPTIONS.map(opt => (
-                <ToggleButton key={opt.key} value={opt.key}>{opt.label}</ToggleButton>
+                <ToggleButton key={opt.key} value={opt.key}>{t(opt.label)}</ToggleButton>
               ))}
             </ToggleButtonGroup>
           </Box>
@@ -458,7 +457,7 @@ const Progress = ({ isEmbedded = false }) => {
           ) : chartData.length === 0 ? (
             <Box sx={{ textAlign: 'center', py: 6 }}>
               <Typography sx={{ color: 'text.secondary' }}>
-                {emptyMessage || 'Nessun allenamento registrato per questo esercizio'}
+                {emptyMessage || t('progress.empty')}
               </Typography>
             </Box>
           ) : (
@@ -470,11 +469,11 @@ const Progress = ({ isEmbedded = false }) => {
                     <XAxis dataKey="date" fontSize={11} stroke={theme.palette.text.secondary} tickLine={false} axisLine={false} />
                     <YAxis fontSize={11} stroke={theme.palette.text.secondary} tickLine={false} axisLine={false} tickCount={4} width={40} />
                     <Tooltip content={renderChartTooltip} />
-                    <Line type="monotone" dataKey={metric.key} name={metric.label} stroke={metric.color} strokeWidth={2.5} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey={metric.key} name={t(metric.label)} stroke={metric.color} strokeWidth={2.5} dot={{ r: 3 }} />
                     <Line
                       type="monotone"
                       dataKey={metric.secondaryKey}
-                      name={metric.secondaryLabel}
+                      name={t(metric.secondaryLabel)}
                       stroke={metric.secondaryColor}
                       strokeWidth={2}
                       strokeDasharray="5 4"
@@ -485,8 +484,8 @@ const Progress = ({ isEmbedded = false }) => {
                 </ResponsiveContainer>
               </Box>
               <Box sx={{ display: 'flex', gap: 3, mt: 1.5 }}>
-                <LegendSwatch color={metric.color} label={metric.label} />
-                <LegendSwatch color={metric.secondaryColor} label={metric.secondaryLabel} />
+                <LegendSwatch color={metric.color} label={t(metric.label)} />
+                <LegendSwatch color={metric.secondaryColor} label={t(metric.secondaryLabel)} />
               </Box>
             </>
           )}
@@ -498,15 +497,15 @@ const Progress = ({ isEmbedded = false }) => {
         <Grid item xs={12} sm={4} key={card.label}>
           <Card sx={{ p: '20px 22px', height: '100%' }}>
             <Typography sx={{ textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700, fontSize: 12, color: 'text.secondary', mb: 1 }}>
-              {card.label}
+              {t(card.label)}
             </Typography>
             <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 26 }}>
-              {card.value?.toLocaleString(undefined, { maximumFractionDigits: 1 }) ?? '—'}
+              {card.value !== undefined ? formatNumber(card.value, { maximumFractionDigits: 1 }) : '—'}
               {card.unit && <Box component="span" sx={{ fontSize: 13, fontWeight: 600, ml: 0.5 }}>{card.unit}</Box>}
             </Typography>
             {card.delta && (
               <Typography sx={{ fontSize: 12, fontWeight: 600, color: card.delta.up ? 'success.main' : 'error.main', mt: 0.5 }}>
-                {card.delta.up ? '▲' : '▼'} {Math.abs(card.delta.pct).toFixed(1)}% vs prima rilevazione
+                {card.delta.up ? '▲' : '▼'} {t('progress.vs_first', { pct: formatNumber(Math.abs(card.delta.pct), { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })}
               </Typography>
             )}
           </Card>
@@ -518,16 +517,16 @@ const Progress = ({ isEmbedded = false }) => {
         <Grid item xs={12}>
           <Card sx={{ p: '20px 22px' }}>
             <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 15, mb: 2 }}>
-              Cronologia — {selectedExercise.name}
+              {t('progress.history_title', { name: selectedExercise.name })}
             </Typography>
             <TableContainer>
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ fontSize: 11, textTransform: 'uppercase', color: 'text.secondary', fontWeight: 700, border: 0 }}>Data</TableCell>
-                    <TableCell align="right" sx={{ fontSize: 11, textTransform: 'uppercase', color: 'text.secondary', fontWeight: 700, border: 0 }}>Volume totale (kg)</TableCell>
-                    <TableCell align="right" sx={{ fontSize: 11, textTransform: 'uppercase', color: 'text.secondary', fontWeight: 700, border: 0 }}>Peso medio (kg/rep)</TableCell>
-                    <TableCell align="right" sx={{ fontSize: 11, textTransform: 'uppercase', color: 'text.secondary', fontWeight: 700, border: 0 }}>Ripetizioni</TableCell>
+                    <TableCell sx={{ fontSize: 11, textTransform: 'uppercase', color: 'text.secondary', fontWeight: 700, border: 0 }}>{t('progress.col.date')}</TableCell>
+                    <TableCell align="right" sx={{ fontSize: 11, textTransform: 'uppercase', color: 'text.secondary', fontWeight: 700, border: 0 }}>{t('progress.col.volume')}</TableCell>
+                    <TableCell align="right" sx={{ fontSize: 11, textTransform: 'uppercase', color: 'text.secondary', fontWeight: 700, border: 0 }}>{t('progress.col.avg_weight')}</TableCell>
+                    <TableCell align="right" sx={{ fontSize: 11, textTransform: 'uppercase', color: 'text.secondary', fontWeight: 700, border: 0 }}>{t('progress.col.reps')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -537,8 +536,8 @@ const Progress = ({ isEmbedded = false }) => {
                     return (
                       <TableRow key={row.id}>
                         <TableCell sx={cellSx}>{row.date}</TableCell>
-                        <TableCell align="right" sx={{ ...cellSx, fontWeight: 700 }}>{row.volume.toLocaleString()}</TableCell>
-                        <TableCell align="right" sx={cellSx}>{row.avgWeight.toFixed(1)}</TableCell>
+                        <TableCell align="right" sx={{ ...cellSx, fontWeight: 700 }}>{formatNumber(row.volume)}</TableCell>
+                        <TableCell align="right" sx={cellSx}>{formatNumber(row.avgWeight, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</TableCell>
                         <TableCell align="right" sx={cellSx}>{row.totalReps}</TableCell>
                       </TableRow>
                     );
@@ -549,7 +548,7 @@ const Progress = ({ isEmbedded = false }) => {
             {exerciseStats.length > 5 && (
               <Box sx={{ textAlign: 'center', mt: 2 }}>
                 <Button size="small" onClick={() => setShowAllRows(!showAllRows)} sx={{ fontSize: 13 }}>
-                  {showAllRows ? 'Mostra meno' : `Mostra tutti (${exerciseStats.length})`}
+                  {showAllRows ? t('progress.show_less') : t('progress.show_all', { count: exerciseStats.length })}
                 </Button>
               </Box>
             )}

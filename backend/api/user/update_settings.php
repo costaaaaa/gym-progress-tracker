@@ -84,6 +84,7 @@ try {
     $user->id = $user_id;
 
     if ($user->updateProfile($fields)) {
+        request_locale(true);
         http_response_code(200);
         echo json_encode([
             'success' => true,

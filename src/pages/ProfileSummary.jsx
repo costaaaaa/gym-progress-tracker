@@ -4,6 +4,7 @@ import StarIcon from '@mui/icons-material/Star';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { API_BASE_URL } from '../config';
 import { xpIntoLevel, xpForNextLevel } from '../utils/gamificationLevels';
+import { intlLocale } from '../i18n/format';
 
 // Solo queste tre categorie hanno una griglia dedicata: "strength" è esclusa perché il suo
 // ruolo è coperto dalla sezione "Livelli per Esercizio" (il catalogo backend resta invariato).
@@ -66,7 +67,7 @@ const ProfileSummary = () => {
 
   const statTiles = [
     { value: total_sessions, label: 'sessioni' },
-    { value: `${Math.round(lifetime_volume_kg).toLocaleString()} kg`, label: 'tonnellaggio a vita' },
+    { value: `${Math.round(lifetime_volume_kg).toLocaleString(intlLocale())} kg`, label: 'tonnellaggio a vita' },
     { value: longest_streak, label: 'settimane record' },
   ];
 
@@ -81,7 +82,7 @@ const ProfileSummary = () => {
               Livello {level}
             </Typography>
             <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.5 }}>
-              {total_xp.toLocaleString()} XP totali
+              {total_xp.toLocaleString(intlLocale())} XP totali
             </Typography>
           </Box>
         </Box>
@@ -183,7 +184,7 @@ const ProfileSummary = () => {
                   title={a.locked
                     ? `Soglia: ${a.threshold}`
                     : a.unlocked_at
-                      ? new Date(a.unlocked_at).toLocaleDateString('it-IT')
+                      ? new Date(a.unlocked_at).toLocaleDateString(intlLocale())
                       : ''}
                   placement="top"
                 >

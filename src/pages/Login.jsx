@@ -8,9 +8,11 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { safeNext } from '../utils/safeNext';
 import { useTranslation } from 'react-i18next';
+import { useLocalizedPath } from '../i18n/paths';
 
 const Login = () => {
   const { t } = useTranslation();
+  const localizedPath = useLocalizedPath();
   usePageMeta(t('login.meta.title'), t('login.meta.description'));
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -125,14 +127,14 @@ const Login = () => {
             {loading ? t('login.submitting') : t('login.submit')}
           </Button>
           <Box sx={{ textAlign: 'center' }}>
-            <Link component={RouterLink} to="/forgot-password" variant="body2">
+            <Link component={RouterLink} to={localizedPath('/forgot-password')} variant="body2">
               {t('login.forgot')}
             </Link>
           </Box>
           <Box sx={{ textAlign: 'center', mt: 2 }}>
             <Typography variant="body2">
               {t('login.no_account')}{' '}
-              <Link component={RouterLink} to={next === '/' ? '/register' : `/register?next=${encodeURIComponent(next)}`} variant="body2">
+              <Link component={RouterLink} to={next === '/' ? localizedPath('/register') : `${localizedPath('/register')}?next=${encodeURIComponent(next)}`} variant="body2">
                 {t('login.register')}
               </Link>
             </Typography>

@@ -4,6 +4,7 @@ import FavoriteIcon from '@mui/icons-material/Favorite';
 import CloseIcon from '@mui/icons-material/Close';
 import { STORE_LINKS } from '../config';
 import { track } from '../utils/analytics';
+import { useTranslation } from 'react-i18next';
 
 const DISMISSED_KEY = 'healthAppHintDismissed';
 
@@ -18,8 +19,8 @@ export const detectPlatform = (nav = window.navigator) => {
 };
 
 const COPY = {
-  ios: { source: 'Apple Salute', store: 'App Store' },
-  android: { source: 'Health Connect', store: 'Play Store' },
+  ios: { source: 'health_hint.source_ios', store: 'App Store' },
+  android: { source: 'health_hint.source_android', store: 'Play Store' },
 };
 
 const isDismissed = () => {
@@ -34,6 +35,7 @@ const isDismissed = () => {
 // da Apple Salute / Health Connect. Niente su computer, se l'app non è ancora nello store di quel
 // telefono (STORE_LINKS vuoto), se l'utente sincronizza già o se l'ha chiuso.
 const HealthAppHint = ({ alreadySyncing = false }) => {
+  const { t } = useTranslation();
   const [platform] = useState(detectPlatform);
   const [dismissed, setDismissed] = useState(isDismissed);
 
@@ -63,7 +65,7 @@ const HealthAppHint = ({ alreadySyncing = false }) => {
         <FavoriteIcon sx={{ fontSize: 16, color: '#ff2d55' }} />
       </Box>
       <Typography sx={{ flex: 1, fontSize: 13, color: 'text.secondary', lineHeight: 1.35 }}>
-        Con l&apos;app, il peso di {source} arriva qui da solo.
+        {t('health_hint.text', { source: t(source) })}
       </Typography>
       <Button
         size="small"
@@ -72,11 +74,11 @@ const HealthAppHint = ({ alreadySyncing = false }) => {
         rel="noopener"
         onClick={() => track('health-app-hint', { platform })}
         sx={{ flexShrink: 0, fontWeight: 700 }}
-        aria-label={`Scarica l'app da ${store}`}
+        aria-label={t('health_hint.download_aria', { store })}
       >
-        Scarica
+        {t('health_hint.download')}
       </Button>
-      <IconButton size="small" onClick={dismiss} aria-label="Non mostrare più" sx={{ ml: -0.5 }}>
+      <IconButton size="small" onClick={dismiss} aria-label={t('health_hint.dismiss')} sx={{ ml: -0.5 }}>
         <CloseIcon fontSize="small" />
       </IconButton>
     </Paper>

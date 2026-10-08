@@ -4,6 +4,7 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { useTabbedPage } from '../hooks/useTabbedPage';
+import { useTranslation } from 'react-i18next';
 
 // Lazy loading dei componenti tab
 const Progress = lazy(() => import('./Progress'));
@@ -12,10 +13,8 @@ const BodyStats = lazy(() => import('./BodyStats'));
 const TABS = ['progress', 'body'];
 
 const Dashboard = () => {
-  usePageMeta(
-    'Dashboard Progressi',
-    'Monitora i tuoi progressi in palestra: grafici sui carichi, statistiche corporee e andamento nel tempo per ogni esercizio.'
-  );
+  const { t } = useTranslation();
+  usePageMeta(t('dashboard.meta.title'), t('dashboard.meta.description'));
   const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS);
 
   return (
@@ -41,13 +40,13 @@ const Dashboard = () => {
           <Tab
             icon={<BarChartIcon fontSize="small" />}
             iconPosition="start"
-            label="Progressi Workout"
+            label={t('dashboard.tab.progress')}
             id="dashboard-tab-0"
           />
           <Tab
             icon={<StraightenIcon fontSize="small" />}
             iconPosition="start"
-            label="Misure Corporee"
+            label={t('dashboard.tab.body')}
             id="dashboard-tab-1"
           />
         </Tabs>

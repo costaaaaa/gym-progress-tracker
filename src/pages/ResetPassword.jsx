@@ -5,10 +5,14 @@ import { API_BASE_URL } from '../config';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { useTranslation } from 'react-i18next';
+import { useLocalizedPath } from '../i18n/paths';
 import { validatePassword } from '../utils/passwordPolicy';
 
 const ResetPassword = () => {
-  usePageMeta('Nuova password', 'Scegli una nuova password per il tuo account.');
+  const { t } = useTranslation();
+  const localizedPath = useLocalizedPath();
+  usePageMeta(t('reset.meta.title'), t('reset.meta.description'));
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token') || '';
   const [password, setPassword] = useState('');
@@ -27,7 +31,7 @@ const ResetPassword = () => {
       return;
     }
     if (password !== confirm) {
-      setError('Le due password non coincidono.');
+      setError(t('reset.error.mismatch'));
       return;
     }
     setLoading(true);
@@ -39,7 +43,7 @@ const ResetPassword = () => {
       });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.message || 'Errore durante il reset');
+        throw new Error(data.message || t('reset.error.generic'));
       }
       setDone(true);
     } catch (err) {
@@ -53,19 +57,19 @@ const ResetPassword = () => {
     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
       <Paper elevation={3} sx={{ p: 4, width: '100%', maxWidth: 400 }}>
         <Typography variant="h4" component="h1" align="center" gutterBottom>
-          Nuova password
+          {t('reset.title')}
         </Typography>
 
         {done ? (
           <>
-            <Alert severity="success" sx={{ mb: 2 }}>Password reimpostata. Ora puoi accedere.</Alert>
-            <Button component={RouterLink} to="/login" fullWidth variant="contained">Vai all'accesso</Button>
+            <Alert severity="success" sx={{ mb: 2 }}>{t('reset.done')}</Alert>
+            <Button component={RouterLink} to={localizedPath('/login')} fullWidth variant="contained">{t('reset.go_to_login')}</Button>
           </>
         ) : !token ? (
           <>
-            <Alert severity="error" sx={{ mb: 2 }}>Link non valido. Richiedine uno nuovo.</Alert>
+            <Alert severity="error" sx={{ mb: 2 }}>{t('reset.invalid_link')}</Alert>
             <Box sx={{ textAlign: 'center' }}>
-              <Link component={RouterLink} to="/forgot-password" variant="body2">Richiedi un nuovo link</Link>
+              <Link component={RouterLink} to={localizedPath('/forgot-password')} variant="body2">{t('reset.request_new')}</Link>
             </Box>
           </>
         ) : (
@@ -77,7 +81,7 @@ const ResetPassword = () => {
                 required
                 fullWidth
                 name="password"
-                label="Nuova password"
+                label={t('reset.new_password')}
                 type={showPassword ? 'text' : 'password'}
                 id="password"
                 autoComplete="new-password"
@@ -88,7 +92,7 @@ const ResetPassword = () => {
                   endAdornment: (
                     <InputAdornment position="end">
                       <IconButton
-                        aria-label="mostra o nascondi la password"
+                        aria-label={t('password.show')}
                         onClick={() => setShowPassword(!showPassword)}
                         edge="end"
                       >
@@ -103,7 +107,7 @@ const ResetPassword = () => {
                 required
                 fullWidth
                 name="confirm"
-                label="Ripeti la password"
+                label={t('reset.repeat_password')}
                 type={showPassword ? 'text' : 'password'}
                 id="confirm"
                 autoComplete="new-password"
@@ -111,11 +115,11 @@ const ResetPassword = () => {
                 onChange={(e) => setConfirm(e.target.value)}
               />
               <Button type="submit" fullWidth variant="contained" sx={{ mt: 2, mb: 1 }} disabled={loading}>
-                {loading ? 'Salvataggio...' : 'Salva la password'}
+                {loading ? t('reset.submitting') : t('reset.submit')}
               </Button>
             </Box>
             <Box sx={{ textAlign: 'center', mt: 1 }}>
-              <Link component={RouterLink} to="/forgot-password" variant="body2">Richiedi un nuovo link</Link>
+              <Link component={RouterLink} to={localizedPath('/forgot-password')} variant="body2">{t('reset.request_new')}</Link>
             </Box>
           </>
         )}

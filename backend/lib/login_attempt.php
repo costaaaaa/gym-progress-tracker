@@ -9,7 +9,7 @@ include_once __DIR__ . '/../models/User.php';
 
 // Verifica username e password di una richiesta di login. Se mancano i dati risponde 400, se i
 // tentativi sono troppi 429, se le credenziali sono errate 401 (e termina). Se vanno bene ritorna
-// lo User, con id e username valorizzati.
+// lo User, con id e username valorizzati; la lingua dell'account la dà request_locale().
 function authenticate_login_request($db, $data)
 {
     $user = new User($db);
@@ -21,7 +21,7 @@ function authenticate_login_request($db, $data)
     ) {
         api_json_response(array(
             "success" => false,
-            "message" => "Username and password are required."
+            "message" => t_server('auth.missing_credentials')
         ), 400);
     }
 
@@ -38,7 +38,7 @@ function authenticate_login_request($db, $data)
         header('Retry-After: ' . $retryAfter);
         api_json_response(array(
             "success" => false,
-            "message" => "Troppi tentativi di accesso. Riprova tra " . $retryAfter . " secondi."
+            "message" => t_server('auth.too_many_logins', array('seconds' => $retryAfter))
         ), 429);
     }
 
@@ -50,11 +50,13 @@ function authenticate_login_request($db, $data)
         $limiter->hit($userKey, $userDecay);
         api_json_response(array(
             "success" => false,
-            "message" => "Invalid username or password."
+            "message" => t_server('auth.invalid_credentials')
         ), 401);
     }
 
-    // Accesso riuscito: azzera il contatore del bersaglio specifico
+    // Accesso riuscito: azzera il contatore del bersaglio specifico. Da qui la lingua della
+    // richiesta è quella dell'account.
     $limiter->clear($userKey);
+    request_user_context($db, $user->id);
     return $user;
 }

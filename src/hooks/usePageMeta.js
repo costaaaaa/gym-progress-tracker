@@ -1,10 +1,5 @@
 import { useEffect } from 'react';
-
-// Default globali definiti staticamente in index.html (audit SEO 25/08/2026,
-// Deliverable 2) — tenuti qui in sync a mano per il ripristino on cleanup.
-const DEFAULT_TITLE = 'LiftIndex – Diario Allenamento Palestra Online';
-const DEFAULT_DESCRIPTION =
-  'Diario allenamento palestra online: piani illimitati, Focus Mode con timer recupero, gamification, mappa muscolare e grafici progressi.';
+import i18n from '../i18n';
 
 /**
  * Imposta document.title e la meta description per la pagina/route corrente.
@@ -24,7 +19,7 @@ export function usePageMeta(title, description) {
   useEffect(() => {
     const fullTitle = title
       ? `${title} | LiftIndex`
-      : DEFAULT_TITLE;
+      : i18n.t('meta.title');
     document.title = fullTitle;
 
     const meta = document.querySelector('meta[name="description"]');
@@ -33,9 +28,9 @@ export function usePageMeta(title, description) {
     }
 
     return () => {
-      document.title = DEFAULT_TITLE;
+      document.title = i18n.t('meta.title');
       if (meta) {
-        meta.setAttribute('content', DEFAULT_DESCRIPTION);
+        meta.setAttribute('content', i18n.t('meta.description'));
       }
     };
   }, [title, description]);

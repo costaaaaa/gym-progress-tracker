@@ -35,8 +35,8 @@ const PageLoader = () => (
 function App() {
   return (
     <AuthProvider>
-      <LocaleSync />
       <Router>
+        <LocaleSync />
         <Suspense fallback={<PageLoader />}>
           <Routes>
               {/* Focus mode — full-screen senza Navbar */}
@@ -56,6 +56,16 @@ function App() {
                 <Route path="/register" element={<Register />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+
+                {/* Pagine pubbliche in inglese: stessa UI, lingua dall'URL */}
+                <Route path="/en">
+                  <Route index element={<Home />} />
+                  <Route path="login" element={<Login />} />
+                  <Route path="register" element={<Register />} />
+                  <Route path="forgot-password" element={<ForgotPassword />} />
+                  <Route path="reset-password" element={<ResetPassword />} />
+                  <Route path="*" element={<Navigate to="/en/" replace />} />
+                </Route>
                 
                 {/* Redirect per retrocompatibilità */}
                 <Route path="/account" element={<Navigate to="/profilo?tab=settings" replace />} />

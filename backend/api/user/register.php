@@ -44,7 +44,7 @@ try {
             http_response_code(429);
             echo json_encode(array(
                 "success" => false,
-                "message" => "Troppe registrazioni da questo indirizzo. Riprova tra " . $retryAfter . " secondi."
+                "message" => t_server('register.too_many', array('seconds' => $retryAfter))
             ));
             exit;
         }
@@ -56,12 +56,12 @@ try {
         // create() fallisce e l'utente legge "nome utente o email gia' in uso".
         if (!is_string($data->username) || !preg_match('/^[a-zA-Z0-9]{3,50}$/', $data->username)) {
             http_response_code(400);
-            echo json_encode(array("success" => false, "message" => "Il nome utente può contenere solo lettere e numeri (da 3 a 50 caratteri)."));
+            echo json_encode(array("success" => false, "message" => t_server('register.username_invalid')));
             exit;
         }
         if (!is_string($data->email) || !filter_var($data->email, FILTER_VALIDATE_EMAIL)) {
             http_response_code(400);
-            echo json_encode(array("success" => false, "message" => "Inserisci un indirizzo email valido."));
+            echo json_encode(array("success" => false, "message" => t_server('common.email_invalid')));
             exit;
         }
 
@@ -81,14 +81,14 @@ try {
         }
         if (!isset($data->gender) || !valid_gender($data->gender)) {
             http_response_code(400);
-            echo json_encode(array("success" => false, "message" => "Seleziona il sesso."));
+            echo json_encode(array("success" => false, "message" => t_server('register.gender_required')));
             exit;
         }
 
         // Termini d'uso e informativa privacy vanno accettati esplicitamente
         if (!isset($data->accept_terms) || $data->accept_terms !== true) {
             http_response_code(400);
-            echo json_encode(array("success" => false, "message" => "Per registrarti devi accettare i termini d'uso e l'informativa privacy."));
+            echo json_encode(array("success" => false, "message" => t_server('register.terms_required')));
             exit;
         }
 
@@ -106,20 +106,20 @@ try {
             http_response_code(201);
             echo json_encode(array(
                 "success" => true,
-                "message" => "Utente registrato con successo."
+                "message" => t_server('register.ok')
             ));
         } else {
             http_response_code(400);
             echo json_encode(array(
                 "success" => false,
-                "message" => "Impossibile registrare l'utente. Il nome utente o l'email potrebbero essere già in uso."
+                "message" => t_server('register.failed')
             ));
         }
     } else {
         http_response_code(400);
         echo json_encode(array(
             "success" => false,
-            "message" => "Dati incompleti. Username, email e password sono obbligatori."
+            "message" => t_server('register.incomplete')
         ));
     }
 } catch (Exception $e) {
@@ -128,6 +128,6 @@ try {
     http_response_code(500);
     echo json_encode(array(
         "success" => false,
-        "message" => "Si è verificato un errore durante la registrazione."
+        "message" => t_server('register.error')
     ));
 }

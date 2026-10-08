@@ -1,5 +1,6 @@
 <?php
 include_once '../../config/cors_headers.php';
+include_once '../../config/api_helpers.php';
 
 // Start session
 session_start();
@@ -12,4 +13,4 @@ session_destroy();
 
 http_response_code(200);
 
-echo json_encode(array("message" => "Logout effettuato con successo."));
+echo json_encode(array("message" => t_server('auth.logout_ok')));

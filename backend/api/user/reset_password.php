@@ -16,7 +16,7 @@ try {
 
     if ($token === '' || $newPassword === '') {
         http_response_code(400);
-        echo json_encode(array("success" => false, "message" => "Token e nuova password sono obbligatori."));
+        echo json_encode(array("success" => false, "message" => t_server('reset.missing')));
         exit;
     }
     $policyError = password_policy_error($newPassword);
@@ -36,21 +36,21 @@ try {
     if ($limiter->tooManyAttempts($ipKey, $ipMax)) {
         header('Retry-After: ' . $limiter->availableIn($ipKey));
         http_response_code(429);
-        echo json_encode(array("success" => false, "message" => "Troppi tentativi. Riprova più tardi."));
+        echo json_encode(array("success" => false, "message" => t_server('common.too_many_later')));
         exit;
     }
 
     $reset = new PasswordReset($db);
     if ($reset->consumeAndSetPassword($token, $newPassword)) {
         http_response_code(200);
-        echo json_encode(array("success" => true, "message" => "Password reimpostata. Ora puoi accedere."));
+        echo json_encode(array("success" => true, "message" => t_server('reset.ok')));
     } else {
         $limiter->hit($ipKey, $ipDecay);
         http_response_code(400);
-        echo json_encode(array("success" => false, "message" => "Il link non è valido o è scaduto. Richiedine uno nuovo."));
+        echo json_encode(array("success" => false, "message" => t_server('reset.invalid_link')));
     }
 } catch (Exception $e) {
     error_log("Reset password error: " . $e->getMessage());
     http_response_code(500);
-    echo json_encode(array("success" => false, "message" => "Si è verificato un errore. Riprova."));
+    echo json_encode(array("success" => false, "message" => t_server('common.error_retry')));
 }

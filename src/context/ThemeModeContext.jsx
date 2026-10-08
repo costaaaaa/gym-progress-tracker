@@ -2,6 +2,8 @@ import { createContext, useState, useContext, useMemo, useEffect } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { grey } from '@mui/material/colors';
 import { GlobalStyles } from '@mui/material';
+import { itIT, enUS } from '@mui/material/locale';
+import { useTranslation } from 'react-i18next';
 
 const ThemeModeContext = createContext();
 
@@ -20,6 +22,9 @@ export const ThemeModeProvider = ({ children }) => {
   const toggleThemeMode = () => {
     setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
   };
+
+  const { i18n } = useTranslation();
+  const muiLocale = i18n.language === 'en' ? enUS : itIT;
 
   const theme = useMemo(
     () =>
@@ -156,8 +161,8 @@ export const ThemeModeProvider = ({ children }) => {
             }
           }
         },
-      }),
-    [mode]
+      }, muiLocale),
+    [mode, muiLocale]
   );
 
   return (

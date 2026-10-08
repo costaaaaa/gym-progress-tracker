@@ -20,23 +20,22 @@ import {
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { format, subYears, startOfToday } from 'date-fns';
-import { it } from 'date-fns/locale';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import { validatePassword } from '../utils/passwordPolicy';
 import { safeNext } from '../utils/safeNext';
 import { track } from '../utils/analytics';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { useTranslation, Trans } from 'react-i18next';
+import DateLocalization from '../i18n/DateLocalization';
+import { useLocalizedPath } from '../i18n/paths';
 
 const Register = () => {
-  usePageMeta(
-    'Registrati',
-    'Crea il tuo account e inizia a tracciare allenamenti, progressi e obiettivi in palestra.'
-  );
+  const { t, i18n } = useTranslation();
+  const localizedPath = useLocalizedPath();
+  usePageMeta(t('register.meta.title'), t('register.meta.description'));
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -77,24 +76,24 @@ const Register = () => {
     }
 
     if (password !== confirmPassword) {
-      setError('Le password non corrispondono');
+      setError(t('register.error.password_mismatch'));
       return;
     }
 
     if (!birthDate) {
-      setError('Inserisci la data di nascita');
+      setError(t('register.error.birth_date_required'));
       return;
     }
     if (birthDate > subYears(startOfToday(), 14)) {
-      setError('Devi avere almeno 14 anni per usare LiftIndex');
+      setError(t('register.error.min_age'));
       return;
     }
     if (!gender) {
-      setError('Seleziona il sesso');
+      setError(t('register.error.gender_required'));
       return;
     }
     if (!acceptTerms) {
-      setError('Per registrarti devi accettare i termini d\'uso e l\'informativa privacy');
+      setError(t('register.error.terms_required'));
       return;
     }
     
@@ -114,7 +113,7 @@ const Register = () => {
           birth_date: birthDate ? format(birthDate, 'yyyy-MM-dd') : null,
           gender,
           accept_terms: true,
-          locale: (navigator.language || 'it').toLowerCase().startsWith('en') ? 'en' : 'it',
+          locale: i18n.language,
           training_start_date: trainingStartDate ? format(trainingStartDate, 'yyyy-MM-01') : null
         }),
         credentials: 'include'
@@ -123,10 +122,10 @@ const Register = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Errore durante la registrazione');
+        throw new Error(data.message || t('register.error.generic'));
       }
 
-      track('signup');
+      track('signup', { lang: i18n.language });
 
       // Accesso automatico con le stesse credenziali, come fa l'app: chi arriva da un
       // invito torna subito al gruppo senza ridigitare la password.
@@ -142,8 +141,8 @@ const Register = () => {
         login(loginData.user);
         navigate(next);
       } else {
-        setSuccess('Registrazione completata! Effettua il login...');
-        setTimeout(() => navigate(next === '/' ? '/login' : `/login?next=${encodeURIComponent(next)}`), 1500);
+        setSuccess(t('register.success_login'));
+        setTimeout(() => navigate(next === '/' ? localizedPath('/login') : `${localizedPath('/login')}?next=${encodeURIComponent(next)}`), 1500);
       }
     } catch (err) {
       setError(err.message);
@@ -156,7 +155,7 @@ const Register = () => {
     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
       <Paper elevation={3} sx={{ p: 4, width: '100%', maxWidth: 400 }}>
         <Typography variant="h4" component="h1" align="center" gutterBottom>
-          Registrati
+          {t('register.title')}
         </Typography>
         
         {error && (
@@ -177,7 +176,7 @@ const Register = () => {
             required
             fullWidth
             id="username"
-            label="Username"
+            label={t('register.username')}
             name="username"
             autoComplete="username"
             autoFocus
@@ -189,7 +188,7 @@ const Register = () => {
             required
             fullWidth
             id="email"
-            label="Email"
+            label={t('register.email')}
             name="email"
             autoComplete="email"
             type="email"
@@ -198,13 +197,13 @@ const Register = () => {
           />
 
           <Typography variant="subtitle2" sx={{ mt: 2, mb: 1, fontWeight: 'bold' }}>
-            Profilo per il recupero muscolare
+            {t('register.profile_section')}
           </Typography>
-          <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={it}>
+          <DateLocalization>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
               <DatePicker
-                label="Data di Nascita"
+                label={t('register.birth_date')}
                 value={birthDate}
                 onChange={(newValue) => setBirthDate(newValue)}
                 minDate={subYears(startOfToday(), 100)}
@@ -213,7 +212,7 @@ const Register = () => {
                   textField: {
                     fullWidth: true,
                     required: true,
-                    helperText: 'Devi avere almeno 14 anni',
+                    helperText: t('register.birth_date_help'),
                     id: "birthDate",
                     name: "birthDate"
                   }
@@ -222,21 +221,21 @@ const Register = () => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth required>
-                <InputLabel>Sesso</InputLabel>
+                <InputLabel>{t('register.gender')}</InputLabel>
                 <Select
                   value={gender}
-                  label="Sesso"
+                  label={t('register.gender')}
                   onChange={(e) => setGender(e.target.value)}
                 >
-                  <MenuItem value="M">Maschio</MenuItem>
-                  <MenuItem value="F">Femmina</MenuItem>
-                  <MenuItem value="O">Altro</MenuItem>
+                  <MenuItem value="M">{t('register.gender_m')}</MenuItem>
+                  <MenuItem value="F">{t('register.gender_f')}</MenuItem>
+                  <MenuItem value="O">{t('register.gender_o')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
             <Grid item xs={12}>
               <DatePicker
-                label="Mese Inizio Allenamento"
+                label={t('register.training_start')}
                 value={trainingStartDate}
                 onChange={(newValue) => setTrainingStartDate(newValue)}
                 views={['year', 'month']}
@@ -250,20 +249,20 @@ const Register = () => {
                     required: true,
                     id: "trainingStartDate",
                     name: "trainingStartDate",
-                    helperText: "Seleziona mese e anno in cui hai iniziato"
+                    helperText: t('register.training_start_help')
                   }
                 }}
               />
             </Grid>
           </Grid>
-          </LocalizationProvider>
+          </DateLocalization>
 
           <TextField
             margin="normal"
             required
             fullWidth
             name="password"
-            label="Password"
+            label={t('register.password')}
             type={showPassword ? "text" : "password"}
             id="password"
             autoComplete="new-password"
@@ -273,7 +272,7 @@ const Register = () => {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
-                    aria-label="toggle password visibility"
+                    aria-label={t('password.show')}
                     onClick={handleTogglePasswordVisibility}
                     edge="end"
                   >
@@ -288,7 +287,7 @@ const Register = () => {
             required
             fullWidth
             name="confirmPassword"
-            label="Conferma Password"
+            label={t('register.confirm_password')}
             type={showConfirmPassword ? "text" : "password"}
             id="confirmPassword"
             value={confirmPassword}
@@ -297,7 +296,7 @@ const Register = () => {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
-                    aria-label="toggle confirm password visibility"
+                    aria-label={t('password.show_confirm')}
                     onClick={handleToggleConfirmPasswordVisibility}
                     edge="end"
                   >
@@ -319,10 +318,13 @@ const Register = () => {
             }
             label={
               <Typography variant="body2">
-                Ho letto e accetto i{' '}
-                <Link href="/termini.html" target="_blank" rel="noopener">termini d&apos;uso</Link>
-                {' '}e l&apos;
-                <Link href="/privacy.html" target="_blank" rel="noopener">informativa privacy</Link>.
+                <Trans
+                  i18nKey="register.terms"
+                  components={{
+                    terms: <Link href="/termini.html" target="_blank" rel="noopener" />,
+                    privacy: <Link href="/privacy.html" target="_blank" rel="noopener" />,
+                  }}
+                />
               </Typography>
             }
           />
@@ -333,13 +335,13 @@ const Register = () => {
             sx={{ mt: 3, mb: 2 }}
             disabled={loading}
           >
-            {loading ? 'Registrazione in corso...' : 'Registrati'}
+            {loading ? t('register.submitting') : t('register.submit')}
           </Button>
           <Box sx={{ textAlign: 'center', mt: 2 }}>
             <Typography variant="body2">
-              Hai già un account?{' '}
-              <Link component={RouterLink} to={next === '/' ? '/login' : `/login?next=${encodeURIComponent(next)}`} variant="body2">
-                Accedi
+              {t('register.have_account')}{' '}
+              <Link component={RouterLink} to={next === '/' ? localizedPath('/login') : `${localizedPath('/login')}?next=${encodeURIComponent(next)}`} variant="body2">
+                {t('register.login')}
               </Link>
             </Typography>
           </Box>

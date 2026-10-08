@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { format, parseISO, isValid } from 'date-fns';
 import { API_BASE_URL } from '../config';
+import { intlLocale } from '../i18n/format';
 
 const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
   const [loading, setLoading] = useState(false);
@@ -112,7 +113,7 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
                   // Mostra la data in formato leggibile italiano
                   const dateObj = new Date(workout.date);
                   if (isValid(dateObj)) {
-                    return dateObj.toLocaleDateString('it-IT', {
+                    return dateObj.toLocaleDateString(intlLocale(), {
                       weekday: 'long',
                       day: 'numeric',
                       month: 'long',

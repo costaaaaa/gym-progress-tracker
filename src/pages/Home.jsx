@@ -24,6 +24,9 @@ import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import { track } from '../utils/analytics';
 import { useTranslation, Trans } from 'react-i18next';
+import { usePageMeta } from '../hooks/usePageMeta';
+import { useLocalizedPath } from '../i18n/paths';
+import { formatDate as formatLocalDate, formatNumber } from '../i18n/format';
 
 // Dati di esempio per mostrare le card reali (Livello, Streak, Recupero) anche a chi
 // non ha ancora effettuato l'accesso — stessa UI usata dagli utenti loggati, dati statici.
@@ -110,8 +113,9 @@ const QuickActionPill = ({ to, icon, label }) => (
 
 const Home = () => {
   const { isLoggedIn, user } = useAuth();
-  const { t, i18n } = useTranslation();
-  const locale = i18n.language;
+  const { t } = useTranslation();
+  const localizedPath = useLocalizedPath();
+  usePageMeta(null, t('meta.description'));
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [lastWorkout, setLastWorkout] = useState(null);
   const [activePlan, setActivePlan] = useState(null);
@@ -175,10 +179,8 @@ const Home = () => {
     }
   };
 
-  const formatDate = (dateString) => {
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(locale, options);
-  };
+  const formatDate = (dateString) =>
+    formatLocalDate(dateString, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   return (
     <>
@@ -225,7 +227,7 @@ const Home = () => {
           <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
             <Button
               component={RouterLink}
-              to="/register"
+              to={localizedPath('/register')}
               onClick={() => track('landing_cta_click', { position: 'hero' })}
               sx={{
                 bgcolor: '#fff',
@@ -241,7 +243,7 @@ const Home = () => {
             </Button>
             <Button
               component={RouterLink}
-              to="/login"
+              to={localizedPath('/login')}
               sx={{
                 color: '#fff',
                 border: '1px solid rgba(255,255,255,.6)',
@@ -308,14 +310,14 @@ const Home = () => {
                   <Box sx={{ display: 'flex', gap: 1.5 }}>
                     <Box sx={{ flex: 1, p: 2, bgcolor: (theme) => theme.palette.mode === 'light' ? '#faf5f5' : 'rgba(213, 0, 0, 0.08)', borderRadius: '10px', textAlign: 'center' }}>
                       <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 22, color: 'primary.main' }}>
-                        {dashboardStats?.weekly_volume?.total_weight?.toLocaleString() || 0}
+                        {formatNumber(dashboardStats?.weekly_volume?.total_weight)}
                         <Box component="span" sx={{ fontSize: 13, fontWeight: 600, ml: 0.5 }}>kg</Box>
                       </Typography>
                       <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.volume')}</Typography>
                     </Box>
                     <Box sx={{ flex: 1, p: 2, bgcolor: (theme) => theme.palette.mode === 'light' ? '#faf5f5' : 'rgba(213, 0, 0, 0.08)', borderRadius: '10px', textAlign: 'center' }}>
                       <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 22, color: 'primary.main' }}>
-                        {dashboardStats?.weekly_volume?.total_reps?.toLocaleString() || 0}
+                        {formatNumber(dashboardStats?.weekly_volume?.total_reps)}
                       </Typography>
                       <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.reps')}</Typography>
                     </Box>
@@ -601,7 +603,7 @@ const Home = () => {
             </Typography>
             <Button
               component={RouterLink}
-              to="/register"
+              to={localizedPath('/register')}
               onClick={() => track('landing_cta_click', { position: 'footer' })}
               startIcon={<ShieldOutlined />}
               sx={{

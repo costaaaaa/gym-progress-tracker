@@ -34,10 +34,11 @@ try {
     http_response_code(200);
     echo json_encode(array(
         "success" => true,
-        "message" => "Login successful.",
+        "message" => t_server('auth.login_ok'),
         "user" => array(
             "id" => $user->id,
-            "username" => $user->username
+            "username" => $user->username,
+            "locale" => request_locale()
         )
     ));
 } catch (Exception $e) {
@@ -46,6 +47,6 @@ try {
     http_response_code(500);
     echo json_encode(array(
         "success" => false,
-        "message" => "An error occurred during login."
+        "message" => t_server('auth.login_error')
     ));
 }

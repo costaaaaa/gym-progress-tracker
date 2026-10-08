@@ -4,13 +4,14 @@
 include_once '../../config/cors_headers.php';
 
 include_once '../../config/database.php';
+include_once '../../config/api_helpers.php';
 include_once '../../models/ApiToken.php';
 
 try {
     $auth_header = $_SERVER['HTTP_AUTHORIZATION'] ?? null;
     if (!$auth_header || stripos($auth_header, 'Bearer ') !== 0) {
         http_response_code(401);
-        echo json_encode(array("success" => false, "message" => "Token mancante."));
+        echo json_encode(array("success" => false, "message" => t_server('auth.token_missing')));
         exit;
     }
 
@@ -25,9 +26,9 @@ try {
     // Idempotente: risponde 200 anche se il token era già scaduto/revocato/inesistente,
     // l'esito per il client è comunque "non più autenticato".
     http_response_code(200);
-    echo json_encode(array("success" => true, "message" => "Logout effettuato con successo."));
+    echo json_encode(array("success" => true, "message" => t_server('auth.logout_ok')));
 } catch (Exception $e) {
     error_log("Mobile Logout Error: " . $e->getMessage());
     http_response_code(500);
-    echo json_encode(array("success" => false, "message" => "Errore durante il logout."));
+    echo json_encode(array("success" => false, "message" => t_server('auth.logout_error')));
 }

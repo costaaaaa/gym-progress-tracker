@@ -7,20 +7,24 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import { useAuth } from '../../context/AuthContext';
 import { useThemeMode } from '../../context/ThemeModeContext';
 import { safeNext } from '../../utils/safeNext';
+import { useTranslation } from 'react-i18next';
+import { stripLangPrefix, useLocalizedPath } from '../../i18n/paths';
 
 // Voci del centro nav desktop: Home / Allenamenti / Dashboard / Gruppi.
 // Su mobile la navigazione vive in BottomNav.jsx (Home/Allenamenti/Focus/Dashboard/Profilo);
 // qui restano solo logo, toggle tema e avatar — "Profilo" non ha un link testuale,
 // l'avatar è l'unico ingresso, sia su desktop che su mobile.
 const navItems = [
-  { label: 'Home', path: '/' },
-  { label: 'Allenamenti', path: '/workouts' },
-  { label: 'Dashboard', path: '/dashboard' },
-  { label: 'Gruppi', path: '/gruppi' },
+  { label: 'nav.home', path: '/' },
+  { label: 'nav.workouts', path: '/workouts' },
+  { label: 'nav.dashboard', path: '/dashboard' },
+  { label: 'nav.groups', path: '/gruppi' },
 ];
 
 const Navbar = () => {
   const location = useLocation();
+  const { t } = useTranslation();
+  const localizedPath = useLocalizedPath();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { mode, toggleThemeMode } = useThemeMode();
@@ -30,11 +34,12 @@ const Navbar = () => {
 
   // Accedi e Registrati conservano la pagina a cui tornare: il ?next= già presente
   // su login e registrazione, oppure il link di invito che si sta guardando.
-  const onAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  const barePath = stripLangPrefix(location.pathname);
+  const onAuthPage = barePath === '/login' || barePath === '/register';
   const authNext = onAuthPage
     ? safeNext(location.search)
     : location.pathname.startsWith('/entra') ? location.pathname + location.search : '/';
-  const withNext = (path) => (authNext === '/' ? path : `${path}?next=${encodeURIComponent(authNext)}`);
+  const withNext = (path) => (authNext === '/' ? localizedPath(path) : `${localizedPath(path)}?next=${encodeURIComponent(authNext)}`);
 
   // Stato locale per tracciare se l'autenticazione è stata verificata
   const [authVerified, setAuthVerified] = useState(false);
@@ -80,7 +85,7 @@ const Navbar = () => {
             color: 'text.primary',
           }}
           component={RouterLink}
-          to="/"
+          to={localizedPath('/')}
         >
           <Box
             sx={{
@@ -133,7 +138,7 @@ const Navbar = () => {
                   },
                 }}
               >
-                {item.label}
+                {t(item.label)}
               </Button>
             ))}
           </Box>
@@ -141,7 +146,7 @@ const Navbar = () => {
 
         {/* Destra: toggle tema, avatar / auth — stessa struttura su mobile e desktop */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifySelf: 'end' }}>
-          <Tooltip title={mode === 'light' ? 'Modalità Scura' : 'Modalità Chiara'}>
+          <Tooltip title={mode === 'light' ? t('nav.dark_mode') : t('nav.light_mode')}>
             <IconButton
               onClick={toggleThemeMode}
               size="small"
@@ -156,7 +161,7 @@ const Navbar = () => {
           </Tooltip>
 
           {authVerified && isLoggedIn && (
-            <Tooltip title="Profilo">
+            <Tooltip title={t('nav.profile')}>
               <IconButton
                 component={RouterLink}
                 to="/profilo"
@@ -193,7 +198,7 @@ const Navbar = () => {
                 to={withNext('/login')}
                 sx={{ color: 'text.secondary', fontWeight: 500, fontSize: 14 }}
               >
-                Accedi
+                {t('nav.login')}
               </Button>
               <Button
                 variant="contained"
@@ -201,7 +206,7 @@ const Navbar = () => {
                 to={withNext('/register')}
                 sx={{ fontSize: 14 }}
               >
-                Registrati
+                {t('nav.register')}
               </Button>
             </>
           )}

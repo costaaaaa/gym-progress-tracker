@@ -37,6 +37,7 @@ import { buildShareStats, historyPrNames, muscleGroupsTitle } from '../utils/sha
 import { track } from '../utils/analytics';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
+import { intlLocale } from '../i18n/format';
 
 // Determina il formato dei dati e organizza gli esercizi di un allenamento in modo uniforme
 // (ex helper interno di WorkoutDetailDialog: il backend restituisce righe storiche in due forme
@@ -424,8 +425,8 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                               aria-controls={rowPanelId}
                             >
                               <ListItemText
-                                primary={<Typography sx={{ fontWeight: 600, fontSize: 14 }}>{new Date(workout.date).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}</Typography>}
-                                secondary={<Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.25 }}>{`${new Date(workout.date).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })} · ${workout.exercises?.length || 0} esercizi`}</Typography>}
+                                primary={<Typography sx={{ fontWeight: 600, fontSize: 14 }}>{new Date(workout.date).toLocaleDateString(intlLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</Typography>}
+                                secondary={<Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.25 }}>{`${new Date(workout.date).toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit' })} · ${workout.exercises?.length || 0} esercizi`}</Typography>}
                               />
                             </ListItemButton>
                           </ListItem>

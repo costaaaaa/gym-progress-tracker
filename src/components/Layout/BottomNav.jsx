@@ -5,6 +5,7 @@ import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import EqualizerIcon from '@mui/icons-material/Equalizer';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 // Voce di navigazione standard (icona + etichetta), come link/bottone accessibile
 // (component=RouterLink su ButtonBase: focus da tastiera, aria-current sulla voce attiva).
@@ -39,6 +40,7 @@ const NavItem = ({ path, label, Icon, active }) => (
 // l'unico accesso a queste destinazioni: qui è sempre visibile durante l'uso dell'app.
 const BottomNav = () => {
   const location = useLocation();
+  const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { isLoggedIn, user } = useAuth();
@@ -55,7 +57,7 @@ const BottomNav = () => {
   return (
     <Box
       component="nav"
-      aria-label="Navigazione principale"
+      aria-label={t('nav.main_aria')}
       sx={{
         position: 'fixed',
         bottom: 0,
@@ -71,14 +73,14 @@ const BottomNav = () => {
         pb: 'env(safe-area-inset-bottom)',
       }}
     >
-      <NavItem path="/" label="Home" Icon={HomeOutlinedIcon} active={isActive('/')} />
-      <NavItem path="/workouts" label="Allenamenti" Icon={CalendarTodayOutlinedIcon} active={isActive('/workouts')} />
+      <NavItem path="/" label={t('nav.home')} Icon={HomeOutlinedIcon} active={isActive('/')} />
+      <NavItem path="/workouts" label={t('nav.workouts')} Icon={CalendarTodayOutlinedIcon} active={isActive('/workouts')} />
 
       <ButtonBase
         component={RouterLink}
         to="/focus"
         disableRipple
-        aria-label="Focus, inizia allenamento"
+        aria-label={t('nav.focus_aria')}
         sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', borderRadius: 0 }}
       >
         <Box
@@ -103,7 +105,7 @@ const BottomNav = () => {
         </Box>
       </ButtonBase>
 
-      <NavItem path="/dashboard" label="Dashboard" Icon={EqualizerIcon} active={isActive('/dashboard')} />
+      <NavItem path="/dashboard" label={t('nav.dashboard')} Icon={EqualizerIcon} active={isActive('/dashboard')} />
 
       <ButtonBase
         component={RouterLink}
@@ -130,7 +132,7 @@ const BottomNav = () => {
           {initials}
         </Box>
         <Box component="span" sx={{ fontSize: '10.5px', fontWeight: profileActive ? 700 : 500, color: profileActive ? 'primary.main' : 'text.secondary' }}>
-          Profilo
+          {t('nav.profile')}
         </Box>
       </ButtonBase>
     </Box>

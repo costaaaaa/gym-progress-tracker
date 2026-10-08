@@ -3,10 +3,13 @@ import { Box, Card, CardActionArea, LinearProgress, Typography } from '@mui/mate
 import StarIcon from '@mui/icons-material/Star';
 import { Link as RouterLink } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
+import { useTranslation } from 'react-i18next';
+import { formatNumber } from '../i18n/format';
 
 // previewData: dati statici per mostrare la card senza autenticazione (es. landing page).
 // Quando presente salta la fetch autenticata e usa direttamente quei dati.
 const LevelCard = ({ previewData }) => {
+  const { t } = useTranslation();
   const [data, setData] = useState(previewData || null);
   const [loading, setLoading] = useState(!previewData);
 
@@ -31,7 +34,7 @@ const LevelCard = ({ previewData }) => {
       <Typography
         sx={{ textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 700, fontSize: 12, color: 'text.secondary', mb: 2 }}
       >
-        Livello
+        {t('level.title')}
       </Typography>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, flexWrap: 'wrap' }}>
@@ -64,11 +67,11 @@ const LevelCard = ({ previewData }) => {
 
         <Box>
           <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
-            {total_xp.toLocaleString()} XP totali
+            {t('level.total_xp', { xp: formatNumber(total_xp) })}
           </Typography>
           {!previewData && (
             <Typography sx={{ fontSize: 12, color: 'primary.main', fontWeight: 600 }}>
-              Vedi profilo →
+              {t('level.see_profile')}
             </Typography>
           )}
         </Box>

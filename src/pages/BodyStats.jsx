@@ -24,9 +24,11 @@ import {
 } from '@mui/material';
 import { ResponsiveContainer, LineChart, Line } from 'recharts';
 import { API_BASE_URL } from '../config';
-import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import itLocale from 'date-fns/locale/it';
+import { DatePicker } from '@mui/x-date-pickers';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
+import DateLocalization from '../i18n/DateLocalization';
+import { formatDate, formatNumber } from '../i18n/format';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import FavoriteIcon from '@mui/icons-material/Favorite';
@@ -37,13 +39,14 @@ import HealthAppHint from '../components/HealthAppHint';
 // Valore della tabella, con un cuore se è arrivato da Apple Salute / Health Connect
 // (health_fields è l'elenco dei campi importati, separati da virgola).
 const StatValue = ({ row, field }) => {
+  const { t } = useTranslation();
   if (!row[field]) return '-';
   const fromHealth = (row.health_fields || '').split(',').includes(field);
   return (
     <>
       {row[field]}
       {fromHealth && (
-        <Box component="span" title="Da Apple Salute / Health Connect" sx={{ ml: 0.5, verticalAlign: 'middle' }}>
+        <Box component="span" title={t('body.from_health')} sx={{ ml: 0.5, verticalAlign: 'middle' }}>
           <FavoriteIcon sx={{ fontSize: 11, color: '#ff2d55' }} />
         </Box>
       )}
@@ -53,14 +56,14 @@ const StatValue = ({ row, field }) => {
 
 // Serie per il grafico "Composizione Corporea" e "Circonferenze": chiave dato, etichetta, colore.
 const BODY_COMPOSITION_SERIES = [
-  { key: 'body_fat_percentage', label: 'Grasso', color: '#4f46e5', unit: '%' },
-  { key: 'muscle_mass_percentage', label: 'Muscolo', color: '#16a34a', unit: '%' },
+  { key: 'body_fat_percentage', label: 'body.fat', color: '#4f46e5', unit: '%' },
+  { key: 'muscle_mass_percentage', label: 'body.muscle', color: '#16a34a', unit: '%' },
 ];
 const CIRCUMFERENCE_SERIES = [
-  { key: 'chest_size', label: 'Torace', color: '#d50000', unit: 'cm' },
-  { key: 'waist_size', label: 'Vita', color: '#d97706', unit: 'cm' },
-  { key: 'arm_size', label: 'Braccio', color: '#4f46e5', unit: 'cm' },
-  { key: 'leg_size', label: 'Gamba', color: '#7c3aed', unit: 'cm' },
+  { key: 'chest_size', label: 'body.chest', color: '#d50000', unit: 'cm' },
+  { key: 'waist_size', label: 'body.waist', color: '#d97706', unit: 'cm' },
+  { key: 'arm_size', label: 'body.arm', color: '#4f46e5', unit: 'cm' },
+  { key: 'leg_size', label: 'body.leg', color: '#7c3aed', unit: 'cm' },
 ];
 
 const lastValueOf = (data, key) => {
@@ -99,7 +102,7 @@ const MiniChartLegend = ({ data, series }) => (
         <Box key={s.key} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
           <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: s.color }} />
           <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
-            {s.label}: <strong>{value !== null ? `${value}${s.unit}` : '—'}</strong>
+            {i18n.t(s.label)}: <strong>{value !== null ? `${value}${s.unit}` : '—'}</strong>
           </Typography>
         </Box>
       );
@@ -113,6 +116,7 @@ const numberFieldSx = {
 };
 
 const BodyStats = ({ isEmbedded = false }) => {
+  const { t } = useTranslation();
   const [stats, setStats] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   // true finché l'utente non ha dato il consenso per i dati sulla salute
@@ -147,7 +151,7 @@ const BodyStats = ({ isEmbedded = false }) => {
       }
     } catch (error) {
       console.error('Error fetching stats:', error);
-      setSnackbar({ open: true, message: 'Errore nel caricamento delle statistiche', severity: 'error' });
+      setSnackbar({ open: true, message: i18n.t('body.error.load'), severity: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -189,7 +193,7 @@ const BodyStats = ({ isEmbedded = false }) => {
 
       const result = await response.json();
       if (response.ok) {
-        setSnackbar({ open: true, message: 'Statistiche salvate con successo', severity: 'success' });
+        setSnackbar({ open: true, message: t('body.saved'), severity: 'success' });
         setIsDialogOpen(false);
         setFormData({
           date: new Date(),
@@ -203,16 +207,16 @@ const BodyStats = ({ isEmbedded = false }) => {
         });
         fetchStats();
       } else {
-        setSnackbar({ open: true, message: result.message || 'Errore nel salvataggio', severity: 'error' });
+        setSnackbar({ open: true, message: result.message || t('body.error.save'), severity: 'error' });
       }
     } catch (error) {
       console.error('Error saving stats:', error);
-      setSnackbar({ open: true, message: 'Errore di connessione', severity: 'error' });
+      setSnackbar({ open: true, message: t('body.error.connection'), severity: 'error' });
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Sei sicuro di voler eliminare questa misurazione?')) return;
+    if (!window.confirm(t('body.confirm_delete'))) return;
 
     try {
       const response = await fetch(`${API_BASE_URL}api/user_stats/delete.php`, {
@@ -223,7 +227,7 @@ const BodyStats = ({ isEmbedded = false }) => {
       });
 
       if (response.ok) {
-        setSnackbar({ open: true, message: 'Misurazione eliminata', severity: 'success' });
+        setSnackbar({ open: true, message: t('body.deleted'), severity: 'success' });
         fetchStats();
       }
     } catch (error) {
@@ -233,7 +237,7 @@ const BodyStats = ({ isEmbedded = false }) => {
 
   const chartData = stats.map(item => ({
     ...item,
-    dateFormatted: new Date(item.date).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' }),
+    dateFormatted: formatDate(item.date, { day: '2-digit', month: '2-digit' }),
   }));
 
   const weightSeries = chartData.map(d => d.weight).filter(v => v !== null && v !== undefined);
@@ -248,11 +252,11 @@ const BodyStats = ({ isEmbedded = false }) => {
       <Box sx={{ display: 'flex', justifyContent: isEmbedded ? 'flex-end' : 'space-between', alignItems: 'center', mb: 3 }}>
         {!isEmbedded && (
           <Typography variant="h4" sx={{ fontWeight: 800 }}>
-            Statistiche Fisiche
+            {t('body.title')}
           </Typography>
         )}
         <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsDialogOpen(true)}>
-          Nuova Misurazione
+          {t('body.new')}
         </Button>
       </Box>
 
@@ -267,12 +271,12 @@ const BodyStats = ({ isEmbedded = false }) => {
           {/* Andamento Peso — a piena larghezza */}
           <Grid item xs={12}>
             <ChartCard
-              title="Andamento Peso (kg)"
+              title={t('body.weight_trend')}
               data={weightSeries}
               color="primary.main"
               valueLabel={lastWeight !== null ? `${lastWeight} kg` : '—'}
               deltaUp={weightDelta !== null ? weightDelta >= 0 : true}
-              deltaText={weightDelta !== null ? `${weightDelta >= 0 ? '+' : ''}${weightDelta.toFixed(1)} kg dalla prima rilevazione` : undefined}
+              deltaText={weightDelta !== null ? t('body.weight_delta', { delta: `${weightDelta >= 0 ? '+' : ''}${formatNumber(weightDelta, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}` }) : undefined}
             />
           </Grid>
 
@@ -280,7 +284,7 @@ const BodyStats = ({ isEmbedded = false }) => {
           <Grid item xs={12} md={6}>
             <Card sx={{ p: '22px' }}>
               <Typography sx={{ textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700, fontSize: 12, color: 'text.secondary', mb: 1.5 }}>
-                Composizione Corporea (%)
+                {t('body.composition')}
               </Typography>
               <MiniMultiLineChart data={chartData} series={BODY_COMPOSITION_SERIES} />
               <MiniChartLegend data={chartData} series={BODY_COMPOSITION_SERIES} />
@@ -291,7 +295,7 @@ const BodyStats = ({ isEmbedded = false }) => {
           <Grid item xs={12} md={6}>
             <Card sx={{ p: '22px' }}>
               <Typography sx={{ textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700, fontSize: 12, color: 'text.secondary', mb: 1.5 }}>
-                Circonferenze (cm)
+                {t('body.circumferences')}
               </Typography>
               <MiniMultiLineChart data={chartData} series={CIRCUMFERENCE_SERIES} />
               <MiniChartLegend data={chartData} series={CIRCUMFERENCE_SERIES} />
@@ -304,21 +308,21 @@ const BodyStats = ({ isEmbedded = false }) => {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>Data</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>Peso</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>Grasso %</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>Muscolo %</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>Petto</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>Braccio</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>Vita</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>Gamba</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>Azioni</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{t('body.col.date')}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{t('body.col.weight')}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{t('body.col.fat')}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{t('body.col.muscle')}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{t('body.chest')}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{t('body.arm')}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{t('body.waist')}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{t('body.leg')}</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{t('body.col.actions')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {stats.slice().reverse().map((row) => (
                     <TableRow key={row.id}>
-                      <TableCell sx={{ fontSize: 13 }}>{new Date(row.date).toLocaleDateString('it-IT')}</TableCell>
+                      <TableCell sx={{ fontSize: 13 }}>{formatDate(row.date)}</TableCell>
                       <TableCell align="right" sx={{ fontSize: 13, fontWeight: 700 }}><StatValue row={row} field="weight" /></TableCell>
                       <TableCell align="right" sx={{ fontSize: 13 }}><StatValue row={row} field="body_fat_percentage" /></TableCell>
                       <TableCell align="right" sx={{ fontSize: 13 }}>{row.muscle_mass_percentage || '-'}</TableCell>
@@ -335,7 +339,7 @@ const BodyStats = ({ isEmbedded = false }) => {
                   ))}
                   {stats.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={9} align="center" sx={{ color: 'text.secondary', py: 3 }}>Nessuna misurazione registrata</TableCell>
+                      <TableCell colSpan={9} align="center" sx={{ color: 'text.secondary', py: 3 }}>{t('body.empty')}</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
@@ -357,45 +361,45 @@ const BodyStats = ({ isEmbedded = false }) => {
 
       {/* Dialog Nuova Misurazione */}
       <Dialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700 }}>Aggiungi Misurazioni</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700 }}>{t('body.dialog_title')}</DialogTitle>
         <DialogContent dividers>
-          <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={itLocale}>
+          <DateLocalization>
             <DatePicker
-              label="Data"
+              label={t('body.field.date')}
               value={formData.date}
               onChange={handleDateChange}
               slotProps={{ textField: { fullWidth: true, sx: { mb: 3, mt: 1 } } }}
             />
-          </LocalizationProvider>
+          </DateLocalization>
 
           <Grid container spacing={2}>
             <Grid item xs={12} sm={4}>
-              <TextField label="Peso (kg)" name="weight" type="number" fullWidth value={formData.weight} onChange={handleInputChange} sx={numberFieldSx} />
+              <TextField label={t('body.field.weight')} name="weight" type="number" fullWidth value={formData.weight} onChange={handleInputChange} sx={numberFieldSx} />
             </Grid>
             <Grid item xs={12} sm={4}>
-              <TextField label="Grasso (%)" name="body_fat_percentage" type="number" fullWidth value={formData.body_fat_percentage} onChange={handleInputChange} sx={numberFieldSx} />
+              <TextField label={t('body.field.fat')} name="body_fat_percentage" type="number" fullWidth value={formData.body_fat_percentage} onChange={handleInputChange} sx={numberFieldSx} />
             </Grid>
             <Grid item xs={12} sm={4}>
-              <TextField label="Muscolo (%)" name="muscle_mass_percentage" type="number" fullWidth value={formData.muscle_mass_percentage} onChange={handleInputChange} sx={numberFieldSx} />
+              <TextField label={t('body.field.muscle')} name="muscle_mass_percentage" type="number" fullWidth value={formData.muscle_mass_percentage} onChange={handleInputChange} sx={numberFieldSx} />
             </Grid>
             <Grid item xs={12} sm={3}>
-              <TextField label="Petto (cm)" name="chest_size" type="number" fullWidth value={formData.chest_size} onChange={handleInputChange} sx={numberFieldSx} />
+              <TextField label={t('body.field.chest')} name="chest_size" type="number" fullWidth value={formData.chest_size} onChange={handleInputChange} sx={numberFieldSx} />
             </Grid>
             <Grid item xs={12} sm={3}>
-              <TextField label="Braccio (cm)" name="arm_size" type="number" fullWidth value={formData.arm_size} onChange={handleInputChange} sx={numberFieldSx} />
+              <TextField label={t('body.field.arm')} name="arm_size" type="number" fullWidth value={formData.arm_size} onChange={handleInputChange} sx={numberFieldSx} />
             </Grid>
             <Grid item xs={12} sm={3}>
-              <TextField label="Vita (cm)" name="waist_size" type="number" fullWidth value={formData.waist_size} onChange={handleInputChange} sx={numberFieldSx} />
+              <TextField label={t('body.field.waist')} name="waist_size" type="number" fullWidth value={formData.waist_size} onChange={handleInputChange} sx={numberFieldSx} />
             </Grid>
             <Grid item xs={12} sm={3}>
-              <TextField label="Gamba (cm)" name="leg_size" type="number" fullWidth value={formData.leg_size} onChange={handleInputChange} sx={numberFieldSx} />
+              <TextField label={t('body.field.leg')} name="leg_size" type="number" fullWidth value={formData.leg_size} onChange={handleInputChange} sx={numberFieldSx} />
             </Grid>
           </Grid>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setIsDialogOpen(false)}>Annulla</Button>
+          <Button onClick={() => setIsDialogOpen(false)}>{t('common.cancel')}</Button>
           <Button variant="contained" onClick={handleSubmit}>
-            Salva
+            {t('common.save')}
           </Button>
         </DialogActions>
       </Dialog>

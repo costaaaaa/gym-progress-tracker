@@ -36,7 +36,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "i18n:check": "node scripts/i18n-check.mjs"
   },
   "browserslist": {
     "production": [

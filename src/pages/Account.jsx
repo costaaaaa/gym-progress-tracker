@@ -38,11 +38,11 @@ import {
   Logout as LogoutIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { format, parseISO, subYears, startOfToday, formatDistanceToNow } from 'date-fns';
-import { it } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
+import DateLocalization from '../i18n/DateLocalization';
+import { dateFnsLocale } from '../i18n/format';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import { validatePassword } from '../utils/passwordPolicy';
@@ -50,7 +50,8 @@ import { getConsents, setConsent } from '../utils/consent';
 import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
 
 const Account = ({ isEmbedded = false }) => {
-  const { user, logout, isLoggedIn, loading: authLoading } = useAuth();
+  const { user, logout, isLoggedIn, updateUser, loading: authLoading } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   // Reindirizza alla pagina di login se l'utente non è autenticato e l'autenticazione è stata verificata
@@ -509,7 +510,7 @@ const Account = ({ isEmbedded = false }) => {
   }
 
   const passwordChangedLabel = userData?.password_changed_at
-    ? `Ultima modifica ${formatDistanceToNow(parseISO(userData.password_changed_at), { locale: it, addSuffix: true })}`
+    ? `Ultima modifica ${formatDistanceToNow(parseISO(userData.password_changed_at), { locale: dateFnsLocale(), addSuffix: true })}`
     : 'Non ancora modificata';
 
   return (
@@ -542,7 +543,7 @@ const Account = ({ isEmbedded = false }) => {
               {userData?.email || 'Email non disponibile'}
             </Typography>
             <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
-              Membro da {joinDate ? format(joinDate, 'MMMM yyyy', { locale: it }) : 'data non disponibile'}
+              Membro da {joinDate ? format(joinDate, 'MMMM yyyy', { locale: dateFnsLocale() }) : 'data non disponibile'}
             </Typography>
           </Box>
 
@@ -561,7 +562,7 @@ const Account = ({ isEmbedded = false }) => {
           <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 3 }}>
             <Box>
               <Typography sx={{ fontSize: 13, fontWeight: 700, mb: 1.5 }}>Profilo fisico</Typography>
-              <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={it}>
+              <DateLocalization>
                 <Grid container spacing={2} alignItems="flex-start">
                   <Grid item xs={12} sm={6}>
                     <DatePicker
@@ -614,7 +615,7 @@ const Account = ({ isEmbedded = false }) => {
                     />
                   </Grid>
                 </Grid>
-              </LocalizationProvider>
+              </DateLocalization>
               <Button
                 variant="contained"
                 startIcon={<SaveIcon />}
@@ -672,16 +673,16 @@ const Account = ({ isEmbedded = false }) => {
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
               <Box>
-                <Typography sx={{ fontSize: 13, fontWeight: 700 }}>Lingua</Typography>
+                <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{t('account.language')}</Typography>
                 <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
-                  Per ora cambia i nomi degli esercizi; il resto dell'app arriverà a breve
+                  {t('account.language_help')}
                 </Typography>
               </Box>
               <Select
                 size="small"
                 value={locale}
                 disabled={savingSettings}
-                inputProps={{ 'aria-label': 'Lingua' }}
+                inputProps={{ 'aria-label': t('account.language') }}
                 onChange={async (e) => {
                   const previous = locale;
                   const next = e.target.value;
@@ -696,11 +697,12 @@ const Account = ({ isEmbedded = false }) => {
                     });
                     const data = await response.json();
                     if (!response.ok) throw new Error(data.message);
-                    setSnackbar({ open: true, message: 'Lingua aggiornata', severity: 'success' });
+                    updateUser({ locale: next });
+                    setSnackbar({ open: true, message: t('account.language_saved', { lng: next }), severity: 'success' });
                   } catch (error) {
                     console.error('Errore aggiornamento lingua:', error);
                     setLocale(previous);
-                    setSnackbar({ open: true, message: 'Errore nel salvataggio della lingua', severity: 'error' });
+                    setSnackbar({ open: true, message: t('account.language_error'), severity: 'error' });
                   } finally {
                     setSavingSettings(false);
                   }

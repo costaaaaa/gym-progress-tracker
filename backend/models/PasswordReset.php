@@ -23,7 +23,7 @@ class PasswordReset
     // Trova l'utente per email. Ritorna ['id' => ..., 'username' => ...] o null.
     public function findUserByEmail($email)
     {
-        $stmt = $this->conn->prepare("SELECT id, username FROM gym_users WHERE email = ? LIMIT 1");
+        $stmt = $this->conn->prepare("SELECT id, username, locale FROM gym_users WHERE email = ? LIMIT 1");
         $stmt->bindParam(1, $email);
         $stmt->execute();
         $row = $stmt->fetch(PDO::FETCH_ASSOC);

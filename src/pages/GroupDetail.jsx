@@ -14,6 +14,7 @@ import {
   errorMessage, GROUP_TYPE_LABELS, inviteLink, leaveGroup, manageGroup, readGroup, ROLE_LABELS,
 } from '../api/groups';
 import { track } from '../utils/analytics';
+import { intlLocale } from '../i18n/format';
 
 const BOARDS = [
   { key: 'week', label: 'Settimana', hint: 'Allenamenti fatti rispetto al proprio obiettivo settimanale.' },
@@ -21,7 +22,7 @@ const BOARDS = [
   { key: 'level', label: 'Livello', hint: 'Livello ed esperienza accumulata.' },
 ];
 
-const formatDay = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+const formatDay = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short' });
 
 // Conferma per le azioni che non si annullano (uscire, eliminare, rimuovere un membro)
 const ConfirmDialog = ({ confirm, onClose }) => (

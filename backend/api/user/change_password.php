@@ -30,7 +30,7 @@ try {
         http_response_code(400);
         echo json_encode(array(
             "success" => false,
-            "message" => "Password attuale e nuova password sono obbligatorie."
+            "message" => t_server('change_password.missing')
         ));
         exit;
     }
@@ -40,7 +40,7 @@ try {
         http_response_code(400);
         echo json_encode(array(
             "success" => false,
-            "message" => "La nuova password deve essere diversa da quella attuale."
+            "message" => t_server('change_password.same')
         ));
         exit;
     }
@@ -64,13 +64,13 @@ try {
         http_response_code(200);
         echo json_encode(array(
             "success" => true,
-            "message" => "Password modificata con successo."
+            "message" => t_server('change_password.ok')
         ));
     } else {
         http_response_code(400);
         echo json_encode(array(
             "success" => false,
-            "message" => "La password attuale non è corretta."
+            "message" => t_server('change_password.wrong_current')
         ));
     }
 } catch (Exception $e) {
@@ -79,6 +79,6 @@ try {
     http_response_code(500);
     echo json_encode(array(
         "success" => false,
-        "message" => "Si è verificato un errore durante il cambio password."
+        "message" => t_server('change_password.error')
     ));
 }
