@@ -29,7 +29,7 @@ try {
         http_response_code(400);
         echo json_encode(array(
             "success" => false,
-            "message" => "La password è obbligatoria."
+            "message" => t_server('account.password_required')
         ));
         exit;
     }
@@ -47,14 +47,14 @@ try {
         http_response_code(200);
         echo json_encode(array(
             "success" => true,
-            "message" => "Account eliminato con successo."
+            "message" => t_server('account.deleted')
         ));
     } else {
         // 400 e non 401: i client trattano ogni 401 come sessione scaduta e fanno logout
         http_response_code(400);
         echo json_encode(array(
             "success" => false,
-            "message" => "Password non corretta. Impossibile eliminare l'account."
+            "message" => t_server('account.wrong_password')
         ));
     }
 } catch (Exception $e) {
@@ -62,6 +62,6 @@ try {
     http_response_code(500);
     echo json_encode(array(
         "success" => false,
-        "message" => "Errore interno del server."
+        "message" => t_server('common.server_error')
     ));
 }

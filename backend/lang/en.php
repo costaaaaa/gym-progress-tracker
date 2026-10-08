@@ -54,4 +54,18 @@ return array(
     'change_password.ok' => 'Password changed successfully.',
     'change_password.wrong_current' => 'The current password is incorrect.',
     'change_password.error' => 'An error occurred while changing the password.',
+
+    'common.method_not_allowed' => 'Method not allowed.',
+    'common.invalid_request' => 'Invalid request.',
+    'common.missing_data' => 'Missing data.',
+    'common.server_error' => 'Internal server error.',
+    'settings.no_fields' => 'Nothing to update.',
+    'settings.updated' => 'Profile updated successfully.',
+    'settings.locale_invalid' => 'Language not supported.',
+    'settings.update_error' => 'Error while updating settings.',
+    'account.password_required' => 'Password is required.',
+    'account.deleted' => 'Account deleted successfully.',
+    'account.wrong_password' => 'Incorrect password. The account cannot be deleted.',
+    'consent.not_revocable' => 'This consent cannot be withdrawn: delete your account to withdraw it.',
+    'consent.error' => 'Error while performing the operation.',
 );

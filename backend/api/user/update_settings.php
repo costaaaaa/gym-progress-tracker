@@ -14,7 +14,7 @@ $user_id = require_authenticated_user($db);
 // Solo richieste POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode(['success' => false, 'message' => 'Metodo non consentito']);
+    echo json_encode(['success' => false, 'message' => t_server('common.method_not_allowed')]);
     exit;
 }
 
@@ -24,7 +24,7 @@ try {
 
     if (!$data || !is_object($data)) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Dati mancanti']);
+        echo json_encode(['success' => false, 'message' => t_server('common.missing_data')]);
         exit;
     }
 
@@ -46,7 +46,7 @@ try {
     if (property_exists($data, 'gender')) {
         if (!valid_gender($data->gender)) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Seleziona il sesso.']);
+            echo json_encode(['success' => false, 'message' => t_server('register.gender_required')]);
             exit;
         }
         $fields['gender'] = $data->gender;
@@ -64,14 +64,14 @@ try {
     if (property_exists($data, 'locale')) {
         if (!is_string($data->locale) || !in_array($data->locale, SUPPORTED_LOCALES, true)) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Lingua non supportata.']);
+            echo json_encode(['success' => false, 'message' => t_server('settings.locale_invalid')]);
             exit;
         }
         $fields['locale'] = $data->locale;
     }
     if (empty($fields)) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Nessun campo da aggiornare']);
+        echo json_encode(['success' => false, 'message' => t_server('settings.no_fields')]);
         exit;
     }
 
@@ -84,7 +84,7 @@ try {
         http_response_code(200);
         echo json_encode([
             'success' => true,
-            'message' => 'Profilo aggiornato con successo',
+            'message' => t_server('settings.updated'),
             'rest_timer_enabled' => $user->rest_timer_enabled,
             'birth_date' => $user->birth_date,
             'gender' => $user->gender,
@@ -97,7 +97,7 @@ try {
         http_response_code(500);
         echo json_encode([
             'success' => false,
-            'message' => 'Errore durante l\'aggiornamento delle impostazioni'
+            'message' => t_server('settings.update_error')
         ]);
     }
 } catch (Exception $e) {
@@ -105,6 +105,6 @@ try {
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'Errore durante l\'aggiornamento delle impostazioni'
+        'message' => t_server('settings.update_error')
     ]);
 }

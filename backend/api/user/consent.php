@@ -21,7 +21,7 @@ try {
     }
 
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        api_json_response(array('success' => false, 'message' => 'Metodo non consentito'), 405);
+        api_json_response(array('success' => false, 'message' => t_server('common.method_not_allowed')), 405);
     }
 
     $data = json_decode(file_get_contents('php://input'));
@@ -29,7 +29,7 @@ try {
     $action = (is_object($data) && isset($data->action)) ? $data->action : null;
 
     if (!Consent::isKnownPurpose($purpose) || !in_array($action, array('grant', 'revoke'), true)) {
-        api_json_response(array('success' => false, 'message' => 'Richiesta non valida'), 400);
+        api_json_response(array('success' => false, 'message' => t_server('common.invalid_request')), 400);
     }
 
     if ($action === 'grant') {
@@ -40,7 +40,7 @@ try {
     if (!in_array($purpose, Consent::REVOCABLE, true)) {
         api_json_response(array(
             'success' => false,
-            'message' => 'Questo consenso non si può revocare: per ritirarlo elimina l\'account.'
+            'message' => t_server('consent.not_revocable')
         ), 400);
     }
     $deleted = $consent->revoke($user_id, $purpose);
@@ -51,5 +51,5 @@ try {
     ));
 } catch (Exception $e) {
     error_log('Consent error: ' . $e->getMessage());
-    api_json_response(array('success' => false, 'message' => 'Errore durante l\'operazione'), 500);
+    api_json_response(array('success' => false, 'message' => t_server('consent.error')), 500);
 }
