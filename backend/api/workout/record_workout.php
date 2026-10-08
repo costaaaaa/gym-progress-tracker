@@ -21,6 +21,30 @@ try {
         exit;
     }
 
+    // Limiti di colonna (gym_workout_sets): weight decimal(5,2), reps varchar(50). Peso 0 ammesso
+    // (corpo libero, macchinari senza carico); oltre i limiti il database darebbe un 500 generico.
+    if (count($data->workout_records) > 500) {
+        api_json_response(['success' => false, 'message' => 'Troppe serie in un solo allenamento.'], 400);
+    }
+    foreach ($data->workout_records as $record) {
+        if (!is_object($record)) {
+            api_json_response(['success' => false, 'message' => 'Dati mancanti o non validi'], 400);
+        }
+        if (!isset($record->exercise_id) || empty($record->exercise_id)) continue;
+        $weight = $record->weight ?? null;
+        $reps = $record->reps ?? null;
+        $set_number = $record->set_number ?? null;
+        if (!is_numeric($weight) || $weight < 0 || $weight > 999.99) {
+            api_json_response(['success' => false, 'message' => 'Peso non valido: usa un valore tra 0 e 999,99 kg.'], 400);
+        }
+        if (!(is_string($reps) || is_int($reps)) || trim((string) $reps) === '' || strlen((string) $reps) > 50) {
+            api_json_response(['success' => false, 'message' => 'Ripetizioni non valide.'], 400);
+        }
+        if (!is_int($set_number) || $set_number < 1 || $set_number > 100) {
+            api_json_response(['success' => false, 'message' => 'Numero di serie non valido.'], 400);
+        }
+    }
+
     // Solo esercizi approvati o creati dall'utente: quelli in attesa degli altri non si usano
     $exercise_ids = array();
     foreach ($data->workout_records as $record) {
@@ -198,7 +222,8 @@ try {
             $eid = (int) $rec->exercise_id;
             $w   = (float) ($rec->weight ?? 0);
             $r   = parseReps($rec->reps ?? '0');
-            if ($w <= 0 || $r <= 0) continue;
+            // Il peso può essere 0 (corpo libero, macchinari): conta la serie se ha ripetizioni
+            if ($r <= 0) continue;
             if (!isset($current_ex_sets[$eid])) $current_ex_sets[$eid] = [];
             $current_ex_sets[$eid][] = ['weight' => $w, 'reps' => $r];
         }
@@ -222,9 +247,10 @@ try {
                 $pw   = (float) $prow['weight'];
                 $pr   = parseReps($prow['reps']);
                 $p1rm = estimateOneRepMax($pw, $pr);
-                if (!isset($prev_bests[$eid])) $prev_bests[$eid] = ['best_weight' => 0.0, 'best_1rm' => 0.0];
+                if (!isset($prev_bests[$eid])) $prev_bests[$eid] = ['best_weight' => 0.0, 'best_1rm' => 0.0, 'best_bw_reps' => 0];
                 if ($pw   > $prev_bests[$eid]['best_weight']) $prev_bests[$eid]['best_weight'] = $pw;
                 if ($p1rm > $prev_bests[$eid]['best_1rm'])   $prev_bests[$eid]['best_1rm']   = $p1rm;
+                if ($pw == 0.0 && $pr > $prev_bests[$eid]['best_bw_reps']) $prev_bests[$eid]['best_bw_reps'] = $pr;
             }
         }
 
@@ -265,20 +291,24 @@ try {
         foreach ($current_ex_sets as $eid => $sets) {
             $ex_best_weight = 0.0;
             $ex_best_1rm    = 0.0;
+            $ex_best_bw_reps = 0;
             foreach ($sets as $s) {
                 $session_volume_kg += $s['weight'] * $s['reps'];
                 if ($s['weight'] > $ex_best_weight) $ex_best_weight = $s['weight'];
                 $orm = estimateOneRepMax($s['weight'], $s['reps']);
                 if ($orm > $ex_best_1rm) $ex_best_1rm = $orm;
+                if ($s['weight'] == 0.0 && $s['reps'] > $ex_best_bw_reps) $ex_best_bw_reps = $s['reps'];
             }
 
             $prev = $prev_bests[$eid] ?? null;
             // PR solo se c'è storico precedente (coerente con detectPersonalRecords in JS)
             $is_weight_pr = $prev !== null && $ex_best_weight > $prev['best_weight'];
             $is_1rm_pr    = $prev !== null && $ex_best_1rm   > $prev['best_1rm'];
+            // A peso 0 (corpo libero) il progresso sono le ripetizioni
+            $is_reps_pr   = $prev !== null && $ex_best_bw_reps > $prev['best_bw_reps'];
 
             $ex_xp = $xp_session ? XP_EXERCISE_SESSION : 0;
-            if ($is_weight_pr || $is_1rm_pr) {
+            if ($is_weight_pr || $is_1rm_pr || $is_reps_pr) {
                 $pr_in_session = true;
                 $ex_xp += XP_EXERCISE_PR;
             }

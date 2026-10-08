@@ -57,8 +57,8 @@ import { buildShareStats } from '../utils/shareCard';
 import ShareCardDialog from '../components/ShareCardDialog';
 import FocusExercisePicker from '../components/FocusExercisePicker';
 import {
-  FEATURE_SESSION_EDIT, lastSessionSets, setStatus, numberedSets,
-  buildSessionEntry, swapExercise, insertExercise
+  FEATURE_SESSION_EDIT, MAX_WEIGHT, isValidWeight, initialWeight, nextSetWeight,
+  lastSessionSets, setStatus, numberedSets, buildSessionEntry, swapExercise, insertExercise
 } from '../utils/focusSession';
 import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../utils/celebrate';
 import { usePageMeta } from '../hooks/usePageMeta';
@@ -388,7 +388,7 @@ const FocusWorkout = () => {
     const firstExercise = selectedDay.exercises[0];
     setRepsInput(firstExercise.reps || '');
     setIntensityTechniqueInput(firstExercise.intensity_technique || '');
-    setWeightInput(getSuggestedWeight(firstExercise));
+    setWeightInput(initialWeight(firstExercise, getSuggestedWeight(firstExercise)));
 
     setPhase('workout');
     hapticFeedback.medium();
@@ -410,14 +410,14 @@ const FocusWorkout = () => {
     setCurrentSetIndex(0);
     setRepsInput(exercise?.reps || '');
     setIntensityTechniqueInput(exercise?.intensity_technique || '');
-    setWeightInput(getSuggestedWeight(exercise));
+    setWeightInput(initialWeight(exercise, getSuggestedWeight(exercise)));
   }, [getSuggestedWeight]);
 
   // ================================================
   // CONFERMA SERIE
   // ================================================
   const handleConfirmSet = () => {
-    if (!weightInput || !repsInput) return;
+    if (!isValidWeight(weightInput) || !repsInput) return;
 
     hapticFeedback.success();
 
@@ -442,7 +442,7 @@ const FocusWorkout = () => {
     } else {
       // Prossima serie
       setCurrentSetIndex(nextSetIndex);
-      setWeightInput('');
+      setWeightInput(nextSetWeight(currentExercise, weightInput));
       // Mantieni le reps dal piano come default
       setRepsInput(currentExercise.reps || '');
       setIntensityTechniqueInput(currentExercise.intensity_technique || '');
@@ -1076,7 +1076,7 @@ const FocusWorkout = () => {
 
               <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                 <TextField label="Peso (kg)" type="number" value={weightInput} onChange={(e) => setWeightInput(e.target.value)}
-                  fullWidth autoFocus inputProps={{ step: 0.5, min: 0, inputMode: 'decimal' }}
+                  fullWidth autoFocus inputProps={{ step: 0.5, min: 0, max: MAX_WEIGHT, inputMode: 'decimal' }}
                   sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.primary }, '&.Mui-focused fieldset': { borderColor: colors.primary } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.primary } }} />
                 <TextField label="Ripetizioni" value={repsInput} onChange={(e) => setRepsInput(e.target.value)}
                   fullWidth inputProps={{ inputMode: 'text' }}
@@ -1108,7 +1108,7 @@ const FocusWorkout = () => {
                 </Select>
               </FormControl>
 
-              <Button variant="contained" fullWidth size="large" startIcon={<CheckIcon />} onClick={handleConfirmSet} disabled={!weightInput || !repsInput}
+              <Button variant="contained" fullWidth size="large" startIcon={<CheckIcon />} onClick={handleConfirmSet} disabled={!isValidWeight(weightInput) || !repsInput}
                 sx={{ py: 2.5, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.success, color: '#fff', borderRadius: '14px',
                   boxShadow: '0 4px 16px rgba(76, 175, 80, 0.3)', '&:hover': { bgcolor: 'success.dark', boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)' },
                   '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted }, mb: 2, transition: 'all 0.3s ease' }}>
@@ -1226,6 +1226,7 @@ const FocusWorkout = () => {
                 if (pr.weight) prParts.push('peso');
                 if (pr.oneRM) prParts.push('1RM');
                 if (pr.volume) prParts.push('volume');
+                if (pr.reps) prParts.push('ripetizioni');
                 return (
                   <Box key={exercise.id} sx={{ px: 2, py: 2, borderBottom: `1px solid ${colors.border}` }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, mb: 1 }}>

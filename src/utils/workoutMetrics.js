@@ -62,18 +62,22 @@ export const getBestSetOneRM = (sets) => {
 
 /**
  * Calcola le statistiche aggregate di un gruppo di set svolti in una sessione.
- * Ritorna { bestWeight, bestOneRM, sessionVolume }.
+ * Ritorna { bestWeight, bestOneRM, sessionVolume, bestBodyweightReps }.
+ * Il peso può essere 0 (corpo libero, macchinari senza carico): la serie conta se ha
+ * ripetizioni; a peso 0 il progresso sono le ripetizioni (bestBodyweightReps).
  */
 export const summarizeSets = (sets) => {
   let bestWeight = 0;
   let bestOneRM = 0;
   let sessionVolume = 0;
+  let bestBodyweightReps = 0;
 
   if (Array.isArray(sets)) {
     sets.forEach((set) => {
       const weight = parseFloat(set.weight) || 0;
       const reps = extractReps(set.reps);
-      if (weight <= 0 || reps <= 0) return;
+      if (reps <= 0) return;
+      if (weight === 0 && reps > bestBodyweightReps) bestBodyweightReps = reps;
       if (weight > bestWeight) bestWeight = weight;
       const oneRM = estimateOneRepMax(weight, reps);
       if (oneRM > bestOneRM) bestOneRM = oneRM;
@@ -81,7 +85,7 @@ export const summarizeSets = (sets) => {
     });
   }
 
-  return { bestWeight, bestOneRM, sessionVolume };
+  return { bestWeight, bestOneRM, sessionVolume, bestBodyweightReps };
 };
 
 /**
@@ -95,7 +99,7 @@ export const summarizeSets = (sets) => {
  *
  * Ritorna una mappa con, per ogni exercise_id:
  *   { lastSession: { date, sets }, lastDate,
- *     bestWeight, bestOneRM, bestSessionVolume }
+ *     bestWeight, bestOneRM, bestSessionVolume, bestBodyweightReps }
  * dove i "best" rappresentano i record personali considerando TUTTO lo storico.
  */
 export const buildExerciseHistoryIndex = (records) => {
@@ -115,11 +119,12 @@ export const buildExerciseHistoryIndex = (records) => {
           bestWeight: 0,
           bestOneRM: 0,
           bestSessionVolume: 0,
+          bestBodyweightReps: 0,
         };
       }
 
       const entry = index[key];
-      const { bestWeight, bestOneRM, sessionVolume } = summarizeSets(ex.sets);
+      const { bestWeight, bestOneRM, sessionVolume, bestBodyweightReps } = summarizeSets(ex.sets);
 
       // La prima occorrenza (record più recente) definisce l'ultima sessione
       if (!entry.lastSession) {
@@ -131,6 +136,7 @@ export const buildExerciseHistoryIndex = (records) => {
       if (bestWeight > entry.bestWeight) entry.bestWeight = bestWeight;
       if (bestOneRM > entry.bestOneRM) entry.bestOneRM = bestOneRM;
       if (sessionVolume > entry.bestSessionVolume) entry.bestSessionVolume = sessionVolume;
+      if (bestBodyweightReps > entry.bestBodyweightReps) entry.bestBodyweightReps = bestBodyweightReps;
     });
   });
 
@@ -140,23 +146,24 @@ export const buildExerciseHistoryIndex = (records) => {
 /**
  * Confronta i set appena completati per un esercizio con lo storico (PRIMA di
  * questa sessione) e ritorna quali record sono stati battuti.
- * Ritorna { isPR, weight, oneRM, volume } con i valori battuti, oppure isPR=false.
+ * Ritorna { isPR, weight, oneRM, volume, reps } con i valori battuti, oppure isPR=false.
  */
 export const detectPersonalRecords = (completedSets, historyEntry) => {
   // Senza storico precedente non parliamo di "record" (è una baseline, non
   // qualcosa di battuto): evita di marcare tutto come PR alla prima sessione.
   if (!historyEntry) {
-    return { isPR: false, weight: null, oneRM: null, volume: null };
+    return { isPR: false, weight: null, oneRM: null, volume: null, reps: null };
   }
 
-  const { bestWeight, bestOneRM, sessionVolume } = summarizeSets(completedSets);
+  const { bestWeight, bestOneRM, sessionVolume, bestBodyweightReps } = summarizeSets(completedSets);
   const prev = historyEntry;
 
   const result = {
     weight: bestWeight > prev.bestWeight ? bestWeight : null,
     oneRM: bestOneRM > prev.bestOneRM ? bestOneRM : null,
     volume: sessionVolume > prev.bestSessionVolume ? parseFloat(sessionVolume.toFixed(1)) : null,
+    reps: bestBodyweightReps > (prev.bestBodyweightReps || 0) ? bestBodyweightReps : null,
   };
-  result.isPR = !!(result.weight || result.oneRM || result.volume);
+  result.isPR = !!(result.weight || result.oneRM || result.volume || result.reps);
   return result;
 };

@@ -24,6 +24,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import { API_BASE_URL } from '../config';
 import { INTENSITY_TECHNIQUES } from './ExerciseDialog';
 import { track } from '../utils/analytics';
+import { MAX_WEIGHT, isValidWeight, initialWeight } from '../utils/focusSession';
 
 const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
   const [selectedDay, setSelectedDay] = useState('');
@@ -42,7 +43,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
     if (selectedDayData && selectedDayData.exercises) {
       selectedDayData.exercises.forEach(exercise => {
         initialWorkoutData[exercise.id] = Array(exercise.sets).fill().map(() => ({
-          weight: '',
+          weight: initialWeight(exercise),
           reps: exercise.reps, // Default to planned reps
           intensity_technique: exercise.intensity_technique || '' // Default to planned intensity technique
         }));
@@ -78,7 +79,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
             set_number: setIndex + 1
           }))
           // Filtriamo per includere solo le serie che hanno sia peso che ripetizioni
-          .filter(set => set.weight && !isNaN(set.weight) && set.reps && set.reps.toString().trim() !== '')
+          .filter(set => isValidWeight(set.weight) && set.reps && set.reps.toString().trim() !== '')
       );
 
       const response = await fetch(`${API_BASE_URL}api/workout/record_workout.php`, {
@@ -120,7 +121,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
       // Controlla se c'è almeno un set con entrambi i valori inseriti
       // Ora accettiamo anche ripetizioni in formato testo
       return sets.some(set => 
-        (set.weight && !isNaN(set.weight)) && 
+        isValidWeight(set.weight) &&
         (set.reps && set.reps.toString().trim() !== '')
       );
     });
@@ -242,6 +243,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                             type="number"
                             value={workoutData[exercise.id]?.[setIndex]?.weight || ''}
                             onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'weight', e.target.value)}
+                            inputProps={{ min: 0, max: MAX_WEIGHT, step: 0.5 }}
                             fullWidth
                             size="small"
                             sx={{

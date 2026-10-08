@@ -6,6 +6,24 @@
 // Funzione premium che sblocca cambio e aggiunta (vedi user_features() nel backend)
 export const FEATURE_SESSION_EDIT = 'focus_session_edit';
 
+// Peso massimo accettato dal backend (colonna decimal(5,2))
+export const MAX_WEIGHT = 999.99;
+
+// Peso valido per una serie: 0 compreso (corpo libero, macchinari senza carico)
+export const isValidWeight = (value) => {
+  const n = parseFloat(value);
+  return Number.isFinite(n) && n >= 0 && n <= MAX_WEIGHT;
+};
+
+export const isBodyweight = (exercise) => exercise?.equipment === 'corpo_libero';
+
+// Peso con cui parte il campo: l'ultimo usato; per i corpo libero, senza storico, 0
+export const initialWeight = (exercise, suggested = '') =>
+  suggested !== '' ? suggested : (isBodyweight(exercise) ? '0' : '');
+
+// Peso della serie successiva: i corpo libero mantengono quello appena usato (0 o zavorra)
+export const nextSetWeight = (exercise, currentWeight) => (isBodyweight(exercise) ? currentWeight : '');
+
 // Serie dell'ultima sessione per le chip "Ultima volta": [{ label, technique }]
 export const lastSessionSets = (lastSession) => {
   if (!lastSession || !Array.isArray(lastSession.sets)) return [];
@@ -42,6 +60,7 @@ export const buildSessionEntry = (catalogEx, { sets, reps, rest }, extra = {}) =
     exercise_id: catalogEx.id,
     exercise_name: catalogEx.name,
     muscle_group: catalogEx.muscle_group,
+    equipment: catalogEx.equipment || null,
     sets: Math.max(1, parseInt(sets, 10) || 1),
     reps: reps === undefined || reps === null ? '' : String(reps),
     rest: Math.max(0, parseInt(rest, 10) || 0),
