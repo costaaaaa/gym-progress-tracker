@@ -50,7 +50,8 @@ try {
             "message" => "Account eliminato con successo."
         ));
     } else {
-        http_response_code(401);
+        // 400 e non 401: i client trattano ogni 401 come sessione scaduta e fanno logout
+        http_response_code(400);
         echo json_encode(array(
             "success" => false,
             "message" => "Password non corretta. Impossibile eliminare l'account."

@@ -150,7 +150,8 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
         credentials: 'include'
       });
       const data = await response.json();
-      if (!response.ok) {
+      // 404 = nessun allenamento registrato: lista vuota, non un errore
+      if (!response.ok && response.status !== 404) {
         throw new Error(data.message || 'Errore nel caricamento della cronologia');
       }
       if (data.records && Array.isArray(data.records)) {
