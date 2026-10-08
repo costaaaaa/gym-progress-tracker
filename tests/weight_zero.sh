@@ -7,7 +7,8 @@
 #
 # Regole: una serie con peso 0 e ripetizioni vale per XP di esercizio e PR; a peso 0 il record
 # è sulle ripetizioni, con zavorra su peso e 1RM. Peso fuori da 0..999,99, ripetizioni vuote e
-# set_number non valido rispondono 400. Registra un account usa e getta (token Bearer) e lo
+# set_number non valido rispondono 400; serie/ripetizioni/recupero di un esercizio in scheda e
+# data di inizio allenamento fuori range pure. Registra un account usa e getta (token Bearer) e lo
 # cancella alla fine. Non va lanciato in produzione: crea account veri.
 #
 # Richiede curl e jq. Esce con 1 se un controllo fallisce.
@@ -90,6 +91,34 @@ status_is "peso null: 400" "$(call POST api/workout/record_workout.php "$T" "$(b
 status_is "ripetizioni vuote: 400" "$(call POST api/workout/record_workout.php "$T" "$(body 20 '')")" 400
 status_is "set_number 0: 400" "$(call POST api/workout/record_workout.php "$T" \
     "$(jq -nc --argjson e "$E1" --argjson d "$DAY" '{workout_records:[{exercise_id:$e, day_id:$d, set_number:0, weight:20, reps:"8"}]}')")" 400
+
+echo "Parametri dell'esercizio e data di inizio"
+ex() { # serie ripetizioni recupero → corpo per add_exercise
+    jq -nc --argjson d "$DAY" --argjson e "$E1" --argjson s "$1" --arg r "$2" --argjson t "$3" \
+        '{day_id:$d, exercise_id:$e, sets:$s, reps:$r, rest:$t}'
+}
+status_is "recupero 0 accettato" "$(call POST api/workout/add_exercise.php "$T" "$(ex 3 10 0)")" 201
+WE="$(call POST api/workout/add_exercise.php "$T" "$(ex 3 10 60)" | cut -d' ' -f2- | jq -r '.workout_exercise.id')"
+status_is "serie 0: 400" "$(call POST api/workout/add_exercise.php "$T" "$(ex 0 10 60)")" 400
+status_is "serie 21: 400" "$(call POST api/workout/add_exercise.php "$T" "$(ex 21 10 60)")" 400
+status_is "recupero negativo: 400" "$(call POST api/workout/add_exercise.php "$T" "$(ex 3 10 -1)")" 400
+status_is "ripetizioni oltre 20 caratteri: 400" "$(call POST api/workout/add_exercise.php "$T" "$(ex 3 123456789012345678901 60)")" 400
+status_is "update con recupero 0 accettato" "$(call POST api/workout/update_exercise.php "$T" "$(jq -nc --argjson d "$DAY" --argjson w "$WE" '{day_id:$d, exercise_id:$w, sets:4, reps:"8-10", rest:0}')")" 200
+status_is "update con serie 0: 400" "$(call POST api/workout/update_exercise.php "$T" "$(jq -nc --argjson d "$DAY" --argjson w "$WE" '{day_id:$d, exercise_id:$w, sets:0, reps:"8", rest:60}')")" 400
+reg() { # data di inizio → "status corpo" della registrazione; l'account creato viene cancellato subito
+    local u="wz${SUFFIX}r$RANDOM" r
+    r="$(call POST api/user/register.php "" "$(jq -nc --arg u "$u" --arg e "$u@example.com" --arg p "$PASS" --arg b "$(date -d '-30 years' +%Y-%m-%d)" --arg t "$1" \
+        '{username:$u, email:$e, password:$p, birth_date:$b, gender:"O", accept_terms:true, training_start_date:$t}')")"
+    if [[ "${r%% *}" == 201 ]]; then
+        local t2
+        t2="$(call POST api/user/mobile_login.php "" "$(jq -nc --arg u "$u" --arg p "$PASS" '{username:$u, password:$p}')" | cut -d' ' -f2- | jq -r '.token // empty')"
+        call POST api/user/delete.php "$t2" "$(jq -nc --arg p "$PASS" '{password:$p}')" >/dev/null
+    fi
+    echo "$r"
+}
+status_is "registrazione con mese 13: 400" "$(reg 2026-13-01)" 400
+status_is "registrazione con data futura: 400" "$(reg "$(date -d '+1 year' +%Y-%m-%d)")" 400
+status_is "registrazione con data valida: 201" "$(reg 2024-03-01)" 201
 
 echo
 if [[ $fails -eq 0 ]]; then printf '\033[32mTutti i %d controlli passati.\033[0m\n' "$checks"; else printf '\033[31m%d controlli su %d falliti.\033[0m\n' "$fails" "$checks"; exit 1; fi

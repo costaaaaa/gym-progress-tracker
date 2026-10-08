@@ -97,7 +97,14 @@ try {
         $user->password = $data->password;
         $user->birth_date = $data->birth_date;
         $user->gender = $data->gender;
-        $user->training_start_date = isset($data->training_start_date) ? $data->training_start_date : null;
+        $tsd = isset($data->training_start_date) ? $data->training_start_date : null;
+        $tsdError = training_start_date_error($tsd);
+        if ($tsdError !== null) {
+            http_response_code(400);
+            echo json_encode(array("success" => false, "message" => $tsdError));
+            exit;
+        }
+        $user->training_start_date = ($tsd === '') ? null : $tsd;
         $user->locale = normalize_locale(isset($data->locale) ? $data->locale : null) ?: 'it';
 
         // Create the user

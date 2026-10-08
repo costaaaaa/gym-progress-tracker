@@ -17,11 +17,13 @@ $data = json_decode(file_get_contents("php://input"));
 
 if (
     !empty($data->day_id) &&
-    !empty($data->exercise_id) &&
-    !empty($data->sets) &&
-    !empty($data->reps) &&
-    !empty($data->rest)
+    !empty($data->exercise_id)
 ) {
+    $params_error = exercise_params_error($data);
+    if ($params_error !== null) {
+        api_json_response(array("message" => $params_error), 400);
+    }
+
     // First, verify that the workout day belongs to the current user
     $workout_day = new WorkoutDay($db);
     $workout_day->id = $data->day_id;

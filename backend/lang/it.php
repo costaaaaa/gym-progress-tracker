@@ -25,6 +25,8 @@ return array(
 
     'birth.invalid' => 'Data di nascita obbligatoria o non valida.',
     'birth.too_young' => 'Devi avere almeno 14 anni per usare LiftIndex.',
+    'training_start.invalid' => 'Data di inizio allenamento non valida.',
+    'exercise.params_invalid' => 'Serie (1-20), ripetizioni (max 20 caratteri) e recupero (0-3600 secondi) non validi.',
 
     'register.too_many' => 'Troppe registrazioni da questo indirizzo. Riprova tra {seconds} secondi.',
     'register.username_invalid' => 'Il nome utente può contenere solo lettere e numeri (da 3 a 50 caratteri).',

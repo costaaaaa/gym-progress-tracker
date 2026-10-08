@@ -224,12 +224,15 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
     onClose();
   };
 
-  const isValid = 
-    exercise.name && 
-    exercise.sets && 
-    exercise.reps && 
-    exercise.rest && 
-    exercise.muscleGroup;
+  const intInRange = (value, min, max) => /^\d+$/.test(String(value)) && Number(value) >= min && Number(value) <= max;
+  const isValid = Boolean(
+    exercise.name &&
+    exercise.muscleGroup &&
+    intInRange(exercise.sets, 1, 20) &&
+    String(exercise.reps).trim() &&
+    exercise.reps.length <= 20 &&
+    intInRange(exercise.rest, 0, 3600)
+  );
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -361,6 +364,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
               name="sets"
               label="Serie"
               type="number"
+              inputProps={{ min: 1, max: 20, step: 1 }}
               value={exercise.sets}
               onChange={handleChange}
               fullWidth
@@ -379,12 +383,14 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
               type="text"
               fullWidth
               value={exercise.reps}
+              inputProps={{ maxLength: 20 }}
               onChange={(e) => setExercise({ ...exercise, reps: e.target.value })}
             />
             <TextField
               name="rest"
               label="Recupero (s)"
               type="number"
+              inputProps={{ min: 0, max: 3600, step: 1 }}
               fullWidth
               value={exercise.rest}
               onChange={(e) => setExercise({ ...exercise, rest: e.target.value })}

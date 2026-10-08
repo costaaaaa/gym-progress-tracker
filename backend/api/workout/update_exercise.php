@@ -19,12 +19,14 @@ $data = json_decode(file_get_contents("php://input"));
 // Verifica che tutti i dati necessari siano presenti
 if (
     !empty($data->day_id) &&
-    !empty($data->exercise_id) &&
-    isset($data->sets) &&
-    !empty($data->reps) &&
-    isset($data->rest)
+    !empty($data->exercise_id)
     // notes è opzionale, quindi non lo verifichiamo qui
 ) {
+    $params_error = exercise_params_error($data);
+    if ($params_error !== null) {
+        api_json_response(array('success' => false, 'message' => $params_error), 400);
+    }
+
     if (!workout_exercise_belongs_to_user($db, $data->exercise_id, $data->day_id, $user_id)) {
         api_not_found('Esercizio non trovato.');
     }

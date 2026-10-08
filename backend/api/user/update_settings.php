@@ -53,17 +53,13 @@ try {
     }
     if (property_exists($data, 'training_start_date')) {
         $tsd = $data->training_start_date;
-        if ($tsd !== null && $tsd !== '') {
-            $d = is_string($tsd) ? DateTime::createFromFormat('!Y-m-d', $tsd) : false;
-            if (!$d || $d->format('Y-m-d') !== $tsd || $d > new DateTime('today')) {
-                http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'Data di inizio allenamento non valida.']);
-                exit;
-            }
-            $fields['training_start_date'] = $tsd;
-        } else {
-            $fields['training_start_date'] = null;
+        $error = training_start_date_error($tsd);
+        if ($error !== null) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => $error]);
+            exit;
         }
+        $fields['training_start_date'] = ($tsd === null || $tsd === '') ? null : $tsd;
     }
     if (property_exists($data, 'locale')) {
         if (!is_string($data->locale) || !in_array($data->locale, SUPPORTED_LOCALES, true)) {

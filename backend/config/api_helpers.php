@@ -264,6 +264,43 @@ function birth_date_error($birth_date)
     return null;
 }
 
+// Valida la data di inizio allenamento ('Y-m-d', non futura). Vuota/null e' ammessa (campo opzionale).
+// Ritorna null se valida o assente, altrimenti il messaggio d'errore.
+function training_start_date_error($value)
+{
+    if ($value === null || $value === '') {
+        return null;
+    }
+    $d = is_string($value) ? DateTime::createFromFormat('!Y-m-d', $value) : false;
+    if (!$d || $d->format('Y-m-d') !== $value || $d > new DateTime('today')) {
+        return t_server('training_start.invalid');
+    }
+    return null;
+}
+
+// Valida serie, ripetizioni e recupero di un esercizio in scheda (limiti delle colonne
+// gym_workout_exercises: reps varchar(20)). Il recupero 0 e' ammesso.
+// Ritorna null se validi, altrimenti il messaggio d'errore.
+function exercise_params_error($data)
+{
+    $int_in_range = function ($v, $min, $max) {
+        if (is_string($v) && preg_match('/^\d+$/', $v)) {
+            $v = (int)$v;
+        }
+        return is_int($v) && $v >= $min && $v <= $max;
+    };
+    $reps = isset($data->reps) ? $data->reps : null;
+    $reps_ok = (is_string($reps) || is_int($reps)) && trim((string)$reps) !== '' && mb_strlen((string)$reps) <= 20;
+    if (
+        !isset($data->sets) || !$int_in_range($data->sets, 1, 20) ||
+        !isset($data->rest) || !$int_in_range($data->rest, 0, 3600) ||
+        !$reps_ok
+    ) {
+        return t_server('exercise.params_invalid');
+    }
+    return null;
+}
+
 // ── Gruppi ──────────────────────────────────────────────────────────────────
 
 // Errore con un codice stabile, così web e mobile mostrano lo stesso messaggio
