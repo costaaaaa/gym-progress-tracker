@@ -6,6 +6,7 @@ import { Outlet, Link as RouterLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LanguageHint from './LanguageHint';
 import { isEnPath, stripLangPrefix, withLangPrefix } from '../../i18n/paths';
+import { setLanguageChoice } from '../../i18n';
 
 const Layout = () => {
   // Utilizziamo il context di autenticazione - questo forza il re-render quando cambia lo stato di autenticazione
@@ -46,6 +47,7 @@ const Layout = () => {
                 component={RouterLink}
                 to={withLangPrefix(stripLangPrefix(pathname), otherLang) + search}
                 lang={otherLang}
+                onClick={() => setLanguageChoice(otherLang)}
                 color="inherit"
                 underline="hover"
               >
