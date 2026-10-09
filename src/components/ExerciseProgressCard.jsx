@@ -38,7 +38,7 @@ const Sparkline = ({ values, color }) => {
   );
 };
 
-const STATUS_COLOR = { improving: 'success.main', stalled: 'text.secondary', new: 'text.secondary', inactive: 'text.disabled' };
+const STATUS_COLOR = { improving: 'success.main', declining: 'error.main', stalled: 'text.secondary', new: 'text.secondary', inactive: 'text.disabled' };
 
 const ExerciseProgressCard = ({ item, name, muscle, showMuscle = false, favorite, onToggleFavorite, onOpen }) => {
   const { t } = useTranslation();
@@ -71,8 +71,8 @@ const ExerciseProgressCard = ({ item, name, muscle, showMuscle = false, favorite
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mt: 1, gap: 1 }}>
           <Typography sx={{ fontSize: 12, fontWeight: 600, color: STATUS_COLOR[status] }}>
-            {status === 'improving' && deltaPct !== null
-              ? `▲ ${formatNumber(deltaPct, { maximumFractionDigits: 1 })}%`
+            {(status === 'improving' || status === 'declining') && deltaPct !== null
+              ? `${deltaPct >= 0 ? '▲' : '▼'} ${formatNumber(Math.abs(deltaPct), { maximumFractionDigits: 1 })}%`
               : t(`progress.status.${status}`)}
           </Typography>
           <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>

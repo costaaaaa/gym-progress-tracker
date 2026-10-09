@@ -1,6 +1,6 @@
 // ============================================================================
 // Logica pura della panoramica "Progressi Workout": serie storica per esercizio,
-// stato (in crescita / fermo / nuovo / inattivo) e raggruppamento per muscolo.
+// stato (in crescita / fermo / in calo / nuovo / inattivo) e raggruppamento per muscolo.
 // Metrica principale: 1RM stimato (Epley); per gli esercizi a corpo libero
 // (sempre peso 0) si usa il massimo di ripetizioni in una serie.
 // ============================================================================
@@ -9,6 +9,7 @@ import { extractReps, estimateOneRepMax } from './workoutMetrics';
 export const RECENT_DAYS = 60;
 export const STALLED_DAYS = 28;
 export const IMPROVING_PCT = 2;
+export const DECLINING_PCT = 5;
 const DAY_MS = 86400000;
 
 export const daysSince = (date, now = Date.now()) =>
@@ -73,7 +74,9 @@ export const buildExerciseSeries = (records) => {
  * Stato di un esercizio:
  * - inactive: ultima sessione oltre RECENT_DAYS fa
  * - new: una sola sessione nel periodo recente (nessun confronto possibile)
- * - improving: valore salito di almeno IMPROVING_PCT% nel periodo recente
+ * - improving / declining: il meglio della seconda metà delle sessioni recenti è salito di almeno
+ *   IMPROVING_PCT% o sceso di almeno DECLINING_PCT% rispetto al meglio della prima metà
+ *   (si confrontano i migliori, non la prima e l'ultima sessione, per non dipendere da una giornata storta)
  * - stalled: tutto il resto (nessun progresso, o fermo da STALLED_DAYS)
  */
 export const analyzeExercise = (serie, now = Date.now()) => {
@@ -91,9 +94,12 @@ export const analyzeExercise = (serie, now = Date.now()) => {
   } else if (recent.length < 2) {
     status = 'new';
   } else {
-    const baseline = recent[0].value;
-    deltaPct = baseline > 0 ? ((last.value - baseline) / baseline) * 100 : null;
+    const half = Math.floor(recent.length / 2);
+    const baseline = Math.max(...recent.slice(0, half).map((s) => s.value));
+    const current = Math.max(...recent.slice(half).map((s) => s.value));
+    deltaPct = baseline > 0 ? ((current - baseline) / baseline) * 100 : null;
     if (deltaPct !== null && deltaPct >= IMPROVING_PCT) status = 'improving';
+    else if (deltaPct !== null && deltaPct <= -DECLINING_PCT) status = 'declining';
     else status = 'stalled';
   }
   if (status !== 'inactive' && lastDays >= STALLED_DAYS) status = 'stalled';
@@ -127,5 +133,6 @@ export const groupByMuscle = (analyzed, muscleOf) => {
 export const summarize = (analyzed) => ({
   improving: analyzed.filter((a) => a.status === 'improving').length,
   stalled: analyzed.filter((a) => a.status === 'stalled').length,
+  declining: analyzed.filter((a) => a.status === 'declining').length,
   prs: analyzed.filter((a) => a.recentPR),
 });
