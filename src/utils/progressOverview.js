@@ -12,13 +12,20 @@ export const DECLINING_PCT = 5;
 export const MAX_PR_CHIPS = 4;
 const DAY_MS = 86400000;
 
+export const STATUS = { IMPROVING: 'improving', STALLED: 'stalled', DECLINING: 'declining', NEW: 'new', INACTIVE: 'inactive' };
+
+// read.php restituisce "YYYY-MM-DD HH:MM:SS": Safari non lo legge senza la "T"
+const toTime = (date) => new Date(String(date).replace(' ', 'T')).getTime();
+
 export const daysSince = (date, now = Date.now()) =>
-  Math.max(0, Math.floor((now - new Date(date).getTime()) / DAY_MS));
+  Math.max(0, Math.floor((now - toTime(date)) / DAY_MS));
 
 /**
  * Da record di api/workout_history/read.php a mappa exercise_id -> serie.
  * Ogni sessione: { id, date, value, bestSet:{weight,reps}, volume, totalReps, isPR }.
  * Le sessioni sono in ordine cronologico crescente.
+ * La metrica (mode) è quella dell'ultima sessione: con peso -> 1RM stimato, a corpo libero -> ripetizioni.
+ * Le sessioni dell'altro tipo restano fuori dalla serie e sono contate in `skipped`.
  */
 export const buildExerciseSeries = (records) => {
   const raw = {};
@@ -54,18 +61,18 @@ export const buildExerciseSeries = (records) => {
 
   const series = {};
   Object.entries(raw).forEach(([id, { name, sessions }]) => {
-    const mode = sessions.some((s) => s.oneRM > 0) ? 'oneRM' : 'reps';
-    const sorted = sessions
+    const byDate = [...sessions].sort((a, b) => toTime(a.date) - toTime(b.date));
+    const mode = byDate[byDate.length - 1].oneRM > 0 ? 'oneRM' : 'reps';
+    const sorted = byDate
       .map((s) => ({ ...s, value: mode === 'oneRM' ? s.oneRM : s.reps }))
-      .filter((s) => s.value > 0)
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
+      .filter((s) => s.value > 0);
     if (sorted.length === 0) return;
     let max = 0;
     sorted.forEach((s, i) => {
       s.isPR = i > 0 && s.value > max;
       if (s.value > max) max = s.value;
     });
-    series[id] = { id, name, mode, sessions: sorted };
+    series[id] = { id, name, mode, sessions: sorted, skipped: byDate.length - sorted.length };
   });
   return series;
 };
@@ -95,19 +102,25 @@ export const analyzeExercise = (serie, now = Date.now()) => {
   }
 
   let status;
-  if (lastDays > RECENT_DAYS) status = 'inactive';
-  else if (recent.length < 2) status = 'new';
-  else if (deltaPct !== null && deltaPct >= IMPROVING_PCT) status = 'improving';
-  else if (deltaPct !== null && deltaPct <= -DECLINING_PCT) status = 'declining';
-  else status = 'stalled';
+  if (lastDays > RECENT_DAYS) status = STATUS.INACTIVE;
+  else if (recent.length < 2) status = STATUS.NEW;
+  else if (deltaPct !== null && deltaPct >= IMPROVING_PCT) status = STATUS.IMPROVING;
+  else if (deltaPct !== null && deltaPct <= -DECLINING_PCT) status = STATUS.DECLINING;
+  else status = STATUS.STALLED;
   return { ...serie, last, lastDays, deltaPct, status, best, recentPR: last.isPR && lastDays <= RECENT_DAYS };
 };
 
 /** Come leggere ogni stato: i client traducono il tono nei propri colori. */
-export const STATUS_TONE = { improving: 'positive', declining: 'negative', stalled: 'neutral', new: 'neutral', inactive: 'muted' };
+export const STATUS_TONE = {
+  [STATUS.IMPROVING]: 'positive',
+  [STATUS.DECLINING]: 'negative',
+  [STATUS.STALLED]: 'neutral',
+  [STATUS.NEW]: 'neutral',
+  [STATUS.INACTIVE]: 'muted',
+};
 
 /** La variazione (▲/▼ %) si mostra solo per gli stati che nascono da un confronto. */
-export const showsDelta = (a) => (a.status === 'improving' || a.status === 'declining') && a.deltaPct !== null;
+export const showsDelta = (a) => (a.status === STATUS.IMPROVING || a.status === STATUS.DECLINING) && a.deltaPct !== null;
 
 /** Nome e muscolo dal catalogo esercizi (catalog: id -> record di api/exercise/read_all.php). */
 export const withCatalog = (analyzed, catalog) =>
@@ -129,23 +142,23 @@ export const groupByMuscle = (analyzed) => {
   return Object.entries(groups)
     .map(([muscle, items]) => {
       const sorted = [...items].sort((a, b) => {
-        const ai = a.status === 'inactive' ? 1 : 0;
-        const bi = b.status === 'inactive' ? 1 : 0;
+        const ai = a.status === STATUS.INACTIVE ? 1 : 0;
+        const bi = b.status === STATUS.INACTIVE ? 1 : 0;
         return ai - bi || byRecency(a, b);
       });
       return {
         muscle,
         items: sorted,
         lastDays: Math.min(...items.map((i) => i.lastDays)),
-        improving: items.filter((i) => i.status === 'improving').length,
+        improving: items.filter((i) => i.status === STATUS.IMPROVING).length,
       };
     })
     .sort(byRecency);
 };
 
 export const summarize = (analyzed) => ({
-  improving: analyzed.filter((a) => a.status === 'improving').length,
-  stalled: analyzed.filter((a) => a.status === 'stalled').length,
-  declining: analyzed.filter((a) => a.status === 'declining').length,
+  improving: analyzed.filter((a) => a.status === STATUS.IMPROVING).length,
+  stalled: analyzed.filter((a) => a.status === STATUS.STALLED).length,
+  declining: analyzed.filter((a) => a.status === STATUS.DECLINING).length,
   prs: analyzed.filter((a) => a.recentPR),
 });

@@ -220,6 +220,8 @@
   "progress.detail.best": "Migliore",
   "progress.detail.sessions": "Sessioni",
   "progress.history_title": "Cronologia",
+  "progress.skipped_sessions_one": "{{count}} sessione di tipo diverso (con peso o a corpo libero) non è nel grafico e nella cronologia",
+  "progress.skipped_sessions_other": "{{count}} sessioni di tipo diverso (con peso o a corpo libero) non sono nel grafico e nella cronologia",
   "progress.col.date": "Data",
   "progress.col.best_set": "Miglior serie",
   "progress.col.volume": "Volume totale (kg)",

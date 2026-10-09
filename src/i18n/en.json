@@ -220,6 +220,8 @@
   "progress.detail.best": "Best",
   "progress.detail.sessions": "Sessions",
   "progress.history_title": "History",
+  "progress.skipped_sessions_one": "{{count}} session of a different type (weighted or bodyweight) is not in the chart and history",
+  "progress.skipped_sessions_other": "{{count}} sessions of a different type (weighted or bodyweight) are not in the chart and history",
   "progress.col.date": "Date",
   "progress.col.best_set": "Best set",
   "progress.col.volume": "Total volume (kg)",

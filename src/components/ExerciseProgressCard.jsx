@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../i18n/format';
 import { muscleLabel } from '../i18n/labels';
 import { buildPoints } from './ChartCard';
-import { STATUS_TONE, showsDelta } from '../utils/progressOverview';
+import { STATUS, STATUS_TONE, showsDelta } from '../utils/progressOverview';
 
 export const formatDaysAgo = (t, days) => {
   if (days === 0) return t('progress.today');
@@ -41,7 +41,7 @@ const TONE_COLOR = { positive: 'success.main', negative: 'error.main', neutral: 
 const ExerciseProgressCard = ({ item, showMuscle = false, favorite, onToggleFavorite, onOpen }) => {
   const { t } = useTranslation();
   const { name, muscle, status, deltaPct, last, mode, sessions, lastDays, recentPR } = item;
-  const inactive = status === 'inactive';
+  const inactive = status === STATUS.INACTIVE;
   const tone = STATUS_TONE[status];
 
   return (

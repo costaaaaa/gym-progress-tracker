@@ -157,9 +157,7 @@ const Progress = ({ isEmbedded = false }) => {
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <SummaryStat label={t('progress.summary.improving')} value={summary.improving} color="success.main" />
                 <SummaryStat label={t('progress.summary.stalled')} value={summary.stalled} />
-                {summary.declining > 0 && (
-                  <SummaryStat label={t('progress.summary.declining')} value={summary.declining} color="error.main" />
-                )}
+                <SummaryStat label={t('progress.summary.declining')} value={summary.declining} color={summary.declining ? 'error.main' : undefined} />
                 <SummaryStat label={t('progress.summary.prs')} value={summary.prs.length} color={summary.prs.length ? 'primary.main' : undefined} />
               </Box>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mt: 2 }}>
