@@ -26,11 +26,11 @@ import { formatValue } from './ExerciseProgressCard';
 const HEAD_SX = { fontSize: 11, textTransform: 'uppercase', color: 'text.secondary', fontWeight: 700, border: 0, px: { xs: 0.75, sm: 2 }, lineHeight: 1.2, verticalAlign: 'bottom' };
 const ROWS_COLLAPSED = 5;
 
-const PRDot = ({ cx, cy, payload }) => {
+const PRDot = ({ cx, cy, payload, color }) => {
   if (cx === undefined || cy === undefined) return null;
   return payload.isPR
-    ? <circle cx={cx} cy={cy} r={6} fill="#d50000" stroke="#fff" strokeWidth={2} />
-    : <circle cx={cx} cy={cy} r={3} fill="#d50000" />;
+    ? <circle cx={cx} cy={cy} r={6} fill={color} stroke="#fff" strokeWidth={2} />
+    : <circle cx={cx} cy={cy} r={3} fill={color} />;
 };
 
 const ChartTooltip = ({ active, payload, mode, t }) => {
@@ -54,7 +54,7 @@ const Stat = ({ label, value }) => (
   </Box>
 );
 
-const ExerciseDetailDialog = ({ item, name, muscle, onClose }) => {
+const ExerciseDetailDialog = ({ item, onClose }) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
@@ -71,8 +71,8 @@ const ExerciseDetailDialog = ({ item, name, muscle, onClose }) => {
       {item && (
         <>
           <DialogTitle sx={{ pr: 6 }}>
-            <Typography component="span" sx={{ display: 'block', fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 18 }}>{name}</Typography>
-            <Typography component="span" sx={{ display: 'block', fontSize: 13, color: 'text.secondary', fontWeight: 400 }}>{muscleLabel(muscle)}</Typography>
+            <Typography component="span" sx={{ display: 'block', fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 18 }}>{item.name}</Typography>
+            <Typography component="span" sx={{ display: 'block', fontSize: 13, color: 'text.secondary', fontWeight: 400 }}>{muscleLabel(item.muscle)}</Typography>
             <IconButton aria-label={t('progress.close')} onClick={onClose} sx={{ position: 'absolute', top: 12, right: 12 }}>
               <CloseIcon />
             </IconButton>
@@ -92,7 +92,7 @@ const ExerciseDetailDialog = ({ item, name, muscle, onClose }) => {
                   <XAxis dataKey="dateLabel" fontSize={11} stroke={theme.palette.text.secondary} tickLine={false} axisLine={false} minTickGap={24} />
                   <YAxis fontSize={11} stroke={theme.palette.text.secondary} tickLine={false} axisLine={false} tickCount={4} width={40} domain={[(min) => Math.floor(min - 2), (max) => Math.ceil(max + 2)]} allowDecimals={false} />
                   <Tooltip content={<ChartTooltip mode={item.mode} t={t} />} />
-                  <Line type="monotone" dataKey="value" stroke="#d50000" strokeWidth={2.5} dot={<PRDot />} activeDot={{ r: 5 }} isAnimationActive={false} />
+                  <Line type="monotone" dataKey="value" stroke={theme.palette.primary.main} strokeWidth={2.5} dot={<PRDot color={theme.palette.primary.main} />} activeDot={{ r: 5 }} isAnimationActive={false} />
                 </LineChart>
               </ResponsiveContainer>
             </Box>

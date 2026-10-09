@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useDeferredValue } from 'react';
 import {
   Container,
   Typography,
@@ -6,8 +6,6 @@ import {
   Box,
   Card,
   Chip,
-  Snackbar,
-  Alert,
   CircularProgress,
   TextField,
   InputAdornment,
@@ -19,16 +17,23 @@ import SearchIcon from '@mui/icons-material/Search';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { API_BASE_URL } from '../config';
 import { useTranslation } from 'react-i18next';
-import i18n from '../i18n';
 import { muscleLabel } from '../i18n/labels';
 import { exerciseMatches } from '../utils/exerciseCatalog';
-import { buildExerciseSeries, analyzeExercise, groupByMuscle, summarize } from '../utils/progressOverview';
+import {
+  buildExerciseSeries,
+  analyzeExercise,
+  withCatalog,
+  groupByMuscle,
+  summarize,
+  byRecency,
+  RECENT_DAYS,
+  MAX_PR_CHIPS,
+} from '../utils/progressOverview';
 import { useFavoriteExercises } from '../hooks/useFavoriteExercises';
 import ExerciseProgressCard, { formatDaysAgo } from '../components/ExerciseProgressCard';
 import ExerciseDetailDialog from '../components/ExerciseDetailDialog';
 
 const OPEN_SECTIONS_DEFAULT = 2;
-const MAX_PR_CHIPS = 4;
 
 const SummaryStat = ({ label, value, color }) => (
   <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -48,8 +53,6 @@ const Progress = ({ isEmbedded = false }) => {
   const [expanded, setExpanded] = useState({});
   const [selectedId, setSelectedId] = useState(null);
   const { favorites, toggleFavorite } = useFavoriteExercises();
-
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -77,7 +80,6 @@ const Progress = ({ isEmbedded = false }) => {
     } catch (error) {
       console.error('Errore nel caricamento dei progressi:', error);
       setHasLoadError(true);
-      setSnackbar({ open: true, message: i18n.t('progress.error.connection'), severity: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -87,41 +89,39 @@ const Progress = ({ isEmbedded = false }) => {
 
   const analyzed = useMemo(() => {
     const now = Date.now();
-    return Object.values(buildExerciseSeries(records)).map((serie) => analyzeExercise(serie, now));
-  }, [records]);
+    const items = Object.values(buildExerciseSeries(records)).map((serie) => analyzeExercise(serie, now));
+    return withCatalog(items, exerciseCatalog);
+  }, [records, exerciseCatalog]);
 
   const summary = useMemo(() => summarize(analyzed), [analyzed]);
 
-  const nameOf = useCallback((item) => exerciseCatalog[item.id]?.name || item.name, [exerciseCatalog]);
-  const muscleOf = useCallback((id) => exerciseCatalog[id]?.muscle_group?.toLowerCase() || null, [exerciseCatalog]);
-
+  const deferredQuery = useDeferredValue(query);
+  const searching = deferredQuery.trim().length > 0;
   const filtered = useMemo(() => {
-    if (!query.trim()) return analyzed;
-    return analyzed.filter((a) => exerciseMatches({ ...exerciseCatalog[a.id], name: nameOf(a) }, query));
-  }, [analyzed, exerciseCatalog, nameOf, query]);
+    if (!searching) return analyzed;
+    return analyzed.filter((a) => exerciseMatches({ ...exerciseCatalog[a.id], name: a.name }, deferredQuery));
+  }, [analyzed, exerciseCatalog, searching, deferredQuery]);
 
+  const favoriteSet = useMemo(() => new Set(favorites), [favorites]);
   const favoriteItems = useMemo(
-    () => filtered.filter((a) => favorites.includes(a.id)).sort((a, b) => a.lastDays - b.lastDays),
-    [filtered, favorites],
+    () => filtered.filter((a) => favoriteSet.has(a.id)).sort(byRecency),
+    [filtered, favoriteSet],
   );
   const sections = useMemo(
-    () => groupByMuscle(filtered.filter((a) => !favorites.includes(a.id)), muscleOf),
-    [filtered, favorites, muscleOf],
+    () => groupByMuscle(filtered.filter((a) => !favoriteSet.has(a.id))),
+    [filtered, favoriteSet],
   );
 
   const selectedItem = analyzed.find((a) => a.id === selectedId) || null;
-  const searching = query.trim().length > 0;
 
   const renderCard = (item, showMuscle) => (
     <Grid item xs={12} sm={6} md={4} key={item.id}>
       <ExerciseProgressCard
         item={item}
-        name={nameOf(item)}
-        muscle={muscleOf(item.id)}
         showMuscle={showMuscle}
-        favorite={favorites.includes(item.id)}
-        onToggleFavorite={() => toggleFavorite(item.id)}
-        onOpen={() => setSelectedId(item.id)}
+        favorite={favoriteSet.has(item.id)}
+        onToggleFavorite={toggleFavorite}
+        onOpen={setSelectedId}
       />
     </Grid>
   );
@@ -152,7 +152,7 @@ const Progress = ({ isEmbedded = false }) => {
           <Grid item xs={12}>
             <Card sx={{ p: '20px 22px' }}>
               <Typography sx={{ fontSize: 12, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700, mb: 1.5 }}>
-                {t('progress.summary.title')}
+                {t('progress.summary.title', { days: RECENT_DAYS })}
               </Typography>
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <SummaryStat label={t('progress.summary.improving')} value={summary.improving} color="success.main" />
@@ -168,7 +168,7 @@ const Progress = ({ isEmbedded = false }) => {
                 ) : (
                   <>
                     {summary.prs.slice(0, MAX_PR_CHIPS).map((a) => (
-                      <Chip key={a.id} size="small" color="primary" variant="outlined" label={`${t('progress.pr')} · ${nameOf(a)}`} onClick={() => setSelectedId(a.id)} />
+                      <Chip key={a.id} size="small" color="primary" variant="outlined" label={`${t('progress.pr')} · ${a.name}`} onClick={() => setSelectedId(a.id)} />
                     ))}
                     {summary.prs.length > MAX_PR_CHIPS && (
                       <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>+{summary.prs.length - MAX_PR_CHIPS}</Typography>
@@ -248,16 +248,8 @@ const Progress = ({ isEmbedded = false }) => {
 
       <ExerciseDetailDialog
         item={selectedItem}
-        name={selectedItem ? nameOf(selectedItem) : ''}
-        muscle={selectedItem ? muscleOf(selectedItem.id) : null}
         onClose={() => setSelectedId(null)}
       />
-
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
-        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </>
   );
 };

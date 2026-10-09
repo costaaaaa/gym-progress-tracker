@@ -10,6 +10,7 @@ export const RECENT_DAYS = 60;
 export const STALLED_DAYS = 28;
 export const IMPROVING_PCT = 2;
 export const DECLINING_PCT = 5;
+export const MAX_PR_CHIPS = 4;
 const DAY_MS = 86400000;
 
 export const daysSince = (date, now = Date.now()) =>
@@ -85,32 +86,46 @@ export const analyzeExercise = (serie, now = Date.now()) => {
   const lastDays = daysSince(last.date, now);
   const recent = sessions.filter((s) => daysSince(s.date, now) <= RECENT_DAYS);
   const best = Math.max(...sessions.map((s) => s.value));
-  const lastPR = last.isPR;
 
-  let status;
   let deltaPct = null;
-  if (lastDays > RECENT_DAYS) {
-    status = 'inactive';
-  } else if (recent.length < 2) {
-    status = 'new';
-  } else {
+  if (recent.length >= 2) {
     const half = Math.floor(recent.length / 2);
     const baseline = Math.max(...recent.slice(0, half).map((s) => s.value));
     const current = Math.max(...recent.slice(half).map((s) => s.value));
-    deltaPct = baseline > 0 ? ((current - baseline) / baseline) * 100 : null;
-    if (deltaPct !== null && deltaPct >= IMPROVING_PCT) status = 'improving';
-    else if (deltaPct !== null && deltaPct <= -DECLINING_PCT) status = 'declining';
-    else status = 'stalled';
+    if (baseline > 0) deltaPct = ((current - baseline) / baseline) * 100;
   }
-  if (status !== 'inactive' && lastDays >= STALLED_DAYS) status = 'stalled';
-  return { ...serie, last, lastDays, deltaPct, status, best, lastPR, recentPR: lastPR && lastDays <= STALLED_DAYS };
+
+  let status;
+  if (lastDays > RECENT_DAYS) status = 'inactive';
+  else if (lastDays >= STALLED_DAYS) status = 'stalled';
+  else if (recent.length < 2) status = 'new';
+  else if (deltaPct !== null && deltaPct >= IMPROVING_PCT) status = 'improving';
+  else if (deltaPct !== null && deltaPct <= -DECLINING_PCT) status = 'declining';
+  else status = 'stalled';
+  return { ...serie, last, lastDays, deltaPct, status, best, recentPR: last.isPR && lastDays <= STALLED_DAYS };
 };
 
+/** Come leggere ogni stato: i client traducono il tono nei propri colori. */
+export const STATUS_TONE = { improving: 'positive', declining: 'negative', stalled: 'neutral', new: 'neutral', inactive: 'muted' };
+
+/** La variazione (▲/▼ %) si mostra solo per gli stati che nascono da un confronto. */
+export const showsDelta = (a) => (a.status === 'improving' || a.status === 'declining') && a.deltaPct !== null;
+
+/** Nome e muscolo dal catalogo esercizi (catalog: id -> record di api/exercise/read_all.php). */
+export const withCatalog = (analyzed, catalog) =>
+  analyzed.map((a) => ({
+    ...a,
+    name: catalog[a.id]?.name || a.name,
+    muscle: catalog[a.id]?.muscle_group?.toLowerCase() || null,
+  }));
+
+export const byRecency = (a, b) => a.lastDays - b.lastDays;
+
 /** Raggruppa per muscolo; sezioni e card ordinate per attività più recente. */
-export const groupByMuscle = (analyzed, muscleOf) => {
+export const groupByMuscle = (analyzed) => {
   const groups = {};
   analyzed.forEach((a) => {
-    const muscle = muscleOf(a.id) || 'other';
+    const muscle = a.muscle || 'other';
     (groups[muscle] = groups[muscle] || []).push(a);
   });
   return Object.entries(groups)
@@ -118,7 +133,7 @@ export const groupByMuscle = (analyzed, muscleOf) => {
       const sorted = [...items].sort((a, b) => {
         const ai = a.status === 'inactive' ? 1 : 0;
         const bi = b.status === 'inactive' ? 1 : 0;
-        return ai - bi || a.lastDays - b.lastDays;
+        return ai - bi || byRecency(a, b);
       });
       return {
         muscle,
@@ -127,7 +142,7 @@ export const groupByMuscle = (analyzed, muscleOf) => {
         improving: items.filter((i) => i.status === 'improving').length,
       };
     })
-    .sort((a, b) => a.lastDays - b.lastDays);
+    .sort(byRecency);
 };
 
 export const summarize = (analyzed) => ({

@@ -1,9 +1,12 @@
+import { memo } from 'react';
 import { Box, Card, CardActionArea, Chip, IconButton, Typography } from '@mui/material';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../i18n/format';
 import { muscleLabel } from '../i18n/labels';
+import { buildPoints } from './ChartCard';
+import { STATUS_TONE, showsDelta } from '../utils/progressOverview';
 
 export const formatDaysAgo = (t, days) => {
   if (days === 0) return t('progress.today');
@@ -23,12 +26,7 @@ const SPARK_POINTS = 12;
 const Sparkline = ({ values, color }) => {
   const data = values.slice(-SPARK_POINTS);
   if (data.length < 2) return <Box sx={{ height: SPARK_H }} />;
-  const min = Math.min(...data);
-  const range = Math.max(...data) - min || 1;
-  const step = SPARK_W / (data.length - 1);
-  const points = data
-    .map((v, i) => `${(i * step).toFixed(1)},${(SPARK_H - 4 - ((v - min) / range) * (SPARK_H - 8)).toFixed(1)}`)
-    .join(' ');
+  const points = buildPoints(data, SPARK_W, SPARK_H, 4);
   return (
     <Box sx={{ height: SPARK_H, color }}>
       <svg viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} width="100%" height="100%" preserveAspectRatio="none" aria-hidden="true">
@@ -38,16 +36,17 @@ const Sparkline = ({ values, color }) => {
   );
 };
 
-const STATUS_COLOR = { improving: 'success.main', declining: 'error.main', stalled: 'text.secondary', new: 'text.secondary', inactive: 'text.disabled' };
+const TONE_COLOR = { positive: 'success.main', negative: 'error.main', neutral: 'text.secondary', muted: 'text.disabled' };
 
-const ExerciseProgressCard = ({ item, name, muscle, showMuscle = false, favorite, onToggleFavorite, onOpen }) => {
+const ExerciseProgressCard = ({ item, showMuscle = false, favorite, onToggleFavorite, onOpen }) => {
   const { t } = useTranslation();
-  const { status, deltaPct, last, mode, sessions, lastDays, recentPR } = item;
+  const { name, muscle, status, deltaPct, last, mode, sessions, lastDays, recentPR } = item;
   const inactive = status === 'inactive';
+  const tone = STATUS_TONE[status];
 
   return (
     <Card sx={{ height: '100%', opacity: inactive ? 0.6 : 1, position: 'relative' }}>
-      <CardActionArea onClick={onOpen} sx={{ p: '16px 16px 14px', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'flex-start' }}>
+      <CardActionArea onClick={() => onOpen(item.id)} sx={{ p: '16px 16px 14px', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'flex-start' }}>
         <Box sx={{ pr: 5, minHeight: showMuscle ? 44 : 24 }}>
           <Typography sx={{ fontWeight: 700, fontSize: 14, lineHeight: 1.3 }} noWrap title={name}>{name}</Typography>
           {showMuscle && (
@@ -66,12 +65,12 @@ const ExerciseProgressCard = ({ item, name, muscle, showMuscle = false, favorite
         </Typography>
 
         <Box sx={{ mt: 1.5 }}>
-          <Sparkline values={sessions.map((s) => s.value)} color={status === 'improving' ? 'success.main' : 'text.secondary'} />
+          <Sparkline values={sessions.map((s) => s.value)} color={tone === 'positive' ? TONE_COLOR.positive : TONE_COLOR.neutral} />
         </Box>
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mt: 1, gap: 1 }}>
-          <Typography sx={{ fontSize: 12, fontWeight: 600, color: STATUS_COLOR[status] }}>
-            {(status === 'improving' || status === 'declining') && deltaPct !== null
+          <Typography sx={{ fontSize: 12, fontWeight: 600, color: TONE_COLOR[tone] }}>
+            {showsDelta(item)
               ? `${deltaPct >= 0 ? '▲' : '▼'} ${formatNumber(Math.abs(deltaPct), { maximumFractionDigits: 1 })}%`
               : t(`progress.status.${status}`)}
           </Typography>
@@ -83,7 +82,7 @@ const ExerciseProgressCard = ({ item, name, muscle, showMuscle = false, favorite
 
       <IconButton
         size="small"
-        onClick={onToggleFavorite}
+        onClick={() => onToggleFavorite(item.id)}
         aria-label={favorite ? t('progress.favorite_remove') : t('progress.favorite_add')}
         aria-pressed={favorite}
         sx={{ position: 'absolute', top: 4, right: 4, width: 44, height: 44, color: favorite ? 'warning.main' : 'text.disabled' }}
@@ -94,4 +93,4 @@ const ExerciseProgressCard = ({ item, name, muscle, showMuscle = false, favorite
   );
 };
 
-export default ExerciseProgressCard;
+export default memo(ExerciseProgressCard);
