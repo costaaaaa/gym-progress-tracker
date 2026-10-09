@@ -184,3 +184,8 @@ blog/content/*
 build/
 backend/api/user_stats/sync_apple_health.php
 dati.sql
+
+# Documenti di dominio e config skill: solo locali, non pubblici
+GLOSSARY.md
+docs/adr/
+docs/agents/
