@@ -4,20 +4,20 @@ const VIEWBOX_WIDTH = 220;
 const VIEWBOX_HEIGHT = 72;
 const PADDING_Y = 6;
 
-function buildPoints(data) {
+export function buildPoints(data, width = VIEWBOX_WIDTH, height = VIEWBOX_HEIGHT, paddingY = PADDING_Y) {
   if (!Array.isArray(data) || data.length === 0) return '';
   if (data.length === 1) {
-    const y = VIEWBOX_HEIGHT / 2;
-    return `0,${y} ${VIEWBOX_WIDTH},${y}`;
+    const y = height / 2;
+    return `0,${y} ${width},${y}`;
   }
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
-  const stepX = VIEWBOX_WIDTH / (data.length - 1);
+  const stepX = width / (data.length - 1);
   return data
     .map((v, i) => {
       const x = i * stepX;
-      const y = VIEWBOX_HEIGHT - PADDING_Y - ((v - min) / range) * (VIEWBOX_HEIGHT - PADDING_Y * 2);
+      const y = height - paddingY - ((v - min) / range) * (height - paddingY * 2);
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(' ');
@@ -25,7 +25,7 @@ function buildPoints(data) {
 
 /**
  * Card piatta con sparkline, mirror di ChartCard.dc.html (progetto Claude Design).
- * Riusata da Progress e BodyStats.
+ * Usata da BodyStats; buildPoints serve anche le sparkline di Progressi.
  *
  * Props:
  * - title: etichetta uppercase in alto

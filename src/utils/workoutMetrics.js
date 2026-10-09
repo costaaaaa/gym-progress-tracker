@@ -50,17 +50,6 @@ export const estimateOneRepMax = (weight, reps) => {
 };
 
 /**
- * Dato un array di set ({ weight, reps }), ritorna il 1RM stimato più alto.
- */
-export const getBestSetOneRM = (sets) => {
-  if (!Array.isArray(sets) || sets.length === 0) return 0;
-  return sets.reduce((best, set) => {
-    const oneRM = estimateOneRepMax(set.weight, set.reps);
-    return oneRM > best ? oneRM : best;
-  }, 0);
-};
-
-/**
  * Calcola le statistiche aggregate di un gruppo di set svolti in una sessione.
  * Ritorna { bestWeight, bestOneRM, sessionVolume, bestBodyweightReps }.
  * Il peso può essere 0 (corpo libero, macchinari senza carico): la serie conta se ha

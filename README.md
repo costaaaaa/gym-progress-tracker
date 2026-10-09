@@ -20,7 +20,7 @@ With it you can:
   * Total repetitions
   * Volume per set
   * Volume per repetition
-  * A **progress index** based on multiple parameters;
+  * **Estimated 1RM** and personal records (PR) for each exercise;
 * Explore your data through **interactive and clear charts**;
 * Train together with friends in **groups** and share your workout as an image.
 
@@ -43,7 +43,7 @@ With it you can:
 * 🩺 **Muscle Recovery Visualizer**: anatomical map displaying muscle fatigue and recovery state
 * 🍎 **Apple Health & Health Connect** *(mobile app)*: two-way sync of weight, body fat and waist; Focus Mode workouts are saved to Health. On the web, Body Stats links to the app
 * 🏋️ Add and edit exercises with intensity techniques (Drop sets, Rest-pause, Super sets)
-* 🎯 **Smart Progress**: detailed metrics (Volume, Avg Weight, Estimated 1RM, Progress Index) for each exercise
+* 🎯 **Smart Progress**: overview of all your exercises grouped by muscle, with estimated 1RM, trend, personal records and favorites; tap an exercise for its detailed chart and history
 * 📌 Ability to select an active workout plan
 * 🔒 **Secure Authentication**: session-based login (30 days) with server-side **bcrypt** password hashing, a single password policy, rate limiting and **password recovery by email**
 * 🛡️ **Privacy by design**: informed consents (terms, health data), privacy policy and terms pages, full **data export**, **account deletion**, periodic purge of data that is no longer needed
@@ -173,7 +173,7 @@ Con questo strumento è possibile:
   * Ripetizioni totali
   * Volume per serie
   * Volume per ripetizione
-  * Un **indice di avanzamento** complessivo basato su più parametri;
+  * **1RM stimato** e record personali (PR) per ogni esercizio;
 * Esplorare i dati tramite **grafici interattivi** e chiari;
 * Allenarsi insieme agli amici nei **gruppi** e condividere l'allenamento come immagine.
 
@@ -196,7 +196,7 @@ Con questo strumento è possibile:
 * 🩺 **Visualizzatore Recupero Muscolare**: mappa anatomica per monitorare l'affaticamento e il recupero dei gruppi muscolari
 * 🍎 **Apple Salute e Health Connect** *(app mobile)*: peso, % grasso e girovita sincronizzati nei due sensi; gli allenamenti in Focus finiscono in Salute. Sul web, Misure Corporee rimanda all'app
 * 🏋️ Aggiunta e modifica di esercizi con supporto a tecniche di intensità (Drop set, Rest-pause, Super set)
-* 🎯 **Progressi Mirati**: metriche di dettaglio (Volume, Peso Medio, 1RM Stimato, Indice Progresso) per ogni singolo esercizio
+* 🎯 **Progressi Mirati**: panoramica di tutti gli esercizi divisi per muscolo, con 1RM stimato, andamento, record personali e preferiti; tocca un esercizio per grafico e cronologia di dettaglio
 * 📌 Possibilità di selezionare una scheda attiva
 * 🔒 **Autenticazione sicura**: login basato su sessione (30 giorni) con hashing **bcrypt** lato server, un'unica regola per le password, rate limiting e **recupero password via email**
 * 🛡️ **Privacy fin dal progetto**: consensi informati (termini, dati sulla salute), pagine di privacy policy e termini, **export completo dei dati**, **eliminazione dell'account**, pulizia periodica dei dati non più necessari
