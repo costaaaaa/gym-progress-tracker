@@ -224,7 +224,7 @@
   "progress.history_title": "History",
   "progress.col.date": "Date",
   "progress.col.best_set": "Best set",
-  "progress.col.volume": "Volume (kg)",
+  "progress.col.volume": "Total volume (kg)",
   "progress.close": "Close",
   "progress.show_less": "Show less",
   "progress.show_all": "Show all ({{count}})",
