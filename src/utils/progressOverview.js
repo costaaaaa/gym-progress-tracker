@@ -7,7 +7,6 @@
 import { extractReps, estimateOneRepMax } from './workoutMetrics';
 
 export const RECENT_DAYS = 60;
-export const STALLED_DAYS = 28;
 export const IMPROVING_PCT = 2;
 export const DECLINING_PCT = 5;
 export const MAX_PR_CHIPS = 4;
@@ -78,7 +77,7 @@ export const buildExerciseSeries = (records) => {
  * - improving / declining: il meglio della seconda metà delle sessioni recenti è salito di almeno
  *   IMPROVING_PCT% o sceso di almeno DECLINING_PCT% rispetto al meglio della prima metà
  *   (si confrontano i migliori, non la prima e l'ultima sessione, per non dipendere da una giornata storta)
- * - stalled: tutto il resto (nessun progresso, o fermo da STALLED_DAYS)
+ * - stalled: tutto il resto (nessun progresso: un breve stallo non cambia lo stato)
  */
 export const analyzeExercise = (serie, now = Date.now()) => {
   const { sessions } = serie;
@@ -97,12 +96,11 @@ export const analyzeExercise = (serie, now = Date.now()) => {
 
   let status;
   if (lastDays > RECENT_DAYS) status = 'inactive';
-  else if (lastDays >= STALLED_DAYS) status = 'stalled';
   else if (recent.length < 2) status = 'new';
   else if (deltaPct !== null && deltaPct >= IMPROVING_PCT) status = 'improving';
   else if (deltaPct !== null && deltaPct <= -DECLINING_PCT) status = 'declining';
   else status = 'stalled';
-  return { ...serie, last, lastDays, deltaPct, status, best, recentPR: last.isPR && lastDays <= STALLED_DAYS };
+  return { ...serie, last, lastDays, deltaPct, status, best, recentPR: last.isPR && lastDays <= RECENT_DAYS };
 };
 
 /** Come leggere ogni stato: i client traducono il tono nei propri colori. */
