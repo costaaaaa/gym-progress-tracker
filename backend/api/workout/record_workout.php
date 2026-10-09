@@ -95,10 +95,13 @@ try {
         }
     }
 
-    // Determine workout date: use start_time if gap <= 4h, else now
+    // Data dell'allenamento: start_time se l'inizio è entro 4 ore, altrimenti adesso.
+    // Bozza ripresa in ritardo: il client manda backdated=true, start_time sul giorno scelto e
+    // ended_at (ultimo set registrato) spostato dello stesso scarto.
     $now = new DateTime();
     $data_workout = $now->format('Y-m-d H:i:s');
     $start_gap = null;
+    $start = null;
 
     if (!empty($data->start_time)) {
         try {
@@ -109,15 +112,15 @@ try {
                 $start_gap = $gap_seconds;
             }
         } catch (Exception $e) {
-            // invalid start_time — fall back to now
+            $start = null;
         }
     }
 
-    // Durata: quella del client (fermata a fine allenamento, prima di note e salvataggio) se
-    // plausibile, altrimenti il tempo dall'inizio. Le app che non mandano duration_seconds
-    // ottengono così una durata comunque; senza start_time valido resta NULL.
     $duration_seconds = null;
     if ($start_gap !== null) {
+        // Durata: quella del client (fermata a fine allenamento, prima di note e salvataggio) se
+        // plausibile, altrimenti il tempo dall'inizio. Le app che non mandano duration_seconds
+        // ottengono così una durata comunque; senza start_time valido resta NULL.
         $duration_seconds = $start_gap;
         if (isset($data->duration_seconds) && is_numeric($data->duration_seconds)) {
             $client_duration = (int) $data->duration_seconds;
@@ -125,8 +128,24 @@ try {
                 $duration_seconds = $client_duration;
             }
         }
-        if ($duration_seconds < 60) $duration_seconds = null;
+    } elseif (!empty($data->backdated) && $start) {
+        // Sessione ripresa in ritardo: start_time è già sul giorno scelto dall'utente. Il client
+        // limita la scelta a 7 giorni fa; qui 8 per assorbire i fusi orari.
+        if ($start < (new DateTime('today'))->modify('-8 days')) {
+            api_json_response(['success' => false, 'message' => 'Data allenamento non valida: puoi scegliere fino a 7 giorni fa.'], 400);
+        }
+        $data_workout = ($start > $now ? $now : $start)->format('Y-m-d H:i:s');
+
+        if (!empty($data->ended_at)) {
+            try {
+                $ended_gap = (new DateTime($data->ended_at))->getTimestamp() - $start->getTimestamp();
+                if ($ended_gap > 0 && $ended_gap <= 12 * 3600) $duration_seconds = $ended_gap;
+            } catch (Exception $e) {
+                // ended_at non valido: durata NULL
+            }
+        }
     }
+    if ($duration_seconds !== null && $duration_seconds < 60) $duration_seconds = null;
 
     $db->beginTransaction();
 
@@ -191,8 +210,9 @@ try {
         if ($weekly_count >= $goal) {
             $last_cw = $gam_row['last_completed_week'];
 
-            if ($last_cw !== null && intval($last_cw) === $current_week) {
-                // Same week already counted — no change
+            if ($last_cw !== null && intval($last_cw) >= $current_week) {
+                // Settimana già contata, o sessione recuperata di una settimana precedente:
+                // lo streak non arretra mai
             } else {
                 $week_completed_now = true;
                 $is_consecutive = ($last_cw !== null) &&
@@ -239,9 +259,10 @@ try {
                  JOIN gym_workout_history wh ON ws.workout_history_id = wh.id
                  WHERE wh.user_id = ?
                    AND ws.exercise_id IN ($placeholders)
-                   AND ws.workout_history_id != ?"
+                   AND ws.workout_history_id != ?
+                   AND wh.date < ?"
             );
-            $stmt_prev->execute(array_merge([$user_id], $eids_list, [$workout_id]));
+            $stmt_prev->execute(array_merge([$user_id], $eids_list, [$workout_id, $data_workout]));
             while ($prow = $stmt_prev->fetch(PDO::FETCH_ASSOC)) {
                 $eid  = (int)   $prow['exercise_id'];
                 $pw   = (float) $prow['weight'];
@@ -277,7 +298,7 @@ try {
         }
         $seconds_since_last_xp = null;
         if (!empty($gam_row['last_xp_session_at'])) {
-            $seconds_since_last_xp = $now->getTimestamp() - (new DateTime($gam_row['last_xp_session_at']))->getTimestamp();
+            $seconds_since_last_xp = abs((new DateTime($data_workout))->getTimestamp() - (new DateTime($gam_row['last_xp_session_at']))->getTimestamp());
         }
         $xp_status  = sessionXpStatus($planned_sets, $done_sets, $duration_seconds, $seconds_since_last_xp);
         $xp_session = $xp_status === 'ok';
@@ -335,7 +356,7 @@ try {
              WHERE user_id = ?"
         )->execute([
             $new_total_xp, $new_level_gam, $new_lifetime_vol,
-            $xp_session ? $now->format('Y-m-d H:i:s') : null, $user_id,
+            $xp_session ? max($data_workout, (string) ($gam_row['last_xp_session_at'] ?? '')) : null, $user_id,
         ]);
 
         // Upsert per-esercizio e rileva level-up

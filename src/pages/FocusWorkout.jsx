@@ -67,6 +67,12 @@ import { xpWithheldMessage } from '../utils/gamificationLevels';
 import { intlLocale } from '../i18n/format';
 
 const DRAFT_STORAGE_KEY = 'gym_focus_workout_draft';
+// Oltre questa età la bozza è una sessione dimenticata: il backend non usa più start_time da solo
+const DRAFT_STALE_MS = 4 * 60 * 60 * 1000;
+const RETRO_MAX_DAYS = 7;
+
+const toDateInputValue = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 const FocusWorkout = () => {
   usePageMeta(
@@ -145,6 +151,11 @@ const FocusWorkout = () => {
   const [confirmQuitDialog, setConfirmQuitDialog] = useState(false);
   const [exerciseTransition, setExerciseTransition] = useState(true);
   const [draftToResume, setDraftToResume] = useState(null);
+  // Orario dell'ultima serie registrata: fine reale di una sessione salvata in ritardo
+  const [lastActivityAt, setLastActivityAt] = useState(null);
+  // Giorno scelto (YYYY-MM-DD) per una bozza vecchia; null = salvataggio normale
+  const [retroDate, setRetroDate] = useState(null);
+  const [retroDateInput, setRetroDateInput] = useState('');
 
   useEffect(() => {
     if (phase === 'summary') setEndTime((prev) => prev || new Date());
@@ -167,12 +178,13 @@ const FocusWorkout = () => {
         currentSetIndex,
         workoutNotes,
         startTime,
+        lastActivityAt,
         phase: phase === 'rest_timer' ? 'workout' : phase, // Se crasha durante il timer, riprendi dall'esercizio
         timestamp: new Date().getTime()
       };
       localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
     }
-  }, [phase, activePlan, selectedDay, selectedDayId, completedSets, skippedExercises, skippedSets, currentExerciseIndex, currentSetIndex, workoutNotes, startTime]);
+  }, [phase, activePlan, selectedDay, selectedDayId, completedSets, skippedExercises, skippedSets, currentExerciseIndex, currentSetIndex, workoutNotes, startTime, lastActivityAt]);
 
   const clearDraft = useCallback(() => {
     localStorage.removeItem(DRAFT_STORAGE_KEY);
@@ -310,7 +322,10 @@ const FocusWorkout = () => {
   // ================================================
   // GESTIONE BOZZA
   // ================================================
-  const handleResumeDraft = () => {
+  const draftIsStale = (draft) => Date.now() - new Date(draft.startTime).getTime() > DRAFT_STALE_MS;
+
+  // Chiude la bozza vecchia come già finita: vai al riepilogo con il giorno scelto
+  const handleResumeDraft = (finishedOn = null) => {
     if (!draftToResume) return;
 
     setActivePlan(draftToResume.activePlan);
@@ -323,13 +338,19 @@ const FocusWorkout = () => {
     setCurrentSetIndex(draftToResume.currentSetIndex);
     setWorkoutNotes(draftToResume.workoutNotes);
     setStartTime(new Date(draftToResume.startTime));
-    
+    const lastActivity = draftToResume.lastActivityAt ? new Date(draftToResume.lastActivityAt) : null;
+    setLastActivityAt(lastActivity);
+    if (finishedOn) {
+      setRetroDate(finishedOn);
+      setEndTime(lastActivity || new Date(draftToResume.startTime));
+    }
+
     // Ripristina input correnti
     const currentEx = draftToResume.selectedDay.exercises[draftToResume.currentExerciseIndex];
     setRepsInput(currentEx?.reps || '');
     setIntensityTechniqueInput(currentEx?.intensity_technique || '');
 
-    setPhase(draftToResume.phase || 'workout');
+    setPhase(finishedOn ? 'summary' : (draftToResume.phase || 'workout'));
     setDraftToResume(null);
   };
 
@@ -383,6 +404,8 @@ const FocusWorkout = () => {
     setWorkoutNotes('');
     setStartTime(new Date());
     setEndTime(null);
+    setLastActivityAt(null);
+    setRetroDate(null);
 
     // Pre-compila reps dal piano e peso dall'ultima sessione (sovraccarico progressivo)
     const firstExercise = selectedDay.exercises[0];
@@ -433,6 +456,7 @@ const FocusWorkout = () => {
       ...prev,
       [exerciseId]: [...(prev[exerciseId] || []), newSet]
     }));
+    setLastActivityAt(new Date());
 
     const nextSetIndex = currentSetIndex + 1;
 
@@ -621,6 +645,20 @@ const FocusWorkout = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Sessione salvata in ritardo: inizio e fine spostati sul giorno scelto, stesso orario e stessa durata
+  const retroPayload = () => {
+    const [y, m, d] = retroDate.split('-').map(Number);
+    const start = new Date(startTime);
+    const moved = new Date(start);
+    moved.setFullYear(y, m - 1, d);
+    const shift = moved.getTime() - start.getTime();
+    return {
+      backdated: true,
+      start_time: moved.toISOString(),
+      ended_at: lastActivityAt ? new Date(lastActivityAt.getTime() + shift).toISOString() : null,
+    };
+  };
+
   // ================================================
   // SALVATAGGIO ALLENAMENTO
   // ================================================
@@ -663,8 +701,10 @@ const FocusWorkout = () => {
         body: JSON.stringify({
           workout_records: workoutRecords,
           notes: workoutNotes || '',
-          start_time: startTime ? startTime.toISOString() : null,
-          duration_seconds: startTime ? getElapsedSeconds() : null
+          ...(retroDate ? retroPayload() : {
+            start_time: startTime ? startTime.toISOString() : null,
+            duration_seconds: startTime ? getElapsedSeconds() : null
+          })
         })
       });
 
@@ -753,6 +793,15 @@ const FocusWorkout = () => {
     }
 
     if (phase === 'resume_prompt' && draftToResume) {
+      const stale = draftIsStale(draftToResume);
+      const today = new Date();
+      const minDay = new Date(today);
+      minDay.setDate(minDay.getDate() - RETRO_MAX_DAYS);
+      const retroDateBounds = { min: toDateInputValue(minDay), max: toDateInputValue(today) };
+      const startDay = toDateInputValue(new Date(draftToResume.startTime));
+      retroDateBounds.initial = startDay < retroDateBounds.min ? retroDateBounds.min : startDay;
+      const chosenRetro = retroDateInput || retroDateBounds.initial;
+      const retroDateValid = chosenRetro >= retroDateBounds.min && chosenRetro <= retroDateBounds.max;
       return (
         <Box sx={{ 
           minHeight: '100vh', bgcolor: colors.bg, color: colors.text,
@@ -773,22 +822,49 @@ const FocusWorkout = () => {
             <Typography variant="h6" sx={{ color: colors.primaryLight, fontWeight: 600, mb: 1 }}>
               {draftToResume.selectedDay?.name}
             </Typography>
-            <Typography variant="body2" sx={{ color: colors.textMuted, mb: 4 }}>
+            <Typography variant="body2" sx={{ color: colors.textMuted, mb: 3 }}>
               Iniziato il {new Date(draftToResume.startTime).toLocaleString(intlLocale())}
             </Typography>
+
+            {stale && (
+              <Box sx={{ mb: 3, textAlign: 'left' }}>
+                <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 1.5 }}>
+                  L'hai già finito? Scegli il giorno in cui ti sei allenato e salvalo con quella data.
+                </Typography>
+                <TextField
+                  type="date"
+                  label="Giorno dell'allenamento"
+                  value={chosenRetro}
+                  onChange={(e) => setRetroDateInput(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  inputProps={{ min: retroDateBounds.min, max: retroDateBounds.max }}
+                  fullWidth
+                  sx={{ mb: 1.5 }}
+                />
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  disabled={!retroDateValid}
+                  onClick={() => handleResumeDraft(chosenRetro)}
+                  sx={{ color: colors.primaryLight, borderColor: colors.primary, py: 1.25, fontWeight: 700 }}
+                >
+                  L'avevo già finito
+                </Button>
+              </Box>
+            )}
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Button
                 variant="contained"
                 size="large"
                 fullWidth
-                onClick={handleResumeDraft}
+                onClick={() => handleResumeDraft()}
                 sx={{
                   bgcolor: colors.primary, py: 1.5, fontWeight: 700,
                   '&:hover': { bgcolor: colors.primaryDark }
                 }}
               >
-                Riprendi Allenamento
+                {stale ? 'Continuo ora' : 'Riprendi Allenamento'}
               </Button>
               <Button
                 variant="outlined"
