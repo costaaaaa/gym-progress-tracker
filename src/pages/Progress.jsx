@@ -1,559 +1,236 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Container,
   Typography,
   Grid,
-  FormControl,
-  Select,
-  MenuItem,
-  ToggleButtonGroup,
-  ToggleButton,
   Box,
   Card,
+  Chip,
   Snackbar,
   Alert,
   CircularProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Button,
-  useTheme,
+  TextField,
+  InputAdornment,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import SearchIcon from '@mui/icons-material/Search';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { API_BASE_URL } from '../config';
-import { extractReps, estimateOneRepMax } from '../utils/workoutMetrics';
-import ChartCard from '../components/ChartCard';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n';
-import { formatDate, formatNumber } from '../i18n/format';
 import { muscleLabel } from '../i18n/labels';
+import { exerciseMatches } from '../utils/exerciseCatalog';
+import { buildExerciseSeries, analyzeExercise, groupByMuscle, summarize } from '../utils/progressOverview';
+import { useFavoriteExercises } from '../hooks/useFavoriteExercises';
+import ExerciseProgressCard, { formatDaysAgo } from '../components/ExerciseProgressCard';
+import ExerciseDetailDialog from '../components/ExerciseDetailDialog';
 
-// Le tre metriche selezionabili tramite pill nella toolbar del grafico principale.
-// dataKey/secondaryKey sono già presenti in ogni punto di chartData (vedi calculateTrendLine).
-const METRIC_OPTIONS = [
-  {
-    key: 'avgWeight', label: 'progress.metric.avg_weight', unit: 'kg/rep', color: '#d50000',
-    secondaryKey: 'est1RM', secondaryLabel: 'progress.metric.est_1rm', secondaryColor: '#4f46e5',
-  },
-  {
-    key: 'volume', label: 'progress.metric.volume', unit: 'kg', color: '#d50000',
-    secondaryKey: 'volumePerSet', secondaryLabel: 'progress.metric.volume_per_set', secondaryColor: '#4f46e5',
-  },
-  {
-    key: 'compositeIndex', label: 'progress.metric.index', unit: '', color: '#7c3aed',
-    secondaryKey: 'trendComposite', secondaryLabel: 'progress.metric.trend', secondaryColor: '#7c3aed', secondaryOpacity: 0.4,
-  },
-];
+const OPEN_SECTIONS_DEFAULT = 2;
+const MAX_PR_CHIPS = 4;
 
-const renderChartTooltip = ({ active, payload, label }) => {
-  if (!active || !payload || !payload.length) return null;
-  return (
-    <Box sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: '10px', p: 1.5, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}>
-      <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 0.5 }}>{label}</Typography>
-      {payload.map((entry, i) => (
-        <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <Box sx={{ width: 8, height: 8, borderRadius: '2px', bgcolor: entry.color }} />
-          <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
-            {entry.name}: <strong>{entry.value}</strong>
-          </Typography>
-        </Box>
-      ))}
-    </Box>
-  );
-};
-
-// Pastiglia 16×3 arrotondata + etichetta, sostituisce il <Legend> di default di recharts.
-const LegendSwatch = ({ color, label }) => (
-  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-    <Box sx={{ width: 16, height: 3, borderRadius: '2px', bgcolor: color }} />
-    <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{label}</Typography>
+const SummaryStat = ({ label, value, color }) => (
+  <Box sx={{ flex: 1, minWidth: 0 }}>
+    <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 28, lineHeight: 1, color }}>{value}</Typography>
+    <Typography sx={{ fontSize: 12, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700, mt: 0.5 }}>{label}</Typography>
   </Box>
 );
 
-const formatDelta = (first, last) => {
-  if (first === undefined || last === undefined || first === 0) return null;
-  const pct = ((last - first) / first) * 100;
-  return { pct, up: pct >= 0 };
-};
-
-// Helper puri (solo parametri, nessuno stato): a livello di modulo cosi'
-// calculateExerciseStats/fetchWorkoutHistory possono essere stabilizzate con useCallback.
-
-// Trova l'esercizio selezionato in un allenamento: prima per ID, poi per nome esatto come fallback.
-const findExerciseInWorkout = (workout, exerciseId, exerciseName) => {
-  if (!workout?.exercises || !Array.isArray(workout.exercises)) return null;
-
-  if (exerciseId) {
-    const byId = workout.exercises.find(ex => ex.exercise_id && String(ex.exercise_id).trim() === String(exerciseId).trim());
-    if (byId) return byId;
-  }
-  if (exerciseName) {
-    const normalized = exerciseName.trim().toLowerCase();
-    const byName = workout.exercises.find(ex => ex.name && ex.name.trim().toLowerCase() === normalized);
-    if (byName) return byName;
-  }
-  return null;
-};
-
-// Regressione lineare (per la linea di tendenza dell'Indice di Progresso).
-const calculateRegression = (data, valueKey) => {
-  const n = data.length;
-  let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
-  data.forEach((point, index) => {
-    sumX += index;
-    sumY += point[valueKey];
-    sumXY += index * point[valueKey];
-    sumXX += index * index;
-  });
-  const m = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-  const b = (sumY - m * sumX) / n;
-  return { m, b };
-};
-
-const calculateTrendLine = (data) => {
-  if (data.length < 2) {
-    return data.map(point => ({ ...point, compositeIndex: 100, trendComposite: 100 }));
-  }
-
-  const initialVolume = data[0].volume;
-  const initialAvgWeight = data[0].avgWeight;
-  const initialVolumePerSet = data[0].volumePerSet;
-
-  // Indice di Progresso: media ponderata di peso medio (50%), volume (25%), volume/serie (25%),
-  // ciascuno normalizzato al 100% del primo punto della serie.
-  const withComposite = data.map(point => {
-    const volumeNorm = (point.volume / initialVolume) * 100;
-    const avgWeightNorm = (point.avgWeight / initialAvgWeight) * 100;
-    const volumePerSetNorm = (point.volumePerSet / initialVolumePerSet) * 100;
-    const compositeIndex = avgWeightNorm * 0.5 + volumeNorm * 0.25 + volumePerSetNorm * 0.25;
-    return { ...point, compositeIndex: parseFloat(compositeIndex.toFixed(1)) };
-  });
-
-  const compositeRegression = calculateRegression(withComposite, 'compositeIndex');
-
-  return withComposite.map((point, index) => ({
-    ...point,
-    trendComposite: parseFloat((compositeRegression.m * index + compositeRegression.b).toFixed(1)),
-  }));
-};
-
 const Progress = ({ isEmbedded = false }) => {
-  const theme = useTheme();
   const { t } = useTranslation();
-  const [muscleGroups, setMuscleGroups] = useState([]);
-  const [exercisesByMuscleGroup, setExercisesByMuscleGroup] = useState({});
-  const [loadingExercises, setLoadingExercises] = useState(true);
+  const [exerciseCatalog, setExerciseCatalog] = useState({});
+  const [records, setRecords] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasLoadError, setHasLoadError] = useState(false);
 
-  const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('');
-  const [selectedExercise, setSelectedExercise] = useState({ id: '', name: '' });
-  const [selectedMetric, setSelectedMetric] = useState('avgWeight');
-
-  const [chartData, setChartData] = useState([]);
-  const [exerciseStats, setExerciseStats] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [emptyMessage, setEmptyMessage] = useState('');
-  const [showAllRows, setShowAllRows] = useState(false);
-
-  const [frequencyData, setFrequencyData] = useState([]);
-  const [totalVolumeData, setTotalVolumeData] = useState([]);
+  const [query, setQuery] = useState('');
+  const [expanded, setExpanded] = useState({});
+  const [selectedId, setSelectedId] = useState(null);
+  const { favorites, toggleFavorite } = useFavoriteExercises();
 
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
 
-  // useCallback([]): legge solo setter e API_BASE_URL.
-  const fetchGlobalStats = useCallback(async () => {
-    try {
-      const [freqRes, volRes] = await Promise.all([
-        fetch(`${API_BASE_URL}api/workout_stats/frequency.php`, { credentials: 'include' }),
-        fetch(`${API_BASE_URL}api/workout_stats/volume.php`, { credentials: 'include' }),
-      ]);
-      const freqData = await freqRes.json();
-      const volData = await volRes.json();
-
-      if (freqData.records) {
-        setFrequencyData(freqData.records.map(r => ({
-          ...r,
-          label: i18n.t('progress.week_short', { week: r.year_week.toString().slice(-2) }),
-        })));
-      }
-      if (volData.records) {
-        setTotalVolumeData(volData.records.map(r => ({
-          ...r,
-          dateFormatted: formatDate(r.workout_date, { day: '2-digit', month: '2-digit' }),
-        })));
-      }
-    } catch (error) {
-      console.error('Errore nel caricamento delle statistiche globali:', error);
-    }
-  }, []);
-
-  // useCallback([]): non legge mai stato reattivo (solo setter, stabili per
-  // garanzia di React, e helper di modulo) — riferimento
-  // stabile per tutta la vita del componente, sicuro da usare come dipendenza
-  // dell'effetto di mount sotto.
-  const fetchExercises = useCallback(async () => {
-    setLoadingExercises(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}api/exercise/read_all.php`, {
-        method: 'GET',
-        credentials: 'include',
-      });
-      const data = await response.json();
-
-      if (data.records && Array.isArray(data.records)) {
-        const uniqueGroups = [...new Set(data.records.map(ex => ex.muscle_group?.toLowerCase()))]
-          .filter(Boolean)
-          .sort((a, b) => muscleLabel(a).localeCompare(muscleLabel(b)));
-        setMuscleGroups(uniqueGroups);
-
-        const exercisesByGroup = {};
-        uniqueGroups.forEach(group => { exercisesByGroup[group] = []; });
-        data.records.forEach(exercise => {
-          const group = exercise.muscle_group?.toLowerCase();
-          if (group && uniqueGroups.includes(group)) {
-            exercisesByGroup[group].push({ id: exercise.id, name: exercise.name });
-          }
-        });
-        setExercisesByMuscleGroup(exercisesByGroup);
-      } else {
-        setMuscleGroups([]);
-        setExercisesByMuscleGroup({});
-        setSnackbar({ open: true, message: i18n.t('progress.error.no_exercises'), severity: 'warning' });
-      }
-    } catch (error) {
-      console.error('Errore nel caricamento degli esercizi:', error);
-      setSnackbar({ open: true, message: i18n.t('progress.error.load_exercises'), severity: 'error' });
-      setMuscleGroups([]);
-      setExercisesByMuscleGroup({});
-    } finally {
-      setLoadingExercises(false);
-    }
-  }, []);
-
-  const handleMuscleGroupChange = (event) => setSelectedMuscleGroup(event.target.value);
-
-  const handleExerciseChange = (event) => {
-    const exerciseId = event.target.value;
-    const exercise = exercisesByMuscleGroup[selectedMuscleGroup]?.find(ex => ex.id === exerciseId);
-    if (exercise) {
-      setSelectedExercise({ id: exercise.id, name: exercise.name });
-      setChartData([]);
-      setExerciseStats([]);
-    }
-  };
-
-  // Riceve l'esercizio come parametro invece di leggere selectedExercise dalla
-  // closure: cosi' non dipende da stato reattivo (solo setter e helper di
-  // modulo) e useCallback([]) resta stabile per tutta la vita del componente.
-  const calculateExerciseStats = useCallback((workouts, exercise) => {
-    if (!workouts || workouts.length === 0 || !exercise.id) {
-      setExerciseStats([]);
-      setChartData([]);
-      return;
-    }
-
-    const relevant = [];
-    for (const workout of workouts) {
-      const exerciseData = findExerciseInWorkout(workout, exercise.id, exercise.name);
-      if (!exerciseData?.sets?.length) continue;
-
-      let totalVolume = 0, totalReps = 0, validSets = 0, bestOneRM = 0;
-      exerciseData.sets.forEach((set) => {
-        const weight = parseFloat(set.weight) || 0;
-        const reps = extractReps(set.reps);
-        if (weight <= 0 || reps <= 0) return;
-
-        totalVolume += weight * reps;
-        totalReps += reps;
-        validSets++;
-        bestOneRM = Math.max(bestOneRM, estimateOneRepMax(weight, reps));
-      });
-      if (validSets === 0) continue;
-
-      relevant.push({
-        id: workout.id || `workout-${workout.date}`,
-        date: formatDate(workout.date),
-        rawDate: workout.date,
-        volume: parseFloat(totalVolume.toFixed(2)),
-        avgWeight: parseFloat((totalVolume / totalReps).toFixed(2)),
-        volumePerSet: parseFloat((totalVolume / validSets).toFixed(2)),
-        est1RM: parseFloat(bestOneRM.toFixed(1)),
-        totalReps,
-      });
-    }
-
-    if (relevant.length === 0) {
-      setEmptyMessage(i18n.t('progress.empty_for_exercise', { name: exercise.name }));
-      setExerciseStats([]);
-      setChartData([]);
-      return;
-    }
-
-    const ascending = relevant.sort((a, b) => new Date(a.rawDate) - new Date(b.rawDate));
-    setChartData(calculateTrendLine(ascending));
-    setExerciseStats([...ascending].reverse());
-  }, []);
-
-  // Dichiarata dopo calculateExerciseStats: l'array di dipendenze viene
-  // valutato durante il render, nominarla prima della sua dichiarazione
-  // lancerebbe ReferenceError (temporal dead zone).
-  const fetchWorkoutHistory = useCallback(async (exercise) => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
-    setEmptyMessage('');
-
+    setHasLoadError(false);
     try {
-      const response = await fetch(`${API_BASE_URL}api/workout_history/read.php`, {
-        method: 'GET',
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
+      const [exRes, histRes] = await Promise.all([
+        fetch(`${API_BASE_URL}api/exercise/read_all.php`, { credentials: 'include' }),
+        fetch(`${API_BASE_URL}api/workout_history/read.php`, { credentials: 'include' }),
+      ]);
+      if (!exRes.ok) throw new Error('exercises');
+      const exData = await exRes.json();
+      const catalog = {};
+      (exData.records || []).forEach((ex) => { catalog[String(ex.id)] = ex; });
+      setExerciseCatalog(catalog);
 
-      const data = await response.json();
-      if (!data.records || !Array.isArray(data.records)) {
-        setChartData([]);
-        setExerciseStats([]);
-        return;
+      // 404 = nessun allenamento registrato, non un errore di connessione
+      if (histRes.status === 404) {
+        setRecords([]);
+      } else if (!histRes.ok) {
+        throw new Error('history');
+      } else {
+        const histData = await histRes.json();
+        setRecords(Array.isArray(histData.records) ? histData.records : []);
       }
-
-      const sortedWorkouts = data.records.sort((a, b) => new Date(a.date) - new Date(b.date));
-      calculateExerciseStats(sortedWorkouts, exercise);
     } catch (error) {
-      console.error('Errore nel caricamento della cronologia:', error);
-      const message = error.message.includes('404')
-        ? i18n.t('progress.error.no_history')
-        : i18n.t('progress.error.connection');
-      setEmptyMessage(message);
-      setChartData([]);
-      setExerciseStats([]);
+      console.error('Errore nel caricamento dei progressi:', error);
+      setHasLoadError(true);
+      setSnackbar({ open: true, message: i18n.t('progress.error.connection'), severity: 'error' });
     } finally {
       setIsLoading(false);
     }
-  }, [calculateExerciseStats]);
+  }, []);
 
-  // Effetti sotto le dichiarazioni delle funzioni che nominano nelle
-  // dipendenze (vedi commento su fetchWorkoutHistory).
-  useEffect(() => {
-    fetchExercises();
-    fetchGlobalStats();
-  }, [fetchExercises, fetchGlobalStats]);
+  useEffect(() => { loadData(); }, [loadData]);
 
-  useEffect(() => {
-    if (!loadingExercises && muscleGroups.length > 0) {
-      setSelectedMuscleGroup(muscleGroups[0]);
-    }
-  }, [loadingExercises, muscleGroups]);
+  const analyzed = useMemo(() => {
+    const now = Date.now();
+    return Object.values(buildExerciseSeries(records)).map((serie) => analyzeExercise(serie, now));
+  }, [records]);
 
-  useEffect(() => {
-    const exercises = exercisesByMuscleGroup[selectedMuscleGroup];
-    if (selectedMuscleGroup && exercises && exercises.length > 0) {
-      setSelectedExercise({ id: exercises[0].id, name: exercises[0].name });
-    }
-  }, [selectedMuscleGroup, exercisesByMuscleGroup]);
+  const summary = useMemo(() => summarize(analyzed), [analyzed]);
 
-  // fetchWorkoutHistory e' stabile: l'effetto si riesegue solo al cambio di esercizio.
-  useEffect(() => {
-    if (selectedExercise.id && selectedExercise.name) {
-      fetchWorkoutHistory(selectedExercise);
-    }
-  }, [selectedExercise, fetchWorkoutHistory]);
+  const nameOf = useCallback((item) => exerciseCatalog[item.id]?.name || item.name, [exerciseCatalog]);
+  const muscleOf = useCallback((id) => exerciseCatalog[id]?.muscle_group?.toLowerCase() || null, [exerciseCatalog]);
 
-  const metric = METRIC_OPTIONS.find(m => m.key === selectedMetric);
-  const first = chartData[0];
-  const last = chartData[chartData.length - 1];
-  const visibleRows = showAllRows ? exerciseStats : exerciseStats.slice(0, 5);
+  const filtered = useMemo(() => {
+    if (!query.trim()) return analyzed;
+    return analyzed.filter((a) => exerciseMatches({ ...exerciseCatalog[a.id], name: nameOf(a) }, query));
+  }, [analyzed, exerciseCatalog, nameOf, query]);
 
-  const statCards = [
-    { label: 'progress.metric.volume', unit: 'kg', value: last?.volume, delta: formatDelta(first?.volume, last?.volume) },
-    { label: 'progress.metric.avg_weight', unit: 'kg/rep', value: last?.avgWeight, delta: formatDelta(first?.avgWeight, last?.avgWeight) },
-    { label: 'progress.metric.index', unit: '', value: last?.compositeIndex, delta: formatDelta(first?.compositeIndex, last?.compositeIndex) },
-  ];
+  const favoriteItems = useMemo(
+    () => filtered.filter((a) => favorites.includes(a.id)).sort((a, b) => a.lastDays - b.lastDays),
+    [filtered, favorites],
+  );
+  const sections = useMemo(
+    () => groupByMuscle(filtered.filter((a) => !favorites.includes(a.id)), muscleOf),
+    [filtered, favorites, muscleOf],
+  );
+
+  const selectedItem = analyzed.find((a) => a.id === selectedId) || null;
+  const searching = query.trim().length > 0;
+
+  const renderCard = (item, showMuscle) => (
+    <Grid item xs={12} sm={6} md={4} key={item.id}>
+      <ExerciseProgressCard
+        item={item}
+        name={nameOf(item)}
+        muscle={muscleOf(item.id)}
+        showMuscle={showMuscle}
+        favorite={favorites.includes(item.id)}
+        onToggleFavorite={() => toggleFavorite(item.id)}
+        onOpen={() => setSelectedId(item.id)}
+      />
+    </Grid>
+  );
 
   const renderContent = () => (
     <Grid container spacing={3}>
       {!isEmbedded && (
         <Grid item xs={12}>
           <Typography variant="h4" gutterBottom>{t('progress.title')}</Typography>
-          <Typography variant="body1" color="text.secondary" paragraph>
-            {t('progress.intro')}
-          </Typography>
+          <Typography variant="body1" color="text.secondary" paragraph>{t('progress.intro')}</Typography>
         </Grid>
       )}
 
-      {/* Frequenza / Volume totale */}
-      <Grid item xs={12} md={6}>
-        <ChartCard
-          title={t('progress.frequency')}
-          data={frequencyData.map(r => r.workout_count)}
-          color="#d50000"
-          valueLabel={frequencyData.length ? `${frequencyData[frequencyData.length - 1].workout_count}` : '—'}
-          deltaText={frequencyData.length ? t('progress.weeks_tracked', { count: frequencyData.length }) : undefined}
-        />
-      </Grid>
-      <Grid item xs={12} md={6}>
-        <ChartCard
-          title={t('progress.total_volume')}
-          data={totalVolumeData.map(r => r.total_volume)}
-          color="#4f46e5"
-          valueLabel={totalVolumeData.length ? `${formatNumber(Math.round(totalVolumeData[totalVolumeData.length - 1].total_volume))} kg` : '—'}
-          deltaText={totalVolumeData.length ? t('progress.sessions_logged', { count: totalVolumeData.length }) : undefined}
-        />
-      </Grid>
-
-      {/* Toolbar: selettori + pill metrica */}
-      <Grid item xs={12}>
-        <Card sx={{ p: '20px 22px' }}>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center', mb: 2.5 }}>
-            <FormControl size="small" sx={{ minWidth: 180 }}>
-              <Select value={selectedMuscleGroup} onChange={handleMuscleGroupChange} displayEmpty disabled={loadingExercises}>
-                {muscleGroups.map(group => <MenuItem key={group} value={group}>{muscleLabel(group)}</MenuItem>)}
-              </Select>
-            </FormControl>
-            <FormControl size="small" sx={{ minWidth: 220 }}>
-              <Select value={selectedExercise.id} onChange={handleExerciseChange} displayEmpty disabled={loadingExercises || !selectedMuscleGroup}>
-                {(exercisesByMuscleGroup[selectedMuscleGroup] || []).map(ex => (
-                  <MenuItem key={ex.id} value={ex.id}>{ex.name}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <ToggleButtonGroup
-              exclusive
-              value={selectedMetric}
-              onChange={(e, v) => v && setSelectedMetric(v)}
-              sx={{
-                ml: { md: 'auto' },
-                '& .MuiToggleButton-root': {
-                  textTransform: 'none',
-                  borderRadius: '999px !important',
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  px: 2,
-                  py: 0.75,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: 'text.secondary',
-                  mr: 1,
-                  '&.Mui-selected': {
-                    bgcolor: 'primary.main',
-                    color: '#fff',
-                    borderColor: 'primary.main',
-                    '&:hover': { bgcolor: 'primary.dark' },
-                  },
-                },
-              }}
-            >
-              {METRIC_OPTIONS.map(opt => (
-                <ToggleButton key={opt.key} value={opt.key}>{t(opt.label)}</ToggleButton>
-              ))}
-            </ToggleButtonGroup>
-          </Box>
-
-          {isLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-              <CircularProgress size={32} />
-            </Box>
-          ) : chartData.length === 0 ? (
-            <Box sx={{ textAlign: 'center', py: 6 }}>
-              <Typography sx={{ color: 'text.secondary' }}>
-                {emptyMessage || t('progress.empty')}
-              </Typography>
-            </Box>
-          ) : (
-            <>
-              <Box sx={{ height: 200 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ top: 5, right: 8, left: -8, bottom: 0 }}>
-                    <CartesianGrid horizontal vertical={false} stroke={theme.palette.divider} />
-                    <XAxis dataKey="date" fontSize={11} stroke={theme.palette.text.secondary} tickLine={false} axisLine={false} />
-                    <YAxis fontSize={11} stroke={theme.palette.text.secondary} tickLine={false} axisLine={false} tickCount={4} width={40} />
-                    <Tooltip content={renderChartTooltip} />
-                    <Line type="monotone" dataKey={metric.key} name={t(metric.label)} stroke={metric.color} strokeWidth={2.5} dot={{ r: 3 }} />
-                    <Line
-                      type="monotone"
-                      dataKey={metric.secondaryKey}
-                      name={t(metric.secondaryLabel)}
-                      stroke={metric.secondaryColor}
-                      strokeWidth={2}
-                      strokeDasharray="5 4"
-                      strokeOpacity={metric.secondaryOpacity ?? 1}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </Box>
-              <Box sx={{ display: 'flex', gap: 3, mt: 1.5 }}>
-                <LegendSwatch color={metric.color} label={t(metric.label)} />
-                <LegendSwatch color={metric.secondaryColor} label={t(metric.secondaryLabel)} />
-              </Box>
-            </>
-          )}
-        </Card>
-      </Grid>
-
-      {/* Stat card */}
-      {chartData.length > 0 && statCards.map((card) => (
-        <Grid item xs={12} sm={4} key={card.label}>
-          <Card sx={{ p: '20px 22px', height: '100%' }}>
-            <Typography sx={{ textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700, fontSize: 12, color: 'text.secondary', mb: 1 }}>
-              {t(card.label)}
-            </Typography>
-            <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 26 }}>
-              {card.value !== undefined ? formatNumber(card.value, { maximumFractionDigits: 1 }) : '—'}
-              {card.unit && <Box component="span" sx={{ fontSize: 13, fontWeight: 600, ml: 0.5 }}>{card.unit}</Box>}
-            </Typography>
-            {card.delta && (
-              <Typography sx={{ fontSize: 12, fontWeight: 600, color: card.delta.up ? 'success.main' : 'error.main', mt: 0.5 }}>
-                {card.delta.up ? '▲' : '▼'} {t('progress.vs_first', { pct: formatNumber(Math.abs(card.delta.pct), { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })}
-              </Typography>
-            )}
-          </Card>
-        </Grid>
-      ))}
-
-      {/* Cronologia */}
-      {exerciseStats.length > 0 && (
+      {isLoading ? (
         <Grid item xs={12}>
-          <Card sx={{ p: '20px 22px' }}>
-            <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 15, mb: 2 }}>
-              {t('progress.history_title', { name: selectedExercise.name })}
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress size={32} /></Box>
+        </Grid>
+      ) : analyzed.length === 0 ? (
+        <Grid item xs={12}>
+          <Card sx={{ p: 4, textAlign: 'center' }}>
+            <Typography sx={{ color: 'text.secondary' }}>
+              {hasLoadError ? t('progress.error.connection') : t('progress.error.no_history')}
             </Typography>
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontSize: 11, textTransform: 'uppercase', color: 'text.secondary', fontWeight: 700, border: 0 }}>{t('progress.col.date')}</TableCell>
-                    <TableCell align="right" sx={{ fontSize: 11, textTransform: 'uppercase', color: 'text.secondary', fontWeight: 700, border: 0 }}>{t('progress.col.volume')}</TableCell>
-                    <TableCell align="right" sx={{ fontSize: 11, textTransform: 'uppercase', color: 'text.secondary', fontWeight: 700, border: 0 }}>{t('progress.col.avg_weight')}</TableCell>
-                    <TableCell align="right" sx={{ fontSize: 11, textTransform: 'uppercase', color: 'text.secondary', fontWeight: 700, border: 0 }}>{t('progress.col.reps')}</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {visibleRows.map((row, i) => {
-                    const isLast = i === visibleRows.length - 1;
-                    const cellSx = { fontSize: 13, borderColor: 'divider', ...(isLast ? { border: 0 } : {}) };
-                    return (
-                      <TableRow key={row.id}>
-                        <TableCell sx={cellSx}>{row.date}</TableCell>
-                        <TableCell align="right" sx={{ ...cellSx, fontWeight: 700 }}>{formatNumber(row.volume)}</TableCell>
-                        <TableCell align="right" sx={cellSx}>{formatNumber(row.avgWeight, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</TableCell>
-                        <TableCell align="right" sx={cellSx}>{row.totalReps}</TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-            {exerciseStats.length > 5 && (
-              <Box sx={{ textAlign: 'center', mt: 2 }}>
-                <Button size="small" onClick={() => setShowAllRows(!showAllRows)} sx={{ fontSize: 13 }}>
-                  {showAllRows ? t('progress.show_less') : t('progress.show_all', { count: exerciseStats.length })}
-                </Button>
-              </Box>
-            )}
           </Card>
         </Grid>
+      ) : (
+        <>
+          <Grid item xs={12}>
+            <Card sx={{ p: '20px 22px' }}>
+              <Typography sx={{ fontSize: 12, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700, mb: 1.5 }}>
+                {t('progress.summary.title')}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <SummaryStat label={t('progress.summary.improving')} value={summary.improving} color="success.main" />
+                <SummaryStat label={t('progress.summary.stalled')} value={summary.stalled} />
+                <SummaryStat label={t('progress.summary.prs')} value={summary.prs.length} color={summary.prs.length ? 'primary.main' : undefined} />
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mt: 2 }}>
+                {summary.prs.length === 0 ? (
+                  <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('progress.summary.prs_none')}</Typography>
+                ) : (
+                  <>
+                    {summary.prs.slice(0, MAX_PR_CHIPS).map((a) => (
+                      <Chip key={a.id} size="small" color="primary" variant="outlined" label={`${t('progress.pr')} · ${nameOf(a)}`} onClick={() => setSelectedId(a.id)} />
+                    ))}
+                    {summary.prs.length > MAX_PR_CHIPS && (
+                      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>+{summary.prs.length - MAX_PR_CHIPS}</Typography>
+                    )}
+                  </>
+                )}
+              </Box>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
+              size="small"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t('progress.search')}
+              inputProps={{ 'aria-label': t('progress.search') }}
+              InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
+            />
+          </Grid>
+
+          {filtered.length === 0 && (
+            <Grid item xs={12}>
+              <Typography sx={{ color: 'text.secondary', textAlign: 'center', py: 3 }}>{t('progress.search_empty')}</Typography>
+            </Grid>
+          )}
+
+          {favoriteItems.length > 0 && (
+            <Grid item xs={12}>
+              <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 15, mb: 1.5 }}>{t('progress.favorites')}</Typography>
+              <Grid container spacing={2}>{favoriteItems.map((item) => renderCard(item, true))}</Grid>
+            </Grid>
+          )}
+
+          {sections.map((section, index) => {
+            const isOpen = searching || (expanded[section.muscle] ?? index < OPEN_SECTIONS_DEFAULT);
+            const label = section.muscle === 'other' ? t('progress.muscle_other') : muscleLabel(section.muscle);
+            return (
+              <Grid item xs={12} key={section.muscle}>
+                <Accordion
+                  disableGutters
+                  expanded={isOpen}
+                  onChange={(_, value) => setExpanded((prev) => ({ ...prev, [section.muscle]: value }))}
+                  sx={{ border: '1px solid', borderColor: 'divider', boxShadow: 'none', borderRadius: '12px !important', '&:before': { display: 'none' } }}
+                >
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 2.5 }}>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 16 }}>
+                        {label} <Box component="span" sx={{ color: 'text.secondary', fontWeight: 500, fontSize: 13 }}>· {t('progress.section_count', { count: section.items.length })}</Box>
+                      </Typography>
+                      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+                        {section.improving > 0 && `${t('progress.section_improving', { count: section.improving })} · `}
+                        {t('progress.last_session', { when: formatDaysAgo(t, section.lastDays) })}
+                      </Typography>
+                    </Box>
+                  </AccordionSummary>
+                  <AccordionDetails sx={{ px: 2.5, pb: 2.5 }}>
+                    <Grid container spacing={2}>{section.items.map((item) => renderCard(item, false))}</Grid>
+                  </AccordionDetails>
+                </Accordion>
+              </Grid>
+            );
+          })}
+        </>
       )}
     </Grid>
   );
@@ -566,16 +243,15 @@ const Progress = ({ isEmbedded = false }) => {
         <Container maxWidth="lg" sx={{ py: 4 }}>{renderContent()}</Container>
       )}
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-      >
-        <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
-        >
+      <ExerciseDetailDialog
+        item={selectedItem}
+        name={selectedItem ? nameOf(selectedItem) : ''}
+        muscle={selectedItem ? muscleOf(selectedItem.id) : null}
+        onClose={() => setSelectedId(null)}
+      />
+
+      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>
       </Snackbar>
