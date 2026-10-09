@@ -23,7 +23,7 @@ import { formatDate, formatNumber } from '../i18n/format';
 import { muscleLabel } from '../i18n/labels';
 import { formatValue } from './ExerciseProgressCard';
 
-const HEAD_SX = { fontSize: 11, textTransform: 'uppercase', color: 'text.secondary', fontWeight: 700, border: 0 };
+const HEAD_SX = { fontSize: 11, textTransform: 'uppercase', color: 'text.secondary', fontWeight: 700, border: 0, px: { xs: 0.75, sm: 2 }, lineHeight: 1.2, verticalAlign: 'bottom' };
 const ROWS_COLLAPSED = 5;
 
 const PRDot = ({ cx, cy, payload }) => {
@@ -77,7 +77,7 @@ const ExerciseDetailDialog = ({ item, name, muscle, onClose }) => {
               <CloseIcon />
             </IconButton>
           </DialogTitle>
-          <DialogContent>
+          <DialogContent sx={{ px: { xs: 2, sm: 3 } }}>
             <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
               <Stat label={t('progress.detail.current')} value={formatValue(t, item.mode, item.last.value)} />
               <Stat label={t('progress.detail.best')} value={formatValue(t, item.mode, item.best)} />
@@ -110,7 +110,7 @@ const ExerciseDetailDialog = ({ item, name, muscle, onClose }) => {
                 </TableHead>
                 <TableBody>
                   {visibleRows.map((row, i) => {
-                    const cellSx = { fontSize: 13, borderColor: 'divider', ...(i === visibleRows.length - 1 ? { border: 0 } : {}) };
+                    const cellSx = { fontSize: { xs: 12, sm: 13 }, px: { xs: 0.75, sm: 2 }, whiteSpace: 'nowrap', borderColor: 'divider', ...(i === visibleRows.length - 1 ? { border: 0 } : {}) };
                     return (
                       <TableRow key={row.id}>
                         <TableCell sx={cellSx}>{row.dateLabel}</TableCell>

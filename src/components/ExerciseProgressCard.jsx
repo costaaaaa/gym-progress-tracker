@@ -48,7 +48,7 @@ const ExerciseProgressCard = ({ item, name, muscle, showMuscle = false, favorite
   return (
     <Card sx={{ height: '100%', opacity: inactive ? 0.6 : 1, position: 'relative' }}>
       <CardActionArea onClick={onOpen} sx={{ p: '16px 16px 14px', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'flex-start' }}>
-        <Box sx={{ pr: 4.5, minHeight: showMuscle ? 44 : 24 }}>
+        <Box sx={{ pr: 5, minHeight: showMuscle ? 44 : 24 }}>
           <Typography sx={{ fontWeight: 700, fontSize: 14, lineHeight: 1.3 }} noWrap title={name}>{name}</Typography>
           {showMuscle && (
             <Typography sx={{ fontSize: 12, color: 'text.secondary' }} noWrap>{muscleLabel(muscle)}</Typography>
@@ -86,7 +86,7 @@ const ExerciseProgressCard = ({ item, name, muscle, showMuscle = false, favorite
         onClick={onToggleFavorite}
         aria-label={favorite ? t('progress.favorite_remove') : t('progress.favorite_add')}
         aria-pressed={favorite}
-        sx={{ position: 'absolute', top: 8, right: 8, color: favorite ? 'warning.main' : 'text.disabled' }}
+        sx={{ position: 'absolute', top: 4, right: 4, width: 44, height: 44, color: favorite ? 'warning.main' : 'text.disabled' }}
       >
         {favorite ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
       </IconButton>
