@@ -108,6 +108,8 @@ function rate_limit_rule($name)
         'login_ip'    => [(int)(getenv('RL_LOGIN_IP_MAX')   ?: 20), (int)(getenv('RL_LOGIN_IP_DECAY')   ?: 900)],
         // login per IP+username: cap più stretto sul bersaglio specifico
         'login_user'  => [(int)(getenv('RL_LOGIN_USER_MAX') ?: 5),  (int)(getenv('RL_LOGIN_USER_DECAY') ?: 900)],
+        // login per username da qualunque IP: ferma il brute force distribuito su un account
+        'login_account' => [(int)(getenv('RL_LOGIN_ACCOUNT_MAX') ?: 10), (int)(getenv('RL_LOGIN_ACCOUNT_DECAY') ?: 900)],
         // register per-IP: anti registrazioni di massa
         'register_ip' => [(int)(getenv('RL_REGISTER_MAX')   ?: 10), (int)(getenv('RL_REGISTER_DECAY')   ?: 3600)],
         // recupero password: richieste di email per IP e per indirizzo (anti spam/enumerazione)
