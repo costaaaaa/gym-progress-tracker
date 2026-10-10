@@ -260,9 +260,9 @@ try {
                  WHERE wh.user_id = ?
                    AND ws.exercise_id IN ($placeholders)
                    AND ws.workout_history_id != ?
-                   AND wh.date < ?"
+                   AND (wh.date < ? OR (wh.date = ? AND wh.id < ?))"
             );
-            $stmt_prev->execute(array_merge([$user_id], $eids_list, [$workout_id, $data_workout]));
+            $stmt_prev->execute(array_merge([$user_id], $eids_list, [$workout_id, $data_workout, $data_workout, $workout_id]));
             while ($prow = $stmt_prev->fetch(PDO::FETCH_ASSOC)) {
                 $eid  = (int)   $prow['exercise_id'];
                 $pw   = (float) $prow['weight'];
