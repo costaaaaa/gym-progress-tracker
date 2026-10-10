@@ -4,6 +4,7 @@ include_once '../../config/cors_headers.php';
 
 // Includi i file necessari
 include_once '../../config/database.php';
+include_once '../../config/api_helpers.php';
 include_once '../../models/WorkoutHistory.php';
 
 // Inizializza il database
@@ -16,18 +17,7 @@ $workout = new WorkoutHistory($db);
 // Ottieni i dati inviati
 $data = json_decode(file_get_contents("php://input"));
 
-// Ottieni l'ID utente dalla sessione
-$user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
-
-// Verifica che tutti i dati necessari siano presenti
-if (!$user_id) {
-    http_response_code(401);
-    echo json_encode(array(
-        "success" => false,
-        "message" => "Utente non autenticato."
-    ));
-    exit;
-}
+$user_id = require_authenticated_user($db);
 
 if (
     !empty($data->id) &&
