@@ -25,16 +25,24 @@ function authenticate_login_request($db, $data)
         ), 400);
     }
 
-    // Due contatori: per IP e per coppia IP+utente
+    // Tre contatori: per IP, per coppia IP+utente e per utente da qualunque IP (brute force
+    // distribuito). trim: MySQL ignora gli spazi finali nel confronto dello username.
     $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
+    $username = strtolower(trim($data->username));
     $ipKey = 'login:ip:' . hash('sha256', $ip);
-    $userKey = 'login:user:' . hash('sha256', $ip . '|' . strtolower($data->username));
+    $userKey = 'login:user:' . hash('sha256', $ip . '|' . $username);
+    $accountKey = 'login:acct:' . hash('sha256', $username);
 
     list($ipMax, $ipDecay) = rate_limit_rule('login_ip');
     list($userMax, $userDecay) = rate_limit_rule('login_user');
+    list($accountMax, $accountDecay) = rate_limit_rule('login_account');
 
-    if ($limiter->tooManyAttempts($ipKey, $ipMax) || $limiter->tooManyAttempts($userKey, $userMax)) {
-        $retryAfter = max($limiter->availableIn($ipKey), $limiter->availableIn($userKey));
+    if (
+        $limiter->tooManyAttempts($ipKey, $ipMax) ||
+        $limiter->tooManyAttempts($userKey, $userMax) ||
+        $limiter->tooManyAttempts($accountKey, $accountMax)
+    ) {
+        $retryAfter = max($limiter->availableIn($ipKey), $limiter->availableIn($userKey), $limiter->availableIn($accountKey));
         header('Retry-After: ' . $retryAfter);
         api_json_response(array(
             "success" => false,
@@ -48,6 +56,7 @@ function authenticate_login_request($db, $data)
     if (!$user->login()) {
         $limiter->hit($ipKey, $ipDecay);
         $limiter->hit($userKey, $userDecay);
+        $limiter->hit($accountKey, $accountDecay);
         api_json_response(array(
             "success" => false,
             "message" => t_server('auth.invalid_credentials')
@@ -57,6 +66,7 @@ function authenticate_login_request($db, $data)
     // Accesso riuscito: azzera il contatore del bersaglio specifico. Da qui la lingua della
     // richiesta è quella dell'account.
     $limiter->clear($userKey);
+    $limiter->clear($accountKey);
     request_user_context($db, $user->id);
     return $user;
 }

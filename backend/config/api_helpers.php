@@ -381,10 +381,15 @@ function require_group_age($db, $user_id)
 }
 
 // Riferimento opaco a un membro, per rimuoverlo senza esporre il suo user_id.
-// Vale solo dentro quel gruppo. La chiave è un segreto già presente nell'ambiente PHP.
+// Vale solo dentro quel gruppo. La chiave è GYM_API_SECRET: senza, meglio un errore che una
+// chiave indovinabile.
 function group_member_ref($group_id, $user_id)
 {
-    $secret = getenv('GYM_API_SECRET') ?: (getenv('DB_PASSWORD') ?: 'sviluppo-locale');
+    $secret = getenv('GYM_API_SECRET');
+    if (!$secret) {
+        error_log('group_member_ref: GYM_API_SECRET non impostata');
+        api_error(500, 'server_misconfigured', 'Configurazione del server incompleta.');
+    }
     return substr(hash_hmac('sha256', 'group-member:' . $group_id . ':' . $user_id, $secret), 0, 20);
 }
 
