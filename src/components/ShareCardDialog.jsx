@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Dialog, DialogContent, DialogActions, Box, Button, Chip, IconButton, Slider, Typography,
+  Dialog, DialogContent, DialogActions, Box, Button, Chip, Collapse, FormControlLabel, IconButton, Slider, Switch, Typography,
   CircularProgress, useMediaQuery, useTheme,
 } from '@mui/material';
 import {
@@ -13,9 +13,10 @@ import {
   ZoomIn as ZoomInIcon,
   ZoomOut as ZoomOutIcon,
   CenterFocusStrong as CenterIcon,
+  Tune as TuneIcon,
 } from '@mui/icons-material';
 import {
-  TEMPLATES, DEFAULT_PRESET, availablePresets, PHOTO_BACKGROUNDS, CARD_WIDTH, PHOTO_BOX, PHOTO_ZOOM_MAX, DEFAULT_PHOTO_TRANSFORM,
+  TEMPLATES, DEFAULT_PRESET, CUSTOM_BLOCKS, availablePresets, presetToggles, PHOTO_BACKGROUNDS, CARD_WIDTH, PHOTO_BOX, PHOTO_ZOOM_MAX, DEFAULT_PHOTO_TRANSFORM,
   layoutShareCard, clampPhotoTransform, zoomPhotoAt, photoMinZoom,
 } from '../utils/shareCard';
 import { loadCardFonts, renderCardToCanvas, canvasToPngFile, loadPhoto } from '../utils/renderShareCard';
@@ -36,6 +37,10 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   const fileRef = useRef(null);
   const [template, setTemplate] = useState('scuro');
   const [preset, setPreset] = useState(DEFAULT_PRESET);
+  // Blocchi scelti con "Personalizza" (null = si usa la card pronta) e pesi nascosti
+  const [customBlocks, setCustomBlocks] = useState(null);
+  const [customizing, setCustomizing] = useState(false);
+  const [hideWeights, setHideWeights] = useState(false);
   const [photo, setPhoto] = useState(null);
   const [photoTransform, setPhotoTransform] = useState(DEFAULT_PHOTO_TRANSFORM);
   const [photoBackground, setPhotoBackground] = useState(PHOTO_BACKGROUNDS[0].id);
@@ -48,6 +53,8 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
 
   const presets = useMemo(() => (stats ? availablePresets(stats) : []), [stats]);
   const activePreset = presets.some((p) => p.id === preset) ? preset : DEFAULT_PRESET;
+  const shownBlocks = customBlocks || presetToggles(activePreset);
+  const toggleBlock = (id) => setCustomBlocks(shownBlocks.includes(id) ? shownBlocks.filter((b) => b !== id) : [...shownBlocks, id]);
   const editable = template === 'foto' && !!photo;
   // Lo sfondo si vede solo quando la foto, rimpicciolita, non copre più la card
   const backgroundVisible = editable && photoTransform.zoom < 0.999;
@@ -64,7 +71,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   useEffect(() => {
     if (!open || !stats || !fontsReady || !canvasRef.current) return undefined;
     let cancelled = false;
-    const layout = layoutShareCard(stats, template, { hasPhoto: !!photo, photoBackground, preset });
+    const layout = layoutShareCard(stats, template, { hasPhoto: !!photo, photoBackground, preset, blocks: customBlocks || undefined, hideWeights });
     renderCardToCanvas(canvasRef.current, layout, photo, photoTransform);
     setReady(false);
     fileRef.current = null;
@@ -80,7 +87,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
       }
     }, 250);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [open, stats, template, preset, photo, photoTransform, photoBackground, fontsReady]);
+  }, [open, stats, template, preset, customBlocks, hideWeights, photo, photoTransform, photoBackground, fontsReady]);
 
   const movePhoto = (update) => {
     if (!photo) return;
@@ -226,11 +233,24 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, pt: 1 }}>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center' }}>
           {presets.map((p) => (
-            <Chip key={p.id} label={p.label} size="small" onClick={() => setPreset(p.id)}
-              color={activePreset === p.id ? 'primary' : 'default'}
-              variant={activePreset === p.id ? 'filled' : 'outlined'} />
+            <Chip key={p.id} label={p.label} size="small" onClick={() => { setPreset(p.id); setCustomBlocks(null); }}
+              color={!customBlocks && activePreset === p.id ? 'primary' : 'default'}
+              variant={!customBlocks && activePreset === p.id ? 'filled' : 'outlined'} />
           ))}
+          {customBlocks && <Chip label="Personalizzata" size="small" color="primary" />}
+          <Chip icon={<TuneIcon />} label="Personalizza" size="small" variant="outlined"
+            onClick={() => setCustomizing((v) => !v)} />
         </Box>
+        <Collapse in={customizing} sx={{ width: '100%' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', px: 2 }}>
+            {CUSTOM_BLOCKS.map((b) => (
+              <FormControlLabel key={b.id} label={b.label}
+                control={<Switch size="small" checked={shownBlocks.includes(b.id)} onChange={() => toggleBlock(b.id)} />} />
+            ))}
+            <FormControlLabel label="Nascondi i pesi"
+              control={<Switch size="small" checked={hideWeights} onChange={(e) => setHideWeights(e.target.checked)} />} />
+          </Box>
+        </Collapse>
         <Box sx={{ position: 'relative', width: '100%', maxWidth: 'calc(62vh * 9 / 16)', aspectRatio: '9 / 16' }}>
           <canvas ref={canvasRef}
             onPointerDown={handlePointerDown} onPointerMove={handlePointerMove}

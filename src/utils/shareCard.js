@@ -51,6 +51,7 @@ export const STRINGS_IT = {
   volumeRecord: 'volume',
   moreExercises: '+{n} esercizi',
   moreRecords: '+{n} record',
+  setsCount: '{n} serie',
 };
 
 const fill = (template, values) => template.replace(/\{(\w+)\}/g, (_, key) => values[key]);
@@ -210,7 +211,7 @@ export const buildShareStats = ({ exercises, date, durationSec, title, records, 
     otherRecords: hero ? ordered.length - 1 : 0,
     recordList: hero ? ordered.slice(1) : [],
     exerciseList: done.map((ex) => ({
-      name: ex.name, best: bestSet(ex.sets), isRecord: ordered.some((r) => r.name === ex.name),
+      name: ex.name, sets: ex.sets.length, best: bestSet(ex.sets), isRecord: ordered.some((r) => r.name === ex.name),
     })),
     muscles: muscleShares(done),
     streakWeeks: streakWeeks || 0,
@@ -278,11 +279,11 @@ const text = (x, y, value, size, color, opts = {}) => ({
 
 // Riquadri. Durata e serie ci sono già nel blocco principale quando la card lo mostra e non
 // c'è un record; il volume manca negli allenamenti a corpo libero.
-const tilesFor = (stats, strings, effortInHero) => {
+const tilesFor = (stats, strings, effortInHero, hideWeights) => {
   const tiles = [];
   const duration = formatDuration(stats.durationSec, strings);
   if (!effortInHero && duration) tiles.push({ value: duration, label: strings.duration });
-  if (stats.volumeKg > 0) tiles.push({ value: fill(strings.kg, { n: formatThousands(stats.volumeKg, strings) }), label: strings.volume });
+  if (stats.volumeKg > 0 && !hideWeights) tiles.push({ value: fill(strings.kg, { n: formatThousands(stats.volumeKg, strings) }), label: strings.volume });
   if (!effortInHero) tiles.push({ value: String(stats.sets), label: strings.sets });
   return tiles;
 };
@@ -371,22 +372,29 @@ const recordDelta = (record, strings) => {
 };
 
 // Blocco principale con un record: esercizio, serie che lo fa, di quanto migliora.
-const recordHero = (stats, { theme, strings, metrics, contentWidth }, y) => {
+const recordHero = (stats, { theme, strings, metrics, contentWidth, hideWeights }, y) => {
   const m = metrics.record;
   const { record } = stats;
-  const name = fit(record.name, contentWidth, m.nameSize, m.nameMin);
-  const value = fit(recordValue(record, strings), contentWidth, m.valueSize);
-  const elements = [
-    text(MARGIN, y, strings.newRecord, m.labelSize, theme.accent, { weight: 700, letterSpacing: 4 }),
-    text(MARGIN, y + m.nameDy, name.text, name.size, theme.text, { weight: 800 }),
-  ];
-  let cursor = y + m.nameDy + m.valueGap + value.size * 0.78;
-  elements.push(text(MARGIN - 4, cursor, value.text, value.size, theme.big, { weight: 800 }));
-  const delta = recordDelta(record, strings);
-  if (delta) {
-    cursor += m.deltaStep;
-    const d = fit(delta, contentWidth, m.deltaSize);
-    elements.push(text(MARGIN, cursor, d.text, d.size, theme.text, { weight: 700 }));
+  const weightless = hideWeights && record.type !== 'reps';
+  const elements = [text(MARGIN, y, strings.newRecord, m.labelSize, theme.accent, { weight: 700, letterSpacing: 4 })];
+  let cursor;
+  if (weightless) {
+    // Senza il peso il protagonista è l'esercizio
+    const name = fit(record.name, contentWidth, m.nameSize * 1.6, m.nameMin);
+    cursor = y + m.nameDy + (name.size - m.nameSize) * 0.8;
+    elements.push(text(MARGIN, cursor, name.text, name.size, theme.big, { weight: 800 }));
+  } else {
+    const name = fit(record.name, contentWidth, m.nameSize, m.nameMin);
+    const value = fit(recordValue(record, strings), contentWidth, m.valueSize);
+    elements.push(text(MARGIN, y + m.nameDy, name.text, name.size, theme.text, { weight: 800 }));
+    cursor = y + m.nameDy + m.valueGap + value.size * 0.78;
+    elements.push(text(MARGIN - 4, cursor, value.text, value.size, theme.big, { weight: 800 }));
+    const delta = recordDelta(record, strings);
+    if (delta) {
+      cursor += m.deltaStep;
+      const d = fit(delta, contentWidth, m.deltaSize);
+      elements.push(text(MARGIN, cursor, d.text, d.size, theme.text, { weight: 700 }));
+    }
   }
   if (stats.otherRecords > 0) {
     cursor += m.othersStep;
@@ -419,7 +427,7 @@ const effortHero = (stats, { theme, strings, metrics, contentWidth }, y) => {
 const heroBlock = (stats, ctx, y) => (stats.record ? recordHero(stats, ctx, y) : effortHero(stats, ctx, y));
 
 const tilesBlock = (stats, ctx, y) => {
-  const tiles = tilesFor(stats, ctx.strings, ctx.hasHero && !stats.record);
+  const tiles = tilesFor(stats, ctx.strings, ctx.hasHero && !stats.record, ctx.hideWeights);
   if (!tiles.length) return { elements: [], height: 0 };
   const grid = tileGrid(tiles, y, ctx, { ...ctx.metrics.tiles, columns: tiles.length });
   return { elements: grid.elements, height: grid.height + ctx.metrics.tilesAfter };
@@ -467,9 +475,9 @@ const bigMusclesBlock = (stats, ctx, y) =>
 
 // Elenco a righe: nome a sinistra, valore a destra; le righe evidenziate (record) hanno uno
 // sfondo e il valore in accento. Se non entrano tutte, l'ultima riga diventa "+N ...".
-const listBlock = (label, rows, moreTemplate) => (stats, { theme, strings, metrics, contentWidth }, y) => {
+const listBlock = (label, rows, moreTemplate) => (stats, { theme, strings, metrics, contentWidth, hideWeights }, y) => {
   const m = metrics.list;
-  const items = rows(stats, strings);
+  const items = rows(stats, strings, hideWeights);
   if (!items.length) return { elements: [], height: 0 };
   const space = Math.floor((m.limit - y - m.firstRow - m.tail) / m.pitch);
   const capacity = Math.max(1, Math.min(m.maxRows, space));
@@ -494,16 +502,24 @@ const listBlock = (label, rows, moreTemplate) => (stats, { theme, strings, metri
   return { elements, height: m.firstRow + rowsDrawn * m.pitch + m.tail };
 };
 
-const exerciseRows = (stats, strings) => stats.exerciseList.map((ex) => ({
-  name: ex.name,
-  value: ex.best && (ex.best.weight > 0
-    ? fill(strings.setValue, { weight: formatDecimal(ex.best.weight, strings), reps: ex.best.reps })
-    : fill(strings.bodyweightValue, { reps: ex.best.reps })),
-  highlight: ex.isRecord,
+const exerciseValue = (ex, strings, hideWeights) => {
+  if (!ex.best) return null;
+  if (ex.best.weight <= 0) return fill(strings.bodyweightValue, { reps: ex.best.reps });
+  if (hideWeights) return fill(strings.setsCount, { n: ex.sets });
+  return fill(strings.setValue, { weight: formatDecimal(ex.best.weight, strings), reps: ex.best.reps });
+};
+
+const exerciseRows = (stats, strings, hideWeights) => stats.exerciseList.map((ex) => ({
+  name: ex.name, value: exerciseValue(ex, strings, hideWeights), highlight: ex.isRecord,
 }));
 
-const recordRows = (stats, strings) => stats.recordList.map((r) => ({
-  name: r.name, value: r.type === 'volume' ? strings.volumeRecord : recordValue(r, strings), highlight: true,
+const recordRowValue = (r, strings, hideWeights) => {
+  if (r.type === 'volume') return strings.volumeRecord;
+  return hideWeights && r.type !== 'reps' ? null : recordValue(r, strings);
+};
+
+const recordRows = (stats, strings, hideWeights) => stats.recordList.map((r) => ({
+  name: r.name, value: recordRowValue(r, strings, hideWeights), highlight: true,
 }));
 
 const exercisesBlock = listBlock('exercisesLabel', exerciseRows, 'moreExercises');
@@ -524,6 +540,26 @@ export const PRESETS = [
 
 export const DEFAULT_PRESET = PRESETS[0].id;
 
+// "Personalizza": i blocchi che l'utente accende e spegne, sempre in questo ordine e nelle
+// misure normali. La card risultante è la "Personalizzata".
+export const CUSTOM_PRESET = 'personalizzata';
+export const CUSTOM_BLOCKS = [
+  { id: 'hero', label: 'Principale' },
+  { id: 'tiles', label: 'Riquadri' },
+  { id: 'muscles', label: 'Muscoli' },
+  { id: 'exercises', label: 'Esercizi' },
+  { id: 'streak', label: 'Settimane di fila' },
+];
+
+const NORMAL_BLOCK = { bigRecord: 'hero', bigMuscles: 'muscles' };
+
+// I blocchi personalizzabili accesi in una card pronta: da qui parte "Personalizza".
+export const presetToggles = (presetId) => {
+  const preset = PRESETS.find((p) => p.id === presetId) || PRESETS[0];
+  const ids = preset.blocks.map((id) => NORMAL_BLOCK[id] || id);
+  return CUSTOM_BLOCKS.map((b) => b.id).filter((id) => ids.includes(id));
+};
+
 // Le card che hanno qualcosa da mostrare per questo allenamento: Record solo con un record,
 // Muscoli solo se gli esercizi hanno un gruppo muscolare.
 export const availablePresets = (stats) => PRESETS.filter((p) => {
@@ -533,9 +569,11 @@ export const availablePresets = (stats) => PRESETS.filter((p) => {
   return true;
 });
 
-const presetBlocks = (stats, presetId) => {
-  const preset = availablePresets(stats).find((p) => p.id === presetId) || PRESETS[0];
-  return { blocks: [headingBlock, ...preset.blocks.map((id) => BLOCKS[id])], hasHero: preset.blocks.includes('hero') };
+const chosenBlocks = (stats, presetId, custom) => {
+  let ids;
+  if (custom) ids = CUSTOM_BLOCKS.map((b) => b.id).filter((id) => custom.includes(id));
+  else ids = (availablePresets(stats).find((p) => p.id === presetId) || PRESETS[0]).blocks;
+  return { blocks: [headingBlock, ...ids.map((id) => BLOCKS[id])], hasHero: ids.includes('hero') };
 };
 
 // Scuro e Rosso: i blocchi scendono dall'alto, sotto l'intestazione.
@@ -610,16 +648,19 @@ const photoUnderlay = (format, hasPhoto) => {
  * photoBackground: id di PHOTO_BACKGROUNDS, solo per il template foto.
  * strings: i testi della card (STRINGS_IT di base). format: FORMAT_STORIA di base.
  * preset: id di PRESETS (la card pronta); se non è disponibile per l'allenamento, Riepilogo.
+ * blocks: id di CUSTOM_BLOCKS accesi (card personalizzata); se c'è, preset non conta.
+ * hideWeights: nessun peso (kg) da nessuna parte.
  */
 export const layoutShareCard = (stats, templateId, {
   hasPhoto = false, photoBackground, strings = STRINGS_IT, format = FORMAT_STORIA, preset = DEFAULT_PRESET,
+  blocks: customBlocks, hideWeights = false,
 } = {}) => {
   const theme = THEMES[templateId] || THEMES.scuro;
   const isPhoto = templateId === 'foto';
-  const { blocks, hasHero } = presetBlocks(stats, preset);
+  const { blocks, hasHero } = chosenBlocks(stats, preset, customBlocks);
   const ctx = {
     theme, strings, metrics: isPhoto ? METRICS.photo : METRICS.full,
-    contentWidth: format.width - 2 * MARGIN, height: format.height, hasHero,
+    contentWidth: format.width - 2 * MARGIN, height: format.height, hasHero, hideWeights,
   };
   const background = isPhoto ? photoBackgroundFill(photoBackground, format) : theme.background(format);
   const elements = [{ type: 'rect', x: 0, y: 0, w: format.width, h: format.height, fill: background }];
