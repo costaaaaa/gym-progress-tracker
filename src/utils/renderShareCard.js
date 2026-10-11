@@ -80,8 +80,10 @@ export const canvasToPngFile = (canvas, name) => new Promise((resolve, reject) =
 });
 
 /**
- * Legge la foto scelta dall'utente e la riduce: oltre 1600 px non serve e i
- * telefoni scattano a 12+ megapixel. createImageBitmap applica l'orientamento EXIF.
+ * Legge la foto scelta dall'utente e la riduce solo se supera 4096 px: la storia
+ * è alta 1920 e la foto la copre (una orizzontale 16:9 ne vuole 3413 di larghezza),
+ * quindi sotto quella misura verrebbe ingrandita e sfocata. Le foto da 12 MP restano
+ * intere, quelle da 24-48 MP si riducono. createImageBitmap applica l'orientamento EXIF.
  */
 const loadImageElement = (file) => new Promise((resolve, reject) => {
   const url = URL.createObjectURL(file);
@@ -92,7 +94,7 @@ const loadImageElement = (file) => new Promise((resolve, reject) => {
 });
 
 export const loadPhoto = async (file) => {
-  const MAX_SIDE = 1600;
+  const MAX_SIDE = 4096;
   let bitmap;
   try {
     bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
