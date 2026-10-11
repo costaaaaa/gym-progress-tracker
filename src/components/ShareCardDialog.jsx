@@ -16,8 +16,8 @@ import {
   Tune as TuneIcon,
 } from '@mui/icons-material';
 import {
-  TEMPLATES, DEFAULT_PRESET, CUSTOM_BLOCKS, availablePresets, presetToggles, PHOTO_BACKGROUNDS, CARD_WIDTH, PHOTO_BOX, PHOTO_ZOOM_MAX, DEFAULT_PHOTO_TRANSFORM,
-  layoutShareCard, clampPhotoTransform, zoomPhotoAt, photoMinZoom,
+  TEMPLATES, DEFAULT_PRESET, CUSTOM_BLOCKS, availablePresets, presetToggles, PHOTO_BACKGROUNDS, FORMATS, FORMAT_STORIA, PHOTO_ZOOM_MAX, DEFAULT_PHOTO_TRANSFORM,
+  layoutShareCard, clampPhotoTransform, zoomPhotoAt, photoMinZoom, photoBox,
 } from '../utils/shareCard';
 import { loadCardFonts, renderCardToCanvas, canvasToPngFile, loadPhoto } from '../utils/renderShareCard';
 import { track } from '../utils/analytics';
@@ -36,6 +36,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   // altrimenti Safari lo rifiuta perché il gesto dell'utente è "scaduto".
   const fileRef = useRef(null);
   const [template, setTemplate] = useState('scuro');
+  const [format, setFormat] = useState(FORMAT_STORIA);
   const [preset, setPreset] = useState(DEFAULT_PRESET);
   // Blocchi scelti con "Personalizza" (null = si usa la card pronta) e pesi nascosti
   const [customBlocks, setCustomBlocks] = useState(null);
@@ -56,6 +57,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   const shownBlocks = customBlocks || presetToggles(activePreset);
   const toggleBlock = (id) => setCustomBlocks(shownBlocks.includes(id) ? shownBlocks.filter((b) => b !== id) : [...shownBlocks, id]);
   const editable = template === 'foto' && !!photo;
+  const box = photoBox(format);
   // Lo sfondo si vede solo quando la foto, rimpicciolita, non copre più la card
   const backgroundVisible = editable && photoTransform.zoom < 0.999;
 
@@ -71,7 +73,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   useEffect(() => {
     if (!open || !stats || !fontsReady || !canvasRef.current) return undefined;
     let cancelled = false;
-    const layout = layoutShareCard(stats, template, { hasPhoto: !!photo, photoBackground, preset, blocks: customBlocks || undefined, hideWeights });
+    const layout = layoutShareCard(stats, template, { hasPhoto: !!photo, photoBackground, format, preset, blocks: customBlocks || undefined, hideWeights });
     renderCardToCanvas(canvasRef.current, layout, photo, photoTransform);
     setReady(false);
     fileRef.current = null;
@@ -87,7 +89,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
       }
     }, 250);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [open, stats, template, preset, customBlocks, hideWeights, photo, photoTransform, photoBackground, fontsReady]);
+  }, [open, stats, template, format, preset, customBlocks, hideWeights, photo, photoTransform, photoBackground, fontsReady]);
 
   const movePhoto = (update) => {
     if (!photo) return;
@@ -95,11 +97,11 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   };
 
   const zoomAtCenter = (zoom) => movePhoto((t, iw, ih) =>
-    zoomPhotoAt(t, zoom / t.zoom, { x: PHOTO_BOX.x + PHOTO_BOX.w / 2, y: PHOTO_BOX.y + PHOTO_BOX.h / 2 }, iw, ih));
+    zoomPhotoAt(t, zoom / t.zoom, { x: box.x + box.w / 2, y: box.y + box.h / 2 }, iw, ih, box));
 
   const toCardPoint = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
-    const k = CARD_WIDTH / rect.width;
+    const k = format.width / rect.width;
     return { x: (e.clientX - rect.left) * k, y: (e.clientY - rect.top) * k };
   };
 
@@ -119,7 +121,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
     if (after.length === 1) {
       const dx = after[0].x - before[0].x;
       const dy = after[0].y - before[0].y;
-      movePhoto((t, iw, ih) => clampPhotoTransform({ ...t, dx: t.dx + dx, dy: t.dy + dy }, iw, ih));
+      movePhoto((t, iw, ih) => clampPhotoTransform({ ...t, dx: t.dx + dx, dy: t.dy + dy }, iw, ih, box));
       return;
     }
     const mid = (p) => ({ x: (p[0].x + p[1].x) / 2, y: (p[0].y + p[1].y) / 2 });
@@ -127,7 +129,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
     const m0 = mid(before);
     const m1 = mid(after);
     const factor = dist(before) > 0 ? dist(after) / dist(before) : 1;
-    movePhoto((t, iw, ih) => zoomPhotoAt({ ...t, dx: t.dx + m1.x - m0.x, dy: t.dy + m1.y - m0.y }, factor, m1, iw, ih));
+    movePhoto((t, iw, ih) => zoomPhotoAt({ ...t, dx: t.dx + m1.x - m0.x, dy: t.dy + m1.y - m0.y }, factor, m1, iw, ih, box));
   };
 
   const handlePointerUp = (e) => { pointersRef.current.delete(e.pointerId); };
@@ -139,7 +141,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
     if (!editable) return;
     e.preventDefault();
     const point = toCardPoint(e);
-    movePhoto((t, iw, ih) => zoomPhotoAt(t, Math.exp(-e.deltaY * 0.002), point, iw, ih));
+    movePhoto((t, iw, ih) => zoomPhotoAt(t, Math.exp(-e.deltaY * 0.002), point, iw, ih, box));
   };
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -161,6 +163,12 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
     } catch {
       setError('Non riesco a leggere questa foto, prova con un\'altra.');
     }
+  };
+
+  // La foto resta nei limiti del nuovo riquadro (quadrato o storia)
+  const handleFormat = (next) => {
+    setFormat(next);
+    if (photo) setPhotoTransform((t) => clampPhotoTransform(t, photo.width, photo.height, photoBox(next)));
   };
 
   const handleTemplate = (id) => {
@@ -251,7 +259,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
               control={<Switch size="small" checked={hideWeights} onChange={(e) => setHideWeights(e.target.checked)} />} />
           </Box>
         </Collapse>
-        <Box sx={{ position: 'relative', width: '100%', maxWidth: 'calc(62vh * 9 / 16)', aspectRatio: '9 / 16' }}>
+        <Box sx={{ position: 'relative', width: '100%', maxWidth: `calc(62vh * ${format.width} / ${format.height})`, aspectRatio: `${format.width} / ${format.height}` }}>
           <canvas ref={canvasRef}
             onPointerDown={handlePointerDown} onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp}
@@ -277,6 +285,14 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
         </Box>
         <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={handlePhotoChange} />
 
+        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+          {FORMATS.map((f) => (
+            <Chip key={f.id} label={f.label} size="small" onClick={() => handleFormat(f)}
+              color={format.id === f.id ? 'primary' : 'default'}
+              variant={format.id === f.id ? 'filled' : 'outlined'} />
+          ))}
+        </Box>
+
         {editable && (
           <Box sx={{ width: '100%', maxWidth: 360 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -284,7 +300,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
               <Slider size="small" aria-label="Zoom della foto"
                 // min arrotondato al passo, così 1 (foto a tutta card) è un valore dello slider;
                 // il limite vero lo applica zoomPhotoAt
-                min={Math.floor(photoMinZoom(photo.width, photo.height) * 100) / 100} max={PHOTO_ZOOM_MAX} step={0.01}
+                min={Math.floor(photoMinZoom(photo.width, photo.height, box) * 100) / 100} max={PHOTO_ZOOM_MAX} step={0.01}
                 value={photoTransform.zoom} onChange={(_, v) => zoomAtCenter(v)} />
               <ZoomInIcon fontSize="small" color="action" />
               <IconButton size="small" aria-label="Rimetti la foto al centro"

@@ -1,5 +1,5 @@
 // ============================================================================
-// Card da condividere dopo un allenamento (storia 1080×1920).
+// Card da condividere dopo un allenamento (storia 1080×1920 o quadrato 1080×1080).
 // Funzioni pure, senza React: statistiche, testi e posizione di ogni elemento.
 // Il web le disegna su <canvas> (renderShareCard.js), il mobile con
 // react-native-svg (ShareCardSvg.jsx): la grafica è definita solo qui.
@@ -8,8 +8,10 @@
 
 import { extractReps, estimateOneRepMax, summarizeSets, buildExerciseHistoryIndex, detectPersonalRecords } from './workoutMetrics';
 
-// Formato della card: dimensioni in px. Per ora solo la storia.
-export const FORMAT_STORIA = { id: 'storia', width: 1080, height: 1920 };
+// Formato della card: dimensioni in px. Storia per le storie, Quadrato per feed e chat.
+export const FORMAT_STORIA = { id: 'storia', label: 'Storia', width: 1080, height: 1920 };
+export const FORMAT_QUADRATO = { id: 'quadrato', label: 'Quadrato', width: 1080, height: 1080 };
+export const FORMATS = [FORMAT_STORIA, FORMAT_QUADRATO];
 
 export const CARD_WIDTH = FORMAT_STORIA.width;
 export const CARD_HEIGHT = FORMAT_STORIA.height;
@@ -309,17 +311,17 @@ const tileGrid = (tiles, y, ctx, { columns, height, valueSize, labelSize }) => {
 const streakLine = (weeks, strings) =>
   (weeks > 0 ? fill(weeks === 1 ? strings.streakOne : strings.streakMany, { n: weeks }) : null);
 
-const header = (theme) => [
-  { type: 'rect', x: MARGIN, y: 228, w: 14, h: 58, r: 4, fill: theme.mark },
-  text(MARGIN + 34, 276, 'LIFTINDEX', 46, theme.text, { weight: 800, letterSpacing: 6 }),
+const header = (theme, { header: h }) => [
+  { type: 'rect', x: MARGIN, y: h.y, w: 14, h: h.markH, r: 4, fill: theme.mark },
+  text(MARGIN + 34, h.y + h.baselineDy, 'LIFTINDEX', h.size, theme.text, { weight: 800, letterSpacing: 6 }),
 ];
 
-const footer = (theme, format) => text(format.width / 2, format.height - 90, 'liftindex.app', 32, theme.muted, { weight: 500, align: 'center', letterSpacing: 2 });
+const footer = (theme, format, { footerDy }) => text(format.width / 2, format.height - footerDy, 'liftindex.app', 32, theme.muted, { weight: 500, align: 'center', letterSpacing: 2 });
 
 // ── Blocchi ────────────────────────────────────────────────────────────────
 // Un blocco è (stats, ctx, y) => { elements, height }: disegna a partire da y e dice quanto
 // spazio occupa, compreso il vuoto che lo separa dal blocco dopo. stack() li impila.
-// ctx = { theme, strings, metrics, contentWidth, height }. Le misure (corpi dei testi,
+// ctx = { theme, strings, metrics, contentWidth, height, fit }. Le misure (corpi dei testi,
 // distanze) cambiano da un layout all'altro e stanno in METRICS.
 
 const METRICS = {
@@ -334,7 +336,7 @@ const METRICS = {
     streak: { size: 32, height: 60, maxY: 1760 },
     recordBig: { labelSize: 34, nameSize: 70, nameMin: 46, nameDy: 88, valueSize: 220, valueGap: 40, deltaSize: 56, deltaStep: 96, othersSize: 34, othersStep: 58, tail: 70 },
     musclesBig: { labelSize: 34, firstRow: 70, pitch: 112, nameSize: 44, nameDy: 42, barDy: 62, barHeight: 22, tail: 60 },
-    list: { labelSize: 30, firstRow: 56, pitch: 84, rowHeight: 68, rowDy: 46, nameSize: 38, nameMin: 28, valueSize: 38, padding: 24, tail: 40, maxRows: 9, limit: 1780 },
+    list: { labelSize: 30, firstRow: 56, pitch: 84, rowHeight: 68, rowDy: 46, nameSize: 38, nameMin: 28, valueSize: 38, padding: 24, tail: 40, minRows: 1, maxRows: 9, limit: 1780 },
   },
   // Foto: la foto resta visibile in alto, i numeri stanno nella parte bassa.
   photo: {
@@ -347,9 +349,40 @@ const METRICS = {
     streak: { size: 30, height: 60, maxY: Infinity },
     recordBig: { labelSize: 30, nameSize: 58, nameMin: 40, nameDy: 74, valueSize: 160, valueGap: 34, deltaSize: 44, deltaStep: 64, othersSize: 30, othersStep: 48, tail: 60 },
     musclesBig: { labelSize: 28, firstRow: 56, pitch: 88, nameSize: 36, nameDy: 34, barDy: 50, barHeight: 18, tail: 50 },
-    list: { labelSize: 26, firstRow: 48, pitch: 72, rowHeight: 58, rowDy: 40, nameSize: 32, nameMin: 24, valueSize: 32, padding: 20, tail: 40, maxRows: 5, limit: Infinity },
+    list: { labelSize: 26, firstRow: 48, pitch: 72, rowHeight: 58, rowDy: 40, nameSize: 32, nameMin: 24, valueSize: 32, padding: 20, tail: 40, minRows: 1, maxRows: 5, limit: Infinity },
+  },
+  // Quadrato (1080×1080): misure compatte, uguali per tutti i template. L'altezza non basta
+  // per tutti i blocchi: layoutShareCard li accorcia (vedi FIT_STATES).
+  square: {
+    heading: { dateSize: 30, titleSize: 52, titleMin: 38, titleDy: 62, height: 112 },
+    record: { labelSize: 26, nameSize: 48, nameMin: 36, nameDy: 58, valueSize: 112, valueGap: 24, deltaSize: 36, deltaStep: 52, othersSize: 28, othersStep: 44, tail: 32 },
+    effort: { valueSize: 110, valueDy: 90, labelDy: 48, labelSize: 26, lineSize: 72, lineDy: 60, tail: 40 },
+    tiles: { columns: 3, height: 112, valueSize: 44, labelSize: 20 },
+    tilesAfter: 32,
+    muscles: { labelSize: 26, firstRow: 40, pitch: 50, nameSize: 28, nameDy: 24, barDy: 34, barHeight: 10, tail: 28 },
+    streak: { size: 28, height: 50, maxY: Infinity },
+    recordBig: { labelSize: 28, nameSize: 56, nameMin: 40, nameDy: 70, valueSize: 150, valueGap: 28, deltaSize: 42, deltaStep: 68, othersSize: 28, othersStep: 44, tail: 44 },
+    musclesBig: { labelSize: 28, firstRow: 50, pitch: 80, nameSize: 36, nameDy: 34, barDy: 50, barHeight: 16, tail: 40 },
+    list: { labelSize: 24, firstRow: 42, pitch: 62, rowHeight: 50, rowDy: 35, nameSize: 28, nameMin: 22, valueSize: 28, padding: 18, tail: 24, minRows: 2, maxRows: 9, limit: Infinity },
   },
 };
+
+// Misure e posizioni fisse di ogni formato. fit: true = i blocchi si accorciano se non
+// entrano (la storia ha spazio da vendere e non lo usa).
+const LAYOUTS = {
+  storia: {
+    header: { y: 228, markH: 58, baselineDy: 48, size: 46 }, footerDy: 90,
+    top: 400, photoBottom: 150, photoTop: 0, fit: false, gradient: { top: 520, bottom: 560 },
+    metrics: { full: METRICS.full, photo: METRICS.photo },
+  },
+  quadrato: {
+    header: { y: 50, markH: 44, baselineDy: 36, size: 36 }, footerDy: 36,
+    top: 146, bottom: 1020, photoBottom: 80, photoTop: 130, fit: true, gradient: { top: 290, bottom: 300 },
+    metrics: { full: METRICS.square, photo: METRICS.square },
+  },
+};
+const layoutOf = (format) => LAYOUTS[format.id] || LAYOUTS.storia;
+
 
 const headingBlock = (stats, { theme, strings, metrics, contentWidth }, y) => {
   const m = metrics.heading;
@@ -433,11 +466,12 @@ const tilesBlock = (stats, ctx, y) => {
   return { elements: grid.elements, height: grid.height + ctx.metrics.tilesAfter };
 };
 
-const musclesBlock = (stats, { theme, strings, metrics, contentWidth }, y) => {
+const musclesBlock = (stats, { theme, strings, metrics, contentWidth, fit: shrink }, y) => {
   const m = metrics.muscles;
-  if (!stats.muscles.length) return { elements: [], height: 0 };
+  const muscles = stats.muscles.slice(0, shrink.muscleRows);
+  if (!muscles.length) return { elements: [], height: 0 };
   const elements = [text(MARGIN, y, strings.muscles, m.labelSize, theme.muted, { weight: 600, letterSpacing: 4 })];
-  stats.muscles.forEach((muscle, i) => {
+  muscles.forEach((muscle, i) => {
     const top = y + m.firstRow + i * m.pitch;
     const name = fit(muscle.group, contentWidth - 140, m.nameSize, m.nameSize * 0.7);
     elements.push(text(MARGIN, top + m.nameDy, name.text, name.size, theme.text, { weight: 600 }));
@@ -445,13 +479,13 @@ const musclesBlock = (stats, { theme, strings, metrics, contentWidth }, y) => {
     elements.push({ type: 'rect', x: MARGIN, y: top + m.barDy, w: contentWidth, h: m.barHeight, r: m.barHeight / 2, fill: theme.tile });
     elements.push({ type: 'rect', x: MARGIN, y: top + m.barDy, w: Math.max(m.barHeight, (contentWidth * muscle.pct) / 100), h: m.barHeight, r: m.barHeight / 2, fill: theme.big });
   });
-  return { elements, height: m.firstRow + stats.muscles.length * m.pitch + m.tail };
+  return { elements, height: m.firstRow + muscles.length * m.pitch + m.tail };
 };
 
-const streakBlock = (stats, { theme, strings, metrics }, y) => {
+const streakBlock = (stats, { theme, strings, metrics, fit: shrink }, y) => {
   const streak = streakLine(stats.streakWeeks, strings);
   const m = metrics.streak;
-  if (!streak || y >= m.maxY) return { elements: [], height: 0 };
+  if (!streak || !shrink.streak || y >= m.maxY) return { elements: [], height: 0 };
   return { elements: [text(MARGIN, y, streak.toUpperCase(), m.size, theme.accent, { weight: 700, letterSpacing: 3 })], height: m.height };
 };
 
@@ -475,12 +509,12 @@ const bigMusclesBlock = (stats, ctx, y) =>
 
 // Elenco a righe: nome a sinistra, valore a destra; le righe evidenziate (record) hanno uno
 // sfondo e il valore in accento. Se non entrano tutte, l'ultima riga diventa "+N ...".
-const listBlock = (label, rows, moreTemplate) => (stats, { theme, strings, metrics, contentWidth, hideWeights }, y) => {
+const listBlock = (label, rows, moreTemplate) => (stats, { theme, strings, metrics, contentWidth, hideWeights, fit: shrink }, y) => {
   const m = metrics.list;
   const items = rows(stats, strings, hideWeights);
   if (!items.length) return { elements: [], height: 0 };
   const space = Math.floor((m.limit - y - m.firstRow - m.tail) / m.pitch);
-  const capacity = Math.max(1, Math.min(m.maxRows, space));
+  const capacity = Math.max(m.minRows, Math.min(m.maxRows, space, shrink.listRows));
   const shown = items.length > capacity ? items.slice(0, capacity - 1) : items;
   const elements = [text(MARGIN, y, strings[label], m.labelSize, theme.muted, { weight: 600, letterSpacing: 4 })];
   shown.forEach((item, i) => {
@@ -576,15 +610,43 @@ const chosenBlocks = (stats, presetId, custom) => {
   return { blocks: [headingBlock, ...ids.map((id) => BLOCKS[id])], hasHero: ids.includes('hero') };
 };
 
+// Quando i blocchi non entrano (quadrato) si prova, nell'ordine, ad accorciare l'elenco
+// esercizi/record (fino a 2 righe + "+N"), poi i muscoli (3, poi 2 righe), poi si toglie la
+// riga delle settimane di fila. Si usa il primo stato in cui l'altezza basta. Gli ultimi due
+// stati servono solo alle card personalizzate con quasi tutti i blocchi accesi.
+const NO_SHRINK = { listRows: Infinity, muscleRows: Infinity, streak: true };
+const FIT_STATES = [
+  ...[9, 8, 7, 6, 5, 4, 3].map((listRows) => ({ listRows, muscleRows: MUSCLES_SHOWN, streak: true })),
+  { listRows: 3, muscleRows: 3, streak: true },
+  { listRows: 3, muscleRows: 2, streak: true },
+  { listRows: 3, muscleRows: 2, streak: false },
+  { listRows: 2, muscleRows: 2, streak: false },
+  { listRows: 2, muscleRows: 1, streak: false },
+];
+
+const fitted = (blocks, stats, ctx, y, available) => {
+  if (!ctx.layout.fit) return { ...ctx, fit: NO_SHRINK };
+  let tried;
+  for (const fit of FIT_STATES) {
+    tried = { ...ctx, fit };
+    if (stack(blocks, stats, tried, y).height <= available) break;
+  }
+  return tried;
+};
+
 // Scuro e Rosso: i blocchi scendono dall'alto, sotto l'intestazione.
-const FULL_TOP = 400;
-const fullLayout = (blocks, stats, ctx) => stack(blocks, stats, ctx, FULL_TOP).elements;
+const fullLayout = (blocks, stats, ctx) => {
+  const { top, bottom } = ctx.layout;
+  return stack(blocks, stats, fitted(blocks, stats, ctx, top, bottom - top), top).elements;
+};
 
 // Foto: i blocchi poggiano in basso e crescono verso l'alto, lasciando libera la foto.
-const PHOTO_BOTTOM_MARGIN = 150;
 const photoBlocksLayout = (blocks, stats, ctx) => {
-  const total = stack(blocks, stats, ctx, 0).height;
-  return stack(blocks, stats, ctx, ctx.height - PHOTO_BOTTOM_MARGIN - total).elements;
+  const { photoBottom, photoTop } = ctx.layout;
+  const base = ctx.height - photoBottom;
+  const sized = fitted(blocks, stats, ctx, 0, base - photoTop);
+  const total = stack(blocks, stats, sized, 0).height;
+  return stack(blocks, stats, sized, base - total).elements;
 };
 
 // ── Foto: posizione e zoom scelti dall'utente ──────────────────────────────
@@ -633,10 +695,11 @@ export const zoomPhotoAt = (transform, factor, point, iw, ih, box = PHOTO_BOX) =
 const photoUnderlay = (format, hasPhoto) => {
   if (!hasPhoto) return [];
   const { width, height } = format;
+  const { top, bottom } = layoutOf(format).gradient;
   return [
     { type: 'photo', ...photoBox(format) },
-    { type: 'rect', x: 0, y: 0, w: width, h: 520, fill: { gradient: { x0: 0, y0: 0, x1: 0, y1: 520, stops: [[0, 'rgba(0,0,0,0.55)'], [1, 'rgba(0,0,0,0)']] } } },
-    { type: 'rect', x: 0, y: 560, w: width, h: height - 560, fill: { gradient: { x0: 0, y0: 560, x1: 0, y1: height, stops: [[0, 'rgba(0,0,0,0)'], [0.25, 'rgba(0,0,0,0.72)'], [1, 'rgba(0,0,0,0.94)']] } } },
+    { type: 'rect', x: 0, y: 0, w: width, h: top, fill: { gradient: { x0: 0, y0: 0, x1: 0, y1: top, stops: [[0, 'rgba(0,0,0,0.55)'], [1, 'rgba(0,0,0,0)']] } } },
+    { type: 'rect', x: 0, y: bottom, w: width, h: height - bottom, fill: { gradient: { x0: 0, y0: bottom, x1: 0, y1: height, stops: [[0, 'rgba(0,0,0,0)'], [0.25, 'rgba(0,0,0,0.72)'], [1, 'rgba(0,0,0,0.94)']] } } },
   ];
 };
 
@@ -658,15 +721,16 @@ export const layoutShareCard = (stats, templateId, {
   const theme = THEMES[templateId] || THEMES.scuro;
   const isPhoto = templateId === 'foto';
   const { blocks, hasHero } = chosenBlocks(stats, preset, customBlocks);
+  const layout = layoutOf(format);
   const ctx = {
-    theme, strings, metrics: isPhoto ? METRICS.photo : METRICS.full,
-    contentWidth: format.width - 2 * MARGIN, height: format.height, hasHero, hideWeights,
+    theme, strings, layout, metrics: isPhoto ? layout.metrics.photo : layout.metrics.full,
+    contentWidth: format.width - 2 * MARGIN, height: format.height, hasHero, hideWeights, fit: NO_SHRINK,
   };
   const background = isPhoto ? photoBackgroundFill(photoBackground, format) : theme.background(format);
   const elements = [{ type: 'rect', x: 0, y: 0, w: format.width, h: format.height, fill: background }];
   if (isPhoto) elements.push(...photoUnderlay(format, hasPhoto));
-  elements.push(...header(theme));
+  elements.push(...header(theme, layout));
   elements.push(...(isPhoto ? photoBlocksLayout(blocks, stats, ctx) : fullLayout(blocks, stats, ctx)));
-  elements.push(footer(theme, format));
+  elements.push(footer(theme, format, layout));
   return { width: format.width, height: format.height, elements };
 };
