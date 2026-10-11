@@ -30,9 +30,9 @@ const MuscleRow = ({ group, recoveryData }) => {
   const status = recoveryData?.[group]?.status;
   const meta = STATUS_META[status];
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1 }}>
       <Typography sx={{ fontSize: 13, color: 'text.primary' }}>{muscleLabel(group)}</Typography>
-      <Typography sx={{ fontSize: 12, fontWeight: 600, color: meta ? meta.color : 'text.disabled' }}>
+      <Typography sx={{ fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', color: meta ? meta.color : 'text.disabled' }}>
         {meta ? t(meta.label) : t('recovery.no_data')}
       </Typography>
     </Box>
@@ -52,14 +52,16 @@ const BodyVisualizer = ({ recoveryData }) => {
       </Typography>
 
       {/* Due liste separate da un divisore verticale, per evitare l'ambiguità della griglia
-          implicita (dove non era chiaro quali righe appartenessero a quale colonna). */}
-      <Box sx={{ display: 'flex', gap: 3 }}>
+          implicita (dove non era chiaro quali righe appartenessero a quale colonna).
+          Sui telefoni le colonne sarebbero troppo strette ("Quadricipiti" + "In recupero"
+          andava a capo): lì diventano una lista unica. */}
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1.5, sm: 3 } }}>
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5, minWidth: 0 }}>
           {leftColumn.map((group) => (
             <MuscleRow key={group} group={group} recoveryData={recoveryData} />
           ))}
         </Box>
-        <Box sx={{ width: '1px', bgcolor: 'divider', flexShrink: 0 }} />
+        <Box sx={{ display: { xs: 'none', sm: 'block' }, width: '1px', bgcolor: 'divider', flexShrink: 0 }} />
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5, minWidth: 0 }}>
           {rightColumn.map((group) => (
             <MuscleRow key={group} group={group} recoveryData={recoveryData} />
