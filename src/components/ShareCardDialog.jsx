@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog, DialogContent, DialogActions, Box, Button, Chip, Collapse, FormControlLabel, IconButton, Slider, Switch, Typography,
   CircularProgress, useMediaQuery, useTheme,
@@ -21,12 +22,8 @@ import {
 } from '../utils/shareCard';
 import { loadCardFonts, renderCardToCanvas, canvasToPngFile, loadPhoto } from '../utils/renderShareCard';
 import { track } from '../utils/analytics';
+import { shareCardStrings } from '../i18n/shareCardStrings';
 
-/**
- * Anteprima e condivisione della card di un allenamento come immagine.
- * stats = buildShareStats(...) da utils/shareCard.js. La foto scelta resta nel
- * browser: si disegna sul canvas e non viene mai inviata al server.
- */
 const SWIPE_MIN_PX = 50;
 const PREFS_KEY = 'lx_share_card';
 
@@ -45,7 +42,15 @@ const CHECKERBOARD = {
   backgroundPosition: '0 0, 12px 12px',
 };
 
+
+/**
+ * Anteprima e condivisione della card di un allenamento come immagine.
+ * stats = buildShareStats(...) da utils/shareCard.js. La foto scelta resta nel
+ * browser: si disegna sul canvas e non viene mai inviata al server.
+ */
 const ShareCardDialog = ({ open, onClose, stats }) => {
+  const { t } = useTranslation();
+  const bgLabel = (bg) => t(`share.bg.${bg.id}`, { defaultValue: bg.label });
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const canvasRef = useRef(null);
@@ -95,13 +100,13 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   useEffect(() => {
     if (!open || !stats || !fontsReady || !canvasRef.current) return undefined;
     let cancelled = false;
-    const layout = layoutShareCard(stats, template, { hasPhoto: !!photo, photoBackground, format, preset, blocks: customBlocks || undefined, hideWeights });
+    const layout = layoutShareCard(stats, template, { hasPhoto: !!photo, photoBackground, format, preset, blocks: customBlocks || undefined, hideWeights, strings: shareCardStrings() });
     renderCardToCanvas(canvasRef.current, layout, photo, photoTransform);
     setReady(false);
     fileRef.current = null;
     const timer = setTimeout(async () => {
       try {
-        const file = await canvasToPngFile(canvasRef.current, 'liftindex-allenamento.png');
+        const file = await canvasToPngFile(canvasRef.current, t('share.filename'));
         if (!cancelled) {
           fileRef.current = file;
           setReady(true);
@@ -111,7 +116,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
       }
     }, 250);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [open, stats, template, format, preset, customBlocks, hideWeights, photo, photoTransform, photoBackground, fontsReady]);
+  }, [open, stats, template, format, preset, customBlocks, hideWeights, photo, photoTransform, photoBackground, fontsReady, t]);
 
   useEffect(() => {
     try {
@@ -211,7 +216,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
       setPhotoTransform(DEFAULT_PHOTO_TRANSFORM);
       setTemplate('foto');
     } catch {
-      setError('Non riesco a leggere questa foto, prova con un\'altra.');
+      setError(t('share.error_photo'));
     }
   };
 
@@ -271,7 +276,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      setError('Non è stato possibile copiare l\'immagine.');
+      setError(t('share.error_copy'));
     }
   };
 
@@ -285,27 +290,27 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
     <Dialog open={open} onClose={onClose} fullScreen={fullScreen} maxWidth="xs" fullWidth
       PaperProps={{ sx: { borderRadius: fullScreen ? 0 : '16px' } }}>
       <Box sx={{ display: 'flex', alignItems: 'center', px: 2, pt: 1.5 }}>
-        <Typography variant="h6" sx={{ flex: 1, fontWeight: 700 }}>Condividi</Typography>
-        <IconButton onClick={onClose} aria-label="Chiudi"><CloseIcon /></IconButton>
+        <Typography variant="h6" sx={{ flex: 1, fontWeight: 700 }}>{t('share.title')}</Typography>
+        <IconButton onClick={onClose} aria-label={t('share.close')}><CloseIcon /></IconButton>
       </Box>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, pt: 1 }}>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center' }}>
           {presets.map((p) => (
-            <Chip key={p.id} label={p.label} size="small" onClick={() => { setPreset(p.id); setCustomBlocks(null); }}
+            <Chip key={p.id} label={t(`share.preset.${p.id}`, { defaultValue: p.label })} size="small" onClick={() => { setPreset(p.id); setCustomBlocks(null); }}
               color={!customBlocks && activePreset === p.id ? 'primary' : 'default'}
               variant={!customBlocks && activePreset === p.id ? 'filled' : 'outlined'} />
           ))}
-          {customBlocks && <Chip label="Personalizzata" size="small" color="primary" />}
-          <Chip icon={<TuneIcon />} label="Personalizza" size="small" variant="outlined"
+          {customBlocks && <Chip label={t('share.customized')} size="small" color="primary" />}
+          <Chip icon={<TuneIcon />} label={t('share.customize')} size="small" variant="outlined"
             onClick={() => setCustomizing((v) => !v)} />
         </Box>
         <Collapse in={customizing} sx={{ width: '100%' }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', px: 2 }}>
             {CUSTOM_BLOCKS.map((b) => (
-              <FormControlLabel key={b.id} label={b.label}
+              <FormControlLabel key={b.id} label={t(`share.block.${b.id}`, { defaultValue: b.label })}
                 control={<Switch size="small" checked={shownBlocks.includes(b.id)} onChange={() => toggleBlock(b.id)} />} />
             ))}
-            <FormControlLabel label="Nascondi i pesi"
+            <FormControlLabel label={t('share.hide_weights')}
               control={<Switch size="small" checked={hideWeights} onChange={(e) => setHideWeights(e.target.checked)} />} />
           </Box>
         </Collapse>
@@ -325,13 +330,13 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
         </Box>
 
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center' }}>
-          {TEMPLATES.map((t) => (
-            <Chip key={t.id} label={t.label} onClick={() => handleTemplate(t.id)}
-              color={template === t.id ? 'primary' : 'default'}
-              variant={template === t.id ? 'filled' : 'outlined'} />
+          {TEMPLATES.map((tpl) => (
+            <Chip key={tpl.id} label={t(`share.template.${tpl.id}`, { defaultValue: tpl.label })} onClick={() => handleTemplate(tpl.id)}
+              color={template === tpl.id ? 'primary' : 'default'}
+              variant={template === tpl.id ? 'filled' : 'outlined'} />
           ))}
           {template !== 'trasparente' && (
-            <Chip icon={<AddPhotoIcon />} label={photo ? 'Cambia foto' : 'Aggiungi foto'} variant="outlined"
+            <Chip icon={<AddPhotoIcon />} label={photo ? t('share.change_photo') : t('share.add_photo')} variant="outlined"
               onClick={() => fileInputRef.current?.click()} />
           )}
         </Box>
@@ -339,7 +344,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
 
         <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
           {FORMATS.map((f) => (
-            <Chip key={f.id} label={f.label} size="small" onClick={() => handleFormat(f)}
+            <Chip key={f.id} label={t(`share.format.${f.id}`, { defaultValue: f.label })} size="small" onClick={() => handleFormat(f)}
               color={format.id === f.id ? 'primary' : 'default'}
               variant={format.id === f.id ? 'filled' : 'outlined'} />
           ))}
@@ -349,26 +354,26 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
           <Box sx={{ width: '100%', maxWidth: 360 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <ZoomOutIcon fontSize="small" color="action" />
-              <Slider size="small" aria-label="Zoom della foto"
+              <Slider size="small" aria-label={t('share.zoom')}
                 // min arrotondato al passo, così 1 (foto a tutta card) è un valore dello slider;
                 // il limite vero lo applica zoomPhotoAt
                 min={Math.floor(photoMinZoom(photo.width, photo.height, box) * 100) / 100} max={PHOTO_ZOOM_MAX} step={0.01}
                 value={photoTransform.zoom} onChange={(_, v) => zoomAtCenter(v)} />
               <ZoomInIcon fontSize="small" color="action" />
-              <IconButton size="small" aria-label="Rimetti la foto al centro"
+              <IconButton size="small" aria-label={t('share.center')}
                 onClick={() => setPhotoTransform(DEFAULT_PHOTO_TRANSFORM)}>
                 <CenterIcon fontSize="small" />
               </IconButton>
             </Box>
             <Typography variant="caption" color="text.secondary" component="p" sx={{ textAlign: 'center' }}>
-              Trascina la foto per spostarla, usa due dita o la rotella per ingrandirla
+              {t('share.photo_hint')}
             </Typography>
             {backgroundVisible && (
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.25, mt: 1.5 }}>
-                <Typography variant="body2" color="text.secondary" sx={{ mr: 0.5 }}>Sfondo</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mr: 0.5 }}>{t('share.background')}</Typography>
                 {PHOTO_BACKGROUNDS.map((bg) => (
-                  <Box key={bg.id} component="button" type="button" aria-label={`Sfondo ${bg.label}`}
-                    aria-pressed={photoBackground === bg.id} title={bg.label}
+                  <Box key={bg.id} component="button" type="button" aria-label={t('share.background_named', { name: bgLabel(bg) })}
+                    aria-pressed={photoBackground === bg.id} title={bgLabel(bg)}
                     onClick={() => setPhotoBackground(bg.id)}
                     sx={{
                       width: 28, height: 28, p: 0, borderRadius: '50%', cursor: 'pointer',
@@ -387,15 +392,15 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
         <Button variant="outlined" startIcon={<DownloadIcon />} onClick={handleDownload} disabled={!ready}>
-          Scarica
+          {t('share.download')}
         </Button>
         {canCopyImage && (
           <Button variant="outlined" startIcon={copied ? <CheckIcon /> : <CopyIcon />} onClick={handleCopy} disabled={!ready}>
-            {copied ? 'Copiata' : 'Copia'}
+            {copied ? t('share.copied') : t('share.copy')}
           </Button>
         )}
         <Button variant="contained" startIcon={<ShareIcon />} onClick={handleShare} disabled={!ready} sx={{ flex: 1 }}>
-          Condividi
+          {t('share.share')}
         </Button>
       </DialogActions>
     </Dialog>

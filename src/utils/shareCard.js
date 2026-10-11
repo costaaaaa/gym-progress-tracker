@@ -19,7 +19,8 @@ export const CARD_HEIGHT = FORMAT_STORIA.height;
 const MARGIN = 90;
 
 // Tutti i testi della card. Chi disegna la card in un'altra lingua passa un oggetto con le
-// stesse chiavi; {nome} è un segnaposto sostituito da fill().
+// stesse chiavi; {nome} è un segnaposto sostituito da fill(). Facoltativo: muscleName(gruppo)
+// per tradurre i gruppi muscolari (di base si mostra il nome del catalogo).
 export const STRINGS_IT = {
   days: ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'],
   months: ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio',
@@ -92,7 +93,7 @@ const formatDecimal = (n, strings = STRINGS_IT) =>
  * I due gruppi muscolari con più serie, es. "Petto · Tricipiti". Titolo della card
  * per gli allenamenti della cronologia, che non ricordano piano e giorno.
  */
-export const muscleGroupsTitle = (exercises) => {
+export const muscleGroupsTitle = (exercises, label) => {
   const counts = {};
   (exercises || []).forEach((ex) => {
     if (!ex.muscle_group) return;
@@ -101,7 +102,7 @@ export const muscleGroupsTitle = (exercises) => {
   return Object.keys(counts)
     .sort((a, b) => counts[b] - counts[a])
     .slice(0, 2)
-    .map((g) => g.charAt(0).toUpperCase() + g.slice(1))
+    .map((g) => (label ? label(g) : g.charAt(0).toUpperCase() + g.slice(1)))
     .join(' · ');
 };
 
@@ -478,7 +479,7 @@ const musclesBlock = (stats, { theme, strings, metrics, contentWidth, fit: shrin
   const elements = [text(MARGIN, y, strings.muscles, m.labelSize, theme.muted, { weight: 600, letterSpacing: 4 })];
   muscles.forEach((muscle, i) => {
     const top = y + m.firstRow + i * m.pitch;
-    const name = fit(muscle.group, contentWidth - 140, m.nameSize, m.nameSize * 0.7);
+    const name = fit(strings.muscleName ? strings.muscleName(muscle.group) : muscle.group, contentWidth - 140, m.nameSize, m.nameSize * 0.7);
     elements.push(text(MARGIN, top + m.nameDy, name.text, name.size, theme.text, { weight: 600 }));
     elements.push(text(MARGIN + contentWidth, top + m.nameDy, `${muscle.pct}%`, m.nameSize, theme.text, { weight: 700, align: 'right' }));
     elements.push({ type: 'rect', x: MARGIN, y: top + m.barDy, w: contentWidth, h: m.barHeight, r: m.barHeight / 2, fill: theme.tile });

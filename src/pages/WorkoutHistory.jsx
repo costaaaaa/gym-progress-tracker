@@ -38,6 +38,7 @@ import { track } from '../utils/analytics';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import { intlLocale } from '../i18n/format';
+import { muscleLabel } from '../i18n/labels';
 
 // Determina il formato dei dati e organizza gli esercizi di un allenamento in modo uniforme
 // (ex helper interno di WorkoutDetailDialog: il backend restituisce righe storiche in due forme
@@ -238,7 +239,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
       exercises: workout.exercises,
       date: workout.date,
       durationSec: workout.duration_seconds,
-      title: muscleGroupsTitle(workout.exercises),
+      title: muscleGroupsTitle(workout.exercises, muscleLabel),
       records: historyRecords(workouts, workout),
     }));
     track('workout_card', { action: 'open', from: 'history' });
