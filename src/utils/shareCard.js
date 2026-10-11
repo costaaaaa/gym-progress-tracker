@@ -608,6 +608,21 @@ export const availablePresets = (stats) => PRESETS.filter((p) => {
   return true;
 });
 
+// Scelte ricordate tra una condivisione e l'altra (la foto mai). Il valore salvato può essere
+// assente, vecchio o corrotto: ogni campo non valido torna al predefinito. "Foto" non si
+// ripristina perché la foto non c'è più: si riparte da Scuro.
+export const sanitizePrefs = (raw) => {
+  const p = raw && typeof raw === 'object' ? raw : {};
+  const customIds = CUSTOM_BLOCKS.map((b) => b.id);
+  return {
+    template: TEMPLATES.some((t) => t.id === p.template) && p.template !== 'foto' ? p.template : 'scuro',
+    format: FORMATS.find((f) => f.id === p.format) || FORMAT_STORIA,
+    preset: PRESETS.some((x) => x.id === p.preset) ? p.preset : DEFAULT_PRESET,
+    customBlocks: Array.isArray(p.customBlocks) ? customIds.filter((id) => p.customBlocks.includes(id)) : null,
+    hideWeights: p.hideWeights === true,
+  };
+};
+
 // La card pronta a destra (+1) o a sinistra (-1) di quella attiva, in giro; salta quelle senza dati.
 export const stepPreset = (stats, presetId, step) => {
   const list = availablePresets(stats);

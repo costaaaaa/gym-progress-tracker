@@ -16,7 +16,7 @@ import {
   Tune as TuneIcon,
 } from '@mui/icons-material';
 import {
-  TEMPLATES, DEFAULT_PRESET, CUSTOM_BLOCKS, availablePresets, stepPreset, presetToggles, PHOTO_BACKGROUNDS, FORMATS, FORMAT_STORIA, PHOTO_ZOOM_MAX, DEFAULT_PHOTO_TRANSFORM,
+  TEMPLATES, DEFAULT_PRESET, CUSTOM_BLOCKS, availablePresets, stepPreset, sanitizePrefs, presetToggles, PHOTO_BACKGROUNDS, FORMATS, PHOTO_ZOOM_MAX, DEFAULT_PHOTO_TRANSFORM,
   layoutShareCard, clampPhotoTransform, zoomPhotoAt, photoMinZoom, photoBox,
 } from '../utils/shareCard';
 import { loadCardFonts, renderCardToCanvas, canvasToPngFile, loadPhoto } from '../utils/renderShareCard';
@@ -28,6 +28,15 @@ import { track } from '../utils/analytics';
  * browser: si disegna sul canvas e non viene mai inviata al server.
  */
 const SWIPE_MIN_PX = 50;
+const PREFS_KEY = 'lx_share_card';
+
+const loadPrefs = () => {
+  try {
+    return sanitizePrefs(JSON.parse(localStorage.getItem(PREFS_KEY)));
+  } catch {
+    return sanitizePrefs(null);
+  }
+};
 
 const CHECKERBOARD = {
   backgroundColor: '#8a8a8a',
@@ -44,13 +53,15 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   // Il PNG si prepara dopo ogni disegno: navigator.share va chiamato subito al tocco,
   // altrimenti Safari lo rifiuta perché il gesto dell'utente è "scaduto".
   const fileRef = useRef(null);
-  const [template, setTemplate] = useState('scuro');
-  const [format, setFormat] = useState(FORMAT_STORIA);
-  const [preset, setPreset] = useState(DEFAULT_PRESET);
+  // Le scelte dell'ultima volta (tranne la foto) si ritrovano alla riapertura
+  const [initialPrefs] = useState(loadPrefs);
+  const [template, setTemplate] = useState(initialPrefs.template);
+  const [format, setFormat] = useState(initialPrefs.format);
+  const [preset, setPreset] = useState(initialPrefs.preset);
   // Blocchi scelti con "Personalizza" (null = si usa la card pronta) e pesi nascosti
-  const [customBlocks, setCustomBlocks] = useState(null);
+  const [customBlocks, setCustomBlocks] = useState(initialPrefs.customBlocks);
   const [customizing, setCustomizing] = useState(false);
-  const [hideWeights, setHideWeights] = useState(false);
+  const [hideWeights, setHideWeights] = useState(initialPrefs.hideWeights);
   const [photo, setPhoto] = useState(null);
   const [photoTransform, setPhotoTransform] = useState(DEFAULT_PHOTO_TRANSFORM);
   const [photoBackground, setPhotoBackground] = useState(PHOTO_BACKGROUNDS[0].id);
@@ -66,6 +77,8 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   const shownBlocks = customBlocks || presetToggles(activePreset);
   const toggleBlock = (id) => setCustomBlocks(shownBlocks.includes(id) ? shownBlocks.filter((b) => b !== id) : [...shownBlocks, id]);
   const editable = template === 'foto' && !!photo;
+  const cardChoice = customBlocks ? 'custom' : activePreset;
+  const trackCard = (action) => track('workout_card', { action, template, card: cardChoice, format: format.id, hide_weights: hideWeights });
   const box = photoBox(format);
   // Lo sfondo si vede solo quando la foto, rimpicciolita, non copre più la card
   const backgroundVisible = editable && photoTransform.zoom < 0.999;
@@ -99,6 +112,12 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
     }, 250);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [open, stats, template, format, preset, customBlocks, hideWeights, photo, photoTransform, photoBackground, fontsReady]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(PREFS_KEY, JSON.stringify({ template, format: format.id, preset, customBlocks, hideWeights }));
+    } catch { /* storage pieno o bloccato: le scelte valgono solo per questa volta */ }
+  }, [template, format, preset, customBlocks, hideWeights]);
 
   const movePhoto = (update) => {
     if (!photo) return;
@@ -228,12 +247,12 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
     if (!file) return;
     if (!canShareFiles()) {
       download(file);
-      track('workout_card', { action: 'download', template });
+      trackCard('download');
       return;
     }
     try {
       await navigator.share({ files: [file] });
-      track('workout_card', { action: 'share', template });
+      trackCard('share');
     } catch (e) {
       // AbortError = l'utente ha chiuso il foglio di condivisione
       if (e?.name !== 'AbortError') download(file);
@@ -248,7 +267,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
     if (!file) return;
     try {
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': file })]);
-      track('workout_card', { action: 'copy', template });
+      trackCard('copy');
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -259,7 +278,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   const handleDownload = () => {
     if (!fileRef.current) return;
     download(fileRef.current);
-    track('workout_card', { action: 'download', template });
+    trackCard('download');
   };
 
   return (
