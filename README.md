@@ -142,6 +142,12 @@ To upgrade an older database instance, execute:
 
 When a release adds a section, only add columns and tables and remove the old ones in a later release: this way the previous version keeps working with the new schema.
 
+## License
+
+The code is distributed under the [PolyForm Noncommercial 1.0.0](LICENSE.md) license:
+you can use, study and modify it for noncommercial purposes.
+For commercial use, contact me at info@liftindex.app.
+
 ## Author
 
 Andrea Costamagna
@@ -294,6 +300,12 @@ Per aggiornare un database preesistente creato con le versioni precedenti, esegu
 * **`backend/database/schema_alter_migrations.sql`**: sezioni numerate e cumulative. Contiene gli `ALTER TABLE` (campi profilo utente e recupero, note, tecniche di intensità, gamification, timestamp cambio password, ultimo accesso, dati da Apple Salute / Health Connect, durata dell'allenamento, esercizi personali con stato di approvazione, ruolo admin), più i `CREATE TABLE IF NOT EXISTS` idempotenti per le tabelle introdotte dopo la release iniziale (cronologia/set, gamification, rate limiting, token API mobile, recupero password, consensi, gruppi). Ogni sezione va eseguita una volta sola: gli `ALTER` non sono idempotenti.
 
 Quando un rilascio aggiunge una sezione, si aggiungono solo colonne e tabelle e si tolgono le vecchie in un rilascio successivo: così la versione precedente continua a funzionare con lo schema nuovo.
+
+## Licenza
+
+Il codice è distribuito con licenza [PolyForm Noncommercial 1.0.0](LICENSE.md):
+puoi usarlo, studiarlo e modificarlo per scopi non commerciali.
+Per usi commerciali contattami a info@liftindex.app.
 
 ## Autore
 
