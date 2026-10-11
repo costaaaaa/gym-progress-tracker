@@ -6,7 +6,7 @@
 // Copia identica in gym-progress-tracker-mobile/src/domain/shareCard.js.
 // ============================================================================
 
-import { extractReps, summarizeSets, buildExerciseHistoryIndex, detectPersonalRecords } from './workoutMetrics';
+import { extractReps, estimateOneRepMax, summarizeSets, buildExerciseHistoryIndex, detectPersonalRecords } from './workoutMetrics';
 
 // Formato della card: dimensioni in px. Per ora solo la storia.
 export const FORMAT_STORIA = { id: 'storia', width: 1080, height: 1920 };
@@ -27,22 +27,22 @@ export const STRINGS_IT = {
   decimal: ',',
   minutes: '{m} min',
   hours: '{h}h {m}m',
-  equivalentLine: 'Come sollevare {count} {item}',
-  equivalents: {
-    balena: ['balenottera azzurra', 'balenottere azzurre'],
-    elefante: ['elefante africano', 'elefanti africani'],
-    auto: ['auto utilitaria', 'auto utilitarie'],
-    pianoforte: ['pianoforte a coda', 'pianoforti a coda'],
-    lavatrice: ['lavatrice', 'lavatrici'],
-  },
-  reps: 'RIPETIZIONI',
   sets: 'SERIE',
-  exercises: 'ESERCIZI',
   duration: 'DURATA',
-  totalVolume: 'VOLUME TOTALE',
-  kgLifted: 'kg sollevati',
-  newRecords: 'NUOVI RECORD',
-  recordLine: 'Record: {names}',
+  volume: 'VOLUME',
+  muscles: 'MUSCOLI ALLENATI',
+  newRecord: 'NUOVO RECORD',
+  setValue: '{weight} kg × {reps}',
+  repsValue: '{reps} rip.',
+  deltaKg: '+{n} kg',
+  deltaOneRm: '+{n} kg stimati',
+  deltaReps: '+{n} rip.',
+  othersOne: 'e un altro record',
+  othersMany: 'e altri {n} record',
+  kg: '{n} kg',
+  effortLine: '{sets} serie · {exercises}',
+  exerciseOne: '{n} esercizio',
+  exerciseMany: '{n} esercizi',
   streakOne: '{n} settimana di fila',
   streakMany: '{n} settimane di fila',
 };
@@ -75,32 +75,9 @@ export const formatDuration = (seconds, strings = STRINGS_IT) => {
   return fill(strings.hours, { h, m: String(m).padStart(2, '0') });
 };
 
-export const totalReps = (sets) => {
-  if (!Array.isArray(sets)) return 0;
-  return sets.reduce((sum, set) => sum + extractReps(set.reps), 0);
-};
-
-// Dal più pesante al più leggero: si usa il primo che il volume supera almeno una volta.
-// I nomi (singolare, plurale) stanno in strings.equivalents.
-const EQUIVALENTS = [
-  { id: 'balena', kg: 150000 },
-  { id: 'elefante', kg: 6000 },
-  { id: 'auto', kg: 1200 },
-  { id: 'pianoforte', kg: 500 },
-  { id: 'lavatrice', kg: 70 },
-];
-
-export const volumeEquivalent = (kg, strings = STRINGS_IT) => {
-  const item = EQUIVALENTS.find((e) => kg >= e.kg);
-  if (!item) return null;
-  const ratio = kg / item.kg;
-  const count = ratio < 10 ? Math.round(ratio * 10) / 10 : Math.round(ratio);
-  const [one, many] = strings.equivalents[item.id];
-  return fill(strings.equivalentLine, {
-    count: String(count).replace('.', strings.decimal),
-    item: count === 1 ? one : many,
-  });
-};
+// 12.5 → "12,5" (una cifra decimale al massimo, separatore della lingua)
+const formatDecimal = (n, strings = STRINGS_IT) =>
+  String(Math.round(n * 10) / 10).replace('.', strings.decimal);
 
 /**
  * I due gruppi muscolari con più serie, es. "Petto · Tricipiti". Titolo della card
@@ -119,43 +96,99 @@ export const muscleGroupsTitle = (exercises) => {
     .join(' · ');
 };
 
+// Tipi di record dal più importante: peso, massimale stimato, ripetizioni a corpo libero.
+// Il volume di sessione è un record ma non è mai il protagonista della card.
+const RECORD_TYPES = ['weight', 'oneRM', 'reps'];
+
+const playedSets = (sets) => sets
+  .map((set) => ({ weight: parseFloat(set.weight) || 0, reps: extractReps(set.reps) }))
+  .filter((set) => set.reps > 0);
+
 /**
- * Esercizi con un record battuto in un allenamento della cronologia, confrontando
- * solo gli allenamenti precedenti (come fa il riepilogo a fine sessione).
+ * Il record battuto da un esercizio, o null: { name, type, weight, reps, delta, pct }.
+ * type = il più importante tra i record battuti; weight × reps = la serie che lo fa;
+ * delta = di quanto supera il record precedente (null alla prima volta), pct = in percentuale.
  */
-export const historyPrNames = (records, workout) => {
+const exerciseRecord = (ex, historyEntry) => {
+  const pr = detectPersonalRecords(ex.sets, historyEntry);
+  if (!pr.isPR) return null;
+  const type = RECORD_TYPES.find((t) => pr[t]) || 'volume';
+  if (type === 'volume') return { name: ex.name, type, weight: 0, reps: 0, delta: null, pct: 0 };
+
+  const sets = playedSets(ex.sets);
+  const previous = { weight: historyEntry.bestWeight, oneRM: historyEntry.bestOneRM, reps: historyEntry.bestBodyweightReps || 0 }[type];
+  let best;
+  if (type === 'weight') best = sets.filter((x) => x.weight === pr.weight).sort((a, b) => b.reps - a.reps)[0];
+  else if (type === 'oneRM') best = [...sets].sort((a, b) => estimateOneRepMax(b.weight, b.reps) - estimateOneRepMax(a.weight, a.reps))[0];
+  else best = sets.filter((x) => x.weight === 0).sort((a, b) => b.reps - a.reps)[0];
+  const delta = previous > 0 ? Math.round((pr[type] - previous) * 10) / 10 : null;
+  return { name: ex.name, type, weight: best.weight, reps: best.reps, delta, pct: previous > 0 ? (pr[type] - previous) / previous : 1 };
+};
+
+/**
+ * Record battuti in un allenamento. exercises: [{ exercise_id, name, sets }];
+ * historyIndex = buildExerciseHistoryIndex degli allenamenti precedenti.
+ */
+export const sessionRecords = (exercises, historyIndex) => (exercises || [])
+  .filter((ex) => ex.sets?.length)
+  .map((ex) => exerciseRecord(ex, historyIndex?.[ex.exercise_id]))
+  .filter(Boolean);
+
+/**
+ * Record di un allenamento della cronologia, confrontando solo gli allenamenti
+ * precedenti (come fa il riepilogo a fine sessione).
+ */
+export const historyRecords = (records, workout) => {
   const t = toDate(workout.date).getTime();
   const older = (records || []).filter((r) => {
     if (r.id === workout.id) return false;
     const rt = toDate(r.date).getTime();
     return rt < t || (rt === t && Number(r.id) < Number(workout.id));
   });
-  const index = buildExerciseHistoryIndex(older);
-  return (workout.exercises || [])
-    .filter((ex) => ex.sets?.length && detectPersonalRecords(ex.sets, index[ex.exercise_id]).isPR)
-    .map((ex) => ex.name);
+  return sessionRecords(workout.exercises, buildExerciseHistoryIndex(older));
+};
+
+// Il record più importante: per tipo, a parità quello che migliora di più in percentuale.
+const heroRecord = (records) => records
+  .filter((r) => r.type !== 'volume')
+  .sort((a, b) => RECORD_TYPES.indexOf(a.type) - RECORD_TYPES.indexOf(b.type) || b.pct - a.pct)[0] || null;
+
+const MUSCLES_SHOWN = 4;
+
+// Primi gruppi muscolari per numero di serie, in % sul totale delle serie con un gruppo.
+const muscleShares = (exercises) => {
+  const counts = new Map();
+  exercises.forEach((ex) => {
+    if (ex.muscle_group) counts.set(ex.muscle_group, (counts.get(ex.muscle_group) || 0) + ex.sets.length);
+  });
+  const total = [...counts.values()].reduce((a, b) => a + b, 0);
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, MUSCLES_SHOWN)
+    .map(([group, count]) => ({ group: group.charAt(0).toUpperCase() + group.slice(1), pct: Math.round((count / total) * 100) }));
 };
 
 /**
- * exercises: [{ sets: [{ weight, reps }] }]. Ritorna i numeri e i testi della card.
+ * exercises: [{ name, muscle_group, sets: [{ weight, reps }] }]; records = sessionRecords(...)
+ * o historyRecords(...). Ritorna i numeri della card.
  */
-export const buildShareStats = ({ exercises, date, durationSec, title, prNames, streakWeeks }) => {
+export const buildShareStats = ({ exercises, date, durationSec, title, records, streakWeeks }) => {
   const done = (exercises || []).filter((ex) => ex.sets?.length);
   let volume = 0;
-  let reps = 0;
   let sets = 0;
   done.forEach((ex) => {
     volume += summarizeSets(ex.sets).sessionVolume;
-    reps += totalReps(ex.sets);
     sets += ex.sets.length;
   });
+  const hero = heroRecord([...(records || [])]);
   return {
     volumeKg: Math.round(volume),
-    reps,
     sets,
     exercises: done.length,
     durationSec: durationSec > 0 ? durationSec : null,
-    prNames: prNames || [],
+    record: hero,
+    otherRecords: hero ? records.length - 1 : 0,
+    muscles: muscleShares(done),
     streakWeeks: streakWeeks || 0,
     date: toDate(date || new Date()),
     title: title || '',
@@ -204,7 +237,7 @@ const THEMES = {
 
 // Senza misurare il testo: larghezza media di un carattere in em, per eccesso. Lexend in
 // grassetto: ~0,62 per cifre e maiuscole, ~0,52 per il testo normale.
-const charEm = (value) => (/[a-z]/.test(value) ? 0.52 : 0.62);
+const charEm = (value) => (/[a-z]/.test(value) && !/\d/.test(value) ? 0.52 : 0.62);
 
 // Dimensione del font perché il testo stia in maxWidth; sotto minSize il testo si tronca.
 const fit = (text, maxWidth, size, minSize = size * 0.6) => {
@@ -220,14 +253,14 @@ const text = (x, y, value, size, color, opts = {}) => ({
   weight: opts.weight || 700, align: opts.align || 'left', letterSpacing: opts.letterSpacing || 0,
 });
 
+// Riquadri sotto il blocco principale. Durata e serie ci sono già nel blocco principale quando
+// non c'è un record; il volume manca negli allenamenti a corpo libero.
 const tilesFor = (stats, strings) => {
-  const tiles = [
-    { value: formatThousands(stats.reps, strings), label: strings.reps },
-    { value: String(stats.sets), label: strings.sets },
-    { value: String(stats.exercises), label: strings.exercises },
-  ];
+  const tiles = [];
   const duration = formatDuration(stats.durationSec, strings);
-  if (duration) tiles.push({ value: duration, label: strings.duration });
+  if (stats.record && duration) tiles.push({ value: duration, label: strings.duration });
+  if (stats.volumeKg > 0) tiles.push({ value: fill(strings.kg, { n: formatThousands(stats.volumeKg, strings) }), label: strings.volume });
+  if (stats.record) tiles.push({ value: String(stats.sets), label: strings.sets });
   return tiles;
 };
 
@@ -247,12 +280,6 @@ const tileGrid = (tiles, y, ctx, { columns, height, valueSize, labelSize }) => {
   });
   const rows = Math.ceil(tiles.length / columns);
   return { elements, height: rows * height + (rows - 1) * gap };
-};
-
-const prLine = (names) => {
-  if (!names.length) return null;
-  const shown = names.slice(0, 2).join(' · ');
-  return names.length > 2 ? `${shown} +${names.length - 2}` : shown;
 };
 
 const streakLine = (weeks, strings) =>
@@ -275,21 +302,21 @@ const METRICS = {
   // Scuro e Rosso: la card intera è dedicata ai numeri.
   full: {
     heading: { dateSize: 34, titleSize: 64, titleMin: 46, titleDy: 80, height: 240 },
-    volume: { labelSize: 34, bigSize: 250, bigDx: -6, bigDy: 40, kgDy: 80, kgSize: 52, eqDy: 64, eqSize: 38, eqMin: 30, after: 140 },
-    tiles: (n) => (n === 4
-      ? { columns: 2, height: 190, valueSize: 84, labelSize: 28 }
-      : { columns: 3, height: 210, valueSize: 76, labelSize: 26 }),
-    tilesAfter: 90,
-    records: { withLabel: true, size: 44, min: 34, textDy: 58, height: 130 },
+    record: { labelSize: 30, nameSize: 58, nameMin: 42, nameDy: 72, valueSize: 170, valueGap: 36, deltaSize: 46, deltaStep: 82, othersSize: 34, othersStep: 58, tail: 60 },
+    effort: { valueSize: 150, valueDy: 120, labelDy: 60, labelSize: 30, lineSize: 96, lineDy: 80, tail: 80 },
+    tiles: { columns: 3, height: 170, valueSize: 56, labelSize: 24 },
+    tilesAfter: 70,
+    muscles: { labelSize: 30, firstRow: 56, pitch: 76, nameSize: 32, nameDy: 30, barDy: 44, barHeight: 14, tail: 50 },
     streak: { size: 32, height: 60, maxY: 1760 },
   },
   // Foto: la foto resta visibile in alto, i numeri stanno nella parte bassa.
   photo: {
     heading: { dateSize: 32, titleSize: 54, titleMin: 40, titleDy: 66, height: 140 },
-    volume: { labelSize: 30, bigSize: 200, bigDx: -4, bigDy: 26, kgDy: 70, kgSize: 46, eqDy: 56, eqSize: 36, eqMin: 28, after: 100 },
-    tiles: (n) => ({ columns: n, height: 170, valueSize: n === 4 ? 58 : 66, labelSize: 22 }),
-    tilesAfter: 70,
-    records: { withLabel: false, size: 40, min: 30, height: 60 },
+    record: { labelSize: 26, nameSize: 50, nameMin: 38, nameDy: 62, valueSize: 120, valueGap: 30, deltaSize: 38, deltaStep: 54, othersSize: 30, othersStep: 48, tail: 56 },
+    effort: { valueSize: 110, valueDy: 90, labelDy: 50, labelSize: 26, lineSize: 72, lineDy: 60, tail: 60 },
+    tiles: { columns: 3, height: 150, valueSize: 50, labelSize: 22 },
+    tilesAfter: 50,
+    muscles: { labelSize: 26, firstRow: 48, pitch: 64, nameSize: 28, nameDy: 26, barDy: 38, barHeight: 12, tail: 44 },
     streak: { size: 30, height: 60, maxY: Infinity },
   },
 };
@@ -304,44 +331,84 @@ const headingBlock = (stats, { theme, strings, metrics, contentWidth }, y) => {
   return { elements, height: m.height };
 };
 
-const volumeBlock = (stats, { theme, strings, metrics, contentWidth }, y) => {
-  const m = metrics.volume;
-  const elements = [text(MARGIN, y, strings.totalVolume, m.labelSize, theme.muted, { weight: 600, letterSpacing: 4 })];
-  const big = fit(formatThousands(stats.volumeKg, strings), contentWidth, m.bigSize);
-  const bigY = y + m.bigDy + big.size * 0.78;
-  elements.push(text(MARGIN + m.bigDx, bigY, big.text, big.size, theme.big, { weight: 800 }));
-  const kgY = bigY + m.kgDy;
-  elements.push(text(MARGIN, kgY, strings.kgLifted, m.kgSize, theme.text, { weight: 700 }));
-  const equivalent = volumeEquivalent(stats.volumeKg, strings);
-  if (equivalent) {
-    const eq = fit(equivalent, contentWidth, m.eqSize, m.eqMin);
-    elements.push(text(MARGIN, kgY + m.eqDy, eq.text, eq.size, theme.muted, { weight: 500 }));
-  }
-  return { elements, height: kgY + m.after - y };
+const recordValue = (record, strings) => (record.type === 'reps'
+  ? fill(strings.repsValue, { reps: record.reps })
+  : fill(strings.setValue, { weight: formatDecimal(record.weight, strings), reps: record.reps }));
+
+const recordDelta = (record, strings) => {
+  if (record.delta === null) return null;
+  const template = { weight: strings.deltaKg, oneRM: strings.deltaOneRm, reps: strings.deltaReps }[record.type];
+  return fill(template, { n: formatDecimal(record.delta, strings) });
 };
+
+// Blocco principale con un record: esercizio, serie che lo fa, di quanto migliora.
+const recordHero = (stats, { theme, strings, metrics, contentWidth }, y) => {
+  const m = metrics.record;
+  const { record } = stats;
+  const name = fit(record.name, contentWidth, m.nameSize, m.nameMin);
+  const value = fit(recordValue(record, strings), contentWidth, m.valueSize);
+  const elements = [
+    text(MARGIN, y, strings.newRecord, m.labelSize, theme.accent, { weight: 700, letterSpacing: 4 }),
+    text(MARGIN, y + m.nameDy, name.text, name.size, theme.text, { weight: 800 }),
+  ];
+  let cursor = y + m.nameDy + m.valueGap + value.size * 0.78;
+  elements.push(text(MARGIN - 4, cursor, value.text, value.size, theme.big, { weight: 800 }));
+  const delta = recordDelta(record, strings);
+  if (delta) {
+    cursor += m.deltaStep;
+    const d = fit(delta, contentWidth, m.deltaSize);
+    elements.push(text(MARGIN, cursor, d.text, d.size, theme.text, { weight: 700 }));
+  }
+  if (stats.otherRecords > 0) {
+    cursor += m.othersStep;
+    const others = fill(stats.otherRecords === 1 ? strings.othersOne : strings.othersMany, { n: stats.otherRecords });
+    elements.push(text(MARGIN, cursor, others, m.othersSize, theme.muted, { weight: 500 }));
+  }
+  return { elements, height: cursor + m.tail - y };
+};
+
+// Blocco principale senza record: durata e serie in grande; senza durata, serie ed esercizi.
+const effortHero = (stats, { theme, strings, metrics, contentWidth }, y) => {
+  const m = metrics.effort;
+  const duration = formatDuration(stats.durationSec, strings);
+  if (!duration) {
+    const exercises = fill(stats.exercises === 1 ? strings.exerciseOne : strings.exerciseMany, { n: stats.exercises });
+    const line = fit(fill(strings.effortLine, { sets: stats.sets, exercises }), contentWidth, m.lineSize);
+    return { elements: [text(MARGIN, y + m.lineDy, line.text, line.size, theme.big, { weight: 800 })], height: m.lineDy + m.tail };
+  }
+  const columnWidth = contentWidth / 2;
+  const elements = [];
+  [[duration, strings.duration], [String(stats.sets), strings.sets]].forEach(([value, label], i) => {
+    const x = MARGIN + i * columnWidth;
+    const big = fit(value, columnWidth - 30, m.valueSize);
+    elements.push(text(x - 4, y + m.valueDy, big.text, big.size, theme.big, { weight: 800 }));
+    elements.push(text(x, y + m.valueDy + m.labelDy, label, m.labelSize, theme.muted, { weight: 600, letterSpacing: 4 }));
+  });
+  return { elements, height: m.valueDy + m.labelDy + m.tail };
+};
+
+const heroBlock = (stats, ctx, y) => (stats.record ? recordHero(stats, ctx, y) : effortHero(stats, ctx, y));
 
 const tilesBlock = (stats, ctx, y) => {
   const tiles = tilesFor(stats, ctx.strings);
-  const grid = tileGrid(tiles, y, ctx, ctx.metrics.tiles(tiles.length));
+  if (!tiles.length) return { elements: [], height: 0 };
+  const grid = tileGrid(tiles, y, ctx, { ...ctx.metrics.tiles, columns: tiles.length });
   return { elements: grid.elements, height: grid.height + ctx.metrics.tilesAfter };
 };
 
-const recordsBlock = (stats, { theme, strings, metrics, contentWidth }, y) => {
-  const pr = prLine(stats.prNames);
-  const m = metrics.records;
-  if (!pr) return { elements: [], height: 0 };
-  if (!m.withLabel) {
-    const p = fit(fill(strings.recordLine, { names: pr }), contentWidth, m.size, m.min);
-    return { elements: [text(MARGIN, y, p.text, p.size, theme.text, { weight: 700 })], height: m.height };
-  }
-  const p = fit(pr, contentWidth, m.size, m.min);
-  return {
-    elements: [
-      text(MARGIN, y, strings.newRecords, 30, theme.accent, { weight: 700, letterSpacing: 4 }),
-      text(MARGIN, y + m.textDy, p.text, p.size, theme.text, { weight: 700 }),
-    ],
-    height: m.height,
-  };
+const musclesBlock = (stats, { theme, strings, metrics, contentWidth }, y) => {
+  const m = metrics.muscles;
+  if (!stats.muscles.length) return { elements: [], height: 0 };
+  const elements = [text(MARGIN, y, strings.muscles, m.labelSize, theme.muted, { weight: 600, letterSpacing: 4 })];
+  stats.muscles.forEach((muscle, i) => {
+    const top = y + m.firstRow + i * m.pitch;
+    const name = fit(muscle.group, contentWidth - 140, m.nameSize, m.nameSize * 0.7);
+    elements.push(text(MARGIN, top + m.nameDy, name.text, name.size, theme.text, { weight: 600 }));
+    elements.push(text(MARGIN + contentWidth, top + m.nameDy, `${muscle.pct}%`, m.nameSize, theme.text, { weight: 700, align: 'right' }));
+    elements.push({ type: 'rect', x: MARGIN, y: top + m.barDy, w: contentWidth, h: m.barHeight, r: m.barHeight / 2, fill: theme.tile });
+    elements.push({ type: 'rect', x: MARGIN, y: top + m.barDy, w: Math.max(m.barHeight, (contentWidth * muscle.pct) / 100), h: m.barHeight, r: m.barHeight / 2, fill: theme.big });
+  });
+  return { elements, height: m.firstRow + stats.muscles.length * m.pitch + m.tail };
 };
 
 const streakBlock = (stats, { theme, strings, metrics }, y) => {
@@ -363,19 +430,17 @@ const stack = (blocks, stats, ctx, y) => {
   return { elements, height: cursor - y };
 };
 
-const MAIN_BLOCKS = [headingBlock, volumeBlock, tilesBlock];
-// Record e settimane di fila compaiono solo se ci sono
-const OPTIONAL_BLOCKS = [recordsBlock, streakBlock];
+const BLOCKS = [headingBlock, heroBlock, tilesBlock, musclesBlock, streakBlock];
 
 // Scuro e Rosso: i blocchi scendono dall'alto, sotto l'intestazione.
 const FULL_TOP = 400;
-const fullLayout = (stats, ctx) => stack([...MAIN_BLOCKS, ...OPTIONAL_BLOCKS], stats, ctx, FULL_TOP).elements;
+const fullLayout = (stats, ctx) => stack(BLOCKS, stats, ctx, FULL_TOP).elements;
 
-// Foto: i blocchi opzionali, quando ci sono, spingono tutto verso l'alto.
-const PHOTO_ANCHOR = 980;
+// Foto: i blocchi poggiano in basso e crescono verso l'alto, lasciando libera la foto.
+const PHOTO_BOTTOM_MARGIN = 150;
 const photoBlocksLayout = (stats, ctx) => {
-  const optionalHeight = stack(OPTIONAL_BLOCKS, stats, ctx, 0).height;
-  return stack([...MAIN_BLOCKS, ...OPTIONAL_BLOCKS], stats, ctx, PHOTO_ANCHOR - optionalHeight).elements;
+  const total = stack(BLOCKS, stats, ctx, 0).height;
+  return stack(BLOCKS, stats, ctx, ctx.height - PHOTO_BOTTOM_MARGIN - total).elements;
 };
 
 // ── Foto: posizione e zoom scelti dall'utente ──────────────────────────────

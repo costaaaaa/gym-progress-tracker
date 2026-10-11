@@ -53,7 +53,7 @@ import { API_BASE_URL } from '../config';
 import { hapticFeedback } from '../utils/vibration';
 import { INTENSITY_TECHNIQUES } from '../components/ExerciseDialog';
 import { buildExerciseHistoryIndex, detectPersonalRecords } from '../utils/workoutMetrics';
-import { buildShareStats } from '../utils/shareCard';
+import { buildShareStats, sessionRecords } from '../utils/shareCard';
 import ShareCardDialog from '../components/ShareCardDialog';
 import FocusExercisePicker from '../components/FocusExercisePicker';
 import {
@@ -1372,13 +1372,20 @@ const FocusWorkout = () => {
                     })
                     .map(ex => ex.exercise_name) || [];
 
+                  const cardExercises = (selectedDay?.exercises || []).map(ex => ({
+                    exercise_id: ex.exercise_id,
+                    name: ex.exercise_name,
+                    muscle_group: ex.muscle_group,
+                    sets: completedSets[ex.id] || [],
+                  }));
+
                   const handleShare = () => {
                     setShareStats(buildShareStats({
-                      exercises: (selectedDay?.exercises || []).map(ex => ({ sets: completedSets[ex.id] || [] })),
+                      exercises: cardExercises,
                       date: startTime || new Date(),
                       durationSec: getElapsedSeconds(),
                       title: `${activePlan?.name || ''}${selectedDay?.name ? ' · ' + selectedDay.name : ''}`,
-                      prNames: prList,
+                      records: sessionRecords(cardExercises, historyIndex),
                       streakWeeks: savedResult.current_streak_weeks,
                     }));
                     track('workout_card', { action: 'open', from: 'summary' });

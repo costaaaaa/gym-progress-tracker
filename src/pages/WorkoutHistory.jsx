@@ -33,7 +33,7 @@ import ShareIcon from '@mui/icons-material/Share';
 import RecordWorkoutDialog from '../components/RecordWorkoutDialog';
 import EditWorkoutDateDialog from '../components/EditWorkoutDateDialog';
 import ShareCardDialog from '../components/ShareCardDialog';
-import { buildShareStats, historyPrNames, muscleGroupsTitle } from '../utils/shareCard';
+import { buildShareStats, historyRecords, muscleGroupsTitle } from '../utils/shareCard';
 import { track } from '../utils/analytics';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
@@ -239,7 +239,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
       date: workout.date,
       durationSec: workout.duration_seconds,
       title: muscleGroupsTitle(workout.exercises),
-      prNames: historyPrNames(workouts, workout),
+      records: historyRecords(workouts, workout),
     }));
     track('workout_card', { action: 'open', from: 'history' });
   };
