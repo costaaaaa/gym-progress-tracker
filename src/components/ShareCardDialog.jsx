@@ -7,6 +7,8 @@ import {
   Close as CloseIcon,
   Share as ShareIcon,
   Download as DownloadIcon,
+  ContentCopy as CopyIcon,
+  Check as CheckIcon,
   AddPhotoAlternate as AddPhotoIcon,
   ZoomIn as ZoomInIcon,
   ZoomOut as ZoomOutIcon,
@@ -39,6 +41,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   const [fontsReady, setFontsReady] = useState(false);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
   // Dita (o mouse) appoggiate sull'anteprima, in px della card
   const pointersRef = useRef(new Map());
 
@@ -188,6 +191,22 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
     }
   };
 
+  const canCopyImage = typeof ClipboardItem !== 'undefined' && !!navigator.clipboard?.write
+    && (typeof ClipboardItem.supports !== 'function' || ClipboardItem.supports('image/png'));
+
+  const handleCopy = async () => {
+    const file = fileRef.current;
+    if (!file) return;
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': file })]);
+      track('workout_card', { action: 'copy', template });
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setError('Non è stato possibile copiare l\'immagine.');
+    }
+  };
+
   const handleDownload = () => {
     if (!fileRef.current) return;
     download(fileRef.current);
@@ -272,6 +291,11 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
         <Button variant="outlined" startIcon={<DownloadIcon />} onClick={handleDownload} disabled={!ready}>
           Scarica
         </Button>
+        {canCopyImage && (
+          <Button variant="outlined" startIcon={copied ? <CheckIcon /> : <CopyIcon />} onClick={handleCopy} disabled={!ready}>
+            {copied ? 'Copiata' : 'Copia'}
+          </Button>
+        )}
         <Button variant="contained" startIcon={<ShareIcon />} onClick={handleShare} disabled={!ready} sx={{ flex: 1 }}>
           Condividi
         </Button>
