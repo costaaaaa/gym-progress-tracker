@@ -307,7 +307,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
           <Chip icon={<TuneIcon />} label={t('share.customize')} size="small" variant="outlined"
             onClick={() => setCustomizing((v) => !v)} />
         </Box>
-        <Collapse in={customizing} sx={{ width: '100%' }}>
+        <Collapse in={customizing} sx={{ width: '100%', flexShrink: 0 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', px: 2 }}>
             {CUSTOM_BLOCKS.map((b) => (
               <FormControlLabel key={b.id} label={t(`share.block.${b.id}`, { defaultValue: b.label })}
