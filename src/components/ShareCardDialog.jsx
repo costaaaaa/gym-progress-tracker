@@ -27,6 +27,13 @@ import { track } from '../utils/analytics';
  * stats = buildShareStats(...) da utils/shareCard.js. La foto scelta resta nel
  * browser: si disegna sul canvas e non viene mai inviata al server.
  */
+const CHECKERBOARD = {
+  backgroundColor: '#8a8a8a',
+  backgroundImage: 'linear-gradient(45deg, #6f6f6f 25%, transparent 25%, transparent 75%, #6f6f6f 75%), linear-gradient(45deg, #6f6f6f 25%, transparent 25%, transparent 75%, #6f6f6f 75%)',
+  backgroundSize: '24px 24px',
+  backgroundPosition: '0 0, 12px 12px',
+};
+
 const ShareCardDialog = ({ open, onClose, stats }) => {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
@@ -264,7 +271,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
             onPointerDown={handlePointerDown} onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp}
             style={{
-              width: '100%', height: '100%', borderRadius: 12, display: 'block', background: '#0a0a0b',
+              width: '100%', height: '100%', borderRadius: 12, display: 'block', ...(template === 'trasparente' ? CHECKERBOARD : { background: '#0a0a0b' }),
               touchAction: editable ? 'none' : 'auto', cursor: editable ? 'grab' : 'default',
             }} />
           {!fontsReady && (
@@ -280,8 +287,10 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
               color={template === t.id ? 'primary' : 'default'}
               variant={template === t.id ? 'filled' : 'outlined'} />
           ))}
-          <Chip icon={<AddPhotoIcon />} label={photo ? 'Cambia foto' : 'Aggiungi foto'} variant="outlined"
-            onClick={() => fileInputRef.current?.click()} />
+          {template !== 'trasparente' && (
+            <Chip icon={<AddPhotoIcon />} label={photo ? 'Cambia foto' : 'Aggiungi foto'} variant="outlined"
+              onClick={() => fileInputRef.current?.click()} />
+          )}
         </Box>
         <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={handlePhotoChange} />
 

@@ -230,6 +230,7 @@ export const TEMPLATES = [
   { id: 'scuro', label: 'Scuro' },
   { id: 'rosso', label: 'Rosso' },
   { id: 'foto', label: 'Foto' },
+  { id: 'trasparente', label: 'Trasparente' },
 ];
 
 // Sfondo del template Foto, visibile quando la foto è rimpicciolita. Solo toni scuri o
@@ -259,6 +260,10 @@ const THEMES = {
   },
   foto: {
     text: '#ffffff', muted: 'rgba(255,255,255,0.8)', accent: '#ff5131', big: '#ffffff', tile: 'rgba(0,0,0,0.45)', mark: '#d50000',
+  },
+  // Senza sfondo: il PNG resta trasparente, da usare come adesivo sopra una foto.
+  trasparente: {
+    text: '#ffffff', muted: 'rgba(255,255,255,0.85)', accent: '#ff8a65', big: '#ffffff', tile: 'rgba(0,0,0,0.35)', mark: '#d50000',
   },
 };
 
@@ -726,8 +731,8 @@ export const layoutShareCard = (stats, templateId, {
     theme, strings, layout, metrics: isPhoto ? layout.metrics.photo : layout.metrics.full,
     contentWidth: format.width - 2 * MARGIN, height: format.height, hasHero, hideWeights, fit: NO_SHRINK,
   };
-  const background = isPhoto ? photoBackgroundFill(photoBackground, format) : theme.background(format);
-  const elements = [{ type: 'rect', x: 0, y: 0, w: format.width, h: format.height, fill: background }];
+  const background = isPhoto ? photoBackgroundFill(photoBackground, format) : theme.background?.(format);
+  const elements = background ? [{ type: 'rect', x: 0, y: 0, w: format.width, h: format.height, fill: background }] : [];
   if (isPhoto) elements.push(...photoUnderlay(format, hasPhoto));
   elements.push(...header(theme, layout));
   elements.push(...(isPhoto ? photoBlocksLayout(blocks, stats, ctx) : fullLayout(blocks, stats, ctx)));
