@@ -3,7 +3,7 @@
 //
 // Semantica "fixed-window counter": un contatore per chiave con scadenza.
 // In SQL è un singolo statement atomico (INSERT ... ON DUPLICATE KEY UPDATE),
-// l'equivalente diretto di INCR + EXPIRE di Redis. Lo swap futuro a Redis (su VPS)
+// l'equivalente diretto di INCR + EXPIRE di Redis. Un eventuale swap a Redis
 // cambia solo la classe dietro l'interfaccia: la logica degli endpoint resta identica.
 
 interface RateLimiterInterface
@@ -93,7 +93,7 @@ function rate_limiter($db)
 {
     $driver = getenv('RATE_LIMITER_DRIVER') ?: 'db';
     switch ($driver) {
-        // case 'redis': return new RedisRateLimiter(...); // futuro, su VPS con Redis disponibile
+        // case 'redis': return new RedisRateLimiter(...); // se Redis è disponibile
         case 'db':
         default:
             return new DbRateLimiter($db);
