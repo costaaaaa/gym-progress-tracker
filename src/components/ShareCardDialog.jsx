@@ -16,7 +16,7 @@ import {
   Tune as TuneIcon,
 } from '@mui/icons-material';
 import {
-  TEMPLATES, DEFAULT_PRESET, CUSTOM_BLOCKS, availablePresets, presetToggles, PHOTO_BACKGROUNDS, FORMATS, FORMAT_STORIA, PHOTO_ZOOM_MAX, DEFAULT_PHOTO_TRANSFORM,
+  TEMPLATES, DEFAULT_PRESET, CUSTOM_BLOCKS, availablePresets, stepPreset, presetToggles, PHOTO_BACKGROUNDS, FORMATS, FORMAT_STORIA, PHOTO_ZOOM_MAX, DEFAULT_PHOTO_TRANSFORM,
   layoutShareCard, clampPhotoTransform, zoomPhotoAt, photoMinZoom, photoBox,
 } from '../utils/shareCard';
 import { loadCardFonts, renderCardToCanvas, canvasToPngFile, loadPhoto } from '../utils/renderShareCard';
@@ -27,6 +27,8 @@ import { track } from '../utils/analytics';
  * stats = buildShareStats(...) da utils/shareCard.js. La foto scelta resta nel
  * browser: si disegna sul canvas e non viene mai inviata al server.
  */
+const SWIPE_MIN_PX = 50;
+
 const CHECKERBOARD = {
   backgroundColor: '#8a8a8a',
   backgroundImage: 'linear-gradient(45deg, #6f6f6f 25%, transparent 25%, transparent 75%, #6f6f6f 75%), linear-gradient(45deg, #6f6f6f 25%, transparent 25%, transparent 75%, #6f6f6f 75%)',
@@ -112,11 +114,24 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
     return { x: (e.clientX - rect.left) * k, y: (e.clientY - rect.top) * k };
   };
 
-  // Un dito (o il mouse) sposta la foto, due dita la spostano e la ingrandiscono.
+  const goToPreset = (step) => {
+    setPreset(stepPreset(stats, activePreset, step));
+    setCustomBlocks(null);
+  };
+
+  // Mouse: trascinare sposta la foto. Touch: un dito scorre tra le card pronte, due dita
+  // spostano e ingrandiscono la foto.
+  const swipeRef = useRef(null);
   const handlePointerDown = (e) => {
-    if (!editable) return;
+    const touch = e.pointerType === 'touch';
+    if (!touch && !editable) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     pointersRef.current.set(e.pointerId, toCardPoint(e));
+    if (touch) {
+      swipeRef.current = pointersRef.current.size === 1
+        ? { x: e.clientX, y: e.clientY, multi: false }
+        : { ...swipeRef.current, multi: true };
+    }
   };
 
   const handlePointerMove = (e) => {
@@ -125,6 +140,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
     const before = [...pointers.values()].slice(0, 2);
     pointers.set(e.pointerId, toCardPoint(e));
     const after = [...pointers.values()].slice(0, 2);
+    if (e.pointerType === 'touch' && (after.length === 1 || !editable)) return;
     if (after.length === 1) {
       const dx = after[0].x - before[0].x;
       const dy = after[0].y - before[0].y;
@@ -139,7 +155,15 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
     movePhoto((t, iw, ih) => zoomPhotoAt({ ...t, dx: t.dx + m1.x - m0.x, dy: t.dy + m1.y - m0.y }, factor, m1, iw, ih, box));
   };
 
-  const handlePointerUp = (e) => { pointersRef.current.delete(e.pointerId); };
+  const handlePointerUp = (e) => {
+    const swipe = swipeRef.current;
+    const wasOnlyFinger = e.pointerType === 'touch' && pointersRef.current.size === 1 && swipe && !swipe.multi;
+    pointersRef.current.delete(e.pointerId);
+    if (!wasOnlyFinger || e.type === 'pointercancel') return;
+    const dx = e.clientX - swipe.x;
+    const dy = e.clientY - swipe.y;
+    if (Math.abs(dx) >= SWIPE_MIN_PX && Math.abs(dx) > Math.abs(dy) * 1.5) goToPreset(dx < 0 ? 1 : -1);
+  };
 
   // Rotella del mouse / pinch del trackpad. Va registrata a mano: React la rende
   // passiva e preventDefault non fermerebbe lo scorrimento della pagina.
@@ -272,7 +296,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
             onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp}
             style={{
               width: '100%', height: '100%', borderRadius: 12, display: 'block', ...(template === 'trasparente' ? CHECKERBOARD : { background: '#0a0a0b' }),
-              touchAction: editable ? 'none' : 'auto', cursor: editable ? 'grab' : 'default',
+              touchAction: editable ? 'none' : 'pan-y', cursor: editable ? 'grab' : 'default',
             }} />
           {!fontsReady && (
             <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

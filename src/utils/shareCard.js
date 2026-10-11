@@ -608,6 +608,13 @@ export const availablePresets = (stats) => PRESETS.filter((p) => {
   return true;
 });
 
+// La card pronta a destra (+1) o a sinistra (-1) di quella attiva, in giro; salta quelle senza dati.
+export const stepPreset = (stats, presetId, step) => {
+  const list = availablePresets(stats);
+  const i = list.findIndex((p) => p.id === presetId);
+  return list[(Math.max(i, 0) + step + list.length) % list.length].id;
+};
+
 const chosenBlocks = (stats, presetId, custom) => {
   let ids;
   if (custom) ids = CUSTOM_BLOCKS.map((b) => b.id).filter((id) => custom.includes(id));
