@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Dialog, DialogContent, DialogActions, Box, Button, Chip, IconButton, Slider, Typography,
   CircularProgress, useMediaQuery, useTheme,
@@ -15,7 +15,7 @@ import {
   CenterFocusStrong as CenterIcon,
 } from '@mui/icons-material';
 import {
-  TEMPLATES, PHOTO_BACKGROUNDS, CARD_WIDTH, PHOTO_BOX, PHOTO_ZOOM_MAX, DEFAULT_PHOTO_TRANSFORM,
+  TEMPLATES, DEFAULT_PRESET, availablePresets, PHOTO_BACKGROUNDS, CARD_WIDTH, PHOTO_BOX, PHOTO_ZOOM_MAX, DEFAULT_PHOTO_TRANSFORM,
   layoutShareCard, clampPhotoTransform, zoomPhotoAt, photoMinZoom,
 } from '../utils/shareCard';
 import { loadCardFonts, renderCardToCanvas, canvasToPngFile, loadPhoto } from '../utils/renderShareCard';
@@ -35,6 +35,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   // altrimenti Safari lo rifiuta perché il gesto dell'utente è "scaduto".
   const fileRef = useRef(null);
   const [template, setTemplate] = useState('scuro');
+  const [preset, setPreset] = useState(DEFAULT_PRESET);
   const [photo, setPhoto] = useState(null);
   const [photoTransform, setPhotoTransform] = useState(DEFAULT_PHOTO_TRANSFORM);
   const [photoBackground, setPhotoBackground] = useState(PHOTO_BACKGROUNDS[0].id);
@@ -45,6 +46,8 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   // Dita (o mouse) appoggiate sull'anteprima, in px della card
   const pointersRef = useRef(new Map());
 
+  const presets = useMemo(() => (stats ? availablePresets(stats) : []), [stats]);
+  const activePreset = presets.some((p) => p.id === preset) ? preset : DEFAULT_PRESET;
   const editable = template === 'foto' && !!photo;
   // Lo sfondo si vede solo quando la foto, rimpicciolita, non copre più la card
   const backgroundVisible = editable && photoTransform.zoom < 0.999;
@@ -61,7 +64,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   useEffect(() => {
     if (!open || !stats || !fontsReady || !canvasRef.current) return undefined;
     let cancelled = false;
-    const layout = layoutShareCard(stats, template, { hasPhoto: !!photo, photoBackground });
+    const layout = layoutShareCard(stats, template, { hasPhoto: !!photo, photoBackground, preset });
     renderCardToCanvas(canvasRef.current, layout, photo, photoTransform);
     setReady(false);
     fileRef.current = null;
@@ -77,7 +80,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
       }
     }, 250);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [open, stats, template, photo, photoTransform, photoBackground, fontsReady]);
+  }, [open, stats, template, preset, photo, photoTransform, photoBackground, fontsReady]);
 
   const movePhoto = (update) => {
     if (!photo) return;
@@ -221,6 +224,13 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
         <IconButton onClick={onClose} aria-label="Chiudi"><CloseIcon /></IconButton>
       </Box>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, pt: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center' }}>
+          {presets.map((p) => (
+            <Chip key={p.id} label={p.label} size="small" onClick={() => setPreset(p.id)}
+              color={activePreset === p.id ? 'primary' : 'default'}
+              variant={activePreset === p.id ? 'filled' : 'outlined'} />
+          ))}
+        </Box>
         <Box sx={{ position: 'relative', width: '100%', maxWidth: 'calc(62vh * 9 / 16)', aspectRatio: '9 / 16' }}>
           <canvas ref={canvasRef}
             onPointerDown={handlePointerDown} onPointerMove={handlePointerMove}
