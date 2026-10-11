@@ -74,6 +74,8 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const copiedTimer = useRef(null);
+  useEffect(() => () => clearTimeout(copiedTimer.current), []);
   // Dita (o mouse) appoggiate sull'anteprima, in px della card
   const pointersRef = useRef(new Map());
 
@@ -274,7 +276,8 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': file })]);
       trackCard('copy');
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      clearTimeout(copiedTimer.current);
+      copiedTimer.current = setTimeout(() => setCopied(false), 2000);
     } catch {
       setError(t('share.error_copy'));
     }

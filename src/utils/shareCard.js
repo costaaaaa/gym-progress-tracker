@@ -50,7 +50,7 @@ export const STRINGS_IT = {
   streakMany: '{n} settimane di fila',
   exercisesLabel: 'ESERCIZI',
   recordsLabel: 'TUTTI I RECORD',
-  bodyweightValue: '× {reps}',
+  bodyweightValue: '{sets} serie · × {reps}',
   volumeRecord: 'volume',
   moreExercises: '+{n} esercizi',
   moreRecords: '+{n} record',
@@ -327,7 +327,7 @@ const footer = (theme, format, { footerDy }) => text(format.width / 2, format.he
 // ── Blocchi ────────────────────────────────────────────────────────────────
 // Un blocco è (stats, ctx, y) => { elements, height }: disegna a partire da y e dice quanto
 // spazio occupa, compreso il vuoto che lo separa dal blocco dopo. stack() li impila.
-// ctx = { theme, strings, metrics, contentWidth, height, fit }. Le misure (corpi dei testi,
+// ctx = { theme, strings, layout, metrics, contentWidth, height, hasHero, hideWeights, fit }. Le misure (corpi dei testi,
 // distanze) cambiano da un layout all'altro e stanno in METRICS.
 
 const METRICS = {
@@ -373,17 +373,17 @@ const METRICS = {
   },
 };
 
-// Misure e posizioni fisse di ogni formato. fit: true = i blocchi si accorciano se non
-// entrano (la storia ha spazio da vendere e non lo usa).
+// Misure e posizioni fisse di ogni formato. bottom = dove finisce lo spazio dei blocchi, che si
+// accorciano se non entrano; senza bottom non si accorciano (la storia ha spazio da vendere).
 const LAYOUTS = {
   storia: {
     header: { y: 228, markH: 58, baselineDy: 48, size: 46 }, footerDy: 90,
-    top: 400, photoBottom: 150, photoTop: 0, fit: false, gradient: { top: 520, bottom: 560 },
+    top: 400, photoBottom: 150, photoTop: 0, gradient: { top: 520, bottom: 560 },
     metrics: { full: METRICS.full, photo: METRICS.photo },
   },
   quadrato: {
     header: { y: 50, markH: 44, baselineDy: 36, size: 36 }, footerDy: 36,
-    top: 146, bottom: 1020, photoBottom: 80, photoTop: 130, fit: true, gradient: { top: 290, bottom: 300 },
+    top: 146, bottom: 1020, photoBottom: 80, photoTop: 130, gradient: { top: 290, bottom: 300 },
     metrics: { full: METRICS.square, photo: METRICS.square },
   },
 };
@@ -544,7 +544,7 @@ const listBlock = (label, rows, moreTemplate) => (stats, { theme, strings, metri
 
 const exerciseValue = (ex, strings, hideWeights) => {
   if (!ex.best) return null;
-  if (ex.best.weight <= 0) return fill(strings.bodyweightValue, { reps: ex.best.reps });
+  if (ex.best.weight <= 0) return fill(strings.bodyweightValue, { sets: ex.sets, reps: ex.best.reps });
   if (hideWeights) return fill(strings.setsCount, { n: ex.sets });
   return fill(strings.setValue, { weight: formatDecimal(ex.best.weight, strings), reps: ex.best.reps });
 };
@@ -582,7 +582,6 @@ export const DEFAULT_PRESET = PRESETS[0].id;
 
 // "Personalizza": i blocchi che l'utente accende e spegne, sempre in questo ordine e nelle
 // misure normali. La card risultante è la "Personalizzata".
-export const CUSTOM_PRESET = 'personalizzata';
 export const CUSTOM_BLOCKS = [
   { id: 'hero', label: 'Principale' },
   { id: 'tiles', label: 'Riquadri' },
@@ -610,13 +609,13 @@ export const availablePresets = (stats) => PRESETS.filter((p) => {
 });
 
 // Scelte ricordate tra una condivisione e l'altra (la foto mai). Il valore salvato può essere
-// assente, vecchio o corrotto: ogni campo non valido torna al predefinito. "Foto" non si
-// ripristina perché la foto non c'è più: si riparte da Scuro.
+// assente, vecchio o corrotto: ogni campo non valido torna al predefinito. Il template Foto
+// si ripristina senza foto: la card resta sullo sfondo finché non se ne sceglie una.
 export const sanitizePrefs = (raw) => {
   const p = raw && typeof raw === 'object' ? raw : {};
   const customIds = CUSTOM_BLOCKS.map((b) => b.id);
   return {
-    template: TEMPLATES.some((t) => t.id === p.template) && p.template !== 'foto' ? p.template : 'scuro',
+    template: TEMPLATES.some((t) => t.id === p.template) ? p.template : 'scuro',
     format: FORMATS.find((f) => f.id === p.format) || FORMAT_STORIA,
     preset: PRESETS.some((x) => x.id === p.preset) ? p.preset : DEFAULT_PRESET,
     customBlocks: Array.isArray(p.customBlocks) ? customIds.filter((id) => p.customBlocks.includes(id)) : null,
@@ -653,7 +652,7 @@ const FIT_STATES = [
 ];
 
 const fitted = (blocks, stats, ctx, y, available) => {
-  if (!ctx.layout.fit) return { ...ctx, fit: NO_SHRINK };
+  if (ctx.layout.bottom === undefined) return { ...ctx, fit: NO_SHRINK };
   let tried;
   for (const fit of FIT_STATES) {
     tried = { ...ctx, fit };
