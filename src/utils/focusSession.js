@@ -44,6 +44,12 @@ export const setStatus = (idx, currentSetIndex, skipped = []) => {
   return idx === currentSetIndex ? 'active' : 'pending';
 };
 
+// Chiave contro i doppi invii di record_workout.php: nasce con la sessione, resta nella bozza
+// e torna uguale a ogni tentativo di salvataggio, così se la risposta si perde il secondo
+// invio non duplica l'allenamento. Il backend accetta 8-64 caratteri [A-Za-z0-9_-].
+export const newIdempotencyKey = () =>
+  `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}${Math.random().toString(36).slice(2, 12)}`;
+
 // Set da inviare a record_workout.php per un esercizio: set_number consecutivi
 // sulle serie fatte, così le serie saltate non lasciano buchi nel database.
 export const numberedSets = (sets = []) => sets.map((set, i) => ({ ...set, set_number: i + 1 }));

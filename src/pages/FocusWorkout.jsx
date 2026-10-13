@@ -58,7 +58,8 @@ import ShareCardDialog from '../components/ShareCardDialog';
 import FocusExercisePicker from '../components/FocusExercisePicker';
 import {
   FEATURE_SESSION_EDIT, MAX_WEIGHT, isValidWeight, initialWeight, nextSetWeight,
-  lastSessionSets, setStatus, numberedSets, buildSessionEntry, swapExercise, insertExercise
+  lastSessionSets, setStatus, numberedSets, buildSessionEntry, swapExercise, insertExercise,
+  newIdempotencyKey
 } from '../utils/focusSession';
 import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../utils/celebrate';
 import { usePageMeta } from '../hooks/usePageMeta';
@@ -140,6 +141,7 @@ const FocusWorkout = () => {
   // Summary state
   const [workoutNotes, setWorkoutNotes] = useState('');
   const [startTime, setStartTime] = useState(null);
+  const [idempotencyKey, setIdempotencyKey] = useState(null);
   // Fine allenamento, fissata all'arrivo nel riepilogo: la durata non cresce più mentre si scrivono le note
   const [endTime, setEndTime] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -178,13 +180,14 @@ const FocusWorkout = () => {
         currentSetIndex,
         workoutNotes,
         startTime,
+        idempotencyKey,
         lastActivityAt,
         phase: phase === 'rest_timer' ? 'workout' : phase, // Se crasha durante il timer, riprendi dall'esercizio
         timestamp: new Date().getTime()
       };
       localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
     }
-  }, [phase, activePlan, selectedDay, selectedDayId, completedSets, skippedExercises, skippedSets, currentExerciseIndex, currentSetIndex, workoutNotes, startTime, lastActivityAt]);
+  }, [phase, activePlan, selectedDay, selectedDayId, completedSets, skippedExercises, skippedSets, currentExerciseIndex, currentSetIndex, workoutNotes, startTime, idempotencyKey, lastActivityAt]);
 
   const clearDraft = useCallback(() => {
     localStorage.removeItem(DRAFT_STORAGE_KEY);
@@ -338,6 +341,8 @@ const FocusWorkout = () => {
     setCurrentSetIndex(draftToResume.currentSetIndex);
     setWorkoutNotes(draftToResume.workoutNotes);
     setStartTime(new Date(draftToResume.startTime));
+    // Bozze di prima della chiave: ne nasce una adesso
+    setIdempotencyKey(draftToResume.idempotencyKey || newIdempotencyKey());
     const lastActivity = draftToResume.lastActivityAt ? new Date(draftToResume.lastActivityAt) : null;
     setLastActivityAt(lastActivity);
     if (finishedOn) {
@@ -403,6 +408,7 @@ const FocusWorkout = () => {
     setSkippedSets({});
     setWorkoutNotes('');
     setStartTime(new Date());
+    setIdempotencyKey(newIdempotencyKey());
     setEndTime(null);
     setLastActivityAt(null);
     setRetroDate(null);
@@ -701,6 +707,7 @@ const FocusWorkout = () => {
         body: JSON.stringify({
           workout_records: workoutRecords,
           notes: workoutNotes || '',
+          idempotency_key: idempotencyKey || undefined,
           ...(retroDate ? retroPayload() : {
             start_time: startTime ? startTime.toISOString() : null,
             duration_seconds: startTime ? getElapsedSeconds() : null
@@ -716,6 +723,11 @@ const FocusWorkout = () => {
 
       clearDraft();
       setSavedResult(data);
+      // Risposta del primo invio persa: l'allenamento c'era già, nessun XP nuovo da festeggiare
+      if (data.already_saved) {
+        setSnackbar({ open: true, message: 'Allenamento già salvato', severity: 'success' });
+        return;
+      }
       track('workout_saved');
       if (data.total_sessions === 1) track('first_workout');
 

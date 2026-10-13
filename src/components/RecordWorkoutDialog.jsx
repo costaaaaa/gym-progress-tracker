@@ -24,17 +24,20 @@ import InfoIcon from '@mui/icons-material/Info';
 import { API_BASE_URL } from '../config';
 import { INTENSITY_TECHNIQUES } from './ExerciseDialog';
 import { track } from '../utils/analytics';
-import { MAX_WEIGHT, isValidWeight, initialWeight } from '../utils/focusSession';
+import { MAX_WEIGHT, isValidWeight, initialWeight, newIdempotencyKey } from '../utils/focusSession';
 
 const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
   const [selectedDay, setSelectedDay] = useState('');
   const [exercises, setExercises] = useState([]);
   const [workoutData, setWorkoutData] = useState({});
   const [openNotes, setOpenNotes] = useState({});
+  // Stessa chiave a ogni tentativo dello stesso allenamento (vedi newIdempotencyKey)
+  const [idempotencyKey, setIdempotencyKey] = useState(newIdempotencyKey);
 
   const handleDayChange = (event) => {
     const dayId = event.target.value;
     setSelectedDay(dayId);
+    setIdempotencyKey(newIdempotencyKey());
     const selectedDayData = activePlan.days.find(day => day.id === dayId);
     setExercises(selectedDayData ? selectedDayData.exercises : []);
     
@@ -89,7 +92,8 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
         },
         credentials: 'include', // Importante per inviare i cookie di sessione
         body: JSON.stringify({
-          workout_records: workoutRecords
+          workout_records: workoutRecords,
+          idempotency_key: idempotencyKey
         })
       });
 
@@ -99,8 +103,12 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
         throw new Error(responseData.message || 'Errore durante il salvataggio dell\'allenamento');
       }
 
-      track('workout_saved');
-      if (responseData.total_sessions === 1) track('first_workout');
+      // Il prossimo allenamento registrato da qui è un altro: chiave nuova
+      setIdempotencyKey(newIdempotencyKey());
+      if (!responseData.already_saved) {
+        track('workout_saved');
+        if (responseData.total_sessions === 1) track('first_workout');
+      }
 
       onClose(true); // Close with success flag
     } catch (error) {
