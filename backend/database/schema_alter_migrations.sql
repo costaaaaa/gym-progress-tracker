@@ -359,3 +359,16 @@ ALTER TABLE `gym_user_gamification`
   ADD COLUMN `last_xp_session_at` DATETIME NULL DEFAULT NULL AFTER `lifetime_volume_kg`;
 
 UPDATE `gym_exercise_gamification` SET `level` = FLOOR(SQRT(`xp` / 25)) + 1;
+
+
+-- ------------------------------------------------------------------------------
+-- 20. Salvataggio idempotente. gym_workout_history.idempotency_key: chiave che il
+--     client genera all'inizio della sessione e rimanda a ogni tentativo di salvataggio;
+--     unica per utente, cosi' un secondo invio dello stesso allenamento non lo duplica.
+--     NULL per le app che non la mandano (piu' NULL non si scontrano nell'indice unico).
+--     Colonna nuova nullable: il rollback del codice resta possibile.
+-- ------------------------------------------------------------------------------
+
+ALTER TABLE `gym_workout_history`
+  ADD COLUMN `idempotency_key` varchar(64) DEFAULT NULL AFTER `notes`,
+  ADD UNIQUE KEY `uniq_user_idempotency` (`user_id`, `idempotency_key`);

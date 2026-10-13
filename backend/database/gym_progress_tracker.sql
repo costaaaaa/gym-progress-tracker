@@ -142,9 +142,11 @@ CREATE TABLE IF NOT EXISTS `gym_workout_history` (
   `date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `duration_seconds` int unsigned DEFAULT NULL,
   `notes` text DEFAULT NULL,
+  `idempotency_key` varchar(64) DEFAULT NULL, -- chiave del client contro i doppi invii (NULL = app vecchie)
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   KEY `idx_user_date` (`user_id`, `date`),
+  UNIQUE KEY `uniq_user_idempotency` (`user_id`, `idempotency_key`),
   CONSTRAINT `gym_workout_history_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

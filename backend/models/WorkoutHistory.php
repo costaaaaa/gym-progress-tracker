@@ -12,6 +12,7 @@ class WorkoutHistory
     public $date;
     public $duration_seconds = null;
     public $notes;
+    public $idempotency_key = null;
 
     // Constructor with database connection
     public function __construct($db)
@@ -35,7 +36,8 @@ class WorkoutHistory
                         exercises = :exercises,
                         date = :date,
                         duration_seconds = :duration_seconds,
-                        notes = :notes";
+                        notes = :notes,
+                        idempotency_key = :idempotency_key";
 
             // Prepare query
             $stmt = $this->conn->prepare($query);
@@ -46,6 +48,7 @@ class WorkoutHistory
             $stmt->bindParam(":date", $this->date);
             $stmt->bindValue(":duration_seconds", $this->duration_seconds, $this->duration_seconds === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
             $stmt->bindParam(":notes", $this->notes);
+            $stmt->bindValue(":idempotency_key", $this->idempotency_key, $this->idempotency_key === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
 
             // Execute query
             if ($stmt->execute()) {
@@ -58,6 +61,15 @@ class WorkoutHistory
             error_log("Database error during workout history creation: " . $e->getMessage());
             throw $e;
         }
+    }
+
+    // Id dell'allenamento dell'utente già salvato con questa chiave, altrimenti null
+    public static function findIdByIdempotencyKey($db, $user_id, $key)
+    {
+        $stmt = $db->prepare("SELECT id FROM gym_workout_history WHERE user_id = ? AND idempotency_key = ?");
+        $stmt->execute([$user_id, $key]);
+        $id = $stmt->fetchColumn();
+        return $id === false ? null : $id;
     }
 
     // Read all workout history records for a user

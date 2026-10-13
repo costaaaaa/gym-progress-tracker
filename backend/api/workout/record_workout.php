@@ -7,6 +7,17 @@ include_once '../../models/WorkoutSet.php';
 include_once '../../models/Exercise.php';
 require_once '../../lib/workout_gamification.php';
 
+// Allenamento già salvato con la stessa chiave: per il client è un successo, senza nuovi XP
+function already_saved_response($workout_id)
+{
+    api_json_response([
+        'success'       => true,
+        'already_saved' => true,
+        'message'       => 'Allenamento già salvato',
+        'id'            => $workout_id,
+    ]);
+}
+
 $database = new Database();
 $db = $database->getConnection();
 
@@ -43,6 +54,20 @@ try {
         if (!is_int($set_number) || $set_number < 1 || $set_number > 100) {
             api_json_response(['success' => false, 'message' => 'Numero di serie non valido.'], 400);
         }
+    }
+
+    // Chiave del client contro i doppi invii: la genera all'inizio della sessione e la rimanda a
+    // ogni tentativo. Se la risposta del primo salvataggio si è persa, il secondo trova
+    // l'allenamento già salvato e non ridà XP, streak e volume. Senza chiave (app vecchie) si
+    // salva come sempre.
+    $idempotency_key = null;
+    if (isset($data->idempotency_key)) {
+        if (!is_string($data->idempotency_key) || !preg_match('/^[A-Za-z0-9_-]{8,64}$/', $data->idempotency_key)) {
+            api_json_response(['success' => false, 'message' => 'Dati mancanti o non validi'], 400);
+        }
+        $idempotency_key = $data->idempotency_key;
+        $saved_id = WorkoutHistory::findIdByIdempotencyKey($db, $user_id, $idempotency_key);
+        if ($saved_id !== null) already_saved_response($saved_id);
     }
 
     // Solo esercizi approvati o creati dall'utente: quelli in attesa degli altri non si usano
@@ -156,6 +181,7 @@ try {
         $workout_history->duration_seconds = $duration_seconds;
         $workout_history->notes = isset($data->notes) ? $data->notes : '';
         $workout_history->exercises = json_encode($data->workout_records);
+        $workout_history->idempotency_key = $idempotency_key;
 
         if (!$workout_history->create()) {
             throw new Exception("Impossibile registrare l'allenamento");
@@ -197,6 +223,11 @@ try {
 
     } catch (Exception $e) {
         $db->rollBack();
+        // Due invii con la stessa chiave arrivati insieme: il secondo trova l'indice unico occupato
+        if ($idempotency_key !== null && $e instanceof PDOException && ($e->errorInfo[1] ?? null) == 1062) {
+            $saved_id = WorkoutHistory::findIdByIdempotencyKey($db, $user_id, $idempotency_key);
+            if ($saved_id !== null) already_saved_response($saved_id);
+        }
         throw $e;
     }
 
