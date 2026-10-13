@@ -1,6 +1,6 @@
 <?php
 // Funzioni pure per le regole di gamification (XP, livelli, achievement).
-// Zero dipendenze DB: usate da record_workout.php (live) e dal backfill (storico).
+// Zero dipendenze DB: usate da workout_gamification.php (salvataggio) e dal backfill (storico).
 
 // ── Economia XP ──────────────────────────────────────────────────────────────
 const XP_SESSION          = 20;  // per sessione completata
