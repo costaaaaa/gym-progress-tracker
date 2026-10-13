@@ -65,9 +65,10 @@ trap cleanup EXIT
 CAT="$(call GET api/exercise/read_all.php "$A")"
 E1="$(echo "${CAT#* }" | jq -r '.records[0].id')"
 
-make_day() { # token → id di un giorno con 3 serie di E1
+make_day() { # token → id di un giorno con 3 serie di E1 (scheda attiva: obiettivo di 1 giorno a settimana, quindi il 1° salvataggio dà streak 1)
     local plan day
     plan="$(call POST api/workout/create_plan.php "$1" '{"name":"Scheda doppio invio"}' | cut -d' ' -f2- | jq -r '.plan.id')"
+    call POST api/workout/activate_plan.php "$1" "{\"plan_id\":$plan}" >/dev/null
     day="$(call POST api/workout/create_days.php "$1" "{\"plan_id\":$plan,\"days\":[{\"name\":\"Giorno 1\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
     call POST api/workout/add_exercise.php "$1" "{\"day_id\":$day,\"exercise_id\":$E1,\"sets\":3,\"reps\":\"10\",\"rest\":60}" >/dev/null
     echo "$day"
