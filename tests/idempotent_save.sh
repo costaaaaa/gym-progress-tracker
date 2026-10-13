@@ -25,14 +25,16 @@ ok() { checks=$((checks + 1)); printf '  \033[32m✓\033[0m %s\n' "$1"; }
 ko() { checks=$((checks + 1)); fails=$((fails + 1)); printf '  \033[31m✗\033[0m %s\n' "$1"; [[ -n "${2:-}" ]] && printf '      %s\n' "$2"; }
 
 call() { # metodo path token [json] → "status corpo"
-    local method="$1" path="$2" token="$3" body="${4:-}"
-    local args=(-s -o /tmp/idempotent_save.$$ -w '%{http_code}' -X "$method" -H 'Content-Type: application/json')
+    # mktemp e non /tmp/...$$: più chiamate partono insieme in background
+    local method="$1" path="$2" token="$3" body="${4:-}" out
+    out="$(mktemp)"
+    local args=(-s -o "$out" -w '%{http_code}' -X "$method" -H 'Content-Type: application/json')
     [[ -n "$token" ]] && args+=(-H "Authorization: Bearer $token")
     [[ -n "$body" ]] && args+=(--data "$body")
     local status
     status="$(curl "${args[@]}" "$BASE$path")"
-    printf '%s %s' "$status" "$(cat /tmp/idempotent_save.$$)"
-    rm -f /tmp/idempotent_save.$$
+    printf '%s %s' "$status" "$(cat "$out")"
+    rm -f "$out"
 }
 
 check() { # descrizione "risposta di call" filtro_jq (sul corpo; $status è il codice HTTP)
@@ -98,10 +100,21 @@ check "un solo allenamento in storico" "200 {\"n\": $(history_count "$A")}" '.n 
 check "XP e volume contati una volta" "$(call GET api/gamification/profile.php "$A")" \
     "(.total_xp | tonumber) == $XP1 and (.lifetime_volume_kg | tonumber) == 600 and (.total_sessions | tonumber) == 1"
 
+echo "Tre invii contemporanei con la stessa chiave (utente A)"
+KEY2="prova-$SUFFIX-parallelo"
+BODY2="$(body "$DAY_A" "$KEY2")"
+PDIR="$(mktemp -d)"
+for i in 1 2 3; do call POST api/workout/record_workout.php "$A" "$BODY2" > "$PDIR/$i" & done
+wait
+PAR="$(for i in 1 2 3; do cut -d' ' -f2- "$PDIR/$i"; done | jq -sc '{ids: (map(.id | tostring) | unique), saved: map(select(.already_saved | not)) | length, ok: all(.success)}')"
+rm -rf "$PDIR"
+check "tutti successo, uno solo salvato, stesso id" "200 $PAR" '.ok and .saved == 1 and (.ids | length) == 1'
+check "due allenamenti in storico" "200 {\"n\": $(history_count "$A")}" '.n == 2'
+
 echo "Senza idempotency_key (app vecchie): come prima"
 check "1° invio senza chiave: salvato" "$(call POST api/workout/record_workout.php "$A" "$(body "$DAY_A")")" '$status == 201 and .success'
 check "2° invio senza chiave: salvato di nuovo" "$(call POST api/workout/record_workout.php "$A" "$(body "$DAY_A")")" '$status == 201 and .success'
-check "tre allenamenti in storico" "200 {\"n\": $(history_count "$A")}" '.n == 3'
+check "quattro allenamenti in storico" "200 {\"n\": $(history_count "$A")}" '.n == 4'
 
 echo "Chiave non valida"
 check "spazi e simboli: 400" "$(call POST api/workout/record_workout.php "$A" "$(body "$DAY_A" 'non va bene!')")" '$status == 400 and .success == false'
