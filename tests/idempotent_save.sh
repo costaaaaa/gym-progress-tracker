@@ -92,10 +92,13 @@ check "1° invio: salvato (201), con gli XP di sessione" "$FIRST" \
     '$status == 201 and .success and (.already_saved | not) and .xp_session_awarded == true'
 ID1="$(echo "${FIRST#* }" | jq -r '.id')"
 XP1="$(echo "${FIRST#* }" | jq -r '.total_xp')"
+STREAK1="$(echo "${FIRST#* }" | jq -r '.current_streak_weeks')"
 
 SECOND="$(call POST api/workout/record_workout.php "$A" "$(body "$DAY_A" "$KEY")")"
 check "2° invio: successo, «già salvato», con l'id del primo" "$SECOND" \
     "\$status == 200 and .success and .already_saved == true and (.id | tostring) == \"$ID1\""
+check "2° invio: streak uguale al 1° (riepilogo e card lo mostrano)" "$SECOND" \
+    ".current_streak_weeks == $STREAK1 and $STREAK1 > 0"
 check "un solo allenamento in storico" "200 {\"n\": $(history_count "$A")}" '.n == 1'
 check "XP e volume contati una volta" "$(call GET api/gamification/profile.php "$A")" \
     "(.total_xp | tonumber) == $XP1 and (.lifetime_volume_kg | tonumber) == 600 and (.total_sessions | tonumber) == 1"

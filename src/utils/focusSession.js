@@ -47,6 +47,7 @@ export const setStatus = (idx, currentSetIndex, skipped = []) => {
 // Chiave contro i doppi invii di record_workout.php: nasce con la sessione, resta nella bozza
 // e torna uguale a ogni tentativo di salvataggio, così se la risposta si perde il secondo
 // invio non duplica l'allenamento. Il backend accetta 8-64 caratteri [A-Za-z0-9_-].
+// Copia identica in gym-progress-tracker-mobile/src/screens/Focus/focusHelpers.js.
 export const newIdempotencyKey = () =>
   `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}${Math.random().toString(36).slice(2, 12)}`;
 

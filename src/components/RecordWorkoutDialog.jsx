@@ -110,7 +110,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
         if (responseData.total_sessions === 1) track('first_workout');
       }
 
-      onClose(true); // Close with success flag
+      onClose(true, null, { alreadySaved: !!responseData.already_saved }); // Close with success flag
     } catch (error) {
       console.error('Error recording workout:', error);
       onClose(false, error.message);

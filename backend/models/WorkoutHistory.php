@@ -29,6 +29,11 @@ class WorkoutHistory
             $this->notes = htmlspecialchars(strip_tags($this->notes));
             // Non sanifichiamo $this->exercises perché è un JSON che deve essere preservato
 
+            // La colonna idempotency_key entra nella query solo se c'è la chiave: le app vecchie
+            // salvano anche se l'immagine nuova arriva prima della migrazione 20.
+            $key_clause = $this->idempotency_key === null ? "" : ",
+                        idempotency_key = :idempotency_key";
+
             // Query to insert record
             $query = "INSERT INTO " . $this->table_name . "
                     SET
@@ -36,8 +41,7 @@ class WorkoutHistory
                         exercises = :exercises,
                         date = :date,
                         duration_seconds = :duration_seconds,
-                        notes = :notes,
-                        idempotency_key = :idempotency_key";
+                        notes = :notes" . $key_clause;
 
             // Prepare query
             $stmt = $this->conn->prepare($query);
@@ -48,7 +52,9 @@ class WorkoutHistory
             $stmt->bindParam(":date", $this->date);
             $stmt->bindValue(":duration_seconds", $this->duration_seconds, $this->duration_seconds === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
             $stmt->bindParam(":notes", $this->notes);
-            $stmt->bindValue(":idempotency_key", $this->idempotency_key, $this->idempotency_key === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+            if ($this->idempotency_key !== null) {
+                $stmt->bindValue(":idempotency_key", $this->idempotency_key, PDO::PARAM_STR);
+            }
 
             // Execute query
             if ($stmt->execute()) {

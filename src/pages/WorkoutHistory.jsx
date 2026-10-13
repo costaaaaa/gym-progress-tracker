@@ -179,12 +179,13 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
     setExpandedWorkouts(prev => ({ ...prev, [workoutId]: !prev[workoutId] }));
   };
 
-  const handleRecordWorkout = (success, errorMessage) => {
+  const handleRecordWorkout = (success, errorMessage, info) => {
     setOpenRecordDialog(false);
     if (success) {
       setSnackbar({
         open: true,
-        message: 'Allenamento registrato con successo',
+        // Già salvato al primo invio: i valori modificati dopo non sono stati salvati
+        message: info?.alreadySaved ? 'Allenamento già salvato' : 'Allenamento registrato con successo',
         severity: 'success'
       });
       fetchWorkoutHistory();

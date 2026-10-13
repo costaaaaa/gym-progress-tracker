@@ -7,14 +7,18 @@ include_once '../../models/WorkoutSet.php';
 include_once '../../models/Exercise.php';
 require_once '../../lib/workout_gamification.php';
 
-// Allenamento già salvato con la stessa chiave: per il client è un successo, senza nuovi XP
-function already_saved_response($workout_id)
+// Allenamento già salvato con la stessa chiave: per il client è un successo, senza nuovi XP.
+// Lo streak serve al riepilogo e alla card di condivisione, che altrimenti lo mostrerebbero vuoto.
+function already_saved_response($db, $user_id, $workout_id)
 {
+    $stmt = $db->prepare("SELECT current_streak_weeks FROM gym_user_gamification WHERE user_id = ?");
+    $stmt->execute([$user_id]);
     api_json_response([
-        'success'       => true,
-        'already_saved' => true,
-        'message'       => 'Allenamento già salvato',
-        'id'            => $workout_id,
+        'success'              => true,
+        'already_saved'        => true,
+        'message'              => 'Allenamento già salvato',
+        'id'                   => $workout_id,
+        'current_streak_weeks' => (int) $stmt->fetchColumn(),
     ]);
 }
 
@@ -67,7 +71,7 @@ try {
         }
         $idempotency_key = $data->idempotency_key;
         $saved_id = WorkoutHistory::findIdByIdempotencyKey($db, $user_id, $idempotency_key);
-        if ($saved_id !== null) already_saved_response($saved_id);
+        if ($saved_id !== null) already_saved_response($db, $user_id, $saved_id);
     }
 
     // Solo esercizi approvati o creati dall'utente: quelli in attesa degli altri non si usano
@@ -226,7 +230,7 @@ try {
         // Due invii con la stessa chiave arrivati insieme: il secondo trova l'indice unico occupato
         if ($idempotency_key !== null && $e instanceof PDOException && ($e->errorInfo[1] ?? null) == 1062) {
             $saved_id = WorkoutHistory::findIdByIdempotencyKey($db, $user_id, $idempotency_key);
-            if ($saved_id !== null) already_saved_response($saved_id);
+            if ($saved_id !== null) already_saved_response($db, $user_id, $saved_id);
         }
         throw $e;
     }
