@@ -59,7 +59,7 @@ import FocusExercisePicker from '../components/FocusExercisePicker';
 import {
   FEATURE_SESSION_EDIT, MAX_WEIGHT, isValidWeight, initialWeight, nextSetWeight,
   lastSessionSets, setStatus, numberedSets, buildSessionEntry, swapExercise, insertExercise,
-  newIdempotencyKey
+  newIdempotencyKey, draftIdempotencyKey
 } from '../utils/focusSession';
 import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../utils/celebrate';
 import { usePageMeta } from '../hooks/usePageMeta';
@@ -341,8 +341,7 @@ const FocusWorkout = () => {
     setCurrentSetIndex(draftToResume.currentSetIndex);
     setWorkoutNotes(draftToResume.workoutNotes);
     setStartTime(new Date(draftToResume.startTime));
-    // Bozze di prima della chiave: ne nasce una adesso
-    setIdempotencyKey(draftToResume.idempotencyKey || newIdempotencyKey());
+    setIdempotencyKey(draftIdempotencyKey(draftToResume));
     const lastActivity = draftToResume.lastActivityAt ? new Date(draftToResume.lastActivityAt) : null;
     setLastActivityAt(lastActivity);
     if (finishedOn) {
@@ -707,7 +706,7 @@ const FocusWorkout = () => {
         body: JSON.stringify({
           workout_records: workoutRecords,
           notes: workoutNotes || '',
-          idempotency_key: idempotencyKey || undefined,
+          idempotency_key: idempotencyKey,
           ...(retroDate ? retroPayload() : {
             start_time: startTime ? startTime.toISOString() : null,
             duration_seconds: startTime ? getElapsedSeconds() : null

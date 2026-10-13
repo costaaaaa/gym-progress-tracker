@@ -50,6 +50,9 @@ export const setStatus = (idx, currentSetIndex, skipped = []) => {
 export const newIdempotencyKey = () =>
   `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}${Math.random().toString(36).slice(2, 12)}`;
 
+// Chiave di una bozza ripresa: la sua, o una nuova per le bozze di prima della chiave
+export const draftIdempotencyKey = (draft) => draft?.idempotencyKey || newIdempotencyKey();
+
 // Set da inviare a record_workout.php per un esercizio: set_number consecutivi
 // sulle serie fatte, così le serie saltate non lasciano buchi nel database.
 export const numberedSets = (sets = []) => sets.map((set, i) => ({ ...set, set_number: i + 1 }));
