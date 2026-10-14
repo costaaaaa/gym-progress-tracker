@@ -38,6 +38,8 @@ try {
 
     // Limiti di colonna (gym_workout_sets): weight decimal(5,2), reps varchar(50). Peso 0 ammesso
     // (corpo libero, macchinari senza carico); oltre i limiti il database darebbe un 500 generico.
+    // Ripetizioni: intero da 1 a 250, come le controllano le app (un 910 nato da "9" scritto
+    // accanto a "10" falserebbe volume, record e obiettivi).
     if (count($data->workout_records) > 500) {
         api_json_response(['success' => false, 'message' => 'Troppe serie in un solo allenamento.'], 400);
     }
@@ -52,8 +54,9 @@ try {
         if (!is_numeric($weight) || $weight < 0 || $weight > 999.99) {
             api_json_response(['success' => false, 'message' => 'Peso non valido: usa un valore tra 0 e 999,99 kg.'], 400);
         }
-        if (!(is_string($reps) || is_int($reps)) || trim((string) $reps) === '' || strlen((string) $reps) > 50) {
-            api_json_response(['success' => false, 'message' => 'Ripetizioni non valide.'], 400);
+        if (!(is_string($reps) || is_int($reps)) || !preg_match('/^\d{1,3}$/', (string) $reps)
+            || (int) $reps < 1 || (int) $reps > 250) {
+            api_json_response(['success' => false, 'message' => 'Ripetizioni non valide: usa un numero intero tra 1 e 250.'], 400);
         }
         if (!is_int($set_number) || $set_number < 1 || $set_number > 100) {
             api_json_response(['success' => false, 'message' => 'Numero di serie non valido.'], 400);

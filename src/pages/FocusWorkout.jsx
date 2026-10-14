@@ -58,6 +58,7 @@ import ShareCardDialog from '../components/ShareCardDialog';
 import FocusExercisePicker from '../components/FocusExercisePicker';
 import {
   FEATURE_SESSION_EDIT, MAX_WEIGHT, isValidWeight, initialWeight, nextSetWeight,
+  isValidReps, planRepsForSet, repsNeedConfirm,
   lastSessionSets, setStatus, numberedSets, buildSessionEntry, swapExercise, insertExercise,
   newIdempotencyKey, draftIdempotencyKey
 } from '../utils/focusSession';
@@ -151,6 +152,7 @@ const FocusWorkout = () => {
   // UI state
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [confirmQuitDialog, setConfirmQuitDialog] = useState(false);
+  const [repsConfirmDialog, setRepsConfirmDialog] = useState(false);
   const [exerciseTransition, setExerciseTransition] = useState(true);
   const [draftToResume, setDraftToResume] = useState(null);
   // Orario dell'ultima serie registrata: fine reale di una sessione salvata in ritardo
@@ -351,7 +353,7 @@ const FocusWorkout = () => {
 
     // Ripristina input correnti
     const currentEx = draftToResume.selectedDay.exercises[draftToResume.currentExerciseIndex];
-    setRepsInput(currentEx?.reps || '');
+    setRepsInput('');
     setIntensityTechniqueInput(currentEx?.intensity_technique || '');
 
     setPhase(finishedOn ? 'summary' : (draftToResume.phase || 'workout'));
@@ -412,9 +414,9 @@ const FocusWorkout = () => {
     setLastActivityAt(null);
     setRetroDate(null);
 
-    // Pre-compila reps dal piano e peso dall'ultima sessione (sovraccarico progressivo)
+    // Peso dall'ultima sessione (sovraccarico progressivo); ripetizioni vuote, la scheda è in grigio
     const firstExercise = selectedDay.exercises[0];
-    setRepsInput(firstExercise.reps || '');
+    setRepsInput('');
     setIntensityTechniqueInput(firstExercise.intensity_technique || '');
     setWeightInput(initialWeight(firstExercise, getSuggestedWeight(firstExercise)));
 
@@ -432,11 +434,12 @@ const FocusWorkout = () => {
   const currentSkippedSets = skippedSets[currentExercise?.id] || [];
   const canEditSession = features.includes(FEATURE_SESSION_EDIT);
 
-  // Porta il Focus su un esercizio: prima serie, reps e tecnica dal piano, peso dall'ultima sessione
+  // Porta il Focus su un esercizio: prima serie, tecnica dal piano, peso dall'ultima sessione.
+  // Le ripetizioni partono vuote: la scheda è solo un suggerimento in grigio, da scrivere ogni volta.
   const enterExercise = useCallback((index, exercise) => {
     setCurrentExerciseIndex(index);
     setCurrentSetIndex(0);
-    setRepsInput(exercise?.reps || '');
+    setRepsInput('');
     setIntensityTechniqueInput(exercise?.intensity_technique || '');
     setWeightInput(initialWeight(exercise, getSuggestedWeight(exercise)));
   }, [getSuggestedWeight]);
@@ -445,15 +448,23 @@ const FocusWorkout = () => {
   // CONFERMA SERIE
   // ================================================
   const handleConfirmSet = () => {
-    if (!isValidWeight(weightInput) || !repsInput) return;
+    if (!isValidWeight(weightInput) || !isValidReps(repsInput)) return;
+    if (repsNeedConfirm(repsInput, currentExercise.reps)) {
+      setRepsConfirmDialog(true);
+      return;
+    }
+    recordSet();
+  };
 
+  const recordSet = () => {
+    setRepsConfirmDialog(false);
     hapticFeedback.success();
 
     const exerciseId = currentExercise.id;
     const newSet = {
       setNumber: currentSetIndex + 1,
       weight: parseFloat(weightInput),
-      reps: repsInput.toString(),
+      reps: String(parseInt(repsInput, 10)),
       intensity_technique: intensityTechniqueInput
     };
 
@@ -472,8 +483,7 @@ const FocusWorkout = () => {
       // Prossima serie
       setCurrentSetIndex(nextSetIndex);
       setWeightInput(nextSetWeight(currentExercise, weightInput));
-      // Mantieni le reps dal piano come default
-      setRepsInput(currentExercise.reps || '');
+      setRepsInput('');
       setIntensityTechniqueInput(currentExercise.intensity_technique || '');
 
       // Avvia timer di recupero se abilitato
@@ -523,7 +533,7 @@ const FocusWorkout = () => {
       goToNextExercise();
     } else {
       setCurrentSetIndex(nextSetIndex);
-      setRepsInput(currentExercise.reps || '');
+      setRepsInput('');
       setIntensityTechniqueInput(currentExercise.intensity_technique || '');
     }
   };
@@ -1165,8 +1175,11 @@ const FocusWorkout = () => {
                 <TextField label="Peso (kg)" type="number" value={weightInput} onChange={(e) => setWeightInput(e.target.value)}
                   fullWidth autoFocus inputProps={{ step: 0.5, min: 0, max: MAX_WEIGHT, inputMode: 'decimal' }}
                   sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.primary }, '&.Mui-focused fieldset': { borderColor: colors.primary } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.primary } }} />
+                {/* Vuoto a ogni serie: la scheda in grigio è solo un suggerimento, va scritta */}
                 <TextField label="Ripetizioni" value={repsInput} onChange={(e) => setRepsInput(e.target.value)}
-                  fullWidth inputProps={{ inputMode: 'text' }}
+                  placeholder={planRepsForSet(currentExercise.reps, currentSetIndex)} InputLabelProps={{ shrink: true }}
+                  onFocus={(e) => e.target.select()}
+                  fullWidth inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
                   sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.primary }, '&.Mui-focused fieldset': { borderColor: colors.primary } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.primary } }} />
               </Box>
 
@@ -1195,7 +1208,7 @@ const FocusWorkout = () => {
                 </Select>
               </FormControl>
 
-              <Button variant="contained" fullWidth size="large" startIcon={<CheckIcon />} onClick={handleConfirmSet} disabled={!isValidWeight(weightInput) || !repsInput}
+              <Button variant="contained" fullWidth size="large" startIcon={<CheckIcon />} onClick={handleConfirmSet} disabled={!isValidWeight(weightInput) || !isValidReps(repsInput)}
                 sx={{ py: 2.5, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.success, color: '#fff', borderRadius: '14px',
                   boxShadow: '0 4px 16px rgba(76, 175, 80, 0.3)', '&:hover': { bgcolor: 'success.dark', boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)' },
                   '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted }, mb: 2, transition: 'all 0.3s ease' }}>
@@ -1264,6 +1277,18 @@ const FocusWorkout = () => {
             <DialogActions>
               <Button onClick={() => setConfirmQuitDialog(false)} sx={{ color: colors.textSecondary }}>Continua</Button>
               <Button onClick={confirmQuit} sx={{ color: colors.primary }}>Esci</Button>
+            </DialogActions>
+          </Dialog>
+
+          <Dialog open={repsConfirmDialog} onClose={() => setRepsConfirmDialog(false)}
+            PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: '16px' } }}>
+            <DialogTitle sx={{ color: colors.text }}>{parseInt(repsInput, 10)} ripetizioni?</DialogTitle>
+            <DialogContent>
+              <DialogContentText sx={{ color: colors.textSecondary }}>È un numero insolito per questa serie: controlla di non averlo scritto accanto a un altro.</DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setRepsConfirmDialog(false)} sx={{ color: colors.textSecondary }}>Correggi</Button>
+              <Button onClick={recordSet} sx={{ color: colors.primary }}>Confermo</Button>
             </DialogActions>
           </Dialog>
         </Box>
