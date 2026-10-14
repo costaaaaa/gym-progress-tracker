@@ -117,7 +117,7 @@ check "  → sul giorno misto restano i manuali" "200 $(day "$D1")" '.body_fat_p
 [[ -z "$(day "$D3")" ]] && ok "  → il giorno solo importato è cancellato" || ko "  → il giorno solo importato è cancellato"
 
 echo "Export"
-check "l'export dice cosa arriva da Salute" "$(call GET api/user/export.php "$T")" '.misure | all(has("da_salute"))'
+check "l'export dice cosa arriva da Salute" "$(call GET api/user/export.php "$T")" '.body_stats | all(has("from_health"))'
 
 echo
 if [[ $fails -eq 0 ]]; then echo "TUTTO OK ($checks controlli)"; else echo "FALLITI $fails su $checks"; exit 1; fi

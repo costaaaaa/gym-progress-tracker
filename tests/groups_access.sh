@@ -128,7 +128,7 @@ expect "gruppo eliminato: 404 anche per A" 404 "$(call GET "api/groups/read.php?
 
 echo "Export"
 res="$(call POST api/groups/create.php "$B" '{"name":"Export","type":"friends"}')"
-if call GET api/user/export.php "$B" | cut -d' ' -f2- | jq -e '.gruppi | length == 1' >/dev/null; then ok "l'export contiene i gruppi"; else ko "l'export contiene i gruppi"; fi
+if call GET api/user/export.php "$B" | cut -d' ' -f2- | jq -e '.groups | length == 1' >/dev/null; then ok "l'export contiene i gruppi"; else ko "l'export contiene i gruppi"; fi
 
 echo "Limite di tentativi sui codici"
 limited=0
