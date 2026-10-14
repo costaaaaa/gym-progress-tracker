@@ -24,7 +24,9 @@ import InfoIcon from '@mui/icons-material/Info';
 import { API_BASE_URL } from '../config';
 import { INTENSITY_TECHNIQUES } from './ExerciseDialog';
 import { track } from '../utils/analytics';
-import { MAX_WEIGHT, isValidWeight, initialWeight, newIdempotencyKey } from '../utils/focusSession';
+import {
+  MAX_WEIGHT, isValidWeight, initialWeight, newIdempotencyKey, isValidReps, planRepsForSet, repsNeedConfirm,
+} from '../utils/focusSession';
 
 const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
   const [selectedDay, setSelectedDay] = useState('');
@@ -33,6 +35,9 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
   const [openNotes, setOpenNotes] = useState({});
   // Stessa chiave a ogni tentativo dello stesso allenamento (vedi newIdempotencyKey)
   const [idempotencyKey, setIdempotencyKey] = useState(newIdempotencyKey);
+  const [repsError, setRepsError] = useState('');
+  // Serie con ripetizioni insolite da confermare prima di salvare: { name, set, reps } o null
+  const [unusualSet, setUnusualSet] = useState(null);
 
   const handleDayChange = (event) => {
     const dayId = event.target.value;
@@ -45,9 +50,11 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
     const initialWorkoutData = {};
     if (selectedDayData && selectedDayData.exercises) {
       selectedDayData.exercises.forEach(exercise => {
-        initialWorkoutData[exercise.id] = Array(exercise.sets).fill().map(() => ({
+        // Ripetizioni precompilate solo se la scheda ha un numero per quella serie; "8-10" o "Max"
+        // restano in grigio e vanno scritte
+        initialWorkoutData[exercise.id] = Array(exercise.sets).fill().map((_, setIndex) => ({
           weight: initialWeight(exercise),
-          reps: exercise.reps, // Default to planned reps
+          reps: isValidReps(planRepsForSet(exercise.reps, setIndex)) ? planRepsForSet(exercise.reps, setIndex) : '',
           intensity_technique: exercise.intensity_technique || '' // Default to planned intensity technique
         }));
       });
@@ -67,7 +74,30 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
     }));
   };
 
+  // Serie scritte (peso valido e ripetizioni presenti): quelle senza ripetizioni non sono state fatte
+  const writtenSets = () => exercises.flatMap(exercise =>
+    (workoutData[exercise.id] || [])
+      .map((set, setIndex) => ({ exercise, setIndex, reps: String(set.reps ?? '').trim(), weight: set.weight }))
+      .filter(set => isValidWeight(set.weight) && set.reps !== ''));
+
+  const handleSave = () => {
+    const written = writtenSets();
+    const invalid = written.find(set => !isValidReps(set.reps));
+    if (invalid) {
+      setRepsError(`${invalid.exercise.exercise_name}, serie ${invalid.setIndex + 1}: ripetizioni non valide, usa un numero intero tra 1 e 250.`);
+      return;
+    }
+    setRepsError('');
+    const unusual = written.find(set => repsNeedConfirm(set.reps, set.exercise.reps));
+    if (unusual) {
+      setUnusualSet({ reps: parseInt(unusual.reps, 10) });
+      return;
+    }
+    handleSubmit();
+  };
+
   const handleSubmit = async () => {
+    setUnusualSet(null);
     try {
       // Modifica: filtriamo solo i set che sono stati compilati (hanno sia peso che ripetizioni)
       const workoutRecords = exercises.flatMap(exercise =>
@@ -76,7 +106,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
             exercise_id: exercise.exercise_id,
             exercise_name: exercise.exercise_name,
             weight: parseFloat(set.weight),
-            reps: set.reps, // Manteniamo il formato testuale delle ripetizioni
+            reps: String(set.reps ?? '').trim(),
             intensity_technique: set.intensity_technique,
             day_id: selectedDay,
             set_number: setIndex + 1
@@ -265,7 +295,11 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                           />
                           <TextField
                             label="Ripetizioni"
-                            value={workoutData[exercise.id]?.[setIndex]?.reps || exercise.reps}
+                            value={workoutData[exercise.id]?.[setIndex]?.reps ?? ''}
+                            placeholder={planRepsForSet(exercise.reps, setIndex)}
+                            InputLabelProps={{ shrink: true }}
+                            inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
+                            onFocus={(e) => e.target.select()}
                             onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'reps', e.target.value)}
                             fullWidth
                             size="small"
@@ -292,17 +326,26 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
             </List>
           )}
         </Box>
+        {repsError && <Alert severity="error" sx={{ mt: 2 }}>{repsError}</Alert>}
       </DialogContent>
       <DialogActions>
         <Button onClick={() => onClose(false)}>Annulla</Button>
         <Button 
-          onClick={handleSubmit} 
+          onClick={handleSave} 
           variant="contained" 
           disabled={!isValid()}
         >
           Salva
         </Button>
       </DialogActions>
+
+      <Dialog open={!!unusualSet} onClose={() => setUnusualSet(null)}>
+        <DialogTitle>Confermi {unusualSet?.reps} ripetizioni?</DialogTitle>
+        <DialogActions>
+          <Button onClick={() => setUnusualSet(null)}>Correggi</Button>
+          <Button onClick={handleSubmit} variant="contained">Sì, confermo</Button>
+        </DialogActions>
+      </Dialog>
     </Dialog>
   );
 };

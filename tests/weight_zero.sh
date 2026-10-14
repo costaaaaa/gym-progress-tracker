@@ -6,9 +6,10 @@
 #   tests/weight_zero.sh http://localhost:8080/backend/
 #
 # Regole: una serie con peso 0 e ripetizioni vale per XP di esercizio e PR; a peso 0 il record
-# è sulle ripetizioni, con zavorra su peso e 1RM. Peso fuori da 0..999,99, ripetizioni vuote e
-# set_number non valido rispondono 400; serie/ripetizioni/recupero di un esercizio in scheda e
-# data di inizio allenamento fuori range pure. Registra un account usa e getta (token Bearer) e lo
+# è sulle ripetizioni, con zavorra su peso e 1RM. Peso fuori da 0..999,99, ripetizioni che non
+# sono un intero da 1 a 250 e set_number non valido rispondono 400; serie/ripetizioni/recupero di
+# un esercizio in scheda e data di inizio allenamento fuori range pure. Gli obiettivi di
+# tonnellaggio seguono la scala dall'automobile alla Torre Eiffel. Registra un account usa e getta (token Bearer) e lo
 # cancella alla fine. Non va lanciato in produzione: crea account veri.
 #
 # Richiede curl e jq. Esce con 1 se un controllo fallisce.
@@ -89,8 +90,25 @@ status_is "peso 1000: 400" "$(call POST api/workout/record_workout.php "$T" "$(b
 status_is "peso negativo: 400" "$(call POST api/workout/record_workout.php "$T" "$(body -1 8)")" 400
 status_is "peso null: 400" "$(call POST api/workout/record_workout.php "$T" "$(body null 8)")" 400
 status_is "ripetizioni vuote: 400" "$(call POST api/workout/record_workout.php "$T" "$(body 20 '')")" 400
+status_is "ripetizioni 250 accettate" "$(call POST api/workout/record_workout.php "$T" "$(body 20 250)")" 201
+status_is "ripetizioni 251: 400" "$(call POST api/workout/record_workout.php "$T" "$(body 20 251)")" 400
+status_is "ripetizioni 910: 400" "$(call POST api/workout/record_workout.php "$T" "$(body 20 910)")" 400
+status_is "ripetizioni 0: 400" "$(call POST api/workout/record_workout.php "$T" "$(body 20 0)")" 400
+status_is "ripetizioni \"8-10\": 400" "$(call POST api/workout/record_workout.php "$T" "$(body 20 8-10)")" 400
+status_is "ripetizioni \"9a\": 400" "$(call POST api/workout/record_workout.php "$T" "$(body 20 9a)")" 400
 status_is "set_number 0: 400" "$(call POST api/workout/record_workout.php "$T" \
     "$(jq -nc --argjson e "$E1" --argjson d "$DAY" '{workout_records:[{exercise_id:$e, day_id:$d, set_number:0, weight:20, reps:"8"}]}')")" 400
+
+echo "Obiettivi di tonnellaggio"
+# Due serie da 999,99 kg × 8 = 16 t: il volume a vita supera i 15 t dell'autobus, resta sotto i 60 t
+status_is "allenamento da 16 t salvato" "$(call POST api/workout/record_workout.php "$T" "$(body 999.99 8)")" 201
+PROFILE="$(call GET api/gamification/profile.php "$T")"
+check "scala dall'automobile alla Torre Eiffel" "$PROFILE" \
+    '[.achievements[] | select(.category == "tonnage") | .threshold] == [1500, 6000, 15000, 60000, 150000, 420000, 2000000, 7300000]'
+check "autobus sbloccato, carro armato no" "$PROFILE" \
+    '([.achievements[] | select(.key == "tonnage_bus")][0].locked == false) and ([.achievements[] | select(.key == "tonnage_tank")][0].locked == true)'
+check "sbloccati tutti e solo i livelli sotto il volume a vita" "$PROFILE" \
+    '(.lifetime_volume_kg | tonumber) as $v | all(.achievements[] | select(.category == "tonnage"); .locked == ($v < .threshold))'
 
 echo "Parametri dell'esercizio e data di inizio"
 ex() { # serie ripetizioni recupero → corpo per add_exercise

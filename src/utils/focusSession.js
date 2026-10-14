@@ -3,6 +3,8 @@
 // aggiunta valgono solo per questa sessione, la scheda non cambia).
 // Stessa logica di src/screens/Focus/focusHelpers.js nell'app mobile.
 
+import { extractReps } from './workoutMetrics';
+
 // Funzione premium che sblocca cambio e aggiunta (vedi user_features() nel backend)
 export const FEATURE_SESSION_EDIT = 'focus_session_edit';
 
@@ -13,6 +15,35 @@ export const MAX_WEIGHT = 999.99;
 export const isValidWeight = (value) => {
   const n = parseFloat(value);
   return Number.isFinite(n) && n >= 0 && n <= MAX_WEIGHT;
+};
+
+// Ripetizioni massime accettate dal backend (record_workout.php)
+export const MAX_REPS = 250;
+
+// Ripetizioni valide per una serie: intero da 1 a MAX_REPS, scritto dall'utente
+export const isValidReps = (value) => {
+  const s = String(value ?? '').trim();
+  if (!/^\d+$/.test(s)) return false;
+  const n = parseInt(s, 10);
+  return n >= 1 && n <= MAX_REPS;
+};
+
+// Obiettivo della serie dalla scheda, mostrato in grigio nel campo (mai salvato da solo).
+// Lista "12/10/8": il valore della serie (oltre la lista l'ultimo); altrimenti il testo intero.
+export const planRepsForSet = (planReps, setIndex) => {
+  const s = String(planReps ?? '').trim();
+  if (!s.includes('/')) return s;
+  const parts = s.split('/').map((p) => p.trim());
+  return parts[Math.min(setIndex, parts.length - 1)];
+};
+
+// Oltre questa soglia si chiede conferma, salvo che la scheda preveda di più
+export const REPS_CONFIRM_MIN = 30;
+
+// Conferma per ripetizioni insolite: contro i numeri scritti accanto a un altro (9 + 10 = 910)
+export const repsNeedConfirm = (reps, planReps) => {
+  const n = parseInt(reps, 10);
+  return n > REPS_CONFIRM_MIN && n > extractReps(planReps);
 };
 
 export const isBodyweight = (exercise) => exercise?.equipment === 'corpo_libero';
