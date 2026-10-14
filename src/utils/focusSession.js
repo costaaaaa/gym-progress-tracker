@@ -44,6 +44,16 @@ export const setStatus = (idx, currentSetIndex, skipped = []) => {
   return idx === currentSetIndex ? 'active' : 'pending';
 };
 
+// Chiave contro i doppi invii di record_workout.php: nasce con la sessione, resta nella bozza
+// e torna uguale a ogni tentativo di salvataggio, così se la risposta si perde il secondo
+// invio non duplica l'allenamento. Il backend accetta 8-64 caratteri [A-Za-z0-9_-].
+// Copia identica in gym-progress-tracker-mobile/src/screens/Focus/focusHelpers.js.
+export const newIdempotencyKey = () =>
+  `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}${Math.random().toString(36).slice(2, 12)}`;
+
+// Chiave di una bozza ripresa: la sua, o una nuova per le bozze di prima della chiave
+export const draftIdempotencyKey = (draft) => draft?.idempotencyKey || newIdempotencyKey();
+
 // Set da inviare a record_workout.php per un esercizio: set_number consecutivi
 // sulle serie fatte, così le serie saltate non lasciano buchi nel database.
 export const numberedSets = (sets = []) => sets.map((set, i) => ({ ...set, set_number: i + 1 }));
