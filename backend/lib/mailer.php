@@ -90,7 +90,6 @@ function mail_send_brevo($to, $subject, $text)
     ]);
     $response = curl_exec($ch);
     $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
 
     if ($status < 200 || $status >= 300) {
         error_log("mail_send_brevo: HTTP $status " . substr((string) $response, 0, 200));
