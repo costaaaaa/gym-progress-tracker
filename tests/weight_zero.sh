@@ -79,10 +79,11 @@ check "più ripetizioni a peso 0: PR sulle ripetizioni (15 XP)" "$(call POST api
     'xpg == 15'
 check "stesse ripetizioni: nessun PR" "$(call POST api/workout/record_workout.php "$T" "$(body 0 10)")" \
     'xpg == 0'
-check "con zavorra (5 kg): PR di peso (15 XP)" "$(call POST api/workout/record_workout.php "$T" "$(body 5 6)")" \
-    'xpg == 15 and .session_volume_kg == 60'
-check "XP di esercizio: 10 + 15 + 15 = 40, livello 2" "$(call GET api/gamification/profile.php "$T")" \
-    "[.exercises[] | select(.exercise_id == $E1)][0] | (.xp | tonumber) == 40 and (.level | tonumber) == 2"
+# il PR di peso c'è, ma l'esercizio ha già preso gli XP di record oggi (una volta al giorno)
+check "con zavorra (5 kg), stesso giorno: record già pagato, 0 XP" "$(call POST api/workout/record_workout.php "$T" "$(body 5 6)")" \
+    'xpg == 0 and .session_volume_kg == 60'
+check "XP di esercizio: 10 + 15 = 25, livello 2" "$(call GET api/gamification/profile.php "$T")" \
+    "[.exercises[] | select(.exercise_id == $E1)][0] | (.xp | tonumber) == 25 and (.level | tonumber) == 2"
 
 echo "Limiti dei set"
 status_is "peso 999,99 accettato" "$(call POST api/workout/record_workout.php "$T" "$(body 999.99 1)")" 201

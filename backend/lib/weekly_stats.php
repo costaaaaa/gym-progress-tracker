@@ -23,8 +23,9 @@ function weekly_goals(PDO $db, array $user_ids): array {
     return $goals;
 }
 
-// Allenamenti nella settimana ISO di $dt per ogni utente: [user_id => count]
-function weekly_workout_counts(PDO $db, array $user_ids, DateTime $dt): array {
+// Allenamenti nella settimana ISO di $dt per ogni utente: [user_id => count]. $exclude_id: un
+// allenamento da non contare (quello che si sta cancellando).
+function weekly_workout_counts(PDO $db, array $user_ids, DateTime $dt, int $exclude_id = 0): array {
     $counts = [];
     foreach ($user_ids as $id) $counts[(int) $id] = 0;
     if (empty($user_ids)) return $counts;
@@ -33,12 +34,12 @@ function weekly_workout_counts(PDO $db, array $user_ids, DateTime $dt): array {
     $placeholders = implode(',', array_fill(0, count($user_ids), '?'));
     $stmt = $db->prepare(
         "SELECT user_id, COUNT(*) AS cnt FROM gym_workout_history
-         WHERE user_id IN ($placeholders) AND date >= ? AND date <= ?
+         WHERE user_id IN ($placeholders) AND date >= ? AND date <= ? AND id != ?
          GROUP BY user_id"
     );
     $stmt->execute(array_merge(
         array_values(array_map('intval', $user_ids)),
-        [$monday->format('Y-m-d H:i:s'), $sunday->format('Y-m-d H:i:s')]
+        [$monday->format('Y-m-d H:i:s'), $sunday->format('Y-m-d H:i:s'), $exclude_id]
     ));
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $counts[(int) $row['user_id']] = (int) $row['cnt'];
