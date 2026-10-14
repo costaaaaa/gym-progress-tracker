@@ -1282,13 +1282,13 @@ const FocusWorkout = () => {
 
           <Dialog open={repsConfirmDialog} onClose={() => setRepsConfirmDialog(false)}
             PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: '16px' } }}>
-            <DialogTitle sx={{ color: colors.text }}>{parseInt(repsInput, 10)} ripetizioni?</DialogTitle>
+            <DialogTitle sx={{ color: colors.text }}>Confermi {parseInt(repsInput, 10)} ripetizioni?</DialogTitle>
             <DialogContent>
-              <DialogContentText sx={{ color: colors.textSecondary }}>È un numero insolito per questa serie: controlla di non averlo scritto accanto a un altro.</DialogContentText>
+              <DialogContentText sx={{ color: colors.textSecondary }}>Sono molte più del solito per questa serie. Se hai scritto due numeri di seguito (ad esempio 9 e 10 diventano 910), torna indietro e correggi.</DialogContentText>
             </DialogContent>
             <DialogActions>
               <Button onClick={() => setRepsConfirmDialog(false)} sx={{ color: colors.textSecondary }}>Correggi</Button>
-              <Button onClick={recordSet} sx={{ color: colors.primary }}>Confermo</Button>
+              <Button onClick={recordSet} sx={{ color: colors.primary }}>Sì, confermo</Button>
             </DialogActions>
           </Dialog>
         </Box>

@@ -340,15 +340,15 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
       </DialogActions>
 
       <Dialog open={!!unusualSet} onClose={() => setUnusualSet(null)}>
-        <DialogTitle>{unusualSet?.reps} ripetizioni?</DialogTitle>
+        <DialogTitle>Confermi {unusualSet?.reps} ripetizioni?</DialogTitle>
         <DialogContent>
           <Typography variant="body2">
-            {unusualSet?.name}, serie {unusualSet?.set}: è un numero insolito, controlla di non averlo scritto accanto a un altro.
+            {unusualSet?.name}, serie {unusualSet?.set}: sono molte più del solito. Se hai scritto due numeri di seguito (ad esempio 9 e 10 diventano 910), torna indietro e correggi.
           </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setUnusualSet(null)}>Correggi</Button>
-          <Button onClick={handleSubmit} variant="contained">Confermo</Button>
+          <Button onClick={handleSubmit} variant="contained">Sì, confermo</Button>
         </DialogActions>
       </Dialog>
     </Dialog>
