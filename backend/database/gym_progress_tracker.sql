@@ -205,6 +205,32 @@ CREATE TABLE IF NOT EXISTS `gym_achievements` (
   CONSTRAINT `fk_ach_user` FOREIGN KEY (`user_id`) REFERENCES `gym_users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Gamification: cosa ha dato ogni allenamento (XP generali, XP per esercizio), per poterlo togliere
+-- se l'allenamento si cancella. xp_general = sessione + PR generale, senza il bonus streak;
+-- day = giorno dell'allenamento al salvataggio (i record danno XP una volta per esercizio al giorno).
+CREATE TABLE IF NOT EXISTS `gym_workout_rewards` (
+  `workout_id`  INT        NOT NULL,
+  `user_id`     INT        NOT NULL,
+  `xp_general`  INT        NOT NULL DEFAULT 0,
+  `xp_session`  TINYINT(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`workout_id`),
+  KEY `idx_rewards_user` (`user_id`, `xp_session`),
+  CONSTRAINT `fk_wrewards_workout` FOREIGN KEY (`workout_id`) REFERENCES `gym_workout_history`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `gym_workout_exercise_rewards` (
+  `workout_id`  INT        NOT NULL,
+  `exercise_id` INT        NOT NULL,
+  `user_id`     INT        NOT NULL,
+  `xp`          INT        NOT NULL DEFAULT 0,
+  `is_pr`       TINYINT(1) NOT NULL DEFAULT 0,
+  `day`         DATE       NOT NULL,
+  PRIMARY KEY (`workout_id`, `exercise_id`),
+  KEY `idx_exrewards_pr` (`user_id`, `exercise_id`, `day`, `is_pr`),
+  CONSTRAINT `fk_exrewards_workout`  FOREIGN KEY (`workout_id`)  REFERENCES `gym_workout_history`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_exrewards_exercise` FOREIGN KEY (`exercise_id`) REFERENCES `gym_exercises`(`id`)       ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Rate limiting per gli endpoint di autenticazione (login/register)
 CREATE TABLE IF NOT EXISTS `gym_rate_limits` (
   `rate_key` varchar(191) NOT NULL,

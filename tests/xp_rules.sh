@@ -54,10 +54,11 @@ register_and_login() {
 
 A="$(register_and_login "xpA$SUFFIX")"
 B="$(register_and_login "xpB$SUFFIX")"
-[[ -n "$A" && -n "$B" ]] || { echo "registrazione o login falliti (limite di registrazioni per IP?)" >&2; exit 1; }
+C="$(register_and_login "xpC$SUFFIX")"
+[[ -n "$A" && -n "$B" && -n "$C" ]] || { echo "registrazione o login falliti (limite di registrazioni per IP?)" >&2; exit 1; }
 
 cleanup() {
-    for t in "$A" "$B"; do
+    for t in "$A" "$B" "$C"; do
         call POST api/user/delete.php "$t" "$(jq -nc --arg p "$PASS" '{password:$p}')" >/dev/null
     done
     echo "Account di prova cancellati."
@@ -104,18 +105,69 @@ check "subito dopo, sessione completa: cooldown, 0 XP" "$(call POST api/workout/
     '.xp_session_awarded == false and .xp_session_reason == "cooldown" and xpg == 0'
 check "l'allenamento si salva comunque (sets_saved)" "$(call POST api/workout/record_workout.php "$A" "$(body "$DAY_A" 25 5 20 0 0)")" '.sets_saved == 5'
 
-echo "PR una volta per sessione (utente B, due esercizi)"
+echo "PR una volta per sessione e per esercizio al giorno (utente B, due esercizi)"
 DAY_B="$(make_day "$B" "Giorno 1" 3 2)"
 check "1ª sessione (peso 20): 20 XP, nessun PR" "$(call POST api/workout/record_workout.php "$B" "$(body "$DAY_B" 25 3 20 2 20)")" \
     '.xp_session_awarded == true and xpg == 20'
 check "2ª sessione (30 kg su due esercizi): in cooldown, un solo PR da 15" "$(call POST api/workout/record_workout.php "$B" "$(body "$DAY_B" 25 3 30 2 30)")" \
     '.xp_session_awarded == false and .xp_session_reason == "cooldown" and xpg == 15'
-check "3ª sessione (40 kg): ancora 15" "$(call POST api/workout/record_workout.php "$B" "$(body "$DAY_B" 25 3 40 2 40)")" \
-    'xpg == 15'
+check "3ª sessione (40 kg, stesso giorno): i PR di oggi sono già stati pagati, 0 XP" "$(call POST api/workout/record_workout.php "$B" "$(body "$DAY_B" 25 3 40 2 40)")" \
+    'xpg == 0'
 
 echo "Livello per esercizio (curva 25)"
 PROFILE="$(call GET api/gamification/profile.php "$B")"
-check "E1: 10 + 15 + 15 = 40 XP, livello 2" "$PROFILE" "[.exercises[] | select(.exercise_id == $E1)][0] | (.xp | tonumber) == 40 and (.level | tonumber) == 2"
+check "E1: 10 + 15 + 0 = 25 XP, livello 2" "$PROFILE" "[.exercises[] | select(.exercise_id == $E1)][0] | (.xp | tonumber) == 25 and (.level | tonumber) == 2"
+
+profile_field() { call GET api/gamification/profile.php "$1" | cut -d' ' -f2- | jq -r "$2"; }
+profile_total_xp() { call GET api/gamification/profile.php "$1" | cut -d' ' -f2- | jq -r '.total_xp'; }
+saved_id() { echo "${1#* }" | jq -r '.id'; }
+
+echo "Cancellare un allenamento toglie gli XP (utente C)"
+DAY_C="$(make_day "$C" "Giorno 1" 3 0)"
+BASE_SAVE="$(call POST api/workout/record_workout.php "$C" "$(body "$DAY_C" 25 3 20 0 0)")"
+BASE_XP="$(profile_total_xp "$C")"
+for round in 1 2 3; do
+    PR="$(call POST api/workout/record_workout.php "$C" "$(body "$DAY_C" 25 3 50 0 0)")"
+    check "giro $round: il record da 50 kg dà il PR da 15" "$PR" 'xpg == 15'
+    check "giro $round: cancellare il record risponde 200" "$(call POST api/workout_history/delete.php "$C" "{\"id\":$(saved_id "$PR")}")" '.success'
+    [[ "$(profile_total_xp "$C")" == "$BASE_XP" ]] && ok "giro $round: total_xp torna a $BASE_XP" || ko "giro $round: total_xp torna a $BASE_XP" "ora: $(profile_total_xp "$C")"
+done
+
+echo "Cooldown (utente C)"
+check "senza cancellare, una seconda sessione subito dopo è in cooldown" "$(call POST api/workout/record_workout.php "$C" "$(body "$DAY_C" 25 3 20 0 0)")" \
+    '.xp_session_awarded == false and .xp_session_reason == "cooldown"'
+call POST api/workout_history/delete.php "$C" "{\"id\":$(saved_id "$BASE_SAVE")}" >/dev/null
+check "cancellata la sessione che aveva dato XP, la prossima li riprende" "$(call POST api/workout/record_workout.php "$C" "$(body "$DAY_C" 25 3 20 0 0)")" \
+    '.xp_session_awarded == true and xpg == 20'
+
+echo "Volume e achievement seguono la cancellazione (utente C)"
+VOL0="$(profile_field "$C" '.lifetime_volume_kg')"
+HEAVY="$(call POST api/workout/record_workout.php "$C" "$(body "$DAY_C" 25 3 140 0 0)")"
+check "un salvataggio a 140 kg sblocca strength_140" "$HEAVY" '[.unlocked_achievements[].key] | index("strength_140") != null'
+check "strength_140 risulta sbloccato nel profilo" "$(call GET api/gamification/profile.php "$C")" \
+    '[.achievements[] | select(.key == "strength_140")][0].locked == false'
+DEL_HEAVY="$(call POST api/workout_history/delete.php "$C" "{\"id\":$(saved_id "$HEAVY")}")"
+check "la cancellazione elenca strength_140 fra gli achievement tolti" "$DEL_HEAVY" '.achievements_removed | index("strength_140") != null'
+check "strength_140 non è più sbloccato nel profilo" "$(call GET api/gamification/profile.php "$C")" \
+    '[.achievements[] | select(.key == "strength_140")][0].locked == true'
+[[ "$(profile_field "$C" '.lifetime_volume_kg')" == "$VOL0" ]] && ok "cancellato: il volume torna a $VOL0 kg" || ko "cancellato: il volume torna a $VOL0 kg" "ora: $(profile_field "$C" '.lifetime_volume_kg')"
+
+echo "Anteprima della cancellazione (utente C)"
+PREV_SAVE="$(call POST api/workout/record_workout.php "$C" "$(body "$DAY_C" 25 3 140 0 0)")"
+XP_BEFORE="$(profile_total_xp "$C")"
+PREVIEW="$(call POST api/workout_history/delete.php "$C" "{\"id\":$(saved_id "$PREV_SAVE"),\"preview\":true}")"
+check "l'anteprima elenca XP e achievement che si perderebbero" "$PREVIEW" '.success and .xp_removed == 15 and (.achievements_removed | index("strength_140") != null)'
+[[ "$(profile_total_xp "$C")" == "$XP_BEFORE" ]] && ok "l'anteprima non cambia gli XP del profilo" || ko "l'anteprima non cambia gli XP del profilo"
+check "l'anteprima non ha cancellato l'allenamento né l'achievement" "$(call GET api/gamification/profile.php "$C")" \
+    '[.achievements[] | select(.key == "strength_140")][0].locked == false'
+call POST api/workout_history/delete.php "$C" "{\"id\":$(saved_id "$PREV_SAVE")}" >/dev/null
+
+echo "Cambio data (utente C)"
+MOVE_SAVE="$(call POST api/workout/record_workout.php "$C" "$(body "$DAY_C" 25 3 20 0 0)")"
+FUTURE_MOVE="$(call POST api/workout_history/update_date.php "$C" "{\"id\":$(saved_id "$MOVE_SAVE"),\"new_date\":\"$(date -d '+3 days' +%Y-%m-%d)\"}")"
+[[ "${FUTURE_MOVE%% *}" == 400 ]] && ok "una data futura risponde 400" || ko "una data futura risponde 400" "ricevuto: ${FUTURE_MOVE:0:200}"
+PAST_MOVE="$(call POST api/workout_history/update_date.php "$C" "{\"id\":$(saved_id "$MOVE_SAVE"),\"new_date\":\"$(date -d '-2 days' +%Y-%m-%d)\"}")"
+[[ "${PAST_MOVE%% *}" == 200 ]] && ok "una data passata si accetta" || ko "una data passata si accetta" "ricevuto: ${PAST_MOVE:0:200}"
 
 echo
 if [[ $fails -eq 0 ]]; then printf '\033[32mTutti i %d controlli passati.\033[0m\n' "$checks"; else printf '\033[31m%d controlli su %d falliti.\033[0m\n' "$fails" "$checks"; exit 1; fi

@@ -3,6 +3,15 @@
 // La chiamante (record_workout.php) la esegue dentro la transazione del salvataggio.
 require_once __DIR__ . '/weekly_stats.php';
 
+// I record di un esercizio danno XP al massimo una volta al giorno (giorno dell'allenamento al salvataggio)
+function exercise_pr_paid_on_day(PDO $db, int $user_id, int $exercise_id, string $day): bool {
+    $stmt = $db->prepare(
+        "SELECT 1 FROM gym_workout_exercise_rewards WHERE user_id = ? AND exercise_id = ? AND day = ? AND is_pr = 1 LIMIT 1"
+    );
+    $stmt->execute([$user_id, $exercise_id, $day]);
+    return (bool) $stmt->fetchColumn();
+}
+
 // $workout_records: le serie come arrivano dal client (oggetti con exercise_id, day_id, weight, reps).
 // Ritorna i campi di gamification della risposta di record_workout.php, nello stesso ordine.
 function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, string $data_workout, ?int $duration_seconds, array $workout_records): array {
@@ -127,6 +136,8 @@ function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, stri
     $xp_status  = sessionXpStatus($planned_sets, $done_sets, $duration_seconds, $seconds_since_last_xp);
     $xp_session = $xp_status === 'ok';
 
+    $workout_day = substr($data_workout, 0, 10);
+
     // Calcola XP guadagnati e volume sessione
     $xp_gained_general  = $xp_session ? XP_SESSION : 0;
     $pr_in_session      = false;
@@ -153,16 +164,23 @@ function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, stri
         $is_reps_pr   = $prev !== null && $ex_best_bw_reps > $prev['best_bw_reps'];
 
         $ex_xp = $xp_session ? XP_EXERCISE_SESSION : 0;
-        if ($is_weight_pr || $is_1rm_pr || $is_reps_pr) {
+        $ex_is_pr = false;
+        if (($is_weight_pr || $is_1rm_pr || $is_reps_pr) && !exercise_pr_paid_on_day($db, $user_id, $eid, $workout_day)) {
             $pr_in_session = true;
+            $ex_is_pr = true;
             $ex_xp += XP_EXERCISE_PR;
         }
-        if ($ex_xp > 0) $exercise_xp_deltas[$eid] = $ex_xp;
+        if ($ex_xp > 0) $exercise_xp_deltas[$eid] = ['xp' => $ex_xp, 'is_pr' => $ex_is_pr];
     }
 
     // PR generale: una volta sola per sessione, comunque siano i PR
     if ($pr_in_session) $xp_gained_general += XP_PR;
+    $xp_general_registered = $xp_gained_general; // lo streak non si annulla: non entra nel registro
     if ($week_completed_now) $xp_gained_general += XP_STREAK_WEEK;
+
+    $db->prepare(
+        "INSERT INTO gym_workout_rewards (workout_id, user_id, xp_general, xp_session) VALUES (?, ?, ?, ?)"
+    )->execute([$workout_id, $user_id, $xp_general_registered, $xp_session ? 1 : 0]);
 
     // Aggiorna totali utente
     $old_total_xp     = (int)   ($gam_row['total_xp']          ?? 0);
@@ -193,7 +211,13 @@ function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, stri
          VALUES (?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE xp = ?, level = ?"
     );
-    foreach ($exercise_xp_deltas as $eid => $xp_delta) {
+    $stmt_ex_reward = $db->prepare(
+        "INSERT INTO gym_workout_exercise_rewards (workout_id, exercise_id, user_id, xp, is_pr, day)
+         VALUES (?, ?, ?, ?, ?, ?)"
+    );
+    foreach ($exercise_xp_deltas as $eid => $reward) {
+        $xp_delta = $reward['xp'];
+        $stmt_ex_reward->execute([$workout_id, $eid, $user_id, $xp_delta, $reward['is_pr'] ? 1 : 0, $workout_day]);
         $stmt_ex_sel->execute([$user_id, $eid]);
         $ex_row    = $stmt_ex_sel->fetch(PDO::FETCH_ASSOC);
         $old_ex_xp = (int) ($ex_row['xp']    ?? 0);
@@ -265,4 +289,89 @@ function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, stri
         'exercise_levelups'     => $exercise_levelups,
         'unlocked_achievements' => $unlocked_achievements,
     ];
+}
+
+// Toglie a utente ed esercizi quello che l'allenamento aveva dato. La chiamante la esegue in transazione,
+// prima del DELETE (il registro cade a cascata con l'allenamento).
+// Ritorna ['xp_removed' => int, 'achievements_removed' => [chiavi]].
+function undo_workout_gamification(PDO $db, int $user_id, int $workout_id): array {
+    $db->prepare(
+        "INSERT IGNORE INTO gym_user_gamification (user_id, current_streak_weeks, longest_streak_weeks, last_completed_week, updated_at)
+         VALUES (?, 0, 0, NULL, NOW())"
+    )->execute([$user_id]);
+    $stmt_row = $db->prepare("SELECT * FROM gym_user_gamification WHERE user_id = ? FOR UPDATE");
+    $stmt_row->execute([$user_id]);
+    $gam_row = $stmt_row->fetch(PDO::FETCH_ASSOC);
+
+    $stmt_reward = $db->prepare("SELECT xp_general, xp_session FROM gym_workout_rewards WHERE workout_id = ? AND user_id = ?");
+    $stmt_reward->execute([$workout_id, $user_id]);
+    $reward = $stmt_reward->fetch(PDO::FETCH_ASSOC) ?: ['xp_general' => 0, 'xp_session' => 0];
+    $xp_general = (int) $reward['xp_general'];
+
+    // Se dava XP di sessione, il cooldown riparte dalla sessione con XP più recente fra quelle rimaste
+    $last_xp_session_at = $gam_row['last_xp_session_at'];
+    if ((int) $reward['xp_session'] === 1) {
+        $stmt_last = $db->prepare(
+            "SELECT MAX(wh.date)
+             FROM gym_workout_rewards r
+             JOIN gym_workout_history wh ON wh.id = r.workout_id
+             WHERE r.user_id = ? AND r.xp_session = 1 AND r.workout_id != ?"
+        );
+        $stmt_last->execute([$user_id, $workout_id]);
+        $last_xp_session_at = $stmt_last->fetchColumn() ?: null;
+    }
+
+    $old_total_xp = (int) $gam_row['total_xp'];
+    $new_total_xp = max(0, $old_total_xp - $xp_general);
+    // Volume: ricavato dalle serie, quindi vale anche per gli allenamenti senza registro
+    $stmt_sets = $db->prepare("SELECT weight, reps FROM gym_workout_sets WHERE workout_history_id = ?");
+    $stmt_sets->execute([$workout_id]);
+    $workout_volume = 0.0;
+    foreach ($stmt_sets->fetchAll(PDO::FETCH_ASSOC) as $set) {
+        $reps = parseReps($set['reps']);
+        if ($reps > 0) $workout_volume += (float) $set['weight'] * $reps;
+    }
+    $new_volume = max(0.0, (float) $gam_row['lifetime_volume_kg'] - $workout_volume);
+
+    $db->prepare("UPDATE gym_user_gamification SET total_xp = ?, level = ?, lifetime_volume_kg = ?, last_xp_session_at = ?, updated_at = NOW() WHERE user_id = ?")
+        ->execute([$new_total_xp, levelForXp($new_total_xp), $new_volume, $last_xp_session_at, $user_id]);
+
+    $stmt_ex_rewards = $db->prepare("SELECT exercise_id, xp FROM gym_workout_exercise_rewards WHERE workout_id = ? AND user_id = ?");
+    $stmt_ex_rewards->execute([$workout_id, $user_id]);
+    $stmt_ex_sel = $db->prepare("SELECT xp FROM gym_exercise_gamification WHERE user_id = ? AND exercise_id = ? FOR UPDATE");
+    $stmt_ex_upd = $db->prepare("UPDATE gym_exercise_gamification SET xp = ?, level = ? WHERE user_id = ? AND exercise_id = ?");
+    foreach ($stmt_ex_rewards->fetchAll(PDO::FETCH_ASSOC) as $reward) {
+        $stmt_ex_sel->execute([$user_id, $reward['exercise_id']]);
+        $ex_xp = $stmt_ex_sel->fetchColumn();
+        if ($ex_xp === false) continue;
+        $new_ex_xp = max(0, (int) $ex_xp - (int) $reward['xp']);
+        $stmt_ex_upd->execute([$new_ex_xp, levelForXp($new_ex_xp, LEVEL_UNIT_EXERCISE), $user_id, $reward['exercise_id']]);
+    }
+
+    // Achievement: ricalcolati sui totali rimasti. Quelli di streak non si toccano.
+    $stmt_cnt = $db->prepare("SELECT COUNT(*) FROM gym_workout_history WHERE user_id = ? AND id != ?");
+    $stmt_cnt->execute([$user_id, $workout_id]);
+    $stmt_max = $db->prepare(
+        "SELECT COALESCE(MAX(ws.weight), 0)
+         FROM gym_workout_sets ws
+         JOIN gym_workout_history wh ON ws.workout_history_id = wh.id
+         WHERE wh.user_id = ? AND wh.id != ?"
+    );
+    $stmt_max->execute([$user_id, $workout_id]);
+    $still_earned = achievementsForTotals([
+        'sessions'        => (int) $stmt_cnt->fetchColumn(),
+        'lifetime_volume' => $new_volume,
+        'max_weight_ever' => (float) $stmt_max->fetchColumn(),
+    ]);
+    $stmt_existing = $db->prepare("SELECT achievement_key FROM gym_achievements WHERE user_id = ?");
+    $stmt_existing->execute([$user_id]);
+    $achievements_removed = [];
+    $stmt_del_ach = $db->prepare("DELETE FROM gym_achievements WHERE user_id = ? AND achievement_key = ?");
+    foreach ($stmt_existing->fetchAll(PDO::FETCH_COLUMN) as $key) {
+        if (str_starts_with($key, 'streak_') || in_array($key, $still_earned, true)) continue;
+        $stmt_del_ach->execute([$user_id, $key]);
+        $achievements_removed[] = $key;
+    }
+
+    return ['xp_removed' => $old_total_xp - $new_total_xp, 'achievements_removed' => $achievements_removed];
 }
