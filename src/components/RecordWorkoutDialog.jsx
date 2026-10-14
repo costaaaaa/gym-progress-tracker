@@ -90,7 +90,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
     setRepsError('');
     const unusual = written.find(set => repsNeedConfirm(set.reps, set.exercise.reps));
     if (unusual) {
-      setUnusualSet({ name: unusual.exercise.exercise_name, set: unusual.setIndex + 1, reps: parseInt(unusual.reps, 10) });
+      setUnusualSet({ reps: parseInt(unusual.reps, 10) });
       return;
     }
     handleSubmit();
@@ -341,11 +341,6 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
 
       <Dialog open={!!unusualSet} onClose={() => setUnusualSet(null)}>
         <DialogTitle>Confermi {unusualSet?.reps} ripetizioni?</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2">
-            {unusualSet?.name}, serie {unusualSet?.set}: sono molte più del solito. Se hai scritto due numeri di seguito (ad esempio 9 e 10 diventano 910), torna indietro e correggi.
-          </Typography>
-        </DialogContent>
         <DialogActions>
           <Button onClick={() => setUnusualSet(null)}>Correggi</Button>
           <Button onClick={handleSubmit} variant="contained">Sì, confermo</Button>
