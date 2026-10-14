@@ -46,6 +46,15 @@ if (
         exit;
     }
 
+    if ($timestamp > time()) {
+        http_response_code(400);
+        echo json_encode(array(
+            "success" => false,
+            "message" => "La data dell'allenamento non può essere nel futuro."
+        ));
+        exit;
+    }
+
     // Formatta la data in un formato standardizzato per MySQL
     $formatted_date = date('Y-m-d H:i:s', $timestamp);
     error_log("Data finale formattata per MySQL: " . $formatted_date);

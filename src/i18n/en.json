@@ -352,5 +352,10 @@
   "share.bg.rosso": "Red",
   "share.bg.blu": "Blue",
   "share.bg.verde": "Green",
-  "share.bg.viola": "Purple"
+  "share.bg.viola": "Purple",
+  "history.delete.title": "Confirm deletion",
+  "history.delete.body": "Are you sure you want to delete this workout?",
+  "history.delete.lose_xp": "You will lose {{xp}} XP.",
+  "history.delete.lose_achievement": "You will lose the achievement “{{label}}”.",
+  "history.delete.confirm": "Delete"
 }

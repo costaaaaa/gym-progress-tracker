@@ -372,3 +372,37 @@ UPDATE `gym_exercise_gamification` SET `level` = FLOOR(SQRT(`xp` / 25)) + 1;
 ALTER TABLE `gym_workout_history`
   ADD COLUMN `idempotency_key` varchar(64) DEFAULT NULL AFTER `notes`,
   ADD UNIQUE KEY `uniq_user_idempotency` (`user_id`, `idempotency_key`);
+
+
+-- ------------------------------------------------------------------------------
+-- 21. XP annullabili. gym_workout_rewards (una riga per allenamento: XP generali dati,
+--     senza il bonus streak, e se ha dato XP di sessione) e gym_workout_exercise_rewards
+--     (una riga per esercizio: XP, se e' un PR, giorno dell'allenamento al salvataggio)
+--     permettono di togliere quegli XP quando l'allenamento si cancella, e di dare i
+--     record al massimo una volta per esercizio al giorno. Solo tabelle nuove con
+--     CASCADE: il rollback del codice resta possibile. Gli allenamenti salvati prima non
+--     hanno righe: cancellarli non cambia gli XP.
+-- ------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `gym_workout_rewards` (
+  `workout_id`  INT        NOT NULL,
+  `user_id`     INT        NOT NULL,
+  `xp_general`  INT        NOT NULL DEFAULT 0,
+  `xp_session`  TINYINT(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`workout_id`),
+  KEY `idx_rewards_user` (`user_id`, `xp_session`),
+  CONSTRAINT `fk_wrewards_workout` FOREIGN KEY (`workout_id`) REFERENCES `gym_workout_history`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `gym_workout_exercise_rewards` (
+  `workout_id`  INT        NOT NULL,
+  `exercise_id` INT        NOT NULL,
+  `user_id`     INT        NOT NULL,
+  `xp`          INT        NOT NULL DEFAULT 0,
+  `is_pr`       TINYINT(1) NOT NULL DEFAULT 0,
+  `day`         DATE       NOT NULL,
+  PRIMARY KEY (`workout_id`, `exercise_id`),
+  KEY `idx_exrewards_pr` (`user_id`, `exercise_id`, `day`, `is_pr`),
+  CONSTRAINT `fk_exrewards_workout`  FOREIGN KEY (`workout_id`)  REFERENCES `gym_workout_history`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_exrewards_exercise` FOREIGN KEY (`exercise_id`) REFERENCES `gym_exercises`(`id`)       ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

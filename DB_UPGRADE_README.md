@@ -82,6 +82,19 @@ Dopo l'aggiornamento:
 2. Verifica che i dati appaiano correttamente nella pagina dei progressi
 3. Controlla i log della console per verificare che gli ID degli esercizi siano corretti
 
+## Sezione 21: XP annullabili
+
+Aggiunge `gym_workout_rewards` e `gym_workout_exercise_rewards`: ogni allenamento salvato da ora registra
+gli XP che ha dato, così cancellarlo li toglie (XP generali, XP e livello degli esercizi, volume,
+achievement di sessioni, tonnellaggio e forza; il cooldown delle sessioni con XP riparte dall'ultima rimasta).
+
+- **Allenamenti salvati prima del rilascio** non hanno righe nel registro: cancellarli **non cambia gli XP**.
+  Il volume e gli achievement invece si ricalcolano dalle serie, come per gli altri.
+- **Record**: un esercizio dà XP di record al massimo **una volta al giorno** (giorno dell'allenamento
+  al salvataggio). Gli allenamenti già salvati non hanno righe, quindi il tetto vale dal primo
+  salvataggio dopo il rilascio.
+- Lo streak e i suoi achievement non si toccano (ticket a parte).
+
 ## Risoluzione dei problemi
 
 ### Se gli allenamenti esistenti non appaiono correttamente:

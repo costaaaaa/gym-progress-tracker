@@ -352,5 +352,10 @@
   "share.bg.rosso": "Rosso",
   "share.bg.blu": "Blu",
   "share.bg.verde": "Verde",
-  "share.bg.viola": "Viola"
+  "share.bg.viola": "Viola",
+  "history.delete.title": "Conferma eliminazione",
+  "history.delete.body": "Sei sicuro di voler eliminare questo allenamento?",
+  "history.delete.lose_xp": "Perderai {{xp}} XP.",
+  "history.delete.lose_achievement": "Perderai l'achievement «{{label}}».",
+  "history.delete.confirm": "Elimina"
 }

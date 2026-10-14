@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Typography,
   Paper,
@@ -39,6 +40,7 @@ import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import { intlLocale } from '../i18n/format';
 import { muscleLabel } from '../i18n/labels';
+import { achievementCatalog } from '../utils/gamificationLevels';
 
 // Determina il formato dei dati e organizza gli esercizi di un allenamento in modo uniforme
 // (ex helper interno di WorkoutDetailDialog: il backend restituisce righe storiche in due forme
@@ -86,6 +88,7 @@ const groupWorkoutsByMonth = (workouts) => {
 };
 
 const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
+  const { t } = useTranslation();
   const { isLoggedIn, loading: authLoading } = useAuth();
   const [workouts, setWorkouts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -95,6 +98,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deletePreview, setDeletePreview] = useState(null); // cosa si perde cancellando, dall'anteprima del server
   const [openEditDateDialog, setOpenEditDateDialog] = useState(false);
   const [workoutToEdit, setWorkoutToEdit] = useState(null);
   const [expandedMonths, setExpandedMonths] = useState({});
@@ -208,7 +212,24 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
   const handleCloseDeleteDialog = () => {
     setOpenDeleteDialog(false);
     setWorkoutToDelete(null);
+    setDeletePreview(null);
   };
+
+  // Alla conferma il server dice cosa si perderebbe; se l'anteprima non arriva il dialogo resta quello base
+  useEffect(() => {
+    if (!workoutToDelete) return undefined;
+    let cancelled = false;
+    fetch(`${API_BASE_URL}api/workout_history/delete.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: workoutToDelete.id, preview: true }),
+      credentials: 'include'
+    })
+      .then(response => (response.ok ? response.json() : null))
+      .then(data => { if (!cancelled && data?.success) setDeletePreview(data); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [workoutToDelete]);
   
   const handleConfirmDelete = async () => {
     if (!workoutToDelete) return;
@@ -232,6 +253,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
       setDeleteLoading(false);
       setOpenDeleteDialog(false);
       setWorkoutToDelete(null);
+      setDeletePreview(null);
     }
   };
 
@@ -455,11 +477,21 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
       {isEmbedded ? renderContent() : <Container maxWidth="lg" sx={{ py: 2 }}>{renderContent()}</Container>}
       {activePlan && <RecordWorkoutDialog open={openRecordDialog} onClose={handleRecordWorkout} activePlan={activePlan} />}
       <Dialog open={openDeleteDialog} onClose={handleCloseDeleteDialog}>
-        <DialogTitle>Conferma eliminazione</DialogTitle>
-        <DialogContent>Sei sicuro di voler eliminare questo allenamento?</DialogContent>
+        <DialogTitle>{t('history.delete.title')}</DialogTitle>
+        <DialogContent>
+          {t('history.delete.body')}
+          {deletePreview?.xp_removed > 0 && (
+            <Typography variant="body2" sx={{ mt: 1.5 }}>{t('history.delete.lose_xp', { xp: deletePreview.xp_removed })}</Typography>
+          )}
+          {(deletePreview?.achievements_removed ?? []).map(key => (
+            <Typography key={key} variant="body2" sx={{ mt: 0.5 }}>
+              {t('history.delete.lose_achievement', { label: achievementCatalog.find(a => a.key === key)?.label ?? key })}
+            </Typography>
+          ))}
+        </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDeleteDialog}>Annulla</Button>
-          <Button onClick={handleConfirmDelete} color="error" variant="contained" disabled={deleteLoading}>Elimina</Button>
+          <Button onClick={handleCloseDeleteDialog}>{t('common.cancel')}</Button>
+          <Button onClick={handleConfirmDelete} color="error" variant="contained" disabled={deleteLoading}>{t('history.delete.confirm')}</Button>
         </DialogActions>
       </Dialog>
       <ShareCardDialog open={!!shareStats} stats={shareStats} onClose={() => setShareStats(null)} />
