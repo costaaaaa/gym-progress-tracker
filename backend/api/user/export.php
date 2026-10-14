@@ -133,6 +133,13 @@ try {
              WHERE m.user_id = ? ORDER BY m.joined_at", array($user_id)),
     );
 
+    // Sezioni aggiuntive fornite da un modulo del server, se presente
+    $extrasFile = __DIR__ . '/../../lib/export_extras.php';
+    if (is_file($extrasFile)) {
+        include_once $extrasFile;
+        $export += export_extra_sections($db, $user_id);
+    }
+
     api_json_response($export);
 } catch (Exception $e) {
     error_log('Export error: ' . $e->getMessage());
