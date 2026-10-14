@@ -38,7 +38,7 @@ try {
          JOIN gym_workout_plans p ON p.id = d.plan_id WHERE p.user_id = ? ORDER BY d.plan_id, d.day_order",
         array($user_id));
     $planExercises = export_rows($db,
-        "SELECT we.day_id, e.name AS esercizio, e.muscle_group AS gruppo_muscolare, we.sets, we.reps, we.rest,
+        "SELECT we.day_id, e.name AS exercise, e.muscle_group, we.sets, we.reps, we.rest,
                 we.intensity_technique, we.notes
          FROM gym_workout_exercises we
          JOIN gym_workout_days d ON d.id = we.day_id
@@ -56,19 +56,19 @@ try {
         $dayId = $day['id'];
         $planId = $day['plan_id'];
         $daysByPlan[$planId][] = array(
-            'nome' => $day['name'],
-            'ordine' => $day['day_order'],
-            'esercizi' => isset($exercisesByDay[$dayId]) ? $exercisesByDay[$dayId] : array(),
+            'name' => $day['name'],
+            'order' => $day['day_order'],
+            'exercises' => isset($exercisesByDay[$dayId]) ? $exercisesByDay[$dayId] : array(),
         );
     }
-    $schede = array();
+    $planList = array();
     foreach ($plans as $plan) {
-        $schede[] = array(
-            'nome' => $plan['name'],
-            'descrizione' => $plan['description'],
-            'attiva' => (bool)$plan['is_active'],
-            'creata_il' => $plan['created_at'],
-            'giorni' => isset($daysByPlan[$plan['id']]) ? $daysByPlan[$plan['id']] : array(),
+        $planList[] = array(
+            'name' => $plan['name'],
+            'description' => $plan['description'],
+            'active' => (bool)$plan['is_active'],
+            'created_at' => $plan['created_at'],
+            'days' => isset($daysByPlan[$plan['id']]) ? $daysByPlan[$plan['id']] : array(),
         );
     }
 
@@ -77,7 +77,7 @@ try {
         "SELECT id, date, duration_seconds, notes, exercises FROM gym_workout_history WHERE user_id = ? ORDER BY date, id",
         array($user_id));
     $sets = export_rows($db,
-        "SELECT s.workout_history_id, e.name AS esercizio, s.set_number, s.weight, s.reps, s.intensity_technique
+        "SELECT s.workout_history_id, e.name AS exercise, s.set_number, s.weight, s.reps, s.intensity_technique
          FROM gym_workout_sets s
          JOIN gym_workout_history h ON h.id = s.workout_history_id
          JOIN gym_exercises e ON e.id = s.exercise_id
@@ -88,48 +88,47 @@ try {
         unset($row['workout_history_id']);
         $setsByHistory[$historyId][] = $row;
     }
-    $allenamenti = array();
+    $workouts = array();
     foreach ($history as $h) {
-        $allenamenti[] = array(
-            'data' => $h['date'],
-            'durata_secondi' => $h['duration_seconds'] !== null ? (int)$h['duration_seconds'] : null,
-            'note' => $h['notes'],
-            'esercizi_svolti' => $h['exercises'],
-            'serie' => isset($setsByHistory[$h['id']]) ? $setsByHistory[$h['id']] : array(),
+        $workouts[] = array(
+            'date' => $h['date'],
+            'duration_seconds' => $h['duration_seconds'] !== null ? (int)$h['duration_seconds'] : null,
+            'notes' => $h['notes'],
+            'exercises' => $h['exercises'],
+            'sets' => isset($setsByHistory[$h['id']]) ? $setsByHistory[$h['id']] : array(),
         );
     }
 
     $export = array(
         'success' => true,
-        'esportato_il' => date('c'),
-        'profilo' => $profile[0],
-        'schede' => $schede,
-        'allenamenti' => $allenamenti,
-        'misure' => export_rows($db,
+        'exported_at' => date('c'),
+        'profile' => $profile[0],
+        'plans' => $planList,
+        'workouts' => $workouts,
+        'body_stats' => export_rows($db,
             "SELECT date, weight, body_fat_percentage, muscle_mass_percentage, chest_size, arm_size, waist_size, leg_size,
-                    health_fields AS da_salute, created_at
+                    health_fields AS from_health, created_at
              FROM gym_user_stats WHERE user_id = ? ORDER BY date", array($user_id)),
-        'progressi_esercizi' => export_rows($db,
-            "SELECT e.name AS esercizio, p.weight, p.date FROM gym_progress p
+        'exercise_progress' => export_rows($db,
+            "SELECT e.name AS exercise, p.weight, p.date FROM gym_progress p
              JOIN gym_exercises e ON e.id = p.exercise_id WHERE p.user_id = ? ORDER BY p.date", array($user_id)),
         'gamification' => array(
-            'profilo' => export_rows($db,
+            'profile' => export_rows($db,
                 "SELECT current_streak_weeks, longest_streak_weeks, last_completed_week, total_xp, level, lifetime_volume_kg
                  FROM gym_user_gamification WHERE user_id = ?", array($user_id)),
-            'esercizi' => export_rows($db,
-                "SELECT e.name AS esercizio, g.xp, g.level FROM gym_exercise_gamification g
+            'exercises' => export_rows($db,
+                "SELECT e.name AS exercise, g.xp, g.level FROM gym_exercise_gamification g
                  JOIN gym_exercises e ON e.id = g.exercise_id WHERE g.user_id = ?", array($user_id)),
-            'traguardi' => export_rows($db,
+            'achievements' => export_rows($db,
                 "SELECT achievement_key, unlocked_at FROM gym_achievements WHERE user_id = ? ORDER BY unlocked_at", array($user_id)),
         ),
-        'dispositivi' => export_rows($db,
+        'devices' => export_rows($db,
             "SELECT device_info, created_at, expires_at, revoked_at FROM gym_api_tokens WHERE user_id = ? ORDER BY created_at",
             array($user_id)),
-        'consensi' => export_rows($db,
+        'consents' => export_rows($db,
             "SELECT purpose, version, granted_at, revoked_at FROM gym_consents WHERE user_id = ? ORDER BY id", array($user_id)),
-        'gruppi' => export_rows($db,
-            "SELECT g.name AS nome, g.type AS tipo, m.role AS ruolo, m.share_level AS condivisione,
-                    m.share_consent_at AS consenso_condivisione, m.joined_at AS ingresso
+        'groups' => export_rows($db,
+            "SELECT g.name, g.type, m.role, m.share_level, m.share_consent_at, m.joined_at
              FROM gym_group_members m JOIN gym_groups g ON g.id = m.group_id
              WHERE m.user_id = ? ORDER BY m.joined_at", array($user_id)),
     );
