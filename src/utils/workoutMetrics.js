@@ -15,7 +15,7 @@ export const extractReps = (repsString) => {
 
   // Se è già un numero (o stringa numerica), lo ritorniamo
   if (!isNaN(repsString)) {
-    return parseInt(repsString) || 0;
+    return parseInt(repsString, 10) || 0;
   }
 
   const str = repsString.toString();
@@ -24,7 +24,7 @@ export const extractReps = (repsString) => {
   if (str.includes('-')) {
     const parts = str.split('-');
     if (parts.length === 2) {
-      const max = parseInt(parts[1].trim());
+      const max = parseInt(parts[1].trim(), 10);
       if (!isNaN(max)) return max;
     }
   }
@@ -32,7 +32,7 @@ export const extractReps = (repsString) => {
   // Estrai i numeri presenti nella stringa e prendi il più grande come stima
   const matches = str.match(/\d+/g);
   if (matches && matches.length > 0) {
-    return Math.max(...matches.map((m) => parseInt(m)));
+    return Math.max(...matches.map((m) => parseInt(m, 10)));
   }
 
   return 0;

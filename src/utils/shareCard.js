@@ -654,8 +654,8 @@ const FIT_STATES = [
 const fitted = (blocks, stats, ctx, y, available) => {
   if (ctx.layout.bottom === undefined) return { ...ctx, fit: NO_SHRINK };
   let tried;
-  for (const fit of FIT_STATES) {
-    tried = { ...ctx, fit };
+  for (const state of FIT_STATES) {
+    tried = { ...ctx, fit: state };
     if (stack(blocks, stats, tried, y).height <= available) break;
   }
   return tried;
