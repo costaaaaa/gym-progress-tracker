@@ -22,6 +22,7 @@ import {
   DialogTitle,
   Divider,
   Collapse,
+  Tooltip,
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -268,6 +269,14 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
     track('workout_card', { action: 'open', from: 'history' });
   };
 
+  // Il server sposta solo gli allenamenti degli ultimi 30 giorni
+  const oldestMovable = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - 30);
+    return d;
+  }, []);
+
   const handleEditDateClick = (workout, event) => {
     event.stopPropagation();
     setWorkoutToEdit(workout);
@@ -435,7 +444,13 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                           <ListItem disablePadding sx={{ '& > .MuiListItemButton-root': { pr: 19 } }} secondaryAction={
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
                               <IconButton onClick={() => handleShareClick(workout)} size="small" sx={{ color: 'text.secondary' }} aria-label="Condividi allenamento"><ShareIcon fontSize="small" /></IconButton>
-                              <IconButton onClick={(e) => handleEditDateClick(workout, e)} size="small" sx={{ color: 'text.secondary' }} aria-label="Modifica data"><EditCalendarIcon fontSize="small" /></IconButton>
+                              {new Date(workout.date) < oldestMovable ? (
+                                <Tooltip title={t('history.date.too_old')}>
+                                  <span><IconButton disabled size="small" aria-label="Modifica data"><EditCalendarIcon fontSize="small" /></IconButton></span>
+                                </Tooltip>
+                              ) : (
+                                <IconButton onClick={(e) => handleEditDateClick(workout, e)} size="small" sx={{ color: 'text.secondary' }} aria-label="Modifica data"><EditCalendarIcon fontSize="small" /></IconButton>
+                              )}
                               <IconButton onClick={(e) => handleDeleteClick(workout, e)} size="small" sx={{ color: 'text.secondary' }} aria-label="Elimina allenamento"><DeleteIcon fontSize="small" /></IconButton>
                               {/* Indicatore: per tastiera e lettori di schermo il comando è la card */}
                               <Box component="span" aria-hidden onClick={() => toggleWorkoutExpansion(workout.id)}
@@ -482,6 +497,11 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
           {t('history.delete.body')}
           {deletePreview?.xp_removed > 0 && (
             <Typography variant="body2" sx={{ mt: 1.5 }}>{t('history.delete.lose_xp', { xp: deletePreview.xp_removed })}</Typography>
+          )}
+          {deletePreview && deletePreview.streak_before !== deletePreview.streak_after && (
+            <Typography variant="body2" sx={{ mt: 0.5 }}>
+              {t('history.streak_change', { from: deletePreview.streak_before, to: deletePreview.streak_after })}
+            </Typography>
           )}
           {(deletePreview?.achievements_removed ?? []).map(key => (
             <Typography key={key} variant="body2" sx={{ mt: 0.5 }}>

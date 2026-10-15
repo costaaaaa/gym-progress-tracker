@@ -357,5 +357,18 @@
   "history.delete.body": "Are you sure you want to delete this workout?",
   "history.delete.lose_xp": "You will lose {{xp}} XP.",
   "history.delete.lose_achievement": "You will lose the achievement “{{label}}”.",
-  "history.delete.confirm": "Delete"
+  "history.delete.confirm": "Delete",
+  "history.streak_change": "Your streak goes from {{from}} to {{to}} weeks.",
+  "history.date.title": "Change workout date",
+  "history.date.current": "Current date:",
+  "history.date.new": "New date",
+  "history.date.unavailable": "Date not available",
+  "history.date.invalid_original": "Couldn't read the original date: set to today.",
+  "history.date.required": "Enter a valid date",
+  "history.date.error": "Error while updating the date",
+  "history.date.saving": "Updating...",
+  "history.date.gain_xp": "You will gain {{xp}} XP.",
+  "history.date.lose_xp": "You will lose {{xp}} XP.",
+  "history.date.gain_achievement": "You will unlock the achievement “{{label}}”.",
+  "history.date.too_old": "Only workouts from the last 30 days can be moved"
 }

@@ -357,5 +357,18 @@
   "history.delete.body": "Sei sicuro di voler eliminare questo allenamento?",
   "history.delete.lose_xp": "Perderai {{xp}} XP.",
   "history.delete.lose_achievement": "Perderai l'achievement «{{label}}».",
-  "history.delete.confirm": "Elimina"
+  "history.delete.confirm": "Elimina",
+  "history.streak_change": "Lo streak passa da {{from}} a {{to}} settimane.",
+  "history.date.title": "Modifica data allenamento",
+  "history.date.current": "Data attuale:",
+  "history.date.new": "Nuova data",
+  "history.date.unavailable": "Data non disponibile",
+  "history.date.invalid_original": "Impossibile leggere la data originale: impostata la data di oggi.",
+  "history.date.required": "Inserisci una data valida",
+  "history.date.error": "Errore durante l'aggiornamento della data",
+  "history.date.saving": "Aggiornamento...",
+  "history.date.gain_xp": "Guadagnerai {{xp}} XP.",
+  "history.date.lose_xp": "Perderai {{xp}} XP.",
+  "history.date.gain_achievement": "Sbloccherai l'achievement «{{label}}».",
+  "history.date.too_old": "Si possono spostare solo gli allenamenti degli ultimi 30 giorni"
 }

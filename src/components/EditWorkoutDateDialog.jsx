@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogTitle,
@@ -10,14 +11,20 @@ import {
   Box,
   Typography
 } from '@mui/material';
-import { format, parseISO, isValid } from 'date-fns';
+import { format, parseISO, isValid, subDays } from 'date-fns';
 import { API_BASE_URL } from '../config';
 import { intlLocale } from '../i18n/format';
+import { achievementCatalog } from '../utils/gamificationLevels';
+
+const achievementLabel = (key) => achievementCatalog.find(a => a.key === key)?.label ?? key;
 
 const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [newDate, setNewDate] = useState('');
+  const [originalDate, setOriginalDate] = useState('');
+  const [preview, setPreview] = useState(null); // cosa cambia spostando, dall'anteprima del server
 
   // Reinizializza la data quando cambia il workout
   useEffect(() => {
@@ -38,20 +45,38 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
         if (isValid(dateObj)) {
           const formattedDate = format(dateObj, 'yyyy-MM-dd');
           setNewDate(formattedDate);
+          setOriginalDate(formattedDate);
         } else {
           // Se la data non è valida, prendiamo la data corrente
           console.warn("Data non valida, uso la data corrente");
           setNewDate(format(new Date(), 'yyyy-MM-dd'));
-          setError("Il formato della data originale non è valido. Impostata data odierna.");
+          setError(t('history.date.invalid_original'));
         }
       } catch (e) {
         // Gestione errori più dettagliata
         console.error("Errore nel formato della data:", e);
         setNewDate(format(new Date(), 'yyyy-MM-dd'));
-        setError("Impossibile interpretare la data originale. Impostata data odierna.");
+        setError(t('history.date.invalid_original'));
       }
     }
-  }, [workout]);
+  }, [workout, t]);
+
+  // Alla scelta di una data nuova il server dice cosa cambierebbe (streak, XP, achievement)
+  useEffect(() => {
+    setPreview(null);
+    if (!workout || !newDate || newDate === originalDate) return undefined;
+    let cancelled = false;
+    fetch(`${API_BASE_URL}api/workout_history/update_date.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: workout.id, new_date: newDate, preview: true }),
+      credentials: 'include'
+    })
+      .then(response => (response.ok ? response.json() : null))
+      .then(data => { if (!cancelled && data?.success) setPreview(data); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [workout, newDate, originalDate]);
 
   const handleDateChange = (e) => {
     setNewDate(e.target.value);
@@ -60,7 +85,7 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
 
   const handleSubmit = async () => {
     if (!newDate) {
-      setError('Inserire una data valida');
+      setError(t('history.date.required'));
       return;
     }
 
@@ -83,7 +108,7 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Errore durante l\'aggiornamento della data');
+        throw new Error(data.message || t('history.date.error'));
       }
 
       // Chiamiamo il callback per informare il parent del successo
@@ -92,7 +117,7 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
       onClose();
     } catch (error) {
       console.error("Errore nell'aggiornamento della data:", error);
-      setError(error.message || 'Si è verificato un errore durante l\'aggiornamento della data');
+      setError(error.message || t('history.date.error'));
     } finally {
       setLoading(false);
     }
@@ -103,11 +128,11 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Modifica Data Allenamento</DialogTitle>
+      <DialogTitle>{t('history.date.title')}</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
           <Typography variant="body1">
-            Data attuale: {
+            {t('history.date.current')} {
               (() => {
                 try {
                   // Mostra la data in formato leggibile italiano
@@ -120,16 +145,16 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
                       year: 'numeric'
                     });
                   } else {
-                    return workout.date || 'Data non disponibile';
+                    return workout.date || t('history.date.unavailable');
                   }
                 } catch {
-                  return workout.date || 'Data non disponibile';
+                  return workout.date || t('history.date.unavailable');
                 }
               })()
             }
           </Typography>
           <TextField
-            label="Nuova data"
+            label={t('history.date.new')}
             type="date"
             value={newDate}
             onChange={handleDateChange}
@@ -137,7 +162,26 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
             InputLabelProps={{
               shrink: true,
             }}
+            inputProps={{
+              min: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
+              max: format(new Date(), 'yyyy-MM-dd'),
+            }}
           />
+          {preview?.xp_delta > 0 && (
+            <Typography variant="body2">{t('history.date.gain_xp', { xp: preview.xp_delta })}</Typography>
+          )}
+          {preview?.xp_delta < 0 && (
+            <Typography variant="body2">{t('history.date.lose_xp', { xp: -preview.xp_delta })}</Typography>
+          )}
+          {preview && preview.streak_before !== preview.streak_after && (
+            <Typography variant="body2">{t('history.streak_change', { from: preview.streak_before, to: preview.streak_after })}</Typography>
+          )}
+          {(preview?.achievements_unlocked ?? []).map(key => (
+            <Typography key={key} variant="body2">{t('history.date.gain_achievement', { label: achievementLabel(key) })}</Typography>
+          ))}
+          {(preview?.achievements_removed ?? []).map(key => (
+            <Typography key={key} variant="body2">{t('history.delete.lose_achievement', { label: achievementLabel(key) })}</Typography>
+          ))}
           {error && (
             <Typography color="error" variant="body2">
               {error}
@@ -147,7 +191,7 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={loading}>
-          Annulla
+          {t('common.cancel')}
         </Button>
         <Button 
           onClick={handleSubmit} 
@@ -155,7 +199,7 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
           disabled={loading || !newDate}
           startIcon={loading ? <CircularProgress size={20} /> : null}
         >
-          {loading ? 'Aggiornamento...' : 'Salva'}
+          {loading ? t('history.date.saving') : t('common.save')}
         </Button>
       </DialogActions>
     </Dialog>
