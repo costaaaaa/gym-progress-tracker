@@ -2,8 +2,8 @@
 // Query settimanali condivise da streak.php, record_workout.php e dalle classifiche dei gruppi.
 require_once __DIR__ . '/gamification_rules.php';
 
-// Obiettivo settimanale per ogni utente: [user_id => goal]
-function weekly_goals(PDO $db, array $user_ids): array {
+// Obiettivo di default per ogni utente: giorni della scheda attiva, 3 senza scheda → [user_id => goal]
+function default_weekly_goals(PDO $db, array $user_ids): array {
     $goals = [];
     foreach ($user_ids as $id) $goals[(int) $id] = WEEKLY_GOAL_DEFAULT;
     if (empty($user_ids)) return $goals;
@@ -21,6 +21,54 @@ function weekly_goals(PDO $db, array $user_ids): array {
         $goals[(int) $row['user_id']] = goalFromPlanDays((int) $row['days_count']);
     }
     return $goals;
+}
+
+// Obiettivo scelto dall'utente per la settimana $yearweek (formato 'oW'): vale il cambio con
+// from_yearweek più alto fra quelli ≤ alla settimana. Solo chi ha scelto un numero compare → [user_id => goal]
+function chosen_weekly_goals(PDO $db, array $user_ids, int $yearweek): array {
+    if (empty($user_ids)) return [];
+    $placeholders = implode(',', array_fill(0, count($user_ids), '?'));
+    $stmt = $db->prepare(
+        "SELECT c.user_id, c.goal
+         FROM gym_weekly_goal_changes c
+         JOIN (SELECT user_id, MAX(from_yearweek) AS fy FROM gym_weekly_goal_changes
+               WHERE user_id IN ($placeholders) AND from_yearweek <= ? GROUP BY user_id) m
+           ON m.user_id = c.user_id AND m.fy = c.from_yearweek
+         WHERE c.goal IS NOT NULL"
+    );
+    $stmt->execute(array_merge(array_values(array_map('intval', $user_ids)), [$yearweek]));
+    $chosen = [];
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) $chosen[(int) $row['user_id']] = (int) $row['goal'];
+    return $chosen;
+}
+
+// Obiettivo settimanale attuale per ogni utente: quello scelto, altrimenti il default → [user_id => goal]
+function weekly_goals(PDO $db, array $user_ids): array {
+    $goals = default_weekly_goals($db, $user_ids);
+    foreach (chosen_weekly_goals($db, $user_ids, (int) (new DateTime())->format('oW')) as $id => $goal) {
+        $goals[$id] = $goal;
+    }
+    return $goals;
+}
+
+// Impostazioni dell'obiettivo per l'utente: weekly_goal = scelto e in vigore (null = default),
+// weekly_goal_default = quello che vale senza scelta, weekly_goal_pending = cambio dal lunedì
+// prossimo ({goal (null = default), from}) o null
+function weekly_goal_settings(PDO $db, int $user_id): array {
+    $this_week = (int) (new DateTime())->format('oW');
+    $stmt = $db->prepare(
+        "SELECT from_yearweek, goal FROM gym_weekly_goal_changes WHERE user_id = ? AND from_yearweek > ? ORDER BY from_yearweek LIMIT 1"
+    );
+    $stmt->execute([$user_id, $this_week]);
+    $next = $stmt->fetch(PDO::FETCH_ASSOC);
+    return [
+        'weekly_goal'         => chosen_weekly_goals($db, [$user_id], $this_week)[$user_id] ?? null,
+        'weekly_goal_default' => default_weekly_goals($db, [$user_id])[$user_id],
+        'weekly_goal_pending' => $next ? [
+            'goal' => $next['goal'] === null ? null : (int) $next['goal'],
+            'from' => yearweekMonday((int) $next['from_yearweek'])->format('Y-m-d'),
+        ] : null,
+    ];
 }
 
 // Allenamenti nella settimana ISO di $dt per ogni utente: [user_id => count]. $exclude_id: un

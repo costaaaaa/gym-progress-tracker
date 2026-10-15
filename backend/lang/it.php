@@ -62,6 +62,7 @@ return array(
     'settings.no_fields' => 'Nessun campo da aggiornare.',
     'settings.updated' => 'Profilo aggiornato con successo.',
     'settings.locale_invalid' => 'Lingua non supportata.',
+    'settings.weekly_goal_invalid' => 'Obiettivo settimanale non valido: da 1 a 7 allenamenti.',
     'settings.update_error' => "Errore durante l'aggiornamento delle impostazioni.",
     'account.password_required' => 'La password è obbligatoria.',
     'account.deleted' => 'Account eliminato con successo.',

@@ -241,6 +241,15 @@ CREATE TABLE IF NOT EXISTS `gym_streak_weeks` (
   CONSTRAINT `fk_streak_weeks_user` FOREIGN KEY (`user_id`) REFERENCES `gym_users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Obiettivo settimanale scelto dall'utente: un cambio vale dalla settimana ISO from_yearweek (goal NULL = default)
+CREATE TABLE IF NOT EXISTS `gym_weekly_goal_changes` (
+  `user_id`       INT NOT NULL,
+  `from_yearweek` INT NOT NULL,
+  `goal`          TINYINT NULL DEFAULT NULL,
+  PRIMARY KEY (`user_id`, `from_yearweek`),
+  CONSTRAINT `fk_weekly_goal_user` FOREIGN KEY (`user_id`) REFERENCES `gym_users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Rate limiting per gli endpoint di autenticazione (login/register)
 CREATE TABLE IF NOT EXISTS `gym_rate_limits` (
   `rate_key` varchar(191) NOT NULL,

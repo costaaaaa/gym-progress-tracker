@@ -10,12 +10,13 @@ include_once '../../config/cors_headers.php';
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/User.php';
+require_once '../../lib/weekly_stats.php';
 include_once '../../models/WorkoutHistory.php';
 include_once '../../models/WorkoutSet.php';
 include_once '../../models/WorkoutPlan.php';
 
 // Helper function to safely parse reps string to integer
-function parseReps($repsStr) {
+function parseDashboardReps($repsStr) {
     $repsStr = (string)$repsStr;
 
     if (is_numeric($repsStr)) return intval($repsStr);
@@ -80,7 +81,7 @@ try {
     $total_weight = 0;
     $total_reps = 0;
     while($row = $stmt_vol_raw->fetch(PDO::FETCH_ASSOC)) {
-        $reps = parseReps($row['reps']);
+        $reps = parseDashboardReps($row['reps']);
         $weight = floatval($row['weight']);
         $total_weight += ($weight * $reps);
         $total_reps += $reps;
@@ -254,6 +255,7 @@ try {
         'success' => true,
         'weekly_workouts' => $weekly_workouts,
         'plan_days_total' => $plan_days_total,
+        'weekly_goal' => weekly_goals($db, [$user_id])[$user_id],
         'weekly_volume' => [
             'total_weight' => round($total_weight, 2),
             'total_reps' => $total_reps

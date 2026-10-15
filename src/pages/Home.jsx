@@ -120,6 +120,8 @@ const Home = () => {
   const [lastWorkout, setLastWorkout] = useState(null);
   const [activePlan, setActivePlan] = useState(null);
   const [dashboardStats, setDashboardStats] = useState(null);
+  // weekly_goal è l'obiettivo effettivo; plan_days_total resta per i server più vecchi
+  const weeklyGoal = dashboardStats?.weekly_goal ?? dashboardStats?.plan_days_total;
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -288,23 +290,23 @@ const Home = () => {
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                     <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{t('home.weekly.done')}</Typography>
                     <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
-                      {dashboardStats?.weekly_workouts || 0} / {dashboardStats?.plan_days_total || '-'}
+                      {dashboardStats?.weekly_workouts || 0} / {weeklyGoal || '-'}
                     </Typography>
                   </Box>
                   <Box sx={{ height: 9, borderRadius: '5px', bgcolor: 'divider', overflow: 'hidden' }}>
                     <Box
                       sx={{
                         height: '100%',
-                        width: `${dashboardStats?.plan_days_total ? Math.min(100, (dashboardStats.weekly_workouts / dashboardStats.plan_days_total) * 100) : 0}%`,
+                        width: `${weeklyGoal ? Math.min(100, (dashboardStats.weekly_workouts / weeklyGoal) * 100) : 0}%`,
                         background: 'linear-gradient(90deg, #d50000, #ff5131)',
                         borderRadius: '5px',
                       }}
                     />
                   </Box>
                   <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 1, mb: 2.5 }}>
-                    {dashboardStats?.weekly_workouts >= dashboardStats?.plan_days_total
+                    {dashboardStats?.weekly_workouts >= weeklyGoal
                       ? t('home.weekly.goal_reached')
-                      : t('home.weekly.missing', { count: Math.max(0, (dashboardStats?.plan_days_total || 0) - (dashboardStats?.weekly_workouts || 0)) })}
+                      : t('home.weekly.missing', { count: Math.max(0, (weeklyGoal || 0) - (dashboardStats?.weekly_workouts || 0)) })}
                   </Typography>
 
                   <Box sx={{ display: 'flex', gap: 1.5 }}>

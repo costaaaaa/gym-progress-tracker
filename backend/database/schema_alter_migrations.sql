@@ -427,3 +427,21 @@ CREATE TABLE IF NOT EXISTS `gym_streak_weeks` (
 
 ALTER TABLE `gym_user_gamification`
   ADD COLUMN `streak_floor_weeks` INT NULL DEFAULT NULL AFTER `last_xp_session_at`;
+
+-- ------------------------------------------------------------------------------
+-- 23. Obiettivo settimanale scelto dall'utente. gym_weekly_goal_changes: una riga per
+--     cambio, valido dalla settimana ISO from_yearweek (formato 'oW', come gym_streak_weeks);
+--     per una settimana vale la riga con from_yearweek più alto fra quelle ≤ alla settimana.
+--     goal NULL = torna al default (giorni della scheda attiva, 3 senza scheda). Un cambio
+--     fatto lunedì o martedì vale dalla settimana in corso, uno fatto dopo dal lunedì
+--     successivo. Solo aggiunte: il rollback del codice resta possibile (vedi
+--     DB_UPGRADE_README.md).
+-- ------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `gym_weekly_goal_changes` (
+  `user_id`       INT NOT NULL,
+  `from_yearweek` INT NOT NULL,
+  `goal`          TINYINT NULL DEFAULT NULL,
+  PRIMARY KEY (`user_id`, `from_yearweek`),
+  CONSTRAINT `fk_weekly_goal_user` FOREIGN KEY (`user_id`) REFERENCES `gym_users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

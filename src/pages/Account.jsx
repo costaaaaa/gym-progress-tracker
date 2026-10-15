@@ -24,6 +24,8 @@ import {
   MenuItem,
   Grid,
   Collapse,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import Switch from '@mui/material/Switch';
 import {
@@ -104,6 +106,47 @@ const Account = ({ isEmbedded = false }) => {
   const [restTimerEnabled, setRestTimerEnabled] = useState(true);
   const [locale, setLocale] = useState('it');
   const [savingSettings, setSavingSettings] = useState(false);
+  const [weeklyGoal, setWeeklyGoal] = useState({ weekly_goal: null, weekly_goal_default: 3, weekly_goal_pending: null });
+  const [weeklyGoalChoice, setWeeklyGoalChoice] = useState('default');
+
+  // L'obiettivo mostrato è quello scelto per ultimo: il cambio in attesa, se c'è, altrimenti quello in vigore
+  const applyWeeklyGoalSettings = (data) => {
+    const settings = {
+      weekly_goal: data.weekly_goal ?? null,
+      weekly_goal_default: data.weekly_goal_default ?? 3,
+      weekly_goal_pending: data.weekly_goal_pending ?? null,
+    };
+    setWeeklyGoal(settings);
+    const shown = settings.weekly_goal_pending ? settings.weekly_goal_pending.goal : settings.weekly_goal;
+    setWeeklyGoalChoice(shown ?? 'default');
+  };
+
+  const handleWeeklyGoalChange = async (_event, next) => {
+    if (next === null || next === weeklyGoalChoice) return;
+    const previousSettings = weeklyGoal;
+    const previousChoice = weeklyGoalChoice;
+    setWeeklyGoalChoice(next);
+    setSavingSettings(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}api/user/update_settings.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ weekly_goal: next === 'default' ? null : next })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
+      applyWeeklyGoalSettings(data);
+      setSnackbar({ open: true, message: t('account.weekly_goal.saved'), severity: 'success' });
+    } catch (error) {
+      console.error('Errore aggiornamento obiettivo settimanale:', error);
+      setWeeklyGoal(previousSettings);
+      setWeeklyGoalChoice(previousChoice);
+      setSnackbar({ open: true, message: t('account.weekly_goal.error'), severity: 'error' });
+    } finally {
+      setSavingSettings(false);
+    }
+  };
 
   // Funzioni per gestire la visibilità delle password
   const handleToggleCurrentPasswordVisibility = () => {
@@ -341,6 +384,7 @@ const Account = ({ isEmbedded = false }) => {
       if (userDetails.locale) {
         setLocale(userDetails.locale);
       }
+      applyWeeklyGoalSettings(userDetails);
 
       if (userDetails.created_at) {
         setJoinDate(new Date(userDetails.created_at));
@@ -711,6 +755,37 @@ const Account = ({ isEmbedded = false }) => {
                 <MenuItem value="it">Italiano</MenuItem>
                 <MenuItem value="en">English</MenuItem>
               </Select>
+            </Box>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
+              <Box>
+                <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{t('account.weekly_goal.title')}</Typography>
+                <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
+                  {t('account.weekly_goal.help')}
+                </Typography>
+              </Box>
+              <ToggleButtonGroup
+                exclusive
+                size="small"
+                color="primary"
+                value={weeklyGoalChoice}
+                onChange={handleWeeklyGoalChange}
+                disabled={savingSettings}
+                aria-label={t('account.weekly_goal.title')}
+                sx={{ flexWrap: 'wrap', alignSelf: 'flex-start' }}
+              >
+                {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+                  <ToggleButton key={n} value={n} sx={{ minWidth: 40 }}>{n}</ToggleButton>
+                ))}
+                <ToggleButton value="default">
+                  {t('account.weekly_goal.default', { n: weeklyGoal.weekly_goal_default })}
+                </ToggleButton>
+              </ToggleButtonGroup>
+              <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+                {weeklyGoal.weekly_goal_pending
+                  ? t('account.weekly_goal.from_date', { date: format(parseISO(weeklyGoal.weekly_goal_pending.from), 'dd/MM') })
+                  : t('account.weekly_goal.now')}
+              </Typography>
             </Box>
           </Box>
         </Collapse>

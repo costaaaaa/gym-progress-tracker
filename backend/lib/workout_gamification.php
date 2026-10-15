@@ -434,6 +434,36 @@ function reopen_week_if_below(PDO $db, int $user_id, DateTime $dt, int $exclude_
     return -XP_STREAK_WEEK;
 }
 
+// Registra un cambio di obiettivo settimanale ($goal null = default). Vale da goalChangeStartMonday($now);
+// un cambio rimandato e poi superato da uno nuovo non resta. La chiamante ha la transazione aperta.
+function apply_weekly_goal_change(PDO $db, int $user_id, ?int $goal, DateTime $now): void {
+    $gam_row = lock_gamification_row($db, $user_id);
+    $from = (int) goalChangeStartMonday($now)->format('oW');
+    $immediate = $from === (int) $now->format('oW');
+    // Il registro di chi non l'ha ancora va ricostruito con l'obiettivo di prima del cambio
+    if ($immediate) ensure_streak_registry($db, $user_id, $gam_row);
+    $db->prepare(
+        "INSERT INTO gym_weekly_goal_changes (user_id, from_yearweek, goal) VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE goal = VALUES(goal)"
+    )->execute([$user_id, $from, $goal]);
+    $db->prepare("DELETE FROM gym_weekly_goal_changes WHERE user_id = ? AND from_yearweek > ?")->execute([$user_id, $from]);
+    if ($goal === null) {
+        // Tornare al default quando prima non c'era una scelta non è un cambio
+        $stmt = $db->prepare("SELECT goal FROM gym_weekly_goal_changes WHERE user_id = ? AND from_yearweek < ? ORDER BY from_yearweek DESC LIMIT 1");
+        $stmt->execute([$user_id, $from]);
+        $previous = $stmt->fetchColumn();
+        if ($previous === false || $previous === null) {
+            $db->prepare("DELETE FROM gym_weekly_goal_changes WHERE user_id = ? AND from_yearweek = ?")->execute([$user_id, $from]);
+        }
+    }
+    // Obiettivo abbassato e già raggiunto: la settimana va chiusa subito, altrimenti resterebbe aperta
+    if ($immediate && close_week_if_reached($db, $user_id, $now) > 0) {
+        add_general_xp($db, $user_id, XP_STREAK_WEEK);
+        $streak = recompute_streak($db, $user_id);
+        sync_streak_achievements($db, $user_id, $streak['longest']);
+    }
+}
+
 // Ricava streak corrente e massimo dal registro e li copia in gym_user_gamification.
 // Ritorna ['current', 'longest', 'last_completed_week'].
 function recompute_streak(PDO $db, int $user_id): array {
