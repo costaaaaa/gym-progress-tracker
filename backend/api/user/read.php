@@ -4,6 +4,7 @@ include_once '../../config/cors_headers.php';
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/User.php';
+require_once '../../lib/weekly_stats.php';
 
 try {
     $database = new Database();
@@ -34,7 +35,7 @@ try {
             'password_changed_at' => $user->password_changed_at,
             'is_admin' => user_is_admin($db, $user_id),
             'features' => user_features($db, $user_id)
-        ));
+        ) + weekly_goal_settings($db, $user_id));
     } else {
         http_response_code(404);
         echo json_encode(array('success' => false, 'message' => 'Utente non trovato'));

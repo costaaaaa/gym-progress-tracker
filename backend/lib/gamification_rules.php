@@ -188,6 +188,15 @@ function yearweekMonday(int $yw): DateTime {
     return $d;
 }
 
+// Lunedì da cui vale un cambio di obiettivo fatto in $now: questa settimana se è lunedì o martedì,
+// altrimenti la prossima (così non si abbassa l'obiettivo a fine settimana solo per salvare lo streak)
+function goalChangeStartMonday(DateTime $now): DateTime {
+    $d = new DateTime($now->format('Y-m-d'));
+    $d->setISODate(intval($now->format('o')), intval($now->format('W')));
+    if (intval($now->format('N')) > 2) $d->modify('+7 days');
+    return $d;
+}
+
 // Settimane chiuse (yearweek in ordine crescente) → [serie che finisce all'ultima, serie più lunga]
 function streakRuns(array $weeks): array {
     $run = 0;

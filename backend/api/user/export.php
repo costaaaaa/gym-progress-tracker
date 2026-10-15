@@ -6,6 +6,7 @@
 include_once '../../config/cors_headers.php';
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
+require_once '../../lib/gamification_rules.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -121,6 +122,11 @@ try {
                  JOIN gym_exercises e ON e.id = g.exercise_id WHERE g.user_id = ?", array($user_id)),
             'achievements' => export_rows($db,
                 "SELECT achievement_key, unlocked_at FROM gym_achievements WHERE user_id = ? ORDER BY unlocked_at", array($user_id)),
+            // 'from' e' il lunedi' da cui vale l'obiettivo settimanale scelto; goal null = default
+            'weekly_goal_changes' => array_map(function ($row) {
+                return array('from' => yearweekMonday((int) $row['from_yearweek'])->format('Y-m-d'), 'goal' => $row['goal'] === null ? null : (int) $row['goal']);
+            }, export_rows($db,
+                "SELECT from_yearweek, goal FROM gym_weekly_goal_changes WHERE user_id = ? ORDER BY from_yearweek", array($user_id))),
         ),
         'devices' => export_rows($db,
             "SELECT device_info, created_at, expires_at, revoked_at FROM gym_api_tokens WHERE user_id = ? ORDER BY created_at",

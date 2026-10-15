@@ -111,6 +111,17 @@ streak si riattacca). Il cambio data è ammesso solo entro 30 giorni, sia da dov
   che resta indietro. Tornando alla versione nuova va riallineato, così si ricostruisce da solo:
   `DELETE FROM gym_streak_weeks; UPDATE gym_user_gamification SET streak_floor_weeks = NULL;`
 
+## Sezione 23: obiettivo settimanale scelto dall'utente
+
+Aggiunge `gym_weekly_goal_changes`: l'utente può impostare da 1 a 7 allenamenti a settimana al posto del
+default (giorni della scheda attiva, 3 senza scheda) e tornare al default. Un cambio fatto **lunedì o
+martedì** vale dalla settimana in corso (e chiude subito la settimana se la raggiunge già); uno fatto da
+mercoledì a domenica vale dal **lunedì successivo**, così non si abbassa l'obiettivo solo per salvare lo streak.
+
+- Nessuna riga = default: gli utenti esistenti non cambiano. Alzare l'obiettivo non riapre settimane già
+  chiuse (vale il minore fra obiettivo alla chiusura e attuale, come nella sezione 22).
+- **Rollback del codice** sotto questa versione: la tabella resta, inutilizzata, e l'obiettivo torna il default.
+
 ## Risoluzione dei problemi
 
 ### Se gli allenamenti esistenti non appaiono correttamente:
