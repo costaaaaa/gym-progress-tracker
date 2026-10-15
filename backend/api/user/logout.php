@@ -9,14 +9,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Start session
-session_start();
-
-// Clear all session variables
-$_SESSION = array();
-
-// Destroy the session
-session_destroy();
+// La sessione l'ha già avviata cors_headers.php (non con un header Bearer: allora non c'è nulla da chiudere)
+if (session_status() === PHP_SESSION_ACTIVE) {
+    $_SESSION = array();
+    session_destroy();
+}
 
 http_response_code(200);
 
