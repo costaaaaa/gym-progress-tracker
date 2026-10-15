@@ -93,7 +93,23 @@ achievement di sessioni, tonnellaggio e forza; il cooldown delle sessioni con XP
 - **Record**: un esercizio dà XP di record al massimo **una volta al giorno** (giorno dell'allenamento
   al salvataggio). Gli allenamenti già salvati non hanno righe, quindi il tetto vale dal primo
   salvataggio dopo il rilascio.
-- Lo streak e i suoi achievement non si toccano (ticket a parte).
+- Lo streak e i suoi achievement non si toccano qui: li segue la sezione 22.
+
+## Sezione 22: streak reversibile
+
+Aggiunge `gym_streak_weeks` (una riga per settimana chiusa, con l'obiettivo di quel momento) e la colonna
+`gym_user_gamification.streak_floor_weeks`. Lo streak si ricava dalle settimane chiuse: cancellare o
+spostare un allenamento può riaprire una settimana (−30 XP, streak ricalcolato, achievement di streak
+tolti se non più raggiunti); salvarlo in ritardo o spostarlo può chiuderne una passata (+30 XP, lo
+streak si riattacca). Il cambio data è ammesso solo entro 30 giorni, sia da dove parte sia dove arriva.
+
+- **Ricostruzione**: non c'è uno script da lanciare. Il primo salvataggio, cancellazione o cambio data
+  di ogni utente dopo il rilascio ricostruisce il suo registro (`streak_floor_weeks` NULL → valorizzato):
+  tutta la serie in corso, le settimane degli ultimi 30 giorni che raggiungono l'obiettivo attuale e,
+  come minimo dello streak massimo, quello salvato se viene da una serie vecchia. Nessun XP cambia.
+- **Rollback del codice** sotto questa versione: il codice vecchio aggiorna lo streak senza il registro,
+  che resta indietro. Tornando alla versione nuova va riallineato, così si ricostruisce da solo:
+  `DELETE FROM gym_streak_weeks; UPDATE gym_user_gamification SET streak_floor_weeks = NULL;`
 
 ## Risoluzione dei problemi
 

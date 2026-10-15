@@ -406,3 +406,24 @@ CREATE TABLE IF NOT EXISTS `gym_workout_exercise_rewards` (
   CONSTRAINT `fk_exrewards_workout`  FOREIGN KEY (`workout_id`)  REFERENCES `gym_workout_history`(`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_exrewards_exercise` FOREIGN KEY (`exercise_id`) REFERENCES `gym_exercises`(`id`)       ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ------------------------------------------------------------------------------
+-- 22. Streak reversibile. gym_streak_weeks: una riga per settimana chiusa (che ha dato
+--     il bonus streak), con l'obiettivo di quel momento. Streak corrente e massimo si
+--     ricavano da qui; le colonne di gym_user_gamification restano come copia per chi
+--     legge. gym_user_gamification.streak_floor_weeks: minimo dello streak massimo (serie
+--     vecchia); NULL = registro dell'utente non ancora ricostruito, lo ricostruisce il
+--     primo salvataggio, cancellazione o cambio data. Solo aggiunte: il rollback del
+--     codice resta possibile (vedi DB_UPGRADE_README.md).
+-- ------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `gym_streak_weeks` (
+  `user_id`  INT NOT NULL,
+  `yearweek` INT NOT NULL,
+  `goal`     INT NOT NULL,
+  PRIMARY KEY (`user_id`, `yearweek`),
+  CONSTRAINT `fk_streak_weeks_user` FOREIGN KEY (`user_id`) REFERENCES `gym_users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE `gym_user_gamification`
+  ADD COLUMN `streak_floor_weeks` INT NULL DEFAULT NULL AFTER `last_xp_session_at`;

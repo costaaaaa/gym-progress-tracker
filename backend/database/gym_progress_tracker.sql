@@ -176,6 +176,7 @@ CREATE TABLE IF NOT EXISTS `gym_user_gamification` (
   `level`                 INT           NOT NULL DEFAULT 1,
   `lifetime_volume_kg`    DECIMAL(12,2) NOT NULL DEFAULT 0,
   `last_xp_session_at`    DATETIME      NULL     DEFAULT NULL,
+  `streak_floor_weeks`    INT           NULL     DEFAULT NULL,
   `updated_at`            DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`user_id`),
   CONSTRAINT `fk_gamification_user`
@@ -229,6 +230,15 @@ CREATE TABLE IF NOT EXISTS `gym_workout_exercise_rewards` (
   KEY `idx_exrewards_pr` (`user_id`, `exercise_id`, `day`, `is_pr`),
   CONSTRAINT `fk_exrewards_workout`  FOREIGN KEY (`workout_id`)  REFERENCES `gym_workout_history`(`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_exrewards_exercise` FOREIGN KEY (`exercise_id`) REFERENCES `gym_exercises`(`id`)       ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Settimane chiuse dello streak (una riga per settimana che ha dato il bonus): lo streak si ricava da qui
+CREATE TABLE IF NOT EXISTS `gym_streak_weeks` (
+  `user_id`  INT NOT NULL,
+  `yearweek` INT NOT NULL,
+  `goal`     INT NOT NULL,
+  PRIMARY KEY (`user_id`, `yearweek`),
+  CONSTRAINT `fk_streak_weeks_user` FOREIGN KEY (`user_id`) REFERENCES `gym_users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Rate limiting per gli endpoint di autenticazione (login/register)

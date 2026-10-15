@@ -156,7 +156,9 @@ echo "Anteprima della cancellazione (utente C)"
 PREV_SAVE="$(call POST api/workout/record_workout.php "$C" "$(body "$DAY_C" 25 3 140 0 0)")"
 XP_BEFORE="$(profile_total_xp "$C")"
 PREVIEW="$(call POST api/workout_history/delete.php "$C" "{\"id\":$(saved_id "$PREV_SAVE"),\"preview\":true}")"
-check "l'anteprima elenca XP e achievement che si perderebbero" "$PREVIEW" '.success and .xp_removed == 15 and (.achievements_removed | index("strength_140") != null)'
+# l'allenamento è la 3ª sessione della settimana (obiettivo 3 senza scheda attiva): toglierlo riapre la settimana
+check "l'anteprima elenca XP (15 di PR + 30 della settimana) e achievement che si perderebbero" "$PREVIEW" \
+    '.success and .xp_removed == 45 and .streak_before == 1 and .streak_after == 0 and (.achievements_removed | index("strength_140") != null)'
 [[ "$(profile_total_xp "$C")" == "$XP_BEFORE" ]] && ok "l'anteprima non cambia gli XP del profilo" || ko "l'anteprima non cambia gli XP del profilo"
 check "l'anteprima non ha cancellato l'allenamento né l'achievement" "$(call GET api/gamification/profile.php "$C")" \
     '[.achievements[] | select(.key == "strength_140")][0].locked == false'

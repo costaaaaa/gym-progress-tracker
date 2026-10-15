@@ -180,6 +180,27 @@ function nextWeekYearweek(int $yw): int {
     return intval($d->format('oW'));
 }
 
+// Lunedì 00:00:00 della settimana ISO $yw (formato 'oW')
+function yearweekMonday(int $yw): DateTime {
+    $d = new DateTime();
+    $d->setISODate(intval(substr((string)$yw, 0, 4)), intval(substr((string)$yw, 4)));
+    $d->setTime(0, 0, 0);
+    return $d;
+}
+
+// Settimane chiuse (yearweek in ordine crescente) → [serie che finisce all'ultima, serie più lunga]
+function streakRuns(array $weeks): array {
+    $run = 0;
+    $longest = 0;
+    $prev = null;
+    foreach ($weeks as $w) {
+        $run = ($prev !== null && nextWeekYearweek($prev) === $w) ? $run + 1 : 1;
+        $longest = max($longest, $run);
+        $prev = $w;
+    }
+    return [$run, $longest];
+}
+
 // Lunedì 00:00:00 e domenica 23:59:59 della settimana ISO che contiene $dt
 function isoWeekBounds(DateTime $dt): array {
     $monday = clone $dt;
