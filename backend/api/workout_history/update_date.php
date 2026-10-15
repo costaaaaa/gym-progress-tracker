@@ -42,6 +42,7 @@ if (
         http_response_code(400);
         echo json_encode(array(
             "success" => false,
+            "code" => "invalid_date",
             "message" => "Formato data non valido. Usare YYYY-MM-DD."
         ));
         exit;
@@ -51,6 +52,7 @@ if (
         http_response_code(400);
         echo json_encode(array(
             "success" => false,
+            "code" => "future_date",
             "message" => "La data dell'allenamento non può essere nel futuro."
         ));
         exit;
@@ -62,6 +64,7 @@ if (
         http_response_code(400);
         echo json_encode(array(
             "success" => false,
+            "code" => "target_too_old",
             "message" => "Puoi spostare un allenamento al massimo a 30 giorni fa."
         ));
         exit;
@@ -80,23 +83,14 @@ if (
         http_response_code(404);
         echo json_encode(array(
             "success" => false,
+            "code" => "not_found",
             "message" => "Allenamento non trovato o non appartiene all'utente corrente."
-        ));
-        exit;
-    }
-
-    if (strtotime($workout->date) < $oldest_allowed) {
-        http_response_code(400);
-        echo json_encode(array(
-            "success" => false,
-            "message" => "Gli allenamenti di più di 30 giorni fa non si possono spostare."
         ));
         exit;
     }
 
     // Lo spostamento conta, per lo streak, come «cancella dalla settimana vecchia e salva nella nuova»:
     // prima si riapre la vecchia, poi si chiude la nuova. XP dell'allenamento e cooldown non cambiano.
-    $old_dt = new DateTime($workout->date);
     $new_dt = new DateTime($formatted_date);
     $workout->date = $formatted_date;
 
@@ -105,9 +99,33 @@ if (
     $db->beginTransaction();
     try {
         $gam_row = lock_gamification_row($db, $user_id);
-        ensure_streak_registry($db, $user_id, $gam_row);
+
+        // Data di partenza riletta sotto lock: due spostamenti contemporanei partirebbero entrambi da
+        // quella letta da readOne(), e il secondo non riaprirebbe la settimana lasciata dal primo
+        $stmt_date = $db->prepare("SELECT date FROM gym_workout_history WHERE id = ? AND user_id = ? FOR UPDATE");
+        $stmt_date->execute([$workout->id, $user_id]);
+        $old_date = $stmt_date->fetchColumn();
+        if ($old_date === false) {
+            $db->rollBack();
+            api_json_response([
+                "success" => false,
+                "code" => "not_found",
+                "message" => "Allenamento non trovato o non appartiene all'utente corrente."
+            ], 404);
+        }
+        if (strtotime($old_date) < $oldest_allowed) {
+            $db->rollBack();
+            api_json_response([
+                "success" => false,
+                "code" => "source_too_old",
+                "message" => "Gli allenamenti di più di 30 giorni fa non si possono spostare."
+            ], 400);
+        }
+        $old_dt = new DateTime($old_date);
+
+        $before = ensure_streak_registry($db, $user_id, $gam_row);
         $now = new DateTime();
-        $streak_before = effectiveStreakWeeks((int) $gam_row['current_streak_weeks'], $gam_row['last_completed_week'], $now);
+        $streak_before = effectiveStreakWeeks($before['current'], $before['last_completed_week'], $now);
 
         if (!$workout->update()) {
             throw new Exception("Impossibile aggiornare la data dell'allenamento.");
@@ -127,6 +145,7 @@ if (
         http_response_code(503);
         echo json_encode(array(
             "success" => false,
+            "code" => "update_failed",
             "message" => "Impossibile aggiornare la data dell'allenamento."
         ));
         exit;
@@ -149,6 +168,7 @@ if (
     http_response_code(400);
     echo json_encode(array(
         "success" => false,
+        "code" => "missing_data",
         "message" => "Dati incompleti. Specificare ID allenamento e nuova data."
     ));
 }

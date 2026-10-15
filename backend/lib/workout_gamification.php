@@ -18,11 +18,11 @@ function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, stri
     // ── Streak: la settimana dell'allenamento si chiude se raggiunge l'obiettivo, anche se è passata
     // (salvataggio ripreso in ritardo): lo streak si ricava dal registro e si riattacca se riempie un buco
     $gam_row = lock_gamification_row($db, $user_id);
-    ensure_streak_registry($db, $user_id, $gam_row, $workout_id);
+    $before = ensure_streak_registry($db, $user_id, $gam_row, $workout_id);
     $week_completed_now = close_week_if_reached($db, $user_id, new DateTime($data_workout)) > 0;
     $streak = recompute_streak($db, $user_id);
     $current_streak_val = effectiveStreakWeeks($streak['current'], $streak['last_completed_week'], new DateTime());
-    $new_longest = $streak['longest'] > (int) $gam_row['longest_streak_weeks'];
+    $new_longest = $streak['longest'] > $before['longest'];
     $streak_milestone = $week_completed_now && ($current_streak_val === 1 || $current_streak_val % 4 === 0);
 
     // ── Gamification: XP + livelli + achievement ──────────────────────────
@@ -252,9 +252,19 @@ function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, stri
 // Ritorna ['xp_removed' => int, 'achievements_removed' => [chiavi], 'streak_before' => int, 'streak_after' => int].
 function undo_workout_gamification(PDO $db, int $user_id, int $workout_id): array {
     $gam_row = lock_gamification_row($db, $user_id);
-    ensure_streak_registry($db, $user_id, $gam_row);
     $now = new DateTime();
-    $streak_before = effectiveStreakWeeks((int) $gam_row['current_streak_weeks'], $gam_row['last_completed_week'], $now);
+
+    // Già cancellato da una richiesta contemporanea: non c'è più nulla da togliere
+    $stmt_date = $db->prepare("SELECT date FROM gym_workout_history WHERE id = ? AND user_id = ? FOR UPDATE");
+    $stmt_date->execute([$workout_id, $user_id]);
+    $workout_date = $stmt_date->fetchColumn();
+    if ($workout_date === false) {
+        $streak = effectiveStreakWeeks((int) $gam_row['current_streak_weeks'], $gam_row['last_completed_week'], $now);
+        return ['xp_removed' => 0, 'achievements_removed' => [], 'streak_before' => $streak, 'streak_after' => $streak];
+    }
+
+    $before = ensure_streak_registry($db, $user_id, $gam_row);
+    $streak_before = effectiveStreakWeeks($before['current'], $before['last_completed_week'], $now);
 
     $stmt_reward = $db->prepare("SELECT xp_general, xp_session FROM gym_workout_rewards WHERE workout_id = ? AND user_id = ?");
     $stmt_reward->execute([$workout_id, $user_id]);
@@ -302,9 +312,7 @@ function undo_workout_gamification(PDO $db, int $user_id, int $workout_id): arra
     }
 
     // Streak: la settimana dell'allenamento si riapre se senza di lui scende sotto l'obiettivo
-    $stmt_date = $db->prepare("SELECT date FROM gym_workout_history WHERE id = ? AND user_id = ?");
-    $stmt_date->execute([$workout_id, $user_id]);
-    $streak_xp = reopen_week_if_below($db, $user_id, new DateTime($stmt_date->fetchColumn()), $workout_id);
+    $streak_xp = reopen_week_if_below($db, $user_id, new DateTime($workout_date), $workout_id);
     $streak = recompute_streak($db, $user_id);
     $new_total_xp += add_general_xp($db, $user_id, $streak_xp);
 
@@ -348,9 +356,12 @@ function undo_workout_gamification(PDO $db, int $user_id, int $workout_id): arra
 
 // Riga di gym_user_gamification dell'utente, creata se manca, bloccata fino alla fine della transazione
 function lock_gamification_row(PDO $db, int $user_id): array {
+    // ON DUPLICATE KEY prende subito il lock esclusivo; INSERT IGNORE prenderebbe quello condiviso e due
+    // richieste insieme andrebbero in deadlock al FOR UPDATE
     $db->prepare(
-        "INSERT IGNORE INTO gym_user_gamification (user_id, current_streak_weeks, longest_streak_weeks, last_completed_week, updated_at)
-         VALUES (?, 0, 0, NULL, NOW())"
+        "INSERT INTO gym_user_gamification (user_id, current_streak_weeks, longest_streak_weeks, last_completed_week, updated_at)
+         VALUES (?, 0, 0, NULL, NOW())
+         ON DUPLICATE KEY UPDATE user_id = user_id"
     )->execute([$user_id]);
     $stmt = $db->prepare("SELECT * FROM gym_user_gamification WHERE user_id = ? FOR UPDATE");
     $stmt->execute([$user_id]);
@@ -362,8 +373,15 @@ function lock_gamification_row(PDO $db, int $user_id): array {
 // giorni che raggiungono l'obiettivo attuale. Lo streak massimo salvato resta come minimo solo
 // se viene da una serie vecchia. Non cambia XP né achievement. $exclude_id: l'allenamento appena
 // salvato, che non deve entrare nella ricostruzione (la sua settimana la chiude poi il salvataggio).
-function ensure_streak_registry(PDO $db, int $user_id, array $gam_row, int $exclude_id = 0): void {
-    if ($gam_row['streak_floor_weeks'] !== null) return;
+// Ritorna lo streak prima dell'azione (come recompute_streak), già comprensivo della ricostruzione.
+function ensure_streak_registry(PDO $db, int $user_id, array $gam_row, int $exclude_id = 0): array {
+    if ($gam_row['streak_floor_weeks'] !== null) {
+        return [
+            'current'             => (int) $gam_row['current_streak_weeks'],
+            'longest'             => (int) $gam_row['longest_streak_weeks'],
+            'last_completed_week' => $gam_row['last_completed_week'],
+        ];
+    }
 
     $now = new DateTime();
     $goal = weekly_goals($db, [$user_id])[$user_id];
@@ -389,6 +407,7 @@ function ensure_streak_registry(PDO $db, int $user_id, array $gam_row, int $excl
     $longest = (int) $gam_row['longest_streak_weeks'];
     $db->prepare("UPDATE gym_user_gamification SET streak_floor_weeks = ? WHERE user_id = ?")
         ->execute([$longest > $current ? $longest : 0, $user_id]);
+    return recompute_streak($db, $user_id);
 }
 
 // Chiude la settimana di $dt se raggiunge l'obiettivo attuale e non è già nel registro.

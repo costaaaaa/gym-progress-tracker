@@ -18,6 +18,16 @@ import { achievementCatalog } from '../utils/gamificationLevels';
 
 const achievementLabel = (key) => achievementCatalog.find(a => a.key === key)?.label ?? key;
 
+// Codici d'errore di update_date.php → testo tradotto (il message del server è solo in italiano)
+const ERROR_KEYS = {
+  missing_data: 'history.date.required',
+  invalid_date: 'history.date.error_invalid',
+  future_date: 'history.date.error_future',
+  target_too_old: 'history.date.error_target_too_old',
+  source_too_old: 'history.date.too_old',
+  not_found: 'history.date.error_not_found',
+};
+
 const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
@@ -25,6 +35,9 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
   const [newDate, setNewDate] = useState('');
   const [originalDate, setOriginalDate] = useState('');
   const [preview, setPreview] = useState(null); // cosa cambia spostando, dall'anteprima del server
+  // Il server sposta solo dentro gli ultimi 30 giorni (stringhe yyyy-MM-dd: si confrontano come testo)
+  const minDate = format(subDays(new Date(), 30), 'yyyy-MM-dd');
+  const maxDate = format(new Date(), 'yyyy-MM-dd');
 
   // Reinizializza la data quando cambia il workout
   useEffect(() => {
@@ -61,22 +74,26 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
     }
   }, [workout, t]);
 
-  // Alla scelta di una data nuova il server dice cosa cambierebbe (streak, XP, achievement)
+  // Alla scelta di una data nuova il server dice cosa cambierebbe (streak, XP, achievement).
+  // Ogni anteprima è una transazione con lock sul server: si chiede solo a scelta ferma e si annulla la precedente.
   useEffect(() => {
     setPreview(null);
-    if (!workout || !newDate || newDate === originalDate) return undefined;
-    let cancelled = false;
-    fetch(`${API_BASE_URL}api/workout_history/update_date.php`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: workout.id, new_date: newDate, preview: true }),
-      credentials: 'include'
-    })
-      .then(response => (response.ok ? response.json() : null))
-      .then(data => { if (!cancelled && data?.success) setPreview(data); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [workout, newDate, originalDate]);
+    if (!open || !workout || !newDate || newDate === originalDate || newDate < minDate || newDate > maxDate) return undefined;
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      fetch(`${API_BASE_URL}api/workout_history/update_date.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: workout.id, new_date: newDate, preview: true }),
+        credentials: 'include',
+        signal: controller.signal
+      })
+        .then(response => (response.ok ? response.json() : null))
+        .then(data => { if (!controller.signal.aborted && data?.success) setPreview(data); })
+        .catch(() => {});
+    }, 300);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [open, workout, newDate, originalDate, minDate, maxDate]);
 
   const handleDateChange = (e) => {
     setNewDate(e.target.value);
@@ -105,10 +122,10 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
         credentials: 'include'
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data.message || t('history.date.error'));
+        throw new Error(t(ERROR_KEYS[data.code] ?? 'history.date.error'));
       }
 
       // Chiamiamo il callback per informare il parent del successo
@@ -162,10 +179,7 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
             InputLabelProps={{
               shrink: true,
             }}
-            inputProps={{
-              min: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
-              max: format(new Date(), 'yyyy-MM-dd'),
-            }}
+            inputProps={{ min: minDate, max: maxDate }}
           />
           {preview?.xp_delta > 0 && (
             <Typography variant="body2">{t('history.date.gain_xp', { xp: preview.xp_delta })}</Typography>

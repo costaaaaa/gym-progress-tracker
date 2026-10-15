@@ -27,13 +27,14 @@ ko() { checks=$((checks + 1)); fails=$((fails + 1)); printf '  \033[31m✗\033[0
 
 call() { # metodo path token [json] → "status corpo"
     local method="$1" path="$2" token="$3" body="${4:-}"
-    local args=(-s -o /tmp/streak_rules.$$ -w '%{http_code}' -X "$method" -H 'Content-Type: application/json')
+    local out status
+    out="$(mktemp)" # una per chiamata: le chiamate in parallelo condividono $$
+    local args=(-s -o "$out" -w '%{http_code}' -X "$method" -H 'Content-Type: application/json')
     [[ -n "$token" ]] && args+=(-H "Authorization: Bearer $token")
     [[ -n "$body" ]] && args+=(--data "$body")
-    local status
     status="$(curl "${args[@]}" "$BASE$path")"
-    printf '%s %s' "$status" "$(cat /tmp/streak_rules.$$)"
-    rm -f /tmp/streak_rules.$$
+    printf '%s %s' "$status" "$(cat "$out")"
+    rm -f "$out"
 }
 
 check() { # descrizione "risposta di call" filtro_jq (sul corpo; $status = codice HTTP)
@@ -50,10 +51,11 @@ register_and_login() {
 }
 
 A="$(register_and_login "stA$SUFFIX")"
-[[ -n "$A" ]] || { echo "registrazione o login falliti (limite di registrazioni per IP?)" >&2; exit 1; }
+B="$(register_and_login "stB$SUFFIX")"
+[[ -n "$A" && -n "$B" ]] || { echo "registrazione o login falliti (limite di registrazioni per IP?)" >&2; exit 1; }
 
 cleanup() {
-    for t in "$A"; do
+    for t in "$A" "$B"; do
         call POST api/user/delete.php "$t" "$(jq -nc --arg p "$PASS" '{password:$p}')" >/dev/null
     done
     echo "Account di prova cancellati."
@@ -133,9 +135,16 @@ check "un salvataggio ripreso in ritardo nella settimana scorsa la richiude: +30
 
 echo "Limiti del cambio data (utente A)"
 W5="$(saved_id "$(save "$A" "$DAY_A")")"
-check "destinazione oltre 30 giorni (5 settimane fa): 400" "$(move "$A" "$W5" 5)" '$status == 400 and .success == false'
+check "destinazione oltre 30 giorni (5 settimane fa): 400" "$(move "$A" "$W5" 5)" '$status == 400 and .success == false and .code == "target_too_old"'
+check "data nel futuro: 400 future_date" \
+    "$(call POST api/workout_history/update_date.php "$A" "{\"id\":$W5,\"new_date\":\"$(date -d '+2 days' +%Y-%m-%d)\"}")" '$status == 400 and .code == "future_date"'
+check "data illeggibile: 400 invalid_date" \
+    "$(call POST api/workout_history/update_date.php "$A" "{\"id\":$W5,\"new_date\":\"non-una-data\"}")" '$status == 400 and .code == "invalid_date"'
+check "allenamento inesistente: 404 not_found" "$(move "$A" 999999999 1)" '$status == 404 and .code == "not_found"'
+check "dati mancanti: 400 missing_data" "$(call POST api/workout_history/update_date.php "$A" "{\"id\":$W5}")" '$status == 400 and .code == "missing_data"'
 check "destinazione a 30 giorni: si accetta" \
     "$(call POST api/workout_history/update_date.php "$A" "{\"id\":$W5,\"new_date\":\"$(date -d '-30 days' +%Y-%m-%d)\"}")" '$status == 200'
+move "$A" "$W5" 4 >/dev/null # −30 giorni cade nella settimana −5 di lunedì e martedì: 28 giorni è sempre la −4
 
 echo "Anteprima del cambio data (utente A, settimane 0..-2 e -4 chiuse)"
 W6="$(saved_id "$(save "$A" "$DAY_A")")"
@@ -153,6 +162,35 @@ call POST api/workout/create_days.php "$A" "{\"plan_id\":$PLAN_A,\"days\":[{\"na
 expect "la scheda ha 2 giorni: obiettivo 2" "$(call GET api/gamification/streak.php "$A" | cut -d' ' -f2- | jq -r '.this_week.goal')" 2
 check "obiettivo salito a 2: la settimana corrente, chiusa con 1, resta chiusa con 1 allenamento" \
     "$(call POST api/workout_history/delete.php "$A" "{\"id\":$W6}")" '.success and .streak_after == .streak_before and .streak_after == 3'
+
+echo "Spostamenti contemporanei dello stesso allenamento (utente B)"
+DAY_B="$(make_day "$B")"
+WB="$(saved_id "$(save "$B" "$DAY_B")")"
+XPB="$(total_xp "$B")"
+drift=""
+errors=0
+R1="$(mktemp)"; R2="$(mktemp)"
+for _ in $(seq 10); do # una coppia che si sovrappone male può essere riassorbita dalla successiva: si controlla ogni volta
+    move "$B" "$WB" 1 >"$R1" & move "$B" "$WB" 2 >"$R2" & wait
+    errors=$((errors + $(cut -c1 "$R1" "$R2" | grep -c 5)))
+    xp="$(total_xp "$B")"
+    [[ "$xp" == "$XPB" ]] || drift+=" $xp"
+done
+move "$B" "$WB" 3 >/dev/null
+expect "10 coppie di spostamenti in parallelo: nessun 5xx" "$errors" 0
+expect "10 coppie di spostamenti in parallelo: XP invariati dopo ogni coppia" "${drift:- nessuno scarto}" " nessuno scarto"
+expect "poi a 3 settimane fa: XP invariati" "$(total_xp "$B")" "$XPB"
+check "resta chiusa solo la settimana dell'allenamento: un salvataggio oggi dà streak 1" "$(save "$B" "$DAY_B")" '.current_streak_weeks == 1'
+
+echo "Cancellazioni contemporanee dello stesso allenamento (utente B)"
+WD="$(saved_id "$(save "$B" "$DAY_B")")"
+move "$B" "$WD" 1 >/dev/null # unico allenamento della settimana scorsa: la chiude
+XPD="$(total_xp "$B")"
+LOST="$(call POST api/workout_history/delete.php "$B" "{\"id\":$WD,\"preview\":true}" | cut -d' ' -f2- | jq -r '.xp_removed')"
+call POST api/workout_history/delete.php "$B" "{\"id\":$WD}" >"$R1" & call POST api/workout_history/delete.php "$B" "{\"id\":$WD}" >"$R2" & wait
+expect "due cancellazioni in parallelo: nessun 5xx" "$(cut -c1 "$R1" "$R2" | grep -c 5)" 0
+rm -f "$R1" "$R2"
+expect "XP tolti una volta sola ($LOST)" "$(total_xp "$B")" "$((XPD - LOST))"
 
 echo
 if [[ $fails -eq 0 ]]; then
