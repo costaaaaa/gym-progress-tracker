@@ -97,7 +97,7 @@ You can test the app directly here: 👉 [LiftIndex](https://liftindex.app/)
    ```
 3. Import the MySQL database — see [Database setup & updates](#database-setup--updates) below.
 4. Configure database access in the `backend/config/database.php` file (copy from `backend/config/database.php.example`);
-5. Launch a local server (e.g., with XAMPP) and make sure the PHP files are correctly served. In development the frontend calls `http://localhost/gym-progress-tracker/backend/` (see `src/config.js`), so the repository folder must be reachable at that path.
+5. Launch a local server (e.g., with XAMPP) and make sure the PHP files are correctly served. In development Vite forwards `/backend/` to `http://localhost/gym-progress-tracker/backend/` (proxy in `vite.config.js`), so the repository folder must be reachable at that path; for a backend elsewhere set `BACKEND_URL` (e.g. `BACKEND_URL=http://localhost:8080/backend/ npm run dev`).
 6. Start the React app (Vite on port 3000):
    ```bash
    npm start
@@ -256,7 +256,7 @@ Puoi testare l'app direttamente al seguente link: 👉 [LiftIndex](https://lifti
    ```
 3. Importa il database MySQL — vedi [Setup e aggiornamento del database](#setup-e-aggiornamento-del-database) più sotto.
 4. Configura i dati di accesso al database nel file `backend/config/database.php` (copiando da `backend/config/database.php.example`);
-5. Avvia il server locale (es. con XAMPP) e assicurati che i file PHP siano serviti correttamente. In sviluppo il frontend chiama `http://localhost/gym-progress-tracker/backend/` (vedi `src/config.js`), quindi la cartella del repo deve essere raggiungibile a quel percorso.
+5. Avvia il server locale (es. con XAMPP) e assicurati che i file PHP siano serviti correttamente. In sviluppo Vite gira `/backend/` a `http://localhost/gym-progress-tracker/backend/` (proxy in `vite.config.js`), quindi la cartella del repo deve essere raggiungibile a quel percorso; per un backend altrove imposta `BACKEND_URL` (es. `BACKEND_URL=http://localhost:8080/backend/ npm run dev`).
 6. Avvia l'app React (Vite sulla porta 3000):
    ```bash
    npm start

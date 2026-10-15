@@ -4,6 +4,10 @@ import react from '@vitejs/plugin-react';
 
 const SITE = 'https://liftindex.app';
 
+// Backend PHP locale per `npm run dev` (di default XAMPP). Il proxy lo serve sotto /backend/ dalla
+// stessa origine della pagina: niente CORS, e funziona anche da 127.0.0.1 o dall'IP di rete.
+const BACKEND = new URL(process.env.BACKEND_URL || 'http://localhost/gym-progress-tracker/backend/');
+
 // Le SPA non hanno HTML per lingua: dopo la build scrive build/en/index.html, copia di
 // index.html con lang, title e meta in inglese (presi da src/i18n), per chi non esegue JS.
 // La build fallisce se index.html non contiene più i testi italiani di src/i18n/it.json.
@@ -49,6 +53,13 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
+    proxy: {
+      '/backend/': {
+        target: BACKEND.origin,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/backend\//, BACKEND.pathname.replace(/\/?$/, '/')),
+      },
+    },
   },
   build: {
     outDir: 'build',

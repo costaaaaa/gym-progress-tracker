@@ -1,10 +1,8 @@
 // Configuration file for the application
 
-// Base URL for API requests
-// Using relative path for production and absolute for dev
-export const API_BASE_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost/gym-progress-tracker/backend/'
-  : '/backend/';
+// Base URL for API requests: sempre relativa, così segue il protocollo e l'host della pagina.
+// In sviluppo la gira al PHP locale il proxy di Vite (vite.config.js, BACKEND_URL).
+export const API_BASE_URL = '/backend/';
 
 // Other configuration settings
 export const APP_NAME = 'LiftIndex';
