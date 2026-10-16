@@ -1,10 +1,11 @@
 import { API_BASE_URL } from '../config';
+import i18n from '../i18n';
 
 // Stato dei consensi dell'utente: { terms: {granted, ...}, health_data: {granted, ...} }
 export const getConsents = async () => {
   const response = await fetch(`${API_BASE_URL}api/user/consent.php`, { credentials: 'include' });
   const data = await response.json();
-  if (!response.ok || !data.success) throw new Error(data.message || 'Errore nel caricamento dei consensi');
+  if (!response.ok || !data.success) throw new Error(data.message || i18n.t('consent.load_error'));
   return data.consents;
 };
 
@@ -17,6 +18,6 @@ export const setConsent = async (purpose, action) => {
     body: JSON.stringify({ purpose, action }),
   });
   const data = await response.json();
-  if (!response.ok || !data.success) throw new Error(data.message || 'Operazione non riuscita');
+  if (!response.ok || !data.success) throw new Error(data.message || i18n.t('consent.failed'));
   return data;
 };
