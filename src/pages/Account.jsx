@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -110,7 +110,7 @@ const Account = ({ isEmbedded = false }) => {
   const [weeklyGoalChoice, setWeeklyGoalChoice] = useState('default');
 
   // L'obiettivo mostrato è quello scelto per ultimo: il cambio in attesa, se c'è, altrimenti quello in vigore
-  const applyWeeklyGoalSettings = (data) => {
+  const applyWeeklyGoalSettings = useCallback((data) => {
     const settings = {
       weekly_goal: data.weekly_goal ?? null,
       weekly_goal_default: data.weekly_goal_default ?? 3,
@@ -119,7 +119,7 @@ const Account = ({ isEmbedded = false }) => {
     setWeeklyGoal(settings);
     const shown = settings.weekly_goal_pending ? settings.weekly_goal_pending.goal : settings.weekly_goal;
     setWeeklyGoalChoice(shown ?? 'default');
-  };
+  }, []);
 
   const handleWeeklyGoalChange = async (_event, next) => {
     if (next === null || next === weeklyGoalChoice) return;
@@ -336,18 +336,8 @@ const Account = ({ isEmbedded = false }) => {
     severity: 'info'
   });
 
-  // Caricamento dei dati dell'utente al mount del componente
-  useEffect(() => {
-    if (user) {
-      fetchUserData();
-    } else {
-      // Se l'utente non è autenticato, imposta loading a false per evitare il caricamento infinito
-      setLoading(false);
-    }
-  }, [user]);
-
   // Funzione per recuperare i dati completi dell'utente
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}api/user/read.php`, {
@@ -401,7 +391,17 @@ const Account = ({ isEmbedded = false }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [applyWeeklyGoalSettings]);
+
+  // Caricamento dei dati dell'utente al mount del componente
+  useEffect(() => {
+    if (user) {
+      fetchUserData();
+    } else {
+      // Se l'utente non è autenticato, imposta loading a false per evitare il caricamento infinito
+      setLoading(false);
+    }
+  }, [user, fetchUserData]);
 
   const handleUpdateProfile = async () => {
     setUpdatingProfile(true);
