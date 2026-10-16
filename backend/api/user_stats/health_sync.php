@@ -27,14 +27,14 @@ $user_id = require_authenticated_user($db);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode(array("message" => "Metodo non consentito."));
+    echo json_encode(array("message" => t_server('common.method_not_allowed')));
     exit;
 }
 
 $data = json_decode(file_get_contents("php://input"), true);
 if (!is_array($data)) {
     http_response_code(400);
-    echo json_encode(array("message" => "Richiesta non valida."));
+    echo json_encode(array("message" => t_server('common.invalid_request')));
     exit;
 }
 
@@ -53,7 +53,7 @@ if (!(new Consent($db))->isActive($user_id, 'health_data')) {
     echo json_encode(array(
         "success" => false,
         "code" => "consent_required",
-        "message" => "Per importare le misure da Salute serve il tuo consenso."
+        "message" => t_server('stats.health_consent_required')
     ));
     exit;
 }
@@ -61,12 +61,12 @@ if (!(new Consent($db))->isActive($user_id, 'health_data')) {
 $days = isset($data['days']) ? $data['days'] : null;
 if (!is_array($days) || !array_is_list($days)) {
     http_response_code(400);
-    echo json_encode(array("message" => "Elenco dei giorni mancante."));
+    echo json_encode(array("message" => t_server('stats.health_days_missing')));
     exit;
 }
 if (count($days) > 1000) {
     http_response_code(413);
-    echo json_encode(array("message" => "Troppi giorni in una volta: al massimo 1000."));
+    echo json_encode(array("message" => t_server('stats.health_too_many_days')));
     exit;
 }
 
@@ -84,7 +84,7 @@ try {
         $date = (is_array($day) && isset($day['date']) && is_string($day['date'])) ? $day['date'] : null;
         $dateObj = $date !== null ? DateTime::createFromFormat('!Y-m-d', $date) : false;
         if (!$dateObj || $dateObj->format('Y-m-d') !== $date || $dateObj > $maxDate || $dateObj->format('Y') < 1900) {
-            $errors[] = array("date" => $date, "message" => "Data non valida.");
+            $errors[] = array("date" => $date, "message" => t_server('stats.date_invalid'));
             continue;
         }
 
@@ -106,7 +106,7 @@ try {
         }
         // Un campione assurdo (una bilancia che segna 900 kg) non deve bloccare gli altri giorni
         if ($invalid !== null) {
-            $errors[] = array("date" => $date, "message" => "Valore non valido per $invalid.");
+            $errors[] = array("date" => $date, "message" => t_server('stats.value_invalid', array('field' => $invalid)));
             continue;
         }
         if (!$values) {
@@ -123,7 +123,7 @@ try {
     }
     error_log("health_sync user $user_id: " . $e->getMessage());
     http_response_code(500);
-    echo json_encode(array("message" => "Impossibile salvare le misure. Riprova più tardi."));
+    echo json_encode(array("message" => t_server('stats.health_save_failed')));
     exit;
 }
 

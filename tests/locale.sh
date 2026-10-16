@@ -99,6 +99,10 @@ expect "gruppi: codice invito sbagliato" .message "Invalid or expired invite cod
     "$(call GET "api/groups/preview.php?code=ZZZZZZZZZZ" "" "$EN")"
 expect "gruppi: codice invito sbagliato, account italiano resta italiano" .message "Codice invito non valido o scaduto." \
     "$(call GET "api/groups/preview.php?code=ZZZZZZZZZZ" en "$IT")"
+expect "misure: salvataggio senza consenso" .message "Saving body measurements requires your consent." \
+    "$(call POST api/user_stats/create.php "" "$EN" '{}')"
+expect "misure: salvataggio senza consenso, account italiano resta italiano" .message "Per salvare le misure corporee serve il tuo consenso." \
+    "$(call POST api/user_stats/create.php en "$IT" '{}')"
 
 echo "Email di reset"
 expect "richiesta reset, X-Locale: en" .success true "$(call POST api/user/forgot_password.php en "" "{\"email\":\"$EN_USER@example.com\"}")"

@@ -139,4 +139,19 @@ return array(
     'groups.invalid_code' => 'Codice invito non valido o scaduto.',
     'groups.consent_required' => 'Per entrare nel gruppo devi accettare cosa vedranno gli altri membri.',
     'groups.full' => 'Il gruppo ha raggiunto il numero massimo di membri.',
+
+    // Misure corporee
+    'stats.consent_required' => 'Per salvare le misure corporee serve il tuo consenso.',
+    'stats.date_invalid' => 'Data non valida.',
+    'stats.value_invalid' => 'Valore non valido per {field}.',
+    'stats.created' => 'Statistiche registrate con successo.',
+    'stats.create_failed' => 'Impossibile registrare le statistiche. Riprova più tardi.',
+    'stats.create_missing_date' => 'Impossibile registrare le statistiche. Data mancante.',
+    'stats.deleted' => 'Statistica eliminata con successo.',
+    'stats.delete_failed' => 'Impossibile eliminare la statistica. Riprova più tardi.',
+    'stats.delete_missing_id' => 'Impossibile eliminare la statistica. ID mancante.',
+    'stats.health_consent_required' => 'Per importare le misure da Salute serve il tuo consenso.',
+    'stats.health_days_missing' => 'Elenco dei giorni mancante.',
+    'stats.health_too_many_days' => 'Troppi giorni in una volta: al massimo 1000.',
+    'stats.health_save_failed' => 'Impossibile salvare le misure. Riprova più tardi.',
 );

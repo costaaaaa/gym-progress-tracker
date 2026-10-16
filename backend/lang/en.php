@@ -139,4 +139,19 @@ return array(
     'groups.invalid_code' => 'Invalid or expired invite code.',
     'groups.consent_required' => 'To join the group, you need to accept what the other members will see.',
     'groups.full' => 'The group has reached its maximum number of members.',
+
+    // Misure corporee
+    'stats.consent_required' => 'Saving body measurements requires your consent.',
+    'stats.date_invalid' => 'Invalid date.',
+    'stats.value_invalid' => 'Invalid value for {field}.',
+    'stats.created' => 'Measurements saved.',
+    'stats.create_failed' => "Couldn't save the measurements. Try again later.",
+    'stats.create_missing_date' => "Couldn't save the measurements. Missing date.",
+    'stats.deleted' => 'Measurement deleted.',
+    'stats.delete_failed' => "Couldn't delete the measurement. Try again later.",
+    'stats.delete_missing_id' => "Couldn't delete the measurement. Missing ID.",
+    'stats.health_consent_required' => 'Importing measurements from Health requires your consent.',
+    'stats.health_days_missing' => 'List of days is missing.',
+    'stats.health_too_many_days' => 'Too many days at once: 1000 at most.',
+    'stats.health_save_failed' => "Couldn't save the measurements. Try again later.",
 );
