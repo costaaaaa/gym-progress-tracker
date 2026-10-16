@@ -22,22 +22,14 @@ if (!empty($data->plan_id)) {
         api_not_found();
     }
 
-    // First, deactivate all plans for this user
-    if ($workout_plan->deactivateAllPlans()) {
-        // Then activate the selected plan
-        if ($workout_plan->activate()) {
-            http_response_code(200);
+    if ($workout_plan->activateExclusively()) {
+        http_response_code(200);
 
-            echo json_encode(array("message" => "Piano di allenamento attivato con successo."));
-        } else {
-            http_response_code(503);
-
-            echo json_encode(array("message" => "Impossibile attivare il piano di allenamento."));
-        }
+        echo json_encode(array("message" => "Piano di allenamento attivato con successo."));
     } else {
         http_response_code(503);
 
-        echo json_encode(array("message" => "Errore durante la disattivazione dei piani esistenti."));
+        echo json_encode(array("message" => "Impossibile attivare il piano di allenamento."));
     }
 } else {
     http_response_code(400);

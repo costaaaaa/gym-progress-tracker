@@ -250,4 +250,22 @@ class WorkoutPlan
         $stmt->bindParam(":user_id", $this->user_id);
         return $stmt->execute();
     }
+
+    // Rende attiva solo questa scheda: i due UPDATE stanno in una transazione, così un guasto
+    // fra l'uno e l'altro non lascia l'utente senza scheda attiva.
+    public function activateExclusively()
+    {
+        try {
+            $this->conn->beginTransaction();
+            $this->deactivateAllPlans();
+            $this->activate();
+            return $this->conn->commit();
+        } catch (PDOException $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+            error_log("Activate plan error: " . $e->getMessage());
+            return false;
+        }
+    }
 }
