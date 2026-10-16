@@ -4,6 +4,7 @@ include_once '../../config/cors_headers.php';
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../lib/password_policy.php';
+include_once '../../lib/password_check.php';
 include_once '../../models/ApiToken.php';
 include_once '../../models/User.php';
 
@@ -52,8 +53,11 @@ try {
         exit;
     }
 
+    password_check_guard($db, $user_id);
+
     // Try to change password
     if ($user->changePassword($data->current_password, $data->new_password)) {
+        password_check_ok($db, $user_id);
         // Le altre sessioni e gli altri dispositivi devono rifare il login: la sessione web
         // in uso riparte con un nuovo id, il token mobile in uso resta valido, gli altri no.
         if (isset($_SESSION['user_id'])) {
@@ -67,6 +71,7 @@ try {
             "message" => t_server('change_password.ok')
         ));
     } else {
+        password_check_failed($db, $user_id);
         http_response_code(400);
         echo json_encode(array(
             "success" => false,

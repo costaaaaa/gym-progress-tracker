@@ -59,7 +59,7 @@ try {
             echo json_encode(array("success" => false, "message" => t_server('register.username_invalid')));
             exit;
         }
-        if (!is_string($data->email) || !filter_var($data->email, FILTER_VALIDATE_EMAIL)) {
+        if (!is_string($data->email) || !filter_var(trim($data->email), FILTER_VALIDATE_EMAIL)) {
             http_response_code(400);
             echo json_encode(array("success" => false, "message" => t_server('common.email_invalid')));
             exit;
@@ -93,7 +93,7 @@ try {
         }
 
         $user->username = $data->username;
-        $user->email = $data->email;
+        $user->email = strtolower(trim($data->email));
         $user->password = $data->password;
         $user->birth_date = $data->birth_date;
         $user->gender = $data->gender;

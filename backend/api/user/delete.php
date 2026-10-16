@@ -4,6 +4,7 @@ include_once '../../config/cors_headers.php';
 
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
+include_once '../../lib/password_check.php';
 include_once '../../models/User.php';
 
 $database = new Database();
@@ -34,6 +35,8 @@ try {
         exit;
     }
 
+    password_check_guard($db, $user_id);
+
     // Try to delete account
     if ($user->deleteAccount($data->password)) {
         // Pulizia sessione solo se presente (percorso web) — sul percorso
@@ -50,6 +53,7 @@ try {
             "message" => t_server('account.deleted')
         ));
     } else {
+        password_check_failed($db, $user_id);
         // 400 e non 401: i client trattano ogni 401 come sessione scaduta e fanno logout
         http_response_code(400);
         echo json_encode(array(

@@ -5,6 +5,7 @@ return array(
     'auth.unauthenticated' => 'Accesso non autorizzato. Effettua il login.',
     'auth.missing_credentials' => 'Nome utente e password sono obbligatori.',
     'auth.too_many_logins' => 'Troppi tentativi di accesso. Riprova tra {seconds} secondi.',
+    'auth.too_many_password' => 'Troppi tentativi con la password attuale. Riprova tra {seconds} secondi.',
     'auth.invalid_credentials' => 'Nome utente o password non validi.',
     'auth.login_ok' => 'Accesso effettuato.',
     'auth.login_error' => "Si è verificato un errore durante l'accesso.",
