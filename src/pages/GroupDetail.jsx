@@ -255,6 +255,13 @@ const GroupDetailContent = () => {
                   {t('groups.detail.leave.button')}
                 </Button>
               )}
+              <Button
+                size="small"
+                href={`mailto:info@liftindex.app?subject=${encodeURIComponent(t('groups.detail.report.subject', { id: group.id }))}&body=${encodeURIComponent(t('groups.detail.report.body', { name: group.name, url: window.location.href }))}`}
+                sx={{ display: 'block', mt: 1 }}
+              >
+                {t('groups.detail.report.button')}
+              </Button>
             </Card>
           </Box>
         </Grid>
