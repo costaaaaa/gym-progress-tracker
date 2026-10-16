@@ -35,7 +35,7 @@ try {
         $direction = $data->direction;
 
         if (!workout_exercise_belongs_to_user($db, $data->exercise_id, $data->day_id, $user_id)) {
-            api_not_found('Esercizio non trovato.');
+            api_not_found(t_server('workout.exercise_not_found'));
         }
 
         // Verifica che l'esercizio esista
@@ -45,7 +45,7 @@ try {
             echo json_encode(
                 array(
                     'success' => false,
-                    'message' => 'Esercizio non trovato.'
+                    'message' => t_server('workout.exercise_not_found')
                 )
             );
             exit;
@@ -66,7 +66,7 @@ try {
             echo json_encode(
                 array(
                     'success' => false,
-                    'message' => 'Direzione non valida. Usare "up" o "down".'
+                    'message' => t_server('workout.reorder_direction_invalid')
                 )
             );
             exit;
@@ -78,7 +78,7 @@ try {
             echo json_encode(
                 array(
                     'success' => true,
-                    'message' => 'Ordine degli esercizi aggiornato con successo.'
+                    'message' => t_server('workout.reorder_ok')
                 )
             );
         } else {
@@ -88,7 +88,7 @@ try {
             echo json_encode(
                 array(
                     'success' => false,
-                    'message' => 'Impossibile riordinare gli esercizi. Verifica i log per maggiori dettagli.'
+                    'message' => t_server('workout.reorder_failed')
                 )
             );
         }
@@ -99,7 +99,7 @@ try {
         echo json_encode(
             array(
                 'success' => false,
-                'message' => 'Dati incompleti. Specificare day_id, exercise_id e direction.'
+                'message' => t_server('workout.reorder_incomplete')
             )
         );
     }

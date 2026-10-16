@@ -122,7 +122,7 @@ try {
         http_response_code(200);
     } else {
         http_response_code(200);
-        $plans_arr["message"] = "Nessuna scheda di allenamento trovata.";
+        $plans_arr["message"] = t_server('workout.none_found');
     }
 
     if (ob_get_length()) ob_clean();
@@ -134,6 +134,6 @@ try {
     if (ob_get_length()) ob_clean();
     header('Content-Type: application/json');
     error_log("Errore in read_plans.php: " . $e->getMessage());
-    echo json_encode(array("message" => "Errore interno del server."));
+    echo json_encode(array("message" => t_server('common.server_error')));
 }
 ob_end_flush();

@@ -27,14 +27,14 @@ if (!empty($data->exercise_id) && !empty($data->day_id)) {
     if ($workout_exercise->delete()) {
         http_response_code(200);
         
-        echo json_encode(array("message" => "Esercizio rimosso con successo."));
+        echo json_encode(array("message" => t_server('workout.exercise_removed')));
     } else {
         http_response_code(503);
         
-        echo json_encode(array("message" => "Impossibile rimuovere l'esercizio."));
+        echo json_encode(array("message" => t_server('workout.exercise_remove_failed')));
     }
 } else {
     http_response_code(400);
     
-    echo json_encode(array("message" => "Impossibile rimuovere l'esercizio. Dati incompleti."));
+    echo json_encode(array("message" => t_server('workout.exercise_remove_incomplete')));
 }

@@ -89,6 +89,10 @@ expect "cambio password errato, account italiano con X-Locale: en" .message "La 
     "$(call POST api/user/change_password.php en "$IT" "$WRONG_PW")"
 
 echo "Messaggi degli endpoint, account inglese"
+expect "scheda: attivazione senza dati" .message "Couldn't activate the plan. Incomplete data." \
+    "$(call POST api/workout/activate_plan.php "" "$EN" '{}')"
+expect "scheda: attivazione, account italiano resta italiano" .message "Impossibile attivare il piano. Dati incompleti." \
+    "$(call POST api/workout/activate_plan.php en "$IT" '{}')"
 expect "404 comune (default di api_not_found)" .message "Resource not found." \
     "$(call POST api/workout/activate_plan.php "" "$EN" '{"plan_id":99999999}')"
 

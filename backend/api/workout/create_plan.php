@@ -25,7 +25,7 @@ if (!empty($data->name)) {
         http_response_code(201);
 
         echo json_encode(array(
-            "message" => "Scheda di allenamento creata con successo.",
+            "message" => t_server('workout.plan_created'),
             "plan" => array(
                 "id" => $workout_plan->id,
                 "name" => $workout_plan->name,
@@ -36,10 +36,10 @@ if (!empty($data->name)) {
     } else {
         http_response_code(503);
 
-        echo json_encode(array("message" => "Impossibile creare la scheda di allenamento. Riprova più tardi."));
+        echo json_encode(array("message" => t_server('workout.plan_create_failed')));
     }
 } else {
     http_response_code(400);
 
-    echo json_encode(array("message" => "Impossibile creare la scheda di allenamento. Dati incompleti."));
+    echo json_encode(array("message" => t_server('workout.plan_create_incomplete')));
 }
