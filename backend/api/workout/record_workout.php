@@ -16,7 +16,7 @@ function already_saved_response($db, $user_id, $workout_id)
     api_json_response([
         'success'              => true,
         'already_saved'        => true,
-        'message'              => 'Allenamento già salvato',
+        'message'              => t_server('workout.record_already_saved'),
         'id'                   => $workout_id,
         'current_streak_weeks' => (int) $stmt->fetchColumn(),
     ]);
@@ -32,7 +32,7 @@ try {
 
     if (!$data || !isset($data->workout_records) || !is_array($data->workout_records) || empty($data->workout_records)) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Dati mancanti o non validi']);
+        echo json_encode(['success' => false, 'message' => t_server('workout.record_invalid')]);
         exit;
     }
 
@@ -41,25 +41,25 @@ try {
     // Ripetizioni: intero da 1 a 250, come le controllano le app (un 910 nato da "9" scritto
     // accanto a "10" falserebbe volume, record e obiettivi).
     if (count($data->workout_records) > 500) {
-        api_json_response(['success' => false, 'message' => 'Troppe serie in un solo allenamento.'], 400);
+        api_json_response(['success' => false, 'message' => t_server('workout.record_too_many_sets')], 400);
     }
     foreach ($data->workout_records as $record) {
         if (!is_object($record)) {
-            api_json_response(['success' => false, 'message' => 'Dati mancanti o non validi'], 400);
+            api_json_response(['success' => false, 'message' => t_server('workout.record_invalid')], 400);
         }
         if (!isset($record->exercise_id) || empty($record->exercise_id)) continue;
         $weight = $record->weight ?? null;
         $reps = $record->reps ?? null;
         $set_number = $record->set_number ?? null;
         if (!is_numeric($weight) || $weight < 0 || $weight > 999.99) {
-            api_json_response(['success' => false, 'message' => 'Peso non valido: usa un valore tra 0 e 999,99 kg.'], 400);
+            api_json_response(['success' => false, 'message' => t_server('workout.record_weight_invalid')], 400);
         }
         if (!(is_string($reps) || is_int($reps)) || !preg_match('/^\d{1,3}$/', (string) $reps)
             || (int) $reps < 1 || (int) $reps > 250) {
-            api_json_response(['success' => false, 'message' => 'Ripetizioni non valide: usa un numero intero tra 1 e 250.'], 400);
+            api_json_response(['success' => false, 'message' => t_server('workout.record_reps_invalid')], 400);
         }
         if (!is_int($set_number) || $set_number < 1 || $set_number > 100) {
-            api_json_response(['success' => false, 'message' => 'Numero di serie non valido.'], 400);
+            api_json_response(['success' => false, 'message' => t_server('workout.record_sets_invalid')], 400);
         }
     }
 
@@ -70,7 +70,7 @@ try {
     $idempotency_key = null;
     if (isset($data->idempotency_key)) {
         if (!is_string($data->idempotency_key) || !preg_match('/^[A-Za-z0-9_-]{8,64}$/', $data->idempotency_key)) {
-            api_json_response(['success' => false, 'message' => 'Dati mancanti o non validi'], 400);
+            api_json_response(['success' => false, 'message' => t_server('workout.record_invalid')], 400);
         }
         $idempotency_key = $data->idempotency_key;
         $saved_id = WorkoutHistory::findIdByIdempotencyKey($db, $user_id, $idempotency_key);
@@ -87,7 +87,7 @@ try {
     foreach (array_keys($exercise_ids) as $eid) {
         if (!Exercise::isVisibleTo($db, $eid, $user_id)) {
             http_response_code(404);
-            echo json_encode(['success' => false, 'message' => 'Esercizio non trovato.']);
+            echo json_encode(['success' => false, 'message' => t_server('workout.exercise_not_found')]);
             exit;
         }
     }
@@ -119,8 +119,7 @@ try {
                 echo json_encode([
                     'success' => false,
                     'code'    => 'premium_required',
-                    'message' => "Cambiare o aggiungere esercizi durante l'allenamento è una funzione Premium: "
-                        . "puoi salvare solo gli esercizi del giorno di scheda.",
+                    'message' => t_server('workout.record_premium_required'),
                 ]);
                 exit;
             }
@@ -164,7 +163,7 @@ try {
         // Sessione ripresa in ritardo: start_time è già sul giorno scelto dall'utente. Il client
         // limita la scelta a 7 giorni fa; qui 8 per assorbire i fusi orari.
         if ($start < (new DateTime('today'))->modify('-8 days')) {
-            api_json_response(['success' => false, 'message' => 'Data allenamento non valida: puoi scegliere fino a 7 giorni fa.'], 400);
+            api_json_response(['success' => false, 'message' => t_server('workout.record_date_invalid')], 400);
         }
         $data_workout = ($start > $now ? $now : $start)->format('Y-m-d H:i:s');
 
@@ -222,7 +221,7 @@ try {
         http_response_code(201);
         echo json_encode(array_merge([
             'success'          => true,
-            'message'          => 'Allenamento registrato con successo',
+            'message'          => t_server('workout.record_saved'),
             'id'               => $workout_id,
             'sets_saved'       => $sets_saved,
             'duration_seconds' => $duration_seconds,
@@ -243,6 +242,6 @@ try {
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'Errore durante la registrazione dell\'allenamento'
+        'message' => t_server('workout.record_error')
     ]);
 }

@@ -88,6 +88,30 @@ expect "cambio password errato, account inglese con X-Locale: it" .message "The 
 expect "cambio password errato, account italiano con X-Locale: en" .message "La password attuale non è corretta." \
     "$(call POST api/user/change_password.php en "$IT" "$WRONG_PW")"
 
+echo "Messaggi degli endpoint, account inglese"
+expect "scheda: attivazione senza dati" .message "Couldn't activate the plan. Incomplete data." \
+    "$(call POST api/workout/activate_plan.php "" "$EN" '{}')"
+expect "scheda: attivazione, account italiano resta italiano" .message "Impossibile attivare il piano. Dati incompleti." \
+    "$(call POST api/workout/activate_plan.php en "$IT" '{}')"
+expect "404 comune (default di api_not_found)" .message "Resource not found." \
+    "$(call POST api/workout/activate_plan.php "" "$EN" '{"plan_id":99999999}')"
+expect "gruppi: codice invito sbagliato" .message "Invalid or expired invite code." \
+    "$(call GET "api/groups/preview.php?code=ZZZZZZZZZZ" "" "$EN")"
+expect "gruppi: codice invito sbagliato, account italiano resta italiano" .message "Codice invito non valido o scaduto." \
+    "$(call GET "api/groups/preview.php?code=ZZZZZZZZZZ" en "$IT")"
+expect "misure: salvataggio senza consenso" .message "Saving body measurements requires your consent." \
+    "$(call POST api/user_stats/create.php "" "$EN" '{}')"
+expect "misure: salvataggio senza consenso, account italiano resta italiano" .message "Per salvare le misure corporee serve il tuo consenso." \
+    "$(call POST api/user_stats/create.php en "$IT" '{}')"
+expect "cronologia: allenamento che non esiste" .message "Workout not found or not authorized" \
+    "$(call POST api/workout_history/delete.php "" "$EN" '{"id":99999999}')"
+expect "cronologia: allenamento che non esiste, account italiano resta italiano" .message "Allenamento non trovato o non autorizzato" \
+    "$(call POST api/workout_history/delete.php en "$IT" '{"id":99999999}')"
+expect "esercizi: nome vuoto" .message "The name must be 2 to 60 characters (letters, numbers and simple punctuation) and can't contain links." \
+    "$(call POST api/exercise/create.php "" "$EN" '{"name":"","muscle_group":"Petto"}')"
+expect "esercizi: nome vuoto, account italiano resta italiano" .message "Il nome deve avere da 2 a 60 caratteri (lettere, numeri e punteggiatura semplice) e non può contenere link." \
+    "$(call POST api/exercise/create.php en "$IT" '{"name":"","muscle_group":"Petto"}')"
+
 echo "Email di reset"
 expect "richiesta reset, X-Locale: en" .success true "$(call POST api/user/forgot_password.php en "" "{\"email\":\"$EN_USER@example.com\"}")"
 echo "  → con MAIL_DRIVER=log: oggetto \"Reset your password\" e link /en/reset-password per $EN_USER@example.com nei log PHP"

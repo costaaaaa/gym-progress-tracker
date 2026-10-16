@@ -82,6 +82,6 @@ try {
     error_log("profile.php error: " . $e->getMessage());
     http_response_code(500);
     if (ob_get_length()) ob_clean();
-    echo json_encode(['success' => false, 'message' => 'Errore interno']);
+    echo json_encode(['success' => false, 'message' => t_server('common.server_error')]);
 }
 ob_end_flush();

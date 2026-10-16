@@ -28,7 +28,7 @@ if (
     }
 
     if (!workout_exercise_belongs_to_user($db, $data->exercise_id, $data->day_id, $user_id)) {
-        api_not_found('Esercizio non trovato.');
+        api_not_found(t_server('workout.exercise_not_found'));
     }
 
     // Prima di aggiornare, dobbiamo trovare l'ID dell'esercizio nella scheda
@@ -64,7 +64,7 @@ if (
             echo json_encode(
                 array(
                     'success' => true,
-                    'message' => 'Esercizio aggiornato con successo.'
+                    'message' => t_server('workout.exercise_updated')
                 )
             );
         } else {
@@ -73,7 +73,7 @@ if (
             echo json_encode(
                 array(
                     'success' => false,
-                    'message' => 'Impossibile aggiornare l\'esercizio.'
+                    'message' => t_server('workout.exercise_update_failed')
                 )
             );
         }
@@ -83,7 +83,7 @@ if (
         echo json_encode(
             array(
                 'success' => false,
-                'message' => 'Esercizio non trovato nella scheda.'
+                'message' => t_server('workout.exercise_not_in_plan')
             )
         );
     }
@@ -93,7 +93,7 @@ if (
     echo json_encode(
         array(
             'success' => false,
-            'message' => 'Dati incompleti. Impossibile aggiornare l\'esercizio.'
+            'message' => t_server('workout.exercise_update_incomplete')
         )
     );
 }

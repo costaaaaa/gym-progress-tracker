@@ -17,7 +17,7 @@ $data = json_decode(file_get_contents("php://input"));
 if (!empty($data->plan_id) && !empty($data->name)) {
     // Check if plan exists and belongs to user
     if (!workout_plan_belongs_to_user($db, $data->plan_id, $user_id)) {
-        api_not_found("Scheda di allenamento non trovata.");
+        api_not_found(t_server('workout.plan_not_found'));
     }
 
     $workout_plan->id = $data->plan_id;
@@ -34,7 +34,7 @@ if (!empty($data->plan_id) && !empty($data->name)) {
         http_response_code(200);
 
         echo json_encode(array(
-            "message" => "Scheda di allenamento aggiornata con successo.",
+            "message" => t_server('workout.plan_updated'),
             "plan" => array(
                 "id" => $workout_plan->id,
                 "name" => $workout_plan->name,
@@ -45,10 +45,10 @@ if (!empty($data->plan_id) && !empty($data->name)) {
     } else {
         http_response_code(500);
 
-        echo json_encode(array("message" => "Impossibile aggiornare la scheda di allenamento. Riprova più tardi."));
+        echo json_encode(array("message" => t_server('workout.plan_update_failed')));
     }
 } else {
     http_response_code(400);
 
-    echo json_encode(array("message" => "Impossibile aggiornare la scheda di allenamento. Dati incompleti."));
+    echo json_encode(array("message" => t_server('workout.plan_update_incomplete')));
 }

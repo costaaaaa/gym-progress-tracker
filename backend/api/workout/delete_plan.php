@@ -26,14 +26,14 @@ if (!empty($data->plan_id)) {
     if ($workout_plan->delete()) {
         http_response_code(200);
 
-        echo json_encode(array("message" => "Scheda di allenamento eliminata con successo."));
+        echo json_encode(array("message" => t_server('workout.plan_deleted')));
     } else {
         http_response_code(503);
 
-        echo json_encode(array("message" => "Impossibile eliminare la scheda di allenamento."));
+        echo json_encode(array("message" => t_server('workout.plan_delete_failed')));
     }
 } else {
     http_response_code(400);
 
-    echo json_encode(array("message" => "Impossibile eliminare la scheda di allenamento. Dati incompleti."));
+    echo json_encode(array("message" => t_server('workout.plan_delete_incomplete')));
 }

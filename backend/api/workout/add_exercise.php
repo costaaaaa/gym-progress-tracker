@@ -36,7 +36,7 @@ if (
         if ($workout_plan->readOne()) {
             // Solo esercizi approvati o creati dall'utente: quelli in attesa degli altri non si usano
             if (!Exercise::isVisibleTo($db, $data->exercise_id, $user_id)) {
-                api_not_found('Esercizio non trovato.');
+                api_not_found(t_server('workout.exercise_not_found'));
             }
 
             // Day belongs to user's plan, proceed with adding the exercise
@@ -60,7 +60,7 @@ if (
                 http_response_code(201);
 
                 echo json_encode(array(
-                    "message" => "Esercizio aggiunto con successo.",
+                    "message" => t_server('workout.exercise_added'),
                     "workout_exercise" => array(
                         "id" => $workout_exercise->id,
                         "day_id" => $workout_exercise->day_id,
@@ -76,7 +76,7 @@ if (
             } else {
                 http_response_code(503);
 
-                echo json_encode(array("message" => "Impossibile aggiungere l'esercizio. Riprova più tardi."));
+                echo json_encode(array("message" => t_server('workout.exercise_add_failed')));
             }
         } else {
             api_not_found();
@@ -87,5 +87,5 @@ if (
 } else {
     http_response_code(400);
 
-    echo json_encode(array("message" => "Impossibile aggiungere l'esercizio. Dati incompleti."));
+    echo json_encode(array("message" => t_server('workout.exercise_add_incomplete')));
 }

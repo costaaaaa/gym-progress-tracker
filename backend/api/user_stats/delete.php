@@ -21,12 +21,12 @@ if (!empty($data->id)) {
     // Delete record
     if ($user_stat->delete()) {
         http_response_code(200);
-        echo json_encode(array("message" => "Statistica eliminata con successo."));
+        echo json_encode(array("message" => t_server('stats.deleted')));
     } else {
         http_response_code(503);
-        echo json_encode(array("message" => "Impossibile eliminare la statistica. Riprova più tardi."));
+        echo json_encode(array("message" => t_server('stats.delete_failed')));
     }
 } else {
     http_response_code(400);
-    echo json_encode(array("message" => "Impossibile eliminare la statistica. ID mancante."));
+    echo json_encode(array("message" => t_server('stats.delete_missing_id')));
 }

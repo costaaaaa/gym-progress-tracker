@@ -11,7 +11,7 @@ try {
     $group = new Group($db);
     $found = $code ? $group->findByCode($code) : null;
     if (!$found || !(int)$found['invite_enabled']) {
-        api_error(404, 'invalid_code', 'Codice invito non valido o scaduto.');
+        api_error(404, 'invalid_code', t_server('groups.invalid_code'));
     }
 
     $is_member = group_membership($db, $found['id'], $user_id) !== null;

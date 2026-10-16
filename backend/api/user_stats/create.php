@@ -17,7 +17,7 @@ if (!(new Consent($db))->isActive($user_id, 'health_data')) {
     echo json_encode(array(
         "success" => false,
         "code" => "consent_required",
-        "message" => "Per salvare le misure corporee serve il tuo consenso."
+        "message" => t_server('stats.consent_required')
     ));
     exit;
 }
@@ -32,14 +32,14 @@ $limits = array(
 $dateObj = (isset($data->date) && is_string($data->date)) ? DateTime::createFromFormat('!Y-m-d', $data->date) : false;
 if (!empty($data->date) && (!$dateObj || $dateObj->format('Y-m-d') !== $data->date || $dateObj > new DateTime('today'))) {
     http_response_code(400);
-    echo json_encode(array("message" => "Data non valida."));
+    echo json_encode(array("message" => t_server('stats.date_invalid')));
     exit;
 }
 foreach ($limits as $field => $max) {
     if (isset($data->$field) && $data->$field !== '' && $data->$field !== null) {
         if (!is_numeric($data->$field) || $data->$field < 0 || $data->$field > $max) {
             http_response_code(400);
-            echo json_encode(array("message" => "Valore non valido per $field."));
+            echo json_encode(array("message" => t_server('stats.value_invalid', array('field' => $field))));
             exit;
         }
     }
@@ -65,7 +65,7 @@ if (!empty($data->date)) {
     if ($user_stat->create() && $user_stat->readOne()) {
         http_response_code($user_stat->created ? 201 : 200);
         echo json_encode(array(
-            "message" => "Statistiche registrate con successo.",
+            "message" => t_server('stats.created'),
             "user_stat" => array(
                 "id" => $user_stat->id,
                 "date" => $user_stat->date,
@@ -81,9 +81,9 @@ if (!empty($data->date)) {
         ));
     } else {
         http_response_code(503);
-        echo json_encode(array("message" => "Impossibile registrare le statistiche. Riprova più tardi."));
+        echo json_encode(array("message" => t_server('stats.create_failed')));
     }
 } else {
     http_response_code(400);
-    echo json_encode(array("message" => "Impossibile registrare le statistiche. Data mancante."));
+    echo json_encode(array("message" => t_server('stats.create_missing_date')));
 }

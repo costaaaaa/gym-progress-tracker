@@ -25,14 +25,14 @@ if (!empty($data->plan_id)) {
     if ($workout_plan->activateExclusively()) {
         http_response_code(200);
 
-        echo json_encode(array("message" => "Piano di allenamento attivato con successo."));
+        echo json_encode(array("message" => t_server('workout.plan_activated')));
     } else {
         http_response_code(503);
 
-        echo json_encode(array("message" => "Impossibile attivare il piano di allenamento."));
+        echo json_encode(array("message" => t_server('workout.plan_activate_failed')));
     }
 } else {
     http_response_code(400);
 
-    echo json_encode(array("message" => "Impossibile attivare il piano. Dati incompleti."));
+    echo json_encode(array("message" => t_server('workout.plan_activate_incomplete')));
 }

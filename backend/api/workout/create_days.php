@@ -40,16 +40,16 @@ if (!empty($data->plan_id) && !empty($data->days)) {
         http_response_code(201);
 
         echo json_encode(array(
-            "message" => "Giorni di allenamento creati con successo.",
+            "message" => t_server('workout.days_created'),
             "days" => $created_days
         ));
     } else {
         http_response_code(503);
 
-        echo json_encode(array("message" => "Impossibile creare tutti i giorni di allenamento. Riprova più tardi."));
+        echo json_encode(array("message" => t_server('workout.days_create_failed')));
     }
 } else {
     http_response_code(400);
 
-    echo json_encode(array("message" => "Impossibile creare i giorni di allenamento. Dati incompleti."));
+    echo json_encode(array("message" => t_server('workout.days_create_incomplete')));
 }

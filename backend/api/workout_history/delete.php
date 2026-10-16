@@ -16,7 +16,7 @@ try {
 
     if (!$data || !isset($data->id) || empty($data->id)) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'ID allenamento mancante o non valido']);
+        echo json_encode(['success' => false, 'message' => t_server('history.id_invalid')]);
         exit;
     }
 
@@ -32,7 +32,7 @@ try {
         http_response_code(404);
         echo json_encode([
             'success' => false,
-            'message' => 'Allenamento non trovato o non autorizzato'
+            'message' => t_server('history.not_found')
         ]);
         exit;
     }
@@ -59,13 +59,13 @@ try {
         echo json_encode(array_merge([
             'success' => true,
             'preview' => $preview,
-            'message' => $preview ? 'Anteprima: nulla è stato eliminato' : 'Allenamento eliminato con successo'
+            'message' => $preview ? t_server('history.delete_preview') : t_server('history.deleted')
         ], $undone));
     } else {
         http_response_code(503);
         echo json_encode([
             'success' => false,
-            'message' => 'Impossibile eliminare l\'allenamento'
+            'message' => t_server('history.delete_failed')
         ]);
     }
 } catch (Exception $e) {
@@ -73,6 +73,6 @@ try {
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'Errore durante l\'eliminazione dell\'allenamento'
+        'message' => t_server('history.delete_error')
     ]);
 }

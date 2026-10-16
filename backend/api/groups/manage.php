@@ -20,7 +20,7 @@ try {
         case 'rename':
             $name = Group::cleanName($data['name'] ?? null);
             if ($name === null) {
-                api_error(400, 'invalid_name', 'Il nome deve avere da 1 a 60 caratteri e non può contenere link.');
+                api_error(400, 'invalid_name', t_server('groups.name_invalid'));
             }
             $group->rename($group_id, $name);
             api_json_response(array('success' => true, 'name' => $name));
@@ -36,26 +36,26 @@ try {
         case 'remove_member':
             $target = $group->memberByRef($group_id, $data['ref'] ?? null);
             if (!$target) {
-                api_error(404, 'member_not_found', 'Membro non trovato.');
+                api_error(404, 'member_not_found', t_server('groups.member_not_found'));
             }
             if ($target['user_id'] === $user_id || $target['role'] === 'owner') {
-                api_error(403, 'forbidden', 'Non puoi rimuovere questo membro.');
+                api_error(403, 'forbidden', t_server('groups.cannot_remove_member'));
             }
             if (!$is_owner && $target['role'] !== 'member') {
-                api_error(403, 'forbidden', 'Solo il proprietario può rimuovere un amministratore.');
+                api_error(403, 'forbidden', t_server('groups.owner_removes_admin'));
             }
             $group->removeMember($group_id, $target['user_id']);
             api_json_response(array('success' => true));
 
         case 'delete':
             if (!$is_owner) {
-                api_error(403, 'forbidden', 'Solo il proprietario può eliminare il gruppo.');
+                api_error(403, 'forbidden', t_server('groups.owner_deletes'));
             }
             $group->delete($group_id);
             api_json_response(array('success' => true));
 
         default:
-            api_error(400, 'invalid_action', 'Azione non valida.');
+            api_error(400, 'invalid_action', t_server('groups.action_invalid'));
     }
 } catch (Throwable $e) {
     groups_fail('groups/manage.php', $e);

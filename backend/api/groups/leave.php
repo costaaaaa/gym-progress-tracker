@@ -9,7 +9,7 @@ try {
     $group_id = groups_group_id($data['group_id'] ?? null);
     $membership = require_group_member($db, $group_id, $user_id);
     if ($membership['role'] === 'owner') {
-        api_error(409, 'owner_cannot_leave', 'Sei il proprietario: per uscire elimina il gruppo.');
+        api_error(409, 'owner_cannot_leave', t_server('groups.owner_cannot_leave'));
     }
     $group = new Group($db);
     $group->removeMember($group_id, $user_id);
