@@ -65,22 +65,35 @@ import {
 import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../utils/celebrate';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { track } from '../utils/analytics';
-import { xpWithheldMessage } from '../utils/gamificationLevels';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import { intlLocale } from '../i18n/format';
+import { muscleLabel, techniqueLabel } from '../i18n/labels';
 
 const DRAFT_STORAGE_KEY = 'gym_focus_workout_draft';
 // Oltre questa età la bozza è una sessione dimenticata: il backend non usa più start_time da solo
 const DRAFT_STALE_MS = 4 * 60 * 60 * 1000;
 const RETRO_MAX_DAYS = 7;
 
+const XP_WITHHELD_KEYS = {
+  incomplete: 'focus.xp_incomplete',
+  too_short: 'focus.xp_too_short',
+  cooldown: 'focus.xp_cooldown',
+  no_plan: 'focus.xp_no_plan'
+};
+
 const toDateInputValue = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 const FocusWorkout = () => {
-  usePageMeta(
-    'Focus Mode',
-    'Allenamento guidato con timer di recupero, storico "ultima volta" e rilevamento automatico dei record personali.'
-  );
+  const { t } = useTranslation();
+  usePageMeta(t('focus.meta.title'), t('focus.meta.description'));
+
+  const xpWithheldText = (result) => {
+    if (!result || result.xp_session_awarded !== false) return '';
+    const key = XP_WITHHELD_KEYS[result.xp_session_reason];
+    return key ? t(key, { pct: result.completion_pct ?? 0 }) : '';
+  };
   const navigate = useNavigate();
   const { isLoggedIn, loading: authLoading } = useAuth();
   const theme = useTheme();
@@ -254,7 +267,7 @@ const FocusWorkout = () => {
       }
 
       if (!plansRes.ok) {
-        let errorMessage = `Errore caricamento piani (${plansRes.status})`;
+        let errorMessage = i18n.t('focus.error_plans', { status: plansRes.status });
         try {
           const errorData = await plansRes.json();
           errorMessage = errorData.message || errorMessage;
@@ -267,7 +280,7 @@ const FocusWorkout = () => {
       }
       
       if (!userRes.ok) {
-        let errorMessage = `Errore caricamento utente (${userRes.status})`;
+        let errorMessage = i18n.t('focus.error_user', { status: userRes.status });
         try {
           const errorData = await userRes.json();
           errorMessage = errorData.message || errorMessage;
@@ -297,7 +310,7 @@ const FocusWorkout = () => {
             setPhase('select_day');
           }
         } else {
-          setSnackbar({ open: true, message: 'Nessun piano attivo trovato. Attiva un piano dalle Schede.', severity: 'warning' });
+          setSnackbar({ open: true, message: i18n.t('focus.no_active_plan_toast'), severity: 'warning' });
           if (!resuming) {
             setPhase('select_day');
           }
@@ -309,7 +322,7 @@ const FocusWorkout = () => {
       }
     } catch (error) {
       console.error('Errore nel caricamento dati:', error);
-      setSnackbar({ open: true, message: 'Errore nel caricamento dei dati: ' + error.message, severity: 'error' });
+      setSnackbar({ open: true, message: i18n.t('focus.error_load', { message: error.message }), severity: 'error' });
       if (!resuming) {
         setPhase('select_day');
       }
@@ -549,7 +562,7 @@ const FocusWorkout = () => {
       return;
     }
     if (pickerMode === 'swap' && currentSetIndex > 0) {
-      setSnackbar({ open: true, message: "Puoi cambiare l'esercizio solo prima della prima serie", severity: 'info' });
+      setSnackbar({ open: true, message: t('focus.swap_only_first_set'), severity: 'info' });
       return;
     }
     setPicker({ mode: pickerMode, from });
@@ -561,7 +574,7 @@ const FocusWorkout = () => {
       const swapped = swapExercise(exercises, currentExerciseIndex, catalogEx);
       setSelectedDay({ ...selectedDay, exercises: swapped });
       enterExercise(currentExerciseIndex, swapped[currentExerciseIndex]);
-      setSnackbar({ open: true, message: `Ora: ${catalogEx.name}`, severity: 'success' });
+      setSnackbar({ open: true, message: t('focus.swapped_to', { name: catalogEx.name }), severity: 'success' });
     } else {
       const entry = buildSessionEntry(catalogEx, opts);
       const fromSummary = picker.from === 'summary';
@@ -575,7 +588,7 @@ const FocusWorkout = () => {
       } else {
         setSnackbar({
           open: true,
-          message: `${catalogEx.name} aggiunto ${opts.position === 'end' ? 'alla fine' : 'dopo questo esercizio'}`,
+          message: t(opts.position === 'end' ? 'focus.added_end' : 'focus.added_after', { name: catalogEx.name }),
           severity: 'success'
         });
       }
@@ -704,7 +717,7 @@ const FocusWorkout = () => {
       });
 
       if (workoutRecords.length === 0) {
-        setSnackbar({ open: true, message: 'Nessuna serie completata da salvare', severity: 'warning' });
+        setSnackbar({ open: true, message: t('focus.nothing_to_save'), severity: 'warning' });
         setSaving(false);
         return;
       }
@@ -727,14 +740,14 @@ const FocusWorkout = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Errore durante il salvataggio');
+        throw new Error(data.message || t('focus.save_error'));
       }
 
       clearDraft();
       setSavedResult(data);
       // Risposta del primo invio persa: l'allenamento c'era già, nessun XP nuovo da festeggiare
       if (data.already_saved) {
-        setSnackbar({ open: true, message: 'Allenamento già salvato', severity: 'success' });
+        setSnackbar({ open: true, message: t('focus.already_saved'), severity: 'success' });
         return;
       }
       track('workout_saved');
@@ -754,9 +767,9 @@ const FocusWorkout = () => {
       }
 
       const notifyParts = [];
-      if (data.leveled_up) notifyParts.push(`Livello ${data.new_level} raggiunto! 🎉`);
+      if (data.leveled_up) notifyParts.push(t('focus.level_reached', { level: data.new_level }));
       if (data.unlocked_achievements?.length) {
-        notifyParts.push(`Achievement: ${data.unlocked_achievements.map(a => a.label).join(', ')}`);
+        notifyParts.push(t('focus.achievements', { labels: data.unlocked_achievements.map(a => a.label).join(', ') }));
       }
       if (notifyParts.length) {
         setSnackbar({ open: true, message: notifyParts.join(' · '), severity: 'success' });
@@ -764,7 +777,7 @@ const FocusWorkout = () => {
 
     } catch (error) {
       console.error('Errore salvataggio:', error);
-      setSnackbar({ open: true, message: error.message || 'Errore durante il salvataggio', severity: 'error' });
+      setSnackbar({ open: true, message: error.message || t('focus.save_error'), severity: 'error' });
     } finally {
       setSaving(false);
     }
@@ -835,26 +848,26 @@ const FocusWorkout = () => {
           }}>
             <HistoryIcon sx={{ fontSize: 64, color: colors.warning, mb: 2 }} />
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
-              Allenamento in sospeso
+              {t('focus.draft_title')}
             </Typography>
             <Typography variant="body1" sx={{ color: colors.textSecondary, mb: 1 }}>
-              Hai un allenamento non salvato per il giorno:
+              {t('focus.draft_text')}
             </Typography>
             <Typography variant="h6" sx={{ color: colors.primaryLight, fontWeight: 600, mb: 1 }}>
               {draftToResume.selectedDay?.name}
             </Typography>
             <Typography variant="body2" sx={{ color: colors.textMuted, mb: 3 }}>
-              Iniziato il {new Date(draftToResume.startTime).toLocaleString(intlLocale())}
+              {t('focus.draft_started', { date: new Date(draftToResume.startTime).toLocaleString(intlLocale()) })}
             </Typography>
 
             {stale && (
               <Box sx={{ mb: 3, textAlign: 'left' }}>
                 <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 1.5 }}>
-                  L'hai già finito? Scegli il giorno in cui ti sei allenato e salvalo con quella data.
+                  {t('focus.draft_retro_hint')}
                 </Typography>
                 <TextField
                   type="date"
-                  label="Giorno dell'allenamento"
+                  label={t('focus.draft_retro_day')}
                   value={chosenRetro}
                   onChange={(e) => setRetroDateInput(e.target.value)}
                   InputLabelProps={{ shrink: true }}
@@ -869,7 +882,7 @@ const FocusWorkout = () => {
                   onClick={() => handleResumeDraft(chosenRetro)}
                   sx={{ color: colors.primaryLight, borderColor: colors.primary, py: 1.25, fontWeight: 700 }}
                 >
-                  L'avevo già finito
+                  {t('focus.draft_retro_done')}
                 </Button>
               </Box>
             )}
@@ -885,7 +898,7 @@ const FocusWorkout = () => {
                   '&:hover': { bgcolor: colors.primaryDark }
                 }}
               >
-                {stale ? 'Continuo ora' : 'Riprendi Allenamento'}
+                {stale ? t('focus.draft_continue_now') : t('focus.draft_resume')}
               </Button>
               <Button
                 variant="outlined"
@@ -897,7 +910,7 @@ const FocusWorkout = () => {
                   '&:hover': { borderColor: colors.primary, color: colors.primaryLight }
                 }}
               >
-                Scarta e Inizia Nuovo
+                {t('focus.draft_discard')}
               </Button>
             </Box>
           </Paper>
@@ -931,17 +944,17 @@ const FocusWorkout = () => {
               <Box sx={{ textAlign: 'center', py: 6 }}>
                 <FitnessCenterIcon sx={{ fontSize: 64, color: colors.textMuted, mb: 2 }} />
                 <Typography variant="h6" sx={{ color: colors.textSecondary, mb: 2 }}>
-                  Nessun piano attivo
+                  {t('focus.no_plan')}
                 </Typography>
                 <Typography variant="body2" sx={{ color: colors.textMuted, mb: 3 }}>
-                  Vai alle Schede e attiva un piano di allenamento
+                  {t('focus.no_plan_hint')}
                 </Typography>
                 <Button
                   variant="outlined"
                   onClick={() => navigate('/workouts?tab=plans')}
                   sx={{ color: colors.primary, borderColor: colors.primary }}
                 >
-                  Vai alle Schede
+                  {t('focus.go_plans')}
                 </Button>
               </Box>
             ) : (
@@ -951,7 +964,7 @@ const FocusWorkout = () => {
                   border: `1px solid ${colors.border}`
                 }}>
                   <Typography variant="overline" sx={{ color: colors.textMuted, letterSpacing: 2 }}>
-                    Piano attivo
+                    {t('focus.active_plan')}
                   </Typography>
                   <Typography variant="h5" sx={{ color: colors.text, fontWeight: 700, mb: 3 }}>
                     {activePlan.name}
@@ -969,10 +982,10 @@ const FocusWorkout = () => {
                     '& .MuiInputLabel-root.Mui-focused': { color: colors.primary },
                     '& .MuiSvgIcon-root': { color: colors.textSecondary },
                   }}>
-                    <InputLabel>Seleziona Giorno</InputLabel>
+                    <InputLabel>{t('record.select_day')}</InputLabel>
                     <Select
                       value={selectedDayId}
-                      label="Seleziona Giorno"
+                      label={t('record.select_day')}
                       onChange={handleDayChange}
                     >
                       {activePlan.days?.map((day) => (
@@ -984,7 +997,7 @@ const FocusWorkout = () => {
                   {selectedDay && selectedDay.exercises && (
                     <Box>
                       <Typography variant="subtitle2" sx={{ color: colors.textMuted, mb: 1.5, letterSpacing: 1 }}>
-                        ESERCIZI ({selectedDay.exercises.length})
+                        {t('focus.exercises_header', { count: selectedDay.exercises.length })}
                       </Typography>
                       {selectedDay.exercises.map((ex, idx) => (
                         <Box key={ex.id} sx={{
@@ -996,12 +1009,12 @@ const FocusWorkout = () => {
                               {ex.exercise_name}
                             </Typography>
                             <Typography variant="caption" sx={{ color: colors.textMuted }}>
-                              {ex.sets} serie × {ex.reps} — Recupero: {ex.rest}s
-                              {ex.intensity_technique && ` — ${ex.intensity_technique}`}
+                              {t('focus.plan_line', { sets: ex.sets, reps: ex.reps, rest: ex.rest })}
+                              {ex.intensity_technique && ` — ${techniqueLabel(ex.intensity_technique)}`}
                             </Typography>
                           </Box>
                           <Chip
-                            label={ex.muscle_group}
+                            label={muscleLabel(ex.muscle_group)}
                             size="small"
                             sx={{
                               bgcolor: colors.primaryAlpha,
@@ -1032,19 +1045,19 @@ const FocusWorkout = () => {
                     transition: 'all 0.3s ease',
                   }}
                 >
-                  Inizia Allenamento
+                  {t('focus.start')}
                 </Button>
 
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 2, gap: 1 }}>
                   {timerEnabled ? (
                     <>
                       <TimerIcon sx={{ fontSize: 16, color: colors.success }} />
-                      <Typography variant="caption" sx={{ color: colors.textMuted }}>Timer di recupero attivo</Typography>
+                      <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.timer_on')}</Typography>
                     </>
                   ) : (
                     <>
                       <TimerOffIcon sx={{ fontSize: 16, color: colors.textMuted }} />
-                      <Typography variant="caption" sx={{ color: colors.textMuted }}>Timer di recupero disattivato</Typography>
+                      <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.timer_off')}</Typography>
                     </>
                   )}
                 </Box>
@@ -1069,15 +1082,15 @@ const FocusWorkout = () => {
               sx={{ color: colors.border, position: 'absolute', left: 0, zIndex: 0 }} />
             <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
               <Typography variant="h2" sx={{ fontWeight: 700, fontFamily: 'monospace', color: colors.text }}>{formatTime(timerRemaining)}</Typography>
-              <Typography variant="caption" sx={{ color: colors.textMuted, mt: 0.5 }}>RECUPERO</Typography>
+              <Typography variant="caption" sx={{ color: colors.textMuted, mt: 0.5 }}>{t('focus.rest_caps')}</Typography>
             </Box>
           </Box>
           <Typography variant="body1" sx={{ color: colors.textSecondary, mb: 1 }}>{currentExercise?.exercise_name}</Typography>
-          <Typography variant="body2" sx={{ color: colors.textMuted, mb: 4 }}>Prossima: Serie {currentSetIndex + 1} di {totalSetsForCurrentExercise}</Typography>
+          <Typography variant="body2" sx={{ color: colors.textMuted, mb: 4 }}>{t('focus.next_set', { n: currentSetIndex + 1, total: totalSetsForCurrentExercise })}</Typography>
           <Button variant="outlined" size="large" startIcon={<SkipNextIcon />} onClick={handleSkipTimer}
             sx={{ color: colors.text, borderColor: colors.border, borderRadius: '12px', px: 4, py: 1.5, fontSize: '1rem',
               '&:hover': { borderColor: colors.primary, bgcolor: colors.timerBg } }}>
-            Salta Timer
+            {t('focus.skip_timer')}
           </Button>
         </Box>
       );
@@ -1101,7 +1114,7 @@ const FocusWorkout = () => {
           <Fade in={exerciseTransition} timeout={300}>
             <Container maxWidth="sm" sx={{ py: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
               <Box sx={{ textAlign: 'center', mb: 3 }}>
-                <Chip label={currentExercise.muscle_group} size="small" sx={{ bgcolor: colors.primaryAlpha, color: colors.primaryLight, mb: 1, fontWeight: 500 }} />
+                <Chip label={muscleLabel(currentExercise.muscle_group)} size="small" sx={{ bgcolor: colors.primaryAlpha, color: colors.primaryLight, mb: 1, fontWeight: 500 }} />
                 <Typography variant="h4" sx={{ fontWeight: 700, color: colors.text, lineHeight: 1.2 }}>{currentExercise.exercise_name}</Typography>
                 {currentExercise.notes && (
                   <Alert severity="info" icon={<InfoIcon sx={{ color: colors.primaryLight }} />}
@@ -1115,7 +1128,7 @@ const FocusWorkout = () => {
                 {Array.from({ length: Number(totalSetsForCurrentExercise) || 0 }, (_, idx) => {
                   const status = setStatus(idx, currentSetIndex, currentSkippedSets);
                   return (
-                    <Box key={idx} title={status === 'skipped' ? 'Serie saltata' : undefined} sx={{
+                    <Box key={idx} title={status === 'skipped' ? t('focus.set_skipped') : undefined} sx={{
                       width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                       border: `2px ${status === 'skipped' ? 'dashed' : 'solid'} ${status === 'done' ? colors.success : status === 'active' ? colors.primary : colors.border}`,
                       bgcolor: status === 'done' ? colors.success : status === 'skipped' ? colors.bgElevated : 'transparent',
@@ -1143,7 +1156,7 @@ const FocusWorkout = () => {
                     <HistoryIcon sx={{ fontSize: 18, color: colors.textMuted, mt: 0.25 }} />
                     <Box sx={{ minWidth: 0 }}>
                       <Typography variant="caption" sx={{ color: colors.textMuted, letterSpacing: 0.5 }}>
-                        ULTIMA VOLTA
+                        {t('focus.last_time')}
                       </Typography>
                       {/* Una chip per serie, con la tecnica sotto; evidenziata quella pari alla serie in corso */}
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 0.5 }}>
@@ -1159,7 +1172,7 @@ const FocusWorkout = () => {
                               </Typography>
                               {set.technique && (
                                 <Typography variant="caption" sx={{ color: colors.primaryLight, display: 'block', lineHeight: 1.2, fontWeight: 600 }}>
-                                  {set.technique}
+                                  {techniqueLabel(set.technique)}
                                 </Typography>
                               )}
                             </Box>
@@ -1172,11 +1185,11 @@ const FocusWorkout = () => {
               })()}
 
               <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                <TextField label="Peso (kg)" type="number" value={weightInput} onChange={(e) => setWeightInput(e.target.value)}
+                <TextField label={t('record.weight')} type="number" value={weightInput} onChange={(e) => setWeightInput(e.target.value)}
                   fullWidth autoFocus inputProps={{ step: 0.5, min: 0, max: MAX_WEIGHT, inputMode: 'decimal' }}
                   sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.primary }, '&.Mui-focused fieldset': { borderColor: colors.primary } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.primary } }} />
                 {/* Vuoto a ogni serie: la scheda in grigio è solo un suggerimento, va scritta */}
-                <TextField label="Ripetizioni" value={repsInput} onChange={(e) => setRepsInput(e.target.value)}
+                <TextField label={t('record.reps')} value={repsInput} onChange={(e) => setRepsInput(e.target.value)}
                   placeholder={planRepsForSet(currentExercise.reps, currentSetIndex)} InputLabelProps={{ shrink: true }}
                   onFocus={(e) => e.target.select()}
                   fullWidth inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
@@ -1195,15 +1208,15 @@ const FocusWorkout = () => {
                 '& .MuiInputLabel-root.Mui-focused': { color: colors.primary },
                 '& .MuiSvgIcon-root': { color: colors.textSecondary },
               }}>
-                <InputLabel>Tecnica di Intensità</InputLabel>
+                <InputLabel>{t('focus.technique')}</InputLabel>
                 <Select
                   value={intensityTechniqueInput}
-                  label="Tecnica di Intensità"
+                  label={t('focus.technique')}
                   onChange={(e) => setIntensityTechniqueInput(e.target.value)}
                 >
-                  <MenuItem value=""><em>Nessuna</em></MenuItem>
-                  {INTENSITY_TECHNIQUES.filter(t => t !== 'Nessuna (Normale)').map((tech) => (
-                    <MenuItem key={tech} value={tech}>{tech}</MenuItem>
+                  <MenuItem value=""><em>{t('record.no_technique')}</em></MenuItem>
+                  {INTENSITY_TECHNIQUES.filter(tech => tech !== 'Nessuna (Normale)').map((tech) => (
+                    <MenuItem key={tech} value={tech}>{techniqueLabel(tech)}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
@@ -1212,7 +1225,7 @@ const FocusWorkout = () => {
                 sx={{ py: 2.5, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.success, color: '#fff', borderRadius: '14px',
                   boxShadow: '0 4px 16px rgba(76, 175, 80, 0.3)', '&:hover': { bgcolor: 'success.dark', boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)' },
                   '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted }, mb: 2, transition: 'all 0.3s ease' }}>
-                Conferma Serie
+                {t('focus.confirm_set')}
               </Button>
 
               <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
@@ -1220,26 +1233,26 @@ const FocusWorkout = () => {
                 {currentSetIndex > 0 && (
                   <Button variant="text" fullWidth startIcon={<SkipNextIcon />} onClick={handleSkipSet}
                     sx={{ py: 1.5, color: colors.textMuted, '&:hover': { color: colors.textSecondary, bgcolor: 'rgba(255,255,255,0.05)' } }}>
-                    Salta Serie
+                    {t('focus.skip_set')}
                   </Button>
                 )}
                 <Button variant="text" fullWidth startIcon={<SkipNextIcon />} onClick={handleSkipExercise}
                   sx={{ py: 1.5, color: colors.textMuted, '&:hover': { color: colors.textSecondary, bgcolor: 'rgba(255,255,255,0.05)' } }}>
-                  Salta Esercizio
+                  {t('focus.skip_exercise')}
                 </Button>
               </Box>
 
               <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
                 {[
-                  { mode: 'swap', label: 'Cambia', icon: <SwapIcon /> },
-                  { mode: 'add', label: 'Aggiungi', icon: <AddIcon /> },
+                  { mode: 'swap', label: t('focus.swap_exercise'), icon: <SwapIcon /> },
+                  { mode: 'add', label: t('focus.add_exercise'), icon: <AddIcon /> },
                 ].map(({ mode: pickerMode, label, icon }) => (
                   <Button key={pickerMode} variant="outlined" fullWidth startIcon={icon}
                     endIcon={canEditSession ? null : <LockIcon sx={{ fontSize: '16px !important' }} />}
                     onClick={() => openPicker(pickerMode)}
                     sx={{ py: 1.25, opacity: pickerMode === 'swap' && currentSetIndex > 0 ? 0.45 : 1, color: colors.textSecondary, borderColor: colors.border, borderRadius: '12px',
                       '&:hover': { borderColor: colors.primary, color: colors.primaryLight } }}>
-                    {label} esercizio
+                    {label}
                   </Button>
                 ))}
               </Box>
@@ -1247,18 +1260,18 @@ const FocusWorkout = () => {
               {currentExerciseSets.length > 0 && (
                 <Paper sx={{ bgcolor: colors.bgCard, overflow: 'hidden', border: `1px solid ${colors.border}` }}>
                   <Box sx={{ px: 2, py: 1.5, bgcolor: colors.bgElevated }}>
-                    <Typography variant="subtitle2" sx={{ color: colors.textMuted, letterSpacing: 1 }}>SERIE COMPLETATE</Typography>
+                    <Typography variant="subtitle2" sx={{ color: colors.textMuted, letterSpacing: 1 }}>{t('focus.sets_done')}</Typography>
                   </Box>
                   {currentExerciseSets.map((set, idx) => (
                     <Box key={set.setNumber} sx={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                       px: 2, py: 1.25, borderTop: idx > 0 ? `1px solid ${colors.border}` : 'none',
                     }}>
-                      <Typography variant="body2" sx={{ color: colors.textMuted }}>Serie {set.setNumber}</Typography>
+                      <Typography variant="body2" sx={{ color: colors.textMuted }}>{t('focus.set_n', { n: set.setNumber })}</Typography>
                       <Box sx={{ textAlign: 'right' }}>
                         <Typography variant="body2" sx={{ color: colors.text, fontWeight: 600 }}>{set.weight} kg × {set.reps}</Typography>
                         {set.intensity_technique && (
-                          <Typography variant="caption" sx={{ color: colors.textMuted, display: 'block' }}>{set.intensity_technique}</Typography>
+                          <Typography variant="caption" sx={{ color: colors.textMuted, display: 'block' }}>{techniqueLabel(set.intensity_technique)}</Typography>
                         )}
                       </Box>
                     </Box>
@@ -1270,22 +1283,22 @@ const FocusWorkout = () => {
 
           <Dialog open={confirmQuitDialog} onClose={() => setConfirmQuitDialog(false)}
             PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: '16px' } }}>
-            <DialogTitle sx={{ color: colors.text }}>Interrompere l'allenamento?</DialogTitle>
+            <DialogTitle sx={{ color: colors.text }}>{t('focus.quit_title')}</DialogTitle>
             <DialogContent>
-              <DialogContentText sx={{ color: colors.textSecondary }}>Hai completato {getTotalCompletedSets()} serie. I dati non salvati andranno persi.</DialogContentText>
+              <DialogContentText sx={{ color: colors.textSecondary }}>{t('focus.quit_text', { count: getTotalCompletedSets() })}</DialogContentText>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setConfirmQuitDialog(false)} sx={{ color: colors.textSecondary }}>Continua</Button>
-              <Button onClick={confirmQuit} sx={{ color: colors.primary }}>Esci</Button>
+              <Button onClick={() => setConfirmQuitDialog(false)} sx={{ color: colors.textSecondary }}>{t('focus.quit_continue')}</Button>
+              <Button onClick={confirmQuit} sx={{ color: colors.primary }}>{t('focus.quit_exit')}</Button>
             </DialogActions>
           </Dialog>
 
           <Dialog open={repsConfirmDialog} onClose={() => setRepsConfirmDialog(false)}
             PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: '16px' } }}>
-            <DialogTitle sx={{ color: colors.text }}>Confermi {parseInt(repsInput, 10)} ripetizioni?</DialogTitle>
+            <DialogTitle sx={{ color: colors.text }}>{t('record.confirm_reps', { reps: parseInt(repsInput, 10) })}</DialogTitle>
             <DialogActions>
-              <Button onClick={() => setRepsConfirmDialog(false)} sx={{ color: colors.textSecondary }}>Correggi</Button>
-              <Button onClick={recordSet} sx={{ color: colors.primary }}>Sì, confermo</Button>
+              <Button onClick={() => setRepsConfirmDialog(false)} sx={{ color: colors.textSecondary }}>{t('record.fix')}</Button>
+              <Button onClick={recordSet} sx={{ color: colors.primary }}>{t('record.confirm_yes')}</Button>
             </DialogActions>
           </Dialog>
         </Box>
@@ -1299,32 +1312,32 @@ const FocusWorkout = () => {
         <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text }}>
           <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1, borderBottom: `1px solid ${colors.border}` }}>
             <IconButton onClick={handleQuit} sx={{ color: colors.textSecondary }}><ArrowBackIcon /></IconButton>
-            <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: 1 }}>RIEPILOGO</Typography>
+            <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: 1 }}>{t('focus.summary_caps')}</Typography>
           </Box>
 
           <Container maxWidth="sm" sx={{ py: 3 }}>
             <Box sx={{ textAlign: 'center', mb: 4 }}>
               <TrophyIcon sx={{ fontSize: 56, color: colors.warning, mb: 1 }} />
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>Allenamento Completato!</Typography>
+              <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>{t('focus.completed')}</Typography>
               <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mt: 2 }}>
                 <Box sx={{ textAlign: 'center' }}>
                   <Typography variant="h4" sx={{ fontWeight: 700, color: colors.primary }}>{exercisesCompleted}</Typography>
-                  <Typography variant="caption" sx={{ color: colors.textMuted }}>ESERCIZI</Typography>
+                  <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.exercises_caps')}</Typography>
                 </Box>
                 <Box sx={{ textAlign: 'center' }}>
                   <Typography variant="h4" sx={{ fontWeight: 700, color: colors.primary }}>{totalSets}</Typography>
-                  <Typography variant="caption" sx={{ color: colors.textMuted }}>SERIE</Typography>
+                  <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.sets_caps')}</Typography>
                 </Box>
                 <Box sx={{ textAlign: 'center' }}>
                   <Typography variant="h4" sx={{ fontWeight: 700, color: colors.primary, fontFamily: 'monospace' }}>{getElapsedTime()}</Typography>
-                  <Typography variant="caption" sx={{ color: colors.textMuted }}>DURATA</Typography>
+                  <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.duration_caps')}</Typography>
                 </Box>
               </Box>
             </Box>
 
             <Paper sx={{ bgcolor: colors.bgCard, overflow: 'hidden', mb: 3, border: `1px solid ${colors.border}` }}>
               <Box sx={{ px: 2, py: 1.5, bgcolor: colors.bgElevated }}>
-                <Typography variant="subtitle2" sx={{ color: colors.textMuted, letterSpacing: 1 }}>DETTAGLIO ESERCIZI</Typography>
+                <Typography variant="subtitle2" sx={{ color: colors.textMuted, letterSpacing: 1 }}>{t('focus.detail_caps')}</Typography>
               </Box>
               {selectedDay?.exercises?.map((exercise) => {
                 const sets = completedSets[exercise.id];
@@ -1332,21 +1345,21 @@ const FocusWorkout = () => {
                 // Confronto con lo storico PRIMA di questa sessione → record personali
                 const pr = detectPersonalRecords(sets, historyIndex[exercise.exercise_id]);
                 const prParts = [];
-                if (pr.weight) prParts.push('peso');
-                if (pr.oneRM) prParts.push('1RM');
-                if (pr.volume) prParts.push('volume');
-                if (pr.reps) prParts.push('ripetizioni');
+                if (pr.weight) prParts.push(t('focus.pr_weight'));
+                if (pr.oneRM) prParts.push(t('focus.pr_1rm'));
+                if (pr.volume) prParts.push(t('focus.pr_volume'));
+                if (pr.reps) prParts.push(t('focus.pr_reps'));
                 return (
                   <Box key={exercise.id} sx={{ px: 2, py: 2, borderBottom: `1px solid ${colors.border}` }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, mb: 1 }}>
                       <Typography variant="subtitle1" sx={{ fontWeight: 600, color: colors.text }}>{exercise.exercise_name}</Typography>
                       {exercise.replaces && (
-                        <Typography variant="caption" sx={{ color: colors.textMuted }}>al posto di {exercise.replaces}</Typography>
+                        <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.replaces', { name: exercise.replaces })}</Typography>
                       )}
                       {pr.isPR && (
                         <Chip
                           icon={<TrophyIcon sx={{ fontSize: 16, color: `${colors.warning} !important` }} />}
-                          label={`Nuovo record${prParts.length ? ` (${prParts.join(', ')})` : ''}`}
+                          label={prParts.length ? t('focus.new_record_parts', { parts: prParts.join(', ') }) : t('focus.new_record')}
                           size="small"
                           sx={{ bgcolor: 'rgba(255, 167, 38, 0.15)', color: colors.warning, fontWeight: 700, fontSize: '0.7rem' }}
                         />
@@ -1358,7 +1371,7 @@ const FocusWorkout = () => {
                           bgcolor: colors.bgElevated, borderRadius: '6px', px: 1.125, py: 0.625,
                           fontSize: 12, fontWeight: 600, color: colors.textSecondary,
                         }}>
-                          {set.weight}kg×{set.reps}{set.intensity_technique ? ` · ${set.intensity_technique}` : ''}
+                          {set.weight}kg×{set.reps}{set.intensity_technique ? ` · ${techniqueLabel(set.intensity_technique)}` : ''}
                         </Box>
                       ))}
                     </Box>
@@ -1379,20 +1392,20 @@ const FocusWorkout = () => {
                     <FireIcon sx={{ fontSize: 40, color: colors.primary, mb: 0.5 }} />
                     <Typography variant="h6" sx={{ fontWeight: 700, color: colors.primary }}>
                       {savedResult.new_longest
-                        ? `Nuovo record! 🏆 ${savedResult.current_streak_weeks} settimane consecutive`
+                        ? t('focus.streak_new_longest', { weeks: savedResult.current_streak_weeks })
                         : savedResult.streak_milestone && savedResult.current_streak_weeks > 1
-                          ? `${savedResult.current_streak_weeks} settimane di fila! 🔥`
-                          : 'Settimana completata! 🔥'}
+                          ? t('focus.streak_milestone', { weeks: savedResult.current_streak_weeks })
+                          : t('focus.week_completed')}
                     </Typography>
                     <Typography variant="body2" sx={{ color: colors.textSecondary, mt: 0.5 }}>
-                      Streak: {savedResult.current_streak_weeks} {savedResult.current_streak_weeks === 1 ? 'settimana' : 'settimane'}
+                      {t('focus.streak_line', { count: savedResult.current_streak_weeks })}
                     </Typography>
                   </Paper>
                 )}
 
-                {xpWithheldMessage(savedResult) && (
+                {xpWithheldText(savedResult) && (
                   <Typography variant="body2" sx={{ color: colors.textSecondary, textAlign: 'center', mb: 2 }}>
-                    {xpWithheldMessage(savedResult)}
+                    {xpWithheldText(savedResult)}
                   </Typography>
                 )}
 
@@ -1427,22 +1440,22 @@ const FocusWorkout = () => {
                   return (
                     <Paper sx={{ bgcolor: colors.bgCard, border: `1px solid ${colors.border}`, p: 2.5, mb: 3 }}>
                       <Typography variant="subtitle2" sx={{ color: colors.textMuted, mb: 1.5, letterSpacing: 1 }}>
-                        RIEPILOGO SESSIONE
+                        {t('focus.session_summary_caps')}
                       </Typography>
                       <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 0.5 }}>
                         {activePlan?.name}{selectedDay?.name ? ` · ${selectedDay.name}` : ''}
                       </Typography>
                       <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 0.5 }}>
-                        ⏱ {getElapsedTime()} · {exercisesCompleted} esercizi · {totalSets} serie
+                        ⏱ {getElapsedTime()} · {t('focus.exercises_count', { count: exercisesCompleted })} · {t('focus.sets_count', { count: totalSets })}
                       </Typography>
                       {prList.length > 0 && (
                         <Typography variant="body2" sx={{ color: colors.warning, mb: 0.5 }}>
-                          🏆 Nuovi record: {prList.join(', ')}
+                          {t('focus.new_records', { list: prList.join(', ') })}
                         </Typography>
                       )}
                       {savedResult.current_streak_weeks > 0 && (
                         <Typography variant="body2" sx={{ color: colors.primary }}>
-                          🔥 Streak: {savedResult.current_streak_weeks} settimane
+                          🔥 {t('focus.streak_line_plain', { count: savedResult.current_streak_weeks })}
                         </Typography>
                       )}
                       <Button
@@ -1451,7 +1464,7 @@ const FocusWorkout = () => {
                         onClick={handleShare}
                         sx={{ mt: 2, borderColor: colors.border, color: colors.textSecondary }}
                       >
-                        Condividi
+                        {t('focus.share')}
                       </Button>
                     </Paper>
                   );
@@ -1462,11 +1475,11 @@ const FocusWorkout = () => {
                   onClick={() => navigate('/workouts?tab=history', { state: { refreshHistory: Date.now() } })}
                   sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.primary, color: '#fff', borderRadius: '14px', mb: 2 }}
                 >
-                  Vai alla Cronologia
+                  {t('focus.go_history')}
                 </Button>
 
                 <Button variant="text" fullWidth onClick={() => navigate('/')} sx={{ color: colors.textMuted, py: 1.5 }}>
-                  Torna alla Home
+                  {t('focus.go_home')}
                 </Button>
 
                 <ShareCardDialog open={!!shareStats} stats={shareStats} onClose={() => setShareStats(null)} />
@@ -1479,11 +1492,11 @@ const FocusWorkout = () => {
                   onClick={() => openPicker('add', 'summary')}
                   sx={{ py: 1.25, mb: 3, color: colors.textSecondary, borderColor: colors.border, borderRadius: '12px',
                     '&:hover': { borderColor: colors.primary, color: colors.primaryLight } }}>
-                  Aggiungi esercizio
+                  {t('focus.add_exercise')}
                 </Button>
 
-                <TextField label="Note sull'allenamento (opzionale)" multiline rows={3} value={workoutNotes}
-                  onChange={(e) => setWorkoutNotes(e.target.value)} fullWidth placeholder="Come ti sei sentito? Qualcosa da ricordare?"
+                <TextField label={t('focus.notes_label')} multiline rows={3} value={workoutNotes}
+                  onChange={(e) => setWorkoutNotes(e.target.value)} fullWidth placeholder={t('focus.notes_placeholder')}
                   sx={{ mb: 3, '& .MuiOutlinedInput-root': { color: colors.text, '& fieldset': { borderColor: colors.border }, '&:hover fieldset': { borderColor: colors.primary }, '&.Mui-focused fieldset': { borderColor: colors.primary } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.primary } }} />
 
                 <Button variant="contained" fullWidth size="large"
@@ -1492,23 +1505,23 @@ const FocusWorkout = () => {
                   sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.primary, color: '#fff', borderRadius: '14px',
                     boxShadow: isDarkMode ? '0 4px 20px rgba(0, 0, 0, 0.4)' : '0 4px 20px rgba(213, 0, 0, 0.2)', '&:hover': { bgcolor: colors.primaryDark },
                     '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted }, mb: 2 }}>
-                  {saving ? 'Salvataggio...' : 'Salva Allenamento'}
+                  {saving ? t('focus.saving') : t('focus.save')}
                 </Button>
 
-                <Button variant="text" fullWidth onClick={handleQuit} disabled={saving} sx={{ color: colors.textMuted, py: 1.5 }}>Annulla</Button>
+                <Button variant="text" fullWidth onClick={handleQuit} disabled={saving} sx={{ color: colors.textMuted, py: 1.5 }}>{t('common.cancel')}</Button>
               </>
             )}
           </Container>
 
           <Dialog open={confirmQuitDialog} onClose={() => setConfirmQuitDialog(false)}
             PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: '16px' } }}>
-            <DialogTitle sx={{ color: colors.text }}>Scartare l'allenamento?</DialogTitle>
+            <DialogTitle sx={{ color: colors.text }}>{t('focus.discard_title')}</DialogTitle>
             <DialogContent>
-              <DialogContentText sx={{ color: colors.textSecondary }}>Hai completato {getTotalCompletedSets()} serie. I dati non verranno salvati.</DialogContentText>
+              <DialogContentText sx={{ color: colors.textSecondary }}>{t('focus.discard_text', { count: getTotalCompletedSets() })}</DialogContentText>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setConfirmQuitDialog(false)} sx={{ color: colors.textSecondary }}>Rimani</Button>
-              <Button onClick={confirmQuit} sx={{ color: colors.primary }}>Scarta ed Esci</Button>
+              <Button onClick={() => setConfirmQuitDialog(false)} sx={{ color: colors.textSecondary }}>{t('focus.discard_stay')}</Button>
+              <Button onClick={confirmQuit} sx={{ color: colors.primary }}>{t('focus.discard_exit')}</Button>
             </DialogActions>
           </Dialog>
         </Box>
@@ -1553,17 +1566,15 @@ const FocusWorkout = () => {
       <Dialog open={premiumDialog} onClose={() => setPremiumDialog(false)}
         PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: '16px' } }}>
         <DialogTitle sx={{ color: colors.text, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <LockIcon sx={{ color: colors.warning }} /> Funzione Premium
+          <LockIcon sx={{ color: colors.warning }} /> {t('focus.premium_title')}
         </DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ color: colors.textSecondary }}>
-            Con Premium puoi cambiare un esercizio al volo (es. cavi occupati, passi ai manubri) o aggiungerne
-            uno durante l'allenamento, anche per recuperare quello che hai saltato l'ultima volta.
-            Nel frattempo puoi aggiungere l'esercizio alla tua scheda dalla sezione Schede.
+            {t('focus.premium_body')}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setPremiumDialog(false)} sx={{ color: colors.primary }}>Ho capito</Button>
+          <Button onClick={() => setPremiumDialog(false)} sx={{ color: colors.primary }}>{t('focus.premium_ok')}</Button>
         </DialogActions>
       </Dialog>
       <Snackbar
