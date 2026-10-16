@@ -3,6 +3,7 @@
   "homepage": "/",
   "version": "2.0.0",
   "private": true,
+  "type": "module",
   "license": "SEE LICENSE IN LICENSE.md",
   "dependencies": {
     "@emotion/react": "^11.11.1",
