@@ -179,19 +179,19 @@ function api_json_response($payload, $status_code = 200)
     exit;
 }
 
-function api_not_found($message = 'Risorsa non trovata.')
+function api_not_found($message = null)
 {
     api_json_response([
         'success' => false,
-        'message' => $message
+        'message' => $message ?? t_server('common.not_found')
     ], 404);
 }
 
-function api_server_error($message = 'Errore interno del server.')
+function api_server_error($message = null)
 {
     api_json_response([
         'success' => false,
-        'message' => $message
+        'message' => $message ?? t_server('common.server_error')
     ], 500);
 }
 
@@ -327,7 +327,7 @@ function require_group_member($db, $group_id, $user_id)
 {
     $membership = group_membership($db, $group_id, $user_id);
     if (!$membership) {
-        api_error(404, 'group_not_found', 'Gruppo non trovato.');
+        api_error(404, 'group_not_found', t_server('groups.not_found'));
     }
     return $membership;
 }
@@ -337,7 +337,7 @@ function require_group_role($db, $group_id, $user_id, array $roles)
 {
     $membership = require_group_member($db, $group_id, $user_id);
     if (!in_array($membership['role'], $roles, true)) {
-        api_error(403, 'forbidden', 'Non hai i permessi per questa azione.');
+        api_error(403, 'forbidden', t_server('common.forbidden'));
     }
     return $membership;
 }
@@ -373,10 +373,10 @@ function require_group_age($db, $user_id)
     $birth_date = $stmt->fetchColumn();
     $birth = $birth_date ? DateTime::createFromFormat('!Y-m-d', $birth_date) : false;
     if (!$birth) {
-        api_error(403, 'birth_date_required', 'Per usare i gruppi inserisci la data di nascita nelle impostazioni.');
+        api_error(403, 'birth_date_required', t_server('groups.birth_required'));
     }
     if ($birth->diff(new DateTime('today'))->y < GROUPS_MIN_AGE) {
-        api_error(403, 'age_restricted', 'I gruppi sono disponibili dai ' . GROUPS_MIN_AGE . ' anni in su.');
+        api_error(403, 'age_restricted', t_server('groups.min_age', array('age' => GROUPS_MIN_AGE)));
     }
 }
 
@@ -388,7 +388,7 @@ function group_member_ref($group_id, $user_id)
     $secret = getenv('GYM_API_SECRET');
     if (!$secret) {
         error_log('group_member_ref: GYM_API_SECRET non impostata');
-        api_error(500, 'server_misconfigured', 'Configurazione del server incompleta.');
+        api_error(500, 'server_misconfigured', t_server('common.misconfigured'));
     }
     return substr(hash_hmac('sha256', 'group-member:' . $group_id . ':' . $user_id, $secret), 0, 20);
 }
@@ -401,7 +401,7 @@ function enforce_rate_limit($db, $rule, $key)
     if ($limiter->tooManyAttempts($key, $max)) {
         $retry_after = $limiter->availableIn($key);
         header('Retry-After: ' . $retry_after);
-        api_error(429, 'rate_limited', 'Troppi tentativi. Riprova tra ' . $retry_after . ' secondi.');
+        api_error(429, 'rate_limited', t_server('common.rate_limited', array('seconds' => $retry_after)));
     }
     $limiter->hit($key, $decay);
 }

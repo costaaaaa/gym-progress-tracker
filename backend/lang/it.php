@@ -70,4 +70,15 @@ return array(
     'account.wrong_password' => "Password non corretta. Impossibile eliminare l'account.",
     'consent.not_revocable' => "Questo consenso non si può revocare: per ritirarlo elimina l'account.",
     'consent.error' => "Errore durante l'operazione.",
+
+    // Messaggi comuni
+    'common.not_found' => 'Risorsa non trovata.',
+    'common.not_authenticated' => 'Utente non autenticato',
+    'common.user_not_found' => 'Utente non trovato',
+    'common.forbidden' => 'Non hai i permessi per questa azione.',
+    'common.misconfigured' => 'Configurazione del server incompleta.',
+    'common.rate_limited' => 'Troppi tentativi. Riprova tra {seconds} secondi.',
+    'groups.not_found' => 'Gruppo non trovato.',
+    'groups.birth_required' => 'Per usare i gruppi inserisci la data di nascita nelle impostazioni.',
+    'groups.min_age' => 'I gruppi sono disponibili dai {age} anni in su.',
 );

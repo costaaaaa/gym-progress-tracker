@@ -88,6 +88,10 @@ expect "cambio password errato, account inglese con X-Locale: it" .message "The 
 expect "cambio password errato, account italiano con X-Locale: en" .message "La password attuale non è corretta." \
     "$(call POST api/user/change_password.php en "$IT" "$WRONG_PW")"
 
+echo "Messaggi degli endpoint, account inglese"
+expect "404 comune (default di api_not_found)" .message "Resource not found." \
+    "$(call POST api/workout/activate_plan.php "" "$EN" '{"plan_id":99999999}')"
+
 echo "Email di reset"
 expect "richiesta reset, X-Locale: en" .success true "$(call POST api/user/forgot_password.php en "" "{\"email\":\"$EN_USER@example.com\"}")"
 echo "  → con MAIL_DRIVER=log: oggetto \"Reset your password\" e link /en/reset-password per $EN_USER@example.com nei log PHP"

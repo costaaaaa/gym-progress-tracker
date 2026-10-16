@@ -70,4 +70,15 @@ return array(
     'account.wrong_password' => 'Incorrect password. The account cannot be deleted.',
     'consent.not_revocable' => 'This consent cannot be withdrawn: delete your account to withdraw it.',
     'consent.error' => 'Error while performing the operation.',
+
+    // Messaggi comuni
+    'common.not_found' => 'Resource not found.',
+    'common.not_authenticated' => 'Not signed in.',
+    'common.user_not_found' => 'User not found.',
+    'common.forbidden' => "You don't have permission to do this.",
+    'common.misconfigured' => 'Server configuration is incomplete.',
+    'common.rate_limited' => 'Too many attempts. Try again in {seconds} seconds.',
+    'groups.not_found' => 'Group not found.',
+    'groups.birth_required' => 'To use groups, add your date of birth in settings.',
+    'groups.min_age' => 'Groups are available from age {age}.',
 );
