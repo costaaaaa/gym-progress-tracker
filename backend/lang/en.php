@@ -140,6 +140,12 @@ return array(
     'groups.consent_required' => 'To join the group, you need to accept what the other members will see.',
     'groups.full' => 'The group has reached its maximum number of members.',
 
+    'report.target_invalid' => 'Choose what to report: the group name or a member.',
+    'report.reason_invalid' => 'Explain the reason in {min}-{max} characters.',
+    'report.good_faith_required' => 'Confirm that the report is made in good faith.',
+    'report.member_invalid' => 'This username is not a member of the group.',
+    'report.self' => 'You cannot report yourself.',
+
     // Misure corporee
     'stats.consent_required' => 'Saving body measurements requires your consent.',
     'stats.date_invalid' => 'Invalid date.',

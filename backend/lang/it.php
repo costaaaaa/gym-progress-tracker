@@ -140,6 +140,12 @@ return array(
     'groups.consent_required' => 'Per entrare nel gruppo devi accettare cosa vedranno gli altri membri.',
     'groups.full' => 'Il gruppo ha raggiunto il numero massimo di membri.',
 
+    'report.target_invalid' => 'Scegli cosa segnalare: il nome del gruppo o un membro.',
+    'report.reason_invalid' => 'Spiega il motivo in {min}-{max} caratteri.',
+    'report.good_faith_required' => 'Conferma che la segnalazione è fatta in buona fede.',
+    'report.member_invalid' => 'Questo nome utente non è tra i membri del gruppo.',
+    'report.self' => 'Non puoi segnalare te stesso.',
+
     // Misure corporee
     'stats.consent_required' => 'Per salvare le misure corporee serve il tuo consenso.',
     'stats.date_invalid' => 'Data non valida.',

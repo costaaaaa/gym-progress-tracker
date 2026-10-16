@@ -125,6 +125,8 @@ function rate_limit_rule($name)
         'group_create_user' => [(int)(getenv('RL_GROUP_CREATE_USER_MAX') ?: 5),  (int)(getenv('RL_GROUP_CREATE_USER_DECAY') ?: 3600)],
         // esercizi personali: creazione per utente (anti spam nella coda di approvazione)
         'exercise_create_user' => [(int)(getenv('RL_EXERCISE_CREATE_USER_MAX') ?: 10), (int)(getenv('RL_EXERCISE_CREATE_USER_DECAY') ?: 3600)],
+        // segnalazioni dei contenuti nei gruppi: per utente (anti spam di segnalazioni e di email)
+        'report_user' => [(int)(getenv('RL_REPORT_USER_MAX') ?: 5), (int)(getenv('RL_REPORT_USER_DECAY') ?: 3600)],
     ];
     return $rules[$name];
 }

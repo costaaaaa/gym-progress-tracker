@@ -176,6 +176,19 @@ class Group
         return $out;
     }
 
+    // Membro del gruppo con questo username ({user_id, username}), o null
+    public function memberByUsername($group_id, $username)
+    {
+        if (!is_string($username) || $username === '') return null;
+        $stmt = $this->conn->prepare(
+            "SELECT m.user_id, u.username FROM gym_group_members m JOIN gym_users u ON u.id = m.user_id
+             WHERE m.group_id = ? AND u.username = ? LIMIT 1"
+        );
+        $stmt->execute([(int)$group_id, $username]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
     // user_id del membro che corrisponde al riferimento opaco, o null
     public function memberByRef($group_id, $ref)
     {
