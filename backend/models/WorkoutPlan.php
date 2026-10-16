@@ -174,28 +174,6 @@ class WorkoutPlan
         return false;
     }
 
-    // Set active workout plan
-    public function setActive()
-    {
-        // First, set all plans to inactive
-        $query = "UPDATE " . $this->table_name . " SET is_active = 0 WHERE user_id = :user_id";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":user_id", $this->user_id);
-        $stmt->execute();
-
-        // Then set the selected plan to active
-        $query = "UPDATE " . $this->table_name . " SET is_active = 1 WHERE id = :id AND user_id = :user_id";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":id", $this->id);
-        $stmt->bindParam(":user_id", $this->user_id);
-
-        if ($stmt->execute()) {
-            return true;
-        }
-
-        return false;
-    }
-
     // Get active workout plan
     public function getActive()
     {
