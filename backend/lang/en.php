@@ -172,4 +172,14 @@ return array(
     'history.date_updated' => 'Workout date updated.',
     'history.none_found' => 'No workouts found.',
     'history.date_incomplete' => 'Incomplete data. Specify the workout ID and the new date.',
+
+    // Esercizi, gamification, statistiche, utente
+    'exercise.name_invalid' => "The name must be 2 to 60 characters (letters, numbers and simple punctuation) and can't contain links.",
+    'exercise.muscle_invalid' => 'Invalid muscle group.',
+    'exercise.exists' => 'An exercise with this name already exists.',
+    'exercise.too_many' => 'You already have {max} personal exercises awaiting review.',
+    'exercise.created' => "Exercise created: only you can see it until it's approved.",
+    'exercise.create_failed' => "Couldn't create the exercise. Try again later.",
+    'exercise.none_found' => 'No exercises found.',
+    'export.error' => 'Error while exporting',
 );

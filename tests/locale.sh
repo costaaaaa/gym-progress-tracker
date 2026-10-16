@@ -107,6 +107,10 @@ expect "cronologia: allenamento che non esiste" .message "Workout not found or n
     "$(call POST api/workout_history/delete.php "" "$EN" '{"id":99999999}')"
 expect "cronologia: allenamento che non esiste, account italiano resta italiano" .message "Allenamento non trovato o non autorizzato" \
     "$(call POST api/workout_history/delete.php en "$IT" '{"id":99999999}')"
+expect "esercizi: nome vuoto" .message "The name must be 2 to 60 characters (letters, numbers and simple punctuation) and can't contain links." \
+    "$(call POST api/exercise/create.php "" "$EN" '{"name":"","muscle_group":"Petto"}')"
+expect "esercizi: nome vuoto, account italiano resta italiano" .message "Il nome deve avere da 2 a 60 caratteri (lettere, numeri e punteggiatura semplice) e non può contenere link." \
+    "$(call POST api/exercise/create.php en "$IT" '{"name":"","muscle_group":"Petto"}')"
 
 echo "Email di reset"
 expect "richiesta reset, X-Locale: en" .success true "$(call POST api/user/forgot_password.php en "" "{\"email\":\"$EN_USER@example.com\"}")"

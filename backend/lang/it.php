@@ -172,4 +172,14 @@ return array(
     'history.date_updated' => "Data dell'allenamento aggiornata con successo.",
     'history.none_found' => 'Nessun allenamento trovato.',
     'history.date_incomplete' => 'Dati incompleti. Specificare ID allenamento e nuova data.',
+
+    // Esercizi, gamification, statistiche, utente
+    'exercise.name_invalid' => 'Il nome deve avere da 2 a 60 caratteri (lettere, numeri e punteggiatura semplice) e non può contenere link.',
+    'exercise.muscle_invalid' => 'Gruppo muscolare non valido.',
+    'exercise.exists' => 'Esiste già un esercizio con questo nome.',
+    'exercise.too_many' => 'Hai già {max} esercizi personali in attesa di revisione.',
+    'exercise.created' => 'Esercizio creato: lo vedi solo tu finché non viene approvato.',
+    'exercise.create_failed' => "Impossibile creare l'esercizio. Riprova più tardi.",
+    'exercise.none_found' => 'Nessun esercizio trovato.',
+    'export.error' => "Errore durante l'esportazione",
 );

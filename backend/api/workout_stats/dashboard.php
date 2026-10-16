@@ -270,6 +270,6 @@ try {
     http_response_code(500);
     if (ob_get_length()) ob_clean();
     header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'Errore interno del server.']);
+    echo json_encode(['success' => false, 'message' => t_server('common.server_error')]);
 }
 ob_end_flush();

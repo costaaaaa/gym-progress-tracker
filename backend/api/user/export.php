@@ -27,7 +27,7 @@ try {
                 created_at, password_changed_at, last_login_at
          FROM gym_users WHERE id = ?", array($user_id));
     if (!$profile) {
-        api_json_response(array('success' => false, 'message' => 'Utente non trovato'), 404);
+        api_json_response(array('success' => false, 'message' => t_server('common.user_not_found')), 404);
     }
 
     // Schede -> giorni -> esercizi
@@ -149,5 +149,5 @@ try {
     api_json_response($export);
 } catch (Exception $e) {
     error_log('Export error: ' . $e->getMessage());
-    api_json_response(array('success' => false, 'message' => 'Errore durante l\'esportazione'), 500);
+    api_json_response(array('success' => false, 'message' => t_server('export.error')), 500);
 }

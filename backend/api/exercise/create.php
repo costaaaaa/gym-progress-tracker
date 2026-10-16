@@ -13,7 +13,7 @@ header('Content-Type: application/json');
 
 try {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        api_error(405, 'method_not_allowed', 'Metodo non consentito');
+        api_error(405, 'method_not_allowed', t_server('common.method_not_allowed'));
     }
 
     $database = new Database();
@@ -29,11 +29,11 @@ try {
 
     $name = Exercise::cleanName($data['name'] ?? null);
     if ($name === null) {
-        api_error(400, 'invalid_name', 'Il nome deve avere da 2 a 60 caratteri (lettere, numeri e punteggiatura semplice) e non può contenere link.');
+        api_error(400, 'invalid_name', t_server('exercise.name_invalid'));
     }
     $muscle_group = is_string($data['muscle_group'] ?? null) ? mb_strtolower(trim($data['muscle_group']), 'UTF-8') : '';
     if (!in_array($muscle_group, $exercise->muscleGroups(), true)) {
-        api_error(400, 'invalid_muscle_group', 'Gruppo muscolare non valido.');
+        api_error(400, 'invalid_muscle_group', t_server('exercise.muscle_invalid'));
     }
 
     $existing = $exercise->findVisibleByName($name, $user_id);
@@ -41,13 +41,13 @@ try {
         api_json_response(array(
             'success' => false,
             'code' => 'duplicate',
-            'message' => 'Esiste già un esercizio con questo nome.',
+            'message' => t_server('exercise.exists'),
             'exercise' => exercise_public($existing, $user_id),
         ), 409);
     }
 
     if ($exercise->countPersonal($user_id) >= Exercise::MAX_PERSONAL) {
-        api_error(409, 'too_many_exercises', 'Hai già ' . Exercise::MAX_PERSONAL . ' esercizi personali in attesa di revisione.');
+        api_error(409, 'too_many_exercises', t_server('exercise.too_many', array('max' => Exercise::MAX_PERSONAL)));
     }
 
     enforce_rate_limit($db, 'exercise_create_user', 'exercise:create:user:' . $user_id);
@@ -62,7 +62,7 @@ try {
 
     api_json_response(array(
         'success' => true,
-        'message' => 'Esercizio creato: lo vedi solo tu finché non viene approvato.',
+        'message' => t_server('exercise.created'),
         'exercise' => exercise_public(array(
             'id' => $exercise->id,
             'name' => $exercise->name,
@@ -76,5 +76,5 @@ try {
 } catch (Throwable $e) {
     api_log_exception('exercise/create.php', $e);
     if (ob_get_length()) ob_clean();
-    api_error(500, 'server_error', 'Impossibile creare l\'esercizio. Riprova più tardi.');
+    api_error(500, 'server_error', t_server('exercise.create_failed'));
 }

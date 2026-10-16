@@ -38,13 +38,13 @@ try {
         ) + weekly_goal_settings($db, $user_id));
     } else {
         http_response_code(404);
-        echo json_encode(array('success' => false, 'message' => 'Utente non trovato'));
+        echo json_encode(array('success' => false, 'message' => t_server('common.user_not_found')));
     }
 } catch (Exception $e) {
     error_log("Read User Error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode(array(
         'success' => false,
-        'message' => 'Errore del server.'
+        'message' => t_server('common.server_error')
     ));
 }

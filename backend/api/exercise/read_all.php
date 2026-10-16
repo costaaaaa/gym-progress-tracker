@@ -50,13 +50,13 @@ try {
         http_response_code(404);
 
         // Tell the user no exercises found
-        echo json_encode(array("message" => "Nessun esercizio trovato."));
+        echo json_encode(array("message" => t_server('exercise.none_found')));
     }
 } catch (Exception $e) {
     error_log("Read exercises error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode(array(
-        "message" => "Errore del server.",
+        "message" => t_server('common.server_error'),
         "success" => false
     ));
 }

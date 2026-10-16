@@ -29,5 +29,5 @@ try {
 } catch (Throwable $e) {
     api_log_exception('exercise/similar.php', $e);
     if (ob_get_length()) ob_clean();
-    api_error(500, 'server_error', 'Errore del server.');
+    api_error(500, 'server_error', t_server('common.server_error'));
 }
