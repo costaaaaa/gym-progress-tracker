@@ -5,6 +5,7 @@ return array(
     'auth.unauthenticated' => 'Unauthorized. Please log in.',
     'auth.missing_credentials' => 'Username and password are required.',
     'auth.too_many_logins' => 'Too many login attempts. Try again in {seconds} seconds.',
+    'auth.too_many_password' => 'Too many attempts with the current password. Try again in {seconds} seconds.',
     'auth.invalid_credentials' => 'Invalid username or password.',
     'auth.login_ok' => 'Login successful.',
     'auth.login_error' => 'An error occurred during login.',
