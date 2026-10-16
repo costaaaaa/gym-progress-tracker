@@ -8,6 +8,7 @@ include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../config/rate_limiter.php';
 include_once '../../models/Exercise.php';
+include_once '../../lib/admin_notify.php';
 
 header('Content-Type: application/json');
 
@@ -59,6 +60,9 @@ try {
     if (!$exercise->create()) {
         throw new Exception('INSERT gym_exercises fallita');
     }
+    after_response(function () use ($name) {
+        admin_notify_exercise($name);
+    });
 
     api_json_response(array(
         'success' => true,

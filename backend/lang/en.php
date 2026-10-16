@@ -145,6 +145,16 @@ return array(
     'report.good_faith_required' => 'Confirm that the report is made in good faith.',
     'report.member_invalid' => 'This username is not a member of the group.',
     'report.self' => 'You cannot report yourself.',
+    'report.mail.received_subject' => "We received your report",
+    'report.mail.received_body' => "Hi {username},\n\nwe received your report no. {id} about “{label}”. We will review it and write to you once we have decided.\n\nLiftIndex\n",
+    'report.mail.resolved_subject' => "Outcome of your report",
+    'report.mail.resolved_body' => "Hi {username},\n\nwe reviewed your report no. {id} about “{label}” and upheld it.\nReason: {note}\n\nLiftIndex\n",
+    'report.mail.dismissed_subject' => "Outcome of your report",
+    'report.mail.dismissed_body' => "Hi {username},\n\nwe reviewed your report no. {id} about “{label}” and did not uphold it.\nReason: {note}\n\nIf you disagree, write to us at info@liftindex.app.\n\nLiftIndex\n",
+    'report.mail.group_renamed_subject' => "Your group's name has been changed",
+    'report.mail.group_renamed_body' => "Hi {username},\n\nfollowing a report, your group “{old}” is now called “{new}”.\nReason: {note}\n\nIf you disagree, write to us at info@liftindex.app.\n\nLiftIndex\n",
+    'report.mail.user_renamed_subject' => "Your username has been changed",
+    'report.mail.user_renamed_body' => "Hi,\n\nfollowing a report, your username “{old}” has been changed to “{new}”.\nReason: {note}\n\nFrom now on, sign in with “{new}”; your password stays the same.\nIf you disagree, write to us at info@liftindex.app.\n\nLiftIndex\n",
 
     // Misure corporee
     'stats.consent_required' => 'Saving body measurements requires your consent.',

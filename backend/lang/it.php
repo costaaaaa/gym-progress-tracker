@@ -145,6 +145,16 @@ return array(
     'report.good_faith_required' => 'Conferma che la segnalazione è fatta in buona fede.',
     'report.member_invalid' => 'Questo nome utente non è tra i membri del gruppo.',
     'report.self' => 'Non puoi segnalare te stesso.',
+    'report.mail.received_subject' => "Abbiamo ricevuto la tua segnalazione",
+    'report.mail.received_body' => "Ciao {username},\n\nabbiamo ricevuto la tua segnalazione n. {id} su «{label}». La esaminiamo e ti scriviamo quando abbiamo deciso.\n\nLiftIndex\n",
+    'report.mail.resolved_subject' => "Esito della tua segnalazione",
+    'report.mail.resolved_body' => "Ciao {username},\n\nabbiamo esaminato la tua segnalazione n. {id} su «{label}» e l'abbiamo accolta.\nMotivazione: {note}\n\nLiftIndex\n",
+    'report.mail.dismissed_subject' => "Esito della tua segnalazione",
+    'report.mail.dismissed_body' => "Ciao {username},\n\nabbiamo esaminato la tua segnalazione n. {id} su «{label}» e non l'abbiamo accolta.\nMotivazione: {note}\n\nSe non sei d'accordo scrivici a info@liftindex.app.\n\nLiftIndex\n",
+    'report.mail.group_renamed_subject' => "Il nome del tuo gruppo è stato cambiato",
+    'report.mail.group_renamed_body' => "Ciao {username},\n\ndopo una segnalazione il tuo gruppo «{old}» ora si chiama «{new}».\nMotivazione: {note}\n\nSe non sei d'accordo scrivici a info@liftindex.app.\n\nLiftIndex\n",
+    'report.mail.user_renamed_subject' => "Il tuo nome utente è stato cambiato",
+    'report.mail.user_renamed_body' => "Ciao,\n\ndopo una segnalazione il tuo nome utente «{old}» è stato cambiato in «{new}».\nMotivazione: {note}\n\nDa ora accedi con «{new}»; la password non cambia.\nSe non sei d'accordo scrivici a info@liftindex.app.\n\nLiftIndex\n",
 
     // Misure corporee
     'stats.consent_required' => 'Per salvare le misure corporee serve il tuo consenso.',

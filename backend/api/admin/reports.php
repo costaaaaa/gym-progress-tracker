@@ -14,6 +14,7 @@ include_once __DIR__ . '/../../config/api_helpers.php';
 include_once __DIR__ . '/../../models/Report.php';
 include_once __DIR__ . '/../../models/Group.php';
 include_once __DIR__ . '/../../models/User.php';
+include_once __DIR__ . '/../../lib/report_mail.php';
 
 header('Content-Type: application/json');
 
@@ -71,10 +72,13 @@ try {
     switch ($data['action'] ?? '') {
         case 'resolve':
         case 'dismiss':
-            admin_open_report($report, $id);
+            $row = admin_open_report($report, $id);
             $note = admin_report_note($data);
             $status = $data['action'] === 'resolve' ? 'resolved' : 'dismissed';
             admin_close_report($report, $id, $status, $note);
+            after_response(function () use ($db, $row, $status, $note) {
+                report_mail_outcome($db, $row, $status, $note);
+            });
             api_json_response(array('success' => true, 'status' => $status));
 
         case 'rename_group':
@@ -88,7 +92,8 @@ try {
             }
             $note = admin_report_note($data);
             $group = new Group($db);
-            if ($row['group_id'] === null || !$group->find($row['group_id'])) {
+            $found = $row['group_id'] === null ? null : $group->find($row['group_id']);
+            if (!$found) {
                 api_error(409, 'group_gone', 'Il gruppo non esiste più.');
             }
             // Chiusura e rinomina insieme: se la segnalazione è stata chiusa nel frattempo, il nome non cambia
@@ -96,6 +101,10 @@ try {
             admin_close_report($report, $id, 'resolved', $note);
             $group->rename($row['group_id'], $name);
             $db->commit();
+            after_response(function () use ($db, $row, $found, $name, $note) {
+                report_mail_outcome($db, $row, 'resolved', $note);
+                report_mail_group_renamed($db, $found['owner_user_id'], $found['name'], $name, $note);
+            });
             api_json_response(array('success' => true, 'status' => 'resolved', 'name' => $name));
 
         case 'rename_user':
@@ -108,6 +117,9 @@ try {
                 api_error(409, 'user_gone', 'L\'account segnalato non esiste più.');
             }
             $username = is_string($data['username'] ?? null) ? trim($data['username']) : null;
+            $old = $db->prepare("SELECT username FROM gym_users WHERE id = ? LIMIT 1");
+            $old->execute([(int)$row['target_user_id']]);
+            $old_username = $old->fetchColumn();
             $db->beginTransaction();
             admin_close_report($report, $id, 'resolved', $note);
             $result = (new User($db))->changeUsername($row['target_user_id'], $username);
@@ -119,6 +131,10 @@ try {
                 api_error(400, 'invalid_username', 'Il nome utente deve avere da 3 a 50 lettere o numeri.');
             }
             $db->commit();
+            after_response(function () use ($db, $row, $old_username, $username, $note) {
+                report_mail_outcome($db, $row, 'resolved', $note);
+                report_mail_user_renamed($db, $row['target_user_id'], $old_username, $username, $note);
+            });
             api_json_response(array('success' => true, 'status' => 'resolved', 'username' => $username));
 
         default:

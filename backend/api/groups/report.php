@@ -3,6 +3,8 @@
 // → segnala il nome del gruppo o lo username di un membro (DSA art. 16). Solo per i membri.
 require_once __DIR__ . '/_common.php';
 include_once __DIR__ . '/../../models/Report.php';
+include_once __DIR__ . '/../../lib/admin_notify.php';
+include_once __DIR__ . '/../../lib/report_mail.php';
 
 try {
     list($db, $user_id) = groups_bootstrap('POST');
@@ -40,7 +42,13 @@ try {
     }
 
     enforce_rate_limit($db, 'report_user', 'report:user:' . $user_id);
-    $report_id = (new Report($db))->create($user_id, $group_id, $target, $target_user_id, $label, $reason);
+    $reports = new Report($db);
+    $report_id = $reports->create($user_id, $group_id, $target, $target_user_id, $label, $reason);
+    $row = $reports->find($report_id);
+    after_response(function () use ($db, $row) {
+        admin_notify_report($row);
+        report_mail_received($db, $row);
+    });
 
     api_json_response(array('success' => true, 'report_id' => $report_id), 201);
 } catch (Throwable $e) {
