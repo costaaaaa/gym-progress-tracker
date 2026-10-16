@@ -57,9 +57,11 @@ class User
                 return false;
             }
 
-            // Sanitize inputs (la password NON va sanitizzata: viene hashata, mai stampata)
+            // Sanitize inputs (la password NON va sanitizzata: viene hashata, mai stampata).
+            // L'email non si trasforma in HTML: un apostrofo diventerebbe &#039; e il recupero
+            // password non la troverebbe più. Il formato lo garantisce validateInputs().
             $this->username = htmlspecialchars(strip_tags($this->username));
-            $this->email = htmlspecialchars(strip_tags($this->email));
+            $this->email = strtolower(trim($this->email));
 
             // Check if username or email already exists
             if ($this->usernameExists() || $this->emailExists()) {
