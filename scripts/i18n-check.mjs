@@ -40,8 +40,8 @@ for (const file of walk(srcDir)) {
   }
 }
 
-// Messaggi del server (backend/lang/*.php): stesse chiavi e stessi {segnaposto}, e ogni
-// t_server('…') del backend deve esistere in italiano
+// Messaggi del server (backend/lang/*.php): stesse chiavi e stessi {segnaposto}, ogni
+// t_server('…') del backend deve esistere in italiano e nessun endpoint scrive i testi a mano
 const phpDir = new URL('../backend/', import.meta.url).pathname;
 const loadPhp = (lang) => {
   const text = readFileSync(join(phpDir, `lang/${lang}.php`), 'utf8');
@@ -67,6 +67,28 @@ for (const file of walkPhp(phpDir)) {
   for (const m of readFileSync(file, 'utf8').matchAll(/t_server\('([\w.]+)'/g)) {
     if (!(m[1] in phpRef)) report(`${file.replace(phpDir, 'backend/')}: chiave "${m[1]}" non tradotta`);
   }
+}
+
+// Gli endpoint (tranne api/admin, in italiano) non scrivono testi a mano: ogni messaggio passa da
+// t_server(). Segnala 'message' => '…', $x['message'] = '…', anche dopo un ?, api_error(…, '…'),
+// api_not_found('…') e api_server_error('…')
+const literalMessage = [
+  /['"]message['"]\s*=>\s*(?:[^,;]*\?\s*)?['"]/,
+  /\[['"]message['"]\]\s*=\s*['"]/,
+  /api_error\([^;]*?,[^,;]*,\s*['"]/,
+  /api_(?:not_found|server_error)\(\s*['"]/,
+];
+const guarded = [
+  ...walkPhp(join(phpDir, 'api')).filter((file) => !file.startsWith(join(phpDir, 'api/admin/'))),
+  join(phpDir, 'config/api_helpers.php'),
+];
+for (const file of guarded) {
+  readFileSync(file, 'utf8').split('\n').forEach((line, i) => {
+    if (/^\s*(\/\/|\*|#)/.test(line)) return;
+    if (literalMessage.some((re) => re.test(line))) {
+      report(`${file.replace(phpDir, 'backend/')}:${i + 1}: messaggio scritto a mano, usa t_server('…')`);
+    }
+  });
 }
 
 if (problems) {
