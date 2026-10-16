@@ -21,6 +21,8 @@ import AddIcon from '@mui/icons-material/Add';
 import { API_BASE_URL } from '../config';
 import { createExercise, errorMessage, findSimilarExercises, personalLabel } from '../api/exercises';
 import { equipmentLabel, exerciseMatches } from '../utils/exerciseCatalog';
+import { useTranslation } from 'react-i18next';
+import { muscleLabel, techniqueLabel } from '../i18n/labels';
 
 // Helper per rendere maiuscola la prima lettera
 const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
@@ -39,6 +41,7 @@ export const INTENSITY_TECHNIQUES = [
 ];
 
 const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
+  const { t } = useTranslation();
   const [exercise, setExercise] = useState({
     name: '',
     sets: '',
@@ -236,20 +239,20 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Aggiungi Esercizio</DialogTitle>
+      <DialogTitle>{t('exercise_dialog.title')}</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
           <FormControl fullWidth>
-            <InputLabel>Gruppo Muscolare</InputLabel>
+            <InputLabel>{t('exercise_dialog.muscle_group')}</InputLabel>
             <Select
               name="muscleGroup"
               value={exercise.muscleGroup}
-              label="Gruppo Muscolare"
+              label={t('exercise_dialog.muscle_group')}
               onChange={handleMuscleGroupChange}
             >
               {availableMuscleGroups.map((group) => (
                 <MenuItem key={group} value={group}>
-                  {group}
+                  {muscleLabel(group)}
                 </MenuItem>
               ))}
             </Select>
@@ -258,7 +261,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
           {exercise.muscleGroup && !loadingExercises && groupEquipment.length > 1 && (
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               <Chip
-                label="Tutti gli attrezzi"
+                label={t('exercise_dialog.all_equipment')}
                 size="small"
                 color={equipmentFilter ? 'default' : 'primary'}
                 onClick={() => setEquipmentFilter('')}
@@ -279,7 +282,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
             loadingExercises ? (
               <Box display="flex" alignItems="center" justifyContent="center" p={2}>
                 <CircularProgress size={24} sx={{ mr: 1 }} />
-                <Typography variant="body2">Caricamento esercizi...</Typography>
+                <Typography variant="body2">{t('exercise_dialog.loading')}</Typography>
               </Box>
             ) : (
               <Autocomplete
@@ -304,12 +307,12 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
                 renderInput={(params) => (
                   <TextField 
                     {...params} 
-                    label="Nome Esercizio" 
+                    label={t('exercise_dialog.name')} 
                     fullWidth
                     helperText={personalLabel(exercises.find(ex => ex.id === exercise.id)) || ''}
                   />
                 )}
-                noOptionsText="Nessun esercizio trovato"
+                noOptionsText={t('exercise_dialog.no_options')}
                 fullWidth
               />
             )
@@ -317,7 +320,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
 
           {exercise.muscleGroup && !loadingExercises && (
             <Box>
-              <Typography sx={{ fontSize: 14, fontWeight: 600, mb: 1 }}>Non lo trovi? Crealo</Typography>
+              <Typography sx={{ fontSize: 14, fontWeight: 600, mb: 1 }}>{t('exercise_dialog.not_found')}</Typography>
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                 <TextField
                   size="small"
@@ -325,7 +328,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
                   value={newName}
                   onChange={(e) => { setNewName(e.target.value); setCreateError(''); }}
                   onKeyDown={(e) => { if (e.key === 'Enter' && canCreate) handleCreate(); }}
-                  placeholder={`Nuovo esercizio (${exercise.muscleGroup.toLowerCase()})`}
+                  placeholder={t('exercise_dialog.new_placeholder', { group: muscleLabel(exercise.muscleGroup).toLowerCase() })}
                   inputProps={{ maxLength: 60 }}
                 />
                 <Button
@@ -334,16 +337,16 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
                   onClick={handleCreate}
                   disabled={!canCreate}
                 >
-                  Crea
+                  {t('common.create')}
                 </Button>
               </Box>
               {suggestions.length > 0 && (
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap', mt: 1 }}>
-                  <Typography sx={{ fontSize: 13, fontWeight: 600 }}>Forse cercavi:</Typography>
+                  <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{t('exercise_dialog.maybe')}</Typography>
                   {suggestions.map(s => (
                     <Chip
                       key={s.id}
-                      label={`${s.name} · ${s.muscle_group}`}
+                      label={`${s.name} · ${muscleLabel(s.muscle_group)}`}
                       size="small"
                       color="primary"
                       variant="outlined"
@@ -353,7 +356,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
                 </Box>
               )}
               <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
-                Lo vedi solo tu finché non viene controllato e aggiunto al catalogo di tutti.
+                {t('exercise_dialog.private_note')}
               </Typography>
             </Box>
           )}
@@ -362,7 +365,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
           <Box sx={{ display: 'flex', gap: 2 }}>
             <TextField
               name="sets"
-              label="Serie"
+              label={t('exercise_dialog.sets')}
               type="number"
               inputProps={{ min: 1, max: 20, step: 1 }}
               value={exercise.sets}
@@ -379,7 +382,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
             />
             <TextField
               name="reps"
-              label="Ripetizioni"
+              label={t('exercise_dialog.reps')}
               type="text"
               fullWidth
               value={exercise.reps}
@@ -388,7 +391,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
             />
             <TextField
               name="rest"
-              label="Recupero (s)"
+              label={t('exercise_dialog.rest')}
               type="number"
               inputProps={{ min: 0, max: 3600, step: 1 }}
               fullWidth
@@ -406,16 +409,16 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
           </Box>
           
           <FormControl fullWidth>
-            <InputLabel>Tecnica di Intensità (Opzionale)</InputLabel>
+            <InputLabel>{t('exercise_dialog.technique')}</InputLabel>
             <Select
               name="intensity_technique"
               value={exercise.intensity_technique}
-              label="Tecnica di Intensità (Opzionale)"
+              label={t('exercise_dialog.technique')}
               onChange={handleChange}
             >
               {INTENSITY_TECHNIQUES.map((tech) => (
                 <MenuItem key={tech} value={tech === 'Nessuna (Normale)' ? '' : tech}>
-                  {tech}
+                  {techniqueLabel(tech)}
                 </MenuItem>
               ))}
             </Select>
@@ -423,7 +426,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
             
           <TextField
             margin="dense"
-            label="Note"
+            label={t('exercise_dialog.notes')}
             multiline
             rows={3}
             fullWidth
@@ -433,13 +436,13 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Annulla</Button>
+        <Button onClick={onClose}>{t('common.cancel')}</Button>
         <Button 
           onClick={handleSubmit} 
           variant="contained" 
           disabled={!isValid}
         >
-          Aggiungi
+          {t('exercise_dialog.add')}
         </Button>
       </DialogActions>
     </Dialog>

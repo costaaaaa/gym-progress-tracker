@@ -1,7 +1,8 @@
 import { API_BASE_URL } from '../config';
+import i18n from '../i18n';
 
 // Endpoint degli esercizi (backend/api/exercise/ e backend/api/admin/exercises.php). Ogni funzione
-// ritorna { ok, status, data } e non lancia mai: i messaggi d'errore arrivano dal server (data.message).
+// ritorna { ok, status, data } e non lancia mai: i messaggi d'errore arrivano dal server (data.message), già nella lingua dell'utente.
 const request = async (path, options = {}) => {
   try {
     const response = await fetch(`${API_BASE_URL}api/${path}`, {
@@ -12,7 +13,7 @@ const request = async (path, options = {}) => {
     const data = await response.json().catch(() => null);
     return { ok: response.ok && data?.success === true, status: response.status, data };
   } catch {
-    return { ok: false, status: 0, data: { message: 'Connessione non riuscita. Riprova.' } };
+    return { ok: false, status: 0, data: { message: i18n.t('exercise.error_connection') } };
   }
 };
 
@@ -31,10 +32,10 @@ export const listAdminExercises = (status = 'pending') =>
   request(`admin/exercises.php?status=${encodeURIComponent(status)}`);
 export const adminExerciseAction = (action, extra = {}) => post('admin/exercises.php', { action, ...extra });
 
-export const errorMessage = (res, fallback = 'Qualcosa è andato storto. Riprova.') => res?.data?.message || fallback;
+export const errorMessage = (res, fallback = i18n.t('exercise.error_generic')) => res?.data?.message || fallback;
 
 // Etichetta per gli esercizi personali (null per quelli del catalogo)
 export const personalLabel = (exercise) => {
   if (!exercise?.is_mine || exercise.status === 'approved') return null;
-  return exercise.status === 'pending' ? 'Personale · in revisione' : 'Personale';
+  return exercise.status === 'pending' ? i18n.t('exercise.personal_pending') : i18n.t('exercise.personal');
 };

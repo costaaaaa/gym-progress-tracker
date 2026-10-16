@@ -21,6 +21,8 @@ import { Close as CloseIcon, Search as SearchIcon } from '@mui/icons-material';
 import { exerciseMatches } from '../utils/exerciseCatalog';
 import { API_BASE_URL } from '../config';
 import { personalLabel } from '../api/exercises';
+import { Trans, useTranslation } from 'react-i18next';
+import { muscleLabel } from '../i18n/labels';
 
 const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '');
 const ALL = '__all__';
@@ -34,6 +36,7 @@ let catalogCache = null;
 // serie/ripetizioni/recupero e, se allowPosition, "subito dopo" o "alla fine".
 // onPick(catalogEx, { sets, reps, rest, position: 'next' | 'end' })
 const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true, onClose, onPick }) => {
+  const { t } = useTranslation();
   const [catalog, setCatalog] = useState(catalogCache || []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -64,7 +67,7 @@ const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true
         catalogCache = Array.isArray(data?.records) ? data.records : [];
         setCatalog(catalogCache);
       })
-      .catch(() => setError('Impossibile caricare gli esercizi. Riprova.'))
+      .catch(() => setError(t('picker.load_error')))
       .finally(() => setLoading(false));
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -96,13 +99,13 @@ const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" PaperProps={{ sx: { borderRadius: '16px' } }}>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1 }}>
-        {mode === 'swap' ? 'Cambia esercizio' : 'Aggiungi esercizio'}
+        {mode === 'swap' ? t('picker.swap_title') : t('picker.add_title')}
         <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
       </DialogTitle>
       <DialogContent dividers>
         {mode === 'swap' && currentExercise && (
           <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-            Al posto di <strong>{currentExercise.exercise_name}</strong>, solo per questo allenamento.
+            <Trans i18nKey="picker.instead_of" values={{ name: currentExercise.exercise_name }} components={{ b: <strong /> }} />
           </Typography>
         )}
 
@@ -110,27 +113,27 @@ const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true
           <Box>
             <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{selected.name}</Typography>
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              {[capitalize(selected.muscle_group), selected.equipment].filter(Boolean).join(' · ')}
+              {[muscleLabel(selected.muscle_group), selected.equipment].filter(Boolean).join(' · ')}
             </Typography>
             <Box sx={{ display: 'flex', gap: 1.5, mt: 2 }}>
-              <TextField label="Serie" value={sets} onChange={(e) => setSets(e.target.value)}
+              <TextField label={t('picker.sets')} value={sets} onChange={(e) => setSets(e.target.value)}
                 inputProps={{ inputMode: 'numeric' }} size="small" />
-              <TextField label="Ripetizioni" value={reps} onChange={(e) => setReps(e.target.value)} size="small" />
-              <TextField label="Recupero (s)" value={rest} onChange={(e) => setRest(e.target.value)}
+              <TextField label={t('picker.reps')} value={reps} onChange={(e) => setReps(e.target.value)} size="small" />
+              <TextField label={t('picker.rest')} value={rest} onChange={(e) => setRest(e.target.value)}
                 inputProps={{ inputMode: 'numeric' }} size="small" />
             </Box>
             {allowPosition && (
               <ToggleButtonGroup exclusive fullWidth size="small" value={position}
                 onChange={(_, v) => v && setPosition(v)} sx={{ mt: 2 }}>
-                <ToggleButton value="next">Subito dopo</ToggleButton>
-                <ToggleButton value="end">Alla fine</ToggleButton>
+                <ToggleButton value="next">{t('picker.next')}</ToggleButton>
+                <ToggleButton value="end">{t('picker.end')}</ToggleButton>
               </ToggleButtonGroup>
             )}
           </Box>
         ) : (
           <>
             <TextField
-              fullWidth size="small" placeholder="Cerca un esercizio" value={query}
+              fullWidth size="small" placeholder={t('picker.search')} value={query}
               onChange={(e) => setQuery(e.target.value)}
               InputProps={{ startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} /> }}
               sx={{ mb: 1.5 }}
@@ -138,7 +141,7 @@ const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true
             {!query.trim() && (
               <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', mb: 1.5 }}>
                 {[ALL, ...groups].map((g) => (
-                  <Chip key={g} label={g === ALL ? 'Tutti' : g} size="small"
+                  <Chip key={g} label={g === ALL ? t('picker.all') : muscleLabel(g)} size="small"
                     color={group === g ? 'primary' : 'default'}
                     variant={group === g ? 'filled' : 'outlined'}
                     onClick={() => setGroup(g)} />
@@ -155,13 +158,13 @@ const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true
                   <ListItemButton key={ex.id} onClick={() => handleSelect(ex)} sx={{ borderRadius: '8px' }}>
                     <ListItemText
                       primary={ex.name}
-                      secondary={[capitalize(ex.muscle_group), ex.equipment, personalLabel(ex)].filter(Boolean).join(' · ')}
+                      secondary={[muscleLabel(ex.muscle_group), ex.equipment, personalLabel(ex)].filter(Boolean).join(' · ')}
                     />
                   </ListItemButton>
                 ))}
                 {results.length === 0 && (
                   <Typography variant="body2" sx={{ color: 'text.secondary', py: 2, textAlign: 'center' }}>
-                    Nessun esercizio trovato. Gli esercizi nuovi si creano dalle Schede.
+                    {t('picker.none_found')}
                   </Typography>
                 )}
               </List>
@@ -171,10 +174,10 @@ const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true
       </DialogContent>
       {selected && (
         <DialogActions>
-          <Button onClick={() => setSelected(null)}>Indietro</Button>
+          <Button onClick={() => setSelected(null)}>{t('picker.back')}</Button>
           <Button variant="contained" disabled={!canAdd}
             onClick={() => onPick(selected, { sets, reps: reps.trim(), rest, position })}>
-            Aggiungi
+            {t('picker.add')}
           </Button>
         </DialogActions>
       )}
