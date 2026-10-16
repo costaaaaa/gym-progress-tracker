@@ -11,46 +11,47 @@ import { usePageMeta } from '../hooks/usePageMeta';
 import RequireLogin from '../components/Groups/RequireLogin';
 import LeaderboardTable from '../components/Groups/LeaderboardTable';
 import {
-  errorMessage, GROUP_TYPE_LABELS, inviteLink, leaveGroup, manageGroup, readGroup, ROLE_LABELS,
+  errorMessage, groupTypeLabel, inviteLink, leaveGroup, manageGroup, readGroup, roleLabel,
 } from '../api/groups';
 import { track } from '../utils/analytics';
+import { Trans, useTranslation } from 'react-i18next';
 import { intlLocale } from '../i18n/format';
 
-const BOARDS = [
-  { key: 'week', label: 'Settimana', hint: 'Allenamenti fatti rispetto al proprio obiettivo settimanale.' },
-  { key: 'streak', label: 'Streak', hint: 'Settimane consecutive con l\'obiettivo raggiunto.' },
-  { key: 'level', label: 'Livello', hint: 'Livello ed esperienza accumulata.' },
-];
+const BOARDS = ['week', 'streak', 'level'];
 
 const formatDay = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short' });
 
 // Conferma per le azioni che non si annullano (uscire, eliminare, rimuovere un membro)
-const ConfirmDialog = ({ confirm, onClose }) => (
-  <Dialog open={Boolean(confirm)} onClose={onClose} maxWidth="xs" fullWidth>
-    <DialogTitle>{confirm?.title}</DialogTitle>
-    <DialogContent><DialogContentText>{confirm?.text}</DialogContentText></DialogContent>
-    <DialogActions sx={{ px: 3, pb: 2 }}>
-      <Button onClick={onClose}>Annulla</Button>
-      <Button color="error" variant="contained" onClick={() => { confirm.action(); onClose(); }}>{confirm?.cta}</Button>
-    </DialogActions>
-  </Dialog>
-);
+const ConfirmDialog = ({ confirm, onClose }) => {
+  const { t } = useTranslation();
+  return (
+    <Dialog open={Boolean(confirm)} onClose={onClose} maxWidth="xs" fullWidth>
+      <DialogTitle>{confirm?.title}</DialogTitle>
+      <DialogContent><DialogContentText>{confirm?.text}</DialogContentText></DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose}>{t('common.cancel')}</Button>
+        <Button color="error" variant="contained" onClick={() => { confirm.action(); onClose(); }}>{confirm?.cta}</Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
 
 const InvitePanel = ({ group, onChange, notify }) => {
+  const { t } = useTranslation();
   const link = inviteLink(group.invite_code);
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(link);
-      notify('Link di invito copiato');
+      notify(t('groups.detail.invite.copied'));
     } catch {
-      notify('Copia non riuscita: seleziona il link a mano');
+      notify(t('groups.detail.invite.copy_failed'));
     }
   };
   const regenerate = async () => {
     const res = await manageGroup(group.id, 'regenerate_code');
     if (res.ok) {
       onChange({ invite_code: res.data.invite_code });
-      notify('Nuovo codice creato: il vecchio link non funziona più');
+      notify(t('groups.detail.invite.new_code_done'));
     } else notify(errorMessage(res));
   };
   const toggle = async (enabled) => {
@@ -61,30 +62,35 @@ const InvitePanel = ({ group, onChange, notify }) => {
 
   return (
     <Card sx={{ p: '22px' }}>
-      <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 1.5 }}>Invita</Typography>
+      <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 1.5 }}>{t('groups.detail.invite.title')}</Typography>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-        <TextField value={link} size="small" fullWidth inputProps={{ readOnly: true, 'aria-label': 'Link di invito' }} disabled={!group.invite_enabled} />
-        <Tooltip title="Copia link">
+        <TextField value={link} size="small" fullWidth inputProps={{ readOnly: true, 'aria-label': t('groups.detail.invite.link_label') }} disabled={!group.invite_enabled} />
+        <Tooltip title={t('groups.detail.invite.copy_tooltip')}>
           <span>
-            <IconButton onClick={copy} disabled={!group.invite_enabled} aria-label="Copia link di invito"><ContentCopyIcon /></IconButton>
+            <IconButton onClick={copy} disabled={!group.invite_enabled} aria-label={t('groups.detail.invite.copy_label')}><ContentCopyIcon /></IconButton>
           </span>
         </Tooltip>
       </Box>
       <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 1 }}>
-        Codice: <Box component="strong" sx={{ letterSpacing: '.08em' }}>{group.invite_code}</Box> · {group.members_count}/{group.max_members} membri
+        <Trans
+          i18nKey="groups.detail.invite.code_line"
+          values={{ code: group.invite_code, count: group.members_count, max: group.max_members }}
+          components={{ code: <Box component="strong" sx={{ letterSpacing: '.08em' }} /> }}
+        />
       </Typography>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
         <FormControlLabel
           control={<Switch checked={group.invite_enabled} onChange={(e) => toggle(e.target.checked)} />}
-          label="Inviti aperti"
+          label={t('groups.detail.invite.open')}
         />
-        <Button size="small" onClick={regenerate}>Nuovo codice</Button>
+        <Button size="small" onClick={regenerate}>{t('groups.detail.invite.new_code')}</Button>
       </Box>
     </Card>
   );
 };
 
 const GroupDetailContent = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const [board, setBoard] = useState('week');
@@ -100,9 +106,9 @@ const GroupDetailContent = () => {
       setData(res.data);
       setError('');
     } else {
-      setError(errorMessage(res, 'Impossibile caricare il gruppo.'));
+      setError(errorMessage(res, t('groups.detail.load_error')));
     }
-  }, [id, board]);
+  }, [id, board, t]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { track('leaderboard_viewed', { board }); }, [board]);
@@ -111,7 +117,7 @@ const GroupDetailContent = () => {
     return (
       <Container maxWidth="md" sx={{ py: 3 }}>
         <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
-        <Button component={RouterLink} to="/gruppi" startIcon={<ArrowBackIcon />}>I tuoi gruppi</Button>
+        <Button component={RouterLink} to="/gruppi" startIcon={<ArrowBackIcon />}>{t('groups.join.your_groups')}</Button>
       </Container>
     );
   }
@@ -139,7 +145,7 @@ const GroupDetailContent = () => {
   const removeMember = async (member) => {
     const res = await manageGroup(group.id, 'remove_member', { ref: member.ref });
     if (res.ok) {
-      setToast(`${member.username} è stato rimosso`);
+      setToast(t('groups.detail.remove.done', { name: member.username }));
       load();
     } else setToast(errorMessage(res));
   };
@@ -154,12 +160,12 @@ const GroupDetailContent = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
-      <Button component={RouterLink} to="/gruppi" startIcon={<ArrowBackIcon />} sx={{ mb: 1 }}>I tuoi gruppi</Button>
+      <Button component={RouterLink} to="/gruppi" startIcon={<ArrowBackIcon />} sx={{ mb: 1 }}>{t('groups.join.your_groups')}</Button>
       <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, flexWrap: 'wrap', mb: 3 }}>
         <Typography component="h1" sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 28 }}>{group.name}</Typography>
-        <Chip size="small" label={GROUP_TYPE_LABELS[group.type]} />
+        <Chip size="small" label={groupTypeLabel(group.type)} />
         <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>
-          {group.members_count} {group.members_count === 1 ? 'membro' : 'membri'}
+          {t('groups_card.members', { count: Number(group.members_count) })}
         </Typography>
       </Box>
 
@@ -167,15 +173,15 @@ const GroupDetailContent = () => {
         <Grid item xs={12} md={8}>
           <Card sx={{ p: '22px' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 1, mb: 1 }}>
-              <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17 }}>Classifica</Typography>
+              <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17 }}>{t('groups.detail.leaderboard')}</Typography>
               <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
-                Settimana {formatDay(week.from)} – {formatDay(week.to)}
+                {t('groups.detail.week_range', { from: formatDay(week.from), to: formatDay(week.to) })}
               </Typography>
             </Box>
             <Tabs value={board} onChange={(e, v) => setBoard(v)} sx={{ mb: 1 }} variant="fullWidth">
-              {BOARDS.map((b) => <Tab key={b.key} value={b.key} label={b.label} />)}
+              {BOARDS.map((b) => <Tab key={b} value={b} label={t(`groups.detail.board.${b}`)} />)}
             </Tabs>
-            <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 1 }}>{BOARDS.find((b) => b.key === board).hint}</Typography>
+            <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 1 }}>{t(`groups.detail.board.${board}_hint`)}</Typography>
             <LeaderboardTable rows={data.board} board={data.board_type} />
           </Card>
         </Grid>
@@ -185,22 +191,22 @@ const GroupDetailContent = () => {
             {canManage && <InvitePanel group={group} onChange={patchGroup} notify={setToast} />}
 
             <Card sx={{ p: '22px' }}>
-              <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 1 }}>Membri</Typography>
+              <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 1 }}>{t('groups.detail.members')}</Typography>
               {members.map((m) => (
                 <Box key={m.username} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.75 }}>
                   <Typography sx={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: m.is_me ? 700 : 400 }}>
-                    {m.username}{m.is_me ? ' (tu)' : ''}
+                    {m.username}{m.is_me ? t('groups.detail.me_suffix') : ''}
                   </Typography>
-                  {m.role !== 'member' && <Chip size="small" label={ROLE_LABELS[m.role]} />}
+                  {m.role !== 'member' && <Chip size="small" label={roleLabel(m.role)} />}
                   {canManage && m.ref && !m.is_me && m.role !== 'owner' && (isOwner || m.role === 'member') && (
-                    <Tooltip title="Rimuovi dal gruppo">
+                    <Tooltip title={t('groups.detail.remove.tooltip')}>
                       <IconButton
                         size="small"
-                        aria-label={`Rimuovi ${m.username}`}
+                        aria-label={t('groups.detail.remove.label', { name: m.username })}
                         onClick={() => setConfirm({
-                          title: `Rimuovere ${m.username}?`,
-                          text: 'Non vedrà più il gruppo. Potrà rientrare solo con un nuovo invito.',
-                          cta: 'Rimuovi',
+                          title: t('groups.detail.remove.title', { name: m.username }),
+                          text: t('groups.detail.remove.text'),
+                          cta: t('groups.detail.remove.cta'),
                           action: () => removeMember(m),
                         })}
                       >
@@ -213,13 +219,13 @@ const GroupDetailContent = () => {
             </Card>
 
             <Card sx={{ p: '22px' }}>
-              <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 1.5 }}>Impostazioni</Typography>
+              <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 1.5 }}>{t('groups.detail.settings')}</Typography>
               {canManage && (renaming === null ? (
-                <Button size="small" onClick={() => setRenaming(group.name)} sx={{ mb: 1 }}>Rinomina il gruppo</Button>
+                <Button size="small" onClick={() => setRenaming(group.name)} sx={{ mb: 1 }}>{t('groups.detail.rename')}</Button>
               ) : (
                 <Box component="form" onSubmit={saveName} sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
-                  <TextField size="small" value={renaming} onChange={(e) => setRenaming(e.target.value)} inputProps={{ maxLength: 60, 'aria-label': 'Nome del gruppo' }} fullWidth autoFocus />
-                  <Button type="submit" size="small" variant="contained" disabled={!renaming.trim()}>Salva</Button>
+                  <TextField size="small" value={renaming} onChange={(e) => setRenaming(e.target.value)} inputProps={{ maxLength: 60, 'aria-label': t('groups.new.name') }} fullWidth autoFocus />
+                  <Button type="submit" size="small" variant="contained" disabled={!renaming.trim()}>{t('groups.detail.save')}</Button>
                 </Box>
               ))}
               {isOwner ? (
@@ -227,26 +233,26 @@ const GroupDetailContent = () => {
                   color="error"
                   size="small"
                   onClick={() => setConfirm({
-                    title: 'Eliminare il gruppo?',
-                    text: 'Il gruppo e la classifica spariscono per tutti i membri. Gli allenamenti di ognuno restano nei rispettivi account.',
-                    cta: 'Elimina',
+                    title: t('groups.detail.delete.title'),
+                    text: t('groups.detail.delete.text'),
+                    cta: t('groups.detail.delete.cta'),
                     action: remove,
                   })}
                 >
-                  Elimina il gruppo
+                  {t('groups.detail.delete.button')}
                 </Button>
               ) : (
                 <Button
                   color="error"
                   size="small"
                   onClick={() => setConfirm({
-                    title: 'Uscire dal gruppo?',
-                    text: 'I tuoi dati spariscono subito dalla classifica. Per rientrare servirà un nuovo invito.',
-                    cta: 'Esci',
+                    title: t('groups.detail.leave.title'),
+                    text: t('groups.detail.leave.text'),
+                    cta: t('groups.detail.leave.cta'),
                     action: leave,
                   })}
                 >
-                  Esci dal gruppo
+                  {t('groups.detail.leave.button')}
                 </Button>
               )}
             </Card>
@@ -261,7 +267,8 @@ const GroupDetailContent = () => {
 };
 
 const GroupDetail = () => {
-  usePageMeta('Gruppo', 'Classifica settimanale del gruppo: costanza, streak e livelli.');
+  const { t } = useTranslation();
+  usePageMeta(t('groups.detail.meta_title'), t('groups.detail.meta_description'));
   return <RequireLogin><GroupDetailContent /></RequireLogin>;
 };
 

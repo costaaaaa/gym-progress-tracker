@@ -1,5 +1,6 @@
 import { Box, Chip, LinearProgress, Typography } from '@mui/material';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
+import { useTranslation } from 'react-i18next';
 import { intlLocale } from '../../i18n/format';
 
 // Classifica del gruppo. Le righe arrivano già ordinate e con la posizione dal server
@@ -7,12 +8,13 @@ import { intlLocale } from '../../i18n/format';
 const MEDALS = { 1: '#d4a017', 2: '#9e9e9e', 3: '#b87333' };
 
 const Metric = ({ row, board }) => {
+  const { t } = useTranslation();
   if (board === 'streak') {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
         <LocalFireDepartmentIcon sx={{ fontSize: 18, color: 'warning.main' }} />
         <Typography sx={{ fontWeight: 700 }}>
-          {row.streak_weeks} {row.streak_weeks === 1 ? 'settimana' : 'settimane'}
+          {t('groups.board.streak_weeks', { count: row.streak_weeks })}
         </Typography>
       </Box>
     );
@@ -20,7 +22,7 @@ const Metric = ({ row, board }) => {
   if (board === 'level') {
     return (
       <Box sx={{ textAlign: 'right' }}>
-        <Typography sx={{ fontWeight: 700 }}>Livello {row.level}</Typography>
+        <Typography sx={{ fontWeight: 700 }}>{t('groups.board.level', { level: row.level })}</Typography>
         <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{row.total_xp.toLocaleString(intlLocale())} XP</Typography>
       </Box>
     );
@@ -34,7 +36,7 @@ const Metric = ({ row, board }) => {
       <LinearProgress
         variant="determinate"
         value={Math.round(row.adherence * 100)}
-        aria-label={`${row.workouts} allenamenti su ${row.goal}`}
+        aria-label={t('groups.board.progress_label', { done: row.workouts, goal: row.goal })}
         sx={{ height: 8, borderRadius: 4 }}
       />
     </Box>
@@ -42,11 +44,12 @@ const Metric = ({ row, board }) => {
 };
 
 const LeaderboardTable = ({ rows, board }) => {
+  const { t } = useTranslation();
   // La barra della settimana è larga: sul telefono va sotto il nome, altrimenti il nome
   // resta di due lettere.
   const wide = board !== 'streak' && board !== 'level';
   if (!rows?.length) {
-    return <Typography sx={{ color: 'text.secondary', py: 2 }}>Nessun membro in classifica.</Typography>;
+    return <Typography sx={{ color: 'text.secondary', py: 2 }}>{t('groups.board.empty')}</Typography>;
   }
   return (
     <Box component="ol" sx={{ listStyle: 'none', m: 0, p: 0 }}>
@@ -84,7 +87,7 @@ const LeaderboardTable = ({ rows, board }) => {
             <Typography sx={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {row.username}
             </Typography>
-            {row.is_me && <Chip label="tu" size="small" color="primary" sx={{ height: 20, fontSize: 11 }} />}
+            {row.is_me && <Chip label={t('groups.board.me')} size="small" color="primary" sx={{ height: 20, fontSize: 11 }} />}
           </Box>
           <Box sx={wide ? { width: { xs: '100%', sm: 'auto' }, pl: { xs: '44px', sm: 0 } } : undefined}>
             <Metric row={row} board={board} />

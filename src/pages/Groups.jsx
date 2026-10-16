@@ -8,10 +8,12 @@ import GroupsOutlined from '@mui/icons-material/GroupsOutlined';
 import AddIcon from '@mui/icons-material/Add';
 import { usePageMeta } from '../hooks/usePageMeta';
 import RequireLogin from '../components/Groups/RequireLogin';
-import { createGroup, errorMessage, GROUP_TYPE_LABELS, listGroups, ROLE_LABELS } from '../api/groups';
+import { createGroup, errorMessage, groupTypeLabel, listGroups, roleLabel } from '../api/groups';
 import { track } from '../utils/analytics';
+import { useTranslation } from 'react-i18next';
 
 const CreateGroupDialog = ({ open, onClose, onCreated }) => {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [type, setType] = useState('friends');
   const [error, setError] = useState('');
@@ -35,11 +37,11 @@ const CreateGroupDialog = ({ open, onClose, onCreated }) => {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <Box component="form" onSubmit={submit}>
-        <DialogTitle sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700 }}>Nuovo gruppo</DialogTitle>
+        <DialogTitle sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700 }}>{t('groups.new.title')}</DialogTitle>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <TextField
-            label="Nome del gruppo"
+            label={t('groups.new.name')}
             value={name}
             onChange={(e) => setName(e.target.value)}
             inputProps={{ maxLength: 60 }}
@@ -48,18 +50,17 @@ const CreateGroupDialog = ({ open, onClose, onCreated }) => {
             autoFocus
             margin="dense"
           />
-          <TextField select label="Tipo" value={type} onChange={(e) => setType(e.target.value)} fullWidth margin="dense">
-            <MenuItem value="friends">Amici</MenuItem>
-            <MenuItem value="gym">Palestra</MenuItem>
+          <TextField select label={t('groups.new.type')} value={type} onChange={(e) => setType(e.target.value)} fullWidth margin="dense">
+            <MenuItem value="friends">{t('groups.type.friends')}</MenuItem>
+            <MenuItem value="gym">{t('groups.type.gym')}</MenuItem>
           </TextField>
           <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 1.5 }}>
-            Dopo averlo creato ricevi un link di invito da condividere. La classifica premia la costanza:
-            allenamenti fatti rispetto al proprio obiettivo settimanale.
+            {t('groups.new.help')}
           </Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={onClose} disabled={saving}>Annulla</Button>
-          <Button type="submit" variant="contained" disabled={saving || !name.trim()}>Crea</Button>
+          <Button onClick={onClose} disabled={saving}>{t('common.cancel')}</Button>
+          <Button type="submit" variant="contained" disabled={saving || !name.trim()}>{t('common.create')}</Button>
         </DialogActions>
       </Box>
     </Dialog>
@@ -67,6 +68,7 @@ const CreateGroupDialog = ({ open, onClose, onCreated }) => {
 };
 
 const GroupsContent = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [groups, setGroups] = useState(null);
   const [error, setError] = useState('');
@@ -76,8 +78,8 @@ const GroupsContent = () => {
   const load = useCallback(async () => {
     const res = await listGroups();
     if (res.ok) setGroups(res.data.groups);
-    else setError(errorMessage(res, 'Impossibile caricare i gruppi.'));
-  }, []);
+    else setError(errorMessage(res, t('groups.load_error')));
+  }, [t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -91,25 +93,25 @@ const GroupsContent = () => {
     <Container maxWidth="lg" sx={{ py: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', mb: 3 }}>
         <Typography component="h1" sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 28 }}>
-          Gruppi
+          {t('groups.title')}
         </Typography>
         <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)}>
-          Crea gruppo
+          {t('groups.create')}
         </Button>
       </Box>
 
       <Card sx={{ p: '22px', mb: 3 }}>
-        <Typography sx={{ fontWeight: 700, mb: 1.5 }}>Hai un codice invito?</Typography>
+        <Typography sx={{ fontWeight: 700, mb: 1.5 }}>{t('groups.code.title')}</Typography>
         <Box component="form" onSubmit={joinWithCode} sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
           <TextField
             size="small"
-            placeholder="Es. K7M2QX9PHD"
+            placeholder={t('groups.code.placeholder')}
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            inputProps={{ maxLength: 14, 'aria-label': 'Codice invito', style: { textTransform: 'uppercase', letterSpacing: '.08em' } }}
+            inputProps={{ maxLength: 14, 'aria-label': t('groups.code.label'), style: { textTransform: 'uppercase', letterSpacing: '.08em' } }}
             sx={{ flex: '1 1 200px' }}
           />
-          <Button type="submit" variant="outlined" disabled={!code.trim()}>Entra</Button>
+          <Button type="submit" variant="outlined" disabled={!code.trim()}>{t('groups.code.join')}</Button>
         </Box>
       </Card>
 
@@ -120,9 +122,9 @@ const GroupsContent = () => {
       {groups?.length === 0 && (
         <Card sx={{ p: 4, textAlign: 'center' }}>
           <GroupsOutlined sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
-          <Typography sx={{ fontWeight: 700, mb: 1 }}>Non sei ancora in nessun gruppo</Typography>
+          <Typography sx={{ fontWeight: 700, mb: 1 }}>{t('groups.empty.title')}</Typography>
           <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>
-            Crea un gruppo con i tuoi amici o con la tua palestra e sfidatevi sulla costanza.
+            {t('groups.empty.text')}
           </Typography>
         </Card>
       )}
@@ -140,10 +142,10 @@ const GroupsContent = () => {
                       {g.name}
                     </Typography>
                     <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
-                      {GROUP_TYPE_LABELS[g.type]} · {g.members_count} {g.members_count === 1 ? 'membro' : 'membri'}
+                      {groupTypeLabel(g.type)} · {t('groups_card.members', { count: Number(g.members_count) })}
                     </Typography>
                   </Box>
-                  {g.my_role !== 'member' && <Chip size="small" label={ROLE_LABELS[g.my_role]} />}
+                  {g.my_role !== 'member' && <Chip size="small" label={roleLabel(g.my_role)} />}
                 </Box>
               </CardActionArea>
             </Card>
@@ -161,7 +163,8 @@ const GroupsContent = () => {
 };
 
 const Groups = () => {
-  usePageMeta('Gruppi', 'Allenati con amici e compagni di palestra: classifica settimanale di costanza, streak e livelli.');
+  const { t } = useTranslation();
+  usePageMeta(t('groups.meta.title'), t('groups.meta.description'));
   return <RequireLogin><GroupsContent /></RequireLogin>;
 };
 

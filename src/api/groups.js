@@ -1,7 +1,8 @@
 import { API_BASE_URL } from '../config';
+import i18n from '../i18n';
 
 // Endpoint dei gruppi (backend/api/groups/). Ogni funzione ritorna { ok, status, data }
-// e non lancia mai: i messaggi d'errore arrivano già in italiano dal server (data.message).
+// e non lancia mai: i messaggi d'errore arrivano già nella lingua dell'utente dal server (data.message).
 const request = async (path, options = {}) => {
   try {
     const response = await fetch(`${API_BASE_URL}api/groups/${path}`, {
@@ -12,7 +13,7 @@ const request = async (path, options = {}) => {
     const data = await response.json().catch(() => null);
     return { ok: response.ok && data?.success === true, status: response.status, data };
   } catch {
-    return { ok: false, status: 0, data: { message: 'Connessione non riuscita. Riprova.' } };
+    return { ok: false, status: 0, data: { message: i18n.t('groups.error_connection') } };
   }
 };
 
@@ -30,7 +31,7 @@ export const manageGroup = (groupId, action, extra = {}) => post('manage.php', {
 // Link di invito. Il codice sta nella query string, che Umami non registra.
 export const inviteLink = (code) => `${window.location.origin}/entra?codice=${code}`;
 
-export const errorMessage = (res, fallback = 'Qualcosa è andato storto. Riprova.') => res?.data?.message || fallback;
+export const errorMessage = (res, fallback = i18n.t('groups.error_generic')) => res?.data?.message || fallback;
 
-export const GROUP_TYPE_LABELS = { friends: 'Amici', gym: 'Palestra', coaching: 'Coaching' };
-export const ROLE_LABELS = { owner: 'Proprietario', admin: 'Amministratore', coach: 'Coach', member: 'Membro' };
+export const groupTypeLabel = (type) => i18n.t(`groups.type.${type}`, { defaultValue: type });
+export const roleLabel = (role) => i18n.t(`groups.role.${role}`, { defaultValue: role });
