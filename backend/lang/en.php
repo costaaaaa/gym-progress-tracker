@@ -154,4 +154,22 @@ return array(
     'stats.health_days_missing' => 'List of days is missing.',
     'stats.health_too_many_days' => 'Too many days at once: 1000 at most.',
     'stats.health_save_failed' => "Couldn't save the measurements. Try again later.",
+
+    // Cronologia allenamenti
+    'history.id_invalid' => 'Missing or invalid workout ID',
+    'history.not_found' => 'Workout not found or not authorized',
+    'history.delete_failed' => "Couldn't delete the workout",
+    'history.delete_error' => 'Error while deleting the workout',
+    'history.delete_preview' => 'Preview: nothing was deleted',
+    'history.deleted' => 'Workout deleted',
+    'history.date_format' => 'Invalid date format. Use YYYY-MM-DD.',
+    'history.date_future' => "The workout date can't be in the future.",
+    'history.date_too_old' => 'You can move a workout back by 30 days at most.',
+    'history.not_yours' => "Workout not found or it doesn't belong to the current user.",
+    'history.locked_old' => "Workouts older than 30 days can't be moved.",
+    'history.date_update_failed' => "Couldn't update the workout date.",
+    'history.date_preview' => "Preview: the date hasn't changed.",
+    'history.date_updated' => 'Workout date updated.',
+    'history.none_found' => 'No workouts found.',
+    'history.date_incomplete' => 'Incomplete data. Specify the workout ID and the new date.',
 );

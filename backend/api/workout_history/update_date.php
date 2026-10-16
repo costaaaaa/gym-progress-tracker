@@ -43,7 +43,7 @@ if (
         echo json_encode(array(
             "success" => false,
             "code" => "invalid_date",
-            "message" => "Formato data non valido. Usare YYYY-MM-DD."
+            "message" => t_server('history.date_format')
         ));
         exit;
     }
@@ -53,7 +53,7 @@ if (
         echo json_encode(array(
             "success" => false,
             "code" => "future_date",
-            "message" => "La data dell'allenamento non può essere nel futuro."
+            "message" => t_server('history.date_future')
         ));
         exit;
     }
@@ -65,7 +65,7 @@ if (
         echo json_encode(array(
             "success" => false,
             "code" => "target_too_old",
-            "message" => "Puoi spostare un allenamento al massimo a 30 giorni fa."
+            "message" => t_server('history.date_too_old')
         ));
         exit;
     }
@@ -84,7 +84,7 @@ if (
         echo json_encode(array(
             "success" => false,
             "code" => "not_found",
-            "message" => "Allenamento non trovato o non appartiene all'utente corrente."
+            "message" => t_server('history.not_yours')
         ));
         exit;
     }
@@ -110,7 +110,7 @@ if (
             api_json_response([
                 "success" => false,
                 "code" => "not_found",
-                "message" => "Allenamento non trovato o non appartiene all'utente corrente."
+                "message" => t_server('history.not_yours')
             ], 404);
         }
         if (strtotime($old_date) < $oldest_allowed) {
@@ -118,7 +118,7 @@ if (
             api_json_response([
                 "success" => false,
                 "code" => "source_too_old",
-                "message" => "Gli allenamenti di più di 30 giorni fa non si possono spostare."
+                "message" => t_server('history.locked_old')
             ], 400);
         }
         $old_dt = new DateTime($old_date);
@@ -128,7 +128,7 @@ if (
         $streak_before = effectiveStreakWeeks($before['current'], $before['last_completed_week'], $now);
 
         if (!$workout->update()) {
-            throw new Exception("Impossibile aggiornare la data dell'allenamento.");
+            throw new Exception(t_server('history.date_update_failed'));
         }
         $xp = reopen_week_if_below($db, $user_id, $old_dt) + close_week_if_reached($db, $user_id, $new_dt);
         $streak = recompute_streak($db, $user_id);
@@ -146,7 +146,7 @@ if (
         echo json_encode(array(
             "success" => false,
             "code" => "update_failed",
-            "message" => "Impossibile aggiornare la data dell'allenamento."
+            "message" => t_server('history.date_update_failed')
         ));
         exit;
     }
@@ -155,7 +155,7 @@ if (
     echo json_encode(array(
         "success" => true,
         "preview" => $preview,
-        "message" => $preview ? "Anteprima: la data non è cambiata." : "Data dell'allenamento aggiornata con successo.",
+        "message" => $preview ? t_server('history.date_preview') : t_server('history.date_updated'),
         "id" => $workout->id,
         "new_date" => date('c', $timestamp),
         "xp_delta" => $xp_delta,
@@ -169,7 +169,7 @@ if (
     echo json_encode(array(
         "success" => false,
         "code" => "missing_data",
-        "message" => "Dati incompleti. Specificare ID allenamento e nuova data."
+        "message" => t_server('history.date_incomplete')
     ));
 }
 ?>

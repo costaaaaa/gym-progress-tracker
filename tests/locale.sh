@@ -103,6 +103,10 @@ expect "misure: salvataggio senza consenso" .message "Saving body measurements r
     "$(call POST api/user_stats/create.php "" "$EN" '{}')"
 expect "misure: salvataggio senza consenso, account italiano resta italiano" .message "Per salvare le misure corporee serve il tuo consenso." \
     "$(call POST api/user_stats/create.php en "$IT" '{}')"
+expect "cronologia: allenamento che non esiste" .message "Workout not found or not authorized" \
+    "$(call POST api/workout_history/delete.php "" "$EN" '{"id":99999999}')"
+expect "cronologia: allenamento che non esiste, account italiano resta italiano" .message "Allenamento non trovato o non autorizzato" \
+    "$(call POST api/workout_history/delete.php en "$IT" '{"id":99999999}')"
 
 echo "Email di reset"
 expect "richiesta reset, X-Locale: en" .success true "$(call POST api/user/forgot_password.php en "" "{\"email\":\"$EN_USER@example.com\"}")"

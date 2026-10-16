@@ -154,4 +154,22 @@ return array(
     'stats.health_days_missing' => 'Elenco dei giorni mancante.',
     'stats.health_too_many_days' => 'Troppi giorni in una volta: al massimo 1000.',
     'stats.health_save_failed' => 'Impossibile salvare le misure. Riprova più tardi.',
+
+    // Cronologia allenamenti
+    'history.id_invalid' => 'ID allenamento mancante o non valido',
+    'history.not_found' => 'Allenamento non trovato o non autorizzato',
+    'history.delete_failed' => "Impossibile eliminare l'allenamento",
+    'history.delete_error' => "Errore durante l'eliminazione dell'allenamento",
+    'history.delete_preview' => 'Anteprima: nulla è stato eliminato',
+    'history.deleted' => 'Allenamento eliminato con successo',
+    'history.date_format' => 'Formato data non valido. Usare YYYY-MM-DD.',
+    'history.date_future' => "La data dell'allenamento non può essere nel futuro.",
+    'history.date_too_old' => 'Puoi spostare un allenamento al massimo a 30 giorni fa.',
+    'history.not_yours' => "Allenamento non trovato o non appartiene all'utente corrente.",
+    'history.locked_old' => 'Gli allenamenti di più di 30 giorni fa non si possono spostare.',
+    'history.date_update_failed' => "Impossibile aggiornare la data dell'allenamento.",
+    'history.date_preview' => 'Anteprima: la data non è cambiata.',
+    'history.date_updated' => "Data dell'allenamento aggiornata con successo.",
+    'history.none_found' => 'Nessun allenamento trovato.',
+    'history.date_incomplete' => 'Dati incompleti. Specificare ID allenamento e nuova data.',
 );

@@ -85,7 +85,7 @@ try {
         http_response_code(200);
     } else {
         http_response_code(404);
-        $records_arr["message"] = "Nessun allenamento trovato.";
+        $records_arr["message"] = t_server('history.none_found');
     }
 
     if (ob_get_length()) ob_clean();
@@ -97,6 +97,6 @@ try {
     if (ob_get_length()) ob_clean();
     header('Content-Type: application/json');
     error_log("Errore in workout_history/read.php: " . $e->getMessage());
-    echo json_encode(array("message" => "Errore interno del server."));
+    echo json_encode(array("message" => t_server('common.server_error')));
 }
 ob_end_flush();
