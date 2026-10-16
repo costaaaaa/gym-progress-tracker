@@ -27,6 +27,9 @@ export const createGroup = (name, type) => post('create.php', { name, type });
 export const joinGroup = (code) => post('join.php', { code, consent: true });
 export const leaveGroup = (groupId) => post('leave.php', { group_id: groupId });
 export const manageGroup = (groupId, action, extra = {}) => post('manage.php', { group_id: groupId, action, ...extra });
+// target: 'group_name' | 'member' (con username). La buona fede va confermata prima nella UI.
+export const reportGroup = (groupId, { target, username, reason }) =>
+  post('report.php', { group_id: groupId, target, username, reason, good_faith: true });
 
 // Link di invito. Il codice sta nella query string, che Umami non registra.
 export const inviteLink = (code) => `${window.location.origin}/entra?codice=${code}`;

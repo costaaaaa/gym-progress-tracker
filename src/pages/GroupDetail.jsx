@@ -10,6 +10,7 @@ import PersonRemoveOutlined from '@mui/icons-material/PersonRemoveOutlined';
 import { usePageMeta } from '../hooks/usePageMeta';
 import RequireLogin from '../components/Groups/RequireLogin';
 import LeaderboardTable from '../components/Groups/LeaderboardTable';
+import ReportDialog from '../components/Groups/ReportDialog';
 import {
   errorMessage, groupTypeLabel, inviteLink, leaveGroup, manageGroup, readGroup, roleLabel,
 } from '../api/groups';
@@ -99,6 +100,7 @@ const GroupDetailContent = () => {
   const [toast, setToast] = useState('');
   const [confirm, setConfirm] = useState(null);
   const [renaming, setRenaming] = useState(null);
+  const [reporting, setReporting] = useState(false);
 
   const load = useCallback(async () => {
     const res = await readGroup(id, board);
@@ -257,7 +259,7 @@ const GroupDetailContent = () => {
               )}
               <Button
                 size="small"
-                href={`mailto:info@liftindex.app?subject=${encodeURIComponent(t('groups.detail.report.subject', { id: group.id }))}&body=${encodeURIComponent(t('groups.detail.report.body', { name: group.name, url: window.location.href }))}`}
+                onClick={() => setReporting(true)}
                 sx={{ display: 'block', mt: 1 }}
               >
                 {t('groups.detail.report.button')}
@@ -268,6 +270,16 @@ const GroupDetailContent = () => {
       </Grid>
 
       <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
+      <ReportDialog
+        open={reporting}
+        group={group}
+        members={members}
+        onClose={() => setReporting(false)}
+        onSent={() => {
+          setReporting(false);
+          setToast(t('groups.detail.report.sent'));
+        }}
+      />
       <Snackbar open={Boolean(toast)} autoHideDuration={4000} onClose={() => setToast('')} message={toast} />
     </Container>
   );

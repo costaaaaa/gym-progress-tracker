@@ -3,6 +3,7 @@ import { Box, CircularProgress, Container, Typography } from '@mui/material';
 import { usePageMeta } from '../hooks/usePageMeta';
 import RequireLogin from '../components/Groups/RequireLogin';
 import AdminExercises from '../components/Admin/AdminExercises';
+import AdminReports from '../components/Admin/AdminReports';
 import { listAdminExercises } from '../api/exercises';
 
 // Area admin. Chi non è admin riceve 404 dal server e qui vede "pagina non trovata":
@@ -24,6 +25,7 @@ const AdminContent = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <AdminExercises />
+      <AdminReports />
     </Box>
   );
 };
