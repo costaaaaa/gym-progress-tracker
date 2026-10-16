@@ -2,10 +2,12 @@ import { useState } from 'react';
 import {
   Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Link, Typography,
 } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 
 // Consenso all'ingresso in un gruppo: cosa vedranno gli altri membri e cosa no.
 // Senza la spunta il server rifiuta l'ingresso (join.php, code consent_required).
 const ShareConsentDialog = ({ open, groupName, username, loading, onClose, onConfirm }) => {
+  const { t } = useTranslation();
   const [accepted, setAccepted] = useState(false);
 
   const close = () => {
@@ -15,32 +17,32 @@ const ShareConsentDialog = ({ open, groupName, username, loading, onClose, onCon
 
   return (
     <Dialog open={open} onClose={close} maxWidth="xs" fullWidth>
-      <DialogTitle sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700 }}>Entra in «{groupName}»</DialogTitle>
+      <DialogTitle sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700 }}>{t('groups.consent.title', { name: groupName })}</DialogTitle>
       <DialogContent>
-        <Typography sx={{ fontWeight: 600, mb: 0.5 }}>Gli altri membri vedranno</Typography>
+        <Typography sx={{ fontWeight: 600, mb: 0.5 }}>{t('groups.consent.sees')}</Typography>
         <Box component="ul" sx={{ mt: 0, mb: 2, pl: 2.5, fontSize: 14 }}>
-          <li>il tuo username{username ? ` (${username})` : ''}</li>
-          <li>livello, XP e streak</li>
-          <li>allenamenti e volume (kg) della settimana</li>
+          <li>{username ? t('groups.consent.sees_username_named', { username }) : t('groups.consent.sees_username')}</li>
+          <li>{t('groups.consent.sees_level')}</li>
+          <li>{t('groups.consent.sees_week')}</li>
         </Box>
-        <Typography sx={{ fontWeight: 600, mb: 0.5 }}>Non vedranno</Typography>
+        <Typography sx={{ fontWeight: 600, mb: 0.5 }}>{t('groups.consent.not_sees')}</Typography>
         <Box component="ul" sx={{ mt: 0, mb: 2, pl: 2.5, fontSize: 14 }}>
-          <li>email, peso e misure corporee</li>
-          <li>i dettagli degli allenamenti (esercizi, carichi, ripetizioni)</li>
+          <li>{t('groups.consent.not_personal')}</li>
+          <li>{t('groups.consent.not_details')}</li>
         </Box>
         <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 1.5 }}>
-          Puoi uscire dal gruppo quando vuoi: i tuoi dati spariscono subito dalla classifica.{' '}
-          <Link href="/privacy.html" target="_blank" rel="noopener">Informativa privacy</Link>
+          {t('groups.consent.leave_anytime')}{' '}
+          <Link href="/privacy.html" target="_blank" rel="noopener">{t('groups.consent.privacy')}</Link>
         </Typography>
         <FormControlLabel
           control={<Checkbox checked={accepted} onChange={(e) => setAccepted(e.target.checked)} />}
-          label="Accetto che i membri del gruppo vedano questi dati"
+          label={t('groups.consent.accept')}
         />
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={close} disabled={loading}>Annulla</Button>
+        <Button onClick={close} disabled={loading}>{t('common.cancel')}</Button>
         <Button variant="contained" onClick={onConfirm} disabled={!accepted || loading}>
-          Entra nel gruppo
+          {t('groups.join.cta')}
         </Button>
       </DialogActions>
     </Dialog>

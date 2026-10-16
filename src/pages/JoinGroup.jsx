@@ -5,32 +5,38 @@ import GroupsOutlined from '@mui/icons-material/GroupsOutlined';
 import { usePageMeta } from '../hooks/usePageMeta';
 import RequireLogin from '../components/Groups/RequireLogin';
 import ShareConsentDialog from '../components/Groups/ShareConsentDialog';
-import { errorMessage, GROUP_TYPE_LABELS, joinGroup, previewGroup } from '../api/groups';
+import { errorMessage, groupTypeLabel, joinGroup, previewGroup } from '../api/groups';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { track } from '../utils/analytics';
 
 // /entra?codice=XXXXXXXXXX — anteprima del gruppo e ingresso con consenso.
 // Chi non ha fatto l'accesso passa da login o registrazione e torna qui (RequireLogin).
 const JoinGroupContent = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const code = (searchParams.get('codice') || '').replace(/\s+/g, '').toUpperCase();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState('');
   const [consentOpen, setConsentOpen] = useState(false);
   const [joining, setJoining] = useState(false);
 
   useEffect(() => {
     if (!code) {
-      setError('Link di invito incompleto: manca il codice.');
+      setError(t('groups.join.incomplete'));
       return;
     }
     previewGroup(code).then((res) => {
       if (res.ok) setPreview(res.data.group);
-      else setError(errorMessage(res, 'Codice invito non valido o scaduto.'));
+      else {
+        setError(errorMessage(res, t('groups.join.invalid')));
+        setErrorCode(res.data?.code || '');
+      }
     });
-  }, [code]);
+  }, [code, t]);
 
   const join = async () => {
     setJoining(true);
@@ -39,6 +45,7 @@ const JoinGroupContent = () => {
     if (!res.ok) {
       setConsentOpen(false);
       setError(errorMessage(res));
+      setErrorCode(res.data?.code || '');
       return;
     }
     if (!res.data.already_member) track('group_joined');
@@ -52,29 +59,29 @@ const JoinGroupContent = () => {
         {error && (
           <>
             <Alert severity="error" sx={{ mb: 2, textAlign: 'left' }}>{error}</Alert>
-            {/(data di nascita|impostazioni)/i.test(error) && (
-              <Button component={RouterLink} to="/profilo?tab=settings" sx={{ mr: 1 }}>Vai alle impostazioni</Button>
+            {errorCode === 'birth_date_required' && (
+              <Button component={RouterLink} to="/profilo?tab=settings" sx={{ mr: 1 }}>{t('groups.join.settings')}</Button>
             )}
-            <Button component={RouterLink} to="/gruppi">I tuoi gruppi</Button>
+            <Button component={RouterLink} to="/gruppi">{t('groups.join.your_groups')}</Button>
           </>
         )}
         {!error && !preview && <CircularProgress sx={{ my: 2 }} />}
         {!error && preview && (
           <>
-            <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>Sei stato invitato in</Typography>
+            <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>{t('groups.join.invited')}</Typography>
             <Typography component="h1" sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 26, my: 1 }}>
               {preview.name}
             </Typography>
             <Typography sx={{ color: 'text.secondary', mb: 3 }}>
-              {GROUP_TYPE_LABELS[preview.type]} · {preview.members_count} {preview.members_count === 1 ? 'membro' : 'membri'}
+              {groupTypeLabel(preview.type)} · {t('groups_card.members', { count: Number(preview.members_count) })}
             </Typography>
             {preview.already_member ? (
-              <Button variant="contained" component={RouterLink} to={`/gruppi/${preview.id}`}>Apri il gruppo</Button>
+              <Button variant="contained" component={RouterLink} to={`/gruppi/${preview.id}`}>{t('groups.join.open')}</Button>
             ) : preview.is_full ? (
-              <Alert severity="warning">Il gruppo ha raggiunto il numero massimo di membri.</Alert>
+              <Alert severity="warning">{t('groups.join.full')}</Alert>
             ) : (
               <Box>
-                <Button variant="contained" size="large" onClick={() => setConsentOpen(true)}>Entra nel gruppo</Button>
+                <Button variant="contained" size="large" onClick={() => setConsentOpen(true)}>{t('groups.join.cta')}</Button>
               </Box>
             )}
           </>
@@ -93,7 +100,8 @@ const JoinGroupContent = () => {
 };
 
 const JoinGroup = () => {
-  usePageMeta('Entra nel gruppo', 'Unisciti al gruppo su LiftIndex e confronta la tua costanza con amici e compagni di palestra.');
+  const { t } = useTranslation();
+  usePageMeta(t('groups.join.meta_title'), t('groups.join.meta_description'));
   return <RequireLogin><JoinGroupContent /></RequireLogin>;
 };
 

@@ -35,8 +35,11 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import ExerciseDialog, { INTENSITY_TECHNIQUES } from '../components/ExerciseDialog';
 import { API_BASE_URL } from '../config';
+import { useTranslation } from 'react-i18next';
+import { muscleLabel, techniqueLabel } from '../i18n/labels';
 
 const WorkoutPlans = ({ isEmbedded = false }) => {
+  const { t } = useTranslation();
   const [workoutPlans, setWorkoutPlans] = useState([]);
   const [expandedPlans, setExpandedPlans] = useState({});
   const [openDialog, setOpenDialog] = useState(false);
@@ -87,7 +90,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
 
   useEffect(() => {
     fetchWorkoutPlans();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchWorkoutPlans = async () => {
     try {
@@ -114,7 +117,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       console.error('Error fetching workout plans:', error);
       setSnackbar({
         open: true,
-        message: 'Errore nel caricamento delle schede: ' + error.message,
+        message: t('plans.msg.load_error', { message: error.message }),
         severity: 'error'
       });
     }
@@ -139,7 +142,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.message || 'Errore nella creazione della scheda');
+        throw new Error(data.message || t('plans.msg.create_error'));
       }
 
       const daysToCreate = Array.from({ length: numDays }, (_, i) => ({
@@ -161,12 +164,12 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
 
       const daysData = await daysResponse.json();
       if (!daysResponse.ok) {
-        throw new Error(daysData.message || 'Errore nella creazione dei giorni della scheda');
+        throw new Error(daysData.message || t('plans.msg.create_days_error'));
       }
 
       setSnackbar({
         open: true,
-        message: 'Scheda creata con successo',
+        message: t('plans.msg.created'),
         severity: 'success'
       });
       fetchWorkoutPlans();
@@ -180,7 +183,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       console.error('Error creating workout plan:', error);
       setSnackbar({
         open: true,
-        message: error.message || 'Errore nella creazione della scheda',
+        message: error.message || t('plans.msg.create_error'),
         severity: 'error'
       });
     }
@@ -206,12 +209,12 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.message || 'Errore nell\'aggiornamento della scheda');
+        throw new Error(data.message || t('plans.msg.update_error'));
       }
 
       setSnackbar({
         open: true,
-        message: 'Scheda aggiornata con successo',
+        message: t('plans.msg.updated'),
         severity: 'success'
       });
       fetchWorkoutPlans();
@@ -220,7 +223,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       console.error('Error updating workout plan:', error);
       setSnackbar({
         open: true,
-        message: error.message || 'Errore nell\'aggiornamento della scheda',
+        message: error.message || t('plans.msg.update_error'),
         severity: 'error'
       });
     } finally {
@@ -262,7 +265,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       if (response.ok) {
         setSnackbar({
           open: true,
-          message: 'Scheda attivata con successo',
+          message: t('plans.msg.activated'),
           severity: 'success'
         });
         fetchWorkoutPlans();
@@ -272,7 +275,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
     } catch (error) {
       setSnackbar({
         open: true,
-        message: error.message || 'Errore nell\'attivazione della scheda',
+        message: error.message || t('plans.msg.activate_error'),
         severity: 'error'
       });
     }
@@ -285,7 +288,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       const selectedExerciseId = exercise.id;
 
       if (!selectedExerciseId) {
-        throw new Error('ID esercizio non valido. Seleziona un esercizio esistente.');
+        throw new Error(t('plans.msg.invalid_exercise_id'));
       }
 
       // Aggiungiamo l'esercizio al giorno di allenamento
@@ -309,7 +312,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       if (response.ok) {
         setSnackbar({
           open: true,
-          message: 'Esercizio aggiunto con successo',
+          message: t('plans.msg.exercise_added'),
           severity: 'success'
         });
         fetchWorkoutPlans();
@@ -319,7 +322,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
     } catch (error) {
       setSnackbar({
         open: true,
-        message: error.message || 'Errore nell\'aggiunta dell\'esercizio',
+        message: error.message || t('plans.msg.add_exercise_error'),
         severity: 'error'
       });
     }
@@ -361,7 +364,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       if (response.ok) {
         setSnackbar({
           open: true,
-          message: 'Scheda eliminata con successo',
+          message: t('plans.msg.plan_deleted'),
           severity: 'success'
         });
         fetchWorkoutPlans();
@@ -371,7 +374,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
     } catch (error) {
       setSnackbar({
         open: true,
-        message: error.message || 'Errore nell\'eliminazione della scheda',
+        message: error.message || t('plans.msg.delete_plan_error'),
         severity: 'error'
       });
     } finally {
@@ -418,7 +421,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       if (response.ok) {
         setSnackbar({
           open: true,
-          message: 'Esercizio eliminato con successo',
+          message: t('plans.msg.exercise_deleted'),
           severity: 'success'
         });
         fetchWorkoutPlans();
@@ -428,7 +431,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
     } catch (error) {
       setSnackbar({
         open: true,
-        message: error.message || 'Errore nell\'eliminazione dell\'esercizio',
+        message: error.message || t('plans.msg.delete_exercise_error'),
         severity: 'error'
       });
     } finally {
@@ -526,7 +529,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       // Notifica l'utente che stiamo salvando le modifiche
       setSnackbar({
         open: true,
-        message: 'Salvataggio modifiche in corso...',
+        message: t('plans.msg.saving_changes'),
         severity: 'info'
       });
       
@@ -593,7 +596,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
             // Mostra il messaggio di successo
             setSnackbar({
               open: true,
-              message: 'Esercizio aggiornato con successo',
+              message: t('plans.msg.exercise_updated'),
               severity: 'success'
             });
           } else {
@@ -605,23 +608,23 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
               
               setSnackbar({
                 open: true,
-                message: 'Modifiche salvate, ricarica la pagina se non vedi i cambiamenti',
+                message: t('plans.msg.saved_reload'),
                 severity: 'warning'
               });
             }, 2000);
           }
         } else {
           console.error('ERRORE: Nessun dato ricevuto nella risposta di recupero piani!');
-          throw new Error('Errore nel recupero dei dati aggiornati');
+          throw new Error(t('plans.msg.refetch_error'));
         }
       } else {
-        throw new Error(data.message || 'Errore nella modifica dell\'esercizio');
+        throw new Error(data.message || t('plans.msg.edit_exercise_error'));
       }
     } catch (error) {
       console.error('Errore nella modifica dell\'esercizio:', error);
       setSnackbar({
         open: true,
-        message: error.message || 'Errore nella modifica dell\'esercizio',
+        message: error.message || t('plans.msg.edit_exercise_error'),
         severity: 'error'
       });
       handleCloseEditExerciseDialog();
@@ -651,7 +654,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       if (response.ok) {
         setSnackbar({
           open: true,
-          message: 'Ordine degli esercizi aggiornato',
+          message: t('plans.msg.order_updated'),
           severity: 'success'
         });
         // Aggiungiamo un timeout per dare tempo al database di aggiornare i dati
@@ -659,13 +662,13 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
           fetchWorkoutPlans();
         }, 300);
       } else {
-        throw new Error(data.message || 'Errore nel server');
+        throw new Error(data.message || t('plans.msg.server_error'));
       }
     } catch (error) {
       console.error('Errore nel riordinamento (su):', error);
       setSnackbar({
         open: true,
-        message: error.message || 'Errore nello spostamento dell\'esercizio',
+        message: error.message || t('plans.msg.move_error'),
         severity: 'error'
       });
     }
@@ -694,7 +697,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       if (response.ok) {
         setSnackbar({
           open: true,
-          message: 'Ordine degli esercizi aggiornato',
+          message: t('plans.msg.order_updated'),
           severity: 'success'
         });
         // Aggiungiamo un timeout per dare tempo al database di aggiornare i dati
@@ -702,13 +705,13 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
           fetchWorkoutPlans();
         }, 300);
       } else {
-        throw new Error(data.message || 'Errore nel server');
+        throw new Error(data.message || t('plans.msg.server_error'));
       }
     } catch (error) {
       console.error('Errore nel riordinamento (giù):', error);
       setSnackbar({
         open: true,
-        message: error.message || 'Errore nello spostamento dell\'esercizio',
+        message: error.message || t('plans.msg.move_error'),
         severity: 'error'
       });
     }
@@ -718,13 +721,13 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
     <Box sx={{ p: isEmbedded ? 0 : 3 }}>
       {!isEmbedded && (
         <Typography variant="h4" gutterBottom>
-          Le Mie Schede
+          {t('plans.page_title')}
         </Typography>
       )}
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography sx={{ fontFamily: "'Lexend', sans-serif", fontWeight: 700, fontSize: 20 }}>
-          Le tue Schede
+          {t('plans.section_title')}
         </Typography>
         <Button
           variant="contained"
@@ -732,7 +735,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
           onClick={() => setOpenDialog(true)}
           sx={{ fontSize: 13, fontWeight: 600 }}
         >
-          Nuova Scheda
+          {t('plans.new')}
         </Button>
       </Box>
 
@@ -766,7 +769,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                               borderRadius: '999px',
                             }}
                           >
-                            ATTIVA
+                            {t('plans.active_badge')}
                           </Box>
                         )}
                       </Box>
@@ -813,7 +816,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                 aria-controls={dayPanelId}
                                 sx={{ fontSize: 12, fontWeight: 600, textTransform: 'none', minWidth: 0, p: 0 }}
                               >
-                                {dayExpanded ? 'Nascondi' : 'Dettagli'}
+                                {dayExpanded ? t('plans.hide') : t('plans.details')}
                               </Button>
                             </Box>
 
@@ -833,13 +836,13 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                         fontWeight: 600,
                                       }}
                                     >
-                                      {group.name} ({group.count})
+                                      {muscleLabel(group.name)} ({group.count})
                                     </Box>
                                   ))}
                                 </Box>
                               ) : (
                                 <Typography variant="body2" color="text.secondary">
-                                  Nessun esercizio aggiunto
+                                  {t('plans.no_exercises')}
                                 </Typography>
                               )}
                             </Box>
@@ -853,7 +856,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                   groupExercisesByMuscleGroup(day.exercises).map((group, groupIdx) => (
                                     <Box key={groupIdx} sx={{ mb: 2, mt: groupIdx > 0 ? 2 : 0, '&:last-of-type': { mb: 0 } }}>
                                       <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center' }}>
-                                        <FitnessCenterIcon fontSize="small" sx={{ mr: 1 }} /> {group.name}
+                                        <FitnessCenterIcon fontSize="small" sx={{ mr: 1 }} /> {muscleLabel(group.name)}
                                       </Typography>
                                       <Divider sx={{ mt: 1, mb: 1.5 }} />
                                       {group.exercises.map((exercise) => {
@@ -866,12 +869,12 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                                   {exercise.exercise_name}
                                                 </Typography>
                                                 <Typography variant="body2" color="text.secondary">
-                                                  {exercise.sets} serie x {exercise.reps} - Recupero: {exercise.rest}s
+                                                  {t('plans.sets_line', { sets: exercise.sets, reps: exercise.reps, rest: exercise.rest })}
                                                 </Typography>
                                                 {exercise.intensity_technique && (
                                                   <Chip
                                                     icon={<WhatshotIcon />}
-                                                    label={exercise.intensity_technique}
+                                                    label={techniqueLabel(exercise.intensity_technique)}
                                                     size="small"
                                                     color="secondary"
                                                     sx={{ mt: 1, mb: 0.5 }}
@@ -879,7 +882,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                                 )}
                                                 {exercise.notes && (
                                                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
-                                                    Note: {exercise.notes}
+                                                    {t('plans.notes', { notes: exercise.notes })}
                                                   </Typography>
                                                 )}
                                               </div>
@@ -924,7 +927,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                   ))
                                 ) : (
                                   <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 1 }}>
-                                    Nessun esercizio aggiunto a questo giorno.
+                                    {t('plans.no_exercises_day')}
                                   </Typography>
                                 )}
                               </Box>
@@ -936,7 +939,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                               size="small"
                               sx={{ fontSize: 12, fontWeight: 600, textTransform: 'none' }}
                             >
-                              Aggiungi Esercizio
+                              {t('plans.add_exercise')}
                             </Button>
                           </Box>
                         );
@@ -944,7 +947,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                     </Box>
                   ) : (
                     <Typography sx={{ mt: 1.75, fontSize: 13, color: 'text.secondary' }}>
-                      {totalDays} giorni · {totalExercises} esercizi
+                      {t('plans.days_count', { count: totalDays })} · {t('plans.exercises_count', { count: totalExercises })}
                     </Typography>
                   )}
                 </CardContent>
@@ -956,7 +959,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                     aria-expanded={isExpanded}
                     sx={{ fontSize: 12, fontWeight: 600, textTransform: 'none', color: 'text.secondary', minWidth: 0, p: 0 }}
                   >
-                    {isExpanded ? "Nascondi dettagli" : "Mostra dettagli"}
+                    {isExpanded ? t('plans.hide_details') : t('plans.show_details')}
                   </Button>
 
                   {!plan.is_active && (
@@ -970,7 +973,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                         '&:hover': { bgcolor: 'text.primary', opacity: 0.85 },
                       }}
                     >
-                      Attiva Scheda
+                      {t('plans.activate')}
                     </Button>
                   )}
                 </CardActions>
@@ -981,39 +984,39 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       </Grid>
       
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Nuova Scheda</DialogTitle>
+        <DialogTitle>{t('plans.new')}</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
             <TextField
               autoFocus
-              label="Nome Scheda"
+              label={t('plans.new_dialog.name')}
               type="text"
               fullWidth
-              placeholder="Es. Forza 5x5"
+              placeholder={t('plans.new_dialog.name_placeholder')}
               value={newPlan.name}
               onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })}
             />
             <TextField
-              label="Descrizione (Opzionale)"
+              label={t('plans.new_dialog.description')}
               type="text"
               fullWidth
               multiline
               rows={2}
-              placeholder="Breve descrizione dell'obiettivo della scheda"
+              placeholder={t('plans.new_dialog.description_placeholder')}
               value={newPlan.description}
               onChange={(e) => setNewPlan({ ...newPlan, description: e.target.value })}
             />
             <FormControl fullWidth>
-              <InputLabel id="num-days-label">Numero di Giorni</InputLabel>
+              <InputLabel id="num-days-label">{t('plans.new_dialog.days')}</InputLabel>
               <Select
                 labelId="num-days-label"
                 value={numDays}
-                label="Numero di Giorni"
+                label={t('plans.new_dialog.days')}
                 onChange={(e) => setNumDays(parseInt(e.target.value, 10))}
               >
                 {[1, 2, 3, 4, 5, 6, 7].map((num) => (
                   <MenuItem key={num} value={num}>
-                    {num} Giorn{num === 1 ? 'o' : 'i'}
+                    {t('plans.new_dialog.days_option', { count: num })}
                   </MenuItem>
                 ))}
               </Select>
@@ -1021,28 +1024,28 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Annulla</Button>
+          <Button onClick={() => setOpenDialog(false)}>{t('common.cancel')}</Button>
           <Button onClick={handleAddPlan} variant="contained" disabled={!newPlan.name}>
-            Crea
+            {t('common.create')}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Dialog Modifica Scheda */}
       <Dialog open={openEditPlanDialog} onClose={handleCloseEditPlanDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>Modifica Scheda</DialogTitle>
+        <DialogTitle>{t('plans.edit_dialog.title')}</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
             <TextField
               autoFocus
-              label="Nome Scheda"
+              label={t('plans.new_dialog.name')}
               type="text"
               fullWidth
               value={editedPlanValues.name}
               onChange={(e) => setEditedPlanValues({ ...editedPlanValues, name: e.target.value })}
             />
             <TextField
-              label="Descrizione (Opzionale)"
+              label={t('plans.new_dialog.description')}
               type="text"
               fullWidth
               multiline
@@ -1053,14 +1056,14 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseEditPlanDialog} disabled={updatePlanLoading}>Annulla</Button>
+          <Button onClick={handleCloseEditPlanDialog} disabled={updatePlanLoading}>{t('common.cancel')}</Button>
           <Button 
             onClick={handleEditPlan} 
             variant="contained" 
             disabled={!editedPlanValues.name || updatePlanLoading}
             startIcon={updatePlanLoading ? <CircularProgress size={20} /> : null}
           >
-            {updatePlanLoading ? 'Salvataggio...' : 'Salva'}
+            {updatePlanLoading ? t('plans.saving') : t('common.save')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1078,13 +1081,13 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title">{"Conferma eliminazione scheda"}</DialogTitle>
+        <DialogTitle id="alert-dialog-title">{t('plans.delete_plan.title')}</DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
-            Sei sicuro di voler eliminare questa scheda? L'azione è irreversibile.
+            {t('plans.delete_plan.text')}
             {planToDelete && (
               <Box sx={{ mt: 2, fontWeight: 'bold' }}>
-                Scheda: {planToDelete.name}
+                {t('plans.delete_plan.name', { name: planToDelete.name })}
               </Box>
             )}
           </DialogContentText>
@@ -1095,7 +1098,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
             color="primary"
             disabled={deletePlanLoading}
           >
-            Annulla
+            {t('common.cancel')}
           </Button>
           <Button 
             onClick={handleConfirmDeletePlan} 
@@ -1104,7 +1107,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
             disabled={deletePlanLoading}
             startIcon={deletePlanLoading ? <CircularProgress size={20} /> : <DeleteIcon />}
           >
-            {deletePlanLoading ? 'Eliminazione...' : 'Elimina'}
+            {deletePlanLoading ? t('plans.deleting') : t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1115,13 +1118,13 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title">{"Conferma eliminazione esercizio"}</DialogTitle>
+        <DialogTitle id="alert-dialog-title">{t('plans.delete_exercise.title')}</DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
-            Sei sicuro di voler eliminare questo esercizio? L'azione è irreversibile.
+            {t('plans.delete_exercise.text')}
             {exerciseToDelete && (
               <Box sx={{ mt: 2, fontWeight: 'bold' }}>
-                Esercizio: {exerciseToDelete.name}
+                {t('plans.delete_exercise.name', { name: exerciseToDelete.name })}
               </Box>
             )}
           </DialogContentText>
@@ -1132,7 +1135,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
             color="primary"
             disabled={deleteExerciseLoading}
           >
-            Annulla
+            {t('common.cancel')}
           </Button>
           <Button 
             onClick={handleConfirmDeleteExercise} 
@@ -1141,7 +1144,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
             disabled={deleteExerciseLoading}
             startIcon={deleteExerciseLoading ? <CircularProgress size={20} /> : <DeleteIcon />}
           >
-            {deleteExerciseLoading ? 'Eliminazione...' : 'Elimina'}
+            {deleteExerciseLoading ? t('plans.deleting') : t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1153,17 +1156,17 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Modifica Esercizio</DialogTitle>
+        <DialogTitle>{t('plans.edit_exercise.title')}</DialogTitle>
         <DialogContent>
           {exerciseToEdit && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
               <Typography variant="h6">{exerciseToEdit.exercise_name}</Typography>
-              <Typography variant="body2" color="text.secondary">{exerciseToEdit.muscle_group}</Typography>
+              <Typography variant="body2" color="text.secondary">{muscleLabel(exerciseToEdit.muscle_group)}</Typography>
               
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <TextField
                   name="sets"
-                  label="Serie"
+                  label={t('plans.edit_exercise.sets')}
                   type="number"
                   value={editedExerciseValues.sets}
                   onChange={handleEditExerciseChange}
@@ -1172,7 +1175,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                 />
                 <TextField
                   name="reps"
-                  label="Ripetizioni"
+                  label={t('plans.edit_exercise.reps')}
                   value={editedExerciseValues.reps}
                   onChange={handleEditExerciseChange}
                   fullWidth
@@ -1180,7 +1183,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
               </Box>
               <TextField
                 name="rest"
-                label="Recupero (secondi)"
+                label={t('plans.edit_exercise.rest')}
                 type="number"
                 value={editedExerciseValues.rest}
                 onChange={handleEditExerciseChange}
@@ -1189,16 +1192,16 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
               />
               
               <FormControl fullWidth>
-                <InputLabel>Tecnica di Intensità (Opzionale)</InputLabel>
+                <InputLabel>{t('plans.edit_exercise.technique')}</InputLabel>
                 <Select
                   name="intensity_technique"
                   value={editedExerciseValues.intensity_technique}
-                  label="Tecnica di Intensità (Opzionale)"
+                  label={t('plans.edit_exercise.technique')}
                   onChange={handleEditExerciseChange}
                 >
                   {INTENSITY_TECHNIQUES.map((tech) => (
                     <MenuItem key={tech} value={tech === 'Nessuna (Normale)' ? '' : tech}>
-                      {tech}
+                      {techniqueLabel(tech)}
                     </MenuItem>
                   ))}
                 </Select>
@@ -1206,25 +1209,25 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
 
               <TextField
                 name="notes"
-                label="Note"
+                label={t('plans.edit_exercise.notes')}
                 value={editedExerciseValues.notes}
                 onChange={handleEditExerciseChange}
                 fullWidth
                 multiline
                 rows={3}
-                placeholder="Inserisci eventuali note sull'esercizio"
+                placeholder={t('plans.edit_exercise.notes_placeholder')}
               />
             </Box>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseEditExerciseDialog}>Annulla</Button>
+          <Button onClick={handleCloseEditExerciseDialog}>{t('common.cancel')}</Button>
           <Button 
             onClick={handleConfirmEditExercise} 
             variant="contained"
             disabled={!editedExerciseValues.sets || !editedExerciseValues.reps || !editedExerciseValues.rest}
           >
-            Salva Modifiche
+            {t('plans.edit_exercise.save')}
           </Button>
         </DialogActions>
       </Dialog>

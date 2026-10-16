@@ -1,4 +1,5 @@
 import { Suspense, lazy } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Box, Tabs, Tab, CircularProgress, Container } from '@mui/material';
 import { useLocation } from 'react-router-dom';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
@@ -13,10 +14,8 @@ const WorkoutHistory = lazy(() => import('./WorkoutHistory'));
 const TABS = ['plans', 'history'];
 
 const Workouts = () => {
-  usePageMeta(
-    'Schede di Allenamento',
-    'Crea e gestisci le tue schede di allenamento in palestra: piani illimitati, esercizi personalizzati e storico completo delle sessioni.'
-  );
+  const { t } = useTranslation();
+  usePageMeta(t('workouts.meta.title'), t('workouts.meta.description'));
   const location = useLocation();
   const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS);
 
@@ -44,13 +43,13 @@ const Workouts = () => {
             <Tab
               icon={<FitnessCenterIcon fontSize="small" />}
               iconPosition="start"
-              label="Le tue Schede"
+              label={t('workouts.tab_plans')}
               id="workout-tab-0"
             />
             <Tab
               icon={<CalendarTodayIcon fontSize="small" />}
               iconPosition="start"
-              label="Cronologia"
+              label={t('workouts.tab_history')}
               id="workout-tab-1"
             />
           </Tabs>

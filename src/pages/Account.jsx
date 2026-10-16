@@ -42,7 +42,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { format, parseISO, subYears, startOfToday, formatDistanceToNow } from 'date-fns';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import DateLocalization from '../i18n/DateLocalization';
 import { dateFnsLocale } from '../i18n/format';
 import { useAuth } from '../context/AuthContext';
@@ -181,12 +181,12 @@ const Account = ({ isEmbedded = false }) => {
   const handleDeleteAccount = async () => {
     // Validazione
     if (!deletePassword) {
-      setDeleteError('La password è obbligatoria');
+      setDeleteError(t('account.delete.password_required'));
       return;
     }
 
     if (!deleteConfirmed) {
-      setDeleteError('Devi confermare di essere consapevole delle conseguenze');
+      setDeleteError(t('account.delete.confirm_required'));
       return;
     }
 
@@ -210,14 +210,16 @@ const Account = ({ isEmbedded = false }) => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Errore durante l\'eliminazione dell\'account');
+        const failure = new Error(data.message || t('account.delete.error'));
+        failure.status = response.status;
+        throw failure;
       }
 
       // Chiudiamo il dialog e mostriamo il messaggio di successo
       handleCloseDeleteDialog();
       setSnackbar({
         open: true,
-        message: 'Account eliminato con successo',
+        message: t('account.delete.done'),
         severity: 'success'
       });
 
@@ -230,12 +232,10 @@ const Account = ({ isEmbedded = false }) => {
       console.error('Errore durante l\'eliminazione dell\'account:', error);
 
       // Gestione dei diversi tipi di errore
-      if (error.message.includes('password')) {
-        setDeleteError('La password non è corretta');
-      } else if (error.message.includes('sessione')) {
-        setDeleteError('La tua sessione è scaduta. Effettua nuovamente il login.');
+      if (error.status === 401) {
+        setDeleteError(t('account.session_expired'));
       } else {
-        setDeleteError(error.message || 'Errore durante l\'eliminazione dell\'account. Riprova.');
+        setDeleteError(error.message || t('account.delete.error_retry'));
       }
     } finally {
       setDeletingAccount(false);
@@ -250,7 +250,7 @@ const Account = ({ isEmbedded = false }) => {
     try {
       const response = await fetch(`${API_BASE_URL}api/user/export.php`, { method: 'GET', credentials: 'include' });
       const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.message || 'Esportazione non riuscita');
+      if (!response.ok || !data.success) throw new Error(data.message || t('account.export.failed'));
 
       const { success, ...dataToExport } = data; // eslint-disable-line no-unused-vars
       const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
@@ -263,11 +263,11 @@ const Account = ({ isEmbedded = false }) => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      setSnackbar({ open: true, message: 'Download completato con successo', severity: 'success' });
+      setSnackbar({ open: true, message: t('account.export.done'), severity: 'success' });
       return true;
     } catch (error) {
       console.error('Errore nell\'esportazione dei dati:', error);
-      setSnackbar({ open: true, message: 'Errore nell\'esportazione dei dati', severity: 'error' });
+      setSnackbar({ open: true, message: t('account.export.error'), severity: 'error' });
       return false;
     } finally {
       setExportLoading(false);
@@ -318,8 +318,8 @@ const Account = ({ isEmbedded = false }) => {
       setSnackbar({
         open: true,
         message: result.deleted_stats > 0
-          ? 'Consenso revocato: le tue misure corporee sono state cancellate'
-          : 'Consenso revocato',
+          ? t('account.consent.revoked_deleted')
+          : t('account.consent.revoked'),
         severity: 'success'
       });
     } catch (error) {
@@ -346,7 +346,7 @@ const Account = ({ isEmbedded = false }) => {
       });
 
       if (!response.ok) {
-        throw new Error('Errore nel recupero dei dati utente');
+        throw new Error(t('account.load_error'));
       }
 
       const userDetails = await response.json();
@@ -385,13 +385,13 @@ const Account = ({ isEmbedded = false }) => {
       console.error('Errore nel recupero dei dati utente:', error);
       setSnackbar({
         open: true,
-        message: 'Errore nel caricamento dei dati utente',
+        message: t('account.load_error'),
         severity: 'error'
       });
     } finally {
       setLoading(false);
     }
-  }, [applyWeeklyGoalSettings]);
+  }, [applyWeeklyGoalSettings]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Caricamento dei dati dell'utente al mount del componente
   useEffect(() => {
@@ -428,14 +428,14 @@ const Account = ({ isEmbedded = false }) => {
 
       setSnackbar({
         open: true,
-        message: 'Profilo aggiornato con successo',
+        message: t('account.profile.saved'),
         severity: 'success'
       });
     } catch (error) {
       console.error('Errore aggiornamento profilo:', error);
       setSnackbar({
         open: true,
-        message: 'Errore nel salvataggio del profilo',
+        message: t('account.profile.error'),
         severity: 'error'
       });
     } finally {
@@ -459,12 +459,12 @@ const Account = ({ isEmbedded = false }) => {
   const handleChangePassword = async () => {
     // Validazione
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setPasswordError('Tutti i campi sono obbligatori');
+      setPasswordError(t('account.password.all_required'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setPasswordError('Le nuove password non corrispondono');
+      setPasswordError(t('account.password.mismatch'));
       return;
     }
 
@@ -477,7 +477,7 @@ const Account = ({ isEmbedded = false }) => {
 
     // Verifica che la nuova password sia diversa da quella attuale
     if (currentPassword === newPassword) {
-      setPasswordError('La nuova password deve essere diversa da quella attuale');
+      setPasswordError(t('account.password.same'));
       return;
     }
 
@@ -502,14 +502,16 @@ const Account = ({ isEmbedded = false }) => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Errore durante il cambio password');
+        const failure = new Error(data.message || t('account.password.error'));
+        failure.status = response.status;
+        throw failure;
       }
 
       // Chiudiamo il dialog e mostriamo il messaggio di successo
       handleClosePasswordDialog();
       setSnackbar({
         open: true,
-        message: 'Password modificata con successo',
+        message: t('account.password.changed'),
         severity: 'success'
       });
 
@@ -519,12 +521,10 @@ const Account = ({ isEmbedded = false }) => {
       console.error('Errore durante il cambio password:', error);
 
       // Gestione dei diversi tipi di errore
-      if (error.message.includes('password attuale')) {
-        setPasswordError('La password attuale non è corretta');
-      } else if (error.message.includes('sessione')) {
-        setPasswordError('La tua sessione è scaduta. Effettua nuovamente il login.');
+      if (error.status === 401) {
+        setPasswordError(t('account.session_expired'));
       } else {
-        setPasswordError(error.message || 'Errore durante il cambio password. Riprova.');
+        setPasswordError(error.message || t('account.password.error_retry'));
       }
     } finally {
       setChangingPassword(false);
@@ -554,8 +554,8 @@ const Account = ({ isEmbedded = false }) => {
   }
 
   const passwordChangedLabel = userData?.password_changed_at
-    ? `Ultima modifica ${formatDistanceToNow(parseISO(userData.password_changed_at), { locale: dateFnsLocale(), addSuffix: true })}`
-    : 'Non ancora modificata';
+    ? t('account.password.last_changed', { when: formatDistanceToNow(parseISO(userData.password_changed_at), { locale: dateFnsLocale(), addSuffix: true }) })
+    : t('account.password.never_changed');
 
   return (
     <Box sx={{ maxWidth: 640, mx: 'auto', display: 'flex', flexDirection: 'column', gap: 3, pb: 4 }}>
@@ -581,13 +581,13 @@ const Account = ({ isEmbedded = false }) => {
 
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography sx={{ fontSize: 18, fontWeight: 700, lineHeight: 1.3 }} noWrap>
-              {userData?.username || 'Utente'}
+              {userData?.username || t('account.user_fallback')}
             </Typography>
             <Typography sx={{ fontSize: 13, color: 'text.secondary' }} noWrap>
-              {userData?.email || 'Email non disponibile'}
+              {userData?.email || t('account.email_unavailable')}
             </Typography>
             <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
-              Membro da {joinDate ? format(joinDate, 'MMMM yyyy', { locale: dateFnsLocale() }) : 'data non disponibile'}
+              {t('account.member_since', { date: joinDate ? format(joinDate, 'MMMM yyyy', { locale: dateFnsLocale() }) : t('account.date_unavailable') })}
             </Typography>
           </Box>
 
@@ -597,7 +597,7 @@ const Account = ({ isEmbedded = false }) => {
             onClick={() => setEditOpen(o => !o)}
             sx={{ flexShrink: 0 }}
           >
-            Modifica
+            {t('account.edit')}
           </Button>
         </Box>
 
@@ -605,12 +605,12 @@ const Account = ({ isEmbedded = false }) => {
         <Collapse in={editOpen}>
           <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 3 }}>
             <Box>
-              <Typography sx={{ fontSize: 13, fontWeight: 700, mb: 1.5 }}>Profilo fisico</Typography>
+              <Typography sx={{ fontSize: 13, fontWeight: 700, mb: 1.5 }}>{t('account.physical_profile')}</Typography>
               <DateLocalization>
                 <Grid container spacing={2} alignItems="flex-start">
                   <Grid item xs={12} sm={6}>
                     <DatePicker
-                      label="Data di Nascita"
+                      label={t('account.birth_date')}
                       value={birthDate}
                       onChange={(newValue) => setBirthDate(newValue)}
                       minDate={subYears(startOfToday(), 100)}
@@ -619,29 +619,29 @@ const Account = ({ isEmbedded = false }) => {
                         textField: {
                           fullWidth: true,
                           size: 'small',
-                          helperText: age ? `Età attuale: ${age} anni` : 'Calcolata automaticamente'
+                          helperText: age ? t('account.age_current', { age }) : t('account.age_auto')
                         }
                       }}
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth size="small">
-                      <InputLabel id="gender-label">Sesso</InputLabel>
+                      <InputLabel id="gender-label">{t('account.gender')}</InputLabel>
                       <Select
                         labelId="gender-label"
                         value={gender}
-                        label="Sesso"
+                        label={t('account.gender')}
                         onChange={(e) => setGender(e.target.value)}
                       >
-                        <MenuItem value="M">Maschio</MenuItem>
-                        <MenuItem value="F">Femmina</MenuItem>
-                        <MenuItem value="O">Altro</MenuItem>
+                        <MenuItem value="M">{t('account.gender_m')}</MenuItem>
+                        <MenuItem value="F">{t('account.gender_f')}</MenuItem>
+                        <MenuItem value="O">{t('account.gender_o')}</MenuItem>
                       </Select>
                     </FormControl>
                   </Grid>
                   <Grid item xs={12}>
                     <DatePicker
-                      label="Mese Inizio Allenamento"
+                      label={t('account.training_start')}
                       value={trainingStartDate}
                       onChange={(newValue) => setTrainingStartDate(newValue)}
                       views={['year', 'month']}
@@ -653,7 +653,7 @@ const Account = ({ isEmbedded = false }) => {
                         textField: {
                           fullWidth: true,
                           size: 'small',
-                          helperText: experienceYears ? `Esperienza: ${experienceYears} anni` : 'Mese e anno di inizio'
+                          helperText: experienceYears ? t('account.experience', { years: experienceYears }) : t('account.training_start_hint')
                         }
                       }}
                     />
@@ -667,15 +667,15 @@ const Account = ({ isEmbedded = false }) => {
                 disabled={updatingProfile}
                 sx={{ mt: 2 }}
               >
-                {updatingProfile ? 'Salvataggio...' : 'Salva Profilo'}
+                {updatingProfile ? t('focus.saving') : t('account.save_profile')}
               </Button>
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
               <Box>
-                <Typography sx={{ fontSize: 13, fontWeight: 700 }}>Timer di recupero</Typography>
+                <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{t('account.rest_timer')}</Typography>
                 <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
-                  Disattiva se usi un timer dedicato o l'orologio della palestra
+                  {t('account.rest_timer_help')}
                 </Typography>
               </Box>
               <Switch
@@ -695,7 +695,7 @@ const Account = ({ isEmbedded = false }) => {
                     if (!response.ok) throw new Error(data.message);
                     setSnackbar({
                       open: true,
-                      message: newValue ? 'Timer di recupero attivato' : 'Timer di recupero disattivato',
+                      message: newValue ? t('account.rest_timer_on') : t('focus.timer_off'),
                       severity: 'success'
                     });
                   } catch (error) {
@@ -703,7 +703,7 @@ const Account = ({ isEmbedded = false }) => {
                     setRestTimerEnabled(!newValue); // Rollback
                     setSnackbar({
                       open: true,
-                      message: 'Errore nel salvataggio delle impostazioni',
+                      message: t('account.settings_error'),
                       severity: 'error'
                     });
                   } finally {
@@ -795,11 +795,11 @@ const Account = ({ isEmbedded = false }) => {
       <Card sx={{ p: '24px' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
           <Box>
-            <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Password</Typography>
+            <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{t('account.password.title')}</Typography>
             <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>{passwordChangedLabel}</Typography>
           </Box>
           <Button variant="outlined" startIcon={<LockIcon />} onClick={handleOpenPasswordDialog}>
-            Cambia Password
+            {t('account.password.change')}
           </Button>
         </Box>
       </Card>
@@ -808,9 +808,9 @@ const Account = ({ isEmbedded = false }) => {
       <Card sx={{ p: '24px' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
           <Box>
-            <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Esporta i tuoi dati</Typography>
+            <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{t('account.export.title')}</Typography>
             <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
-              Scarica tutti i tuoi dati in formato JSON
+              {t('account.export.help')}
             </Typography>
           </Box>
           <Button
@@ -819,7 +819,7 @@ const Account = ({ isEmbedded = false }) => {
             onClick={handleDownloadData}
             disabled={exportLoading}
           >
-            Esporta
+            {t('account.export.button')}
           </Button>
         </Box>
       </Card>
@@ -828,15 +828,13 @@ const Account = ({ isEmbedded = false }) => {
       <Card sx={{ p: '24px' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
           <Box sx={{ maxWidth: 520 }}>
-            <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Misure corporee</Typography>
+            <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{t('account.consent.title')}</Typography>
             <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
-              Peso e misure sono dati sulla salute e li trattiamo solo con il tuo consenso.
-              Se lo revochi, le tue misure vengono cancellate.
+              {t('account.consent.help')}
             </Typography>
             {healthConsentOutdated && healthConsent !== true && (
               <Typography sx={{ fontSize: 12, color: 'warning.main', mt: 0.5 }}>
-                Abbiamo aggiornato il testo (ora comprende Apple Salute e Health Connect): riattivalo per
-                rivedere le tue misure.
+                {t('account.consent.outdated')}
               </Typography>
             )}
           </Box>
@@ -844,13 +842,13 @@ const Account = ({ isEmbedded = false }) => {
             checked={healthConsent === true}
             disabled={healthConsent === null || consentBusy}
             onChange={(e) => handleHealthConsentToggle(e.target.checked)}
-            inputProps={{ 'aria-label': 'Consenso al trattamento delle misure corporee' }}
+            inputProps={{ 'aria-label': t('account.consent.aria') }}
           />
         </Box>
         <Typography sx={{ fontSize: 12, mt: 1.5 }}>
-          <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Informativa privacy</a>
+          <a href="/privacy.html" target="_blank" rel="noopener noreferrer">{t('account.privacy')}</a>
           {' · '}
-          <a href="/termini.html" target="_blank" rel="noopener noreferrer">Termini d&apos;uso</a>
+          <a href="/termini.html" target="_blank" rel="noopener noreferrer">{t('account.terms')}</a>
         </Typography>
       </Card>
 
@@ -859,10 +857,10 @@ const Account = ({ isEmbedded = false }) => {
       {userData?.is_admin && (
         <Card sx={{ p: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
           <Box>
-            <Typography sx={{ fontSize: 15, fontWeight: 700 }}>Amministrazione</Typography>
-            <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Esercizi da approvare e catalogo</Typography>
+            <Typography sx={{ fontSize: 15, fontWeight: 700 }}>{t('account.admin.title')}</Typography>
+            <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{t('account.admin.help')}</Typography>
           </Box>
-          <Button variant="outlined" onClick={() => navigate('/admin')} sx={{ flexShrink: 0 }}>Apri</Button>
+          <Button variant="outlined" onClick={() => navigate('/admin')} sx={{ flexShrink: 0 }}>{t('account.admin.open')}</Button>
         </Card>
       )}
 
@@ -870,13 +868,13 @@ const Account = ({ isEmbedded = false }) => {
       <Card sx={{ p: '24px' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
           <Box>
-            <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Sessione</Typography>
+            <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{t('account.session.title')}</Typography>
             <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
-              Esci dall'account su questo dispositivo
+              {t('account.session.help')}
             </Typography>
           </Box>
           <Button variant="outlined" startIcon={<LogoutIcon />} onClick={logout}>
-            Esci
+            {t('account.session.logout')}
           </Button>
         </Box>
       </Card>
@@ -896,10 +894,10 @@ const Account = ({ isEmbedded = false }) => {
               fontSize: 15,
               color: (theme) => theme.palette.mode === 'light' ? '#9b0000' : 'error.main',
             }}>
-              Zona Pericolosa
+              {t('account.danger.title')}
             </Typography>
             <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
-              Elimina definitivamente il tuo account e tutti i tuoi dati
+              {t('account.danger.help')}
             </Typography>
           </Box>
           <Button
@@ -908,18 +906,17 @@ const Account = ({ isEmbedded = false }) => {
             startIcon={<DeleteForeverIcon />}
             onClick={handleOpenDeleteDialog}
           >
-            Elimina Account
+            {t('account.delete.title')}
           </Button>
         </Box>
       </Card>
 
       {/* Dialog per cambio password */}
       <Dialog open={revokeDialogOpen} onClose={() => !consentBusy && setRevokeDialogOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Revocare il consenso?</DialogTitle>
+        <DialogTitle>{t('account.revoke.title')}</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: 2 }}>
-            Se revochi il consenso <strong>tutte le tue misure corporee vengono cancellate</strong> e non
-            potrai più registrarne nuove finché non lo darai di nuovo. L&apos;operazione non si può annullare.
+            <Trans i18nKey="account.revoke.body" components={{ strong: <strong /> }} />
           </DialogContentText>
           <Button
             variant="outlined"
@@ -927,22 +924,22 @@ const Account = ({ isEmbedded = false }) => {
             onClick={handleDownloadData}
             disabled={exportLoading || consentBusy}
           >
-            Scarica prima i miei dati
+            {t('account.revoke.export_first')}
           </Button>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setRevokeDialogOpen(false)} disabled={consentBusy}>Annulla</Button>
+          <Button onClick={() => setRevokeDialogOpen(false)} disabled={consentBusy}>{t('common.cancel')}</Button>
           <Button onClick={handleConfirmRevoke} color="error" variant="contained" disabled={consentBusy}>
-            Revoca e cancella le misure
+            {t('account.revoke.confirm')}
           </Button>
         </DialogActions>
       </Dialog>
 
       <Dialog open={openPasswordDialog} onClose={handleClosePasswordDialog} fullWidth maxWidth="sm">
-        <DialogTitle>Cambia Password</DialogTitle>
+        <DialogTitle>{t('account.password.change')}</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: 2 }}>
-            Per modificare la tua password, inserisci la password attuale seguita dalla nuova password.
+            {t('account.password.intro')}
           </DialogContentText>
 
           {passwordError && (
@@ -953,7 +950,7 @@ const Account = ({ isEmbedded = false }) => {
 
           <TextField
             margin="dense"
-            label="Password Attuale"
+            label={t('account.password.current')}
             type={showCurrentPassword ? "text" : "password"}
             fullWidth
             variant="outlined"
@@ -980,7 +977,7 @@ const Account = ({ isEmbedded = false }) => {
 
           <TextField
             margin="dense"
-            label="Nuova Password"
+            label={t('account.password.new')}
             type={showNewPassword ? "text" : "password"}
             fullWidth
             variant="outlined"
@@ -1007,7 +1004,7 @@ const Account = ({ isEmbedded = false }) => {
 
           <TextField
             margin="dense"
-            label="Conferma Nuova Password"
+            label={t('account.password.confirm')}
             type={showConfirmPassword ? "text" : "password"}
             fullWidth
             variant="outlined"
@@ -1037,7 +1034,7 @@ const Account = ({ isEmbedded = false }) => {
             startIcon={<CancelIcon />}
             disabled={changingPassword}
           >
-            Annulla
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={handleChangePassword}
@@ -1045,7 +1042,7 @@ const Account = ({ isEmbedded = false }) => {
             startIcon={<SaveIcon />}
             disabled={changingPassword}
           >
-            {changingPassword ? 'Salvataggio...' : 'Salva'}
+            {changingPassword ? t('focus.saving') : t('common.save')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1053,19 +1050,19 @@ const Account = ({ isEmbedded = false }) => {
       {/* Dialog per eliminazione account */}
       <Dialog open={openDeleteDialog} onClose={handleCloseDeleteDialog} fullWidth maxWidth="sm">
         <DialogTitle sx={{ color: 'error.main', display: 'flex', alignItems: 'center' }}>
-          <DeleteForeverIcon sx={{ mr: 1 }} /> Elimina Account
+          <DeleteForeverIcon sx={{ mr: 1 }} /> {t('account.delete.title')}
         </DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: 2 }}>
-            Stai per eliminare definitivamente il tuo account. Questa operazione non può essere annullata e comporterà la perdita di tutti i tuoi dati.
+            {t('account.delete.intro')}
           </DialogContentText>
 
           <Alert severity="warning" sx={{ mb: 3 }}>
             <Typography variant="subtitle2" fontWeight="bold">
-              Attenzione: questa azione è irreversibile!
+              {t('account.delete.warning_title')}
             </Typography>
             <Typography variant="body2">
-              Tutti i tuoi dati, inclusi allenamenti e schede, verranno eliminati permanentemente.
+              {t('account.delete.warning_text')}
             </Typography>
           </Alert>
 
@@ -1077,7 +1074,7 @@ const Account = ({ isEmbedded = false }) => {
 
           <TextField
             margin="dense"
-            label="Password"
+            label={t('account.password.title')}
             type={showDeletePassword ? "text" : "password"}
             fullWidth
             variant="outlined"
@@ -1111,7 +1108,7 @@ const Account = ({ isEmbedded = false }) => {
                 color="error"
               />
             }
-            label="Confermo di essere consapevole che tutti i miei dati verranno eliminati permanentemente"
+            label={t('account.delete.confirm_label')}
             sx={{ mt: 1 }}
           />
         </DialogContent>
@@ -1121,7 +1118,7 @@ const Account = ({ isEmbedded = false }) => {
             startIcon={<CancelIcon />}
             disabled={deletingAccount}
           >
-            Annulla
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={handleDeleteAccount}
@@ -1130,7 +1127,7 @@ const Account = ({ isEmbedded = false }) => {
             startIcon={<DeleteForeverIcon />}
             disabled={deletingAccount || !deleteConfirmed}
           >
-            {deletingAccount ? 'Eliminazione in corso...' : 'Elimina Account'}
+            {deletingAccount ? t('account.delete.in_progress') : t('account.delete.title')}
           </Button>
         </DialogActions>
       </Dialog>

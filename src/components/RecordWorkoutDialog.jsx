@@ -24,11 +24,14 @@ import InfoIcon from '@mui/icons-material/Info';
 import { API_BASE_URL } from '../config';
 import { INTENSITY_TECHNIQUES } from './ExerciseDialog';
 import { track } from '../utils/analytics';
+import { useTranslation } from 'react-i18next';
+import { techniqueLabel } from '../i18n/labels';
 import {
   MAX_WEIGHT, isValidWeight, initialWeight, newIdempotencyKey, isValidReps, planRepsForSet, repsNeedConfirm,
 } from '../utils/focusSession';
 
 const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
+  const { t } = useTranslation();
   const [selectedDay, setSelectedDay] = useState('');
   const [exercises, setExercises] = useState([]);
   const [workoutData, setWorkoutData] = useState({});
@@ -84,7 +87,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
     const written = writtenSets();
     const invalid = written.find(set => !isValidReps(set.reps));
     if (invalid) {
-      setRepsError(`${invalid.exercise.exercise_name}, serie ${invalid.setIndex + 1}: ripetizioni non valide, usa un numero intero tra 1 e 250.`);
+      setRepsError(t('record.invalid_reps', { exercise: invalid.exercise.exercise_name, n: invalid.setIndex + 1 }));
       return;
     }
     setRepsError('');
@@ -130,7 +133,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
       const responseData = await response.json();
 
       if (!response.ok) {
-        throw new Error(responseData.message || 'Errore durante il salvataggio dell\'allenamento');
+        throw new Error(responseData.message || t('record.save_error'));
       }
 
       // Il prossimo allenamento registrato da qui è un altro: chiave nuova
@@ -183,14 +186,14 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
 
   return (
     <Dialog open={open} onClose={() => onClose(false)} maxWidth="sm" fullWidth>
-      <DialogTitle>Registra Allenamento</DialogTitle>
+      <DialogTitle>{t('record.title')}</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
           <FormControl fullWidth>
-            <InputLabel>Seleziona Giorno</InputLabel>
+            <InputLabel>{t('record.select_day')}</InputLabel>
             <Select
               value={selectedDay}
-              label="Seleziona Giorno"
+              label={t('record.select_day')}
               onChange={handleDayChange}
             >
               {activePlan?.days?.map((day) => (
@@ -203,7 +206,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
 
           {exercises.length === 0 && (
             <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-              Seleziona un giorno per compilare le serie svolte.
+              {t('record.select_day_hint')}
             </Typography>
           )}
 
@@ -222,7 +225,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                       secondary={
                         <Box>
                           <Typography variant="body2" color="text.secondary">
-                            {`${exercise.sets} serie x ${exercise.reps} - Recupero: ${exercise.rest}s`}
+                            {t('record.plan_line', { sets: exercise.sets, reps: exercise.reps, rest: exercise.rest })}
                           </Typography>
                           {exercise.notes && (
                             <Box sx={{ mt: 1 }}>
@@ -230,13 +233,13 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                                 <Box>
                                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                     <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', mr: 1 }}>
-                                      Note: {exercise.notes.substring(0, 50)}...
+                                      {t('record.notes_truncated', { notes: exercise.notes.substring(0, 50) })}
                                     </Typography>
                                     <IconButton 
                                       size="small" 
                                       color="primary" 
                                       onClick={() => toggleNotes(exercise.id)}
-                                      aria-label="mostra note"
+                                      aria-label={t('record.show_notes')}
                                     >
                                       <InfoIcon fontSize="small" />
                                     </IconButton>
@@ -247,7 +250,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                                       sx={{ mt: 1 }}
                                       action={
                                         <IconButton
-                                          aria-label="chiudi"
+                                          aria-label={t('record.close')}
                                           color="inherit"
                                           size="small"
                                           onClick={() => toggleNotes(exercise.id)}
@@ -262,7 +265,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                                 </Box>
                               ) : (
                                 <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                                  Note: {exercise.notes}
+                                  {t('record.notes', { notes: exercise.notes })}
                                 </Typography>
                               )}
                             </Box>
@@ -274,10 +277,10 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                       {Array(exercise.sets).fill().map((_, setIndex) => (
                         <Box key={setIndex} sx={{ display: 'flex', gap: 2, mb: 2 }}>
                           <Typography variant="body2" sx={{ minWidth: 60, display: 'flex', alignItems: 'center' }}>
-                            Serie {setIndex + 1}:
+                            {t('record.set', { n: setIndex + 1 })}
                           </Typography>
                           <TextField
-                            label="Peso (kg)"
+                            label={t('record.weight')}
                             type="number"
                             value={workoutData[exercise.id]?.[setIndex]?.weight || ''}
                             onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'weight', e.target.value)}
@@ -294,7 +297,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                             }}
                           />
                           <TextField
-                            label="Ripetizioni"
+                            label={t('record.reps')}
                             value={workoutData[exercise.id]?.[setIndex]?.reps ?? ''}
                             placeholder={planRepsForSet(exercise.reps, setIndex)}
                             InputLabelProps={{ shrink: true }}
@@ -305,15 +308,15 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                             size="small"
                           />
                           <FormControl fullWidth size="small">
-                            <InputLabel>Tecnica</InputLabel>
+                            <InputLabel>{t('record.technique')}</InputLabel>
                             <Select
                               value={workoutData[exercise.id]?.[setIndex]?.intensity_technique || ''}
-                              label="Tecnica"
+                              label={t('record.technique')}
                               onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'intensity_technique', e.target.value)}
                             >
-                              <MenuItem value=""><em>Nessuna</em></MenuItem>
-                              {INTENSITY_TECHNIQUES.filter(t => t !== 'Nessuna (Normale)').map(tech => (
-                                <MenuItem key={tech} value={tech}>{tech}</MenuItem>
+                              <MenuItem value=""><em>{t('record.no_technique')}</em></MenuItem>
+                              {INTENSITY_TECHNIQUES.filter(tech => tech !== 'Nessuna (Normale)').map(tech => (
+                                <MenuItem key={tech} value={tech}>{techniqueLabel(tech)}</MenuItem>
                               ))}
                             </Select>
                           </FormControl>
@@ -329,21 +332,21 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
         {repsError && <Alert severity="error" sx={{ mt: 2 }}>{repsError}</Alert>}
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => onClose(false)}>Annulla</Button>
+        <Button onClick={() => onClose(false)}>{t('common.cancel')}</Button>
         <Button 
           onClick={handleSave} 
           variant="contained" 
           disabled={!isValid()}
         >
-          Salva
+          {t('common.save')}
         </Button>
       </DialogActions>
 
       <Dialog open={!!unusualSet} onClose={() => setUnusualSet(null)}>
-        <DialogTitle>Confermi {unusualSet?.reps} ripetizioni?</DialogTitle>
+        <DialogTitle>{t('record.confirm_reps', { reps: unusualSet?.reps })}</DialogTitle>
         <DialogActions>
-          <Button onClick={() => setUnusualSet(null)}>Correggi</Button>
-          <Button onClick={handleSubmit} variant="contained">Sì, confermo</Button>
+          <Button onClick={() => setUnusualSet(null)}>{t('record.fix')}</Button>
+          <Button onClick={handleSubmit} variant="contained">{t('record.confirm_yes')}</Button>
         </DialogActions>
       </Dialog>
     </Dialog>

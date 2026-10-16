@@ -1,4 +1,5 @@
 import { Suspense, lazy } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Box, Tabs, Tab, CircularProgress } from '@mui/material';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -12,10 +13,8 @@ const Account = lazy(() => import('./Account'));
 const TABS = ['summary', 'settings'];
 
 const Profile = () => {
-  usePageMeta(
-    'Profilo e Impostazioni',
-    'Gestisci il tuo profilo, i traguardi raggiunti e le impostazioni del tuo account LiftIndex.'
-  );
+  const { t } = useTranslation();
+  usePageMeta(t('profile.meta.title'), t('profile.meta.description'));
   const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS);
 
   return (
@@ -41,13 +40,13 @@ const Profile = () => {
           <Tab
             icon={<EmojiEventsIcon fontSize="small" />}
             iconPosition="start"
-            label="Riepilogo"
+            label={t('profile.tab_summary')}
             id="profile-tab-0"
           />
           <Tab
             icon={<SettingsIcon fontSize="small" />}
             iconPosition="start"
-            label="Impostazioni"
+            label={t('profile.tab_settings')}
             id="profile-tab-1"
           />
         </Tabs>
