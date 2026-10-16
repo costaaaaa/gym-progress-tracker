@@ -184,6 +184,9 @@ build/
 backend/api/user_stats/sync_apple_health.php
 dati.sql
 
+# Analisi e documentazione interna
+analisi-ottimizzazione-gym-progress-tracker.md
+
 # Documenti di dominio e config skill: solo locali, non pubblici
 GLOSSARY.md
 docs/adr/
