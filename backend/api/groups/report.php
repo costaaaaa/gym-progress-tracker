@@ -19,7 +19,8 @@ try {
     $reason = is_string($data['reason'] ?? null) ? trim($data['reason']) : '';
     $length = mb_strlen($reason, 'UTF-8');
     if ($length < Report::REASON_MIN || $length > Report::REASON_MAX) {
-        api_error(400, 'invalid_reason', t_server('report.reason_invalid', array('min' => Report::REASON_MIN, 'max' => Report::REASON_MAX)));
+        $limits = array('min' => Report::REASON_MIN, 'max' => Report::REASON_MAX);
+        api_error(400, 'invalid_reason', t_server('report.reason_invalid', $limits));
     }
     if (($data['good_faith'] ?? null) !== true) {
         api_error(400, 'good_faith_required', t_server('report.good_faith_required'));
