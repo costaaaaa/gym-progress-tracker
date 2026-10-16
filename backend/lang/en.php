@@ -125,4 +125,18 @@ return array(
     'workout.record_saved' => 'Workout saved',
     'workout.record_error' => 'Error while saving the workout',
     'workout.none_found' => 'No workout plans found.',
+
+    // Gruppi
+    'groups.name_invalid' => "The name must be 1 to 60 characters and can't contain links.",
+    'groups.type_invalid' => 'Invalid group type.',
+    'groups.too_many' => 'You can create at most {max} groups.',
+    'groups.owner_cannot_leave' => "You're the owner: delete the group to leave it.",
+    'groups.member_not_found' => 'Member not found.',
+    'groups.cannot_remove_member' => "You can't remove this member.",
+    'groups.owner_removes_admin' => 'Only the owner can remove an admin.',
+    'groups.owner_deletes' => 'Only the owner can delete the group.',
+    'groups.action_invalid' => 'Invalid action.',
+    'groups.invalid_code' => 'Invalid or expired invite code.',
+    'groups.consent_required' => 'To join the group, you need to accept what the other members will see.',
+    'groups.full' => 'The group has reached its maximum number of members.',
 );

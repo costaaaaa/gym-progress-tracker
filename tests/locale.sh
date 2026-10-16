@@ -95,6 +95,10 @@ expect "scheda: attivazione, account italiano resta italiano" .message "Impossib
     "$(call POST api/workout/activate_plan.php en "$IT" '{}')"
 expect "404 comune (default di api_not_found)" .message "Resource not found." \
     "$(call POST api/workout/activate_plan.php "" "$EN" '{"plan_id":99999999}')"
+expect "gruppi: codice invito sbagliato" .message "Invalid or expired invite code." \
+    "$(call GET "api/groups/preview.php?code=ZZZZZZZZZZ" "" "$EN")"
+expect "gruppi: codice invito sbagliato, account italiano resta italiano" .message "Codice invito non valido o scaduto." \
+    "$(call GET "api/groups/preview.php?code=ZZZZZZZZZZ" en "$IT")"
 
 echo "Email di reset"
 expect "richiesta reset, X-Locale: en" .success true "$(call POST api/user/forgot_password.php en "" "{\"email\":\"$EN_USER@example.com\"}")"

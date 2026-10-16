@@ -9,18 +9,18 @@ try {
     $data = groups_json_body();
     $name = Group::cleanName($data['name'] ?? null);
     if ($name === null) {
-        api_error(400, 'invalid_name', 'Il nome deve avere da 1 a 60 caratteri e non può contenere link.');
+        api_error(400, 'invalid_name', t_server('groups.name_invalid'));
     }
     $type = $data['type'] ?? 'friends';
     if (!in_array($type, Group::TYPES, true)) {
-        api_error(400, 'invalid_type', 'Tipo di gruppo non valido.');
+        api_error(400, 'invalid_type', t_server('groups.type_invalid'));
     }
 
     enforce_rate_limit($db, 'group_create_user', 'group:create:user:' . $user_id);
 
     $group = new Group($db);
     if ($group->countOwned($user_id) >= Group::MAX_OWNED) {
-        api_error(409, 'too_many_groups', 'Puoi creare al massimo ' . Group::MAX_OWNED . ' gruppi.');
+        api_error(409, 'too_many_groups', t_server('groups.too_many', array('max' => Group::MAX_OWNED)));
     }
     $group_id = $group->create($user_id, $name, $type);
     $created = $group->find($group_id);

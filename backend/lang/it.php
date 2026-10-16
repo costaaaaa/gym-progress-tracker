@@ -125,4 +125,18 @@ return array(
     'workout.record_saved' => 'Allenamento registrato con successo',
     'workout.record_error' => "Errore durante la registrazione dell'allenamento",
     'workout.none_found' => 'Nessuna scheda di allenamento trovata.',
+
+    // Gruppi
+    'groups.name_invalid' => 'Il nome deve avere da 1 a 60 caratteri e non può contenere link.',
+    'groups.type_invalid' => 'Tipo di gruppo non valido.',
+    'groups.too_many' => 'Puoi creare al massimo {max} gruppi.',
+    'groups.owner_cannot_leave' => 'Sei il proprietario: per uscire elimina il gruppo.',
+    'groups.member_not_found' => 'Membro non trovato.',
+    'groups.cannot_remove_member' => 'Non puoi rimuovere questo membro.',
+    'groups.owner_removes_admin' => 'Solo il proprietario può rimuovere un amministratore.',
+    'groups.owner_deletes' => 'Solo il proprietario può eliminare il gruppo.',
+    'groups.action_invalid' => 'Azione non valida.',
+    'groups.invalid_code' => 'Codice invito non valido o scaduto.',
+    'groups.consent_required' => 'Per entrare nel gruppo devi accettare cosa vedranno gli altri membri.',
+    'groups.full' => 'Il gruppo ha raggiunto il numero massimo di membri.',
 );

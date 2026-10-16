@@ -12,13 +12,13 @@ function groups_bootstrap($method)
 {
     header('Content-Type: application/json');
     if ($_SERVER['REQUEST_METHOD'] !== $method) {
-        api_error(405, 'method_not_allowed', 'Metodo non consentito');
+        api_error(405, 'method_not_allowed', t_server('common.method_not_allowed'));
     }
     $database = new Database();
     $db = $database->getConnection();
     $user_id = resolve_authenticated_user_id($db);
     if (!$user_id) {
-        api_error(401, 'unauthenticated', 'Utente non autenticato');
+        api_error(401, 'unauthenticated', t_server('common.not_authenticated'));
     }
     return array($db, (int)$user_id);
 }
@@ -33,7 +33,7 @@ function groups_group_id($value)
 {
     $id = filter_var($value, FILTER_VALIDATE_INT, array('options' => array('min_range' => 1)));
     if ($id === false) {
-        api_error(404, 'group_not_found', 'Gruppo non trovato.');
+        api_error(404, 'group_not_found', t_server('groups.not_found'));
     }
     return $id;
 }
@@ -43,5 +43,5 @@ function groups_fail($context, $e)
 {
     api_log_exception($context, $e);
     if (ob_get_length()) ob_clean();
-    api_error(500, 'server_error', 'Errore interno del server.');
+    api_error(500, 'server_error', t_server('common.server_error'));
 }

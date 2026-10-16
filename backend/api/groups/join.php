@@ -9,7 +9,7 @@ try {
 
     $data = groups_json_body();
     if (($data['consent'] ?? false) !== true) {
-        api_error(400, 'consent_required', 'Per entrare nel gruppo devi accettare cosa vedranno gli altri membri.');
+        api_error(400, 'consent_required', t_server('groups.consent_required'));
     }
     require_group_age($db, $user_id);
 
@@ -17,15 +17,15 @@ try {
     $group = new Group($db);
     $found = $code ? $group->findByCode($code) : null;
     if (!$found) {
-        api_error(404, 'invalid_code', 'Codice invito non valido o scaduto.');
+        api_error(404, 'invalid_code', t_server('groups.invalid_code'));
     }
 
     $result = $group->join($found['id'], $user_id);
     if ($result === 'closed') {
-        api_error(404, 'invalid_code', 'Codice invito non valido o scaduto.');
+        api_error(404, 'invalid_code', t_server('groups.invalid_code'));
     }
     if ($result === 'full') {
-        api_error(409, 'group_full', 'Il gruppo ha raggiunto il numero massimo di membri.');
+        api_error(409, 'group_full', t_server('groups.full'));
     }
 
     api_json_response(array(
