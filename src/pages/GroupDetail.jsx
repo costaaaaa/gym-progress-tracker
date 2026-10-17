@@ -21,6 +21,8 @@ import { intlLocale } from '../i18n/format';
 const BOARDS = ['week', 'streak', 'level'];
 
 const formatDay = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short' });
+// "2026-10-30 18:05:00" (MySQL): con la "T" lo leggono anche Safari e Hermes
+const formatLockDate = (value) => new Date(value.replace(' ', 'T')).toLocaleString(intlLocale(), { dateStyle: 'medium', timeStyle: 'short' });
 
 // Conferma per le azioni che non si annullano (uscire, eliminare, rimuovere un membro)
 const ConfirmDialog = ({ confirm, onClose }) => {
@@ -222,7 +224,17 @@ const GroupDetailContent = () => {
 
             <Card sx={{ p: '22px' }}>
               <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 1.5 }}>{t('groups.detail.settings')}</Typography>
-              {canManage && (renaming === null ? (
+              {canManage && group.name_locked && (
+                <>
+                  <Button size="small" disabled sx={{ mb: 0.5 }}>{t('groups.detail.rename')}</Button>
+                  <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 1.5 }}>
+                    {group.name_locked_until
+                      ? t('groups.detail.name_locked_until', { date: formatLockDate(group.name_locked_until) })
+                      : t('groups.detail.name_locked')}
+                  </Typography>
+                </>
+              )}
+              {canManage && !group.name_locked && (renaming === null ? (
                 <Button size="small" onClick={() => setRenaming(group.name)} sx={{ mb: 1 }}>{t('groups.detail.rename')}</Button>
               ) : (
                 <Box component="form" onSubmit={saveName} sx={{ display: 'flex', gap: 1, mb: 1.5 }}>

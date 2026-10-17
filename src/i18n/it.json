@@ -473,6 +473,8 @@
   "groups.detail.remove.cta": "Rimuovi",
   "groups.detail.remove.done": "{{name}} è stato rimosso",
   "groups.detail.rename": "Rinomina il gruppo",
+  "groups.detail.name_locked_until": "Il nome è stato cambiato dopo una segnalazione: potrai modificarlo dal {{date}}.",
+  "groups.detail.name_locked": "Il nome è stato cambiato dopo più segnalazioni e non si può più modificare. Per chiedere un cambio scrivi a info@liftindex.app.",
   "groups.detail.save": "Salva",
   "groups.detail.delete.title": "Eliminare il gruppo?",
   "groups.detail.delete.text": "Il gruppo e la classifica spariscono per tutti i membri. Gli allenamenti di ognuno restano nei rispettivi account.",

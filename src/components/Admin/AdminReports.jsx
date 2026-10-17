@@ -12,9 +12,23 @@ const TARGET_LABELS = { group_name: 'Nome del gruppo', member: 'Username' };
 // Azioni sulle segnalazioni aperte. La nota è sempre obbligatoria: è la motivazione (DSA art. 17)
 // che arriva per email a chi ha segnalato e, nelle rinomine, a chi subisce la modifica.
 const ACTIONS = {
-  resolve: { title: 'Accogli la segnalazione', cta: 'Accogli' },
+  resolve: {
+    title: 'Accogli la segnalazione',
+    cta: 'Accogli',
+    hint: () => 'La chiude come accolta senza cambiare niente: usala se hai già provveduto in altro modo. Per cambiare il nome usa «Rinomina».',
+  },
   dismiss: { title: 'Respingi la segnalazione', cta: 'Respingi' },
-  rename_group: { title: 'Rinomina il gruppo', cta: 'Rinomina', field: 'name', fieldLabel: 'Nuovo nome del gruppo', max: 60 },
+  rename_group: {
+    title: 'Rinomina il gruppo',
+    cta: 'Rinomina',
+    field: 'name',
+    fieldLabel: 'Nuovo nome del gruppo',
+    max: 60,
+    // Stesse regole di Group::nameLock sul server
+    hint: (report) => (report.group_admin_renames >= 1
+      ? 'È già stato rinominato d\'ufficio: dopo questa volta il proprietario non potrà più cambiare il nome.'
+      : 'Il proprietario non potrà cambiare il nome per 14 giorni.'),
+  },
   rename_user: { title: "Rinomina l'utente", cta: 'Rinomina', field: 'username', fieldLabel: 'Nuovo username', max: 50 },
 };
 
@@ -56,6 +70,9 @@ const ReportActionDialog = ({ pending, onClose, onDone }) => {
           <DialogTitle sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700 }}>{action.title}</DialogTitle>
           <DialogContent>
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            {action.hint && (
+              <Typography sx={{ fontSize: 14, color: 'text.secondary', mb: 1 }}>{action.hint(pending.report)}</Typography>
+            )}
             {action.field && (
               <TextField
                 label={action.fieldLabel}

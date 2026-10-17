@@ -139,6 +139,8 @@ return array(
     'groups.invalid_code' => 'Codice invito non valido o scaduto.',
     'groups.consent_required' => 'Per entrare nel gruppo devi accettare cosa vedranno gli altri membri.',
     'groups.full' => 'Il gruppo ha raggiunto il numero massimo di membri.',
+    'groups.name_locked_until' => 'Il nome è stato cambiato dopo una segnalazione: potrai modificarlo dal {date}.',
+    'groups.name_locked' => 'Il nome è stato cambiato dopo più segnalazioni e non si può più modificare. Per chiedere un cambio scrivi a info@liftindex.app.',
 
     'report.target_invalid' => 'Scegli cosa segnalare: il nome del gruppo o un membro.',
     'report.reason_invalid' => 'Spiega il motivo in {min}-{max} caratteri.',
@@ -152,7 +154,9 @@ return array(
     'report.mail.dismissed_subject' => "Esito della tua segnalazione",
     'report.mail.dismissed_body' => "Ciao {username},\n\nabbiamo esaminato la tua segnalazione n. {id} su «{label}» e non l'abbiamo accolta.\nMotivazione: {note}\n\nSe non sei d'accordo scrivici a info@liftindex.app.\n\nLiftIndex\n",
     'report.mail.group_renamed_subject' => "Il nome del tuo gruppo è stato cambiato",
-    'report.mail.group_renamed_body' => "Ciao {username},\n\ndopo una segnalazione il tuo gruppo «{old}» ora si chiama «{new}».\nMotivazione: {note}\n\nSe non sei d'accordo scrivici a info@liftindex.app.\n\nLiftIndex\n",
+    'report.mail.group_renamed_body' => "Ciao {username},\n\ndopo una segnalazione il tuo gruppo «{old}» ora si chiama «{new}».\nMotivazione: {note}\n\nPer {days} giorni non potrai cambiare il nome. Se succede di nuovo, il nome non si potrà più cambiare.\nSe non sei d'accordo scrivici a info@liftindex.app.\n\nLiftIndex\n",
+    'report.mail.group_renamed_forever_subject' => "Il nome del tuo gruppo è stato cambiato",
+    'report.mail.group_renamed_forever_body' => "Ciao {username},\n\ndopo un'altra segnalazione il tuo gruppo «{old}» ora si chiama «{new}».\nMotivazione: {note}\n\nIl nome è stato cambiato d'ufficio più di una volta: d'ora in poi non potrai più modificarlo.\nSe non sei d'accordo, o vuoi chiedere un cambio, scrivici a info@liftindex.app.\n\nLiftIndex\n",
     'report.mail.user_renamed_subject' => "Il tuo nome utente è stato cambiato",
     'report.mail.user_renamed_body' => "Ciao,\n\ndopo una segnalazione il tuo nome utente «{old}» è stato cambiato in «{new}».\nMotivazione: {note}\n\nDa ora accedi con «{new}»; la password non cambia.\nSe non sei d'accordo scrivici a info@liftindex.app.\n\nLiftIndex\n",
 

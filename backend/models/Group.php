@@ -9,6 +9,10 @@ class Group
     const MAX_OWNED = 10;
     const TYPES = array('friends', 'gym');
     const BOARDS = array('week', 'streak', 'level');
+    // Rinomine d'ufficio (segnalazioni): dopo la prima il proprietario non può cambiare il nome
+    // per NAME_LOCK_DAYS giorni, dalla NAME_LOCK_FOREVER_AFTER-esima mai più
+    const NAME_LOCK_DAYS = 14;
+    const NAME_LOCK_FOREVER_AFTER = 2;
 
     private $conn;
 
@@ -85,6 +89,9 @@ class Group
     {
         $stmt = $this->conn->prepare(
             "SELECT g.id, g.name, g.type, g.owner_user_id, g.invite_code, g.invite_enabled, g.max_members, g.created_at,
+                    g.admin_renames,
+                    IF(g.admin_renamed_at > NOW() - INTERVAL " . self::NAME_LOCK_DAYS . " DAY,
+                       g.admin_renamed_at + INTERVAL " . self::NAME_LOCK_DAYS . " DAY, NULL) AS name_locked_until,
                     (SELECT COUNT(*) FROM gym_group_members m WHERE m.group_id = g.id) AS members_count
              FROM gym_groups g WHERE g.id = ? LIMIT 1"
         );
@@ -270,6 +277,25 @@ class Group
     public function rename($group_id, $name)
     {
         $this->conn->prepare("UPDATE gym_groups SET name = ? WHERE id = ?")->execute([$name, (int)$group_id]);
+    }
+
+    // Rinomina d'ufficio (segnalazione accolta dall'admin): conta per il blocco del nome
+    public function adminRename($group_id, $name)
+    {
+        $this->conn->prepare(
+            "UPDATE gym_groups SET name = ?, admin_renames = admin_renames + 1, admin_renamed_at = NOW() WHERE id = ?"
+        )->execute([$name, (int)$group_id]);
+    }
+
+    // Blocco del nome per il proprietario, da una riga di find(): null se può cambiarlo,
+    // altrimenti {until: 'AAAA-MM-GG hh:mm:ss'} o, dopo troppe rinomine d'ufficio, {until: null}.
+    // La scadenza la calcola MySQL, come admin_renamed_at: niente confronti fra fusi orari diversi.
+    public static function nameLock(array $row)
+    {
+        if ((int)($row['admin_renames'] ?? 0) >= self::NAME_LOCK_FOREVER_AFTER) {
+            return array('until' => null);
+        }
+        return empty($row['name_locked_until']) ? null : array('until' => $row['name_locked_until']);
     }
 
     public function regenerateCode($group_id)

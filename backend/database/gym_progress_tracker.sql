@@ -438,6 +438,8 @@ CREATE TABLE IF NOT EXISTS `gym_groups` (
   `invite_code` char(10) NOT NULL,
   `invite_enabled` tinyint(1) NOT NULL DEFAULT 1,
   `max_members` smallint(6) NOT NULL DEFAULT 50,
+  `admin_renames` tinyint unsigned NOT NULL DEFAULT 0,
+  `admin_renamed_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),

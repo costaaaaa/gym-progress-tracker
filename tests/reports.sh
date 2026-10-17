@@ -87,6 +87,12 @@ call POST api/groups/join.php "$B" "{\"code\":\"$CODE\",\"consent\":true}" >/dev
 
 REASON='Il nome del gruppo insulta una persona riconoscibile.'
 
+# rename_by_owner nome → risposta di manage.php per A (owner)
+rename_by_owner() {
+    call POST api/groups/manage.php "$A" "$(jq -nc --argjson g "$GID" --arg n "$1" '{group_id:$g, action:"rename", name:$n}')"
+}
+check "all'inizio il nome non è bloccato" "$(call GET "api/groups/read.php?group_id=$GID" "$A")" '.group.name_locked == false and .group.name_locked_until == null'
+
 echo "Segnalazione"
 GROUP_RES="$(report "$B" "$GID" "$(jq -nc --arg r "$REASON" '{target:"group_name", reason:$r, good_faith:true}')")"
 expect "B segnala il nome del gruppo: 201" 201 "$GROUP_RES"
@@ -148,6 +154,12 @@ if [[ -n "${ADMIN_USER:-}" && -n "${ADMIN_PASS:-}" ]]; then
         check "B vede il nuovo nome" "$(call GET "api/groups/read.php?group_id=$GID" "$B")" ".group.name == \"$NEW_GROUP_NAME\""
         check "la segnalazione è accolta, con il nome segnalato com'era" "$(call GET 'api/admin/reports.php?status=resolved' "$ADM")" \
             ".reports | any(.id == $GROUP_RID and .decision_note == \"$NOTE_G\" and .target_label == \"$GROUP_NAME\" and .group_name == \"$NEW_GROUP_NAME\")"
+        check "A vede il nome bloccato per 14 giorni" "$(call GET "api/groups/read.php?group_id=$GID" "$A")" \
+            '.group.name_locked == true and (.group.name_locked_until | type == "string")'
+        check "B (membro) non riceve il blocco: non gestisce il gruppo" "$(call GET "api/groups/read.php?group_id=$GID" "$B")" '.group | has("name_locked") | not'
+        res="$(rename_by_owner "Di nuovo $SUFFIX")"
+        expect "A non può rinominarlo: 403" 403 "$res"
+        check "con il codice name_locked e la data nel messaggio" "$res" '.code == "name_locked" and (.message | test("[0-9]{2}/[0-9]{2}/[0-9]{4}"))'
 
         echo "Admin: rinomina l'utente"
         NOTE_U='Lo username era un insulto.'
@@ -165,6 +177,15 @@ if [[ -n "${ADMIN_USER:-}" && -n "${ADMIN_PASS:-}" ]]; then
         check "B vede A col nuovo nome fra i membri" "$(call GET "api/groups/read.php?group_id=$GID" "$B")" ".members | any(.username == \"$NEW_A_USER\")"
         check "la segnalazione è accolta" "$(call GET 'api/admin/reports.php?status=resolved' "$ADM")" \
             ".reports | any(.id == $MEMBER_RID and .decision_note == \"$NOTE_U\" and .target_label == \"$A_USER\")"
+
+        echo "Admin: seconda rinomina del gruppo"
+        check "l'elenco dice che il gruppo è già stato rinominato una volta" "$(call GET api/admin/reports.php "$ADM")" \
+            ".reports | any(.id == $OPEN_GROUP_RID and .group_admin_renames == 1)"
+        expect "rinomina di nuovo" 200 "$(call POST api/admin/reports.php "$ADM" "$(jq -nc --argjson i "$OPEN_GROUP_RID" --arg g "Gruppo2 $SUFFIX" --arg n "$NOTE_G" '{action:"rename_group", id:$i, name:$g, note:$n}')")"
+        check "ora il nome è bloccato per sempre" "$(call GET "api/groups/read.php?group_id=$GID" "$A")" '.group.name_locked == true and .group.name_locked_until == null'
+        res="$(rename_by_owner "Di nuovo $SUFFIX")"
+        expect "A non può rinominarlo: 403" 403 "$res"
+        check "con il messaggio senza data" "$res" '.code == "name_locked" and (.message | test("info@liftindex.app"))'
     fi
 else
     echo "  (parte admin saltata: imposta ADMIN_USER e ADMIN_PASS)"

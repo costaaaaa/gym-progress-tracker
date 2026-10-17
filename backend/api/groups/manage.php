@@ -1,6 +1,6 @@
 <?php
 // POST {group_id, action, ...} → gestione del gruppo.
-//   rename {name}             owner, admin
+//   rename {name}             owner, admin (403 name_locked dopo una rinomina d'ufficio, vedi Group::nameLock)
 //   regenerate_code           owner, admin (il vecchio codice smette di funzionare)
 //   toggle_invites {enabled}  owner, admin
 //   remove_member {ref}       owner (chiunque tranne sé), admin (solo i member)
@@ -18,6 +18,14 @@ try {
 
     switch ($action) {
         case 'rename':
+            $lock = Group::nameLock($group->find($group_id));
+            if ($lock !== null && $lock['until'] === null) {
+                api_error(403, 'name_locked', t_server('groups.name_locked'));
+            }
+            if ($lock !== null) {
+                $format = request_locale() === 'en' ? 'M j, Y g:i A' : 'd/m/Y H:i';
+                api_error(403, 'name_locked', t_server('groups.name_locked_until', array('date' => date($format, strtotime($lock['until'])))));
+            }
             $name = Group::cleanName($data['name'] ?? null);
             if ($name === null) {
                 api_error(400, 'invalid_name', t_server('groups.name_invalid'));

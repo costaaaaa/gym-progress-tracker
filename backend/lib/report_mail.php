@@ -3,6 +3,7 @@
 // ricevuta ed esito a chi segnala, motivazione a chi subisce la modifica (proprietario del
 // gruppo rinominato, utente rinominato). Account cancellato o senza email: non parte niente.
 require_once __DIR__ . '/mailer.php';
+require_once __DIR__ . '/../models/Group.php';
 
 function report_mail_to_user($db, $user_id, $key, array $vars)
 {
@@ -30,9 +31,11 @@ function report_mail_outcome($db, array $report, $status, $note)
         array('id' => (int)$report['id'], 'label' => $report['target_label'], 'note' => $note));
 }
 
-function report_mail_group_renamed($db, $owner_id, $old_name, $new_name, $note)
+// $forever: dalla seconda rinomina d'ufficio il nome non si può più cambiare (Group::nameLock)
+function report_mail_group_renamed($db, $owner_id, $old_name, $new_name, $note, $forever)
 {
-    return report_mail_to_user($db, $owner_id, 'group_renamed', array('old' => $old_name, 'new' => $new_name, 'note' => $note));
+    $vars = array('old' => $old_name, 'new' => $new_name, 'note' => $note, 'days' => Group::NAME_LOCK_DAYS);
+    return report_mail_to_user($db, $owner_id, $forever ? 'group_renamed_forever' : 'group_renamed', $vars);
 }
 
 function report_mail_user_renamed($db, $user_id, $old_name, $new_name, $note)

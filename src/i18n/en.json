@@ -473,6 +473,8 @@
   "groups.detail.remove.cta": "Remove",
   "groups.detail.remove.done": "{{name}} was removed",
   "groups.detail.rename": "Rename group",
+  "groups.detail.name_locked_until": "The name was changed after a report: you can change it from {{date}}.",
+  "groups.detail.name_locked": "The name was changed after several reports and can no longer be changed. To request a change, write to info@liftindex.app.",
   "groups.detail.save": "Save",
   "groups.detail.delete.title": "Delete the group?",
   "groups.detail.delete.text": "The group and its leaderboard disappear for all members. Everyone keeps their workouts in their own account.",

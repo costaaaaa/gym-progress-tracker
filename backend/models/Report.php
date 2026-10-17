@@ -28,12 +28,14 @@ class Report
     }
 
     // Elenco per la pagina admin: le aperte dalla più vecchia, le chiuse dalla più recente.
-    // group_name è il nome attuale del gruppo (null se eliminato), reporter lo username di chi segnala.
+    // group_name è il nome attuale del gruppo (null se eliminato), group_admin_renames quante volte
+    // l'admin l'ha già rinominato (per il blocco del nome), reporter lo username di chi segnala.
     public function adminList($status)
     {
         $order = $status === 'open' ? 'r.created_at ASC, r.id ASC' : 'r.decided_at DESC, r.id DESC';
         $stmt = $this->conn->prepare(
-            "SELECT r.id, r.group_id, g.name AS group_name, r.target, r.target_label, r.reason, r.status,
+            "SELECT r.id, r.group_id, g.name AS group_name, g.admin_renames AS group_admin_renames,
+                    r.target, r.target_label, r.reason, r.status,
                     r.decision_note, r.decided_at, r.created_at, u.username AS reporter
              FROM gym_reports r
              LEFT JOIN gym_groups g ON g.id = r.group_id
@@ -47,6 +49,7 @@ class Report
         foreach ($rows as &$row) {
             $row['id'] = (int)$row['id'];
             $row['group_id'] = $row['group_id'] === null ? null : (int)$row['group_id'];
+            $row['group_admin_renames'] = (int)$row['group_admin_renames'];
         }
         return $rows;
     }

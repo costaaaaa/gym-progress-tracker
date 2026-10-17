@@ -29,6 +29,10 @@ try {
     if ($can_manage) {
         $payload['invite_code'] = $info['invite_code'];
         $payload['invite_enabled'] = (bool)(int)$info['invite_enabled'];
+        // Nome bloccato dopo una rinomina d'ufficio: fino a name_locked_until, o per sempre se è null
+        $lock = Group::nameLock($info);
+        $payload['name_locked'] = $lock !== null;
+        $payload['name_locked_until'] = $lock['until'] ?? null;
     }
 
     api_json_response(array(

@@ -139,6 +139,8 @@ return array(
     'groups.invalid_code' => 'Invalid or expired invite code.',
     'groups.consent_required' => 'To join the group, you need to accept what the other members will see.',
     'groups.full' => 'The group has reached its maximum number of members.',
+    'groups.name_locked_until' => 'The name was changed after a report: you can change it from {date}.',
+    'groups.name_locked' => 'The name was changed after several reports and can no longer be changed. To request a change, write to info@liftindex.app.',
 
     'report.target_invalid' => 'Choose what to report: the group name or a member.',
     'report.reason_invalid' => 'Explain the reason in {min}-{max} characters.',
@@ -152,7 +154,9 @@ return array(
     'report.mail.dismissed_subject' => "Outcome of your report",
     'report.mail.dismissed_body' => "Hi {username},\n\nwe reviewed your report no. {id} about “{label}” and did not uphold it.\nReason: {note}\n\nIf you disagree, write to us at info@liftindex.app.\n\nLiftIndex\n",
     'report.mail.group_renamed_subject' => "Your group's name has been changed",
-    'report.mail.group_renamed_body' => "Hi {username},\n\nfollowing a report, your group “{old}” is now called “{new}”.\nReason: {note}\n\nIf you disagree, write to us at info@liftindex.app.\n\nLiftIndex\n",
+    'report.mail.group_renamed_body' => "Hi {username},\n\nfollowing a report, your group “{old}” is now called “{new}”.\nReason: {note}\n\nFor {days} days you won't be able to change the name. If this happens again, the name can no longer be changed.\nIf you disagree, write to us at info@liftindex.app.\n\nLiftIndex\n",
+    'report.mail.group_renamed_forever_subject' => "Your group's name has been changed",
+    'report.mail.group_renamed_forever_body' => "Hi {username},\n\nfollowing another report, your group “{old}” is now called “{new}”.\nReason: {note}\n\nThe name has been changed by us more than once: from now on you can no longer change it.\nIf you disagree, or want to request a change, write to us at info@liftindex.app.\n\nLiftIndex\n",
     'report.mail.user_renamed_subject' => "Your username has been changed",
     'report.mail.user_renamed_body' => "Hi,\n\nfollowing a report, your username “{old}” has been changed to “{new}”.\nReason: {note}\n\nFrom now on, sign in with “{new}”; your password stays the same.\nIf you disagree, write to us at info@liftindex.app.\n\nLiftIndex\n",
 

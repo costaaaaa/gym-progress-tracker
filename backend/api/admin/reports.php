@@ -6,7 +6,9 @@
 //                                              è la motivazione della decisione (DSA art. 17)
 //     resolve                                  accolta
 //     dismiss                                  respinta
-//     rename_group {name}                      rinomina il gruppo segnalato e la chiude come accolta
+//     rename_group {name}                      rinomina il gruppo segnalato e la chiude come accolta; il
+//                                              proprietario non può cambiare il nome per 14 giorni, dalla
+//                                              seconda volta mai più (Group::nameLock)
 //     rename_user {username}                   cambia lo username del membro segnalato e la chiude come accolta
 include_once __DIR__ . '/../../config/cors_headers.php';
 include_once __DIR__ . '/../../config/database.php';
@@ -99,11 +101,12 @@ try {
             // Chiusura e rinomina insieme: se la segnalazione è stata chiusa nel frattempo, il nome non cambia
             $db->beginTransaction();
             admin_close_report($report, $id, 'resolved', $note);
-            $group->rename($row['group_id'], $name);
+            $group->adminRename($row['group_id'], $name);
             $db->commit();
-            after_response(function () use ($db, $row, $found, $name, $note) {
+            $forever = (int)$found['admin_renames'] + 1 >= Group::NAME_LOCK_FOREVER_AFTER;
+            after_response(function () use ($db, $row, $found, $name, $note, $forever) {
                 report_mail_outcome($db, $row, 'resolved', $note);
-                report_mail_group_renamed($db, $found['owner_user_id'], $found['name'], $name, $note);
+                report_mail_group_renamed($db, $found['owner_user_id'], $found['name'], $name, $note, $forever);
             });
             api_json_response(array('success' => true, 'status' => 'resolved', 'name' => $name));
 
