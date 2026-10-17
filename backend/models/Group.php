@@ -9,6 +9,10 @@ class Group
     const MAX_OWNED = 10;
     const TYPES = array('friends', 'gym');
     const BOARDS = array('week', 'streak', 'level');
+    // Rinomine d'ufficio (segnalazioni): dopo la prima il proprietario non può cambiare il nome
+    // per NAME_LOCK_DAYS giorni, dalla NAME_LOCK_FOREVER_AFTER-esima mai più
+    const NAME_LOCK_DAYS = 14;
+    const NAME_LOCK_FOREVER_AFTER = 2;
 
     private $conn;
 
@@ -85,6 +89,7 @@ class Group
     {
         $stmt = $this->conn->prepare(
             "SELECT g.id, g.name, g.type, g.owner_user_id, g.invite_code, g.invite_enabled, g.max_members, g.created_at,
+                    g.admin_renames, " . self::nameLockedUntilSql() . " AS name_locked_until,
                     (SELECT COUNT(*) FROM gym_group_members m WHERE m.group_id = g.id) AS members_count
              FROM gym_groups g WHERE g.id = ? LIMIT 1"
         );
@@ -176,6 +181,19 @@ class Group
         return $out;
     }
 
+    // Membro del gruppo con questo username ({user_id, username}), o null
+    public function memberByUsername($group_id, $username)
+    {
+        if (!is_string($username) || $username === '') return null;
+        $stmt = $this->conn->prepare(
+            "SELECT m.user_id, u.username FROM gym_group_members m JOIN gym_users u ON u.id = m.user_id
+             WHERE m.group_id = ? AND u.username = ? LIMIT 1"
+        );
+        $stmt->execute([(int)$group_id, $username]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
     // user_id del membro che corrisponde al riferimento opaco, o null
     public function memberByRef($group_id, $ref)
     {
@@ -257,6 +275,62 @@ class Group
     public function rename($group_id, $name)
     {
         $this->conn->prepare("UPDATE gym_groups SET name = ? WHERE id = ?")->execute([$name, (int)$group_id]);
+    }
+
+    // Rinomina d'ufficio (segnalazione accolta dall'admin): conta per il blocco del nome
+    public function adminRename($group_id, $name)
+    {
+        $this->conn->prepare(
+            "UPDATE gym_groups SET name = ?, admin_renames = admin_renames + 1, admin_renamed_at = NOW() WHERE id = ?"
+        )->execute([$name, (int)$group_id]);
+    }
+
+    // Fine del blocco a tempo (colonna name_locked_until), o NULL: la calcola MySQL, come
+    // admin_renamed_at, così non si confrontano fusi orari diversi
+    private static function nameLockedUntilSql()
+    {
+        return "IF(g.admin_renamed_at > NOW() - INTERVAL " . self::NAME_LOCK_DAYS . " DAY,
+                   g.admin_renamed_at + INTERVAL " . self::NAME_LOCK_DAYS . " DAY, NULL)";
+    }
+
+    // Ricerca per la pagina admin: l'id esatto o un testo nel nome, al massimo 20, i più recenti
+    // prima. Con il proprietario e il blocco del nome.
+    public function adminSearch($q)
+    {
+        $q = is_string($q) ? trim($q) : '';
+        if ($q === '') return array();
+        $stmt = $this->conn->prepare(
+            "SELECT g.id, g.name, g.created_at, g.admin_renames, u.username AS owner,
+                    " . self::nameLockedUntilSql() . " AS name_locked_until,
+                    (SELECT COUNT(*) FROM gym_group_members m WHERE m.group_id = g.id) AS members_count
+             FROM gym_groups g JOIN gym_users u ON u.id = g.owner_user_id
+             WHERE g.id = ? OR g.name LIKE ?
+             ORDER BY g.id DESC
+             LIMIT 20"
+        );
+        $stmt->execute([ctype_digit($q) ? (int)$q : 0, '%' . addcslashes($q, '%_\\') . '%']);
+        return array_map(function ($r) {
+            $lock = self::nameLock($r);
+            return array(
+                'id' => (int)$r['id'],
+                'name' => $r['name'],
+                'owner' => $r['owner'],
+                'members_count' => (int)$r['members_count'],
+                'created_at' => $r['created_at'],
+                'name_locked' => $lock !== null,
+                'name_locked_until' => $lock['until'] ?? null,
+            );
+        }, $stmt->fetchAll(PDO::FETCH_ASSOC));
+    }
+
+    // Blocco del nome per il proprietario, da una riga di find(): null se può cambiarlo,
+    // altrimenti {until: 'AAAA-MM-GG hh:mm:ss'} o, dopo troppe rinomine d'ufficio, {until: null}.
+    public static function nameLock(array $row)
+    {
+        if ((int)($row['admin_renames'] ?? 0) >= self::NAME_LOCK_FOREVER_AFTER) {
+            return array('until' => null);
+        }
+        return empty($row['name_locked_until']) ? null : array('until' => $row['name_locked_until']);
     }
 
     public function regenerateCode($group_id)

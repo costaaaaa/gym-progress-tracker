@@ -10,6 +10,7 @@ import PersonRemoveOutlined from '@mui/icons-material/PersonRemoveOutlined';
 import { usePageMeta } from '../hooks/usePageMeta';
 import RequireLogin from '../components/Groups/RequireLogin';
 import LeaderboardTable from '../components/Groups/LeaderboardTable';
+import ReportDialog from '../components/Groups/ReportDialog';
 import {
   errorMessage, groupTypeLabel, inviteLink, leaveGroup, manageGroup, readGroup, roleLabel,
 } from '../api/groups';
@@ -20,6 +21,8 @@ import { intlLocale } from '../i18n/format';
 const BOARDS = ['week', 'streak', 'level'];
 
 const formatDay = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short' });
+// "2026-10-30 18:05:00" (MySQL): con la "T" lo leggono anche Safari e Hermes
+const formatLockDate = (value) => new Date(value.replace(' ', 'T')).toLocaleString(intlLocale(), { dateStyle: 'medium', timeStyle: 'short' });
 
 // Conferma per le azioni che non si annullano (uscire, eliminare, rimuovere un membro)
 const ConfirmDialog = ({ confirm, onClose }) => {
@@ -99,6 +102,7 @@ const GroupDetailContent = () => {
   const [toast, setToast] = useState('');
   const [confirm, setConfirm] = useState(null);
   const [renaming, setRenaming] = useState(null);
+  const [reporting, setReporting] = useState(false);
 
   const load = useCallback(async () => {
     const res = await readGroup(id, board);
@@ -220,7 +224,17 @@ const GroupDetailContent = () => {
 
             <Card sx={{ p: '22px' }}>
               <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 1.5 }}>{t('groups.detail.settings')}</Typography>
-              {canManage && (renaming === null ? (
+              {canManage && group.name_locked && (
+                <>
+                  <Button size="small" disabled sx={{ mb: 0.5 }}>{t('groups.detail.rename')}</Button>
+                  <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 1.5 }}>
+                    {group.name_locked_until
+                      ? t('groups.detail.name_locked_until', { date: formatLockDate(group.name_locked_until) })
+                      : t('groups.detail.name_locked')}
+                  </Typography>
+                </>
+              )}
+              {canManage && !group.name_locked && (renaming === null ? (
                 <Button size="small" onClick={() => setRenaming(group.name)} sx={{ mb: 1 }}>{t('groups.detail.rename')}</Button>
               ) : (
                 <Box component="form" onSubmit={saveName} sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
@@ -257,7 +271,7 @@ const GroupDetailContent = () => {
               )}
               <Button
                 size="small"
-                href={`mailto:info@liftindex.app?subject=${encodeURIComponent(t('groups.detail.report.subject', { id: group.id }))}&body=${encodeURIComponent(t('groups.detail.report.body', { name: group.name, url: window.location.href }))}`}
+                onClick={() => setReporting(true)}
                 sx={{ display: 'block', mt: 1 }}
               >
                 {t('groups.detail.report.button')}
@@ -268,6 +282,16 @@ const GroupDetailContent = () => {
       </Grid>
 
       <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
+      <ReportDialog
+        open={reporting}
+        group={group}
+        members={members}
+        onClose={() => setReporting(false)}
+        onSent={() => {
+          setReporting(false);
+          setToast(t('groups.detail.report.sent'));
+        }}
+      />
       <Snackbar open={Boolean(toast)} autoHideDuration={4000} onClose={() => setToast('')} message={toast} />
     </Container>
   );

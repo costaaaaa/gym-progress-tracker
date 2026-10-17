@@ -124,6 +124,28 @@ class User
         return $stmt->rowCount() > 0;
     }
 
+    // Cambia lo username d'ufficio (segnalazioni, pagina admin): stesse regole della registrazione.
+    // Ritorna 'ok', 'invalid' o 'taken'. Sessioni e token restano validi: sono legati all'id.
+    public function changeUsername($user_id, $username)
+    {
+        if (!is_string($username) || !preg_match('/^[a-zA-Z0-9]{3,50}$/', $username)) {
+            return 'invalid';
+        }
+        $stmt = $this->conn->prepare("SELECT 1 FROM " . $this->table_name . " WHERE username = ? AND id <> ? LIMIT 1");
+        $stmt->execute([$username, (int)$user_id]);
+        if ($stmt->fetchColumn()) {
+            return 'taken';
+        }
+        try {
+            $this->conn->prepare("UPDATE " . $this->table_name . " SET username = ? WHERE id = ?")->execute([$username, (int)$user_id]);
+        } catch (PDOException $e) {
+            // Indice unico: un altro account ha preso il nome fra il controllo e l'UPDATE
+            if ($e->getCode() === '23000') return 'taken';
+            throw $e;
+        }
+        return 'ok';
+    }
+
     // Check if email exists
     public function emailExists()
     {

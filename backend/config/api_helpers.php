@@ -179,6 +179,22 @@ function api_json_response($payload, $status_code = 200)
     exit;
 }
 
+// Esegue $fn dopo aver mandato la risposta (PHP-FPM), per le email: non devono rallentarla
+// né farla fallire.
+function after_response(callable $fn)
+{
+    register_shutdown_function(function () use ($fn) {
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        }
+        try {
+            $fn();
+        } catch (Throwable $e) {
+            api_log_exception('after_response', $e);
+        }
+    });
+}
+
 function api_not_found($message = null)
 {
     api_json_response([

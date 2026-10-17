@@ -3,7 +3,8 @@ import i18n from '../i18n';
 
 // Endpoint degli esercizi (backend/api/exercise/ e backend/api/admin/exercises.php). Ogni funzione
 // ritorna { ok, status, data } e non lancia mai: i messaggi d'errore arrivano dal server (data.message), già nella lingua dell'utente.
-const request = async (path, options = {}) => {
+// request e post servono anche agli altri endpoint admin (api/reports.js).
+export const request = async (path, options = {}) => {
   try {
     const response = await fetch(`${API_BASE_URL}api/${path}`, {
       credentials: 'include',
@@ -17,7 +18,7 @@ const request = async (path, options = {}) => {
   }
 };
 
-const post = (path, body) => request(path, { method: 'POST', body: JSON.stringify(body) });
+export const post = (path, body) => request(path, { method: 'POST', body: JSON.stringify(body) });
 
 // Esercizio personale: lo vede solo chi lo crea finché un admin non lo approva.
 // 409 con data.code === 'duplicate' → data.exercise è quello già esistente, da selezionare.

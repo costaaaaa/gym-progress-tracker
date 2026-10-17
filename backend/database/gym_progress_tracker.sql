@@ -438,6 +438,8 @@ CREATE TABLE IF NOT EXISTS `gym_groups` (
   `invite_code` char(10) NOT NULL,
   `invite_enabled` tinyint(1) NOT NULL DEFAULT 1,
   `max_members` smallint(6) NOT NULL DEFAULT 50,
+  `admin_renames` tinyint unsigned NOT NULL DEFAULT 0,
+  `admin_renamed_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -457,4 +459,24 @@ CREATE TABLE IF NOT EXISTS `gym_group_members` (
   KEY `idx_user` (`user_id`),
   CONSTRAINT `fk_gm_group` FOREIGN KEY (`group_id`) REFERENCES `gym_groups` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_gm_user` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Segnalazioni dei contenuti nei gruppi (DSA art. 16): restano anche se gruppo o account spariscono
+CREATE TABLE IF NOT EXISTS `gym_reports` (
+  `id`               INT NOT NULL AUTO_INCREMENT,
+  `reporter_user_id` INT NULL DEFAULT NULL,
+  `group_id`         INT NULL DEFAULT NULL,
+  `target`           ENUM('group_name','member') NOT NULL,
+  `target_user_id`   INT NULL DEFAULT NULL,
+  `target_label`     VARCHAR(60) NOT NULL,
+  `reason`           VARCHAR(1000) NOT NULL,
+  `status`           ENUM('open','resolved','dismissed') NOT NULL DEFAULT 'open',
+  `decision_note`    VARCHAR(500) NULL DEFAULT NULL,
+  `decided_at`       DATETIME NULL DEFAULT NULL,
+  `created_at`       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_status_created` (`status`, `created_at`),
+  CONSTRAINT `fk_reports_reporter` FOREIGN KEY (`reporter_user_id`) REFERENCES `gym_users`(`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_reports_group` FOREIGN KEY (`group_id`) REFERENCES `gym_groups`(`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_reports_target_user` FOREIGN KEY (`target_user_id`) REFERENCES `gym_users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

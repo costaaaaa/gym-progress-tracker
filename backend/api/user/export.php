@@ -137,6 +137,10 @@ try {
             "SELECT g.name, g.type, m.role, m.share_level, m.share_consent_at, m.joined_at
              FROM gym_group_members m JOIN gym_groups g ON g.id = m.group_id
              WHERE m.user_id = ? ORDER BY m.joined_at", array($user_id)),
+        // Segnalazioni fatte dall'utente, con l'esito
+        'reports' => export_rows($db,
+            "SELECT target, target_label, reason, status, decision_note, decided_at, created_at
+             FROM gym_reports WHERE reporter_user_id = ? ORDER BY id", array($user_id)),
     );
 
     // Sezioni aggiuntive fornite da un modulo del server, se presente

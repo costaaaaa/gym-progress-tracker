@@ -445,3 +445,43 @@ CREATE TABLE IF NOT EXISTS `gym_weekly_goal_changes` (
   PRIMARY KEY (`user_id`, `from_yearweek`),
   CONSTRAINT `fk_weekly_goal_user` FOREIGN KEY (`user_id`) REFERENCES `gym_users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ------------------------------------------------------------------------------
+-- 24. Segnalazioni dei contenuti nei gruppi (DSA art. 16): nome del gruppo o nome
+--     utente di un membro. target_label è il nome al momento della segnalazione.
+--     Le FK sono ON DELETE SET NULL: la segnalazione e la decisione restano anche
+--     se gruppo o account spariscono. Solo aggiunte: il rollback del codice resta
+--     possibile (vedi DB_UPGRADE_README.md).
+-- ------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `gym_reports` (
+  `id`               INT NOT NULL AUTO_INCREMENT,
+  `reporter_user_id` INT NULL DEFAULT NULL,
+  `group_id`         INT NULL DEFAULT NULL,
+  `target`           ENUM('group_name','member') NOT NULL,
+  `target_user_id`   INT NULL DEFAULT NULL,
+  `target_label`     VARCHAR(60) NOT NULL,
+  `reason`           VARCHAR(1000) NOT NULL,
+  `status`           ENUM('open','resolved','dismissed') NOT NULL DEFAULT 'open',
+  `decision_note`    VARCHAR(500) NULL DEFAULT NULL,
+  `decided_at`       DATETIME NULL DEFAULT NULL,
+  `created_at`       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_status_created` (`status`, `created_at`),
+  CONSTRAINT `fk_reports_reporter` FOREIGN KEY (`reporter_user_id`) REFERENCES `gym_users`(`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_reports_group` FOREIGN KEY (`group_id`) REFERENCES `gym_groups`(`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_reports_target_user` FOREIGN KEY (`target_user_id`) REFERENCES `gym_users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ------------------------------------------------------------------------------
+-- 25. Blocco del nome del gruppo dopo le rinomine d'ufficio (segnalazioni accolte con
+--     «Rinomina gruppo»). gym_groups.admin_renames: quante sono state; admin_renamed_at:
+--     quando l'ultima. Dopo la prima il proprietario non può cambiare il nome per 14 giorni,
+--     dalla seconda mai più (vedi Group::nameLock). Sul gruppo e non contate in gym_reports,
+--     perché le segnalazioni chiuse si cancellano dopo 5 anni. Solo aggiunte: il rollback del
+--     codice resta possibile (vedi DB_UPGRADE_README.md).
+-- ------------------------------------------------------------------------------
+
+ALTER TABLE `gym_groups`
+  ADD COLUMN `admin_renames` TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER `max_members`,
+  ADD COLUMN `admin_renamed_at` DATETIME NULL DEFAULT NULL AFTER `admin_renames`;

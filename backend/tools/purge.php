@@ -9,6 +9,7 @@
 //   - token mobile scaduti o revocati da piu' di 30 giorni
 //   - link di reset password scaduti o gia' usati da piu' di 7 giorni
 //   - contatori del rate limiter scaduti
+//   - segnalazioni nei gruppi chiuse da piu' di 5 anni (le aperte restano finche' l'admin decide)
 //   - (solo se impostata la variabile LEGACY_STATS_PURGE_FROM=AAAA-MM-GG e la data e' passata)
 //     le misure corporee di chi non ha mai dato il consenso per i dati sulla salute: sono i dati
 //     inseriti prima che il consenso esistesse. Spenta di proposito finche' non la si imposta.
@@ -47,6 +48,9 @@ purge($db, 'link di reset scaduti o usati (>7 gg)', 'gym_password_resets',
     "expires_at < DATE_SUB(NOW(), INTERVAL 7 DAY)", $dryRun);
 
 purge($db, 'contatori rate limiter scaduti', 'gym_rate_limits', "expires_at < NOW()", $dryRun);
+
+purge($db, 'segnalazioni chiuse (>5 anni)', 'gym_reports',
+    "status <> 'open' AND decided_at < DATE_SUB(NOW(), INTERVAL 5 YEAR)", $dryRun);
 
 $from = getenv('LEGACY_STATS_PURGE_FROM');
 if ($from && preg_match('/^\d{4}-\d{2}-\d{2}$/', $from) && date('Y-m-d') >= $from) {
