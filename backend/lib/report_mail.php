@@ -38,6 +38,12 @@ function report_mail_group_renamed($db, $owner_id, $old_name, $new_name, $note, 
     return report_mail_to_user($db, $owner_id, $forever ? 'group_renamed_forever' : 'group_renamed', $vars);
 }
 
+// Rinomina dalla pagina admin senza segnalazione (admin/groups.php)
+function report_mail_group_renamed_by_admin($db, $owner_id, $old_name, $new_name, $note)
+{
+    return report_mail_to_user($db, $owner_id, 'group_renamed_admin', array('old' => $old_name, 'new' => $new_name, 'note' => $note));
+}
+
 function report_mail_user_renamed($db, $user_id, $old_name, $new_name, $note)
 {
     return report_mail_to_user($db, $user_id, 'user_renamed', array('old' => $old_name, 'new' => $new_name, 'note' => $note));

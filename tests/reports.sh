@@ -186,6 +186,24 @@ if [[ -n "${ADMIN_USER:-}" && -n "${ADMIN_PASS:-}" ]]; then
         res="$(rename_by_owner "Di nuovo $SUFFIX")"
         expect "A non può rinominarlo: 403" 403 "$res"
         check "con il messaggio senza data" "$res" '.code == "name_locked" and (.message | test("info@liftindex.app"))'
+
+        echo "Admin: rinomina senza segnalazione"
+        admin_rename() { # json → risposta
+            call POST api/admin/groups.php "$ADM" "$1"
+        }
+        expect "A (non admin) non cerca i gruppi: 404" 404 "$(call GET "api/admin/groups.php?q=$GID" "$A")"
+        expect "A (non admin) non rinomina: 404" 404 "$(call POST api/admin/groups.php "$A" "{\"action\":\"rename\",\"id\":$GID,\"name\":\"X\",\"note\":\"x\"}")"
+        check "l'admin trova il gruppo per id, con proprietario, membri e blocco" "$(call GET "api/admin/groups.php?q=$GID" "$ADM")" \
+            ".groups | any(.id == $GID and .owner == \"$NEW_A_USER\" and .members_count == 2 and .name_locked == true and .name_locked_until == null)"
+        check "e per nome" "$(call GET "api/admin/groups.php?q=Gruppo2%20$SUFFIX" "$ADM")" ".groups | any(.id == $GID)"
+        check "una ricerca vuota non trova niente" "$(call GET 'api/admin/groups.php?q=' "$ADM")" '.groups == []'
+        expect "senza nota: 400" 400 "$(admin_rename "$(jq -nc --argjson i "$GID" '{action:"rename", id:$i, name:"Nome chiesto"}')")"
+        expect "nome con un link: 400" 400 "$(admin_rename "$(jq -nc --argjson i "$GID" '{action:"rename", id:$i, name:"www.spam.com", note:"Su richiesta."}')")"
+        expect "gruppo inesistente: 404" 404 "$(admin_rename '{"action":"rename","id":999999999,"name":"Nome","note":"Su richiesta."}')"
+        REQ_NAME="Chiesto $SUFFIX"
+        expect "rinomina su richiesta del proprietario" 200 "$(admin_rename "$(jq -nc --argjson i "$GID" --arg n "$REQ_NAME" '{action:"rename", id:$i, name:$n, note:"Su richiesta del proprietario."}')")"
+        check "B vede il nome nuovo" "$(call GET "api/groups/read.php?group_id=$GID" "$B")" ".group.name == \"$REQ_NAME\""
+        check "il blocco resta per sempre" "$(call GET "api/groups/read.php?group_id=$GID" "$A")" '.group.name_locked == true and .group.name_locked_until == null'
     fi
 else
     echo "  (parte admin saltata: imposta ADMIN_USER e ADMIN_PASS)"

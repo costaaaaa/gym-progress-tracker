@@ -157,6 +157,8 @@ return array(
     'report.mail.group_renamed_body' => "Hi {username},\n\nfollowing a report, your group “{old}” is now called “{new}”.\nReason: {note}\n\nFor {days} days you won't be able to change the name. If this happens again, the name can no longer be changed.\nIf you disagree, write to us at info@liftindex.app.\n\nLiftIndex\n",
     'report.mail.group_renamed_forever_subject' => "Your group's name has been changed",
     'report.mail.group_renamed_forever_body' => "Hi {username},\n\nfollowing another report, your group “{old}” is now called “{new}”.\nReason: {note}\n\nThe name has been changed by us more than once: from now on you can no longer change it.\nIf you disagree, or want to request a change, write to us at info@liftindex.app.\n\nLiftIndex\n",
+    'report.mail.group_renamed_admin_subject' => "Your group's name has been changed",
+    'report.mail.group_renamed_admin_body' => "Hi {username},\n\nyour group “{old}” is now called “{new}”.\nReason: {note}\n\nIf you disagree, write to us at info@liftindex.app.\n\nLiftIndex\n",
     'report.mail.user_renamed_subject' => "Your username has been changed",
     'report.mail.user_renamed_body' => "Hi,\n\nfollowing a report, your username “{old}” has been changed to “{new}”.\nReason: {note}\n\nFrom now on, sign in with “{new}”; your password stays the same.\nIf you disagree, write to us at info@liftindex.app.\n\nLiftIndex\n",
 

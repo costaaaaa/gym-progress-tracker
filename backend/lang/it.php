@@ -157,6 +157,8 @@ return array(
     'report.mail.group_renamed_body' => "Ciao {username},\n\ndopo una segnalazione il tuo gruppo «{old}» ora si chiama «{new}».\nMotivazione: {note}\n\nPer {days} giorni non potrai cambiare il nome. Se succede di nuovo, il nome non si potrà più cambiare.\nSe non sei d'accordo scrivici a info@liftindex.app.\n\nLiftIndex\n",
     'report.mail.group_renamed_forever_subject' => "Il nome del tuo gruppo è stato cambiato",
     'report.mail.group_renamed_forever_body' => "Ciao {username},\n\ndopo un'altra segnalazione il tuo gruppo «{old}» ora si chiama «{new}».\nMotivazione: {note}\n\nIl nome è stato cambiato d'ufficio più di una volta: d'ora in poi non potrai più modificarlo.\nSe non sei d'accordo, o vuoi chiedere un cambio, scrivici a info@liftindex.app.\n\nLiftIndex\n",
+    'report.mail.group_renamed_admin_subject' => "Il nome del tuo gruppo è stato cambiato",
+    'report.mail.group_renamed_admin_body' => "Ciao {username},\n\nil tuo gruppo «{old}» ora si chiama «{new}».\nMotivazione: {note}\n\nSe non sei d'accordo scrivici a info@liftindex.app.\n\nLiftIndex\n",
     'report.mail.user_renamed_subject' => "Il tuo nome utente è stato cambiato",
     'report.mail.user_renamed_body' => "Ciao,\n\ndopo una segnalazione il tuo nome utente «{old}» è stato cambiato in «{new}».\nMotivazione: {note}\n\nDa ora accedi con «{new}»; la password non cambia.\nSe non sei d'accordo scrivici a info@liftindex.app.\n\nLiftIndex\n",
 
