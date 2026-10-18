@@ -66,7 +66,7 @@ With it you can:
 * **Passwords are hashed server-side with bcrypt** (`password_hash` / `password_verify`); the plaintext is sent only over HTTPS and is never stored.
 * **Transparent migration**: accounts created with older hashes are automatically re-hashed to bcrypt on their next successful login (`backend/tools/wrap_legacy_hashes.php` wraps the old hashes in one go).
 * **Session-based authentication** via PHP sessions for the web app; every request uses `credentials: 'include'`.
-* **Bearer tokens** for the mobile client (`mobile_login.php`): only the SHA-256 hash of the token is stored, with a 30-day sliding expiration.
+* **Bearer tokens** for the mobile client (`backend/api/user/mobile_login.php` and `mobile_logout.php`): only the SHA-256 hash of the token is stored, with a 30-day sliding expiration.
 * **Rate limiting** on authentication, password recovery, group and exercise-creation endpoints to mitigate abuse.
 * **Data retention**: `backend/tools/purge.php` (run daily from cron) deletes expired tokens, used or expired reset links and expired rate-limit counters.
 
@@ -102,7 +102,7 @@ You can test the app directly here: 👉 [LiftIndex](https://liftindex.app/)
    ```bash
    npm start
    ```
-7. Optional: check the code with `npm run lint`.
+7. Optional: check the code with `npm run lint`, and the translations with `npm run i18n:check` (keys present in `it.json` and `en.json`, matching `{{variables}}` and tags, keys used in the code that exist).
 
 ### Server environment variables (optional)
 
@@ -115,6 +115,8 @@ You can test the app directly here: 👉 [LiftIndex](https://liftindex.app/)
 | `MAIL_LOG_FULL` | With the `log` driver, set to `1` to see the full reset link in development |
 | `RL_*`, `RATE_LIMITER_DRIVER` | Rate limiting thresholds and driver |
 | `LEGACY_STATS_PURGE_FROM` | Optional date (`YYYY-MM-DD`) from which `purge.php` removes body measurements entered before the health-data consent existed; off unless set |
+
+Frontend build variables (Vite, read at build time): `VITE_UMAMI_SRC` and `VITE_UMAMI_WEBSITE_ID` load the Umami analytics script; if either is empty, no script is loaded.
 
 ### Command-line tools
 
@@ -225,7 +227,7 @@ Con questo strumento è possibile:
 * **Le password sono hashate lato server con bcrypt** (`password_hash` / `password_verify`); il testo in chiaro viaggia solo su HTTPS e non viene mai memorizzato.
 * **Migrazione trasparente**: gli account con hash più vecchi vengono ri-hashati automaticamente in bcrypt al primo login andato a buon fine (`backend/tools/wrap_legacy_hashes.php` avvolge i vecchi hash in un colpo solo).
 * **Autenticazione basata su sessione** tramite sessioni PHP per l'app web; ogni richiesta usa `credentials: 'include'`.
-* **Token Bearer** per il client mobile (`mobile_login.php`): nel database finisce solo l'hash SHA-256 del token, con scadenza scorrevole di 30 giorni.
+* **Token Bearer** per il client mobile (`backend/api/user/mobile_login.php` e `mobile_logout.php`): nel database finisce solo l'hash SHA-256 del token, con scadenza scorrevole di 30 giorni.
 * **Rate limiting** sugli endpoint di autenticazione, recupero password, gruppi e creazione di esercizi per mitigare gli abusi.
 * **Conservazione dei dati**: `backend/tools/purge.php` (da lanciare ogni giorno dal cron) elimina token scaduti, link di reset usati o scaduti e contatori del rate limiter scaduti.
 
@@ -261,7 +263,7 @@ Puoi testare l'app direttamente al seguente link: 👉 [LiftIndex](https://lifti
    ```bash
    npm start
    ```
-7. Facoltativo: controlla il codice con `npm run lint`.
+7. Facoltativo: controlla il codice con `npm run lint` e le traduzioni con `npm run i18n:check` (chiavi presenti in `it.json` e `en.json`, `{{variabili}}` e tag uguali, chiavi usate nel codice che esistono).
 
 ### Variabili d'ambiente del server (facoltative)
 
@@ -274,6 +276,8 @@ Puoi testare l'app direttamente al seguente link: 👉 [LiftIndex](https://lifti
 | `MAIL_LOG_FULL` | Con il driver `log`, `1` mostra in sviluppo il link di reset completo |
 | `RL_*`, `RATE_LIMITER_DRIVER` | Soglie e driver del rate limiting |
 | `LEGACY_STATS_PURGE_FROM` | Data facoltativa (`AAAA-MM-GG`) da cui `purge.php` elimina le misure corporee inserite prima che esistesse il consenso sui dati sulla salute; spenta se non impostata |
+
+Variabili di build del frontend (Vite, `VITE_*`, lette in fase di build): `VITE_UMAMI_SRC` e `VITE_UMAMI_WEBSITE_ID` attivano lo script di Umami; se una delle due manca, lo script non viene caricato.
 
 ### Strumenti da riga di comando
 
