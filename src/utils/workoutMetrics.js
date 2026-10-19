@@ -135,7 +135,8 @@ export const buildExerciseHistoryIndex = (records) => {
 /**
  * Confronta i set appena completati per un esercizio con lo storico (PRIMA di
  * questa sessione) e ritorna quali record sono stati battuti.
- * Ritorna { isPR, weight, oneRM, volume, reps } con i valori battuti, oppure isPR=false.
+ * Ritorna { isPR, weight, oneRM, volume, reps } con i valori battuti.
+ * isPR segue le regole dei record che danno XP (tests/fixtures/pr_cases.json); il volume no.
  */
 export const detectPersonalRecords = (completedSets, historyEntry) => {
   // Senza storico precedente non parliamo di "record" (è una baseline, non
@@ -153,6 +154,6 @@ export const detectPersonalRecords = (completedSets, historyEntry) => {
     volume: sessionVolume > prev.bestSessionVolume ? parseFloat(sessionVolume.toFixed(1)) : null,
     reps: bestBodyweightReps > (prev.bestBodyweightReps || 0) ? bestBodyweightReps : null,
   };
-  result.isPR = !!(result.weight || result.oneRM || result.volume || result.reps);
+  result.isPR = !!(result.weight || result.oneRM || result.reps);
   return result;
 };

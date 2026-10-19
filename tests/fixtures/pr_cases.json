@@ -1,0 +1,65 @@
+{
+  "_doc": "Record personali di un esercizio: storico (sessioni precedenti, null = mai fatto) e serie della sessione. Letti da tests/gamification_rules_test.php (PHP, record che danno XP) e dal test Jest del mobile (detectPersonalRecords). Copia identica in gym-progress-tracker-mobile/__tests__/fixtures/pr_cases.json. volume = miglior volume di sessione, solo lato client.",
+  "cases": [
+    {
+      "name": "prima volta: nessun record",
+      "history": null,
+      "sets": [{ "weight": 100, "reps": "5" }],
+      "expect": { "weight": false, "oneRM": false, "reps": false, "volume": false, "isPR": false }
+    },
+    {
+      "name": "peso più alto",
+      "history": [[{ "weight": 80, "reps": "5" }]],
+      "sets": [{ "weight": 82.5, "reps": "1" }],
+      "expect": { "weight": true, "oneRM": false, "reps": false, "volume": false, "isPR": true }
+    },
+    {
+      "name": "massimale stimato più alto",
+      "history": [[{ "weight": 100, "reps": "3" }]],
+      "sets": [{ "weight": 95, "reps": "8" }],
+      "expect": { "weight": false, "oneRM": true, "reps": false, "volume": true, "isPR": true }
+    },
+    {
+      "name": "solo volume: non è un record",
+      "history": [[{ "weight": 60, "reps": "8" }, { "weight": 60, "reps": "8" }]],
+      "sets": [{ "weight": 60, "reps": "8" }, { "weight": 60, "reps": "8" }, { "weight": 60, "reps": "6" }],
+      "expect": { "weight": false, "oneRM": false, "reps": false, "volume": true, "isPR": false }
+    },
+    {
+      "name": "volume confrontato con la sessione migliore, non con la somma dello storico",
+      "history": [[{ "weight": 60, "reps": "10" }], [{ "weight": 60, "reps": "10" }]],
+      "sets": [{ "weight": 60, "reps": "10" }, { "weight": 10, "reps": "1" }],
+      "expect": { "weight": false, "oneRM": false, "reps": false, "volume": true, "isPR": false }
+    },
+    {
+      "name": "corpo libero: più ripetizioni",
+      "history": [[{ "weight": 0, "reps": "10" }]],
+      "sets": [{ "weight": 0, "reps": "12" }],
+      "expect": { "weight": false, "oneRM": false, "reps": true, "volume": false, "isPR": true }
+    },
+    {
+      "name": "corpo libero: stesse ripetizioni",
+      "history": [[{ "weight": 0, "reps": "12" }]],
+      "sets": [{ "weight": 0, "reps": "12" }],
+      "expect": { "weight": false, "oneRM": false, "reps": false, "volume": false, "isPR": false }
+    },
+    {
+      "name": "ripetizioni testuali: \"8-10\" vale 10",
+      "history": [[{ "weight": 50, "reps": "8" }]],
+      "sets": [{ "weight": 50, "reps": "8-10" }],
+      "expect": { "weight": false, "oneRM": true, "reps": false, "volume": true, "isPR": true }
+    },
+    {
+      "name": "le serie senza ripetizioni nello storico non contano",
+      "history": [[{ "weight": 200, "reps": "0" }, { "weight": 80, "reps": "5" }]],
+      "sets": [{ "weight": 90, "reps": "1" }],
+      "expect": { "weight": true, "oneRM": false, "reps": false, "volume": false, "isPR": true }
+    },
+    {
+      "name": "\"max\" senza numero: la serie non conta",
+      "history": [[{ "weight": 0, "reps": "5" }]],
+      "sets": [{ "weight": 0, "reps": "max" }],
+      "expect": { "weight": false, "oneRM": false, "reps": false, "volume": false, "isPR": false }
+    }
+  ]
+}
