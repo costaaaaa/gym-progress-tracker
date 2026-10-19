@@ -485,3 +485,31 @@ CREATE TABLE IF NOT EXISTS `gym_reports` (
 ALTER TABLE `gym_groups`
   ADD COLUMN `admin_renames` TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER `max_members`,
   ADD COLUMN `admin_renamed_at` DATETIME NULL DEFAULT NULL AFTER `admin_renames`;
+
+-- ------------------------------------------------------------------------------
+-- 26. Testo libero salvato con le entità HTML. I model applicavano htmlspecialchars al
+--     nome dei giorni, alle note e alle ripetizioni: con PHP 8.1+ "dell'atleta" finiva nel
+--     DB come "dell&#039;atleta" e la UI (React, mobile) lo mostrava così. Ora i model
+--     salvano il testo in chiaro; qui si riportano in chiaro le righe già salvate.
+--     &amp; va per ultimo. Da eseguire una volta sola: una seconda esecuzione
+--     decodificherebbe anche un "&lt;" scritto alla lettera dall'utente.
+-- ------------------------------------------------------------------------------
+
+UPDATE `gym_workout_days`
+  SET `name` = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(`name`, '&#039;', ''''), '&quot;', '"'), '&lt;', '<'), '&gt;', '>'), '&amp;', '&')
+  WHERE `name` LIKE '%&%;%';
+
+UPDATE `gym_workout_history`
+  SET `notes` = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(`notes`, '&#039;', ''''), '&quot;', '"'), '&lt;', '<'), '&gt;', '>'), '&amp;', '&')
+  WHERE `notes` LIKE '%&%;%';
+
+UPDATE `gym_workout_exercises`
+  SET `reps` = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(`reps`, '&#039;', ''''), '&quot;', '"'), '&lt;', '<'), '&gt;', '>'), '&amp;', '&'),
+      `notes` = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(`notes`, '&#039;', ''''), '&quot;', '"'), '&lt;', '<'), '&gt;', '>'), '&amp;', '&'),
+      `intensity_technique` = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(`intensity_technique`, '&#039;', ''''), '&quot;', '"'), '&lt;', '<'), '&gt;', '>'), '&amp;', '&')
+  WHERE `reps` LIKE '%&%;%' OR `notes` LIKE '%&%;%' OR `intensity_technique` LIKE '%&%;%';
+
+UPDATE `gym_workout_sets`
+  SET `reps` = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(`reps`, '&#039;', ''''), '&quot;', '"'), '&lt;', '<'), '&gt;', '>'), '&amp;', '&'),
+      `intensity_technique` = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(`intensity_technique`, '&#039;', ''''), '&quot;', '"'), '&lt;', '<'), '&gt;', '>'), '&amp;', '&')
+  WHERE `reps` LIKE '%&%;%' OR `intensity_technique` LIKE '%&%;%';

@@ -34,10 +34,11 @@ class WorkoutExercise
         $this->day_id = htmlspecialchars(strip_tags($this->day_id));
         $this->exercise_id = htmlspecialchars(strip_tags($this->exercise_id));
         $this->sets = htmlspecialchars(strip_tags($this->sets));
-        $this->reps = htmlspecialchars(strip_tags($this->reps));
+        // Niente htmlspecialchars sul testo libero: l'escape lo fa chi lo mostra (vedi Exercise::create)
+        $this->reps = trim((string)$this->reps);
         $this->rest = htmlspecialchars(strip_tags($this->rest));
-        $this->notes = isset($this->notes) ? htmlspecialchars(strip_tags($this->notes)) : null;
-        $this->intensity_technique = isset($this->intensity_technique) ? htmlspecialchars(strip_tags($this->intensity_technique)) : null;
+        $this->notes = isset($this->notes) ? trim((string)$this->notes) : null;
+        $this->intensity_technique = isset($this->intensity_technique) ? trim((string)$this->intensity_technique) : null;
 
         // Query to insert record
         $query = "INSERT INTO " . $this->table_name . "
@@ -142,10 +143,10 @@ class WorkoutExercise
     {
         // Sanitize inputs
         $this->sets = htmlspecialchars(strip_tags($this->sets));
-        $this->reps = htmlspecialchars(strip_tags($this->reps));
+        $this->reps = trim((string)$this->reps);
         $this->rest = htmlspecialchars(strip_tags($this->rest));
-        $this->notes = isset($this->notes) ? htmlspecialchars(strip_tags($this->notes)) : null;
-        $this->intensity_technique = isset($this->intensity_technique) ? htmlspecialchars(strip_tags($this->intensity_technique)) : null;
+        $this->notes = isset($this->notes) ? trim((string)$this->notes) : null;
+        $this->intensity_technique = isset($this->intensity_technique) ? trim((string)$this->intensity_technique) : null;
         $this->id = htmlspecialchars(strip_tags($this->id));
 
         // Query to update record

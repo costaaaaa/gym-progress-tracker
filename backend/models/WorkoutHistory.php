@@ -26,7 +26,8 @@ class WorkoutHistory
         try {
             // Sanitize inputs
             $this->user_id = htmlspecialchars(strip_tags($this->user_id));
-            $this->notes = htmlspecialchars(strip_tags($this->notes));
+            // Niente htmlspecialchars: l'escape lo fa chi mostra il testo (vedi Exercise::create)
+            $this->notes = trim((string)$this->notes);
             // Non sanifichiamo $this->exercises perché è un JSON che deve essere preservato
 
             // La colonna idempotency_key entra nella query solo se c'è la chiave: le app vecchie
@@ -140,7 +141,7 @@ class WorkoutHistory
         // Sanitize inputs
         $this->id = htmlspecialchars(strip_tags($this->id));
         $this->user_id = htmlspecialchars(strip_tags($this->user_id));
-        $this->notes = htmlspecialchars(strip_tags($this->notes));
+        $this->notes = trim((string)$this->notes);
         // Non sanifichiamo $this->exercises perché è un JSON che deve essere preservato
 
         // Query to update record

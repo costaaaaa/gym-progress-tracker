@@ -22,7 +22,8 @@ class WorkoutDay {
     public function create() {
         // Sanitize inputs
         $this->plan_id = htmlspecialchars(strip_tags($this->plan_id));
-        $this->name = htmlspecialchars(strip_tags($this->name));
+        // Niente htmlspecialchars: l'escape lo fa chi mostra il testo (vedi Exercise::create)
+        $this->name = trim((string)$this->name);
         $this->day_order = htmlspecialchars(strip_tags($this->day_order));
 
         // Query to insert record
@@ -106,7 +107,7 @@ class WorkoutDay {
     // Update workout day
     public function update() {
         // Sanitize inputs
-        $this->name = htmlspecialchars(strip_tags($this->name));
+        $this->name = trim((string)$this->name);
         $this->day_order = htmlspecialchars(strip_tags($this->day_order));
         $this->id = htmlspecialchars(strip_tags($this->id));
 

@@ -45,8 +45,9 @@ class WorkoutSet
             $this->exercise_id = htmlspecialchars(strip_tags($this->exercise_id));
             $this->set_number = htmlspecialchars(strip_tags($this->set_number));
             $this->weight = htmlspecialchars(strip_tags($this->weight));
-            $this->reps = htmlspecialchars(strip_tags($this->reps));
-            $this->intensity_technique = isset($this->intensity_technique) ? htmlspecialchars(strip_tags($this->intensity_technique)) : null;
+            // Niente htmlspecialchars sul testo libero: l'escape lo fa chi lo mostra (vedi Exercise::create)
+            $this->reps = trim((string)$this->reps);
+            $this->intensity_technique = isset($this->intensity_technique) ? trim((string)$this->intensity_technique) : null;
 
             // Bind values
             $stmt->bindParam(":workout_history_id", $this->workout_history_id);
@@ -186,8 +187,8 @@ class WorkoutSet
         $this->exercise_id = htmlspecialchars(strip_tags($this->exercise_id));
         $this->set_number = htmlspecialchars(strip_tags($this->set_number));
         $this->weight = htmlspecialchars(strip_tags($this->weight));
-        $this->reps = htmlspecialchars(strip_tags($this->reps));
-        $this->intensity_technique = isset($this->intensity_technique) ? htmlspecialchars(strip_tags($this->intensity_technique)) : null;
+        $this->reps = trim((string)$this->reps);
+        $this->intensity_technique = isset($this->intensity_technique) ? trim((string)$this->intensity_technique) : null;
 
         // Bind values
         $stmt->bindParam(":id", $this->id);
