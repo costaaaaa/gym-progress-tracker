@@ -94,6 +94,57 @@ function estimateOneRepMax(float $weight, int $reps): float {
     return round($weight * (1 + $reps / 30), 1);
 }
 
+// ── Record personali e XP di un allenamento ──────────────────────────────────
+// Stesse regole di detectPersonalRecords in workoutMetrics.js; casi comuni in tests/fixtures/pr_cases.json.
+
+// Migliori valori di un elenco di serie [['weight' => ..., 'reps' => ...]]. Le serie senza ripetizioni non contano.
+function setBests(array $sets): array {
+    $b = ['weight' => 0.0, 'one_rm' => 0.0, 'bw_reps' => 0, 'volume' => 0.0];
+    foreach ($sets as $s) {
+        $w = (float) ($s['weight'] ?? 0);
+        $r = parseReps($s['reps'] ?? '0');
+        if ($r <= 0) continue;
+        if ($w > $b['weight']) $b['weight'] = $w;
+        $orm = estimateOneRepMax($w, $r);
+        if ($orm > $b['one_rm']) $b['one_rm'] = $orm;
+        // A peso 0 (corpo libero) il progresso sono le ripetizioni
+        if ($w == 0.0 && $r > $b['bw_reps']) $b['bw_reps'] = $r;
+        $b['volume'] += $w * $r;
+    }
+    return $b;
+}
+
+// Record battuti in un esercizio. $cur = setBests delle serie fatte; $prev = setBests dello storico
+// precedente, null se l'esercizio non è mai stato fatto (la prima volta non è un record).
+function exerciseRecords(array $cur, ?array $prev): array {
+    $rec = [
+        'weight'  => $prev !== null && $cur['weight'] > $prev['weight'],
+        'one_rm'  => $prev !== null && $cur['one_rm'] > $prev['one_rm'],
+        'bw_reps' => $prev !== null && $cur['bw_reps'] > $prev['bw_reps'],
+    ];
+    $rec['is_pr'] = $rec['weight'] || $rec['one_rm'] || $rec['bw_reps'];
+    return $rec;
+}
+
+// XP di un allenamento. $sets_by_exercise[eid] = serie fatte; $prev_bests[eid] = setBests dello storico
+// precedente (assente se mai fatto); $pr_paid_today = esercizi con un record già pagato nel giorno
+// (un record dà XP al massimo una volta al giorno per esercizio). Gli XP della streak non sono qui.
+// Ritorna ['xp_general', 'pr_in_session', 'volume', 'exercises' => [eid => ['xp', 'is_pr']]] con i soli esercizi che danno XP.
+function workoutRewards(array $sets_by_exercise, array $prev_bests, bool $xp_session, array $pr_paid_today): array {
+    $out = ['xp_general' => $xp_session ? XP_SESSION : 0, 'pr_in_session' => false, 'volume' => 0.0, 'exercises' => []];
+    foreach ($sets_by_exercise as $eid => $sets) {
+        $cur = setBests($sets);
+        $out['volume'] += $cur['volume'];
+        $is_pr = exerciseRecords($cur, $prev_bests[$eid] ?? null)['is_pr'] && !in_array($eid, $pr_paid_today, true);
+        $xp = ($xp_session ? XP_EXERCISE_SESSION : 0) + ($is_pr ? XP_EXERCISE_PR : 0);
+        if ($is_pr) $out['pr_in_session'] = true;
+        if ($xp > 0) $out['exercises'][$eid] = ['xp' => $xp, 'is_pr' => $is_pr];
+    }
+    // PR generale: una volta sola per sessione, comunque siano i PR
+    if ($out['pr_in_session']) $out['xp_general'] += XP_PR;
+    return $out;
+}
+
 // ── Achievement ───────────────────────────────────────────────────────────────
 // $totals = [
 //   'sessions'          => int,   // sessioni totali a vita

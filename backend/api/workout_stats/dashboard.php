@@ -15,20 +15,6 @@ include_once '../../models/WorkoutHistory.php';
 include_once '../../models/WorkoutSet.php';
 include_once '../../models/WorkoutPlan.php';
 
-// Helper function to safely parse reps string to integer
-function parseDashboardReps($repsStr) {
-    $repsStr = (string)$repsStr;
-
-    if (is_numeric($repsStr)) return intval($repsStr);
-
-    // Handle cases like "10+2", "10-12", "max"
-    // Use first number found or default to 0
-    if (preg_match('/(\d+)/', $repsStr, $matches)) {
-        return intval($matches[1]);
-    }
-    return 0;
-}
-
 try {
     $database = new Database();
     $db = $database->getConnection();
@@ -81,7 +67,7 @@ try {
     $total_weight = 0;
     $total_reps = 0;
     while($row = $stmt_vol_raw->fetch(PDO::FETCH_ASSOC)) {
-        $reps = parseDashboardReps($row['reps']);
+        $reps = parseReps($row['reps']);
         $weight = floatval($row['weight']);
         $total_weight += ($weight * $reps);
         $total_reps += $reps;

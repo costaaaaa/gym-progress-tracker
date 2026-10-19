@@ -51,7 +51,7 @@ export const STRINGS_IT = {
   exercisesLabel: 'ESERCIZI',
   recordsLabel: 'TUTTI I RECORD',
   bodyweightValue: '{sets} serie · × {reps}',
-  volumeRecord: 'volume',
+  volumeRecord: 'miglior volume',
   moreExercises: '+{n} esercizi',
   moreRecords: '+{n} record',
   setsCount: '{n} serie',
@@ -107,7 +107,7 @@ export const muscleGroupsTitle = (exercises, label) => {
 };
 
 // Tipi di record dal più importante: peso, massimale stimato, ripetizioni a corpo libero.
-// Il volume di sessione è un record ma non è mai il protagonista della card.
+// Il miglior volume di sessione non conta come record: sta in fondo alla lista solo se l'utente lo sceglie.
 const RECORD_TYPES = ['weight', 'oneRM', 'reps'];
 
 const playedSets = (sets) => sets
@@ -121,9 +121,8 @@ const playedSets = (sets) => sets
  */
 const exerciseRecord = (ex, historyEntry) => {
   const pr = detectPersonalRecords(ex.sets, historyEntry);
-  if (!pr.isPR) return null;
-  const type = RECORD_TYPES.find((t) => pr[t]) || 'volume';
-  if (type === 'volume') return { name: ex.name, type, weight: 0, reps: 0, delta: null, pct: 0 };
+  if (!pr.isPR) return pr.volume ? { name: ex.name, type: 'volume', weight: 0, reps: 0, delta: null, pct: 0 } : null;
+  const type = RECORD_TYPES.find((t) => pr[t]);
 
   const sets = playedSets(ex.sets);
   const previous = { weight: historyEntry.bestWeight, oneRM: historyEntry.bestOneRM, reps: historyEntry.bestBodyweightReps || 0 }[type];
@@ -205,16 +204,17 @@ export const buildShareStats = ({ exercises, date, durationSec, title, records, 
   });
   const ordered = sortRecords(records || []);
   const hero = ordered[0] && ordered[0].type !== 'volume' ? ordered[0] : null;
+  const realRecords = ordered.filter((r) => r.type !== 'volume');
   return {
     volumeKg: Math.round(volume),
     sets,
     exercises: done.length,
     durationSec: durationSec > 0 ? durationSec : null,
     record: hero,
-    otherRecords: hero ? ordered.length - 1 : 0,
+    otherRecords: hero ? realRecords.length - 1 : 0,
     recordList: hero ? ordered.slice(1) : [],
     exerciseList: done.map((ex) => ({
-      name: ex.name, sets: ex.sets.length, best: bestSet(ex.sets), isRecord: ordered.some((r) => r.name === ex.name),
+      name: ex.name, sets: ex.sets.length, best: bestSet(ex.sets), isRecord: realRecords.some((r) => r.name === ex.name),
     })),
     muscles: muscleShares(done),
     streakWeeks: streakWeeks || 0,
@@ -620,6 +620,7 @@ export const sanitizePrefs = (raw) => {
     preset: PRESETS.some((x) => x.id === p.preset) ? p.preset : DEFAULT_PRESET,
     customBlocks: Array.isArray(p.customBlocks) ? customIds.filter((id) => p.customBlocks.includes(id)) : null,
     hideWeights: p.hideWeights === true,
+    showBestVolume: p.showBestVolume === true,
   };
 };
 
@@ -740,11 +741,13 @@ const photoUnderlay = (format, hasPhoto) => {
  * preset: id di PRESETS (la card pronta); se non è disponibile per l'allenamento, Riepilogo.
  * blocks: id di CUSTOM_BLOCKS accesi (card personalizzata); se c'è, preset non conta.
  * hideWeights: nessun peso (kg) da nessuna parte.
+ * showBestVolume: le righe "miglior volume" nell'elenco dei record (di base no).
  */
 export const layoutShareCard = (stats, templateId, {
   hasPhoto = false, photoBackground, strings = STRINGS_IT, format = FORMAT_STORIA, preset = DEFAULT_PRESET,
-  blocks: customBlocks, hideWeights = false,
+  blocks: customBlocks, hideWeights = false, showBestVolume = false,
 } = {}) => {
+  if (!showBestVolume) stats = { ...stats, recordList: stats.recordList.filter((r) => r.type !== 'volume') };
   const theme = THEMES[templateId] || THEMES.scuro;
   const isPhoto = templateId === 'foto';
   const { blocks, hasHero } = chosenBlocks(stats, preset, customBlocks);

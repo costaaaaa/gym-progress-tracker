@@ -67,6 +67,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   const [customBlocks, setCustomBlocks] = useState(initialPrefs.customBlocks);
   const [customizing, setCustomizing] = useState(false);
   const [hideWeights, setHideWeights] = useState(initialPrefs.hideWeights);
+  const [showBestVolume, setShowBestVolume] = useState(initialPrefs.showBestVolume);
   const [photo, setPhoto] = useState(null);
   const [photoTransform, setPhotoTransform] = useState(DEFAULT_PHOTO_TRANSFORM);
   const [photoBackground, setPhotoBackground] = useState(PHOTO_BACKGROUNDS[0].id);
@@ -85,6 +86,8 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   const toggleBlock = (id) => setCustomBlocks(shownBlocks.includes(id) ? shownBlocks.filter((b) => b !== id) : [...shownBlocks, id]);
   const editable = template === 'foto' && !!photo;
   const cardChoice = customBlocks ? 'custom' : activePreset;
+  // Il miglior volume compare solo nell'elenco dei record della card Record
+  const canShowBestVolume = cardChoice === 'record' && stats?.recordList.some((r) => r.type === 'volume');
   const trackCard = (action) => track('workout_card', { action, template, card: cardChoice, format: format.id, hide_weights: hideWeights });
   const box = photoBox(format);
   // Lo sfondo si vede solo quando la foto, rimpicciolita, non copre più la card
@@ -102,7 +105,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   useEffect(() => {
     if (!open || !stats || !fontsReady || !canvasRef.current) return undefined;
     let cancelled = false;
-    const layout = layoutShareCard(stats, template, { hasPhoto: !!photo, photoBackground, format, preset, blocks: customBlocks || undefined, hideWeights, strings: shareCardStrings() });
+    const layout = layoutShareCard(stats, template, { hasPhoto: !!photo, photoBackground, format, preset, blocks: customBlocks || undefined, hideWeights, showBestVolume, strings: shareCardStrings() });
     renderCardToCanvas(canvasRef.current, layout, photo, photoTransform);
     setReady(false);
     fileRef.current = null;
@@ -118,13 +121,13 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
       }
     }, 250);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [open, stats, template, format, preset, customBlocks, hideWeights, photo, photoTransform, photoBackground, fontsReady, t]);
+  }, [open, stats, template, format, preset, customBlocks, hideWeights, showBestVolume, photo, photoTransform, photoBackground, fontsReady, t]);
 
   useEffect(() => {
     try {
-      localStorage.setItem(PREFS_KEY, JSON.stringify({ template, format: format.id, preset, customBlocks, hideWeights }));
+      localStorage.setItem(PREFS_KEY, JSON.stringify({ template, format: format.id, preset, customBlocks, hideWeights, showBestVolume }));
     } catch { /* storage pieno o bloccato: le scelte valgono solo per questa volta */ }
-  }, [template, format, preset, customBlocks, hideWeights]);
+  }, [template, format, preset, customBlocks, hideWeights, showBestVolume]);
 
   const movePhoto = (update) => {
     if (!photo) return;
@@ -315,6 +318,10 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
             ))}
             <FormControlLabel label={t('share.hide_weights')}
               control={<Switch size="small" checked={hideWeights} onChange={(e) => setHideWeights(e.target.checked)} />} />
+            {canShowBestVolume && (
+              <FormControlLabel label={t('share.show_best_volume')}
+                control={<Switch size="small" checked={showBestVolume} onChange={(e) => setShowBestVolume(e.target.checked)} />} />
+            )}
           </Box>
         </Collapse>
         <Box sx={{ position: 'relative', width: '100%', maxWidth: `calc(62vh * ${format.width} / ${format.height})`, aspectRatio: `${format.width} / ${format.height}` }}>

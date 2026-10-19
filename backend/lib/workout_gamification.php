@@ -3,15 +3,6 @@
 // La chiamante (record_workout.php) la esegue dentro la transazione del salvataggio.
 require_once __DIR__ . '/weekly_stats.php';
 
-// I record di un esercizio danno XP al massimo una volta al giorno (giorno dell'allenamento al salvataggio)
-function exercise_pr_paid_on_day(PDO $db, int $user_id, int $exercise_id, string $day): bool {
-    $stmt = $db->prepare(
-        "SELECT 1 FROM gym_workout_exercise_rewards WHERE user_id = ? AND exercise_id = ? AND day = ? AND is_pr = 1 LIMIT 1"
-    );
-    $stmt->execute([$user_id, $exercise_id, $day]);
-    return (bool) $stmt->fetchColumn();
-}
-
 // $workout_records: le serie come arrivano dal client (oggetti con exercise_id, day_id, weight, reps).
 // Ritorna i campi di gamification della risposta di record_workout.php, nello stesso ordine.
 function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, string $data_workout, ?int $duration_seconds, array $workout_records): array {
@@ -27,21 +18,19 @@ function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, stri
 
     // ── Gamification: XP + livelli + achievement ──────────────────────────
 
-    // Raggruppa set validi per esercizio (peso > 0 e reps > 0)
+    // Serie con ripetizioni, per esercizio (il peso può essere 0: corpo libero, macchinari)
     $current_ex_sets = [];
     foreach ($workout_records as $rec) {
         if (!isset($rec->exercise_id) || empty($rec->exercise_id)) continue;
-        $eid = (int) $rec->exercise_id;
-        $w   = (float) ($rec->weight ?? 0);
-        $r   = parseReps($rec->reps ?? '0');
-        // Il peso può essere 0 (corpo libero, macchinari): conta la serie se ha ripetizioni
+        $r = parseReps($rec->reps ?? '0');
         if ($r <= 0) continue;
-        if (!isset($current_ex_sets[$eid])) $current_ex_sets[$eid] = [];
-        $current_ex_sets[$eid][] = ['weight' => $w, 'reps' => $r];
+        $current_ex_sets[(int) $rec->exercise_id][] = ['weight' => (float) ($rec->weight ?? 0), 'reps' => $r];
     }
 
-    // Best pregressi per gli esercizi allenati, escluso il workout appena inserito
+    // Migliori valori precedenti degli esercizi allenati, escluso il workout appena inserito
     $prev_bests = [];
+    $pr_paid_today = [];
+    $workout_day = substr($data_workout, 0, 10);
     if (!empty($current_ex_sets)) {
         $eids_list    = array_keys($current_ex_sets);
         $placeholders = implode(',', array_fill(0, count($eids_list), '?'));
@@ -55,16 +44,18 @@ function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, stri
                AND (wh.date < ? OR (wh.date = ? AND wh.id < ?))"
         );
         $stmt_prev->execute(array_merge([$user_id], $eids_list, [$workout_id, $data_workout, $data_workout, $workout_id]));
+        $prev_sets = [];
         while ($prow = $stmt_prev->fetch(PDO::FETCH_ASSOC)) {
-            $eid  = (int)   $prow['exercise_id'];
-            $pw   = (float) $prow['weight'];
-            $pr   = parseReps($prow['reps']);
-            $p1rm = estimateOneRepMax($pw, $pr);
-            if (!isset($prev_bests[$eid])) $prev_bests[$eid] = ['best_weight' => 0.0, 'best_1rm' => 0.0, 'best_bw_reps' => 0];
-            if ($pw   > $prev_bests[$eid]['best_weight']) $prev_bests[$eid]['best_weight'] = $pw;
-            if ($p1rm > $prev_bests[$eid]['best_1rm'])   $prev_bests[$eid]['best_1rm']   = $p1rm;
-            if ($pw == 0.0 && $pr > $prev_bests[$eid]['best_bw_reps']) $prev_bests[$eid]['best_bw_reps'] = $pr;
+            $prev_sets[(int) $prow['exercise_id']][] = $prow;
         }
+        $prev_bests = array_map('setBests', $prev_sets);
+
+        $stmt_paid = $db->prepare(
+            "SELECT DISTINCT exercise_id FROM gym_workout_exercise_rewards
+             WHERE user_id = ? AND day = ? AND is_pr = 1 AND exercise_id IN ($placeholders)"
+        );
+        $stmt_paid->execute(array_merge([$user_id, $workout_day], $eids_list));
+        $pr_paid_today = array_map('intval', $stmt_paid->fetchAll(PDO::FETCH_COLUMN));
     }
 
     // XP di sessione: solo se la sessione rispetta le regole (scheda, completamento, durata,
@@ -95,45 +86,10 @@ function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, stri
     $xp_status  = sessionXpStatus($planned_sets, $done_sets, $duration_seconds, $seconds_since_last_xp);
     $xp_session = $xp_status === 'ok';
 
-    $workout_day = substr($data_workout, 0, 10);
-
-    // Calcola XP guadagnati e volume sessione
-    $xp_gained_general  = $xp_session ? XP_SESSION : 0;
-    $pr_in_session      = false;
-    $session_volume_kg  = 0.0;
-    $exercise_xp_deltas = [];
-
-    foreach ($current_ex_sets as $eid => $sets) {
-        $ex_best_weight = 0.0;
-        $ex_best_1rm    = 0.0;
-        $ex_best_bw_reps = 0;
-        foreach ($sets as $s) {
-            $session_volume_kg += $s['weight'] * $s['reps'];
-            if ($s['weight'] > $ex_best_weight) $ex_best_weight = $s['weight'];
-            $orm = estimateOneRepMax($s['weight'], $s['reps']);
-            if ($orm > $ex_best_1rm) $ex_best_1rm = $orm;
-            if ($s['weight'] == 0.0 && $s['reps'] > $ex_best_bw_reps) $ex_best_bw_reps = $s['reps'];
-        }
-
-        $prev = $prev_bests[$eid] ?? null;
-        // PR solo se c'è storico precedente (coerente con detectPersonalRecords in JS)
-        $is_weight_pr = $prev !== null && $ex_best_weight > $prev['best_weight'];
-        $is_1rm_pr    = $prev !== null && $ex_best_1rm   > $prev['best_1rm'];
-        // A peso 0 (corpo libero) il progresso sono le ripetizioni
-        $is_reps_pr   = $prev !== null && $ex_best_bw_reps > $prev['best_bw_reps'];
-
-        $ex_xp = $xp_session ? XP_EXERCISE_SESSION : 0;
-        $ex_is_pr = false;
-        if (($is_weight_pr || $is_1rm_pr || $is_reps_pr) && !exercise_pr_paid_on_day($db, $user_id, $eid, $workout_day)) {
-            $pr_in_session = true;
-            $ex_is_pr = true;
-            $ex_xp += XP_EXERCISE_PR;
-        }
-        if ($ex_xp > 0) $exercise_xp_deltas[$eid] = ['xp' => $ex_xp, 'is_pr' => $ex_is_pr];
-    }
-
-    // PR generale: una volta sola per sessione, comunque siano i PR
-    if ($pr_in_session) $xp_gained_general += XP_PR;
+    $rewards = workoutRewards($current_ex_sets, $prev_bests, $xp_session, $pr_paid_today);
+    $session_volume_kg     = $rewards['volume'];
+    $exercise_xp_deltas    = $rewards['exercises'];
+    $xp_gained_general     = $rewards['xp_general'];
     $xp_general_registered = $xp_gained_general; // il bonus streak lo segue gym_streak_weeks, non l'allenamento
     if ($week_completed_now) $xp_gained_general += XP_STREAK_WEEK;
 

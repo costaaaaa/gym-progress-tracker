@@ -37,6 +37,7 @@ import {
   Close as CloseIcon,
   Info as InfoIcon,
   EmojiEvents as TrophyIcon,
+  TrendingUp as TrendingUpIcon,
   AccessTime as AccessTimeIcon,
   History as HistoryIcon,
   Share as ShareIcon,
@@ -1347,7 +1348,6 @@ const FocusWorkout = () => {
                 const prParts = [];
                 if (pr.weight) prParts.push(t('focus.pr_weight'));
                 if (pr.oneRM) prParts.push(t('focus.pr_1rm'));
-                if (pr.volume) prParts.push(t('focus.pr_volume'));
                 if (pr.reps) prParts.push(t('focus.pr_reps'));
                 return (
                   <Box key={exercise.id} sx={{ px: 2, py: 2, borderBottom: `1px solid ${colors.border}` }}>
@@ -1362,6 +1362,15 @@ const FocusWorkout = () => {
                           label={prParts.length ? t('focus.new_record_parts', { parts: prParts.join(', ') }) : t('focus.new_record')}
                           size="small"
                           sx={{ bgcolor: 'rgba(255, 167, 38, 0.15)', color: colors.warning, fontWeight: 700, fontSize: '0.7rem' }}
+                        />
+                      )}
+                      {!!pr.volume && (
+                        <Chip
+                          icon={<TrendingUpIcon sx={{ fontSize: 16, color: `${colors.primaryLight} !important` }} />}
+                          label={t('focus.best_volume')}
+                          size="small"
+                          variant="outlined"
+                          sx={{ borderColor: colors.primary, color: colors.primaryLight, fontWeight: 700, fontSize: '0.7rem' }}
                         />
                       )}
                     </Box>
@@ -1411,12 +1420,11 @@ const FocusWorkout = () => {
 
                 {/* Recap card */}
                 {(() => {
-                  const prList = selectedDay?.exercises
-                    ?.filter(ex => {
-                      const sets = completedSets[ex.id];
-                      return sets?.length && detectPersonalRecords(sets, historyIndex[ex.exercise_id]).isPR;
-                    })
-                    .map(ex => ex.exercise_name) || [];
+                  const prs = (selectedDay?.exercises || [])
+                    .filter(ex => completedSets[ex.id]?.length)
+                    .map(ex => ({ name: ex.exercise_name, pr: detectPersonalRecords(completedSets[ex.id], historyIndex[ex.exercise_id]) }));
+                  const prList = prs.filter(x => x.pr.isPR).map(x => x.name);
+                  const volumeList = prs.filter(x => x.pr.volume).map(x => x.name);
 
                   const cardExercises = (selectedDay?.exercises || []).map(ex => ({
                     exercise_id: ex.exercise_id,
@@ -1451,6 +1459,11 @@ const FocusWorkout = () => {
                       {prList.length > 0 && (
                         <Typography variant="body2" sx={{ color: colors.warning, mb: 0.5 }}>
                           {t('focus.new_records', { list: prList.join(', ') })}
+                        </Typography>
+                      )}
+                      {volumeList.length > 0 && (
+                        <Typography variant="body2" sx={{ color: colors.primaryLight, mb: 0.5 }}>
+                          {t('focus.best_volume_list', { list: volumeList.join(', ') })}
                         </Typography>
                       )}
                       {savedResult.current_streak_weeks > 0 && (
