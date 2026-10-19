@@ -41,12 +41,8 @@ try {
             "locale" => request_locale()
         )
     ));
-} catch (Exception $e) {
-    error_log("Login Error: " . $e->getMessage());
-
-    http_response_code(500);
-    echo json_encode(array(
-        "success" => false,
-        "message" => t_server('auth.login_error')
-    ));
+} catch (Throwable $e) {
+    api_log_exception('user/login.php', $e);
+    if (ob_get_length()) ob_clean();
+    api_server_error(t_server('auth.login_error'));
 }
