@@ -1364,7 +1364,7 @@ const FocusWorkout = () => {
                           sx={{ bgcolor: 'rgba(255, 167, 38, 0.15)', color: colors.warning, fontWeight: 700, fontSize: '0.7rem' }}
                         />
                       )}
-                      {pr.volume && (
+                      {!!pr.volume && (
                         <Chip
                           icon={<TrendingUpIcon sx={{ fontSize: 16, color: `${colors.primaryLight} !important` }} />}
                           label={t('focus.best_volume')}

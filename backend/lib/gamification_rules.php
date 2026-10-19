@@ -114,10 +114,9 @@ function setBests(array $sets): array {
     return $b;
 }
 
-// Record battuti dalle serie di un esercizio. $prev = setBests dello storico precedente,
-// null se l'esercizio non è mai stato fatto (la prima volta non è un record).
-function exerciseRecords(array $sets, ?array $prev): array {
-    $cur = setBests($sets);
+// Record battuti in un esercizio. $cur = setBests delle serie fatte; $prev = setBests dello storico
+// precedente, null se l'esercizio non è mai stato fatto (la prima volta non è un record).
+function exerciseRecords(array $cur, ?array $prev): array {
     $rec = [
         'weight'  => $prev !== null && $cur['weight'] > $prev['weight'],
         'one_rm'  => $prev !== null && $cur['one_rm'] > $prev['one_rm'],
@@ -134,8 +133,9 @@ function exerciseRecords(array $sets, ?array $prev): array {
 function workoutRewards(array $sets_by_exercise, array $prev_bests, bool $xp_session, array $pr_paid_today): array {
     $out = ['xp_general' => $xp_session ? XP_SESSION : 0, 'pr_in_session' => false, 'volume' => 0.0, 'exercises' => []];
     foreach ($sets_by_exercise as $eid => $sets) {
-        $out['volume'] += setBests($sets)['volume'];
-        $is_pr = exerciseRecords($sets, $prev_bests[$eid] ?? null)['is_pr'] && !in_array($eid, $pr_paid_today, true);
+        $cur = setBests($sets);
+        $out['volume'] += $cur['volume'];
+        $is_pr = exerciseRecords($cur, $prev_bests[$eid] ?? null)['is_pr'] && !in_array($eid, $pr_paid_today, true);
         $xp = ($xp_session ? XP_EXERCISE_SESSION : 0) + ($is_pr ? XP_EXERCISE_PR : 0);
         if ($is_pr) $out['pr_in_session'] = true;
         if ($xp > 0) $out['exercises'][$eid] = ['xp' => $xp, 'is_pr' => $is_pr];

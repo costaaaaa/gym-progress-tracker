@@ -22,7 +22,7 @@ echo "Record (tests/fixtures/pr_cases.json, stessi casi del client)\n";
 $fixture = json_decode(file_get_contents(__DIR__ . '/fixtures/pr_cases.json'), true);
 foreach ($fixture['cases'] as $case) {
     $prev = $case['history'] === null ? null : setBests(array_merge(...$case['history']));
-    $rec = exerciseRecords($case['sets'], $prev);
+    $rec = exerciseRecords(setBests($case['sets']), $prev);
     $e = $case['expect'];
     check($case['name'], $rec['weight'] === $e['weight'] && $rec['one_rm'] === $e['oneRM']
         && $rec['bw_reps'] === $e['reps'] && $rec['is_pr'] === $e['isPR']);

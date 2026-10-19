@@ -107,7 +107,7 @@ export const muscleGroupsTitle = (exercises, label) => {
 };
 
 // Tipi di record dal più importante: peso, massimale stimato, ripetizioni a corpo libero.
-// Il miglior volume di sessione sta in fondo alla lista e non conta come record.
+// Il miglior volume di sessione non conta come record: sta in fondo alla lista solo se l'utente lo sceglie.
 const RECORD_TYPES = ['weight', 'oneRM', 'reps'];
 
 const playedSets = (sets) => sets
@@ -620,6 +620,7 @@ export const sanitizePrefs = (raw) => {
     preset: PRESETS.some((x) => x.id === p.preset) ? p.preset : DEFAULT_PRESET,
     customBlocks: Array.isArray(p.customBlocks) ? customIds.filter((id) => p.customBlocks.includes(id)) : null,
     hideWeights: p.hideWeights === true,
+    showBestVolume: p.showBestVolume === true,
   };
 };
 
@@ -740,11 +741,13 @@ const photoUnderlay = (format, hasPhoto) => {
  * preset: id di PRESETS (la card pronta); se non è disponibile per l'allenamento, Riepilogo.
  * blocks: id di CUSTOM_BLOCKS accesi (card personalizzata); se c'è, preset non conta.
  * hideWeights: nessun peso (kg) da nessuna parte.
+ * showBestVolume: le righe "miglior volume" nell'elenco dei record (di base no).
  */
 export const layoutShareCard = (stats, templateId, {
   hasPhoto = false, photoBackground, strings = STRINGS_IT, format = FORMAT_STORIA, preset = DEFAULT_PRESET,
-  blocks: customBlocks, hideWeights = false,
+  blocks: customBlocks, hideWeights = false, showBestVolume = false,
 } = {}) => {
+  if (!showBestVolume) stats = { ...stats, recordList: stats.recordList.filter((r) => r.type !== 'volume') };
   const theme = THEMES[templateId] || THEMES.scuro;
   const isPhoto = templateId === 'foto';
   const { blocks, hasHero } = chosenBlocks(stats, preset, customBlocks);
