@@ -1,20 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Container,
   Box,
-  Typography,
   Button,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Paper,
-  LinearProgress,
   CircularProgress,
-  IconButton,
-  Chip,
   Alert,
   Snackbar,
   Dialog,
@@ -22,45 +11,18 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  Fade,
   GlobalStyles
 } from '@mui/material';
-import {
-  PlayArrow as PlayArrowIcon,
-  SkipNext as SkipNextIcon,
-  Check as CheckIcon,
-  FitnessCenter as FitnessCenterIcon,
-  Timer as TimerIcon,
-  TimerOff as TimerOffIcon,
-  ArrowBack as ArrowBackIcon,
-  Save as SaveIcon,
-  Close as CloseIcon,
-  Info as InfoIcon,
-  EmojiEvents as TrophyIcon,
-  TrendingUp as TrendingUpIcon,
-  AccessTime as AccessTimeIcon,
-  History as HistoryIcon,
-  Share as ShareIcon,
-  LocalFireDepartment as FireIcon,
-  SwapHoriz as SwapIcon,
-  Add as AddIcon,
-  Lock as LockIcon,
-  Remove as RemoveIcon
-} from '@mui/icons-material';
+import { Lock as LockIcon } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
-import { useThemeMode } from '../context/ThemeModeContext';
-import { useTheme } from '@mui/material/styles';
 import { API_BASE_URL } from '../config';
 import { hapticFeedback } from '../utils/vibration';
-import { INTENSITY_TECHNIQUES } from '../components/ExerciseDialog';
 import { buildExerciseHistoryIndex, detectPersonalRecords } from '../utils/workoutMetrics';
-import { buildShareStats, sessionRecords } from '../utils/shareCard';
-import ShareCardDialog from '../components/ShareCardDialog';
 import FocusExercisePicker from '../components/FocusExercisePicker';
 import {
-  FEATURE_SESSION_EDIT, MAX_WEIGHT, isValidWeight, initialWeight, nextSetWeight,
-  isValidReps, planRepsForSet, repsNeedConfirm,
-  lastSessionSets, setStatus, numberedSets, buildSessionEntry, swapExercise, insertExercise,
+  FEATURE_SESSION_EDIT, isValidWeight, initialWeight, nextSetWeight,
+  isValidReps, repsNeedConfirm,
+  numberedSets, buildSessionEntry, swapExercise, insertExercise,
   newIdempotencyKey, draftIdempotencyKey
 } from '../utils/focusSession';
 import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../utils/celebrate';
@@ -68,55 +30,21 @@ import { usePageMeta } from '../hooks/usePageMeta';
 import { track } from '../utils/analytics';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n';
-import { intlLocale } from '../i18n/format';
-import { muscleLabel, techniqueLabel } from '../i18n/labels';
+import { useFocusColors } from './focus/useFocusColors';
+import ResumePromptPhase from './focus/ResumePromptPhase';
+import SelectDayPhase from './focus/SelectDayPhase';
+import RestTimerPhase from './focus/RestTimerPhase';
+import WorkoutPhase from './focus/WorkoutPhase';
+import SummaryPhase from './focus/SummaryPhase';
 
 const DRAFT_STORAGE_KEY = 'gym_focus_workout_draft';
-// Oltre questa età la bozza è una sessione dimenticata: il backend non usa più start_time da solo
-const DRAFT_STALE_MS = 4 * 60 * 60 * 1000;
-const RETRO_MAX_DAYS = 7;
-
-const XP_WITHHELD_KEYS = {
-  incomplete: 'focus.xp_incomplete',
-  too_short: 'focus.xp_too_short',
-  cooldown: 'focus.xp_cooldown',
-  no_plan: 'focus.xp_no_plan'
-};
-
-const toDateInputValue = (d) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
 const FocusWorkout = () => {
   const { t } = useTranslation();
   usePageMeta(t('focus.meta.title'), t('focus.meta.description'));
 
-  const xpWithheldText = (result) => {
-    if (!result || result.xp_session_awarded !== false) return '';
-    const key = XP_WITHHELD_KEYS[result.xp_session_reason];
-    return key ? t(key, { pct: result.completion_pct ?? 0 }) : '';
-  };
   const navigate = useNavigate();
   const { isLoggedIn, loading: authLoading } = useAuth();
-  const theme = useTheme();
-  const { mode } = useThemeMode();
-  const isDarkMode = mode === 'dark';
-
-  const colors = {
-    bg: theme.palette.background.default,
-    bgCard: theme.palette.background.paper,
-    bgElevated: theme.palette.action.hover,
-    primary: theme.palette.primary.main,
-    primaryLight: theme.palette.primary.light,
-    primaryDark: theme.palette.primary.dark,
-    text: theme.palette.text.primary,
-    textSecondary: theme.palette.text.secondary,
-    textMuted: isDarkMode ? '#757575' : '#9e9e9e',
-    success: theme.palette.success.main,
-    warning: theme.palette.warning.main,
-    border: theme.palette.divider,
-    timerBg: isDarkMode ? 'rgba(213, 0, 0, 0.08)' : 'rgba(213, 0, 0, 0.04)',
-    primaryAlpha: isDarkMode ? 'rgba(213, 0, 0, 0.15)' : 'rgba(213, 0, 0, 0.08)',
-  };
+  const { colors, isDarkMode } = useFocusColors();
 
   // ================================================
   // STATE
@@ -341,8 +269,6 @@ const FocusWorkout = () => {
   // ================================================
   // GESTIONE BOZZA
   // ================================================
-  const draftIsStale = (draft) => Date.now() - new Date(draft.startTime).getTime() > DRAFT_STALE_MS;
-
   // Chiude la bozza vecchia come già finita: vai al riepilogo con il giorno scelto
   const handleResumeDraft = (finishedOn = null) => {
     if (!draftToResume) return;
@@ -651,15 +577,6 @@ const FocusWorkout = () => {
     };
   }, []);
 
-  // ================================================
-  // FORMATO TIMER
-  // ================================================
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
   // Tempo totale allenamento
   const getElapsedSeconds = () => {
     if (!startTime) return 0;
@@ -813,6 +730,93 @@ const FocusWorkout = () => {
   };
 
   // ================================================
+  // PROPS DELLE FASI
+  // ================================================
+  const quitDialog = {
+    quitDialogOpen: confirmQuitDialog,
+    onCloseQuitDialog: () => setConfirmQuitDialog(false),
+    onConfirmQuit: confirmQuit,
+    totalCompletedSets: getTotalCompletedSets(),
+  };
+  const resumePrompt = {
+    draftToResume,
+    retroDateInput,
+    onRetroDateChange: setRetroDateInput,
+    onResume: () => handleResumeDraft(),
+    onFinished: handleResumeDraft,
+    onDiscard: handleDiscardDraft,
+  };
+  const selectDay = {
+    activePlan,
+    selectedDayId,
+    selectedDay,
+    timerEnabled,
+    onDayChange: handleDayChange,
+    onStart: handleStartWorkout,
+    onBack: () => navigate('/'),
+    onGoToPlans: () => navigate('/workouts?tab=plans'),
+  };
+  const restTimer = {
+    timerDuration,
+    timerRemaining,
+    currentExerciseName: currentExercise?.exercise_name,
+    nextSetNumber: currentSetIndex + 1,
+    totalSetsForCurrentExercise,
+    onSkip: handleSkipTimer,
+  };
+  const workout = {
+    currentExercise,
+    currentExerciseIndex,
+    totalExercises,
+    currentSetIndex,
+    totalSetsForCurrentExercise,
+    currentExerciseSets,
+    currentSkippedSets,
+    lastSession: getLastSession(currentExercise),
+    exerciseTransition,
+    elapsedTime: getElapsedTime(),
+    weightInput,
+    onWeightChange: setWeightInput,
+    repsInput,
+    onRepsChange: setRepsInput,
+    intensityTechniqueInput,
+    onIntensityChange: setIntensityTechniqueInput,
+    onConfirmSet: handleConfirmSet,
+    onSkipSet: handleSkipSet,
+    onSkipExercise: handleSkipExercise,
+    canEditSession,
+    onOpenPicker: openPicker,
+    onQuit: handleQuit,
+    ...quitDialog,
+    repsConfirmOpen: repsConfirmDialog,
+    onCloseRepsConfirm: () => setRepsConfirmDialog(false),
+    onConfirmReps: recordSet,
+  };
+  const summary = {
+    activePlan,
+    selectedDay,
+    completedSets,
+    historyIndex,
+    startTime,
+    elapsedSeconds: getElapsedSeconds(),
+    elapsedTime: getElapsedTime(),
+    workoutNotes,
+    onNotesChange: setWorkoutNotes,
+    saving,
+    savedResult,
+    onSave: handleSave,
+    onQuit: handleQuit,
+    onGoHistory: () => navigate('/workouts?tab=history', { state: { refreshHistory: Date.now() } }),
+    onGoHome: () => navigate('/'),
+    canEditSession,
+    onAddExercise: () => openPicker('add', 'summary'),
+    shareStats,
+    onOpenShare: setShareStats,
+    onCloseShare: () => setShareStats(null),
+    ...quitDialog,
+  };
+
+  // ================================================
   // RENDER — CONTENUTO IN BASE ALLA FASE
   // ================================================
   const renderContent = () => {
@@ -828,717 +832,23 @@ const FocusWorkout = () => {
     }
 
     if (phase === 'resume_prompt' && draftToResume) {
-      const stale = draftIsStale(draftToResume);
-      const today = new Date();
-      const minDay = new Date(today);
-      minDay.setDate(minDay.getDate() - RETRO_MAX_DAYS);
-      const retroDateBounds = { min: toDateInputValue(minDay), max: toDateInputValue(today) };
-      const startDay = toDateInputValue(new Date(draftToResume.startTime));
-      retroDateBounds.initial = startDay < retroDateBounds.min ? retroDateBounds.min : startDay;
-      const chosenRetro = retroDateInput || retroDateBounds.initial;
-      const retroDateValid = chosenRetro >= retroDateBounds.min && chosenRetro <= retroDateBounds.max;
-      return (
-        <Box sx={{ 
-          minHeight: '100vh', bgcolor: colors.bg, color: colors.text,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3
-        }}>
-          <Paper sx={{
-            bgcolor: colors.bgCard, p: 4, maxWidth: 400, textAlign: 'center',
-            border: `1px solid ${colors.border}`,
-            boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
-          }}>
-            <HistoryIcon sx={{ fontSize: 64, color: colors.warning, mb: 2 }} />
-            <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
-              {t('focus.draft_title')}
-            </Typography>
-            <Typography variant="body1" sx={{ color: colors.textSecondary, mb: 1 }}>
-              {t('focus.draft_text')}
-            </Typography>
-            <Typography variant="h6" sx={{ color: colors.primaryLight, fontWeight: 600, mb: 1 }}>
-              {draftToResume.selectedDay?.name}
-            </Typography>
-            <Typography variant="body2" sx={{ color: colors.textMuted, mb: 3 }}>
-              {t('focus.draft_started', { date: new Date(draftToResume.startTime).toLocaleString(intlLocale()) })}
-            </Typography>
-
-            {stale && (
-              <Box sx={{ mb: 3, textAlign: 'left' }}>
-                <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 1.5 }}>
-                  {t('focus.draft_retro_hint')}
-                </Typography>
-                <TextField
-                  type="date"
-                  label={t('focus.draft_retro_day')}
-                  value={chosenRetro}
-                  onChange={(e) => setRetroDateInput(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                  inputProps={{ min: retroDateBounds.min, max: retroDateBounds.max }}
-                  fullWidth
-                  sx={{ mb: 1.5 }}
-                />
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  disabled={!retroDateValid}
-                  onClick={() => handleResumeDraft(chosenRetro)}
-                  sx={{ color: colors.primaryLight, borderColor: colors.primary, py: 1.25, fontWeight: 700 }}
-                >
-                  {t('focus.draft_retro_done')}
-                </Button>
-              </Box>
-            )}
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Button
-                variant="contained"
-                size="large"
-                fullWidth
-                onClick={() => handleResumeDraft()}
-                sx={{
-                  bgcolor: colors.primary, py: 1.5, fontWeight: 700,
-                  '&:hover': { bgcolor: colors.primaryDark }
-                }}
-              >
-                {stale ? t('focus.draft_continue_now') : t('focus.draft_resume')}
-              </Button>
-              <Button
-                variant="outlined"
-                size="large"
-                fullWidth
-                onClick={handleDiscardDraft}
-                sx={{
-                  color: colors.textSecondary, borderColor: colors.border, py: 1.5,
-                  '&:hover': { borderColor: colors.primary, color: colors.primaryLight }
-                }}
-              >
-                {t('focus.draft_discard')}
-              </Button>
-            </Box>
-          </Paper>
-        </Box>
-      );
+      return <ResumePromptPhase {...resumePrompt} />;
     }
 
     if (phase === 'select_day') {
-      return (
-        <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text }}>
-          <Box sx={{
-            px: 2.5, py: 2, display: 'flex', alignItems: 'center', gap: 1.25,
-            borderBottom: `1px solid ${colors.border}`
-          }}>
-            <IconButton onClick={() => navigate('/')} sx={{ color: colors.text }}>
-              <ArrowBackIcon />
-            </IconButton>
-            <Box sx={{
-              width: 26, height: 26, borderRadius: '7px', bgcolor: colors.primary,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            }}>
-              <FitnessCenterIcon sx={{ color: '#fff', fontSize: 15 }} />
-            </Box>
-            <Typography sx={{ fontFamily: "'Lexend', sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: '0.06em' }}>
-              FOCUS MODE
-            </Typography>
-          </Box>
-
-          <Container maxWidth="sm" sx={{ py: 4 }}>
-            {!activePlan ? (
-              <Box sx={{ textAlign: 'center', py: 6 }}>
-                <FitnessCenterIcon sx={{ fontSize: 64, color: colors.textMuted, mb: 2 }} />
-                <Typography variant="h6" sx={{ color: colors.textSecondary, mb: 2 }}>
-                  {t('focus.no_plan')}
-                </Typography>
-                <Typography variant="body2" sx={{ color: colors.textMuted, mb: 3 }}>
-                  {t('focus.no_plan_hint')}
-                </Typography>
-                <Button
-                  variant="outlined"
-                  onClick={() => navigate('/workouts?tab=plans')}
-                  sx={{ color: colors.primary, borderColor: colors.primary }}
-                >
-                  {t('focus.go_plans')}
-                </Button>
-              </Box>
-            ) : (
-              <>
-                <Paper sx={{
-                  bgcolor: colors.bgCard, p: 3, mb: 3,
-                  border: `1px solid ${colors.border}`
-                }}>
-                  <Typography variant="overline" sx={{ color: colors.textMuted, letterSpacing: 2 }}>
-                    {t('focus.active_plan')}
-                  </Typography>
-                  <Typography variant="h5" sx={{ color: colors.text, fontWeight: 700, mb: 3 }}>
-                    {activePlan.name}
-                  </Typography>
-
-                  <FormControl fullWidth sx={{
-                    mb: 3,
-                    '& .MuiOutlinedInput-root': {
-                      color: colors.text,
-                      '& fieldset': { borderColor: colors.border },
-                      '&:hover fieldset': { borderColor: colors.primary },
-                      '&.Mui-focused fieldset': { borderColor: colors.primary },
-                    },
-                    '& .MuiInputLabel-root': { color: colors.textSecondary },
-                    '& .MuiInputLabel-root.Mui-focused': { color: colors.primary },
-                    '& .MuiSvgIcon-root': { color: colors.textSecondary },
-                  }}>
-                    <InputLabel>{t('record.select_day')}</InputLabel>
-                    <Select
-                      value={selectedDayId}
-                      label={t('record.select_day')}
-                      onChange={handleDayChange}
-                    >
-                      {activePlan.days?.map((day) => (
-                        <MenuItem key={day.id} value={day.id}>{day.name}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-
-                  {selectedDay && selectedDay.exercises && (
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ color: colors.textMuted, mb: 1.5, letterSpacing: 1 }}>
-                        {t('focus.exercises_header', { count: selectedDay.exercises.length })}
-                      </Typography>
-                      {selectedDay.exercises.map((ex, idx) => (
-                        <Box key={ex.id} sx={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          py: 1.5, borderBottom: idx < selectedDay.exercises.length - 1 ? `1px solid ${colors.border}` : 'none'
-                        }}>
-                          <Box>
-                            <Typography variant="body1" sx={{ color: colors.text, fontWeight: 500 }}>
-                              {ex.exercise_name}
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: colors.textMuted }}>
-                              {t('focus.plan_line', { sets: ex.sets, reps: ex.reps, rest: ex.rest })}
-                              {ex.intensity_technique && ` — ${techniqueLabel(ex.intensity_technique)}`}
-                            </Typography>
-                          </Box>
-                          <Chip
-                            label={muscleLabel(ex.muscle_group)}
-                            size="small"
-                            sx={{
-                              bgcolor: colors.primaryAlpha,
-                              color: colors.primaryLight,
-                              fontWeight: 500,
-                              fontSize: '0.7rem'
-                            }}
-                          />
-                        </Box>
-                      ))}
-                    </Box>
-                  )}
-                </Paper>
-
-                <Button
-                  variant="contained"
-                  fullWidth
-                  size="large"
-                  startIcon={<PlayArrowIcon />}
-                  disabled={!selectedDay || !selectedDay.exercises || selectedDay.exercises.length === 0}
-                  onClick={handleStartWorkout}
-                  sx={{
-                    py: 2, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1,
-                    bgcolor: colors.primary, color: '#fff', borderRadius: '14px', textTransform: 'uppercase',
-                    boxShadow: isDarkMode ? '0 4px 20px rgba(0, 0, 0, 0.4)' : '0 4px 20px rgba(213, 0, 0, 0.2)',
-                    '&:hover': { bgcolor: colors.primaryDark, boxShadow: isDarkMode ? '0 6px 24px rgba(0, 0, 0, 0.5)' : '0 6px 24px rgba(213, 0, 0, 0.3)', transform: 'translateY(-2px)' },
-                    '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted },
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  {t('focus.start')}
-                </Button>
-
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 2, gap: 1 }}>
-                  {timerEnabled ? (
-                    <>
-                      <TimerIcon sx={{ fontSize: 16, color: colors.success }} />
-                      <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.timer_on')}</Typography>
-                    </>
-                  ) : (
-                    <>
-                      <TimerOffIcon sx={{ fontSize: 16, color: colors.textMuted }} />
-                      <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.timer_off')}</Typography>
-                    </>
-                  )}
-                </Box>
-              </>
-            )}
-          </Container>
-        </Box>
-      );
+      return <SelectDayPhase {...selectDay} />;
     }
 
     if (phase === 'rest_timer') {
-      const progress = timerDuration > 0 ? ((timerDuration - timerRemaining) / timerDuration) * 100 : 0;
-      return (
-        <Box sx={{
-          minHeight: '100vh', bgcolor: colors.bg, color: colors.text,
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', px: 3
-        }}>
-          <Box sx={{ position: 'relative', display: 'inline-flex', mb: 4 }}>
-            <CircularProgress variant="determinate" value={progress} size={220} thickness={4}
-              sx={{ color: colors.primary, '& .MuiCircularProgress-circle': { strokeLinecap: 'round', transition: 'stroke-dashoffset 1s linear' } }} />
-            <CircularProgress variant="determinate" value={100} size={220} thickness={4}
-              sx={{ color: colors.border, position: 'absolute', left: 0, zIndex: 0 }} />
-            <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-              <Typography variant="h2" sx={{ fontWeight: 700, fontFamily: 'monospace', color: colors.text }}>{formatTime(timerRemaining)}</Typography>
-              <Typography variant="caption" sx={{ color: colors.textMuted, mt: 0.5 }}>{t('focus.rest_caps')}</Typography>
-            </Box>
-          </Box>
-          <Typography variant="body1" sx={{ color: colors.textSecondary, mb: 1 }}>{currentExercise?.exercise_name}</Typography>
-          <Typography variant="body2" sx={{ color: colors.textMuted, mb: 4 }}>{t('focus.next_set', { n: currentSetIndex + 1, total: totalSetsForCurrentExercise })}</Typography>
-          <Button variant="outlined" size="large" startIcon={<SkipNextIcon />} onClick={handleSkipTimer}
-            sx={{ color: colors.text, borderColor: colors.border, borderRadius: '12px', px: 4, py: 1.5, fontSize: '1rem',
-              '&:hover': { borderColor: colors.primary, bgcolor: colors.timerBg } }}>
-            {t('focus.skip_timer')}
-          </Button>
-        </Box>
-      );
+      return <RestTimerPhase {...restTimer} />;
     }
 
     if (phase === 'workout' && currentExercise) {
-      return (
-        <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text, display: 'flex', flexDirection: 'column' }}>
-          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${colors.border}` }}>
-            <IconButton onClick={handleQuit} sx={{ color: colors.textSecondary }}><CloseIcon /></IconButton>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <AccessTimeIcon sx={{ fontSize: 16, color: colors.textMuted }} />
-              <Typography variant="caption" sx={{ color: colors.textMuted, fontFamily: 'monospace' }}>{getElapsedTime()}</Typography>
-            </Box>
-            <Typography variant="caption" sx={{ color: colors.textMuted }}>{currentExerciseIndex + 1}/{totalExercises}</Typography>
-          </Box>
-
-          <LinearProgress variant="determinate" value={((currentExerciseIndex) / totalExercises) * 100}
-            sx={{ height: 3, bgcolor: colors.border, '& .MuiLinearProgress-bar': { bgcolor: colors.primary } }} />
-
-          <Fade in={exerciseTransition} timeout={300}>
-            <Container maxWidth="sm" sx={{ py: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <Box sx={{ textAlign: 'center', mb: 3 }}>
-                <Chip label={muscleLabel(currentExercise.muscle_group)} size="small" sx={{ bgcolor: colors.primaryAlpha, color: colors.primaryLight, mb: 1, fontWeight: 500 }} />
-                <Typography variant="h4" sx={{ fontWeight: 700, color: colors.text, lineHeight: 1.2 }}>{currentExercise.exercise_name}</Typography>
-                {currentExercise.notes && (
-                  <Alert severity="info" icon={<InfoIcon sx={{ color: colors.primaryLight }} />}
-                    sx={{ mt: 2, bgcolor: colors.timerBg, color: colors.textSecondary, '& .MuiAlert-icon': { color: colors.primaryLight }, border: `1px solid ${colors.border}`, borderRadius: '8px' }}>
-                    {currentExercise.notes}
-                  </Alert>
-                )}
-              </Box>
-
-              <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1.5, mb: 3 }}>
-                {Array.from({ length: Number(totalSetsForCurrentExercise) || 0 }, (_, idx) => {
-                  const status = setStatus(idx, currentSetIndex, currentSkippedSets);
-                  return (
-                    <Box key={idx} title={status === 'skipped' ? t('focus.set_skipped') : undefined} sx={{
-                      width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      border: `2px ${status === 'skipped' ? 'dashed' : 'solid'} ${status === 'done' ? colors.success : status === 'active' ? colors.primary : colors.border}`,
-                      bgcolor: status === 'done' ? colors.success : status === 'skipped' ? colors.bgElevated : 'transparent',
-                      color: status === 'done' ? '#fff' : status === 'active' ? colors.primary : colors.textMuted,
-                      fontWeight: 700, fontSize: '0.875rem', transition: 'all 0.3s ease'
-                    }}>
-                      {status === 'done' ? <CheckIcon sx={{ fontSize: 18 }} /> : status === 'skipped' ? <RemoveIcon sx={{ fontSize: 18 }} /> : idx + 1}
-                    </Box>
-                  );
-                })}
-              </Box>
-
-              <Typography variant="subtitle2" sx={{ textAlign: 'center', color: colors.textMuted, mb: 3, letterSpacing: 1 }}>
-                SERIE {currentSetIndex + 1} DI {totalSetsForCurrentExercise}
-              </Typography>
-
-              {(() => {
-                const lastSets = lastSessionSets(getLastSession(currentExercise));
-                if (lastSets.length === 0) return null;
-                return (
-                  <Box sx={{
-                    display: 'flex', alignItems: 'flex-start', gap: 1, mb: 2, px: 1.5, py: 1,
-                    borderRadius: '10px', bgcolor: colors.bgElevated, border: `1px solid ${colors.border}`
-                  }}>
-                    <HistoryIcon sx={{ fontSize: 18, color: colors.textMuted, mt: 0.25 }} />
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography variant="caption" sx={{ color: colors.textMuted, letterSpacing: 0.5 }}>
-                        {t('focus.last_time')}
-                      </Typography>
-                      {/* Una chip per serie, con la tecnica sotto; evidenziata quella pari alla serie in corso */}
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 0.5 }}>
-                        {lastSets.map((set, idx) => {
-                          const isCurrent = idx === currentSetIndex;
-                          return (
-                            <Box key={idx} sx={{
-                              px: 1, py: 0.5, borderRadius: '6px', bgcolor: colors.bgCard,
-                              border: `1px solid ${isCurrent ? colors.primary : colors.border}`,
-                            }}>
-                              <Typography variant="body2" sx={{ color: isCurrent ? colors.text : colors.textSecondary, fontWeight: isCurrent ? 700 : 600, lineHeight: 1.3 }}>
-                                {set.label}
-                              </Typography>
-                              {set.technique && (
-                                <Typography variant="caption" sx={{ color: colors.primaryLight, display: 'block', lineHeight: 1.2, fontWeight: 600 }}>
-                                  {techniqueLabel(set.technique)}
-                                </Typography>
-                              )}
-                            </Box>
-                          );
-                        })}
-                      </Box>
-                    </Box>
-                  </Box>
-                );
-              })()}
-
-              <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                <TextField label={t('record.weight')} type="number" value={weightInput} onChange={(e) => setWeightInput(e.target.value)}
-                  fullWidth autoFocus inputProps={{ step: 0.5, min: 0, max: MAX_WEIGHT, inputMode: 'decimal' }}
-                  sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.primary }, '&.Mui-focused fieldset': { borderColor: colors.primary } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.primary } }} />
-                {/* Vuoto a ogni serie: la scheda in grigio è solo un suggerimento, va scritta */}
-                <TextField label={t('record.reps')} value={repsInput} onChange={(e) => setRepsInput(e.target.value)}
-                  placeholder={planRepsForSet(currentExercise.reps, currentSetIndex)} InputLabelProps={{ shrink: true }}
-                  onFocus={(e) => e.target.select()}
-                  fullWidth inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
-                  sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.primary }, '&.Mui-focused fieldset': { borderColor: colors.primary } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.primary } }} />
-              </Box>
-
-              <FormControl fullWidth sx={{
-                mb: 3,
-                '& .MuiOutlinedInput-root': {
-                  color: colors.text,
-                  '& fieldset': { borderColor: colors.border, borderWidth: 2 },
-                  '&:hover fieldset': { borderColor: colors.primary },
-                  '&.Mui-focused fieldset': { borderColor: colors.primary },
-                },
-                '& .MuiInputLabel-root': { color: colors.textSecondary },
-                '& .MuiInputLabel-root.Mui-focused': { color: colors.primary },
-                '& .MuiSvgIcon-root': { color: colors.textSecondary },
-              }}>
-                <InputLabel>{t('focus.technique')}</InputLabel>
-                <Select
-                  value={intensityTechniqueInput}
-                  label={t('focus.technique')}
-                  onChange={(e) => setIntensityTechniqueInput(e.target.value)}
-                >
-                  <MenuItem value=""><em>{t('record.no_technique')}</em></MenuItem>
-                  {INTENSITY_TECHNIQUES.filter(tech => tech !== 'Nessuna (Normale)').map((tech) => (
-                    <MenuItem key={tech} value={tech}>{techniqueLabel(tech)}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <Button variant="contained" fullWidth size="large" startIcon={<CheckIcon />} onClick={handleConfirmSet} disabled={!isValidWeight(weightInput) || !isValidReps(repsInput)}
-                sx={{ py: 2.5, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.success, color: '#fff', borderRadius: '14px',
-                  boxShadow: '0 4px 16px rgba(76, 175, 80, 0.3)', '&:hover': { bgcolor: 'success.dark', boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)' },
-                  '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted }, mb: 2, transition: 'all 0.3s ease' }}>
-                {t('focus.confirm_set')}
-              </Button>
-
-              <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                {/* Dalla seconda serie: saltare la prima equivale a saltare l'esercizio */}
-                {currentSetIndex > 0 && (
-                  <Button variant="text" fullWidth startIcon={<SkipNextIcon />} onClick={handleSkipSet}
-                    sx={{ py: 1.5, color: colors.textMuted, '&:hover': { color: colors.textSecondary, bgcolor: 'rgba(255,255,255,0.05)' } }}>
-                    {t('focus.skip_set')}
-                  </Button>
-                )}
-                <Button variant="text" fullWidth startIcon={<SkipNextIcon />} onClick={handleSkipExercise}
-                  sx={{ py: 1.5, color: colors.textMuted, '&:hover': { color: colors.textSecondary, bgcolor: 'rgba(255,255,255,0.05)' } }}>
-                  {t('focus.skip_exercise')}
-                </Button>
-              </Box>
-
-              <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
-                {[
-                  { mode: 'swap', label: t('focus.swap_exercise'), icon: <SwapIcon /> },
-                  { mode: 'add', label: t('focus.add_exercise'), icon: <AddIcon /> },
-                ].map(({ mode: pickerMode, label, icon }) => (
-                  <Button key={pickerMode} variant="outlined" fullWidth startIcon={icon}
-                    endIcon={canEditSession ? null : <LockIcon sx={{ fontSize: '16px !important' }} />}
-                    onClick={() => openPicker(pickerMode)}
-                    sx={{ py: 1.25, opacity: pickerMode === 'swap' && currentSetIndex > 0 ? 0.45 : 1, color: colors.textSecondary, borderColor: colors.border, borderRadius: '12px',
-                      '&:hover': { borderColor: colors.primary, color: colors.primaryLight } }}>
-                    {label}
-                  </Button>
-                ))}
-              </Box>
-
-              {currentExerciseSets.length > 0 && (
-                <Paper sx={{ bgcolor: colors.bgCard, overflow: 'hidden', border: `1px solid ${colors.border}` }}>
-                  <Box sx={{ px: 2, py: 1.5, bgcolor: colors.bgElevated }}>
-                    <Typography variant="subtitle2" sx={{ color: colors.textMuted, letterSpacing: 1 }}>{t('focus.sets_done')}</Typography>
-                  </Box>
-                  {currentExerciseSets.map((set, idx) => (
-                    <Box key={set.setNumber} sx={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      px: 2, py: 1.25, borderTop: idx > 0 ? `1px solid ${colors.border}` : 'none',
-                    }}>
-                      <Typography variant="body2" sx={{ color: colors.textMuted }}>{t('focus.set_n', { n: set.setNumber })}</Typography>
-                      <Box sx={{ textAlign: 'right' }}>
-                        <Typography variant="body2" sx={{ color: colors.text, fontWeight: 600 }}>{set.weight} kg × {set.reps}</Typography>
-                        {set.intensity_technique && (
-                          <Typography variant="caption" sx={{ color: colors.textMuted, display: 'block' }}>{techniqueLabel(set.intensity_technique)}</Typography>
-                        )}
-                      </Box>
-                    </Box>
-                  ))}
-                </Paper>
-              )}
-            </Container>
-          </Fade>
-
-          <Dialog open={confirmQuitDialog} onClose={() => setConfirmQuitDialog(false)}
-            PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: '16px' } }}>
-            <DialogTitle sx={{ color: colors.text }}>{t('focus.quit_title')}</DialogTitle>
-            <DialogContent>
-              <DialogContentText sx={{ color: colors.textSecondary }}>{t('focus.quit_text', { count: getTotalCompletedSets() })}</DialogContentText>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setConfirmQuitDialog(false)} sx={{ color: colors.textSecondary }}>{t('focus.quit_continue')}</Button>
-              <Button onClick={confirmQuit} sx={{ color: colors.primary }}>{t('focus.quit_exit')}</Button>
-            </DialogActions>
-          </Dialog>
-
-          <Dialog open={repsConfirmDialog} onClose={() => setRepsConfirmDialog(false)}
-            PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: '16px' } }}>
-            <DialogTitle sx={{ color: colors.text }}>{t('record.confirm_reps', { reps: parseInt(repsInput, 10) })}</DialogTitle>
-            <DialogActions>
-              <Button onClick={() => setRepsConfirmDialog(false)} sx={{ color: colors.textSecondary }}>{t('record.fix')}</Button>
-              <Button onClick={recordSet} sx={{ color: colors.primary }}>{t('record.confirm_yes')}</Button>
-            </DialogActions>
-          </Dialog>
-        </Box>
-      );
+      return <WorkoutPhase {...workout} />;
     }
 
     if (phase === 'summary') {
-      const totalSets = getTotalCompletedSets();
-      const exercisesCompleted = Object.keys(completedSets).length;
-      return (
-        <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text }}>
-          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1, borderBottom: `1px solid ${colors.border}` }}>
-            <IconButton onClick={handleQuit} sx={{ color: colors.textSecondary }}><ArrowBackIcon /></IconButton>
-            <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: 1 }}>{t('focus.summary_caps')}</Typography>
-          </Box>
-
-          <Container maxWidth="sm" sx={{ py: 3 }}>
-            <Box sx={{ textAlign: 'center', mb: 4 }}>
-              <TrophyIcon sx={{ fontSize: 56, color: colors.warning, mb: 1 }} />
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>{t('focus.completed')}</Typography>
-              <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mt: 2 }}>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h4" sx={{ fontWeight: 700, color: colors.primary }}>{exercisesCompleted}</Typography>
-                  <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.exercises_caps')}</Typography>
-                </Box>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h4" sx={{ fontWeight: 700, color: colors.primary }}>{totalSets}</Typography>
-                  <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.sets_caps')}</Typography>
-                </Box>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="h4" sx={{ fontWeight: 700, color: colors.primary, fontFamily: 'monospace' }}>{getElapsedTime()}</Typography>
-                  <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.duration_caps')}</Typography>
-                </Box>
-              </Box>
-            </Box>
-
-            <Paper sx={{ bgcolor: colors.bgCard, overflow: 'hidden', mb: 3, border: `1px solid ${colors.border}` }}>
-              <Box sx={{ px: 2, py: 1.5, bgcolor: colors.bgElevated }}>
-                <Typography variant="subtitle2" sx={{ color: colors.textMuted, letterSpacing: 1 }}>{t('focus.detail_caps')}</Typography>
-              </Box>
-              {selectedDay?.exercises?.map((exercise) => {
-                const sets = completedSets[exercise.id];
-                if (!sets || sets.length === 0) return null;
-                // Confronto con lo storico PRIMA di questa sessione → record personali
-                const pr = detectPersonalRecords(sets, historyIndex[exercise.exercise_id]);
-                const prParts = [];
-                if (pr.weight) prParts.push(t('focus.pr_weight'));
-                if (pr.oneRM) prParts.push(t('focus.pr_1rm'));
-                if (pr.reps) prParts.push(t('focus.pr_reps'));
-                return (
-                  <Box key={exercise.id} sx={{ px: 2, py: 2, borderBottom: `1px solid ${colors.border}` }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, mb: 1 }}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600, color: colors.text }}>{exercise.exercise_name}</Typography>
-                      {exercise.replaces && (
-                        <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.replaces', { name: exercise.replaces })}</Typography>
-                      )}
-                      {pr.isPR && (
-                        <Chip
-                          icon={<TrophyIcon sx={{ fontSize: 16, color: `${colors.warning} !important` }} />}
-                          label={prParts.length ? t('focus.new_record_parts', { parts: prParts.join(', ') }) : t('focus.new_record')}
-                          size="small"
-                          sx={{ bgcolor: 'rgba(255, 167, 38, 0.15)', color: colors.warning, fontWeight: 700, fontSize: '0.7rem' }}
-                        />
-                      )}
-                      {!!pr.volume && (
-                        <Chip
-                          icon={<TrendingUpIcon sx={{ fontSize: 16, color: `${colors.primaryLight} !important` }} />}
-                          label={t('focus.best_volume')}
-                          size="small"
-                          variant="outlined"
-                          sx={{ borderColor: colors.primary, color: colors.primaryLight, fontWeight: 700, fontSize: '0.7rem' }}
-                        />
-                      )}
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                      {sets.map((set) => (
-                        <Box key={set.setNumber} sx={{
-                          bgcolor: colors.bgElevated, borderRadius: '6px', px: 1.125, py: 0.625,
-                          fontSize: 12, fontWeight: 600, color: colors.textSecondary,
-                        }}>
-                          {set.weight}kg×{set.reps}{set.intensity_technique ? ` · ${techniqueLabel(set.intensity_technique)}` : ''}
-                        </Box>
-                      ))}
-                    </Box>
-                  </Box>
-                );
-              })}
-            </Paper>
-
-            {savedResult ? (
-              <>
-                {/* Streak banner */}
-                {(savedResult.week_completed_now || savedResult.streak_milestone || savedResult.new_longest) && (
-                  <Paper sx={{
-                    bgcolor: isDarkMode ? 'rgba(213, 0, 0, 0.12)' : 'rgba(213, 0, 0, 0.06)',
-                    border: `1px solid ${colors.primary}`,
-                    p: 2.5, mb: 3, textAlign: 'center'
-                  }}>
-                    <FireIcon sx={{ fontSize: 40, color: colors.primary, mb: 0.5 }} />
-                    <Typography variant="h6" sx={{ fontWeight: 700, color: colors.primary }}>
-                      {savedResult.new_longest
-                        ? t('focus.streak_new_longest', { weeks: savedResult.current_streak_weeks })
-                        : savedResult.streak_milestone && savedResult.current_streak_weeks > 1
-                          ? t('focus.streak_milestone', { weeks: savedResult.current_streak_weeks })
-                          : t('focus.week_completed')}
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: colors.textSecondary, mt: 0.5 }}>
-                      {t('focus.streak_line', { count: savedResult.current_streak_weeks })}
-                    </Typography>
-                  </Paper>
-                )}
-
-                {xpWithheldText(savedResult) && (
-                  <Typography variant="body2" sx={{ color: colors.textSecondary, textAlign: 'center', mb: 2 }}>
-                    {xpWithheldText(savedResult)}
-                  </Typography>
-                )}
-
-                {/* Recap card */}
-                {(() => {
-                  const prs = (selectedDay?.exercises || [])
-                    .filter(ex => completedSets[ex.id]?.length)
-                    .map(ex => ({ name: ex.exercise_name, pr: detectPersonalRecords(completedSets[ex.id], historyIndex[ex.exercise_id]) }));
-                  const prList = prs.filter(x => x.pr.isPR).map(x => x.name);
-                  const volumeList = prs.filter(x => x.pr.volume).map(x => x.name);
-
-                  const cardExercises = (selectedDay?.exercises || []).map(ex => ({
-                    exercise_id: ex.exercise_id,
-                    name: ex.exercise_name,
-                    muscle_group: ex.muscle_group,
-                    sets: completedSets[ex.id] || [],
-                  }));
-
-                  const handleShare = () => {
-                    setShareStats(buildShareStats({
-                      exercises: cardExercises,
-                      date: startTime || new Date(),
-                      durationSec: getElapsedSeconds(),
-                      title: `${activePlan?.name || ''}${selectedDay?.name ? ' · ' + selectedDay.name : ''}`,
-                      records: sessionRecords(cardExercises, historyIndex),
-                      streakWeeks: savedResult.current_streak_weeks,
-                    }));
-                    track('workout_card', { action: 'open', from: 'summary' });
-                  };
-
-                  return (
-                    <Paper sx={{ bgcolor: colors.bgCard, border: `1px solid ${colors.border}`, p: 2.5, mb: 3 }}>
-                      <Typography variant="subtitle2" sx={{ color: colors.textMuted, mb: 1.5, letterSpacing: 1 }}>
-                        {t('focus.session_summary_caps')}
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 0.5 }}>
-                        {activePlan?.name}{selectedDay?.name ? ` · ${selectedDay.name}` : ''}
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 0.5 }}>
-                        ⏱ {getElapsedTime()} · {t('focus.exercises_count', { count: exercisesCompleted })} · {t('focus.sets_count', { count: totalSets })}
-                      </Typography>
-                      {prList.length > 0 && (
-                        <Typography variant="body2" sx={{ color: colors.warning, mb: 0.5 }}>
-                          {t('focus.new_records', { list: prList.join(', ') })}
-                        </Typography>
-                      )}
-                      {volumeList.length > 0 && (
-                        <Typography variant="body2" sx={{ color: colors.primaryLight, mb: 0.5 }}>
-                          {t('focus.best_volume_list', { list: volumeList.join(', ') })}
-                        </Typography>
-                      )}
-                      {savedResult.current_streak_weeks > 0 && (
-                        <Typography variant="body2" sx={{ color: colors.primary }}>
-                          🔥 {t('focus.streak_line_plain', { count: savedResult.current_streak_weeks })}
-                        </Typography>
-                      )}
-                      <Button
-                        variant="outlined" fullWidth size="small"
-                        startIcon={<ShareIcon />}
-                        onClick={handleShare}
-                        sx={{ mt: 2, borderColor: colors.border, color: colors.textSecondary }}
-                      >
-                        {t('focus.share')}
-                      </Button>
-                    </Paper>
-                  );
-                })()}
-
-                <Button
-                  variant="contained" fullWidth size="large"
-                  onClick={() => navigate('/workouts?tab=history', { state: { refreshHistory: Date.now() } })}
-                  sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.primary, color: '#fff', borderRadius: '14px', mb: 2 }}
-                >
-                  {t('focus.go_history')}
-                </Button>
-
-                <Button variant="text" fullWidth onClick={() => navigate('/')} sx={{ color: colors.textMuted, py: 1.5 }}>
-                  {t('focus.go_home')}
-                </Button>
-
-                <ShareCardDialog open={!!shareStats} stats={shareStats} onClose={() => setShareStats(null)} />
-              </>
-            ) : (
-              <>
-                {/* Esercizio dimenticato: si aggiunge in coda e si torna ad allenarsi */}
-                <Button variant="outlined" fullWidth startIcon={<AddIcon />}
-                  endIcon={canEditSession ? null : <LockIcon sx={{ fontSize: '16px !important' }} />}
-                  onClick={() => openPicker('add', 'summary')}
-                  sx={{ py: 1.25, mb: 3, color: colors.textSecondary, borderColor: colors.border, borderRadius: '12px',
-                    '&:hover': { borderColor: colors.primary, color: colors.primaryLight } }}>
-                  {t('focus.add_exercise')}
-                </Button>
-
-                <TextField label={t('focus.notes_label')} multiline rows={3} value={workoutNotes}
-                  onChange={(e) => setWorkoutNotes(e.target.value)} fullWidth placeholder={t('focus.notes_placeholder')}
-                  sx={{ mb: 3, '& .MuiOutlinedInput-root': { color: colors.text, '& fieldset': { borderColor: colors.border }, '&:hover fieldset': { borderColor: colors.primary }, '&.Mui-focused fieldset': { borderColor: colors.primary } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.primary } }} />
-
-                <Button variant="contained" fullWidth size="large"
-                  startIcon={saving ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : <SaveIcon />}
-                  onClick={handleSave} disabled={saving || getTotalCompletedSets() === 0}
-                  sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.primary, color: '#fff', borderRadius: '14px',
-                    boxShadow: isDarkMode ? '0 4px 20px rgba(0, 0, 0, 0.4)' : '0 4px 20px rgba(213, 0, 0, 0.2)', '&:hover': { bgcolor: colors.primaryDark },
-                    '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted }, mb: 2 }}>
-                  {saving ? t('focus.saving') : t('focus.save')}
-                </Button>
-
-                <Button variant="text" fullWidth onClick={handleQuit} disabled={saving} sx={{ color: colors.textMuted, py: 1.5 }}>{t('common.cancel')}</Button>
-              </>
-            )}
-          </Container>
-
-          <Dialog open={confirmQuitDialog} onClose={() => setConfirmQuitDialog(false)}
-            PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: '16px' } }}>
-            <DialogTitle sx={{ color: colors.text }}>{t('focus.discard_title')}</DialogTitle>
-            <DialogContent>
-              <DialogContentText sx={{ color: colors.textSecondary }}>{t('focus.discard_text', { count: getTotalCompletedSets() })}</DialogContentText>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setConfirmQuitDialog(false)} sx={{ color: colors.textSecondary }}>{t('focus.discard_stay')}</Button>
-              <Button onClick={confirmQuit} sx={{ color: colors.primary }}>{t('focus.discard_exit')}</Button>
-            </DialogActions>
-          </Dialog>
-        </Box>
-      );
+      return <SummaryPhase {...summary} />;
     }
 
     // Fallback
