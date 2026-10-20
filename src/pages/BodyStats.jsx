@@ -35,6 +35,8 @@ import AddIcon from '@mui/icons-material/Add';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FirstPageIcon from '@mui/icons-material/FirstPage';
 import LastPageIcon from '@mui/icons-material/LastPage';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import EventBusyIcon from '@mui/icons-material/EventBusy';
 import ChartCard from '../components/ChartCard';
 import HealthConsentCard from '../components/HealthConsentCard';
@@ -414,15 +416,19 @@ const BodyStats = ({ isEmbedded = false }) => {
                 </TableBody>
               </Table>
               {history.total > 0 && (
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, flexWrap: 'wrap', py: 1.25, borderTop: '1px solid', borderColor: 'divider' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, py: 1.25, borderTop: '1px solid', borderColor: 'divider' }}>
                   <IconButton size="small" disabled={history.page === 0} onClick={() => setPage(0)} aria-label={t('body.page_first')}>
                     <FirstPageIcon fontSize="small" />
                   </IconButton>
-                  <Button size="small" disabled={history.page === 0} onClick={() => setPage(history.page - 1)}>{t('body.page_prev')}</Button>
+                  <IconButton size="small" disabled={history.page === 0} onClick={() => setPage(history.page - 1)} aria-label={t('body.page_prev')}>
+                    <NavigateBeforeIcon fontSize="small" />
+                  </IconButton>
                   <Typography sx={{ fontSize: 13, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
                     {t('body.page_range', { from: history.from, to: history.to, total: history.total })}
                   </Typography>
-                  <Button size="small" disabled={history.page === history.lastPage} onClick={() => setPage(history.page + 1)}>{t('body.page_next')}</Button>
+                  <IconButton size="small" disabled={history.page === history.lastPage} onClick={() => setPage(history.page + 1)} aria-label={t('body.page_next')}>
+                    <NavigateNextIcon fontSize="small" />
+                  </IconButton>
                   <IconButton size="small" disabled={history.page === history.lastPage} onClick={() => setPage(history.lastPage)} aria-label={t('body.page_last')}>
                     <LastPageIcon fontSize="small" />
                   </IconButton>

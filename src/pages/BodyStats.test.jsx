@@ -109,18 +109,18 @@ describe('storico a pagine', () => {
     expect(tableRows()).toHaveLength(10);
     expect(within(tableRows()[0]).getByText(formatDate('2026-10-20'))).toBeTruthy();
     expect(screen.getByText('1–10 di 25')).toBeTruthy();
-    expect(screen.getByRole('button', { name: '‹ Precedenti' }).disabled).toBe(true);
+    expect(screen.getByRole('button', { name: 'Pagina precedente' }).disabled).toBe(true);
   });
 
   it('successive, ultima pagina e prima pagina', async () => {
     await mount();
-    fireEvent.click(screen.getByRole('button', { name: 'Successive ›' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pagina successiva' }));
     expect(screen.getByText('11–20 di 25')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ultima pagina' }));
     expect(screen.getByText('21–25 di 25')).toBeTruthy();
     expect(tableRows()).toHaveLength(5);
-    expect(screen.getByRole('button', { name: 'Successive ›' }).disabled).toBe(true);
+    expect(screen.getByRole('button', { name: 'Pagina successiva' }).disabled).toBe(true);
 
     fireEvent.click(screen.getByRole('button', { name: 'Prima pagina' }));
     expect(screen.getByText('1–10 di 25')).toBeTruthy();
