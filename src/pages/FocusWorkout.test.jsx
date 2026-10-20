@@ -100,6 +100,16 @@ describe('flusso completo e salvataggio', () => {
     expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
     expect(mockTrack).toHaveBeenCalledWith('workout_saved');
   });
+
+  it('il cronometro dell\'allenamento avanza ogni secondo, senza toccare niente', async () => {
+    await startDay('Push');
+    expect(screen.getByText('00:00')).toBeTruthy();
+
+    await advance(1);
+    expect(screen.getByText('00:01')).toBeTruthy();
+    await advance(64);
+    expect(screen.getByText('01:05')).toBeTruthy();
+  });
 });
 
 describe('bozza e ripresa', () => {

@@ -752,7 +752,7 @@ export default function useFocusSession() {
     currentSkippedSets,
     lastSession: getLastSession(currentExercise),
     exerciseTransition,
-    elapsedTime: getElapsedTime(),
+    startTime,
     weightInput,
     onWeightChange: setWeightInput,
     repsInput,
