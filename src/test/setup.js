@@ -23,3 +23,10 @@ window.matchMedia = window.matchMedia || ((query) => ({
   removeListener: () => {},
   dispatchEvent: () => false,
 }));
+
+// Neanche ResizeObserver: lo usa il ResponsiveContainer di Recharts
+window.ResizeObserver = window.ResizeObserver || class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
