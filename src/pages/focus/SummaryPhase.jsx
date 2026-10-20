@@ -1,6 +1,5 @@
 import {
-  Container, Box, Typography, Button, TextField, Paper, CircularProgress, IconButton, Chip,
-  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions
+  Container, Box, Typography, Button, TextField, Paper, CircularProgress, IconButton, Chip
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon, Save as SaveIcon, EmojiEvents as TrophyIcon, TrendingUp as TrendingUpIcon,
@@ -8,6 +7,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
+import QuitDialog from './QuitDialog';
 import { detectPersonalRecords } from '../../utils/workoutMetrics';
 import { buildShareStats, sessionRecords } from '../../utils/shareCard';
 import ShareCardDialog from '../../components/ShareCardDialog';
@@ -254,17 +254,9 @@ export default function SummaryPhase({
         )}
       </Container>
 
-      <Dialog open={quitDialogOpen} onClose={onCloseQuitDialog}
-        PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: '16px' } }}>
-        <DialogTitle sx={{ color: colors.text }}>{t('focus.discard_title')}</DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ color: colors.textSecondary }}>{t('focus.discard_text', { count: totalCompletedSets })}</DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onCloseQuitDialog} sx={{ color: colors.textSecondary }}>{t('focus.discard_stay')}</Button>
-          <Button onClick={onConfirmQuit} sx={{ color: colors.primary }}>{t('focus.discard_exit')}</Button>
-        </DialogActions>
-      </Dialog>
+      <QuitDialog open={quitDialogOpen} onClose={onCloseQuitDialog} onConfirm={onConfirmQuit}
+        title={t('focus.discard_title')} text={t('focus.discard_text', { count: totalCompletedSets })}
+        stayLabel={t('focus.discard_stay')} exitLabel={t('focus.discard_exit')} />
     </Box>
   );
 }

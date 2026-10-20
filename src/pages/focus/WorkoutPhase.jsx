@@ -1,6 +1,6 @@
 import {
   Container, Box, Typography, Button, TextField, FormControl, InputLabel, Select, MenuItem, Paper, LinearProgress,
-  IconButton, Chip, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Fade
+  IconButton, Chip, Alert, Dialog, DialogTitle, DialogActions, Fade
 } from '@mui/material';
 import {
   SkipNext as SkipNextIcon, Check as CheckIcon, Close as CloseIcon, Info as InfoIcon, AccessTime as AccessTimeIcon,
@@ -8,6 +8,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
+import QuitDialog from './QuitDialog';
 import { INTENSITY_TECHNIQUES } from '../../components/ExerciseDialog';
 import { MAX_WEIGHT, isValidWeight, isValidReps, planRepsForSet, lastSessionSets, setStatus } from '../../utils/focusSession';
 import { muscleLabel, techniqueLabel } from '../../i18n/labels';
@@ -206,17 +207,9 @@ export default function WorkoutPhase({
         </Container>
       </Fade>
 
-      <Dialog open={quitDialogOpen} onClose={onCloseQuitDialog}
-        PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: '16px' } }}>
-        <DialogTitle sx={{ color: colors.text }}>{t('focus.quit_title')}</DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ color: colors.textSecondary }}>{t('focus.quit_text', { count: totalCompletedSets })}</DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onCloseQuitDialog} sx={{ color: colors.textSecondary }}>{t('focus.quit_continue')}</Button>
-          <Button onClick={onConfirmQuit} sx={{ color: colors.primary }}>{t('focus.quit_exit')}</Button>
-        </DialogActions>
-      </Dialog>
+      <QuitDialog open={quitDialogOpen} onClose={onCloseQuitDialog} onConfirm={onConfirmQuit}
+        title={t('focus.quit_title')} text={t('focus.quit_text', { count: totalCompletedSets })}
+        stayLabel={t('focus.quit_continue')} exitLabel={t('focus.quit_exit')} />
 
       <Dialog open={repsConfirmOpen} onClose={onCloseRepsConfirm}
         PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: '16px' } }}>
