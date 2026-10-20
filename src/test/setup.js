@@ -1,5 +1,11 @@
-import { afterEach } from 'vitest';
+import { beforeEach, afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
+import i18n from '../i18n';
+
+// I test cercano i testi italiani: la lingua è fissata qui, non dipende da come l'app sceglie la prima
+beforeEach(async () => {
+  await i18n.changeLanguage('it');
+});
 
 afterEach(() => {
   cleanup();
