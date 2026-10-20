@@ -24,6 +24,9 @@ const Groups = lazy(() => import('./pages/Groups'));
 const GroupDetail = lazy(() => import('./pages/GroupDetail'));
 const JoinGroup = lazy(() => import('./pages/JoinGroup'));
 const Admin = lazy(() => import('./pages/Admin'));
+// PROTOTIPO USA E GETTA (tracker #18): solo in sviluppo
+const PROTOTYPE_ON = import.meta.env.DEV || import.meta.env.VITE_PROTOTYPE === '1';
+const BodyStatsPrototype = PROTOTYPE_ON ? lazy(() => import('./pages/BodyStatsPrototype')) : null;
 
 // Fallback component while loading chunks
 const PageLoader = () => (
@@ -52,6 +55,7 @@ function App() {
                 <Route path="/gruppi/:id" element={<GroupDetail />} />
                 <Route path="/entra" element={<JoinGroup />} />
                 <Route path="/admin" element={<Admin />} />
+                {BodyStatsPrototype && <Route path="/prototipo-misure" element={<BodyStatsPrototype />} />}
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
