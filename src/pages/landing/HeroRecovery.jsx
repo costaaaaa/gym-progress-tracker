@@ -69,17 +69,19 @@ const HeroRecovery = () => {
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) minmax(0, 1.05fr)' },
+        gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) minmax(0, 1.1fr)' },
         gap: { xs: 4, md: 8 },
         alignItems: 'center',
-        pt: { xs: 1, md: 4 },
-        pb: { xs: 6, md: 10 },
+        // Su desktop il primo schermo è pieno: sotto la Navbar (64) e il margine del Layout (32).
+        minHeight: { md: 'calc(100svh - 96px)' },
+        pt: { xs: 1, md: 0 },
+        pb: { xs: 6, md: 4 },
       }}
     >
       <Box>
         <Typography
           variant="h1"
-          sx={{ fontSize: { xs: '2.25rem', md: '3.5rem' }, lineHeight: 1.08, mb: 2.5 }}
+          sx={{ fontSize: { xs: '2.25rem', md: '4rem' }, lineHeight: 1.05, mb: 3 }}
         >
           {t('home.landing.hero.title')}
         </Typography>

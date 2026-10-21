@@ -47,7 +47,7 @@ const SceneProgress = () => {
   const { ref, live } = useScrollScene(build);
 
   return (
-    <Box ref={ref} component="section" aria-labelledby="scene-progress-title" sx={sceneSx(live, 1.5, 1.5)}>
+    <Box ref={ref} component="section" aria-labelledby="scene-progress-title" sx={sceneSx(live, 1.25, 1.25)}>
       <Box sx={stageSx(live)}>
         <Box
           sx={{
@@ -77,6 +77,7 @@ const SceneProgress = () => {
 
           <Box aria-hidden="true" data-ui sx={{ position: 'relative', width: '100%', aspectRatio: '5 / 4' }}>
             <Box component="svg" viewBox="0 0 100 80" sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible' }}>
+              <Box component="path" d={LINE} fill="none" strokeLinecap="round" strokeLinejoin="round" sx={{ stroke: (theme) => theme.palette.action.disabled, strokeWidth: 0.8 }} />
               <Box
                 component="path"
                 data-line

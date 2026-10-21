@@ -5,19 +5,19 @@ import { sceneSx, stageSx, useScrollScene } from './useScrollScene';
 
 const TOTAL_SETS = 4;
 const REST_SECONDS = 90;
-const RING = { size: 184, stroke: 10 };
+const RING = { size: 208, stroke: 10 };
 const STEPS = ['s1', 's2', 's3'];
 
 const clock = (seconds) => `${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, '0')}`;
 const TABULAR = { fontFamily: '"Inter", sans-serif', fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"' };
 
-// Timeline: 0-.34 serie, .38-.46 cambio schermata, .46-.80 recupero che scorre, .80-.95 fine e vibrazione.
+// Timeline: .2-.34 conferma della serie, .38-.46 cambio schermata, .46-.80 recupero che scorre, .80-.95 fine e vibrazione.
 function build(tl, q) {
   const time = { v: REST_SECONDS };
-  tl.fromTo(q('[data-value]'), { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: 0.08, stagger: 0.04 }, 0.02)
-    .to(q('[data-confirm]'), { scale: 0.95, duration: 0.03 }, 0.2)
+  tl.to(q('[data-confirm]'), { scale: 0.95, duration: 0.03 }, 0.2)
     .to(q('[data-confirm]'), { scale: 1, duration: 0.03 }, 0.23)
     .fromTo(q('[data-dot-fill]'), { scale: 0 }, { scale: 1, duration: 0.05 }, 0.24)
+    .fromTo(q('[data-new-set]'), { autoAlpha: 0, y: -8 }, { autoAlpha: 1, y: 0, duration: 0.05 }, 0.25)
     .to(q('[data-step="s1"]'), { autoAlpha: 0, y: -16, duration: 0.05 }, 0.34)
     .fromTo(q('[data-step="s2"]'), { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: 0.05 }, 0.38)
     .to(q('[data-screen="work"]'), { autoAlpha: 0, xPercent: -8, duration: 0.07 }, 0.38)
@@ -58,7 +58,7 @@ const Dot = ({ index, filled }) => (
 );
 
 const Value = ({ label, value }) => (
-  <Box data-value sx={{ flex: 1, textAlign: 'center', py: 1.5, borderRadius: '12px', bgcolor: 'action.hover' }}>
+  <Box sx={{ flex: 1, textAlign: 'center', py: 1.5, borderRadius: '12px', bgcolor: 'action.hover' }}>
     <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{label}</Typography>
     <Typography sx={{ ...TABULAR, fontWeight: 800, fontSize: 32, lineHeight: 1.2 }}>{value}</Typography>
   </Box>
@@ -72,8 +72,8 @@ const Phone = ({ children, sx }) => (
     sx={{
       width: 320,
       maxWidth: '100%',
-      height: { xs: 'min(430px, calc(100svh - 370px))', md: 560 },
-      minHeight: 380,
+      height: { xs: 'min(480px, calc(100svh - 340px))', md: 560 },
+      minHeight: 400,
       border: '2px solid',
       borderColor: 'text.primary',
       borderRadius: '36px',
@@ -107,7 +107,15 @@ const WorkScreen = ({ t }) => (
       <Value label={t('home.landing.focus.weight')} value={`${formatNumber(72.5)} kg`} />
       <Value label={t('home.landing.focus.reps')} value="8" />
     </Box>
-    <Box sx={{ flex: 1 }} />
+    <Box sx={{ flex: 1 }}>
+      <Typography sx={{ fontSize: 16, color: 'text.secondary', mb: 0.5 }}>{t('home.landing.focus.sets_done')}</Typography>
+      {[1, 2, 3].map((n) => (
+        <Box key={n} data-new-set={n === 3 ? '' : undefined} sx={{ display: 'flex', justifyContent: 'space-between', py: 0.75 }}>
+          <Typography sx={{ fontSize: 16 }}>{t('focus.set_n', { n })}</Typography>
+          <Typography sx={{ ...TABULAR, fontSize: 16, fontWeight: 700 }}>{`${formatNumber(72.5)} kg × 8`}</Typography>
+        </Box>
+      ))}
+    </Box>
     <Box
       data-confirm
       sx={{
@@ -164,10 +172,25 @@ const RestScreen = ({ t, live }) => {
         {t('focus.next_set', { n: 4, total: TOTAL_SETS })}
       </Typography>
       {live && (
-        <Typography data-done sx={{ fontWeight: 700, fontSize: 17, mt: 'auto', mb: 1 }}>
+        <Typography data-done sx={{ fontWeight: 700, fontSize: 17, mt: 'auto' }}>
           {t('home.landing.focus.done')}
         </Typography>
       )}
+      <Box
+        sx={{
+          mt: live ? 0 : 'auto',
+          alignSelf: 'stretch',
+          border: '2px solid',
+          borderColor: 'text.primary',
+          borderRadius: '12px',
+          py: 1.5,
+          textAlign: 'center',
+          fontWeight: 700,
+          fontSize: 17,
+        }}
+      >
+        {t('focus.skip_timer')}
+      </Box>
     </Box>
   );
 };
@@ -218,10 +241,10 @@ const SceneFocus = () => {
             </Phone>
           ) : (
             <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', justifyContent: 'center' }}>
-              <Phone sx={{ height: 440 }}>
+              <Phone sx={{ height: 500 }}>
                 <WorkScreen t={t} />
               </Phone>
-              <Phone sx={{ height: 440 }}>
+              <Phone sx={{ height: 500 }}>
                 <RestScreen t={t} live={false} />
               </Phone>
             </Box>
