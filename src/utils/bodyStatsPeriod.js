@@ -7,13 +7,14 @@
 export const DEFAULT_PERIOD = '3m';
 export const PERIODS = ['1m', '3m', '6m', '1y', 'all'];
 
-// Chiavi i18n di ogni periodo: etichetta del selettore e testo della variazione del peso
+// Chiavi i18n di ogni periodo: etichetta del selettore, testo della variazione del peso
+// e testo del peso stabile
 export const PERIOD_UI = {
-  '1m': { label: 'body.period_1m', delta: 'body.weight_delta_1m' },
-  '3m': { label: 'body.period_3m', delta: 'body.weight_delta_3m' },
-  '6m': { label: 'body.period_6m', delta: 'body.weight_delta_6m' },
-  '1y': { label: 'body.period_1y', delta: 'body.weight_delta_1y' },
-  all: { label: 'body.period_all', delta: 'body.weight_delta' },
+  '1m': { label: 'body.period_1m', delta: 'body.weight_delta_1m', stable: 'body.weight_stable_1m' },
+  '3m': { label: 'body.period_3m', delta: 'body.weight_delta_3m', stable: 'body.weight_stable_3m' },
+  '6m': { label: 'body.period_6m', delta: 'body.weight_delta_6m', stable: 'body.weight_stable_6m' },
+  '1y': { label: 'body.period_1y', delta: 'body.weight_delta_1y', stable: 'body.weight_stable_1y' },
+  all: { label: 'body.period_all', delta: 'body.weight_delta', stable: 'body.weight_stable' },
 };
 
 // Mesi di calendario all'indietro da oggi. 'all' non c'è: nessun limite.
@@ -61,6 +62,16 @@ export const periodWeightDelta = (rows) => {
   const weights = sortByDate(rows).map((row) => row.weight).filter(isValidNumber).map(parseFloat);
   if (weights.length < 2) return null;
   return weights[weights.length - 1] - weights[0];
+};
+
+/**
+ * Andamento del peso: 'up', 'down', o 'flat' se la variazione arrotondata al
+ * decimale (come la mostrano le app) è 0; null senza variazione.
+ */
+export const weightTrend = (delta) => {
+  if (delta === null) return null;
+  if (Math.abs(delta) < 0.05) return 'flat';
+  return delta > 0 ? 'up' : 'down';
 };
 
 export const PAGE_SIZE = 10;

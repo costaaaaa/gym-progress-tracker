@@ -41,7 +41,7 @@ import EventBusyIcon from '@mui/icons-material/EventBusy';
 import ChartCard from '../components/ChartCard';
 import HealthConsentCard from '../components/HealthConsentCard';
 import HealthAppHint from '../components/HealthAppHint';
-import { DEFAULT_PERIOD, PERIODS, PERIOD_UI, filterByPeriod, periodWeightDelta, sortByDate, paginate } from '../utils/bodyStatsPeriod';
+import { DEFAULT_PERIOD, PERIODS, PERIOD_UI, filterByPeriod, periodWeightDelta, weightTrend, sortByDate, paginate } from '../utils/bodyStatsPeriod';
 
 // Valore della tabella, con un cuore se è arrivato da Apple Salute / Health Connect
 // (health_fields è l'elenco dei campi importati, separati da virgola).
@@ -282,6 +282,10 @@ const BodyStats = ({ isEmbedded = false }) => {
   const weightSeries = chartData.map(d => d.weight).filter(v => v !== null && v !== undefined);
   const lastWeight = lastValueOf(chartData, 'weight');
   const weightDelta = periodWeightDelta(periodRows);
+  const trend = weightTrend(weightDelta);
+  const deltaText = trend === null ? undefined
+    : trend === 'flat' ? t(PERIOD_UI[period].stable)
+      : t(PERIOD_UI[period].delta, { delta: `${weightDelta >= 0 ? '+' : ''}${formatNumber(weightDelta, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}` });
 
   // Lo storico non segue il periodo: tutte le righe, dalla più recente, a pagine
   const sortedStats = sortByDate(stats);
@@ -335,8 +339,8 @@ const BodyStats = ({ isEmbedded = false }) => {
                   data={weightSeries}
                   color="primary.main"
                   valueLabel={lastWeight !== null ? `${lastWeight} kg` : '—'}
-                  deltaUp={weightDelta !== null ? weightDelta >= 0 : true}
-                  deltaText={weightDelta !== null ? t(PERIOD_UI[period].delta, { delta: `${weightDelta >= 0 ? '+' : ''}${formatNumber(weightDelta, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}` }) : undefined}
+                  trend={trend}
+                  deltaText={deltaText}
                 />
               </Grid>
 

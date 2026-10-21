@@ -63,10 +63,11 @@ describe('periodo e variazione del peso', () => {
     expect(screen.queryByText(/kg negli ultimi 3 mesi/)).toBeNull();
   });
 
-  it('una variazione di 0 si vede: "+0,0 kg"', async () => {
-    records = [row('2026-08-10', '80.0'), row('2026-10-15', '80.0')];
+  it('una variazione che arrotondata è 0 si legge "Stabile", senza freccia', async () => {
+    records = [row('2026-08-10', '80.0'), row('2026-10-15', '80.04')];
     await mount();
-    expect(screen.getByText(/\+0,0 kg negli ultimi 3 mesi/)).toBeTruthy();
+    expect(screen.getByText('Stabile negli ultimi 3 mesi')).toBeTruthy();
+    expect(screen.queryByText(/0,0 kg|▲|▼/)).toBeNull();
   });
 });
 

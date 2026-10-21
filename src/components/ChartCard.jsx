@@ -32,10 +32,16 @@ export function buildPoints(data, width = VIEWBOX_WIDTH, height = VIEWBOX_HEIGHT
  * - data: array di numeri (serie storica), normalizzato internamente in una polyline
  * - color: colore della linea — token tema (es. "primary.main") o valore CSS letterale
  * - valueLabel: valore corrente mostrato in grande (stringa già formattata)
- * - deltaUp: true = delta verde con ▲, false = delta rosso con ▼
+ * - trend: 'up' = delta verde con ▲, 'down' = delta rosso con ▼, 'flat' = delta grigio senza freccia
  * - deltaText: testo del delta (es. "12% vs mese scorso"); se assente il delta non è renderizzato
  */
-const ChartCard = ({ title, data, color = 'primary.main', valueLabel, deltaUp = true, deltaText }) => {
+const TREND_STYLE = {
+  up: { color: 'success.main', arrow: '▲ ' },
+  down: { color: 'error.main', arrow: '▼ ' },
+  flat: { color: 'text.secondary', arrow: '' },
+};
+
+const ChartCard = ({ title, data, color = 'primary.main', valueLabel, trend = 'up', deltaText }) => {
   const points = buildPoints(data);
 
   return (
@@ -91,10 +97,10 @@ const ChartCard = ({ title, data, color = 'primary.main', valueLabel, deltaUp = 
             sx={{
               fontSize: 12,
               fontWeight: 600,
-              color: deltaUp ? 'success.main' : 'error.main',
+              color: TREND_STYLE[trend].color,
             }}
           >
-            {deltaUp ? '▲' : '▼'} {deltaText}
+            {TREND_STYLE[trend].arrow}{deltaText}
           </Typography>
         )}
       </Box>

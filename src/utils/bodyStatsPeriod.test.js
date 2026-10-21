@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DEFAULT_PERIOD, PERIODS, periodStart, filterByPeriod, periodWeightDelta, sortByDate, paginate } from './bodyStatsPeriod';
+import { DEFAULT_PERIOD, PERIODS, periodStart, filterByPeriod, periodWeightDelta, weightTrend, sortByDate, paginate } from './bodyStatsPeriod';
 
 const day = (y, m, d) => new Date(y, m - 1, d, 12, 0);
 const row = (date, weight) => ({ id: date, date, weight });
@@ -87,6 +87,25 @@ describe('sortByDate', () => {
     const input = [row('2026-10-01', '1'), row('2026-09-01', '2')];
     sortByDate(input);
     expect(input[0].date).toBe('2026-10-01');
+  });
+});
+
+describe('weightTrend', () => {
+  it('senza variazione non c\'è andamento', () => {
+    expect(weightTrend(null)).toBeNull();
+  });
+
+  it('stabile se la variazione arrotondata al decimale è 0', () => {
+    expect(weightTrend(0)).toBe('flat');
+    expect(weightTrend(0.04)).toBe('flat');
+    expect(weightTrend(-0.04)).toBe('flat');
+    expect(weightTrend(periodWeightDelta([row('2026-09-01', '80.00'), row('2026-10-01', '80.04')]))).toBe('flat');
+  });
+
+  it('su o giù dal primo decimale in poi', () => {
+    expect(weightTrend(0.1)).toBe('up');
+    expect(weightTrend(-0.1)).toBe('down');
+    expect(weightTrend(periodWeightDelta([row('2026-09-01', '82.0'), row('2026-10-01', '80.5')]))).toBe('down');
   });
 });
 
