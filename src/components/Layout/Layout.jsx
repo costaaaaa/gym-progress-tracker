@@ -16,7 +16,9 @@ const Layout = () => {
   const otherLang = isEnPath(pathname) ? 'it' : 'en';
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', containerType: 'inline-size' }}>
+    // Solo per gli ospiti: serve al campo pieno della home (100cqw); i Safari più vecchi trattavano il container
+    // come riferimento dei position: fixed, e le pagine con login ne hanno (BottomNav, Snackbar).
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', containerType: isLoggedIn ? 'normal' : 'inline-size' }}>
       {!isLoggedIn && <LanguageHint />}
       <Navbar />
       <Container
