@@ -3,6 +3,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import BodyStats from './BodyStats';
+import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { formatDate } from '../i18n/format';
 
 const row = (date, weight, extra = {}) => ({ id: date, date, weight, ...extra });
@@ -131,5 +132,15 @@ describe('storico a pagine', () => {
     await mount();
     fireEvent.click(pill('1M'));
     expect(screen.getByText('1–10 di 25')).toBeTruthy();
+  });
+});
+
+describe('font delle pillole', () => {
+  it('col tema dell\'app sono in Lexend 500, come gli altri chip che si premono', async () => {
+    records = [row('2026-10-01', '80.0')];
+    render(<ThemeModeProvider><BodyStats /></ThemeModeProvider>);
+    await screen.findByRole('group', { name: 'Periodo' });
+    const { fontFamily, fontWeight } = getComputedStyle(pill('3M'));
+    expect({ fontFamily, fontWeight }).toEqual({ fontFamily: '"Lexend", sans-serif', fontWeight: '500' });
   });
 });

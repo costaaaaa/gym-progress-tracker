@@ -134,7 +134,7 @@ const PeriodChips = ({ value, onChange }) => {
             onClick={() => onChange(period)}
             aria-pressed={selected}
             sx={{
-              fontWeight: 700, fontSize: 13, height: 32, borderRadius: 999, px: 0.5,
+              fontSize: 13, height: 32, borderRadius: 999, px: 0.5,
               ...(!selected && { borderColor: 'divider', color: 'text.primary' }),
             }}
           />

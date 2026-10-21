@@ -23,6 +23,7 @@ import {
 import { loadCardFonts, renderCardToCanvas, canvasToPngFile, loadPhoto } from '../utils/renderShareCard';
 import { track } from '../utils/analytics';
 import { shareCardStrings } from '../i18n/shareCardStrings';
+import { CHIP_FONT } from '../context/ThemeModeContext';
 
 const SWIPE_MIN_PX = 50;
 const PREFS_KEY = 'lx_share_card';
@@ -306,7 +307,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
               color={!customBlocks && activePreset === p.id ? 'primary' : 'default'}
               variant={!customBlocks && activePreset === p.id ? 'filled' : 'outlined'} />
           ))}
-          {customBlocks && <Chip label={t('share.customized')} size="small" color="primary" />}
+          {customBlocks && <Chip label={t('share.customized')} size="small" color="primary" sx={CHIP_FONT} />}
           <Chip icon={<TuneIcon />} label={t('share.customize')} size="small" variant="outlined"
             onClick={() => setCustomizing((v) => !v)} />
         </Box>

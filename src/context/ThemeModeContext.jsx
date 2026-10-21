@@ -9,6 +9,10 @@ const ThemeModeContext = createContext();
 
 export const useThemeMode = () => useContext(ThemeModeContext);
 
+// Font dei chip che si premono (scelte, filtri, azioni rapide), uguale all'app: Lexend 500.
+// I badge restano Inter.
+export const CHIP_FONT = { fontFamily: '"Lexend", sans-serif', fontWeight: 500 };
+
 export const ThemeModeProvider = ({ children }) => {
   const [mode, setMode] = useState(() => {
     const savedMode = localStorage.getItem('themeMode');
@@ -119,6 +123,13 @@ export const ThemeModeProvider = ({ children }) => {
                 '&:hover': {
                   boxShadow: 'none',
                 },
+              },
+            },
+          },
+          MuiChip: {
+            styleOverrides: {
+              root: {
+                '&.MuiChip-clickable': CHIP_FONT,
               },
             },
           },
