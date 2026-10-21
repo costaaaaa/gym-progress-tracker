@@ -4,6 +4,7 @@ import { grey } from '@mui/material/colors';
 import { GlobalStyles } from '@mui/material';
 import { itIT, enUS } from '@mui/material/locale';
 import { useTranslation } from 'react-i18next';
+import { CHIP_FONT } from '../utils/chipFont';
 
 const ThemeModeContext = createContext();
 
@@ -119,6 +120,14 @@ export const ThemeModeProvider = ({ children }) => {
                 '&:hover': {
                   boxShadow: 'none',
                 },
+              },
+            },
+          },
+          // Ogni Chip con onClick: due classi, quindi vince su fontFamily e fontWeight dati con sx
+          MuiChip: {
+            styleOverrides: {
+              root: {
+                '&.MuiChip-clickable': CHIP_FONT,
               },
             },
           },
