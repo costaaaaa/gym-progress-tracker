@@ -70,6 +70,12 @@ export const ThemeModeProvider = ({ children }) => {
             recovering: mode === 'light' ? '#b45309' : '#fbbf24',
             fatigued: mode === 'light' ? '#7c2d12' : '#f97316',
           },
+          // Sezione a campo pieno della home (scena Focus): fondo quasi nero; in scuro un grigio più chiaro della pagina.
+          scene: {
+            bg: mode === 'light' ? '#141416' : '#222226',
+            text: '#f7f6f5',
+            muted: 'rgba(247, 246, 245, 0.72)',
+          },
           // Token extra usato dal redesign per l'Indice di Progresso (non uno slot MUI standard)
           violet: {
             main: mode === 'light' ? '#7c3aed' : '#a78bfa',

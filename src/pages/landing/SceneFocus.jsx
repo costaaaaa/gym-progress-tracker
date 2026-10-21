@@ -75,7 +75,7 @@ const Phone = ({ children, sx }) => (
       height: { xs: 'min(480px, calc(100svh - 340px))', md: 560 },
       minHeight: 400,
       border: '2px solid',
-      borderColor: 'text.primary',
+      borderColor: 'scene.text',
       borderRadius: '36px',
       bgcolor: 'background.paper',
       position: 'relative',
@@ -195,12 +195,30 @@ const RestScreen = ({ t, live }) => {
   );
 };
 
+// Campo pieno da bordo a bordo: 100cqw è la larghezza della pagina (container-type sul Layout), senza scrollbar.
+const FIELD = {
+  isolation: 'isolate',
+  bgcolor: 'scene.bg',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: '50%',
+    width: '100%',
+    transform: 'translateX(-50%)',
+    bgcolor: 'scene.bg',
+    zIndex: -1,
+    '@supports (width: 100cqw)': { width: '100cqw' },
+  },
+};
+
 const Step = ({ id, t, live }) => (
   <Box data-step={id} sx={live ? { gridArea: '1 / 1' } : { mb: 3 }}>
     <Typography variant="h3" sx={{ fontSize: { xs: 22, md: 28 }, mb: 1 }}>
       {t(`home.landing.focus.${id}.title`)}
     </Typography>
-    <Typography sx={{ fontSize: { xs: 17, md: 19 }, lineHeight: 1.5, maxWidth: 440 }}>
+    <Typography sx={{ fontSize: { xs: 17, md: 19 }, lineHeight: 1.5, maxWidth: 440, color: 'scene.muted' }}>
       {t(`home.landing.focus.${id}.text`)}
     </Typography>
   </Box>
@@ -211,7 +229,7 @@ const SceneFocus = () => {
   const { ref, live } = useScrollScene(build);
 
   return (
-    <Box ref={ref} component="section" aria-labelledby="scene-focus-title" sx={sceneSx(live, 1.5, 1.5)}>
+    <Box ref={ref} component="section" aria-labelledby="scene-focus-title" sx={{ ...sceneSx(live, 1.5, 1.5), ...FIELD }}>
       <Box sx={stageSx(live)}>
         <Box
           sx={{
@@ -220,10 +238,9 @@ const SceneFocus = () => {
             gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
             gap: { xs: 2.5, md: 8 },
             alignItems: 'center',
-            
           }}
         >
-          <Box sx={{ width: '100%' }}>
+          <Box sx={{ width: '100%', color: 'scene.text' }}>
             <Typography id="scene-focus-title" variant="h2" sx={{ fontSize: { xs: '1.75rem', md: '2.75rem' }, lineHeight: 1.1, mb: { xs: 2, md: 4 } }}>
               {t('home.landing.focus.title')}
             </Typography>

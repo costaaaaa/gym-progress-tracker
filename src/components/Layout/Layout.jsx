@@ -16,7 +16,7 @@ const Layout = () => {
   const otherLang = isEnPath(pathname) ? 'it' : 'en';
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', containerType: 'inline-size' }}>
       {!isLoggedIn && <LanguageHint />}
       <Navbar />
       <Container
