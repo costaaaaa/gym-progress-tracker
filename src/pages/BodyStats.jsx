@@ -17,6 +17,7 @@ import {
   Button,
   TextField,
   IconButton,
+  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -32,9 +33,15 @@ import { formatDate, formatNumber } from '../i18n/format';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import FavoriteIcon from '@mui/icons-material/Favorite';
+import FirstPageIcon from '@mui/icons-material/FirstPage';
+import LastPageIcon from '@mui/icons-material/LastPage';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import EventBusyIcon from '@mui/icons-material/EventBusy';
 import ChartCard from '../components/ChartCard';
 import HealthConsentCard from '../components/HealthConsentCard';
 import HealthAppHint from '../components/HealthAppHint';
+import { DEFAULT_PERIOD, PERIODS, filterByPeriod, periodWeightDelta, sortByDate, paginate } from '../utils/bodyStatsPeriod';
 
 // Valore della tabella, con un cuore se è arrivato da Apple Salute / Health Connect
 // (health_fields è l'elenco dei campi importati, separati da virgola).
@@ -110,6 +117,44 @@ const MiniChartLegend = ({ data, series }) => (
   </Box>
 );
 
+// Etichetta del selettore e testo della variazione del peso per ogni periodo
+const PERIOD_UI = {
+  '1m': { label: 'body.period_1m', delta: 'body.weight_delta_1m' },
+  '3m': { label: 'body.period_3m', delta: 'body.weight_delta_3m' },
+  '6m': { label: 'body.period_6m', delta: 'body.weight_delta_6m' },
+  '1y': { label: 'body.period_1y', delta: 'body.weight_delta_1y' },
+  all: { label: 'body.period_all', delta: 'body.weight_delta' },
+};
+
+// Pillole come sull'app mobile: piena rossa se selezionata, con il contorno le altre.
+const PeriodChips = ({ value, onChange }) => {
+  const { t } = useTranslation();
+  return (
+    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 3 }} role="group" aria-label={t('body.period_label')}>
+      {PERIODS.map((period) => {
+        const selected = period === value;
+        return (
+          <Chip
+            key={period}
+            label={t(PERIOD_UI[period].label)}
+            clickable
+            color="primary"
+            variant={selected ? 'filled' : 'outlined'}
+            onClick={() => onChange(period)}
+            aria-pressed={selected}
+            sx={{
+              fontWeight: 700, fontSize: 13, height: 32, borderRadius: 999, px: 0.5,
+              ...(!selected && { borderColor: 'divider', color: 'text.primary' }),
+            }}
+          />
+        );
+      })}
+    </Box>
+  );
+};
+
+const headCellSx = { fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' };
+
 const numberFieldSx = {
   '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': { display: 'none' },
   '& input[type=number]': { MozAppearance: 'textfield' },
@@ -118,6 +163,8 @@ const numberFieldSx = {
 const BodyStats = ({ isEmbedded = false }) => {
   const { t } = useTranslation();
   const [stats, setStats] = useState([]);
+  const [period, setPeriod] = useState(DEFAULT_PERIOD);
+  const [page, setPage] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   // true finché l'utente non ha dato il consenso per i dati sulla salute
   const [consentRequired, setConsentRequired] = useState(false);
@@ -235,15 +282,20 @@ const BodyStats = ({ isEmbedded = false }) => {
     }
   };
 
-  const chartData = stats.map(item => ({
+  const periodRows = filterByPeriod(stats, period);
+  const chartData = periodRows.map(item => ({
     ...item,
     dateFormatted: formatDate(item.date, { day: '2-digit', month: '2-digit' }),
   }));
 
   const weightSeries = chartData.map(d => d.weight).filter(v => v !== null && v !== undefined);
   const lastWeight = lastValueOf(chartData, 'weight');
-  const firstWeight = weightSeries[0];
-  const weightDelta = firstWeight && lastWeight ? lastWeight - firstWeight : null;
+  const weightDelta = periodWeightDelta(periodRows);
+
+  // Lo storico non segue il periodo: tutte le righe, dalla più recente, a pagine
+  const sortedStats = sortByDate(stats);
+  const history = paginate(sortedStats.slice().reverse(), page);
+  const latestRow = sortedStats[sortedStats.length - 1];
 
   const renderContent = () => (consentRequired && !isLoading) ? (
     <HealthConsentCard onGranted={fetchStats} updated={consentUpdated} />
@@ -262,65 +314,84 @@ const BodyStats = ({ isEmbedded = false }) => {
 
       {!isLoading && <HealthAppHint alreadySyncing={stats.some((s) => s.health_fields)} />}
 
+      {!isLoading && stats.length > 0 && <PeriodChips value={period} onChange={setPeriod} />}
+
       {isLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 10 }}>
           <CircularProgress color="primary" />
         </Box>
       ) : (
         <Grid container spacing={3}>
-          {/* Andamento Peso — a piena larghezza */}
-          <Grid item xs={12}>
-            <ChartCard
-              title={t('body.weight_trend')}
-              data={weightSeries}
-              color="primary.main"
-              valueLabel={lastWeight !== null ? `${lastWeight} kg` : '—'}
-              deltaUp={weightDelta !== null ? weightDelta >= 0 : true}
-              deltaText={weightDelta !== null ? t('body.weight_delta', { delta: `${weightDelta >= 0 ? '+' : ''}${formatNumber(weightDelta, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}` }) : undefined}
-            />
-          </Grid>
+          {stats.length > 0 && periodRows.length === 0 ? (
+            <Grid item xs={12}>
+              <Card sx={{ p: '28px 22px', textAlign: 'center' }}>
+                <EventBusyIcon sx={{ fontSize: 36, color: 'text.secondary', mb: 1 }} />
+                <Typography sx={{ fontWeight: 700, fontSize: 16 }}>{t('body.period_empty')}</Typography>
+                <Typography sx={{ color: 'text.secondary', fontSize: 14, mt: 0.5 }}>
+                  {t('body.period_empty_last', {
+                    date: formatDate(latestRow.date),
+                    weight: latestRow.weight ? `${latestRow.weight} kg` : '—',
+                  })}
+                </Typography>
+              </Card>
+            </Grid>
+          ) : (
+            <>
+              {/* Andamento Peso — a piena larghezza */}
+              <Grid item xs={12}>
+                <ChartCard
+                  title={t('body.weight_trend')}
+                  data={weightSeries}
+                  color="primary.main"
+                  valueLabel={lastWeight !== null ? `${lastWeight} kg` : '—'}
+                  deltaUp={weightDelta !== null ? weightDelta >= 0 : true}
+                  deltaText={weightDelta !== null ? t(PERIOD_UI[period].delta, { delta: `${weightDelta >= 0 ? '+' : ''}${formatNumber(weightDelta, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}` }) : undefined}
+                />
+              </Grid>
 
-          {/* Composizione Corporea */}
-          <Grid item xs={12} md={6}>
-            <Card sx={{ p: '22px' }}>
-              <Typography sx={{ textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700, fontSize: 12, color: 'text.secondary', mb: 1.5 }}>
-                {t('body.composition')}
-              </Typography>
-              <MiniMultiLineChart data={chartData} series={BODY_COMPOSITION_SERIES} />
-              <MiniChartLegend data={chartData} series={BODY_COMPOSITION_SERIES} />
-            </Card>
-          </Grid>
+              {/* Composizione Corporea */}
+              <Grid item xs={12} md={6}>
+                <Card sx={{ p: '22px' }}>
+                  <Typography sx={{ textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700, fontSize: 12, color: 'text.secondary', mb: 1.5 }}>
+                    {t('body.composition')}
+                  </Typography>
+                  <MiniMultiLineChart data={chartData} series={BODY_COMPOSITION_SERIES} />
+                  <MiniChartLegend data={chartData} series={BODY_COMPOSITION_SERIES} />
+                </Card>
+              </Grid>
 
-          {/* Circonferenze */}
-          <Grid item xs={12} md={6}>
-            <Card sx={{ p: '22px' }}>
-              <Typography sx={{ textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700, fontSize: 12, color: 'text.secondary', mb: 1.5 }}>
-                {t('body.circumferences')}
-              </Typography>
-              <MiniMultiLineChart data={chartData} series={CIRCUMFERENCE_SERIES} />
-              <MiniChartLegend data={chartData} series={CIRCUMFERENCE_SERIES} />
-            </Card>
-          </Grid>
+              {/* Circonferenze */}
+              <Grid item xs={12} md={6}>
+                <Card sx={{ p: '22px' }}>
+                  <Typography sx={{ textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700, fontSize: 12, color: 'text.secondary', mb: 1.5 }}>
+                    {t('body.circumferences')}
+                  </Typography>
+                  <MiniMultiLineChart data={chartData} series={CIRCUMFERENCE_SERIES} />
+                  <MiniChartLegend data={chartData} series={CIRCUMFERENCE_SERIES} />
+                </Card>
+              </Grid>
+            </>
+          )}
 
           {/* Tabella Storico */}
           <Grid item xs={12}>
             <TableContainer component={Card} sx={{ p: 0 }}>
-              <Table>
+              <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{t('body.col.date')}</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{t('body.col.weight')}</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{t('body.col.fat')}</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{t('body.col.muscle')}</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{t('body.chest')}</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{t('body.arm')}</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{t('body.waist')}</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{t('body.leg')}</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' }}>{t('body.col.actions')}</TableCell>
+                    <TableCell sx={headCellSx}>{t('body.col.date')}</TableCell>
+                    <TableCell align="right" sx={headCellSx}>{t('body.col.weight')}</TableCell>
+                    <TableCell align="right" sx={headCellSx}>{t('body.col.fat')}</TableCell>
+                    <TableCell align="right" sx={headCellSx}>{t('body.col.muscle')}</TableCell>
+                    <TableCell align="right" sx={headCellSx}>{t('body.chest')}</TableCell>
+                    <TableCell align="right" sx={headCellSx}>{t('body.arm')}</TableCell>
+                    <TableCell align="right" sx={headCellSx}>{t('body.waist')}</TableCell>
+                    <TableCell align="right" sx={headCellSx}>{t('body.leg')}</TableCell>
+                    <TableCell align="center" sx={headCellSx}>{t('body.col.actions')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {stats.slice().reverse().map((row) => (
+                  {history.rows.map((row) => (
                     <TableRow key={row.id}>
                       <TableCell sx={{ fontSize: 13 }}>{formatDate(row.date)}</TableCell>
                       <TableCell align="right" sx={{ fontSize: 13, fontWeight: 700 }}><StatValue row={row} field="weight" /></TableCell>
@@ -344,6 +415,25 @@ const BodyStats = ({ isEmbedded = false }) => {
                   )}
                 </TableBody>
               </Table>
+              {history.total > 0 && (
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, py: 1.25, borderTop: '1px solid', borderColor: 'divider' }}>
+                  <IconButton size="small" disabled={history.page === 0} onClick={() => setPage(0)} aria-label={t('body.page_first')}>
+                    <FirstPageIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton size="small" disabled={history.page === 0} onClick={() => setPage(history.page - 1)} aria-label={t('body.page_prev')}>
+                    <NavigateBeforeIcon fontSize="small" />
+                  </IconButton>
+                  <Typography sx={{ fontSize: 13, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
+                    {t('body.page_range', { from: history.from, to: history.to, total: history.total })}
+                  </Typography>
+                  <IconButton size="small" disabled={history.page === history.lastPage} onClick={() => setPage(history.page + 1)} aria-label={t('body.page_next')}>
+                    <NavigateNextIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton size="small" disabled={history.page === history.lastPage} onClick={() => setPage(history.lastPage)} aria-label={t('body.page_last')}>
+                    <LastPageIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              )}
             </TableContainer>
           </Grid>
         </Grid>

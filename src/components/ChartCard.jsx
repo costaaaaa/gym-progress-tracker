@@ -75,6 +75,7 @@ const ChartCard = ({ title, data, color = 'primary.main', valueLabel, deltaUp = 
               strokeWidth={2.5}
               strokeLinecap="round"
               strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
             />
           </svg>
         )}
