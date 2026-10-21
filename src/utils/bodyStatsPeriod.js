@@ -7,6 +7,15 @@
 export const DEFAULT_PERIOD = '3m';
 export const PERIODS = ['1m', '3m', '6m', '1y', 'all'];
 
+// Chiavi i18n di ogni periodo: etichetta del selettore e testo della variazione del peso
+export const PERIOD_UI = {
+  '1m': { label: 'body.period_1m', delta: 'body.weight_delta_1m' },
+  '3m': { label: 'body.period_3m', delta: 'body.weight_delta_3m' },
+  '6m': { label: 'body.period_6m', delta: 'body.weight_delta_6m' },
+  '1y': { label: 'body.period_1y', delta: 'body.weight_delta_1y' },
+  all: { label: 'body.period_all', delta: 'body.weight_delta' },
+};
+
 // Mesi di calendario all'indietro da oggi. 'all' non c'è: nessun limite.
 const PERIOD_MONTHS = { '1m': 1, '3m': 3, '6m': 6, '1y': 12 };
 

@@ -41,7 +41,7 @@ import EventBusyIcon from '@mui/icons-material/EventBusy';
 import ChartCard from '../components/ChartCard';
 import HealthConsentCard from '../components/HealthConsentCard';
 import HealthAppHint from '../components/HealthAppHint';
-import { DEFAULT_PERIOD, PERIODS, filterByPeriod, periodWeightDelta, sortByDate, paginate } from '../utils/bodyStatsPeriod';
+import { DEFAULT_PERIOD, PERIODS, PERIOD_UI, filterByPeriod, periodWeightDelta, sortByDate, paginate } from '../utils/bodyStatsPeriod';
 
 // Valore della tabella, con un cuore se è arrivato da Apple Salute / Health Connect
 // (health_fields è l'elenco dei campi importati, separati da virgola).
@@ -116,15 +116,6 @@ const MiniChartLegend = ({ data, series }) => (
     })}
   </Box>
 );
-
-// Etichetta del selettore e testo della variazione del peso per ogni periodo
-const PERIOD_UI = {
-  '1m': { label: 'body.period_1m', delta: 'body.weight_delta_1m' },
-  '3m': { label: 'body.period_3m', delta: 'body.weight_delta_3m' },
-  '6m': { label: 'body.period_6m', delta: 'body.weight_delta_6m' },
-  '1y': { label: 'body.period_1y', delta: 'body.weight_delta_1y' },
-  all: { label: 'body.period_all', delta: 'body.weight_delta' },
-};
 
 // Pillole come sull'app mobile: piena rossa se selezionata, con il contorno le altre.
 const PeriodChips = ({ value, onChange }) => {
