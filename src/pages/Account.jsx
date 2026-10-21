@@ -48,6 +48,7 @@ import { dateFnsLocale } from '../i18n/format';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import { validatePassword } from '../utils/passwordPolicy';
+import { CHIP_FONT } from '../utils/chipFont';
 import { getConsents, setConsent } from '../utils/consent';
 import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
 
@@ -775,9 +776,9 @@ const Account = ({ isEmbedded = false }) => {
                 sx={{ flexWrap: 'wrap', alignSelf: 'flex-start' }}
               >
                 {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-                  <ToggleButton key={n} value={n} sx={{ minWidth: 40 }}>{n}</ToggleButton>
+                  <ToggleButton key={n} value={n} sx={{ minWidth: 40, ...CHIP_FONT }}>{n}</ToggleButton>
                 ))}
-                <ToggleButton value="default">
+                <ToggleButton value="default" sx={CHIP_FONT}>
                   {t('account.weekly_goal.default', { n: weeklyGoal.weekly_goal_default })}
                 </ToggleButton>
               </ToggleButtonGroup>

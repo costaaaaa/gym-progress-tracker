@@ -23,7 +23,7 @@ import {
 import { loadCardFonts, renderCardToCanvas, canvasToPngFile, loadPhoto } from '../utils/renderShareCard';
 import { track } from '../utils/analytics';
 import { shareCardStrings } from '../i18n/shareCardStrings';
-import { CHIP_FONT } from '../context/ThemeModeContext';
+import { CHIP_FONT } from '../utils/chipFont';
 
 const SWIPE_MIN_PX = 50;
 const PREFS_KEY = 'lx_share_card';

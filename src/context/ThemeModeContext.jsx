@@ -4,14 +4,11 @@ import { grey } from '@mui/material/colors';
 import { GlobalStyles } from '@mui/material';
 import { itIT, enUS } from '@mui/material/locale';
 import { useTranslation } from 'react-i18next';
+import { CHIP_FONT } from '../utils/chipFont';
 
 const ThemeModeContext = createContext();
 
 export const useThemeMode = () => useContext(ThemeModeContext);
-
-// Font dei chip che si premono (scelte, filtri, azioni rapide), uguale all'app: Lexend 500.
-// I badge restano Inter.
-export const CHIP_FONT = { fontFamily: '"Lexend", sans-serif', fontWeight: 500 };
 
 export const ThemeModeProvider = ({ children }) => {
   const [mode, setMode] = useState(() => {
@@ -126,6 +123,7 @@ export const ThemeModeProvider = ({ children }) => {
               },
             },
           },
+          // Ogni Chip con onClick: due classi, quindi vince su fontFamily e fontWeight dati con sx
           MuiChip: {
             styleOverrides: {
               root: {

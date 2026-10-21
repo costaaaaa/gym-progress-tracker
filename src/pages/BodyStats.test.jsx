@@ -20,8 +20,9 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const mount = async () => {
-  render(<BodyStats />);
+// Con wrap si monta dentro un provider (es. il tema dell'app)
+const mount = async (wrap = (page) => page) => {
+  render(wrap(<BodyStats />));
   await screen.findByRole('group', { name: 'Periodo' });
 };
 const pill = (name) => screen.getByRole('button', { name });
@@ -138,8 +139,7 @@ describe('storico a pagine', () => {
 describe('font delle pillole', () => {
   it('col tema dell\'app sono in Lexend 500, come gli altri chip che si premono', async () => {
     records = [row('2026-10-01', '80.0')];
-    render(<ThemeModeProvider><BodyStats /></ThemeModeProvider>);
-    await screen.findByRole('group', { name: 'Periodo' });
+    await mount((page) => <ThemeModeProvider>{page}</ThemeModeProvider>);
     const { fontFamily, fontWeight } = getComputedStyle(pill('3M'));
     expect({ fontFamily, fontWeight }).toEqual({ fontFamily: '"Lexend", sans-serif', fontWeight: '500' });
   });
