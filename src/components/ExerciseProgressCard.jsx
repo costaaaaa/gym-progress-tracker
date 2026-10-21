@@ -58,7 +58,7 @@ const ExerciseProgressCard = ({ item, showMuscle = false, favorite, onToggleFavo
           <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 24, lineHeight: 1 }}>
             {formatValue(t, mode, last.value)}
           </Typography>
-          {recentPR && <Chip size="small" color="primary" label={t('progress.pr')} sx={{ height: 20, fontSize: 11, fontWeight: 700 }} />}
+          {recentPR && <Chip size="small" color="secondary" label={t('progress.pr')} sx={{ height: 20, fontSize: 11, fontWeight: 700 }} />}
         </Box>
         <Typography sx={{ fontSize: 11, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 600, mt: 0.5 }}>
           {t(`progress.kind.${mode}`)}

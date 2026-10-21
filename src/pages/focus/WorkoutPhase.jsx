@@ -36,7 +36,7 @@ export default function WorkoutPhase({
       </Box>
 
       <LinearProgress variant="determinate" value={((currentExerciseIndex) / totalExercises) * 100}
-        sx={{ height: 3, bgcolor: colors.border, '& .MuiLinearProgress-bar': { bgcolor: colors.primary } }} />
+        sx={{ height: 3, bgcolor: colors.border, '& .MuiLinearProgress-bar': { bgcolor: colors.text } }} />
 
       <Fade in={exerciseTransition} timeout={300}>
         <Container maxWidth="sm" sx={{ py: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
