@@ -112,6 +112,8 @@ function rate_limit_rule($name)
         'login_account' => [(int)(getenv('RL_LOGIN_ACCOUNT_MAX') ?: 10), (int)(getenv('RL_LOGIN_ACCOUNT_DECAY') ?: 900)],
         // register per-IP: anti registrazioni di massa
         'register_ip' => [(int)(getenv('RL_REGISTER_MAX')   ?: 10), (int)(getenv('RL_REGISTER_DECAY')   ?: 3600)],
+        // disponibilità di username ed email al primo passo della registrazione, per IP
+        'check_ip'    => [(int)(getenv('RL_CHECK_IP_MAX')   ?: 30), (int)(getenv('RL_CHECK_IP_DECAY')   ?: 900)],
         // recupero password: richieste di email per IP e per indirizzo (anti spam/enumerazione)
         'forgot_ip'    => [(int)(getenv('RL_FORGOT_IP_MAX')    ?: 10), (int)(getenv('RL_FORGOT_IP_DECAY')    ?: 3600)],
         'forgot_email' => [(int)(getenv('RL_FORGOT_EMAIL_MAX') ?: 3),  (int)(getenv('RL_FORGOT_EMAIL_DECAY') ?: 3600)],

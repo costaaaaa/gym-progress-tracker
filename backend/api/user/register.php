@@ -107,6 +107,16 @@ try {
         $user->training_start_date = ($tsd === '') ? null : $tsd;
         $user->locale = normalize_locale(isset($data->locale) ? $data->locale : null) ?: 'it';
 
+        // Username o email già in uso: messaggio preciso e campo da correggere (lo stesso dice
+        // check_availability.php al primo passo; create() resta comunque il controllo finale).
+        $taken = $user->usernameExists() ? 'username' : ($user->emailExists() ? 'email' : null);
+        if ($taken !== null) {
+            http_response_code(409);
+            $message = $taken === 'username' ? t_server('register.username_taken') : t_server('register.email_taken');
+            echo json_encode(array("success" => false, "field" => $taken, "message" => $message));
+            exit;
+        }
+
         // Create the user
         if ($user->create()) {
             (new Consent($db))->grant((int)$user->id, 'terms');
