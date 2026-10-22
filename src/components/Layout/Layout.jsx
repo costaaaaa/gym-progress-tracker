@@ -16,7 +16,10 @@ const Layout = () => {
   const otherLang = isEnPath(pathname) ? 'it' : 'en';
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    // Solo per gli ospiti: serve al campo pieno della home (100cqw); i Safari più vecchi trattavano il container
+    // come riferimento dei position: fixed, e le pagine con login ne hanno (BottomNav, Snackbar).
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', containerType: isLoggedIn ? 'normal' : 'inline-size' }}>
+      {!isLoggedIn && <LanguageHint />}
       <Navbar />
       <Container
         component="main"
@@ -29,14 +32,13 @@ const Layout = () => {
           px: { xs: 2, md: '32px' },
         }}
       >
-        {!isLoggedIn && <LanguageHint />}
         <Outlet />
       </Container>
       <Box
         component="footer"
         sx={{ textAlign: 'center', pb: { xs: isLoggedIn ? 10 : 2, md: 2 }, px: 2 }}
       >
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: 14 }}>
           <Link href="/privacy.html" color="inherit" underline="hover">{t('footer.privacy')}</Link>
           {' · '}
           <Link href="/termini.html" color="inherit" underline="hover">{t('footer.terms')}</Link>

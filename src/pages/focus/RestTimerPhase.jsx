@@ -22,7 +22,7 @@ export default function RestTimerPhase({
     }}>
       <Box sx={{ position: 'relative', display: 'inline-flex', mb: 4 }}>
         <CircularProgress variant="determinate" value={progress} size={220} thickness={4}
-          sx={{ color: colors.primary, '& .MuiCircularProgress-circle': { strokeLinecap: 'round', transition: 'stroke-dashoffset 1s linear' } }} />
+          sx={{ color: colors.text, position: 'relative', zIndex: 1, '& .MuiCircularProgress-circle': { strokeLinecap: 'round', transition: 'stroke-dashoffset 1s linear' } }} />
         <CircularProgress variant="determinate" value={100} size={220} thickness={4}
           sx={{ color: colors.border, position: 'absolute', left: 0, zIndex: 0 }} />
         <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>

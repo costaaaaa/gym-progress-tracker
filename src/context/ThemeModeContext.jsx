@@ -52,7 +52,7 @@ export const ThemeModeProvider = ({ children }) => {
           },
           divider: mode === 'light' ? '#ececea' : 'rgba(255, 255, 255, 0.08)',
           success: {
-            main: mode === 'light' ? '#16a34a' : '#22c55e',
+            main: mode === 'light' ? '#15803d' : '#22c55e',
           },
           warning: {
             main: mode === 'light' ? '#d97706' : '#f59e0b',
@@ -62,6 +62,19 @@ export const ThemeModeProvider = ({ children }) => {
           },
           info: {
             main: mode === 'light' ? '#4f46e5' : '#818cf8',
+          },
+          // Stato di recupero muscolare: il rosso del marchio non è più uno stato. Tre luminosità
+          // diverse (in chiaro 5.0 / 5.0 / 9.4 : 1 sul bianco), così le righe si distinguono anche in scala di grigi.
+          recovery: {
+            ready: mode === 'light' ? '#15803d' : '#22c55e',
+            recovering: mode === 'light' ? '#b45309' : '#fbbf24',
+            fatigued: mode === 'light' ? '#7c2d12' : '#f97316',
+          },
+          // Sezione a campo pieno della home (scena Focus): fondo quasi nero; in scuro un grigio più chiaro della pagina.
+          scene: {
+            bg: mode === 'light' ? '#141416' : '#222226',
+            text: '#f7f6f5',
+            muted: 'rgba(247, 246, 245, 0.72)',
           },
           // Token extra usato dal redesign per l'Indice di Progresso (non uno slot MUI standard)
           violet: {
