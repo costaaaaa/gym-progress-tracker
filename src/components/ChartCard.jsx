@@ -3,16 +3,6 @@ import { Box, Card, Typography } from '@mui/material';
 const VIEWBOX_WIDTH = 220;
 const VIEWBOX_HEIGHT = 72;
 const PADDING_Y = 6;
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-// Giorno di calendario come numero, per l'asse x: accetta 'YYYY-MM-DD', 'YYYY-MM-DD HH:MM:SS'
-// o una Date (giorno locale). In UTC, così fuso e ora legale non spostano i punti.
-export const dayNumber = (date) => {
-  const [y, m, d] = typeof date === 'string'
-    ? date.slice(0, 10).split('-').map(Number)
-    : [date.getFullYear(), date.getMonth() + 1, date.getDate()];
-  return Date.UTC(y, m - 1, d) / DAY_MS;
-};
 
 // points: [{ x, value }], con x numerica (es. un giorno); domain: [inizio, fine] dell'asse x.
 export function buildPoints(points, [start, end], width = VIEWBOX_WIDTH, height = VIEWBOX_HEIGHT, paddingY = PADDING_Y) {
@@ -25,11 +15,12 @@ export function buildPoints(points, [start, end], width = VIEWBOX_WIDTH, height 
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min || 1;
-  const span = end - start || 1;
+  const span = end - start;
   return points
-    .map(({ x: at, value: v }) => {
-      const x = ((at - start) / span) * width;
-      const y = height - paddingY - ((v - min) / range) * (height - paddingY * 2);
+    .map((point, i) => {
+      // Dominio di ampiezza zero (tutti alla stessa x): a distanza uguale invece di un segmento verticale
+      const x = span > 0 ? ((point.x - start) / span) * width : (i / (points.length - 1)) * width;
+      const y = height - paddingY - ((point.value - min) / range) * (height - paddingY * 2);
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(' ');
@@ -41,7 +32,7 @@ export function buildPoints(points, [start, end], width = VIEWBOX_WIDTH, height 
  *
  * Props:
  * - title: etichetta uppercase in alto
- * - points: [{ x, value }] (x = dayNumber della data), normalizzati internamente in una polyline
+ * - points: [{ x, value }] (x = giorno della misura, da dayNumber in utils/calendarDay), normalizzati in una polyline
  * - domain: [inizio, fine] dell'asse x, stessa unità di x
  * - color: colore della linea — token tema (es. "primary.main") o valore CSS letterale
  * - valueLabel: valore corrente mostrato in grande (stringa già formattata)

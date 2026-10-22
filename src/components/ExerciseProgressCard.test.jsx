@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import ExerciseProgressCard from './ExerciseProgressCard';
 import { STATUS } from '../utils/progressOverview';
+import { polylineX } from '../test/polyline';
 
 const session = (date, value) => ({ id: date, date, value });
 
@@ -19,20 +20,32 @@ const item = (sessions) => ({
   recentPR: false,
 });
 
-const sparklineX = (container) => container.querySelector('polyline')
-  .getAttribute('points').split(' ').map((p) => Number(p.split(',')[0]));
+const sparklineX = (container) => polylineX(container.querySelector('polyline'));
 
 describe('sparkline', () => {
   it('distanzia le sessioni secondo la data, dalla prima all\'ultima', () => {
-    // Giorni 0, 1 e 10 (con l'ora, come li restituisce read.php)
+    // Giorni 0, 1 e 10 alla stessa ora (con l'ora, come li restituisce read.php)
     const sessions = [
       session('2026-10-01 18:00:00', 80),
-      session('2026-10-02 07:30:00', 82),
-      session('2026-10-11 19:00:00', 85),
+      session('2026-10-02 18:00:00', 82),
+      session('2026-10-11 18:00:00', 85),
     ];
     const { container } = render(
       <ExerciseProgressCard item={item(sessions)} favorite={false} onToggleFavorite={() => {}} onOpen={() => {}} />,
     );
     expect(sparklineX(container)).toEqual([0, 12, 120]);
+  });
+
+  it('due sessioni nello stesso giorno restano distinte, secondo l\'ora', () => {
+    // Dalle 10:00 del 1/10 alle 10:00 del 2/10: le 18:00 sono a un terzo
+    const sessions = [
+      session('2026-10-01 10:00:00', 80),
+      session('2026-10-01 18:00:00', 82),
+      session('2026-10-02 10:00:00', 85),
+    ];
+    const { container } = render(
+      <ExerciseProgressCard item={item(sessions)} favorite={false} onToggleFavorite={() => {}} onOpen={() => {}} />,
+    );
+    expect(sparklineX(container)).toEqual([0, 40, 120]);
   });
 });

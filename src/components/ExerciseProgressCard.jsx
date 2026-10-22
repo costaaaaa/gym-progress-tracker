@@ -5,7 +5,8 @@ import StarBorderIcon from '@mui/icons-material/StarBorder';
 import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../i18n/format';
 import { muscleLabel } from '../i18n/labels';
-import { buildPoints, dayNumber } from './ChartCard';
+import { buildPoints } from './ChartCard';
+import { dayTime } from '../utils/calendarDay';
 import { STATUS, STATUS_TONE, showsDelta } from '../utils/progressOverview';
 
 export const formatDaysAgo = (t, days) => {
@@ -25,13 +26,13 @@ const SPARK_POINTS = 12;
 
 // Ultime sessioni distanziate per data, dalla prima all'ultima mostrata
 const Sparkline = ({ sessions, color }) => {
-  const data = sessions.slice(-SPARK_POINTS).map((s) => ({ x: dayNumber(s.date), value: s.value }));
-  if (data.length < 2) return <Box sx={{ height: SPARK_H }} />;
-  const points = buildPoints(data, [data[0].x, data.at(-1).x], SPARK_W, SPARK_H, 4);
+  const points = sessions.slice(-SPARK_POINTS).map((s) => ({ x: dayTime(s.date), value: s.value }));
+  if (points.length < 2) return <Box sx={{ height: SPARK_H }} />;
+  const polyline = buildPoints(points, [points[0].x, points.at(-1).x], SPARK_W, SPARK_H, 4);
   return (
     <Box sx={{ height: SPARK_H, color }}>
       <svg viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} width="100%" height="100%" preserveAspectRatio="none" aria-hidden="true">
-        <polyline points={points} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+        <polyline points={polyline} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
       </svg>
     </Box>
   );
