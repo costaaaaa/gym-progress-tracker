@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Typography, Paper, TextField, Button, Box, Alert, Link, InputAdornment, IconButton } from '@mui/material';
+import { TextField, Button, Box, Alert, Link, InputAdornment, IconButton } from '@mui/material';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -8,6 +8,7 @@ import { usePageMeta } from '../hooks/usePageMeta';
 import { useTranslation } from 'react-i18next';
 import { useLocalizedPath } from '../i18n/paths';
 import { validatePassword } from '../utils/passwordPolicy';
+import AuthLayout from '../components/Auth/AuthLayout';
 
 const ResetPassword = () => {
   const { t } = useTranslation();
@@ -54,11 +55,7 @@ const ResetPassword = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
-      <Paper elevation={3} sx={{ p: 4, width: '100%', maxWidth: 400 }}>
-        <Typography variant="h4" component="h1" align="center" gutterBottom>
-          {t('reset.title')}
-        </Typography>
+    <AuthLayout title={t('reset.title')}>
 
         {done ? (
           <>
@@ -69,7 +66,7 @@ const ResetPassword = () => {
           <>
             <Alert severity="error" sx={{ mb: 2 }}>{t('reset.invalid_link')}</Alert>
             <Box sx={{ textAlign: 'center' }}>
-              <Link component={RouterLink} to={localizedPath('/forgot-password')} variant="body2">{t('reset.request_new')}</Link>
+              <Link component={RouterLink} to={localizedPath('/forgot-password')}>{t('reset.request_new')}</Link>
             </Box>
           </>
         ) : (
@@ -119,12 +116,11 @@ const ResetPassword = () => {
               </Button>
             </Box>
             <Box sx={{ textAlign: 'center', mt: 1 }}>
-              <Link component={RouterLink} to={localizedPath('/forgot-password')} variant="body2">{t('reset.request_new')}</Link>
+              <Link component={RouterLink} to={localizedPath('/forgot-password')}>{t('reset.request_new')}</Link>
             </Box>
           </>
         )}
-      </Paper>
-    </Box>
+    </AuthLayout>
   );
 };
 

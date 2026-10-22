@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Typography, Paper, TextField, Button, Box, Alert, Link, InputAdornment, IconButton } from '@mui/material';
+import { Typography, TextField, Button, Box, Alert, Link, InputAdornment, IconButton } from '@mui/material';
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,7 @@ import { usePageMeta } from '../hooks/usePageMeta';
 import { safeNext } from '../utils/safeNext';
 import { useTranslation } from 'react-i18next';
 import { useLocalizedPath } from '../i18n/paths';
+import AuthLayout from '../components/Auth/AuthLayout';
 
 const Login = () => {
   const { t } = useTranslation();
@@ -67,12 +68,7 @@ const Login = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
-      <Paper elevation={3} sx={{ p: 4, width: '100%', maxWidth: 400 }}>
-        <Typography variant="h4" component="h1" align="center" gutterBottom>
-          {t('login.title')}
-        </Typography>
-        
+    <AuthLayout title={t('login.title')} side={{ title: t('login.side.title'), text: t('login.side.text') }}>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
@@ -127,21 +123,20 @@ const Login = () => {
             {loading ? t('login.submitting') : t('login.submit')}
           </Button>
           <Box sx={{ textAlign: 'center' }}>
-            <Link component={RouterLink} to={localizedPath('/forgot-password')} variant="body2">
+            <Link component={RouterLink} to={localizedPath('/forgot-password')}>
               {t('login.forgot')}
             </Link>
           </Box>
           <Box sx={{ textAlign: 'center', mt: 2 }}>
-            <Typography variant="body2">
+            <Typography>
               {t('login.no_account')}{' '}
-              <Link component={RouterLink} to={next === '/' ? localizedPath('/register') : `${localizedPath('/register')}?next=${encodeURIComponent(next)}`} variant="body2">
+              <Link component={RouterLink} to={next === '/' ? localizedPath('/register') : `${localizedPath('/register')}?next=${encodeURIComponent(next)}`}>
                 {t('login.register')}
               </Link>
             </Typography>
           </Box>
         </Box>
-      </Paper>
-    </Box>
+    </AuthLayout>
   );
 };
 
