@@ -31,7 +31,7 @@ import DateLocalization from '../i18n/DateLocalization';
 import { useLocalizedPath } from '../i18n/paths';
 import AuthLayout from '../components/Auth/AuthLayout';
 
-// Stesse regole di register.php
+// Username: stessa regola di register.php. Email: solo un primo filtro, il server usa FILTER_VALIDATE_EMAIL
 const USERNAME_RE = /^[a-zA-Z0-9]{3,50}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -99,7 +99,7 @@ const Register = () => {
   const handleNext = async () => {
     setError('');
     const errors = {
-      username: USERNAME_RE.test(username) ? '' : t('register.error.username_format'),
+      username: USERNAME_RE.test(username) ? '' : t('register.username_help'),
       email: EMAIL_RE.test(email.trim()) ? '' : t('register.error.email_format'),
       password: validatePassword(password) || '',
       confirmPassword: password === confirmPassword ? '' : t('register.error.password_mismatch'),
@@ -373,7 +373,8 @@ const Register = () => {
                 <Checkbox
                   checked={acceptTerms}
                   onChange={(e) => setAcceptTerms(e.target.checked)}
-                  sx={{ pt: 0.5 }}
+                  // Spunta nel colore del testo: il rosso resta al bottone principale
+                  sx={{ pt: 0.5, '&.Mui-checked': { color: 'text.primary' } }}
                 />
               }
               label={

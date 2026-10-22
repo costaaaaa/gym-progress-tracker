@@ -40,41 +40,40 @@ const ForgotPassword = () => {
 
   return (
     <AuthLayout title={t('forgot.title')}>
+      {message ? (
+        <Alert severity="success" sx={{ mb: 2 }}>{message}</Alert>
+      ) : (
+        <>
+          <Typography sx={{ mb: 1 }}>
+            {t('forgot.intro')}
+          </Typography>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          <Box component="form" onSubmit={handleSubmit} noValidate>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="email"
+              label={t('forgot.email')}
+              name="email"
+              type="email"
+              autoComplete="email"
+              autoFocus
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <Button type="submit" fullWidth variant="contained" sx={{ mt: 2, mb: 1 }} disabled={loading}>
+              {loading ? t('forgot.submitting') : t('forgot.submit')}
+            </Button>
+          </Box>
+        </>
+      )}
 
-        {message ? (
-          <Alert severity="success" sx={{ mb: 2 }}>{message}</Alert>
-        ) : (
-          <>
-            <Typography sx={{ mb: 1 }}>
-              {t('forgot.intro')}
-            </Typography>
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-            <Box component="form" onSubmit={handleSubmit} noValidate>
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                id="email"
-                label={t('forgot.email')}
-                name="email"
-                type="email"
-                autoComplete="email"
-                autoFocus
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <Button type="submit" fullWidth variant="contained" sx={{ mt: 2, mb: 1 }} disabled={loading}>
-                {loading ? t('forgot.submitting') : t('forgot.submit')}
-              </Button>
-            </Box>
-          </>
-        )}
-
-        <Box sx={{ textAlign: 'center', mt: 2 }}>
-          <Link component={RouterLink} to={localizedPath('/login')}>
-            {t('forgot.back_to_login')}
-          </Link>
-        </Box>
+      <Box sx={{ textAlign: 'center', mt: 2 }}>
+        <Link component={RouterLink} to={localizedPath('/login')}>
+          {t('forgot.back_to_login')}
+        </Link>
+      </Box>
     </AuthLayout>
   );
 };

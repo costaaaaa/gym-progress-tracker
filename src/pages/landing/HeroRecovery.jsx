@@ -7,7 +7,7 @@ import BodyVisualizer from '../../components/BodyVisualizer';
 import { CHIP_FONT } from '../../utils/chipFont';
 import { track } from '../../utils/analytics';
 import { useLocalizedPath } from '../../i18n/paths';
-import { buildRecovery } from './recoveryDemo';
+import { buildRecovery } from '../../utils/recoveryDemo';
 
 const OPTIONS = ['none', 'push', 'pull', 'legs'];
 const DEFAULT_OPTION = 'push';

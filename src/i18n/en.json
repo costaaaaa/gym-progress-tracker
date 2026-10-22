@@ -118,7 +118,6 @@
   "register.username_help": "3 to 50 characters, letters and numbers only",
   "register.profile_title": "Your profile",
   "register.profile_text": "Age, sex and how long you've been training change recovery times: this way the estimates are yours, not an average. We don't show them to other users.",
-  "register.error.username_format": "3 to 50 characters, letters and numbers only",
   "register.error.email_format": "Enter a valid email",
   "register.error.username_taken": "This username is already taken",
   "register.error.email_taken": "This email is already registered: <login>log in</login> or <forgot>reset your password</forgot>.",

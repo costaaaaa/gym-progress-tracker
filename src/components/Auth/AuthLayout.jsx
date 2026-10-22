@@ -1,7 +1,7 @@
 import { Box, Card, Paper, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import BodyVisualizer from '../BodyVisualizer';
-import { buildRecovery } from '../../pages/landing/recoveryDemo';
+import { buildRecovery } from '../../utils/recoveryDemo';
 
 const SAMPLE = buildRecovery('push');
 
@@ -12,7 +12,16 @@ const AuthLayout = ({ title, side, children }) => {
   const { t } = useTranslation();
 
   const form = (
-    <Paper sx={{ p: { xs: 3, sm: 4 }, width: '100%', maxWidth: 440, justifySelf: { md: side ? 'end' : 'center' } }}>
+    <Paper
+      sx={{
+        p: { xs: 3, sm: 4 },
+        width: '100%',
+        maxWidth: 440,
+        justifySelf: { md: side ? 'end' : 'center' },
+        // Aiuti ed errori sotto i campi: 14px invece dei 12 di MUI, si leggono e i loro link si toccano
+        '& .MuiFormHelperText-root': { fontSize: '0.875rem', lineHeight: 1.45, mt: 0.75 },
+      }}
+    >
       <Typography variant="h1" sx={{ fontSize: { xs: '1.75rem', md: '2rem' }, lineHeight: 1.15, mb: 2 }}>
         {title}
       </Typography>

@@ -19,7 +19,7 @@ const fillStep1 = ({ confirm = 'Segreta!2026' } = {}) => {
   fireEvent.change(screen.getByLabelText(/^Username/), { target: { value: 'mario88' } });
   fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: 'mario@example.com' } });
   fireEvent.change(screen.getByLabelText(/^Password/), { target: { value: 'Segreta!2026' } });
-  fireEvent.change(screen.getByLabelText(/^Conferma Password/), { target: { value: confirm } });
+  fireEvent.change(screen.getByLabelText(/^Conferma password/), { target: { value: confirm } });
 };
 
 beforeEach(() => {
@@ -69,9 +69,9 @@ describe('registrazione in due passaggi', () => {
   it('correggendo la conferma l\'errore sparisce mentre si scrive, non al clic su Avanti', async () => {
     renderRegister();
     fillStep1({ confirm: 'Diversa!2026' });
-    fireEvent.blur(screen.getByLabelText(/^Conferma Password/));
+    fireEvent.blur(screen.getByLabelText(/^Conferma password/));
     expect(await screen.findByText('Le password non corrispondono')).toBeTruthy();
-    fireEvent.change(screen.getByLabelText(/^Conferma Password/), { target: { value: 'Segreta!2026' } });
+    fireEvent.change(screen.getByLabelText(/^Conferma password/), { target: { value: 'Segreta!2026' } });
     expect(screen.queryByText('Le password non corrispondono')).toBeNull();
   });
 

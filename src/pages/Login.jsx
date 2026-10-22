@@ -69,73 +69,73 @@ const Login = () => {
 
   return (
     <AuthLayout title={t('login.title')} side={{ title: t('login.side.title'), text: t('login.side.text') }}>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-        
-        <Box component="form" onSubmit={handleSubmit} noValidate>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="username"
-            label={t('login.username')}
-            name="username"
-            autoComplete="username"
-            autoFocus
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="password"
-            label={t('login.password')}
-            type={showPassword ? "text" : "password"}
-            id="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label={t('login.toggle_password')}
-                    onClick={handleTogglePasswordVisibility}
-                    edge="end"
-                  >
-                    {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-            disabled={loading}
-          >
-            {loading ? t('login.submitting') : t('login.submit')}
-          </Button>
-          <Box sx={{ textAlign: 'center' }}>
-            <Link component={RouterLink} to={localizedPath('/forgot-password')}>
-              {t('login.forgot')}
-            </Link>
-          </Box>
-          <Box sx={{ textAlign: 'center', mt: 2 }}>
-            <Typography>
-              {t('login.no_account')}{' '}
-              <Link component={RouterLink} to={next === '/' ? localizedPath('/register') : `${localizedPath('/register')}?next=${encodeURIComponent(next)}`}>
-                {t('login.register')}
-              </Link>
-            </Typography>
-          </Box>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+      
+      <Box component="form" onSubmit={handleSubmit} noValidate>
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          id="username"
+          label={t('login.username')}
+          name="username"
+          autoComplete="username"
+          autoFocus
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          name="password"
+          label={t('login.password')}
+          type={showPassword ? "text" : "password"}
+          id="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  aria-label={t('login.toggle_password')}
+                  onClick={handleTogglePasswordVisibility}
+                  edge="end"
+                >
+                  {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+        />
+        <Button
+          type="submit"
+          fullWidth
+          variant="contained"
+          sx={{ mt: 3, mb: 2 }}
+          disabled={loading}
+        >
+          {loading ? t('login.submitting') : t('login.submit')}
+        </Button>
+        <Box sx={{ textAlign: 'center' }}>
+          <Link component={RouterLink} to={localizedPath('/forgot-password')}>
+            {t('login.forgot')}
+          </Link>
         </Box>
+        <Box sx={{ textAlign: 'center', mt: 2 }}>
+          <Typography>
+            {t('login.no_account')}{' '}
+            <Link component={RouterLink} to={next === '/' ? localizedPath('/register') : `${localizedPath('/register')}?next=${encodeURIComponent(next)}`}>
+              {t('login.register')}
+            </Link>
+          </Typography>
+        </Box>
+      </Box>
     </AuthLayout>
   );
 };
