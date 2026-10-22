@@ -191,23 +191,28 @@ const Navbar = () => {
             <CircularProgress size={22} sx={{ color: 'text.secondary' }} />
           )}
 
+          {/* Sulla pagina di accesso o di registrazione non si ripete il bottone della pagina stessa */}
           {authVerified && !isLoggedIn && (
             <>
-              <Button
-                component={RouterLink}
-                to={withNext('/login')}
-                sx={{ color: 'text.secondary', fontWeight: 500, fontSize: 14 }}
-              >
-                {t('nav.login')}
-              </Button>
-              <Button
-                variant="contained"
-                component={RouterLink}
-                to={withNext('/register')}
-                sx={{ fontSize: 14 }}
-              >
-                {t('nav.register')}
-              </Button>
+              {barePath !== '/login' && (
+                <Button
+                  component={RouterLink}
+                  to={withNext('/login')}
+                  sx={{ color: 'text.secondary', fontWeight: 500, fontSize: 14 }}
+                >
+                  {t('nav.login')}
+                </Button>
+              )}
+              {barePath !== '/register' && (
+                <Button
+                  variant="contained"
+                  component={RouterLink}
+                  to={withNext('/register')}
+                  sx={{ fontSize: 14 }}
+                >
+                  {t('nav.register')}
+                </Button>
+              )}
             </>
           )}
         </Box>
