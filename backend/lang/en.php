@@ -36,7 +36,7 @@ return array(
     'register.ok' => 'Account created successfully.',
     'register.username_taken' => 'This username is already taken.',
     'register.email_taken' => 'This email is already registered.',
-    'check.too_many' => 'Too many checks from this address. Try again in {seconds} seconds.',
+    'register.check_too_many' => 'Too many checks from this address. Try again in {seconds} seconds.',
     'register.failed' => 'Could not create the account. The username or email may already be in use.',
     'register.incomplete' => 'Missing data. Username, email and password are required.',
     'register.error' => 'An error occurred during sign-up.',

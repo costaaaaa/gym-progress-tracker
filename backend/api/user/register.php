@@ -54,7 +54,7 @@ try {
 
         // Stesse regole di User::validateInputs(), ma con un messaggio preciso: altrimenti
         // create() fallisce e l'utente legge "nome utente o email gia' in uso".
-        if (!is_string($data->username) || !preg_match('/^[a-zA-Z0-9]{3,50}$/', $data->username)) {
+        if (!is_string($data->username) || !preg_match(User::USERNAME_PATTERN, $data->username)) {
             http_response_code(400);
             echo json_encode(array("success" => false, "message" => t_server('register.username_invalid')));
             exit;

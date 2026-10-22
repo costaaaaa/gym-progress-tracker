@@ -36,7 +36,7 @@ return array(
     'register.ok' => 'Utente registrato con successo.',
     'register.username_taken' => 'Questo username è già preso.',
     'register.email_taken' => 'Questa email è già registrata.',
-    'check.too_many' => 'Troppi controlli da questo indirizzo. Riprova tra {seconds} secondi.',
+    'register.check_too_many' => 'Troppi controlli da questo indirizzo. Riprova tra {seconds} secondi.',
     'register.failed' => "Impossibile registrare l'utente. Il nome utente o l'email potrebbero essere già in uso.",
     'register.incomplete' => 'Dati incompleti. Username, email e password sono obbligatori.',
     'register.error' => 'Si è verificato un errore durante la registrazione.',
