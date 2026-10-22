@@ -54,7 +54,7 @@ try {
 
         // Stesse regole di User::validateInputs(), ma con un messaggio preciso: altrimenti
         // create() fallisce e l'utente legge "nome utente o email gia' in uso".
-        if (!is_string($data->username) || !preg_match('/^[a-zA-Z0-9]{3,50}$/', $data->username)) {
+        if (!is_string($data->username) || !preg_match(User::USERNAME_PATTERN, $data->username)) {
             http_response_code(400);
             echo json_encode(array("success" => false, "message" => t_server('register.username_invalid')));
             exit;
@@ -106,6 +106,16 @@ try {
         }
         $user->training_start_date = ($tsd === '') ? null : $tsd;
         $user->locale = normalize_locale(isset($data->locale) ? $data->locale : null) ?: 'it';
+
+        // Username o email già in uso: messaggio preciso e campo da correggere (lo stesso dice
+        // check_availability.php al primo passo; create() resta comunque il controllo finale).
+        $taken = $user->usernameExists() ? 'username' : ($user->emailExists() ? 'email' : null);
+        if ($taken !== null) {
+            http_response_code(409);
+            $message = $taken === 'username' ? t_server('register.username_taken') : t_server('register.email_taken');
+            echo json_encode(array("success" => false, "field" => $taken, "message" => $message));
+            exit;
+        }
 
         // Create the user
         if ($user->create()) {

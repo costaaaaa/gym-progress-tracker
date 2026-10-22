@@ -36,6 +36,8 @@ const Navbar = () => {
   // su login e registrazione, oppure il link di invito che si sta guardando.
   const barePath = stripLangPrefix(location.pathname);
   const onAuthPage = barePath === '/login' || barePath === '/register';
+  // Pagine di accesso: il bottone rosso è quello del modulo, la Navbar resta in testo
+  const onAccessPage = onAuthPage || barePath === '/forgot-password' || barePath === '/reset-password';
   const authNext = onAuthPage
     ? safeNext(location.search)
     : location.pathname.startsWith('/entra') ? location.pathname + location.search : '/';
@@ -191,23 +193,28 @@ const Navbar = () => {
             <CircularProgress size={22} sx={{ color: 'text.secondary' }} />
           )}
 
+          {/* Sulla pagina di accesso o di registrazione non si ripete il bottone della pagina stessa */}
           {authVerified && !isLoggedIn && (
             <>
-              <Button
-                component={RouterLink}
-                to={withNext('/login')}
-                sx={{ color: 'text.secondary', fontWeight: 500, fontSize: 14 }}
-              >
-                {t('nav.login')}
-              </Button>
-              <Button
-                variant="contained"
-                component={RouterLink}
-                to={withNext('/register')}
-                sx={{ fontSize: 14 }}
-              >
-                {t('nav.register')}
-              </Button>
+              {barePath !== '/login' && (
+                <Button
+                  component={RouterLink}
+                  to={withNext('/login')}
+                  sx={{ color: 'text.secondary', fontWeight: 500, fontSize: 14 }}
+                >
+                  {t('nav.login')}
+                </Button>
+              )}
+              {barePath !== '/register' && (
+                <Button
+                  variant={onAccessPage ? 'text' : 'contained'}
+                  component={RouterLink}
+                  to={withNext('/register')}
+                  sx={onAccessPage ? { color: 'text.secondary', fontWeight: 500, fontSize: 14 } : { fontSize: 14 }}
+                >
+                  {t('nav.register')}
+                </Button>
+              )}
             </>
           )}
         </Box>

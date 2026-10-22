@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Typography, Paper, TextField, Button, Box, Alert, Link, InputAdornment, IconButton } from '@mui/material';
+import { Typography, TextField, Button, Box, Alert, Link, InputAdornment, IconButton } from '@mui/material';
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,7 @@ import { usePageMeta } from '../hooks/usePageMeta';
 import { safeNext } from '../utils/safeNext';
 import { useTranslation } from 'react-i18next';
 import { useLocalizedPath } from '../i18n/paths';
+import AuthLayout from '../components/Auth/AuthLayout';
 
 const Login = () => {
   const { t } = useTranslation();
@@ -67,81 +68,75 @@ const Login = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
-      <Paper elevation={3} sx={{ p: 4, width: '100%', maxWidth: 400 }}>
-        <Typography variant="h4" component="h1" align="center" gutterBottom>
-          {t('login.title')}
-        </Typography>
-        
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-        
-        <Box component="form" onSubmit={handleSubmit} noValidate>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="username"
-            label={t('login.username')}
-            name="username"
-            autoComplete="username"
-            autoFocus
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="password"
-            label={t('login.password')}
-            type={showPassword ? "text" : "password"}
-            id="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label={t('login.toggle_password')}
-                    onClick={handleTogglePasswordVisibility}
-                    edge="end"
-                  >
-                    {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-            disabled={loading}
-          >
-            {loading ? t('login.submitting') : t('login.submit')}
-          </Button>
-          <Box sx={{ textAlign: 'center' }}>
-            <Link component={RouterLink} to={localizedPath('/forgot-password')} variant="body2">
-              {t('login.forgot')}
-            </Link>
-          </Box>
-          <Box sx={{ textAlign: 'center', mt: 2 }}>
-            <Typography variant="body2">
-              {t('login.no_account')}{' '}
-              <Link component={RouterLink} to={next === '/' ? localizedPath('/register') : `${localizedPath('/register')}?next=${encodeURIComponent(next)}`} variant="body2">
-                {t('login.register')}
-              </Link>
-            </Typography>
-          </Box>
+    <AuthLayout title={t('login.title')} side={{ title: t('login.side.title'), text: t('login.side.text') }}>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+      
+      <Box component="form" onSubmit={handleSubmit} noValidate>
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          id="username"
+          label={t('login.username')}
+          name="username"
+          autoComplete="username"
+          autoFocus
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          name="password"
+          label={t('login.password')}
+          type={showPassword ? "text" : "password"}
+          id="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  aria-label={t('login.toggle_password')}
+                  onClick={handleTogglePasswordVisibility}
+                  edge="end"
+                >
+                  {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+        />
+        <Button
+          type="submit"
+          fullWidth
+          variant="contained"
+          sx={{ mt: 3, mb: 2 }}
+          disabled={loading}
+        >
+          {loading ? t('login.submitting') : t('login.submit')}
+        </Button>
+        <Box sx={{ textAlign: 'center' }}>
+          <Link component={RouterLink} to={localizedPath('/forgot-password')}>
+            {t('login.forgot')}
+          </Link>
         </Box>
-      </Paper>
-    </Box>
+        <Box sx={{ textAlign: 'center', mt: 2 }}>
+          <Typography>
+            {t('login.no_account')}{' '}
+            <Link component={RouterLink} to={next === '/' ? localizedPath('/register') : `${localizedPath('/register')}?next=${encodeURIComponent(next)}`}>
+              {t('login.register')}
+            </Link>
+          </Typography>
+        </Box>
+      </Box>
+    </AuthLayout>
   );
 };
 

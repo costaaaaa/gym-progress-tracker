@@ -1,19 +1,17 @@
 import { useState } from 'react';
-import { 
-  Typography, 
-  Paper, 
-  TextField, 
-  Button, 
-  Box, 
-  Alert, 
-  Link, 
-  InputAdornment, 
+import {
+  Typography,
+  TextField,
+  Button,
+  Box,
+  Alert,
+  Link,
+  InputAdornment,
   IconButton,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Grid,
   Checkbox,
   FormControlLabel
 } from '@mui/material';
@@ -31,6 +29,11 @@ import { usePageMeta } from '../hooks/usePageMeta';
 import { useTranslation, Trans } from 'react-i18next';
 import DateLocalization from '../i18n/DateLocalization';
 import { useLocalizedPath } from '../i18n/paths';
+import AuthLayout from '../components/Auth/AuthLayout';
+
+// Username: stessa regola di register.php. Email: solo un primo filtro, il server usa FILTER_VALIDATE_EMAIL
+const USERNAME_RE = /^[a-zA-Z0-9]{3,50}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const Register = () => {
   const { t, i18n } = useTranslation();
@@ -44,6 +47,10 @@ const Register = () => {
   const [gender, setGender] = useState('');
   const [trainingStartDate, setTrainingStartDate] = useState(null);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  // Due passaggi: 1 = account (controllato subito con check_availability.php), 2 = profilo per il recupero.
+  // La registrazione parte solo alla fine, con una chiamata sola.
+  const [step, setStep] = useState(1);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -63,22 +70,74 @@ const Register = () => {
   const next = safeNext(location.search);
   const { login } = useAuth();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const withNext = (path) => (next === '/' ? localizedPath(path) : `${localizedPath(path)}?next=${encodeURIComponent(next)}`);
+
+  // Errore sul campo: per l'email già registrata, con i link per accedere o recuperare la password
+  const takenError = (field) => (field === 'email' ? (
+    <Trans
+      i18nKey="register.error.email_taken"
+      components={{
+        login: <Link component={RouterLink} to={withNext('/login')} />,
+        forgot: <Link component={RouterLink} to={localizedPath('/forgot-password')} />,
+      }}
+    />
+  ) : t('register.error.username_taken'));
+
+  // L'errore di un campo sparisce mentre si scrive; uscendo dal campo può solo comparire. Se sparisse
+  // all'uscita, il clic su "Avanti" sposterebbe il bottone sotto il dito e andrebbe perso.
+  const edit = (setter, field) => (e) => {
+    setter(e.target.value);
+    if (fieldErrors[field]) setFieldErrors((prev) => ({ ...prev, [field]: '' }));
+  };
+
+  const checkConfirm = () => {
+    if (confirmPassword && confirmPassword !== password) {
+      setFieldErrors((prev) => ({ ...prev, confirmPassword: t('register.error.password_mismatch') }));
+    }
+  };
+
+  const handleNext = async () => {
+    setError('');
+    const errors = {
+      username: USERNAME_RE.test(username) ? '' : t('register.username_help'),
+      email: EMAIL_RE.test(email.trim()) ? '' : t('register.error.email_format'),
+      password: validatePassword(password) || '',
+      confirmPassword: password === confirmPassword ? '' : t('register.error.password_mismatch'),
+    };
+    setFieldErrors(errors);
+    if (Object.values(errors).some(Boolean)) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}api/user/check_availability.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.status === 429) {
+        setError(data.message || t('register.error.generic'));
+        return;
+      }
+      if (response.ok && (data.username_taken || data.email_taken)) {
+        setFieldErrors({
+          username: data.username_taken ? takenError('username') : '',
+          email: data.email_taken ? takenError('email') : '',
+        });
+        return;
+      }
+    } catch {
+      // Controllo non raggiungibile: si va avanti, register.php ripete comunque la verifica
+    } finally {
+      setLoading(false);
+    }
+    track('register_step2', { lang: i18n.language });
+    setStep(2);
+  };
+
+  const handleSubmit = async () => {
     setError('');
     setSuccess('');
-    
-    // Validazione sicurezza password
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      setError(passwordError);
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError(t('register.error.password_mismatch'));
-      return;
-    }
 
     if (!birthDate) {
       setError(t('register.error.birth_date_required'));
@@ -96,7 +155,7 @@ const Register = () => {
       setError(t('register.error.terms_required'));
       return;
     }
-    
+
     setLoading(true);
 
     try {
@@ -121,6 +180,12 @@ const Register = () => {
 
       const data = await response.json();
 
+      // Username o email presi nel frattempo: si torna al primo passo, con l'errore sul campo
+      if (response.status === 409 && (data.field === 'username' || data.field === 'email')) {
+        setFieldErrors({ [data.field]: takenError(data.field) });
+        setStep(1);
+        return;
+      }
       if (!response.ok) {
         throw new Error(data.message || t('register.error.generic'));
       }
@@ -142,7 +207,7 @@ const Register = () => {
         navigate(next);
       } else {
         setSuccess(t('register.success_login'));
-        setTimeout(() => navigate(next === '/' ? localizedPath('/login') : `${localizedPath('/login')}?next=${encodeURIComponent(next)}`), 1500);
+        setTimeout(() => navigate(withNext('/login')), 1500);
       }
     } catch (err) {
       setError(err.message);
@@ -151,57 +216,107 @@ const Register = () => {
     }
   };
 
-  return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
-      <Paper elevation={3} sx={{ p: 4, width: '100%', maxWidth: 400 }}>
-        <Typography variant="h4" component="h1" align="center" gutterBottom>
-          {t('register.title')}
-        </Typography>
-        
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-        
-        {success && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            {success}
-          </Alert>
-        )}
-        
-        <Box component="form" onSubmit={handleSubmit} noValidate>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="username"
-            label={t('register.username')}
-            name="username"
-            autoComplete="username"
-            autoFocus
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="email"
-            label={t('register.email')}
-            name="email"
-            autoComplete="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+  const onSubmit = (e) => {
+    e.preventDefault();
+    if (step === 1) handleNext();
+    else handleSubmit();
+  };
 
-          <Typography variant="subtitle2" sx={{ mt: 2, mb: 1, fontWeight: 'bold' }}>
-            {t('register.profile_section')}
-          </Typography>
-          <DateLocalization>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+  const passwordAdornment = (shown, toggle, label) => (
+    <InputAdornment position="end">
+      <IconButton aria-label={label} onClick={toggle} edge="end">
+        {shown ? <VisibilityOffIcon /> : <VisibilityIcon />}
+      </IconButton>
+    </InputAdornment>
+  );
+
+  return (
+    <AuthLayout title={t('register.title')} side={{ title: t('home.landing.hero.title'), text: t('register.side.text') }}>
+      <Typography sx={{ color: 'text.secondary', mb: 1 }}>{t('register.step', { n: step })}</Typography>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {success && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          {success}
+        </Alert>
+      )}
+
+      <Box component="form" onSubmit={onSubmit} noValidate>
+        {step === 1 ? (
+          <>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="username"
+              label={t('register.username')}
+              name="username"
+              autoComplete="username"
+              autoFocus
+              value={username}
+              onChange={edit(setUsername, 'username')}
+              error={Boolean(fieldErrors.username)}
+              helperText={fieldErrors.username || t('register.username_help')}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="email"
+              label={t('register.email')}
+              name="email"
+              autoComplete="email"
+              type="email"
+              value={email}
+              onChange={edit(setEmail, 'email')}
+              error={Boolean(fieldErrors.email)}
+              helperText={fieldErrors.email}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="password"
+              label={t('register.password')}
+              type={showPassword ? "text" : "password"}
+              id="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={edit(setPassword, 'password')}
+              error={Boolean(fieldErrors.password)}
+              helperText={fieldErrors.password}
+              InputProps={{ endAdornment: passwordAdornment(showPassword, handleTogglePasswordVisibility, t('password.show')) }}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="confirmPassword"
+              label={t('register.confirm_password')}
+              type={showConfirmPassword ? "text" : "password"}
+              id="confirmPassword"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={edit(setConfirmPassword, 'confirmPassword')}
+              onBlur={checkConfirm}
+              error={Boolean(fieldErrors.confirmPassword)}
+              helperText={fieldErrors.confirmPassword}
+              InputProps={{ endAdornment: passwordAdornment(showConfirmPassword, handleToggleConfirmPasswordVisibility, t('password.show_confirm')) }}
+            />
+            <Button type="submit" fullWidth variant="contained" size="large" sx={{ mt: 3, mb: 2 }} disabled={loading}>
+              {loading ? t('register.checking') : t('register.next')}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Typography variant="h2" sx={{ fontSize: '1.25rem', mt: 1, mb: 1 }}>{t('register.profile_title')}</Typography>
+            <Typography sx={{ mb: 1 }}>{t('register.profile_text')}</Typography>
+            <DateLocalization>
               <DatePicker
                 label={t('register.birth_date')}
                 value={birthDate}
@@ -212,17 +327,17 @@ const Register = () => {
                   textField: {
                     fullWidth: true,
                     required: true,
+                    margin: 'normal',
                     helperText: t('register.birth_date_help'),
                     id: "birthDate",
                     name: "birthDate"
                   }
                 }}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required>
-                <InputLabel>{t('register.gender')}</InputLabel>
+              <FormControl fullWidth required margin="normal">
+                <InputLabel id="gender-label">{t('register.gender')}</InputLabel>
                 <Select
+                  labelId="gender-label"
                   value={gender}
                   label={t('register.gender')}
                   onChange={(e) => setGender(e.target.value)}
@@ -232,8 +347,6 @@ const Register = () => {
                   <MenuItem value="O">{t('register.gender_o')}</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
-            <Grid item xs={12}>
               <DatePicker
                 label={t('register.training_start')}
                 value={trainingStartDate}
@@ -246,108 +359,56 @@ const Register = () => {
                 slotProps={{
                   textField: {
                     fullWidth: true,
-                    required: true,
+                    margin: 'normal',
                     id: "trainingStartDate",
                     name: "trainingStartDate",
                     helperText: t('register.training_start_help')
                   }
                 }}
               />
-            </Grid>
-          </Grid>
-          </DateLocalization>
-
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="password"
-            label={t('register.password')}
-            type={showPassword ? "text" : "password"}
-            id="password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label={t('password.show')}
-                    onClick={handleTogglePasswordVisibility}
-                    edge="end"
-                  >
-                    {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="confirmPassword"
-            label={t('register.confirm_password')}
-            type={showConfirmPassword ? "text" : "password"}
-            id="confirmPassword"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label={t('password.show_confirm')}
-                    onClick={handleToggleConfirmPasswordVisibility}
-                    edge="end"
-                  >
-                    {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-          <FormControlLabel
-            sx={{ mt: 2, alignItems: 'flex-start' }}
-            control={
-              <Checkbox
-                checked={acceptTerms}
-                onChange={(e) => setAcceptTerms(e.target.checked)}
-                required
-                sx={{ pt: 0.5 }}
-              />
-            }
-            label={
-              <Typography variant="body2">
-                <Trans
-                  i18nKey="register.terms"
-                  components={{
-                    terms: <Link href="/termini.html" target="_blank" rel="noopener" />,
-                    privacy: <Link href="/privacy.html" target="_blank" rel="noopener" />,
-                  }}
+            </DateLocalization>
+            <FormControlLabel
+              sx={{ mt: 2, alignItems: 'flex-start' }}
+              control={
+                <Checkbox
+                  checked={acceptTerms}
+                  onChange={(e) => setAcceptTerms(e.target.checked)}
+                  // Spunta nel colore del testo: il rosso resta al bottone principale
+                  sx={{ pt: 0.5, '&.Mui-checked': { color: 'text.primary' } }}
                 />
-              </Typography>
-            }
-          />
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-            disabled={loading}
-          >
-            {loading ? t('register.submitting') : t('register.submit')}
-          </Button>
-          <Box sx={{ textAlign: 'center', mt: 2 }}>
-            <Typography variant="body2">
-              {t('register.have_account')}{' '}
-              <Link component={RouterLink} to={next === '/' ? localizedPath('/login') : `${localizedPath('/login')}?next=${encodeURIComponent(next)}`} variant="body2">
-                {t('register.login')}
-              </Link>
-            </Typography>
-          </Box>
+              }
+              label={
+                <Typography>
+                  <Trans
+                    i18nKey="register.terms"
+                    components={{
+                      terms: <Link href="/termini.html" target="_blank" rel="noopener" />,
+                      privacy: <Link href="/privacy.html" target="_blank" rel="noopener" />,
+                    }}
+                  />
+                </Typography>
+              }
+            />
+            <Box sx={{ display: 'flex', gap: 1.5, mt: 3, mb: 2 }}>
+              <Button color="inherit" size="large" onClick={() => { setError(''); setStep(1); }} disabled={loading}>
+                {t('register.back')}
+              </Button>
+              <Button type="submit" variant="contained" size="large" sx={{ flex: 1 }} disabled={loading}>
+                {loading ? t('register.submitting') : t('register.submit')}
+              </Button>
+            </Box>
+          </>
+        )}
+        <Box sx={{ textAlign: 'center', mt: 2 }}>
+          <Typography>
+            {t('register.have_account')}{' '}
+            <Link component={RouterLink} to={withNext('/login')}>
+              {t('register.login')}
+            </Link>
+          </Typography>
         </Box>
-      </Paper>
-    </Box>
+      </Box>
+    </AuthLayout>
   );
 };
 

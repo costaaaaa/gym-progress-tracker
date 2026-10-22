@@ -7,38 +7,10 @@ import BodyVisualizer from '../../components/BodyVisualizer';
 import { CHIP_FONT } from '../../utils/chipFont';
 import { track } from '../../utils/analytics';
 import { useLocalizedPath } from '../../i18n/paths';
+import { buildRecovery } from '../../utils/recoveryDemo';
 
-// Esempi precalcolati a circa 24 ore dall'allenamento: [stato, percentuale, giorni al "pronto"].
-// Non c'è nessuna formula nel client: sono dati di esempio, dichiarati tali sotto la card.
-const R = ['PRONTO', 100, 0];
-const SETS = {
-  none: {},
-  push: { petto: ['AFFATICATO', 30, 3], spalle: ['IN RECUPERO', 50, 2], tricipiti: ['IN RECUPERO', 55, 1] },
-  pull: { schiena: ['AFFATICATO', 32, 2], bicipiti: ['IN RECUPERO', 55, 1], spalle: ['IN RECUPERO', 70, 1] },
-  legs: {
-    quadricipiti: ['AFFATICATO', 28, 3],
-    glutei: ['IN RECUPERO', 45, 2],
-    femorali: ['IN RECUPERO', 40, 2],
-    polpacci: ['IN RECUPERO', 60, 1],
-  },
-};
-const MUSCLES = ['petto', 'schiena', 'spalle', 'bicipiti', 'tricipiti', 'addome', 'quadricipiti', 'femorali', 'glutei', 'polpacci'];
 const OPTIONS = ['none', 'push', 'pull', 'legs'];
 const DEFAULT_OPTION = 'push';
-
-const pad = (n) => String(n).padStart(2, '0');
-const toReadyAt = (days) => {
-  const d = new Date(Date.now() + days * 86400000);
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
-};
-
-const buildRecovery = (option) =>
-  Object.fromEntries(
-    MUSCLES.map((m) => {
-      const [status, percent, days] = SETS[option][m] || R;
-      return [m, { status, percent, ready_at: days ? toReadyAt(days) : null }];
-    }),
-  );
 
 const HeroRecovery = () => {
   const { t } = useTranslation();

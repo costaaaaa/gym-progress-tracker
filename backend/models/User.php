@@ -5,6 +5,9 @@ class User
     private $conn;
     private $table_name = "gym_users";
 
+    // Regola dello username: registrazione, controllo al primo passo, cambio d'ufficio
+    const USERNAME_PATTERN = '/^[a-zA-Z0-9]{3,50}$/';
+
     // Object properties
     public $id;
     public $username;
@@ -128,7 +131,7 @@ class User
     // Ritorna 'ok', 'invalid' o 'taken'. Sessioni e token restano validi: sono legati all'id.
     public function changeUsername($user_id, $username)
     {
-        if (!is_string($username) || !preg_match('/^[a-zA-Z0-9]{3,50}$/', $username)) {
+        if (!is_string($username) || !preg_match(self::USERNAME_PATTERN, $username)) {
             return 'invalid';
         }
         $stmt = $this->conn->prepare("SELECT 1 FROM " . $this->table_name . " WHERE username = ? AND id <> ? LIMIT 1");
@@ -165,7 +168,7 @@ class User
     private function validateInputs()
     {
         // Validate username (alphanumeric, 3-50 characters)
-        if (!preg_match('/^[a-zA-Z0-9]{3,50}$/', $this->username)) {
+        if (!preg_match(self::USERNAME_PATTERN, $this->username)) {
             error_log("Username validation failed: must be alphanumeric, 3-50 characters");
             return false;
         }

@@ -144,6 +144,18 @@ export const ThemeModeProvider = ({ children }) => {
               },
             },
           },
+          // Link nel testo: colore del testo e sottolineati (il rosso resta ai bottoni principali, agli errori e agli stati)
+          MuiLink: {
+            defaultProps: {
+              color: 'text.primary',
+              underline: 'always',
+            },
+            styleOverrides: {
+              root: {
+                '&:hover': { textDecorationColor: 'inherit' },
+              },
+            },
+          },
           MuiPaper: {
             styleOverrides: {
               root: {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Typography, Paper, TextField, Button, Box, Alert, Link, InputAdornment, IconButton } from '@mui/material';
+import { TextField, Button, Box, Alert, Link, InputAdornment, IconButton } from '@mui/material';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -8,6 +8,7 @@ import { usePageMeta } from '../hooks/usePageMeta';
 import { useTranslation } from 'react-i18next';
 import { useLocalizedPath } from '../i18n/paths';
 import { validatePassword } from '../utils/passwordPolicy';
+import AuthLayout from '../components/Auth/AuthLayout';
 
 const ResetPassword = () => {
   const { t } = useTranslation();
@@ -54,77 +55,71 @@ const ResetPassword = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
-      <Paper elevation={3} sx={{ p: 4, width: '100%', maxWidth: 400 }}>
-        <Typography variant="h4" component="h1" align="center" gutterBottom>
-          {t('reset.title')}
-        </Typography>
-
-        {done ? (
-          <>
-            <Alert severity="success" sx={{ mb: 2 }}>{t('reset.done')}</Alert>
-            <Button component={RouterLink} to={localizedPath('/login')} fullWidth variant="contained">{t('reset.go_to_login')}</Button>
-          </>
-        ) : !token ? (
-          <>
-            <Alert severity="error" sx={{ mb: 2 }}>{t('reset.invalid_link')}</Alert>
-            <Box sx={{ textAlign: 'center' }}>
-              <Link component={RouterLink} to={localizedPath('/forgot-password')} variant="body2">{t('reset.request_new')}</Link>
-            </Box>
-          </>
-        ) : (
-          <>
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-            <Box component="form" onSubmit={handleSubmit} noValidate>
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                name="password"
-                label={t('reset.new_password')}
-                type={showPassword ? 'text' : 'password'}
-                id="password"
-                autoComplete="new-password"
-                autoFocus
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        aria-label={t('password.show')}
-                        onClick={() => setShowPassword(!showPassword)}
-                        edge="end"
-                      >
-                        {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                name="confirm"
-                label={t('reset.repeat_password')}
-                type={showPassword ? 'text' : 'password'}
-                id="confirm"
-                autoComplete="new-password"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-              />
-              <Button type="submit" fullWidth variant="contained" sx={{ mt: 2, mb: 1 }} disabled={loading}>
-                {loading ? t('reset.submitting') : t('reset.submit')}
-              </Button>
-            </Box>
-            <Box sx={{ textAlign: 'center', mt: 1 }}>
-              <Link component={RouterLink} to={localizedPath('/forgot-password')} variant="body2">{t('reset.request_new')}</Link>
-            </Box>
-          </>
-        )}
-      </Paper>
-    </Box>
+    <AuthLayout title={t('reset.title')}>
+      {done ? (
+        <>
+          <Alert severity="success" sx={{ mb: 2 }}>{t('reset.done')}</Alert>
+          <Button component={RouterLink} to={localizedPath('/login')} fullWidth variant="contained">{t('reset.go_to_login')}</Button>
+        </>
+      ) : !token ? (
+        <>
+          <Alert severity="error" sx={{ mb: 2 }}>{t('reset.invalid_link')}</Alert>
+          <Box sx={{ textAlign: 'center' }}>
+            <Link component={RouterLink} to={localizedPath('/forgot-password')}>{t('reset.request_new')}</Link>
+          </Box>
+        </>
+      ) : (
+        <>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          <Box component="form" onSubmit={handleSubmit} noValidate>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="password"
+              label={t('reset.new_password')}
+              type={showPassword ? 'text' : 'password'}
+              id="password"
+              autoComplete="new-password"
+              autoFocus
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label={t('password.show')}
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="confirm"
+              label={t('reset.repeat_password')}
+              type={showPassword ? 'text' : 'password'}
+              id="confirm"
+              autoComplete="new-password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+            />
+            <Button type="submit" fullWidth variant="contained" sx={{ mt: 2, mb: 1 }} disabled={loading}>
+              {loading ? t('reset.submitting') : t('reset.submit')}
+            </Button>
+          </Box>
+          <Box sx={{ textAlign: 'center', mt: 1 }}>
+            <Link component={RouterLink} to={localizedPath('/forgot-password')}>{t('reset.request_new')}</Link>
+          </Box>
+        </>
+      )}
+    </AuthLayout>
   );
 };
 
