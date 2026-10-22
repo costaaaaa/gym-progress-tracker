@@ -5,6 +5,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react';
 import BodyStats from './BodyStats';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { formatDate } from '../i18n/format';
+import { polylineX } from '../test/polyline';
 
 const row = (date, weight, extra = {}) => ({ id: date, date, weight, ...extra });
 
@@ -70,6 +71,17 @@ describe('periodo e variazione del peso', () => {
     await mount();
     expect(screen.getByText('Stabile negli ultimi 3 mesi')).toBeTruthy();
     expect(screen.queryByText(/0,0 kg|▲|▼/)).toBeNull();
+  });
+});
+
+describe('grafico del peso', () => {
+  const weightLineX = () => polylineX(screen.getByText('Andamento Peso (kg)').closest('.MuiCard-root').querySelector('polyline'));
+
+  it('i punti stanno alla loro data, tra l\'inizio del periodo e oggi', async () => {
+    // 3M: dal 20/07 al 20/10, 92 giorni. Il 10/08 è al giorno 21, il 15/10 al giorno 87.
+    records = [row('2026-05-10', '85.0'), row('2026-08-10', '82.0'), row('2026-10-15', '80.0')];
+    await mount();
+    expect(weightLineX()).toEqual([50.2, 208.0]);
   });
 });
 
