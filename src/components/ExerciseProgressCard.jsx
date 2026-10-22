@@ -5,7 +5,7 @@ import StarBorderIcon from '@mui/icons-material/StarBorder';
 import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../i18n/format';
 import { muscleLabel } from '../i18n/labels';
-import { buildPoints } from './ChartCard';
+import { buildPoints, dayNumber } from './ChartCard';
 import { STATUS, STATUS_TONE, showsDelta } from '../utils/progressOverview';
 
 export const formatDaysAgo = (t, days) => {
@@ -23,10 +23,11 @@ const SPARK_W = 120;
 const SPARK_H = 36;
 const SPARK_POINTS = 12;
 
-const Sparkline = ({ values, color }) => {
-  const data = values.slice(-SPARK_POINTS);
+// Ultime sessioni distanziate per data, dalla prima all'ultima mostrata
+const Sparkline = ({ sessions, color }) => {
+  const data = sessions.slice(-SPARK_POINTS).map((s) => ({ x: dayNumber(s.date), value: s.value }));
   if (data.length < 2) return <Box sx={{ height: SPARK_H }} />;
-  const points = buildPoints(data, SPARK_W, SPARK_H, 4);
+  const points = buildPoints(data, [data[0].x, data.at(-1).x], SPARK_W, SPARK_H, 4);
   return (
     <Box sx={{ height: SPARK_H, color }}>
       <svg viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} width="100%" height="100%" preserveAspectRatio="none" aria-hidden="true">
@@ -65,7 +66,7 @@ const ExerciseProgressCard = ({ item, showMuscle = false, favorite, onToggleFavo
         </Typography>
 
         <Box sx={{ mt: 1.5 }}>
-          <Sparkline values={sessions.map((s) => s.value)} color={tone === 'positive' ? TONE_COLOR.positive : TONE_COLOR.neutral} />
+          <Sparkline sessions={sessions} color={tone === 'positive' ? TONE_COLOR.positive : TONE_COLOR.neutral} />
         </Box>
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mt: 1, gap: 1 }}>

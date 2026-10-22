@@ -73,6 +73,18 @@ describe('periodo e variazione del peso', () => {
   });
 });
 
+describe('grafico del peso', () => {
+  const weightLineX = () => screen.getByText('Andamento Peso (kg)').closest('.MuiCard-root')
+    .querySelector('polyline').getAttribute('points').split(' ').map((p) => Number(p.split(',')[0]));
+
+  it('i punti stanno alla loro data, tra l\'inizio del periodo e oggi', async () => {
+    // 3M: dal 20/07 al 20/10, 92 giorni. Il 10/08 è al giorno 21, il 15/10 al giorno 87.
+    records = [row('2026-05-10', '85.0'), row('2026-08-10', '82.0'), row('2026-10-15', '80.0')];
+    await mount();
+    expect(weightLineX()).toEqual([50.2, 208.0]);
+  });
+});
+
 describe('periodo senza misure', () => {
   it('mostra l\'ultima rilevazione, senza peso se quella riga non ne ha, e Tutto riporta i grafici', async () => {
     records = [row('2026-01-10', '84.0'), row('2026-05-19', null, { chest_size: '100' })];

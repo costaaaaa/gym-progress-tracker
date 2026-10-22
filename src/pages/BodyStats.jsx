@@ -23,7 +23,7 @@ import {
   DialogContent,
   DialogActions,
 } from '@mui/material';
-import { ResponsiveContainer, LineChart, Line } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis } from 'recharts';
 import { API_BASE_URL } from '../config';
 import { DatePicker } from '@mui/x-date-pickers';
 import { useTranslation } from 'react-i18next';
@@ -38,10 +38,10 @@ import LastPageIcon from '@mui/icons-material/LastPage';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import EventBusyIcon from '@mui/icons-material/EventBusy';
-import ChartCard from '../components/ChartCard';
+import ChartCard, { dayNumber } from '../components/ChartCard';
 import HealthConsentCard from '../components/HealthConsentCard';
 import HealthAppHint from '../components/HealthAppHint';
-import { DEFAULT_PERIOD, PERIODS, PERIOD_UI, filterByPeriod, periodWeightDelta, weightTrend, sortByDate, paginate } from '../utils/bodyStatsPeriod';
+import { DEFAULT_PERIOD, PERIODS, PERIOD_UI, filterByPeriod, periodStart, periodWeightDelta, weightTrend, sortByDate, paginate } from '../utils/bodyStatsPeriod';
 
 // Valore della tabella, con un cuore se è arrivato da Apple Salute / Health Connect
 // (health_fields è l'elenco dei campi importati, separati da virgola).
@@ -81,10 +81,11 @@ const lastValueOf = (data, key) => {
 };
 
 // Mini grafico multi-serie senza assi, usato dalle card "Composizione Corporea" e "Circonferenze".
-const MiniMultiLineChart = ({ data, series }) => (
+const MiniMultiLineChart = ({ data, series, domain }) => (
   <Box sx={{ height: 90 }}>
     <ResponsiveContainer width="100%" height="100%">
       <LineChart data={data} margin={{ top: 4, right: 4, left: 4, bottom: 4 }}>
+        <XAxis dataKey="day" type="number" domain={domain} hide />
         {series.map((s) => (
           <Line
             key={s.key}
@@ -276,10 +277,21 @@ const BodyStats = ({ isEmbedded = false }) => {
   const periodRows = filterByPeriod(stats, period);
   const chartData = periodRows.map(item => ({
     ...item,
+    day: dayNumber(item.date),
     dateFormatted: formatDate(item.date, { day: '2-digit', month: '2-digit' }),
   }));
 
-  const weightSeries = chartData.map(d => d.weight).filter(v => v !== null && v !== undefined);
+  // Asse x dei grafici: dall'inizio del periodo (con "Tutto" dalla prima misura) a oggi
+  const today = dayNumber(new Date());
+  const start = periodStart(period);
+  const chartDomain = [
+    start ? dayNumber(start) : (chartData[0]?.day ?? today),
+    Math.max(today, chartData.at(-1)?.day ?? today),
+  ];
+
+  const weightPoints = chartData
+    .filter(d => d.weight !== null && d.weight !== undefined)
+    .map(d => ({ x: d.day, value: d.weight }));
   const lastWeight = lastValueOf(chartData, 'weight');
   const weightDelta = periodWeightDelta(periodRows);
   const trend = weightTrend(weightDelta);
@@ -336,7 +348,8 @@ const BodyStats = ({ isEmbedded = false }) => {
               <Grid item xs={12}>
                 <ChartCard
                   title={t('body.weight_trend')}
-                  data={weightSeries}
+                  points={weightPoints}
+                  domain={chartDomain}
                   color="primary.main"
                   valueLabel={lastWeight !== null ? `${lastWeight} kg` : '—'}
                   trend={trend}
@@ -350,7 +363,7 @@ const BodyStats = ({ isEmbedded = false }) => {
                   <Typography sx={{ textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700, fontSize: 12, color: 'text.secondary', mb: 1.5 }}>
                     {t('body.composition')}
                   </Typography>
-                  <MiniMultiLineChart data={chartData} series={BODY_COMPOSITION_SERIES} />
+                  <MiniMultiLineChart data={chartData} series={BODY_COMPOSITION_SERIES} domain={chartDomain} />
                   <MiniChartLegend data={chartData} series={BODY_COMPOSITION_SERIES} />
                 </Card>
               </Grid>
@@ -361,7 +374,7 @@ const BodyStats = ({ isEmbedded = false }) => {
                   <Typography sx={{ textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700, fontSize: 12, color: 'text.secondary', mb: 1.5 }}>
                     {t('body.circumferences')}
                   </Typography>
-                  <MiniMultiLineChart data={chartData} series={CIRCUMFERENCE_SERIES} />
+                  <MiniMultiLineChart data={chartData} series={CIRCUMFERENCE_SERIES} domain={chartDomain} />
                   <MiniChartLegend data={chartData} series={CIRCUMFERENCE_SERIES} />
                 </Card>
               </Grid>

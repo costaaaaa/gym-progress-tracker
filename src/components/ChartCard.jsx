@@ -3,20 +3,32 @@ import { Box, Card, Typography } from '@mui/material';
 const VIEWBOX_WIDTH = 220;
 const VIEWBOX_HEIGHT = 72;
 const PADDING_Y = 6;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
-export function buildPoints(data, width = VIEWBOX_WIDTH, height = VIEWBOX_HEIGHT, paddingY = PADDING_Y) {
-  if (!Array.isArray(data) || data.length === 0) return '';
-  if (data.length === 1) {
+// Giorno di calendario come numero, per l'asse x: accetta 'YYYY-MM-DD', 'YYYY-MM-DD HH:MM:SS'
+// o una Date (giorno locale). In UTC, così fuso e ora legale non spostano i punti.
+export const dayNumber = (date) => {
+  const [y, m, d] = typeof date === 'string'
+    ? date.slice(0, 10).split('-').map(Number)
+    : [date.getFullYear(), date.getMonth() + 1, date.getDate()];
+  return Date.UTC(y, m - 1, d) / DAY_MS;
+};
+
+// points: [{ x, value }], con x numerica (es. un giorno); domain: [inizio, fine] dell'asse x.
+export function buildPoints(points, [start, end], width = VIEWBOX_WIDTH, height = VIEWBOX_HEIGHT, paddingY = PADDING_Y) {
+  if (!Array.isArray(points) || points.length === 0) return '';
+  if (points.length === 1) {
     const y = height / 2;
     return `0,${y} ${width},${y}`;
   }
-  const min = Math.min(...data);
-  const max = Math.max(...data);
+  const values = points.map((p) => p.value);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
   const range = max - min || 1;
-  const stepX = width / (data.length - 1);
-  return data
-    .map((v, i) => {
-      const x = i * stepX;
+  const span = end - start || 1;
+  return points
+    .map(({ x: at, value: v }) => {
+      const x = ((at - start) / span) * width;
       const y = height - paddingY - ((v - min) / range) * (height - paddingY * 2);
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
@@ -29,7 +41,8 @@ export function buildPoints(data, width = VIEWBOX_WIDTH, height = VIEWBOX_HEIGHT
  *
  * Props:
  * - title: etichetta uppercase in alto
- * - data: array di numeri (serie storica), normalizzato internamente in una polyline
+ * - points: [{ x, value }] (x = dayNumber della data), normalizzati internamente in una polyline
+ * - domain: [inizio, fine] dell'asse x, stessa unità di x
  * - color: colore della linea — token tema (es. "primary.main") o valore CSS letterale
  * - valueLabel: valore corrente mostrato in grande (stringa già formattata)
  * - trend: 'up' = delta verde con ▲, 'down' = delta rosso con ▼, 'flat' = delta grigio senza freccia
@@ -41,8 +54,8 @@ const TREND_STYLE = {
   flat: { color: 'text.secondary', arrow: '' },
 };
 
-const ChartCard = ({ title, data, color = 'primary.main', valueLabel, trend = 'up', deltaText }) => {
-  const points = buildPoints(data);
+const ChartCard = ({ title, points, domain, color = 'primary.main', valueLabel, trend = 'up', deltaText }) => {
+  const polyline = buildPoints(points, domain);
 
   return (
     <Card
@@ -67,7 +80,7 @@ const ChartCard = ({ title, data, color = 'primary.main', valueLabel, trend = 'u
       </Typography>
 
       <Box sx={{ width: '100%', height: 72, color }}>
-        {points && (
+        {polyline && (
           <svg
             viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
             width="100%"
@@ -75,7 +88,7 @@ const ChartCard = ({ title, data, color = 'primary.main', valueLabel, trend = 'u
             preserveAspectRatio="none"
           >
             <polyline
-              points={points}
+              points={polyline}
               fill="none"
               stroke="currentColor"
               strokeWidth={2.5}

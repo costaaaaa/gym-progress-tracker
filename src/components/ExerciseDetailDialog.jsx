@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 import { formatDate, formatNumber } from '../i18n/format';
 import { muscleLabel } from '../i18n/labels';
 import { formatValue } from './ExerciseProgressCard';
+import { dayNumber } from './ChartCard';
 
 const HEAD_SX = { fontSize: 11, textTransform: 'uppercase', color: 'text.secondary', fontWeight: 700, border: 0, px: { xs: 0.75, sm: 2 }, lineHeight: 1.2, verticalAlign: 'bottom' };
 const ROWS_COLLAPSED = 5;
@@ -62,7 +63,9 @@ const ExerciseDetailDialog = ({ item, onClose }) => {
 
   const open = Boolean(item);
   const sessions = item?.sessions || [];
-  const chartData = sessions.map((s) => ({ ...s, dateLabel: formatDate(s.date) }));
+  const chartData = sessions.map((s) => ({ ...s, day: dayNumber(s.date), dateLabel: formatDate(s.date) }));
+  // Etichette dell'asse solo nei giorni con una sessione
+  const labelByDay = new Map(chartData.map((d) => [d.day, d.dateLabel]));
   const rows = [...chartData].reverse();
   const visibleRows = showAll ? rows : rows.slice(0, ROWS_COLLAPSED);
 
@@ -92,7 +95,7 @@ const ExerciseDetailDialog = ({ item, onClose }) => {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 8, right: 12, left: -8, bottom: 0 }}>
                   <CartesianGrid horizontal vertical={false} stroke={theme.palette.divider} />
-                  <XAxis dataKey="dateLabel" fontSize={11} stroke={theme.palette.text.secondary} tickLine={false} axisLine={false} minTickGap={24} />
+                  <XAxis dataKey="day" type="number" domain={['dataMin', 'dataMax']} ticks={[...labelByDay.keys()]} tickFormatter={(day) => labelByDay.get(day)} fontSize={11} stroke={theme.palette.text.secondary} tickLine={false} axisLine={false} minTickGap={24} />
                   <YAxis fontSize={11} stroke={theme.palette.text.secondary} tickLine={false} axisLine={false} tickCount={4} width={40} domain={[(min) => Math.floor(min - 2), (max) => Math.ceil(max + 2)]} allowDecimals={false} />
                   <Tooltip content={<ChartTooltip mode={item.mode} t={t} />} />
                   <Line type="monotone" dataKey="value" stroke={theme.palette.primary.main} strokeWidth={2.5} dot={<PRDot color={theme.palette.primary.main} />} activeDot={{ r: 5 }} isAnimationActive={false} />
