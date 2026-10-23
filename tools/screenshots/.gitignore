@@ -1,0 +1,7 @@
+before/
+before-bis/
+after/
+diff/
+*.log
+*.pid
+node_modules/
