@@ -1,0 +1,11 @@
+{
+  "name": "gym-progress-tracker-screenshots",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "pixelmatch": "5.3.0",
+    "playwright": "1.64.1",
+    "pngjs": "7.0.0"
+  }
+}
