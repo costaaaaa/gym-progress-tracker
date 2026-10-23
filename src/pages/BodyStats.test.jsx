@@ -158,7 +158,7 @@ describe('font delle pillole', () => {
 });
 
 describe('titolo della pagina', () => {
-  it('"Statistiche fisiche" è l\'h1 della pagina, in Lexend 800 a 28px sul telefono', async () => {
+  it('"Statistiche fisiche" è l\'h1 della pagina, in Lexend 800 a 28px', async () => {
     records = [row('2026-10-01', '80.0')];
     await mount((page) => <ThemeModeProvider>{page}</ThemeModeProvider>);
     const { fontFamily, fontWeight, fontSize } = getComputedStyle(

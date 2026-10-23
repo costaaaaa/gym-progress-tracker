@@ -131,7 +131,7 @@ const Home = () => {
   return (
     <>
       <Box sx={{ mb: 4 }}>
-        <Typography variant="pageTitle" sx={{ mb: 1.5 }}>
+        <Typography variant="h1" sx={{ fontSize: { xs: '1.75rem', md: '2.25rem' }, mb: 1.5 }}>
           {t('home.hero.welcome', { username: user?.username || '' })}
         </Typography>
         <Typography sx={{ fontSize: 16, color: 'text.secondary', mb: 3, maxWidth: 560, lineHeight: 1.6 }}>

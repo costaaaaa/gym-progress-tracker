@@ -23,7 +23,7 @@ describe('tema: chip', () => {
 });
 
 describe('tema: titolo di pagina', () => {
-  it('la variante pageTitle è un <h1> in Lexend 800 a 28px sul telefono', () => {
+  it('la variante pageTitle è un <h1> in Lexend 800 a 28px', () => {
     render(<ThemeModeProvider><Typography variant="pageTitle">Le mie schede</Typography></ThemeModeProvider>);
     const { fontFamily, fontWeight, fontSize, letterSpacing } = getComputedStyle(
       screen.getByRole('heading', { level: 1, name: 'Le mie schede' }),
