@@ -73,8 +73,6 @@ const Phone = ({ children, sx }) => (
     sx={{
       width: 320,
       maxWidth: '100%',
-      height: { xs: 'min(480px, calc(100svh - 340px))', md: 560 },
-      minHeight: 400,
       border: '2px solid',
       borderColor: 'scene.text',
       borderRadius: '36px',
@@ -108,7 +106,9 @@ const WorkScreen = ({ t }) => (
       <Value label={t('home.landing.focus.weight')} value={`${formatNumber(72.5)} kg`} />
       <Value label={t('home.landing.focus.reps')} value="8" />
     </Box>
-    <Box sx={{ flex: 1 }}>
+    {/* Parte elastica: su un telefono basso mostra meno righe, il bottone resta in fondo.
+        Colonna che va a capo: le righe che non ci stanno intere passano in una colonna nascosta a destra. */}
+    <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', flexWrap: 'wrap', alignContent: 'flex-start', '& > *': { width: '100%' } }}>
       <Typography sx={{ fontSize: 16, color: 'text.secondary', mb: 0.5 }}>{t('home.landing.focus.sets_done')}</Typography>
       {[1, 2, 3].map((n) => (
         <Box key={n} data-new-set={n === 3 ? '' : undefined} sx={{ display: 'flex', justifyContent: 'space-between', py: 0.75 }}>
@@ -144,34 +144,38 @@ const RestScreen = ({ t, live }) => {
       <Typography sx={{ fontWeight: 700, fontSize: 16, alignSelf: 'flex-start' }}>
         {t('focus.rest')}
       </Typography>
-      <Box sx={{ position: 'relative', width: RING.size, height: RING.size, mt: 1 }}>
-        <svg width={RING.size} height={RING.size} viewBox={`0 0 ${RING.size} ${RING.size}`} style={{ transform: 'rotate(-90deg)' }}>
-          <circle cx={RING.size / 2} cy={RING.size / 2} r={r} fill="none" strokeWidth={RING.stroke} stroke="currentColor" opacity="0.12" />
-          <Box
-            component="circle"
-            data-ring
-            cx={RING.size / 2}
-            cy={RING.size / 2}
-            r={r}
-            fill="none"
-            strokeWidth={RING.stroke}
-            strokeLinecap="round"
-            pathLength="1"
-            strokeDasharray="1"
-            strokeDashoffset={live ? 0 : 0.35}
-            sx={{ stroke: (theme) => theme.palette.text.primary }}
-          />
-        </svg>
-        <Typography
-          data-clock
-          sx={{ ...TABULAR, position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 44 }}
-        >
-          {live ? clock(REST_SECONDS) : clock(58)}
+      {/* Parte elastica: se il telefono è basso l'anello si rimpicciolisce, "Prossima" gli resta sotto
+          e il bottone resta in fondo. --ring: lato dell'anello (48px = riga "Prossima" + spazi). */}
+      <Box sx={{ flex: 1, minHeight: 0, alignSelf: 'stretch', containerType: 'size', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, pt: 1 }}>
+        <Box sx={{ '--ring': `min(${RING.size}px, 100cqw, 100cqh - 48px)`, position: 'relative', width: 'var(--ring)', aspectRatio: '1', flexShrink: 0 }}>
+          <svg width="100%" height="100%" viewBox={`0 0 ${RING.size} ${RING.size}`} style={{ transform: 'rotate(-90deg)', display: 'block' }}>
+            <circle cx={RING.size / 2} cy={RING.size / 2} r={r} fill="none" strokeWidth={RING.stroke} stroke="currentColor" opacity="0.12" />
+            <Box
+              component="circle"
+              data-ring
+              cx={RING.size / 2}
+              cy={RING.size / 2}
+              r={r}
+              fill="none"
+              strokeWidth={RING.stroke}
+              strokeLinecap="round"
+              pathLength="1"
+              strokeDasharray="1"
+              strokeDashoffset={live ? 0 : 0.35}
+              sx={{ stroke: (theme) => theme.palette.text.primary }}
+            />
+          </svg>
+          <Typography
+            data-clock
+            sx={{ ...TABULAR, position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: `calc(var(--ring) * 44 / ${RING.size})` }}
+          >
+            {live ? clock(REST_SECONDS) : clock(58)}
+          </Typography>
+        </Box>
+        <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
+          {t('focus.next_set', { n: 4, total: TOTAL_SETS })}
         </Typography>
       </Box>
-      <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
-        {t('focus.next_set', { n: 4, total: TOTAL_SETS })}
-      </Typography>
       {live && (
         <Typography data-done sx={{ fontWeight: 700, fontSize: 17, mt: 'auto' }}>
           {t('home.landing.focus.done')}
@@ -239,6 +243,8 @@ const SceneFocus = () => {
             gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
             gap: { xs: 2.5, md: 8 },
             alignItems: 'center',
+            // Telefono: il testo in alto, il telefono finto nello spazio che resta (al massimo 480px)
+            ...(live && { height: { xs: '100%', md: 'auto' }, gridTemplateRows: { xs: 'auto minmax(0, 1fr)', md: 'none' }, py: { xs: 2, md: 0 } }),
           }}
         >
           <Box sx={{ width: '100%', color: 'scene.text' }}>
@@ -253,7 +259,7 @@ const SceneFocus = () => {
           </Box>
 
           {live ? (
-            <Phone sx={{ justifySelf: 'center' }}>
+            <Phone sx={{ justifySelf: 'center', height: { xs: '100%', md: 560 }, maxHeight: { xs: 480, md: 'none' } }}>
               <WorkScreen t={t} />
               <RestScreen t={t} live />
             </Phone>
