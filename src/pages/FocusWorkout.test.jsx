@@ -250,7 +250,8 @@ describe('errori e premium', () => {
 describe('intestazione della scelta del giorno', () => {
   it('mostra il marchio LiftIndex e non il manubrio', async () => {
     await mount();
-    expect(screen.getByRole('img', { name: 'LiftIndex' })).toBeTruthy();
+    expect(screen.getByTestId('logo-mark')).toBeTruthy();
+    expect(screen.queryByRole('img', { name: 'LiftIndex' })).toBeNull();
     expect(screen.queryByTestId('FitnessCenterIcon')).toBeNull();
   });
 });

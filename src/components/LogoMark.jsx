@@ -1,9 +1,10 @@
 // Marchio LiftIndex: quattro barrette a capi tondi, ridisegnate da public/logo512.png (160×122 px
 // nell'icona: barre da 22 px, due corte da 70 e due lunghe da 122, passo 34,5). Colore: currentColor.
-const LogoMark = ({ width = 20, ...props }) => (
+// Decorativo (aria-hidden) se accanto c'è già il nome; con `title` diventa un'immagine con quel nome accessibile.
+const LogoMark = ({ width = 20, title, ...props }) => (
   <svg
-    role="img"
-    aria-label="LiftIndex"
+    data-testid="logo-mark"
+    {...(title ? { role: 'img', 'aria-label': title } : { 'aria-hidden': 'true' })}
     viewBox="0 0 160 122"
     width={width}
     height={(width * 122) / 160}
