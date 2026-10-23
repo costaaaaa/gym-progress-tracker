@@ -35,7 +35,7 @@ const Workouts = () => {
               minHeight: 0,
               '& .MuiTab-root': {
                 textTransform: 'none',
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: 500,
                 minHeight: 44,
                 color: 'text.secondary',

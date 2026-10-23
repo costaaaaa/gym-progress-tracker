@@ -736,7 +736,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
           variant="contained"
           startIcon={<AddIcon sx={{ color: "white" }} fontSize="small" />}
           onClick={() => setOpenDialog(true)}
-          sx={{ fontSize: 13, fontWeight: 600 }}
+          sx={{ fontSize: 16, fontWeight: 600 }}
         >
           {t('plans.new')}
         </Button>
@@ -762,11 +762,10 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                           <Box
                             component="span"
                             sx={{
-                              bgcolor: (theme) => theme.palette.mode === 'light' ? '#fbebeb' : 'rgba(213, 0, 0, 0.12)',
-                              color: 'primary.main',
-                              fontSize: 11,
+                              bgcolor: (theme) => theme.palette.mode === 'light' ? '#e8f3ec' : 'rgba(34, 197, 94, 0.15)',
+                              color: (theme) => theme.palette.mode === 'light' ? '#166534' : '#86efac',
+                              fontSize: 13,
                               fontWeight: 700,
-                              letterSpacing: '0.03em',
                               px: 1.25,
                               py: 0.5,
                               borderRadius: '999px',
@@ -777,7 +776,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                         )}
                       </Box>
                       {plan.description && (
-                        <Typography sx={{ fontSize: 13, color: 'text.secondary', fontStyle: 'italic', lineHeight: 1.5 }}>
+                        <Typography sx={{ fontSize: 16, color: 'text.secondary', lineHeight: 1.5 }}>
                           {plan.description}
                         </Typography>
                       )}
@@ -949,7 +948,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                       })}
                     </Box>
                   ) : (
-                    <Typography sx={{ mt: 1.75, fontSize: 13, color: 'text.secondary' }}>
+                    <Typography sx={{ mt: 1.75, fontSize: 16, color: 'text.secondary' }}>
                       {t('plans.days_count', { count: totalDays })} · {t('plans.exercises_count', { count: totalExercises })}
                     </Typography>
                   )}
@@ -960,7 +959,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                     variant="text"
                     onClick={() => togglePlanExpansion(plan.id)}
                     aria-expanded={isExpanded}
-                    sx={{ fontSize: 12, fontWeight: 600, textTransform: 'none', color: 'text.secondary', minWidth: 0, p: 0 }}
+                    sx={{ fontSize: 16, fontWeight: 600, textTransform: 'none', color: 'text.secondary', minWidth: 0, p: 0 }}
                   >
                     {isExpanded ? t('plans.hide_details') : t('plans.show_details')}
                   </Button>
@@ -968,12 +967,12 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                   {!plan.is_active && (
                     <Button
                       size="small"
+                      variant="outlined"
                       onClick={() => handleActivatePlan(plan.id)}
                       sx={{
-                        bgcolor: 'text.primary',
-                        color: (theme) => theme.palette.getContrastText(theme.palette.text.primary),
-                        borderRadius: '8px', px: 2, py: 1, fontSize: 12, fontWeight: 600, textTransform: 'none',
-                        '&:hover': { bgcolor: 'text.primary', opacity: 0.85 },
+                        color: 'text.primary', borderColor: 'text.secondary',
+                        borderRadius: '8px', px: 2, py: 1, fontSize: 16, fontWeight: 600, textTransform: 'none',
+                        '&:hover': { borderColor: 'text.primary', bgcolor: 'action.hover' },
                       }}
                     >
                       {t('plans.activate')}
