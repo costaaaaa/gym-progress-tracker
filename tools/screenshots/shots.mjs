@@ -121,7 +121,7 @@ const fixtures = [
   ['groups/read.php', () => ({
     success: true,
     group: { id: 1, name: 'Palestra Esempio', type: 'open', invite_code: 'ESEMPIO7', invite_enabled: true, members_count: 4, max_members: 30, my_role: 'owner', name_locked: false, name_locked_until: null },
-    week: { start: isoDay(-2), end: isoDay(4) },
+    week: { iso: '2026-W43', from: isoDay(-2), to: isoDay(4) },
     members: [
       { username: 'atleta_demo', role: 'owner', is_me: true, ref: null },
       { username: 'atleta_2', role: 'member', is_me: false, ref: 'm-2' },
