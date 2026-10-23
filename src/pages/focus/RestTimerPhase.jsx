@@ -32,7 +32,7 @@ export default function RestTimerPhase({
         </Box>
       </Box>
       <Typography variant="body1" sx={{ color: colors.textSecondary, mb: 1 }}>{currentExerciseName}</Typography>
-      <Typography variant="body2" sx={{ color: colors.textMuted, mb: 4 }}>{t('focus.next_set', { n: nextSetNumber, total: totalSetsForCurrentExercise })}</Typography>
+      <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 4 }}>{t('focus.next_set', { n: nextSetNumber, total: totalSetsForCurrentExercise })}</Typography>
       <Button variant="outlined" size="large" startIcon={<SkipNextIcon />} onClick={onSkip}
         sx={{ color: colors.text, borderColor: colors.border, borderRadius: '12px', px: 4, py: 1.5, fontSize: '1rem',
           '&:hover': { borderColor: colors.text, bgcolor: colors.bgElevated } }}>

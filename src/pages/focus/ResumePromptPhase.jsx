@@ -46,7 +46,7 @@ export default function ResumePromptPhase({ draftToResume, retroDateInput, onRet
         <Typography variant="h6" sx={{ color: colors.text, fontWeight: 600, mb: 1 }}>
           {draftToResume.selectedDay?.name}
         </Typography>
-        <Typography variant="body2" sx={{ color: colors.textMuted, mb: 3 }}>
+        <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 3 }}>
           {t('focus.draft_started', { date: new Date(draftToResume.startTime).toLocaleString(intlLocale()) })}
         </Typography>
 
