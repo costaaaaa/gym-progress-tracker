@@ -45,7 +45,7 @@ export default function WorkoutPhase({
             <Chip label={muscleLabel(currentExercise.muscle_group)} size="small" sx={{ bgcolor: colors.bgElevated, color: colors.textSecondary, mb: 1, fontWeight: 500 }} />
             <Typography variant="h4" sx={{ fontWeight: 700, color: colors.text, lineHeight: 1.2 }}>{currentExercise.exercise_name}</Typography>
             {currentExercise.notes && (
-              <Alert severity="info" icon={<InfoIcon sx={{ color: colors.primaryLight }} />}
+              <Alert severity="info" icon={<InfoIcon />}
                 sx={{ mt: 2, bgcolor: colors.bgElevated, color: colors.textSecondary, '& .MuiAlert-icon': { color: colors.textSecondary }, border: `1px solid ${colors.border}`, borderRadius: '8px' }}>
                 {currentExercise.notes}
               </Alert>
