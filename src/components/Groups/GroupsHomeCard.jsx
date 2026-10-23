@@ -28,7 +28,7 @@ const GroupsHomeCard = () => {
           <Box sx={{ width: 42, height: 42, borderRadius: '10px', bgcolor: (theme) => (theme.palette.mode === 'light' ? '#fbebeb' : 'rgba(213, 0, 0, 0.12)'), display: 'flex', alignItems: 'center', justifyContent: 'center', mr: 2 }}>
             <GroupsOutlined sx={{ color: 'primary.main', fontSize: 22 }} />
           </Box>
-          <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17 }}>{t('groups_card.title')}</Typography>
+          <Typography component="h2" sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17 }}>{t('groups_card.title')}</Typography>
         </Box>
         {groups.length === 0 ? (
           <>
