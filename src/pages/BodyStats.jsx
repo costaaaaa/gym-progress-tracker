@@ -311,7 +311,7 @@ const BodyStats = ({ isEmbedded = false }) => {
     <>
       <Box sx={{ display: 'flex', justifyContent: isEmbedded ? 'flex-end' : 'space-between', alignItems: 'center', mb: 3 }}>
         {!isEmbedded && (
-          <Typography variant="h4" sx={{ fontWeight: 800 }}>
+          <Typography variant="pageTitle">
             {t('body.title')}
           </Typography>
         )}

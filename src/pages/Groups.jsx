@@ -93,7 +93,7 @@ const GroupsContent = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', mb: 3 }}>
-        <Typography component="h1" sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 28 }}>
+        <Typography variant="pageTitle">
           {t('groups.title')}
         </Typography>
         <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)}>

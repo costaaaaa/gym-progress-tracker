@@ -17,7 +17,6 @@ import {
 import { track } from '../utils/analytics';
 import { Trans, useTranslation } from 'react-i18next';
 import { intlLocale } from '../i18n/format';
-import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
 const BOARDS = ['week', 'streak', 'level'];
 
@@ -167,7 +166,7 @@ const GroupDetailContent = () => {
     <Container maxWidth="lg" sx={{ py: 3 }}>
       <Button component={RouterLink} to="/gruppi" startIcon={<ArrowBackIcon />} sx={{ mb: 1 }}>{t('groups.join.your_groups')}</Button>
       <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, flexWrap: 'wrap', mb: 3 }}>
-        <Typography component="h1" sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 28 }}>{group.name}</Typography>
+        <Typography variant="pageTitle">{group.name}</Typography>
         <Chip size="small" label={groupTypeLabel(group.type)} />
         <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>
           {t('groups_card.members', { count: Number(group.members_count) })}
