@@ -19,7 +19,7 @@ describe('card Livello', () => {
   it('mostra livello, XP e XP totali', async () => {
     renderCard();
     const card = await screen.findByRole('link');
-    expect(card.textContent).toContain('5');
+    expect(screen.getByText('5')).toBeTruthy();
     expect(card.textContent).toContain('120 XP');
     expect(card.textContent).toContain('300 XP');
     expect(card.textContent).toContain('1500 XP totali');
