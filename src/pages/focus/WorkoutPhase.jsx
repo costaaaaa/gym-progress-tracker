@@ -69,8 +69,8 @@ export default function WorkoutPhase({
             })}
           </Box>
 
-          <Typography variant="subtitle2" sx={{ textAlign: 'center', color: colors.textMuted, mb: 3, letterSpacing: 1 }}>
-            SERIE {currentSetIndex + 1} DI {totalSetsForCurrentExercise}
+          <Typography variant="subtitle2" sx={{ textAlign: 'center', color: colors.textSecondary, mb: 3 }}>
+            {t('focus.set_of', { n: currentSetIndex + 1, total: totalSetsForCurrentExercise })}
           </Typography>
 
           {(() => {
@@ -83,7 +83,7 @@ export default function WorkoutPhase({
               }}>
                 <HistoryIcon sx={{ fontSize: 18, color: colors.textMuted, mt: 0.25 }} />
                 <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="caption" sx={{ color: colors.textMuted, letterSpacing: 0.5 }}>
+                  <Typography variant="caption" sx={{ color: colors.textSecondary }}>
                     {t('focus.last_time')}
                   </Typography>
                   {/* Una chip per serie, con la tecnica sotto; evidenziata quella pari alla serie in corso */}
@@ -188,7 +188,7 @@ export default function WorkoutPhase({
           {currentExerciseSets.length > 0 && (
             <Paper sx={{ bgcolor: colors.bgCard, overflow: 'hidden', border: `1px solid ${colors.border}` }}>
               <Box sx={{ px: 2, py: 1.5, bgcolor: colors.bgElevated }}>
-                <Typography variant="subtitle2" sx={{ color: colors.textMuted, letterSpacing: 1 }}>{t('focus.sets_done')}</Typography>
+                <Typography variant="subtitle2" sx={{ color: colors.textSecondary }}>{t('focus.sets_done')}</Typography>
               </Box>
               {currentExerciseSets.map((set, idx) => (
                 <Box key={set.setNumber} sx={{

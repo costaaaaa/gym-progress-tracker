@@ -29,8 +29,8 @@ export default function SelectDayPhase({
         }}>
           <FitnessCenterIcon sx={{ color: colors.primaryContrast, fontSize: 15 }} />
         </Box>
-        <Typography sx={{ fontFamily: "'Lexend', sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: '0.06em' }}>
-          FOCUS MODE
+        <Typography sx={{ fontFamily: "'Lexend', sans-serif", fontWeight: 700, fontSize: 14 }}>
+          Focus mode
         </Typography>
       </Box>
 
@@ -58,7 +58,7 @@ export default function SelectDayPhase({
               bgcolor: colors.bgCard, p: 3, mb: 3,
               border: `1px solid ${colors.border}`
             }}>
-              <Typography variant="overline" sx={{ color: colors.textMuted, letterSpacing: 2 }}>
+              <Typography variant="subtitle2" sx={{ color: colors.textSecondary }}>
                 {t('focus.active_plan')}
               </Typography>
               <Typography variant="h5" sx={{ color: colors.text, fontWeight: 700, mb: 3 }}>
@@ -91,7 +91,7 @@ export default function SelectDayPhase({
 
               {selectedDay && selectedDay.exercises && (
                 <Box>
-                  <Typography variant="subtitle2" sx={{ color: colors.textMuted, mb: 1.5, letterSpacing: 1 }}>
+                  <Typography variant="subtitle2" sx={{ color: colors.textSecondary, mb: 1.5 }}>
                     {t('focus.exercises_header', { count: selectedDay.exercises.length })}
                   </Typography>
                   {selectedDay.exercises.map((ex, idx) => (

@@ -70,10 +70,11 @@ afterEach(() => {
 describe('flusso completo e salvataggio', () => {
   it('giorno, serie, recupero, riepilogo: salva le serie con la durata ferma all\'arrivo nel riepilogo', async () => {
     await startDay('Push');
+    expect(screen.getByText(/^Serie 1 di \d+$/)).toBeTruthy();
 
     await advance(60);
     doSet();
-    expect(screen.getByText('RECUPERO')).toBeTruthy();
+    expect(screen.getByText('Recupero')).toBeTruthy();
     expect(screen.getByText('01:30')).toBeTruthy();
     await advance(30);
     expect(screen.getByText('01:00')).toBeTruthy();
@@ -81,7 +82,7 @@ describe('flusso completo e salvataggio', () => {
 
     await advance(30);
     doSet('62.5', '7');
-    expect(screen.getByText('RIEPILOGO')).toBeTruthy();
+    expect(screen.getByText('Riepilogo')).toBeTruthy();
 
     await advance(600);
     await act(async () => { click('Salva Allenamento'); });
@@ -132,7 +133,7 @@ describe('bozza e ripresa', () => {
   it('salva la bozza a ogni serie, come allenamento anche durante il recupero', async () => {
     await startDay('Push');
     doSet();
-    expect(screen.getByText('RECUPERO')).toBeTruthy();
+    expect(screen.getByText('Recupero')).toBeTruthy();
     expect(draft()).toMatchObject({
       phase: 'workout',
       selectedDayId: 1,
@@ -169,7 +170,7 @@ describe('bozza e ripresa', () => {
     await mount();
     fireEvent.change(screen.getByLabelText('Giorno dell\'allenamento'), { target: { value: '2026-10-18' } });
     click('L\'avevo già finito');
-    expect(screen.getByText('RIEPILOGO')).toBeTruthy();
+    expect(screen.getByText('Riepilogo')).toBeTruthy();
 
     await act(async () => { click('Salva Allenamento'); });
     await advance(0);
@@ -194,12 +195,12 @@ describe('salti e uscita', () => {
     click('Salta Timer');
 
     click('Salta Serie');
-    expect(screen.queryByText('RECUPERO')).toBeNull();
+    expect(screen.queryByText('Recupero')).toBeNull();
     await advance(0.3);
     expect(screen.getByRole('heading', { name: 'Croci' })).toBeTruthy();
 
     click('Salta Esercizio');
-    expect(screen.getByText('RIEPILOGO')).toBeTruthy();
+    expect(screen.getByText('Riepilogo')).toBeTruthy();
 
     await act(async () => { click('Salva Allenamento'); });
     await advance(0);

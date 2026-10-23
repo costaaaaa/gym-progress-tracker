@@ -42,7 +42,7 @@ export default function SummaryPhase({
     <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text }}>
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1, borderBottom: `1px solid ${colors.border}` }}>
         <IconButton onClick={onQuit} sx={{ color: colors.textSecondary }}><ArrowBackIcon /></IconButton>
-        <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: 1 }}>{t('focus.summary_caps')}</Typography>
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>{t('focus.summary')}</Typography>
       </Box>
 
       <Container maxWidth="sm" sx={{ py: 3 }}>
@@ -52,22 +52,22 @@ export default function SummaryPhase({
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mt: 2 }}>
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="h4" sx={{ fontWeight: 700, color: colors.text }}>{exercisesCompleted}</Typography>
-              <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.exercises_caps')}</Typography>
+              <Typography variant="caption" sx={{ color: colors.textSecondary }}>{t('focus.exercises')}</Typography>
             </Box>
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="h4" sx={{ fontWeight: 700, color: colors.text }}>{totalSets}</Typography>
-              <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.sets_caps')}</Typography>
+              <Typography variant="caption" sx={{ color: colors.textSecondary }}>{t('focus.sets')}</Typography>
             </Box>
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="h4" sx={{ ...TABULAR, fontWeight: 700, color: colors.text }}>{elapsedTime}</Typography>
-              <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.duration_caps')}</Typography>
+              <Typography variant="caption" sx={{ color: colors.textSecondary }}>{t('focus.duration')}</Typography>
             </Box>
           </Box>
         </Box>
 
         <Paper sx={{ bgcolor: colors.bgCard, overflow: 'hidden', mb: 3, border: `1px solid ${colors.border}` }}>
           <Box sx={{ px: 2, py: 1.5, bgcolor: colors.bgElevated }}>
-            <Typography variant="subtitle2" sx={{ color: colors.textMuted, letterSpacing: 1 }}>{t('focus.detail_caps')}</Typography>
+            <Typography variant="subtitle2" sx={{ color: colors.textSecondary }}>{t('focus.detail')}</Typography>
           </Box>
           {selectedDay?.exercises?.map((exercise) => {
             const sets = completedSets[exercise.id];
@@ -176,8 +176,8 @@ export default function SummaryPhase({
 
               return (
                 <Paper sx={{ bgcolor: colors.bgCard, border: `1px solid ${colors.border}`, p: 2.5, mb: 3 }}>
-                  <Typography variant="subtitle2" sx={{ color: colors.textMuted, mb: 1.5, letterSpacing: 1 }}>
-                    {t('focus.session_summary_caps')}
+                  <Typography variant="subtitle2" sx={{ color: colors.textSecondary, mb: 1.5 }}>
+                    {t('focus.session_summary')}
                   </Typography>
                   <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 0.5 }}>
                     {activePlan?.name}{selectedDay?.name ? ` · ${selectedDay.name}` : ''}

@@ -28,7 +28,7 @@ export default function RestTimerPhase({
           sx={{ color: colors.border, position: 'absolute', left: 0, zIndex: 0 }} />
         <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
           <Typography variant="h2" sx={{ ...TABULAR, fontWeight: 700, color: colors.text }}>{formatTime(timerRemaining)}</Typography>
-          <Typography variant="caption" sx={{ color: colors.textMuted, mt: 0.5 }}>{t('focus.rest_caps')}</Typography>
+          <Typography variant="caption" sx={{ color: colors.textSecondary, mt: 0.5 }}>{t('focus.rest')}</Typography>
         </Box>
       </Box>
       <Typography variant="body1" sx={{ color: colors.textSecondary, mb: 1 }}>{currentExerciseName}</Typography>

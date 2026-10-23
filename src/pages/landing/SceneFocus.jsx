@@ -140,8 +140,8 @@ const RestScreen = ({ t, live }) => {
       data-screen="rest"
       sx={{ position: 'absolute', inset: 0, p: 2.5, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}
     >
-      <Typography sx={{ fontWeight: 700, fontSize: 16, letterSpacing: '0.08em', alignSelf: 'flex-start' }}>
-        {t('focus.rest_caps')}
+      <Typography sx={{ fontWeight: 700, fontSize: 16, alignSelf: 'flex-start' }}>
+        {t('focus.rest')}
       </Typography>
       <Box sx={{ position: 'relative', width: RING.size, height: RING.size, mt: 1 }}>
         <svg width={RING.size} height={RING.size} viewBox={`0 0 ${RING.size} ${RING.size}`} style={{ transform: 'rotate(-90deg)' }}>
