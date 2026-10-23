@@ -43,7 +43,7 @@ export default function ResumePromptPhase({ draftToResume, retroDateInput, onRet
         <Typography variant="body1" sx={{ color: colors.textSecondary, mb: 1 }}>
           {t('focus.draft_text')}
         </Typography>
-        <Typography variant="h6" sx={{ color: colors.primaryLight, fontWeight: 600, mb: 1 }}>
+        <Typography variant="h6" sx={{ color: colors.text, fontWeight: 600, mb: 1 }}>
           {draftToResume.selectedDay?.name}
         </Typography>
         <Typography variant="body2" sx={{ color: colors.textMuted, mb: 3 }}>
@@ -70,7 +70,7 @@ export default function ResumePromptPhase({ draftToResume, retroDateInput, onRet
               fullWidth
               disabled={!retroDateValid}
               onClick={() => onFinished(chosenRetro)}
-              sx={{ color: colors.primaryLight, borderColor: colors.primary, py: 1.25, fontWeight: 700 }}
+              sx={{ color: colors.text, borderColor: colors.border, py: 1.25, fontWeight: 700 }}
             >
               {t('focus.draft_retro_done')}
             </Button>
@@ -97,7 +97,7 @@ export default function ResumePromptPhase({ draftToResume, retroDateInput, onRet
             onClick={onDiscard}
             sx={{
               color: colors.textSecondary, borderColor: colors.border, py: 1.5,
-              '&:hover': { borderColor: colors.primary, color: colors.primaryLight }
+              '&:hover': { borderColor: colors.text, color: colors.text }
             }}
           >
             {t('focus.draft_discard')}

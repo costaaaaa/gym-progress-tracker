@@ -99,7 +99,7 @@ export default function WorkoutPhase({
                             {set.label}
                           </Typography>
                           {set.technique && (
-                            <Typography variant="caption" sx={{ color: colors.primaryLight, display: 'block', lineHeight: 1.2, fontWeight: 600 }}>
+                            <Typography variant="caption" sx={{ color: colors.textSecondary, display: 'block', lineHeight: 1.2, fontWeight: 600 }}>
                               {techniqueLabel(set.technique)}
                             </Typography>
                           )}
@@ -179,7 +179,7 @@ export default function WorkoutPhase({
                 endIcon={canEditSession ? null : <LockIcon sx={{ fontSize: '16px !important' }} />}
                 onClick={() => onOpenPicker(pickerMode)}
                 sx={{ py: 1.25, opacity: pickerMode === 'swap' && currentSetIndex > 0 ? 0.45 : 1, color: colors.textSecondary, borderColor: colors.border, borderRadius: '12px',
-                  '&:hover': { borderColor: colors.primary, color: colors.primaryLight } }}>
+                  '&:hover': { borderColor: colors.text, color: colors.text } }}>
                 {label}
               </Button>
             ))}

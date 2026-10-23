@@ -51,11 +51,11 @@ export default function SummaryPhase({
           <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>{t('focus.completed')}</Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mt: 2 }}>
             <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: colors.primary }}>{exercisesCompleted}</Typography>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: colors.text }}>{exercisesCompleted}</Typography>
               <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.exercises_caps')}</Typography>
             </Box>
             <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: colors.primary }}>{totalSets}</Typography>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: colors.text }}>{totalSets}</Typography>
               <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.sets_caps')}</Typography>
             </Box>
             <Box sx={{ textAlign: 'center' }}>
@@ -95,11 +95,11 @@ export default function SummaryPhase({
                   )}
                   {!!pr.volume && (
                     <Chip
-                      icon={<TrendingUpIcon sx={{ fontSize: 16, color: `${colors.primaryLight} !important` }} />}
+                      icon={<TrendingUpIcon sx={{ fontSize: 16, color: `${colors.textSecondary} !important` }} />}
                       label={t('focus.best_volume')}
                       size="small"
                       variant="outlined"
-                      sx={{ borderColor: colors.primary, color: colors.primaryLight, fontWeight: 700, fontSize: '0.7rem' }}
+                      sx={{ borderColor: colors.border, color: colors.textSecondary, fontWeight: 700, fontSize: '0.7rem' }}
                     />
                   )}
                 </Box>
@@ -191,12 +191,12 @@ export default function SummaryPhase({
                     </Typography>
                   )}
                   {volumeList.length > 0 && (
-                    <Typography variant="body2" sx={{ color: colors.primaryLight, mb: 0.5 }}>
+                    <Typography variant="body2" sx={{ color: colors.text, mb: 0.5 }}>
                       {t('focus.best_volume_list', { list: volumeList.join(', ') })}
                     </Typography>
                   )}
                   {savedResult.current_streak_weeks > 0 && (
-                    <Typography variant="body2" sx={{ color: colors.primary }}>
+                    <Typography variant="body2" sx={{ color: colors.text }}>
                       🔥 {t('focus.streak_line_plain', { count: savedResult.current_streak_weeks })}
                     </Typography>
                   )}
@@ -233,7 +233,7 @@ export default function SummaryPhase({
               endIcon={canEditSession ? null : <LockIcon sx={{ fontSize: '16px !important' }} />}
               onClick={onAddExercise}
               sx={{ py: 1.25, mb: 3, color: colors.textSecondary, borderColor: colors.border, borderRadius: '12px',
-                '&:hover': { borderColor: colors.primary, color: colors.primaryLight } }}>
+                '&:hover': { borderColor: colors.text, color: colors.text } }}>
               {t('focus.add_exercise')}
             </Button>
 
