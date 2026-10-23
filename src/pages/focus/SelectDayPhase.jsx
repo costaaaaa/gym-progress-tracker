@@ -39,11 +39,11 @@ export default function SelectDayPhase({
       <Container maxWidth="sm" sx={{ py: 4 }}>
         {!activePlan ? (
           <Box sx={{ textAlign: 'center', py: 6 }}>
-            <FitnessCenterIcon sx={{ fontSize: 64, color: colors.textMuted, mb: 2 }} />
+            <FitnessCenterIcon sx={{ fontSize: 64, color: colors.textSecondary, mb: 2 }} />
             <Typography variant="h6" sx={{ color: colors.textSecondary, mb: 2 }}>
               {t('focus.no_plan')}
             </Typography>
-            <Typography variant="body2" sx={{ color: colors.textMuted, mb: 3 }}>
+            <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 3 }}>
               {t('focus.no_plan_hint')}
             </Typography>
             <Button
@@ -105,7 +105,7 @@ export default function SelectDayPhase({
                         <Typography variant="body1" sx={{ color: colors.text, fontWeight: 500 }}>
                           {ex.exercise_name}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: colors.textMuted }}>
+                        <Typography variant="caption" sx={{ color: colors.textSecondary }}>
                           {t('focus.plan_line', { sets: ex.sets, reps: ex.reps, rest: ex.rest })}
                           {ex.intensity_technique && ` — ${techniqueLabel(ex.intensity_technique)}`}
                         </Typography>
@@ -137,7 +137,7 @@ export default function SelectDayPhase({
                 py: 2, fontSize: '1.2rem', fontWeight: 700,
                 bgcolor: colors.primary, color: colors.primaryContrast, borderRadius: '12px',
                 '&:hover': { bgcolor: colors.primaryDark },
-                '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted },
+                '&:disabled': { bgcolor: colors.bgElevated, color: colors.textSecondary },
               }}
             >
               {t('focus.start')}
@@ -147,12 +147,12 @@ export default function SelectDayPhase({
               {timerEnabled ? (
                 <>
                   <TimerIcon sx={{ fontSize: 16, color: colors.success }} />
-                  <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.timer_on')}</Typography>
+                  <Typography variant="caption" sx={{ color: colors.textSecondary }}>{t('focus.timer_on')}</Typography>
                 </>
               ) : (
                 <>
-                  <TimerOffIcon sx={{ fontSize: 16, color: colors.textMuted }} />
-                  <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.timer_off')}</Typography>
+                  <TimerOffIcon sx={{ fontSize: 16, color: colors.textSecondary }} />
+                  <Typography variant="caption" sx={{ color: colors.textSecondary }}>{t('focus.timer_off')}</Typography>
                 </>
               )}
             </Box>
