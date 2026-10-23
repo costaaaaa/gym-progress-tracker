@@ -865,6 +865,7 @@
   "account.delete.in_progress": "Eliminazione in corso...",
   "profile.meta.title": "Profilo e impostazioni",
   "profile.meta.description": "Gestisci il tuo profilo, i traguardi raggiunti e le impostazioni del tuo account LiftIndex.",
+  "workouts.title": "Allenamenti",
   "workouts.meta.title": "Schede di allenamento",
   "workouts.meta.description": "Crea e gestisci le tue schede di allenamento in palestra: piani illimitati, esercizi personalizzati e storico completo delle sessioni.",
   "consent.load_error": "Errore nel caricamento dei consensi",

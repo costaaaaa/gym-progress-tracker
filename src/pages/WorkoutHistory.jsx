@@ -376,10 +376,12 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
 
   const renderContent = () => (
     <Box sx={{ pt: isEmbedded ? 0 : 3, pb: 6 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 20 }}>
-          {t('history.title')}
-        </Typography>
+      <Box sx={{ display: 'flex', justifyContent: isEmbedded ? 'flex-end' : 'space-between', alignItems: 'center', mb: 3 }}>
+        {!isEmbedded && (
+          <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 20 }}>
+            {t('history.title')}
+          </Typography>
+        )}
         {isLoggedIn && activePlan && (
           <Button
             variant="contained"

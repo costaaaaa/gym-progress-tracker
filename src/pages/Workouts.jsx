@@ -1,6 +1,6 @@
 import { Suspense, lazy } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Box, Tabs, Tab, CircularProgress, Container } from '@mui/material';
+import { Box, Tabs, Tab, CircularProgress, Container, Typography } from '@mui/material';
 import { useLocation } from 'react-router-dom';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
@@ -22,12 +22,15 @@ const Workouts = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
       <Box sx={{ width: '100%' }}>
+        <Typography variant="pageTitle" gutterBottom>
+          {t('workouts.title')}
+        </Typography>
         <Box sx={{ borderBottom: '1px solid', borderColor: 'divider', mb: 2 }}>
           <Tabs
             value={tabIndex}
             onChange={handleTabChange}
             aria-label="workout hub tabs"
-            TabIndicatorProps={{ sx: { height: 2, bgcolor: 'primary.main' } }}
+            TabIndicatorProps={{ sx: { height: 2, bgcolor: 'text.primary' } }}
             sx={{
               minHeight: 0,
               '& .MuiTab-root': {
@@ -36,7 +39,8 @@ const Workouts = () => {
                 fontWeight: 500,
                 minHeight: 44,
                 color: 'text.secondary',
-                '&.Mui-selected': { color: 'primary.main', fontWeight: 600 },
+                '&.Mui-selected': { color: 'text.primary', fontWeight: 600 },
+                '& .MuiTab-iconWrapper': { color: 'text.secondary' },
               },
             }}
           >
