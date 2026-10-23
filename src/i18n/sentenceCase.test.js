@@ -32,7 +32,8 @@ const maiuscoleSbagliate = (valore) => {
     const parola = m[0];
     if (!/^\p{Lu}/u.test(parola) || NOMI_PROPRI.has(parola)) continue;
     const prima = testo.slice(0, m.index).replace(/[\s«“"'(¡¿]+$/u, '');
-    const inizioFrase = prima === '' || /[.!?:]$/.test(prima) || /\n\s*$/.test(testo.slice(0, m.index));
+    const davanti = testo.slice(0, m.index);
+    const inizioFrase = prima === '' || /[.!?:]$/.test(prima) || /\n\s*$/.test(davanti) || /\s[–—]\s+$/.test(davanti);
     if (!inizioFrase) trovate.push(parola);
   }
   return trovate;
@@ -57,5 +58,16 @@ describe('testi: sentence case', () => {
 
   it('in inglese nessuna parola a metà frase inizia con la maiuscola e nessun testo è tutto maiuscolo', () => {
     expect(errori(en)).toEqual([]);
+  });
+});
+
+describe('testi: maiuscola dopo il trattino lungo', () => {
+  it('"LiftIndex – Diario allenamento" passa: dopo " – " e " — " si riparte con la maiuscola', () => {
+    expect(maiuscoleSbagliate('LiftIndex – Diario allenamento palestra')).toEqual([]);
+    expect(maiuscoleSbagliate('LiftIndex — Gym workout log')).toEqual([]);
+  });
+
+  it('ma la seconda parola dopo il trattino resta vietata: "Diario Allenamento"', () => {
+    expect(maiuscoleSbagliate('LiftIndex – Diario Allenamento palestra')).toEqual(['Allenamento']);
   });
 });
