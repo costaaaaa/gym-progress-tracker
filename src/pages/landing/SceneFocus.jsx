@@ -22,7 +22,8 @@ function build(tl, q) {
     .fromTo(q('[data-step="s2"]'), { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: 0.05 }, 0.38)
     .to(q('[data-screen="work"]'), { autoAlpha: 0, xPercent: -8, duration: 0.07 }, 0.38)
     .fromTo(q('[data-screen="rest"]'), { autoAlpha: 0, xPercent: 8 }, { autoAlpha: 1, xPercent: 0, duration: 0.07 }, 0.4)
-    .fromTo(q('[data-ring]'), { strokeDashoffset: 0 }, { strokeDashoffset: 1, duration: 0.34 }, 0.46)
+    // autoRound: false, se no GSAP arrotonda i px all'intero e l'anello (pathLength 1) scatta da pieno a vuoto a metà.
+    .fromTo(q('[data-ring]'), { strokeDashoffset: 0 }, { strokeDashoffset: 1, autoRound: false, duration: 0.34 }, 0.46)
     .to(time, {
       v: 0,
       duration: 0.34,
