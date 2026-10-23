@@ -13,6 +13,7 @@ export function useFocusColors() {
     primary: theme.palette.primary.main,
     primaryLight: theme.palette.primary.light,
     primaryDark: theme.palette.primary.dark,
+    primaryContrast: theme.palette.primary.contrastText,
     text: theme.palette.text.primary,
     textSecondary: theme.palette.text.secondary,
     textMuted: isDarkMode ? '#757575' : '#9e9e9e',

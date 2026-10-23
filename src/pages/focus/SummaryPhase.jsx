@@ -215,7 +215,7 @@ export default function SummaryPhase({
             <Button
               variant="contained" fullWidth size="large"
               onClick={onGoHistory}
-              sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, bgcolor: colors.primary, color: '#fff', borderRadius: '12px', mb: 2 }}
+              sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, bgcolor: colors.primary, color: colors.primaryContrast, borderRadius: '12px', mb: 2 }}
             >
               {t('focus.go_history')}
             </Button>
@@ -242,9 +242,9 @@ export default function SummaryPhase({
               sx={{ mb: 3, '& .MuiOutlinedInput-root': { color: colors.text, '& fieldset': { borderColor: colors.border }, '&:hover fieldset': { borderColor: colors.primary }, '&.Mui-focused fieldset': { borderColor: colors.primary } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.primary } }} />
 
             <Button variant="contained" fullWidth size="large"
-              startIcon={saving ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : <SaveIcon />}
+              startIcon={saving ? <CircularProgress size={20} sx={{ color: colors.primaryContrast }} /> : <SaveIcon />}
               onClick={onSave} disabled={saving || totalCompletedSets === 0}
-              sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, bgcolor: colors.primary, color: '#fff', borderRadius: '12px',
+              sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, bgcolor: colors.primary, color: colors.primaryContrast, borderRadius: '12px',
                 '&:hover': { bgcolor: colors.primaryDark },
                 '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted }, mb: 2 }}>
               {saving ? t('focus.saving') : t('focus.save')}

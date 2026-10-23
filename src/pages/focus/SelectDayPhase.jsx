@@ -27,7 +27,7 @@ export default function SelectDayPhase({
           width: 26, height: 26, borderRadius: '7px', bgcolor: colors.primary,
           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         }}>
-          <FitnessCenterIcon sx={{ color: '#fff', fontSize: 15 }} />
+          <FitnessCenterIcon sx={{ color: colors.primaryContrast, fontSize: 15 }} />
         </Box>
         <Typography sx={{ fontFamily: "'Lexend', sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: '0.06em' }}>
           FOCUS MODE
@@ -133,7 +133,7 @@ export default function SelectDayPhase({
               onClick={onStart}
               sx={{
                 py: 2, fontSize: '1.2rem', fontWeight: 700,
-                bgcolor: colors.primary, color: '#fff', borderRadius: '12px',
+                bgcolor: colors.primary, color: colors.primaryContrast, borderRadius: '12px',
                 '&:hover': { bgcolor: colors.primaryDark },
                 '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted },
               }}
