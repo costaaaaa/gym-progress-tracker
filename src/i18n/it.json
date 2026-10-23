@@ -787,6 +787,7 @@
   "history.share_aria": "Condividi allenamento",
   "history.edit_date_aria": "Modifica data",
   "history.delete_aria": "Elimina allenamento",
+  "history.more_actions_aria": "Altre azioni",
   "account.delete.password_required": "La password è obbligatoria",
   "account.delete.confirm_required": "Devi confermare di essere consapevole delle conseguenze",
   "account.delete.error": "Errore durante l'eliminazione dell'account",
