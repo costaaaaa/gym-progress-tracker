@@ -11,7 +11,6 @@ export function useFocusColors() {
     bgCard: theme.palette.background.paper,
     bgElevated: theme.palette.action.hover,
     primary: theme.palette.primary.main,
-    primaryLight: theme.palette.primary.light,
     primaryDark: theme.palette.primary.dark,
     primaryContrast: theme.palette.primary.contrastText,
     text: theme.palette.text.primary,
