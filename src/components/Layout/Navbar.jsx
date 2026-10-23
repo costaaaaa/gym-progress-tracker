@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AppBar, Toolbar, Typography, Button, Box, Avatar, useMediaQuery, IconButton, useTheme, Tooltip, CircularProgress } from '@mui/material';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
-import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import { useAuth } from '../../context/AuthContext';
@@ -10,6 +9,7 @@ import { safeNext } from '../../utils/safeNext';
 import { useTranslation } from 'react-i18next';
 import { stripLangPrefix, useLocalizedPath } from '../../i18n/paths';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
+import LogoMark from '../LogoMark';
 
 // Voci del centro nav desktop: Home / Allenamenti / Dashboard / Gruppi.
 // Su mobile la navigazione vive in BottomNav.jsx (Home/Allenamenti/Focus/Dashboard/Profilo);
@@ -102,7 +102,7 @@ const Navbar = () => {
               flexShrink: 0,
             }}
           >
-            <FitnessCenterIcon sx={{ fontSize: 18, color: '#fff' }} />
+            <LogoMark width={20} color="#fff" />
           </Box>
           <Typography
             sx={{

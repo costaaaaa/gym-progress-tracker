@@ -246,3 +246,11 @@ describe('errori e premium', () => {
     expect(fetchMock.mock.calls.some(([url]) => url.includes('exercise/read_all.php'))).toBe(false);
   });
 });
+
+describe('intestazione della scelta del giorno', () => {
+  it('mostra il marchio LiftIndex e non il manubrio', async () => {
+    await mount();
+    expect(screen.getByRole('img', { name: 'LiftIndex' })).toBeTruthy();
+    expect(screen.queryByTestId('FitnessCenterIcon')).toBeNull();
+  });
+});
