@@ -4,7 +4,7 @@ import { grey } from '@mui/material/colors';
 import { GlobalStyles } from '@mui/material';
 import { itIT, enUS } from '@mui/material/locale';
 import { useTranslation } from 'react-i18next';
-import { CHIP_FONT } from '../utils/chipFont';
+import { CHIP_FONT } from '../utils/fonts';
 
 const ThemeModeContext = createContext();
 

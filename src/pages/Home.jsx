@@ -11,7 +11,7 @@ import StreakCard from '../components/StreakCard';
 import LevelCard from '../components/LevelCard';
 import GroupsHomeCard from '../components/Groups/GroupsHomeCard';
 import { useAuth } from '../context/AuthContext';
-import { CHIP_FONT } from '../utils/chipFont';
+import { CHIP_FONT } from '../utils/fonts';
 import { API_BASE_URL } from '../config';
 import { useTranslation, Trans } from 'react-i18next';
 import { usePageMeta } from '../hooks/usePageMeta';

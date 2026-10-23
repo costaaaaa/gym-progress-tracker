@@ -8,7 +8,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
-import { TABULAR } from '../../utils/tabularFont';
+import { TABULAR } from '../../utils/fonts';
 import ElapsedClock from './ElapsedClock';
 import QuitDialog from './QuitDialog';
 import { INTENSITY_TECHNIQUES } from '../../components/ExerciseDialog';

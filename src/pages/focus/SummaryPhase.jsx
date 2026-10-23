@@ -7,7 +7,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
-import { TABULAR } from '../../utils/tabularFont';
+import { TABULAR } from '../../utils/fonts';
 import QuitDialog from './QuitDialog';
 import { detectPersonalRecords } from '../../utils/workoutMetrics';
 import { buildShareStats, sessionRecords } from '../../utils/shareCard';

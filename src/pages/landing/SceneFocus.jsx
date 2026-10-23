@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../../i18n/format';
-import { TABULAR } from '../../utils/tabularFont';
+import { TABULAR } from '../../utils/fonts';
 import { sceneSx, stageSx, useScrollScene } from './useScrollScene';
 
 const TOTAL_SETS = 4;

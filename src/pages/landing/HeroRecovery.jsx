@@ -4,7 +4,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import gsap from 'gsap';
 import BodyVisualizer from '../../components/BodyVisualizer';
-import { CHIP_FONT } from '../../utils/chipFont';
+import { CHIP_FONT } from '../../utils/fonts';
 import { track } from '../../utils/analytics';
 import { useLocalizedPath } from '../../i18n/paths';
 import { buildRecovery } from '../../utils/recoveryDemo';

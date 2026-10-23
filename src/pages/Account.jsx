@@ -48,7 +48,7 @@ import { dateFnsLocale } from '../i18n/format';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import { validatePassword } from '../utils/passwordPolicy';
-import { CHIP_FONT } from '../utils/chipFont';
+import { CHIP_FONT } from '../utils/fonts';
 import { getConsents, setConsent } from '../utils/consent';
 import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
 
