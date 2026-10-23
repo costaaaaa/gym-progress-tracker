@@ -11,7 +11,7 @@ import StreakCard from '../components/StreakCard';
 import LevelCard from '../components/LevelCard';
 import GroupsHomeCard from '../components/Groups/GroupsHomeCard';
 import { useAuth } from '../context/AuthContext';
-import { CHIP_FONT } from '../utils/chipFont';
+import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
 import { API_BASE_URL } from '../config';
 import { useTranslation, Trans } from 'react-i18next';
 import { usePageMeta } from '../hooks/usePageMeta';
@@ -166,7 +166,7 @@ const Home = () => {
             {/* Riepilogo Settimanale */}
             <Grid item xs={12} md={6}>
               <Card sx={{ height: '100%', p: '22px' }}>
-                <Typography component="h2" sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2.5 }}>
+                <Typography component="h2" variant="cardTitle" sx={{ mb: 2.5 }}>
                   {t('home.weekly.title')}
                 </Typography>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
@@ -193,14 +193,14 @@ const Home = () => {
 
                 <Box sx={{ display: 'flex', gap: 1.5 }}>
                   <Box sx={{ flex: 1 }}>
-                    <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 22 }}>
+                    <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
                       {formatNumber(dashboardStats?.weekly_volume?.total_weight)}
                       <Box component="span" sx={{ fontSize: 13, fontWeight: 600, ml: 0.5 }}>kg</Box>
                     </Typography>
                     <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.volume')}</Typography>
                   </Box>
                   <Box sx={{ flex: 1 }}>
-                    <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 22 }}>
+                    <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
                       {formatNumber(dashboardStats?.weekly_volume?.total_reps)}
                     </Typography>
                     <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.reps')}</Typography>
@@ -225,7 +225,7 @@ const Home = () => {
             <Grid item xs={12} md={6}>
               <Card sx={{ height: '100%' }}>
                 <CardActionArea component={RouterLink} to="/workouts?tab=history" sx={{ height: '100%', p: '26px' }}>
-                  <Typography component="h2" sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2.5 }}>{t('home.last.title')}</Typography>
+                  <Typography component="h2" variant="cardTitle" sx={{ mb: 2.5 }}>{t('home.last.title')}</Typography>
                   {lastWorkout ? (
                     <>
                       <Typography sx={{ color: 'text.primary', fontWeight: 700, fontSize: 15, mb: 1 }}>
@@ -261,7 +261,7 @@ const Home = () => {
             <Grid item xs={12} md={6}>
               <Card sx={{ height: '100%' }}>
                 <CardActionArea component={RouterLink} to="/workouts?tab=plans" sx={{ height: '100%', p: '26px' }}>
-                  <Typography component="h2" sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2.5 }}>{t('home.plan.title')}</Typography>
+                  <Typography component="h2" variant="cardTitle" sx={{ mb: 2.5 }}>{t('home.plan.title')}</Typography>
                   {activePlan ? (
                     <>
                       <Typography sx={{ color: 'text.primary', fontWeight: 700, fontSize: 15, mb: 1 }}>
@@ -290,7 +290,7 @@ const Home = () => {
 
             {/* Azioni Rapide */}
             <Grid item xs={12}>
-              <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2, mt: 2 }}>
+              <Typography variant="cardTitle" sx={{ mb: 2, mt: 2 }}>
                 {t('home.quick.title')}
               </Typography>
               <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>

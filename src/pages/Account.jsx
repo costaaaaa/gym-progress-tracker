@@ -48,7 +48,7 @@ import { dateFnsLocale } from '../i18n/format';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import { validatePassword } from '../utils/passwordPolicy';
-import { CHIP_FONT } from '../utils/chipFont';
+import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
 import { getConsents, setConsent } from '../utils/consent';
 import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
 
@@ -561,7 +561,7 @@ const Account = ({ isEmbedded = false }) => {
   return (
     <Box sx={{ maxWidth: 640, mx: 'auto', display: 'flex', flexDirection: 'column', gap: 3, pb: 4 }}>
       {!isEmbedded && (
-        <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 22 }}>
+        <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 22 }}>
           Il mio Account
         </Typography>
       )}
@@ -572,7 +572,7 @@ const Account = ({ isEmbedded = false }) => {
           <Avatar sx={{
             width: 64, height: 64,
             bgcolor: '#1a1816',
-            fontFamily: '"Lexend", sans-serif',
+            fontFamily: TITLE_FONT_FAMILY,
             fontWeight: 700,
             fontSize: 20,
             flexShrink: 0,
@@ -890,7 +890,7 @@ const Account = ({ isEmbedded = false }) => {
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
           <Box>
             <Typography sx={{
-              fontFamily: '"Lexend", sans-serif',
+              fontFamily: TITLE_FONT_FAMILY,
               fontWeight: 700,
               fontSize: 15,
               color: (theme) => theme.palette.mode === 'light' ? '#9b0000' : 'error.main',

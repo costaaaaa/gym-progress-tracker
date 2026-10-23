@@ -8,6 +8,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
 import { muscleLabel, techniqueLabel } from '../../i18n/labels';
+import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 
 export default function SelectDayPhase({
   activePlan, selectedDayId, selectedDay, timerEnabled, onDayChange, onStart, onBack, onGoToPlans
@@ -29,7 +30,7 @@ export default function SelectDayPhase({
         }}>
           <FitnessCenterIcon sx={{ color: colors.primaryContrast, fontSize: 15 }} />
         </Box>
-        <Typography sx={{ fontFamily: "'Lexend', sans-serif", fontWeight: 700, fontSize: 14 }}>
+        <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 14 }}>
           Focus mode
         </Typography>
       </Box>

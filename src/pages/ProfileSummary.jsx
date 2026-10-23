@@ -5,6 +5,7 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { API_BASE_URL } from '../config';
 import { xpIntoLevel, xpForNextLevel } from '../utils/gamificationLevels';
 import { intlLocale } from '../i18n/format';
+import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
 // Solo queste tre categorie hanno una griglia dedicata: "strength" è esclusa perché il suo
 // ruolo è coperto dalla sezione "Livelli per Esercizio" (il catalogo backend resta invariato).
@@ -78,7 +79,7 @@ const ProfileSummary = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2.5 }}>
           <StarIcon sx={{ fontSize: 44, color: 'primary.main' }} />
           <Box>
-            <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 26, lineHeight: 1 }}>
+            <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 26, lineHeight: 1 }}>
               Livello {level}
             </Typography>
             <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.5 }}>
@@ -112,7 +113,7 @@ const ProfileSummary = () => {
         <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
           {statTiles.map((stat) => (
             <Box key={stat.label}>
-              <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 19, lineHeight: 1 }}>
+              <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 19, lineHeight: 1 }}>
                 {stat.value}
               </Typography>
               <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>{stat.label}</Typography>
@@ -124,7 +125,7 @@ const ProfileSummary = () => {
       {/* Livelli per Esercizio — precede Achievement */}
       {exercises.length > 0 && (
         <Box sx={{ mb: 3 }}>
-          <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2 }}>
+          <Typography variant="cardTitle" sx={{ mb: 2 }}>
             Livelli per Esercizio
           </Typography>
           <Grid container spacing={2}>
@@ -169,7 +170,7 @@ const ProfileSummary = () => {
       )}
 
       {/* Achievement — solo sessions / tonnage / streak, "strength" esclusa dal rendering */}
-      <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2 }}>
+      <Typography variant="cardTitle" sx={{ mb: 2 }}>
         Achievement
       </Typography>
       {CATEGORY_ORDER.filter(cat => byCategory[cat]?.length).map(cat => (

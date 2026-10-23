@@ -2,6 +2,7 @@ import { Box, Chip, LinearProgress, Typography } from '@mui/material';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import { useTranslation } from 'react-i18next';
 import { intlLocale } from '../../i18n/format';
+import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 
 // Classifica del gruppo. Le righe arrivano già ordinate e con la posizione dal server
 // (api/groups/read.php); qui cambia solo cosa si mostra per ogni scheda.
@@ -75,7 +76,7 @@ const LeaderboardTable = ({ rows, board }) => {
             sx={{
               width: 28,
               textAlign: 'center',
-              fontFamily: '"Lexend", sans-serif',
+              fontFamily: TITLE_FONT_FAMILY,
               fontWeight: 800,
               fontSize: 18,
               color: MEDALS[row.rank] || 'text.secondary',

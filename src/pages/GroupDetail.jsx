@@ -17,6 +17,7 @@ import {
 import { track } from '../utils/analytics';
 import { Trans, useTranslation } from 'react-i18next';
 import { intlLocale } from '../i18n/format';
+import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
 const BOARDS = ['week', 'streak', 'level'];
 
@@ -65,7 +66,7 @@ const InvitePanel = ({ group, onChange, notify }) => {
 
   return (
     <Card sx={{ p: '22px' }}>
-      <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 1.5 }}>{t('groups.detail.invite.title')}</Typography>
+      <Typography variant="cardTitle" sx={{ mb: 1.5 }}>{t('groups.detail.invite.title')}</Typography>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
         <TextField value={link} size="small" fullWidth inputProps={{ readOnly: true, 'aria-label': t('groups.detail.invite.link_label') }} disabled={!group.invite_enabled} />
         <Tooltip title={t('groups.detail.invite.copy_tooltip')}>
@@ -166,7 +167,7 @@ const GroupDetailContent = () => {
     <Container maxWidth="lg" sx={{ py: 3 }}>
       <Button component={RouterLink} to="/gruppi" startIcon={<ArrowBackIcon />} sx={{ mb: 1 }}>{t('groups.join.your_groups')}</Button>
       <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, flexWrap: 'wrap', mb: 3 }}>
-        <Typography component="h1" sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 28 }}>{group.name}</Typography>
+        <Typography component="h1" sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 28 }}>{group.name}</Typography>
         <Chip size="small" label={groupTypeLabel(group.type)} />
         <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>
           {t('groups_card.members', { count: Number(group.members_count) })}
@@ -177,7 +178,7 @@ const GroupDetailContent = () => {
         <Grid item xs={12} md={8}>
           <Card sx={{ p: '22px' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 1, mb: 1 }}>
-              <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17 }}>{t('groups.detail.leaderboard')}</Typography>
+              <Typography variant="cardTitle">{t('groups.detail.leaderboard')}</Typography>
               <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
                 {t('groups.detail.week_range', { from: formatDay(week.from), to: formatDay(week.to) })}
               </Typography>
@@ -195,7 +196,7 @@ const GroupDetailContent = () => {
             {canManage && <InvitePanel group={group} onChange={patchGroup} notify={setToast} />}
 
             <Card sx={{ p: '22px' }}>
-              <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 1 }}>{t('groups.detail.members')}</Typography>
+              <Typography variant="cardTitle" sx={{ mb: 1 }}>{t('groups.detail.members')}</Typography>
               {members.map((m) => (
                 <Box key={m.username} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.75 }}>
                   <Typography sx={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: m.is_me ? 700 : 400 }}>
@@ -223,7 +224,7 @@ const GroupDetailContent = () => {
             </Card>
 
             <Card sx={{ p: '22px' }}>
-              <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 1.5 }}>{t('groups.detail.settings')}</Typography>
+              <Typography variant="cardTitle" sx={{ mb: 1.5 }}>{t('groups.detail.settings')}</Typography>
               {canManage && group.name_locked && (
                 <>
                   <Button size="small" disabled sx={{ mb: 0.5 }}>{t('groups.detail.rename')}</Button>

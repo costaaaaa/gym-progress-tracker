@@ -2,7 +2,7 @@ import { Box, Typography, Button, CircularProgress } from '@mui/material';
 import { SkipNext as SkipNextIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
-import { TABULAR } from '../../utils/tabularFont';
+import { TABULAR } from '../../utils/fonts';
 
 const formatTime = (seconds) => {
   const mins = Math.floor(seconds / 60);

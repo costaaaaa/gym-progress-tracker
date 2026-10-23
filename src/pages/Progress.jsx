@@ -32,12 +32,13 @@ import {
 import { useFavoriteExercises } from '../hooks/useFavoriteExercises';
 import ExerciseProgressCard, { formatDaysAgo } from '../components/ExerciseProgressCard';
 import ExerciseDetailDialog from '../components/ExerciseDetailDialog';
+import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
 const OPEN_SECTIONS_DEFAULT = 2;
 
 const SummaryStat = ({ label, value, color }) => (
   <Box sx={{ flex: 1, minWidth: 0 }}>
-    <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 28, lineHeight: 1, color }}>{value}</Typography>
+    <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 28, lineHeight: 1, color }}>{value}</Typography>
     <Typography sx={{ fontSize: 12, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700, mt: 0.5 }}>{label}</Typography>
   </Box>
 );
@@ -197,7 +198,7 @@ const Progress = ({ isEmbedded = false }) => {
 
           {favoriteItems.length > 0 && (
             <Grid item xs={12}>
-              <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 15, mb: 1.5 }}>{t('progress.favorites')}</Typography>
+              <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 15, mb: 1.5 }}>{t('progress.favorites')}</Typography>
               <Grid container spacing={2}>{favoriteItems.map((item) => renderCard(item, true))}</Grid>
             </Grid>
           )}
@@ -215,7 +216,7 @@ const Progress = ({ isEmbedded = false }) => {
                 >
                   <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 2.5 }}>
                     <Box sx={{ minWidth: 0 }}>
-                      <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 16 }}>
+                      <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 16 }}>
                         {label} <Box component="span" sx={{ color: 'text.secondary', fontWeight: 500, fontSize: 13 }}>· {t('progress.section_count', { count: section.items.length })}</Box>
                       </Typography>
                       <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>

@@ -4,7 +4,7 @@ import { grey } from '@mui/material/colors';
 import { GlobalStyles } from '@mui/material';
 import { itIT, enUS } from '@mui/material/locale';
 import { useTranslation } from 'react-i18next';
-import { CHIP_FONT } from '../utils/chipFont';
+import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
 
 const ThemeModeContext = createContext();
 
@@ -89,12 +89,15 @@ export const ThemeModeProvider = ({ children }) => {
         },
         typography: {
           fontFamily: '"Inter", "Roboto", sans-serif',
-          h1: { fontFamily: '"Lexend", sans-serif', fontWeight: 800, letterSpacing: '-0.02em' },
-          h2: { fontFamily: '"Lexend", sans-serif', fontWeight: 800, letterSpacing: '-0.02em' },
-          h3: { fontFamily: '"Lexend", sans-serif', fontWeight: 700, letterSpacing: '-0.01em' },
-          h4: { fontFamily: '"Lexend", sans-serif', fontWeight: 700, letterSpacing: '-0.01em' },
-          h5: { fontFamily: '"Lexend", sans-serif', fontWeight: 700 },
-          h6: { fontFamily: '"Lexend", sans-serif', fontWeight: 700 },
+          h1: { fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, letterSpacing: '-0.02em' },
+          h2: { fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, letterSpacing: '-0.02em' },
+          h3: { fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, letterSpacing: '-0.01em' },
+          h4: { fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, letterSpacing: '-0.01em' },
+          h5: { fontFamily: TITLE_FONT_FAMILY, fontWeight: 700 },
+          h6: { fontFamily: TITLE_FONT_FAMILY, fontWeight: 700 },
+          // Titolo di una card o di una sezione. Interlinea come body1 (1.5): è il Typography senza variante
+          // che sostituisce, con un tag <p> (vedi variantMapping sotto).
+          cardTitle: { fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: '17px', lineHeight: 1.5 },
           button: {
             fontFamily: '"Inter", sans-serif',
             fontWeight: 600,
@@ -103,6 +106,12 @@ export const ThemeModeProvider = ({ children }) => {
           },
         },
         components: {
+          // Una variante sconosciuta uscirebbe <span> (in linea, senza margini verticali): cardTitle è un <p>.
+          MuiTypography: {
+            defaultProps: {
+              variantMapping: { cardTitle: 'p' },
+            },
+          },
           MuiCssBaseline: {
             styleOverrides: {
               body: {

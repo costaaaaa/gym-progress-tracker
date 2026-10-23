@@ -6,6 +6,7 @@ import AdminExercises from '../components/Admin/AdminExercises';
 import AdminReports from '../components/Admin/AdminReports';
 import AdminGroups from '../components/Admin/AdminGroups';
 import { listAdminExercises } from '../api/exercises';
+import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
 // Area admin. Chi non è admin riceve 404 dal server e qui vede "pagina non trovata":
 // il link compare solo agli admin (Account), ma la protezione vera è lato server.
@@ -36,7 +37,7 @@ const Admin = () => {
   usePageMeta('Admin', 'Area di amministrazione di LiftIndex.');
   return (
     <Container maxWidth="md" sx={{ py: 3 }}>
-      <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 22, mb: 3 }}>Admin</Typography>
+      <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 22, mb: 3 }}>Admin</Typography>
       <RequireLogin>
         <AdminContent />
       </RequireLogin>

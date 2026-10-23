@@ -4,7 +4,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import gsap from 'gsap';
 import BodyVisualizer from '../../components/BodyVisualizer';
-import { CHIP_FONT } from '../../utils/chipFont';
+import { CHIP_FONT, TITLE_FONT_FAMILY } from '../../utils/fonts';
 import { track } from '../../utils/analytics';
 import { useLocalizedPath } from '../../i18n/paths';
 import { buildRecovery } from '../../utils/recoveryDemo';
@@ -85,7 +85,7 @@ const HeroRecovery = () => {
 
       <Box>
         <Card data-ui sx={{ p: { xs: 2.5, md: 3 } }}>
-          <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 1.5 }}>
+          <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 17, mb: 1.5 }}>
             {t('home.landing.hero.question')}
           </Typography>
           <Box role="group" aria-label={t('home.landing.hero.question')} sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 3 }}>

@@ -9,6 +9,7 @@ import { errorMessage, groupTypeLabel, joinGroup, previewGroup } from '../api/gr
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { track } from '../utils/analytics';
+import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
 // /entra?codice=XXXXXXXXXX — anteprima del gruppo e ingresso con consenso.
 // Chi non ha fatto l'accesso passa da login o registrazione e torna qui (RequireLogin).
@@ -69,7 +70,7 @@ const JoinGroupContent = () => {
         {!error && preview && (
           <>
             <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>{t('groups.join.invited')}</Typography>
-            <Typography component="h1" sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 26, my: 1 }}>
+            <Typography component="h1" sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 26, my: 1 }}>
               {preview.name}
             </Typography>
             <Typography sx={{ color: 'text.secondary', mb: 3 }}>

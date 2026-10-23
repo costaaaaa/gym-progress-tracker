@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { errorMessage, reportGroup } from '../../api/groups';
+import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 
 // Segnalazione del nome del gruppo o dello username di un membro (DSA art. 16).
 // Stesse regole del server (groups/report.php): motivo di 10-1000 caratteri e buona fede.
@@ -50,7 +51,7 @@ const ReportDialog = ({ open, group, members, onClose, onSent }) => {
   return (
     <Dialog open={open} onClose={sending ? undefined : onClose} maxWidth="xs" fullWidth>
       <Box component="form" onSubmit={submit}>
-        <DialogTitle sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700 }}>{t('groups.detail.report.title')}</DialogTitle>
+        <DialogTitle sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700 }}>{t('groups.detail.report.title')}</DialogTitle>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <ToggleButtonGroup exclusive fullWidth size="small" value={target} onChange={(_, v) => v && setTarget(v)} sx={{ mb: 2 }}>

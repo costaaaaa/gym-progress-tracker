@@ -97,3 +97,30 @@ describe('home dopo il login', () => {
     },
   );
 });
+
+// Il font dei titoli di card è un valore atteso scritto per esteso: non importato dal codice.
+describe('home: titoli delle card', () => {
+  const style = (el) => {
+    const { fontFamily, fontWeight, fontSize, lineHeight, letterSpacing } = getComputedStyle(el);
+    return { tag: el.tagName, fontFamily, fontWeight, fontSize, lineHeight, letterSpacing };
+  };
+  const titolo = {
+    fontFamily: '"Lexend", sans-serif',
+    fontWeight: '700',
+    fontSize: '17px',
+    lineHeight: '1.5',
+    letterSpacing: 'normal',
+  };
+
+  it('il titolo di una card (h2) è Lexend 700 a 17px', async () => {
+    renderHome();
+    const h2 = await screen.findByRole('heading', { name: 'Riepilogo Settimanale' });
+    expect(style(h2)).toEqual({ tag: 'H2', ...titolo });
+  });
+
+  it('il titolo di sezione senza heading resta un <p> con lo stesso stile', async () => {
+    renderHome();
+    await screen.findByRole('heading', { name: 'Riepilogo Settimanale' });
+    expect(style(screen.getByText('Azioni Rapide'))).toEqual({ tag: 'P', ...titolo });
+  });
+});

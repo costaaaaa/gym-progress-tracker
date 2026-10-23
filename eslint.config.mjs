@@ -2,12 +2,17 @@ import js from '@eslint/js';
 import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 
+const MESSAGGIO_LEXEND = 'Non scrivere "Lexend" a mano: usa TITLE_FONT_FAMILY da utils/fonts.js, oppure la variante cardTitle del tema.';
+
 /**
  * Prima introduzione di ESLint nel repo (in precedenza c'era solo un blocco
  * "eslintConfig" morto ereditato da Create React App, che estendeva
  * "react-app" senza avere il pacchetto installato). Su una codebase mai
- * passata da un linter, tutto e' impostato come "warn": va segnalato, non
- * bloccare il build finche' non viene ripulito a mano file per file.
+ * passata da un linter le regole generiche sono "warn": vanno segnalate, non
+ * bloccare il build finche' non vengono ripulite a mano file per file.
+ * Sono "error" solo le regole che proteggono da bug veri o da una convenzione
+ * decisa apposta: rules-of-hooks, no-use-before-define e il divieto di
+ * scrivere "Lexend" a mano (in fondo al file).
  *
  * Tutto e' ristretto esplicitamente a "files: src/**" (niente blocco globale
  * senza "files") — il repo contiene cartelle gitignorate ma non escluse di
@@ -58,6 +63,26 @@ export default [
       // stesso scope prima della dichiarazione, non quelli dentro callback
       // (es. il corpo di un useEffect), che sono legittimi.
       'no-use-before-define': ['error', { functions: false, classes: false, variables: false }],
+    },
+  },
+  // Il font dei titoli sta in un punto solo: src/utils/fonts.js (costante) e il tema (varianti h1-h6, cardTitle).
+  // Vietato scrivere "Lexend" in stringhe e template altrove. Esclusi il canvas del cartoncino (usa un font
+  // canvas con fallback suo) e i test, che tengono il valore atteso scritto per esteso.
+  {
+    files: ['src/**/*.{js,jsx}'],
+    ignores: ['src/utils/fonts.js', 'src/utils/renderShareCard.js', 'src/**/*.test.{js,jsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Literal[value=/Lexend/]',
+          message: MESSAGGIO_LEXEND,
+        },
+        {
+          selector: 'TemplateElement[value.raw=/Lexend/]',
+          message: MESSAGGIO_LEXEND,
+        },
+      ],
     },
   },
 ];
