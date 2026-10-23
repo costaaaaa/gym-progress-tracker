@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { Box, Button, Card, CardActionArea, Typography } from '@mui/material';
-import GroupsOutlined from '@mui/icons-material/GroupsOutlined';
 import { listGroups } from '../../api/groups';
 import { useTranslation } from 'react-i18next';
 
@@ -24,12 +23,7 @@ const GroupsHomeCard = () => {
   return (
     <Card sx={{ height: '100%' }}>
       <CardActionArea component={RouterLink} to="/gruppi" sx={{ height: '100%', p: '26px' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Box sx={{ width: 42, height: 42, borderRadius: '10px', bgcolor: (theme) => (theme.palette.mode === 'light' ? '#fbebeb' : 'rgba(213, 0, 0, 0.12)'), display: 'flex', alignItems: 'center', justifyContent: 'center', mr: 2 }}>
-            <GroupsOutlined sx={{ color: 'primary.main', fontSize: 22 }} />
-          </Box>
-          <Typography component="h2" sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17 }}>{t('groups_card.title')}</Typography>
-        </Box>
+        <Typography component="h2" sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2 }}>{t('groups_card.title')}</Typography>
         {groups.length === 0 ? (
           <>
             <Typography sx={{ color: 'text.secondary', fontSize: 14, mb: 2 }}>
