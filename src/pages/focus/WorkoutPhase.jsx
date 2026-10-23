@@ -8,6 +8,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
+import { TABULAR } from '../../utils/tabularFont';
 import ElapsedClock from './ElapsedClock';
 import QuitDialog from './QuitDialog';
 import { INTENSITY_TECHNIQUES } from '../../components/ExerciseDialog';
@@ -30,7 +31,7 @@ export default function WorkoutPhase({
         <IconButton onClick={onQuit} sx={{ color: colors.textSecondary }}><CloseIcon /></IconButton>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <AccessTimeIcon sx={{ fontSize: 16, color: colors.textMuted }} />
-          <Typography variant="caption" sx={{ color: colors.textMuted, fontFamily: 'monospace' }}><ElapsedClock startTime={startTime} /></Typography>
+          <Typography variant="caption" sx={{ ...TABULAR, color: colors.textMuted }}><ElapsedClock startTime={startTime} /></Typography>
         </Box>
         <Typography variant="caption" sx={{ color: colors.textMuted }}>{currentExerciseIndex + 1}/{totalExercises}</Typography>
       </Box>

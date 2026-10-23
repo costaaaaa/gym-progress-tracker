@@ -2,6 +2,7 @@ import { Box, Typography, Button, CircularProgress } from '@mui/material';
 import { SkipNext as SkipNextIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
+import { TABULAR } from '../../utils/tabularFont';
 
 const formatTime = (seconds) => {
   const mins = Math.floor(seconds / 60);
@@ -26,7 +27,7 @@ export default function RestTimerPhase({
         <CircularProgress variant="determinate" value={100} size={220} thickness={4}
           sx={{ color: colors.border, position: 'absolute', left: 0, zIndex: 0 }} />
         <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-          <Typography variant="h2" sx={{ fontWeight: 700, fontFamily: 'monospace', color: colors.text }}>{formatTime(timerRemaining)}</Typography>
+          <Typography variant="h2" sx={{ ...TABULAR, fontWeight: 700, color: colors.text }}>{formatTime(timerRemaining)}</Typography>
           <Typography variant="caption" sx={{ color: colors.textMuted, mt: 0.5 }}>{t('focus.rest_caps')}</Typography>
         </Box>
       </Box>

@@ -1,6 +1,7 @@
 import { Box, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../../i18n/format';
+import { TABULAR } from '../../utils/tabularFont';
 import { sceneSx, stageSx, useScrollScene } from './useScrollScene';
 
 const TOTAL_SETS = 4;
@@ -9,7 +10,6 @@ const RING = { size: 208, stroke: 10 };
 const STEPS = ['s1', 's2', 's3'];
 
 const clock = (seconds) => `${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, '0')}`;
-const TABULAR = { fontFamily: '"Inter", sans-serif', fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"' };
 
 // Timeline: .2-.34 conferma della serie, .38-.46 cambio schermata, .46-.80 recupero che scorre, .80-.95 fine e vibrazione.
 function build(tl, q) {

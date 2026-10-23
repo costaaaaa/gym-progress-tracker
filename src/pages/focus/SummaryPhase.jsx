@@ -7,6 +7,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
+import { TABULAR } from '../../utils/tabularFont';
 import QuitDialog from './QuitDialog';
 import { detectPersonalRecords } from '../../utils/workoutMetrics';
 import { buildShareStats, sessionRecords } from '../../utils/shareCard';
@@ -58,7 +59,7 @@ export default function SummaryPhase({
               <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.sets_caps')}</Typography>
             </Box>
             <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: colors.primary, fontFamily: 'monospace' }}>{elapsedTime}</Typography>
+              <Typography variant="h4" sx={{ ...TABULAR, fontWeight: 700, color: colors.text }}>{elapsedTime}</Typography>
               <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.duration_caps')}</Typography>
             </Box>
           </Box>
