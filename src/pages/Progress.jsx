@@ -9,12 +9,8 @@ import {
   CircularProgress,
   TextField,
   InputAdornment,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { API_BASE_URL } from '../config';
 import { useTranslation } from 'react-i18next';
 import { muscleLabel } from '../i18n/labels';
@@ -30,7 +26,8 @@ import {
   MAX_PR_CHIPS,
 } from '../utils/progressOverview';
 import { useFavoriteExercises } from '../hooks/useFavoriteExercises';
-import ExerciseProgressCard, { formatDaysAgo } from '../components/ExerciseProgressCard';
+import PrototypeSwitcher, { useVariant } from '../components/PrototypeSwitcher';
+import { ExerciseVariants, VARIANT_NAMES } from './prototype31/ProgressVariants';
 import ExerciseDetailDialog from '../components/ExerciseDetailDialog';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
@@ -38,8 +35,8 @@ const OPEN_SECTIONS_DEFAULT = 2;
 
 const SummaryStat = ({ label, value, color }) => (
   <Box sx={{ flex: 1, minWidth: 0 }}>
-    <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 28, lineHeight: 1, color }}>{value}</Typography>
-    <Typography sx={{ fontSize: 12, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700, mt: 0.5 }}>{label}</Typography>
+    <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 22, fontVariantNumeric: 'tabular-nums', lineHeight: 1.1, color: value ? color : 'text.secondary' }}>{value}</Typography>
+    <Typography sx={{ fontSize: 14, color: 'text.secondary', mt: 0.5 }}>{label}</Typography>
   </Box>
 );
 
@@ -54,6 +51,8 @@ const Progress = ({ isEmbedded = false }) => {
   const [expanded, setExpanded] = useState({});
   const [selectedId, setSelectedId] = useState(null);
   const { favorites, toggleFavorite } = useFavoriteExercises();
+  const variant = useVariant(['A', 'B', 'C']);
+  const Variant = ExerciseVariants[variant];
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -115,18 +114,6 @@ const Progress = ({ isEmbedded = false }) => {
 
   const selectedItem = analyzed.find((a) => a.id === selectedId) || null;
 
-  const renderCard = (item, showMuscle) => (
-    <Grid item xs={12} sm={6} md={4} key={item.id}>
-      <ExerciseProgressCard
-        item={item}
-        showMuscle={showMuscle}
-        favorite={favoriteSet.has(item.id)}
-        onToggleFavorite={toggleFavorite}
-        onOpen={setSelectedId}
-      />
-    </Grid>
-  );
-
   const renderContent = () => (
     <Grid container spacing={3}>
       {!isEmbedded && (
@@ -151,15 +138,15 @@ const Progress = ({ isEmbedded = false }) => {
       ) : (
         <>
           <Grid item xs={12}>
-            <Card sx={{ p: '20px 22px' }}>
-              <Typography sx={{ fontSize: 12, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700, mb: 1.5 }}>
+            <Card sx={{ p: '20px 22px', boxShadow: 'none', border: '1px solid', borderColor: 'divider' }}>
+              <Typography variant="cardTitle" sx={{ mb: 1.5 }}>
                 {t('progress.summary.title', { days: RECENT_DAYS })}
               </Typography>
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <SummaryStat label={t('progress.summary.improving')} value={summary.improving} color="success.main" />
-                <SummaryStat label={t('progress.summary.stalled')} value={summary.stalled} />
-                <SummaryStat label={t('progress.summary.declining')} value={summary.declining} color={summary.declining ? 'error.main' : undefined} />
-                <SummaryStat label={t('progress.summary.prs')} value={summary.prs.length} color={summary.prs.length ? 'primary.main' : undefined} />
+                <SummaryStat label={t('progress.summary.stalled')} value={summary.stalled} color="text.primary" />
+                <SummaryStat label={t('progress.summary.declining')} value={summary.declining} color="recovery.recovering" />
+                <SummaryStat label={t('progress.summary.prs')} value={summary.prs.length} color="text.primary" />
               </Box>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mt: 2 }}>
                 {summary.prs.length === 0 ? (
@@ -167,7 +154,7 @@ const Progress = ({ isEmbedded = false }) => {
                 ) : (
                   <>
                     {summary.prs.slice(0, MAX_PR_CHIPS).map((a) => (
-                      <Chip key={a.id} size="small" color="primary" variant="outlined" label={`${t('progress.pr')} · ${a.name}`} onClick={() => setSelectedId(a.id)} />
+                      <Chip key={a.id} size="small" variant="outlined" label={`${t('progress.pr')} · ${a.name}`} onClick={() => setSelectedId(a.id)} />
                     ))}
                     {summary.prs.length > MAX_PR_CHIPS && (
                       <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>+{summary.prs.length - MAX_PR_CHIPS}</Typography>
@@ -196,42 +183,14 @@ const Progress = ({ isEmbedded = false }) => {
             </Grid>
           )}
 
-          {favoriteItems.length > 0 && (
-            <Grid item xs={12}>
-              <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 15, mb: 1.5 }}>{t('progress.favorites')}</Typography>
-              <Grid container spacing={2}>{favoriteItems.map((item) => renderCard(item, true))}</Grid>
-            </Grid>
-          )}
-
-          {sections.map((section, index) => {
-            const isOpen = searching || (expanded[section.muscle] ?? index < OPEN_SECTIONS_DEFAULT);
-            const label = section.muscle === 'other' ? t('progress.muscle_other') : muscleLabel(section.muscle);
-            return (
-              <Grid item xs={12} key={section.muscle}>
-                <Accordion
-                  disableGutters
-                  expanded={isOpen}
-                  onChange={(_, value) => setExpanded((prev) => ({ ...prev, [section.muscle]: value }))}
-                  sx={{ border: '1px solid', borderColor: 'divider', boxShadow: 'none', borderRadius: '12px !important', '&:before': { display: 'none' } }}
-                >
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 2.5 }}>
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 16 }}>
-                        {label} <Box component="span" sx={{ color: 'text.secondary', fontWeight: 500, fontSize: 13 }}>· {t('progress.section_count', { count: section.items.length })}</Box>
-                      </Typography>
-                      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
-                        {section.improving > 0 && `${t('progress.section_improving', { count: section.improving })} · `}
-                        {t('progress.last_session', { when: formatDaysAgo(t, section.lastDays) })}
-                      </Typography>
-                    </Box>
-                  </AccordionSummary>
-                  <AccordionDetails sx={{ px: 2.5, pb: 2.5 }}>
-                    <Grid container spacing={2}>{section.items.map((item) => renderCard(item, false))}</Grid>
-                  </AccordionDetails>
-                </Accordion>
-              </Grid>
-            );
-          })}
+          <Variant
+            favoriteItems={favoriteItems}
+            sections={sections}
+            isOpen={(section, index) => searching || (expanded[section.muscle] ?? index < OPEN_SECTIONS_DEFAULT)}
+            onToggle={(section, value) => setExpanded((prev) => ({ ...prev, [section.muscle]: value }))}
+            label={(section) => (section.muscle === 'other' ? t('progress.muscle_other') : muscleLabel(section.muscle))}
+            cardProps={(item) => ({ favorite: favoriteSet.has(item.id), onToggleFavorite: toggleFavorite, onOpen: setSelectedId })}
+          />
         </>
       )}
     </Grid>
@@ -245,6 +204,7 @@ const Progress = ({ isEmbedded = false }) => {
         <Container maxWidth="lg" sx={{ py: 4 }}>{renderContent()}</Container>
       )}
 
+      <PrototypeSwitcher variants={['A', 'B', 'C']} names={VARIANT_NAMES} />
       <ExerciseDetailDialog
         item={selectedItem}
         onClose={() => setSelectedId(null)}

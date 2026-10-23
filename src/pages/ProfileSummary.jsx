@@ -1,26 +1,22 @@
 import { useState, useEffect } from 'react';
-import { Box, Card, CircularProgress, Grid, LinearProgress, Tooltip, Typography } from '@mui/material';
-import StarIcon from '@mui/icons-material/Star';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import { Box, Card, CircularProgress, Grid, LinearProgress, Typography } from '@mui/material';
+import PrototypeSwitcher, { useVariant } from '../components/PrototypeSwitcher';
+import { AchievementVariants, ACH_VARIANT_NAMES } from './prototype31/AchievementVariants';
 import { API_BASE_URL } from '../config';
 import { xpIntoLevel, xpForNextLevel } from '../utils/gamificationLevels';
 import { intlLocale } from '../i18n/format';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
-
-// Solo queste tre categorie hanno una griglia dedicata: "strength" è esclusa perché il suo
-// ruolo è coperto dalla sezione "Livelli per Esercizio" (il catalogo backend resta invariato).
-const CATEGORY_ORDER = ['sessions', 'tonnage', 'streak'];
-const CATEGORY_LABEL = {
-  sessions: 'Sessioni',
-  tonnage:  'Tonnellaggio',
-  streak:   'Costanza',
-};
 
 function exProgressPct(xp) {
   const xpNum = parseInt(xp, 10);
   const span = xpForNextLevel(xpNum);
   return span > 0 ? Math.round((xpIntoLevel(xpNum) / span) * 100) : 100;
 }
+
+const Achievements = ({ data }) => {
+  const V = AchievementVariants[useVariant(['A', 'B', 'C'])];
+  return <V data={data} />;
+};
 
 const ProfileSummary = () => {
   const [data, setData] = useState(null);
@@ -53,18 +49,12 @@ const ProfileSummary = () => {
   const {
     level, total_xp, xp_into_level, xp_for_next_level,
     lifetime_volume_kg, total_sessions, longest_streak,
-    exercises, achievements,
+    exercises,
   } = data;
 
   const progress = xp_for_next_level > 0
     ? Math.round((xp_into_level / xp_for_next_level) * 100)
     : 100;
-
-  const byCategory = {};
-  achievements.forEach(a => {
-    if (!byCategory[a.category]) byCategory[a.category] = [];
-    byCategory[a.category].push(a);
-  });
 
   const statTiles = [
     { value: total_sessions, label: 'sessioni' },
@@ -75,9 +65,8 @@ const ProfileSummary = () => {
   return (
     <Box sx={{ pb: 4 }}>
       {/* Card livello */}
-      <Card sx={{ p: '26px', mb: 3 }}>
+      <Card sx={{ p: '26px', mb: 3, boxShadow: 'none', border: '1px solid', borderColor: 'divider' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2.5 }}>
-          <StarIcon sx={{ fontSize: 44, color: 'primary.main' }} />
           <Box>
             <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 26, lineHeight: 1 }}>
               Livello {level}
@@ -104,42 +93,42 @@ const ProfileSummary = () => {
               bgcolor: 'divider',
               '& .MuiLinearProgress-bar': {
                 borderRadius: '5px',
-                background: 'linear-gradient(90deg, #d50000, #ff5131)',
+                bgcolor: 'primary.main',
               },
             }}
           />
         </Box>
 
-        <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', justifyContent: 'start', columnGap: { xs: 3, md: 5 } }}>
           {statTiles.map((stat) => (
             <Box key={stat.label}>
-              <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 19, lineHeight: 1 }}>
+              <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 22, fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>
                 {stat.value}
               </Typography>
-              <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>{stat.label}</Typography>
+              <Typography sx={{ fontSize: 14, color: 'text.secondary', mt: 0.5 }}>{stat.label}</Typography>
             </Box>
           ))}
         </Box>
       </Card>
 
-      {/* Livelli per Esercizio — precede Achievement */}
+      {/* Livelli per esercizio — precede Achievement */}
       {exercises.length > 0 && (
         <Box sx={{ mb: 3 }}>
           <Typography variant="cardTitle" sx={{ mb: 2 }}>
-            Livelli per Esercizio
+            Livelli per esercizio
           </Typography>
           <Grid container spacing={2}>
             {exercises.map(ex => (
               <Grid item xs={12} sm={6} key={ex.exercise_id}>
-                <Card sx={{ borderRadius: '14px', p: '18px' }}>
+                <Card sx={{ borderRadius: '14px', p: '18px', boxShadow: 'none', border: '1px solid', borderColor: 'divider' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.25 }}>
-                    <Typography sx={{ fontSize: 14, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <Typography sx={{ fontSize: 16, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {ex.name}
                     </Typography>
                     <Box sx={{
-                      bgcolor: 'primary.main',
-                      color: '#fff',
-                      fontSize: 11,
+                      bgcolor: 'action.selected',
+                      color: 'text.primary',
+                      fontSize: 13,
                       fontWeight: 800,
                       borderRadius: '999px',
                       px: 1.25,
@@ -158,7 +147,7 @@ const ProfileSummary = () => {
                       borderRadius: '3px',
                       bgcolor: 'divider',
                       mb: 0.75,
-                      '& .MuiLinearProgress-bar': { borderRadius: '3px', background: 'linear-gradient(90deg, #d50000, #ff5131)' },
+                      '& .MuiLinearProgress-bar': { borderRadius: '3px', bgcolor: 'primary.main' },
                     }}
                   />
                   <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{ex.xp} XP</Typography>
@@ -169,50 +158,8 @@ const ProfileSummary = () => {
         </Box>
       )}
 
-      {/* Achievement — solo sessions / tonnage / streak, "strength" esclusa dal rendering */}
-      <Typography variant="cardTitle" sx={{ mb: 2 }}>
-        Achievement
-      </Typography>
-      {CATEGORY_ORDER.filter(cat => byCategory[cat]?.length).map(cat => (
-        <Box key={cat} sx={{ mb: 3 }}>
-          <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'text.secondary', mb: 1.25 }}>
-            {CATEGORY_LABEL[cat]}
-          </Typography>
-          <Grid container spacing={1.5}>
-            {byCategory[cat].map(a => (
-              <Grid item xs={6} sm={3} key={a.key}>
-                <Tooltip
-                  title={a.locked
-                    ? `Soglia: ${a.threshold}`
-                    : a.unlocked_at
-                      ? new Date(a.unlocked_at).toLocaleDateString(intlLocale())
-                      : ''}
-                  placement="top"
-                >
-                  <Card sx={{
-                    borderRadius: '12px',
-                    p: '16px 10px',
-                    textAlign: 'center',
-                    opacity: a.locked ? 0.5 : 1,
-                    border: a.locked ? '1px solid' : '2px solid',
-                    borderColor: a.locked ? 'divider' : 'primary.main',
-                    cursor: 'default',
-                    height: '100%',
-                  }}>
-                    {a.locked
-                      ? <LockOutlinedIcon sx={{ fontSize: 24, color: 'text.disabled', mb: 0.75 }} />
-                      : <StarIcon sx={{ fontSize: 24, color: 'primary.main', mb: 0.75 }} />
-                    }
-                    <Typography sx={{ fontSize: 12, fontWeight: 600, lineHeight: 1.3 }}>
-                      {a.label}
-                    </Typography>
-                  </Card>
-                </Tooltip>
-              </Grid>
-            ))}
-          </Grid>
-        </Box>
-      ))}
+      <Achievements data={data} />
+      <PrototypeSwitcher variants={['A', 'B', 'C']} names={ACH_VARIANT_NAMES} />
     </Box>
   );
 };
