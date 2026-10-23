@@ -35,7 +35,7 @@ export default function RestTimerPhase({
       <Typography variant="body2" sx={{ color: colors.textMuted, mb: 4 }}>{t('focus.next_set', { n: nextSetNumber, total: totalSetsForCurrentExercise })}</Typography>
       <Button variant="outlined" size="large" startIcon={<SkipNextIcon />} onClick={onSkip}
         sx={{ color: colors.text, borderColor: colors.border, borderRadius: '12px', px: 4, py: 1.5, fontSize: '1rem',
-          '&:hover': { borderColor: colors.primary, bgcolor: colors.timerBg } }}>
+          '&:hover': { borderColor: colors.text, bgcolor: colors.bgElevated } }}>
         {t('focus.skip_timer')}
       </Button>
     </Box>

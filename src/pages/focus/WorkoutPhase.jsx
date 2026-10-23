@@ -42,11 +42,11 @@ export default function WorkoutPhase({
       <Fade in={exerciseTransition} timeout={300}>
         <Container maxWidth="sm" sx={{ py: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
           <Box sx={{ textAlign: 'center', mb: 3 }}>
-            <Chip label={muscleLabel(currentExercise.muscle_group)} size="small" sx={{ bgcolor: colors.primaryAlpha, color: colors.primaryLight, mb: 1, fontWeight: 500 }} />
+            <Chip label={muscleLabel(currentExercise.muscle_group)} size="small" sx={{ bgcolor: colors.bgElevated, color: colors.textSecondary, mb: 1, fontWeight: 500 }} />
             <Typography variant="h4" sx={{ fontWeight: 700, color: colors.text, lineHeight: 1.2 }}>{currentExercise.exercise_name}</Typography>
             {currentExercise.notes && (
               <Alert severity="info" icon={<InfoIcon sx={{ color: colors.primaryLight }} />}
-                sx={{ mt: 2, bgcolor: colors.timerBg, color: colors.textSecondary, '& .MuiAlert-icon': { color: colors.primaryLight }, border: `1px solid ${colors.border}`, borderRadius: '8px' }}>
+                sx={{ mt: 2, bgcolor: colors.bgElevated, color: colors.textSecondary, '& .MuiAlert-icon': { color: colors.textSecondary }, border: `1px solid ${colors.border}`, borderRadius: '8px' }}>
                 {currentExercise.notes}
               </Alert>
             )}

@@ -19,8 +19,6 @@ export function useFocusColors() {
     success: theme.palette.success.main,
     warning: theme.palette.warning.main,
     border: theme.palette.divider,
-    timerBg: isDarkMode ? 'rgba(213, 0, 0, 0.08)' : 'rgba(213, 0, 0, 0.04)',
-    primaryAlpha: isDarkMode ? 'rgba(213, 0, 0, 0.15)' : 'rgba(213, 0, 0, 0.08)',
   };
   return { colors, isDarkMode };
 }

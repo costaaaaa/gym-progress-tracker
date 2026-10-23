@@ -13,7 +13,7 @@ export default function SelectDayPhase({
   activePlan, selectedDayId, selectedDay, timerEnabled, onDayChange, onStart, onBack, onGoToPlans
 }) {
   const { t } = useTranslation();
-  const { colors, isDarkMode } = useFocusColors();
+  const { colors } = useFocusColors();
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text }}>
       <Box sx={{
@@ -112,8 +112,8 @@ export default function SelectDayPhase({
                         label={muscleLabel(ex.muscle_group)}
                         size="small"
                         sx={{
-                          bgcolor: colors.primaryAlpha,
-                          color: colors.primaryLight,
+                          bgcolor: colors.bgElevated,
+                          color: colors.textSecondary,
                           fontWeight: 500,
                           fontSize: '0.7rem'
                         }}
@@ -132,12 +132,10 @@ export default function SelectDayPhase({
               disabled={!selectedDay || !selectedDay.exercises || selectedDay.exercises.length === 0}
               onClick={onStart}
               sx={{
-                py: 2, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1,
-                bgcolor: colors.primary, color: '#fff', borderRadius: '14px', textTransform: 'uppercase',
-                boxShadow: isDarkMode ? '0 4px 20px rgba(0, 0, 0, 0.4)' : '0 4px 20px rgba(213, 0, 0, 0.2)',
-                '&:hover': { bgcolor: colors.primaryDark, boxShadow: isDarkMode ? '0 6px 24px rgba(0, 0, 0, 0.5)' : '0 6px 24px rgba(213, 0, 0, 0.3)', transform: 'translateY(-2px)' },
+                py: 2, fontSize: '1.2rem', fontWeight: 700,
+                bgcolor: colors.primary, color: '#fff', borderRadius: '12px',
+                '&:hover': { bgcolor: colors.primaryDark },
                 '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted },
-                transition: 'all 0.3s ease',
               }}
             >
               {t('focus.start')}

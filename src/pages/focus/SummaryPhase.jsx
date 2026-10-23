@@ -29,7 +29,7 @@ export default function SummaryPhase({
   quitDialogOpen, onCloseQuitDialog, onConfirmQuit
 }) {
   const { t } = useTranslation();
-  const { colors, isDarkMode } = useFocusColors();
+  const { colors } = useFocusColors();
 
   const xpWithheldText = (result) => {
     if (!result || result.xp_session_awarded !== false) return '';
@@ -123,12 +123,12 @@ export default function SummaryPhase({
             {/* Streak banner */}
             {(savedResult.week_completed_now || savedResult.streak_milestone || savedResult.new_longest) && (
               <Paper sx={{
-                bgcolor: isDarkMode ? 'rgba(213, 0, 0, 0.12)' : 'rgba(213, 0, 0, 0.06)',
-                border: `1px solid ${colors.primary}`,
+                bgcolor: colors.bgElevated,
+                border: `1px solid ${colors.border}`,
                 p: 2.5, mb: 3, textAlign: 'center'
               }}>
-                <FireIcon sx={{ fontSize: 40, color: colors.primary, mb: 0.5 }} />
-                <Typography variant="h6" sx={{ fontWeight: 700, color: colors.primary }}>
+                <FireIcon sx={{ fontSize: 40, color: colors.warning, mb: 0.5 }} />
+                <Typography variant="h6" sx={{ fontWeight: 700, color: colors.text }}>
                   {savedResult.new_longest
                     ? t('focus.streak_new_longest', { weeks: savedResult.current_streak_weeks })
                     : savedResult.streak_milestone && savedResult.current_streak_weeks > 1
@@ -215,7 +215,7 @@ export default function SummaryPhase({
             <Button
               variant="contained" fullWidth size="large"
               onClick={onGoHistory}
-              sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.primary, color: '#fff', borderRadius: '14px', mb: 2 }}
+              sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, bgcolor: colors.primary, color: '#fff', borderRadius: '12px', mb: 2 }}
             >
               {t('focus.go_history')}
             </Button>
@@ -244,8 +244,8 @@ export default function SummaryPhase({
             <Button variant="contained" fullWidth size="large"
               startIcon={saving ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : <SaveIcon />}
               onClick={onSave} disabled={saving || totalCompletedSets === 0}
-              sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.primary, color: '#fff', borderRadius: '14px',
-                boxShadow: isDarkMode ? '0 4px 20px rgba(0, 0, 0, 0.4)' : '0 4px 20px rgba(213, 0, 0, 0.2)', '&:hover': { bgcolor: colors.primaryDark },
+              sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, bgcolor: colors.primary, color: '#fff', borderRadius: '12px',
+                '&:hover': { bgcolor: colors.primaryDark },
                 '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted }, mb: 2 }}>
               {saving ? t('focus.saving') : t('focus.save')}
             </Button>
