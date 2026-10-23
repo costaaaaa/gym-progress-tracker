@@ -9,22 +9,19 @@ const RING_RADIUS = 26;
 const RING_STROKE = 5;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
-// previewData: dati statici per mostrare la card senza autenticazione (es. landing page).
-// Quando presente salta la fetch autenticata e usa direttamente quei dati.
-const StreakCard = ({ previewData }) => {
+const StreakCard = () => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const [data, setData] = useState(previewData || null);
-  const [loading, setLoading] = useState(!previewData);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (previewData) return;
     fetch(`${API_BASE_URL}api/gamification/streak.php`, { credentials: 'include' })
       .then(r => r.ok ? r.json() : null)
       .then(json => { if (json?.success) setData(json); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [previewData]);
+  }, []);
 
   if (loading) return null;
   if (!data) return null;
@@ -37,9 +34,10 @@ const StreakCard = ({ previewData }) => {
   const remaining = Math.max(0, this_week.goal - this_week.count);
 
   return (
-    <Card sx={{ p: '22px', height: '100%', ...(previewData && { '&:hover': { transform: 'none' } }) }}>
+    <Card sx={{ p: '22px', height: '100%' }}>
       <Typography
-        sx={{ textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 700, fontSize: 12, color: 'text.secondary', mb: 2 }}
+        component="h2"
+        sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2 }}
       >
         {t('streak.title')}
       </Typography>
@@ -47,7 +45,7 @@ const StreakCard = ({ previewData }) => {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, flexWrap: 'wrap' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <LocalFireDepartmentIcon sx={{ fontSize: 30, color: 'warning.main' }} />
-          <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 30, lineHeight: 1, color: 'warning.main' }}>
+          <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 30, lineHeight: 1 }}>
             {current_streak_weeks}
           </Typography>
         </Box>
@@ -67,7 +65,7 @@ const StreakCard = ({ previewData }) => {
               cy={RING_SIZE / 2}
               r={RING_RADIUS}
               fill="none"
-              stroke="#d50000"
+              stroke={theme.palette.primary.main}
               strokeWidth={RING_STROKE}
               strokeLinecap="round"
               strokeDasharray={RING_CIRCUMFERENCE}
