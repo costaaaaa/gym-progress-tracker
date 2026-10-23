@@ -31,7 +31,8 @@ const LevelCard = () => {
       <CardActionArea component={RouterLink} to="/profilo" sx={{ height: '100%', p: '22px' }}>
         <Typography
           component="h2"
-          sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2 }}
+          variant="cardTitle"
+          sx={{ mb: 2 }}
         >
           {t('level.title')}
         </Typography>

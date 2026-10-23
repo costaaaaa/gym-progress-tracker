@@ -37,7 +37,8 @@ const StreakCard = () => {
     <Card sx={{ p: '22px', height: '100%' }}>
       <Typography
         component="h2"
-        sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2 }}
+        variant="cardTitle"
+        sx={{ mb: 2 }}
       >
         {t('streak.title')}
       </Typography>

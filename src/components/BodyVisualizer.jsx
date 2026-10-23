@@ -67,7 +67,7 @@ const BodyVisualizer = ({ recoveryData }) => {
 
   return (
     <Box sx={{ width: '100%' }}>
-      <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2 }}>
+      <Typography variant="cardTitle" sx={{ mb: 2 }}>
         {t('recovery.title')}
       </Typography>
 

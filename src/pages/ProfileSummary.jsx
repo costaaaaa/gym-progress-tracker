@@ -124,7 +124,7 @@ const ProfileSummary = () => {
       {/* Livelli per Esercizio — precede Achievement */}
       {exercises.length > 0 && (
         <Box sx={{ mb: 3 }}>
-          <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2 }}>
+          <Typography variant="cardTitle" sx={{ mb: 2 }}>
             Livelli per Esercizio
           </Typography>
           <Grid container spacing={2}>
@@ -169,7 +169,7 @@ const ProfileSummary = () => {
       )}
 
       {/* Achievement — solo sessions / tonnage / streak, "strength" esclusa dal rendering */}
-      <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2 }}>
+      <Typography variant="cardTitle" sx={{ mb: 2 }}>
         Achievement
       </Typography>
       {CATEGORY_ORDER.filter(cat => byCategory[cat]?.length).map(cat => (
