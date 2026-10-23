@@ -60,4 +60,24 @@ export default [
       'no-use-before-define': ['error', { functions: false, classes: false, variables: false }],
     },
   },
+  // Il font dei titoli sta in un punto solo: src/utils/fonts.js (costante) e il tema (varianti h1-h6, cardTitle).
+  // Vietato scrivere "Lexend" in stringhe e template altrove. Esclusi il canvas del cartoncino (usa un font
+  // canvas con fallback suo) e i test, che tengono il valore atteso scritto per esteso.
+  {
+    files: ['src/**/*.{js,jsx}'],
+    ignores: ['src/utils/fonts.js', 'src/utils/renderShareCard.js', 'src/**/*.test.{js,jsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Literal[value=/Lexend/]',
+          message: 'Non scrivere "Lexend" a mano: usa TITLE_FONT_FAMILY da utils/fonts.js, oppure la variante cardTitle del tema.',
+        },
+        {
+          selector: 'TemplateElement[value.raw=/Lexend/]',
+          message: 'Non scrivere "Lexend" a mano: usa TITLE_FONT_FAMILY da utils/fonts.js, oppure la variante cardTitle del tema.',
+        },
+      ],
+    },
+  },
 ];
