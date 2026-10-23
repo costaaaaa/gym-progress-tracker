@@ -23,6 +23,11 @@ import {
   Divider,
   Collapse,
   Tooltip,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -31,6 +36,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ShareIcon from '@mui/icons-material/Share';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 
 import RecordWorkoutDialog from '../components/RecordWorkoutDialog';
 import EditWorkoutDateDialog from '../components/EditWorkoutDateDialog';
@@ -92,6 +98,8 @@ const groupWorkoutsByMonth = (workouts) => {
 const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
   const { t } = useTranslation();
   const { isLoggedIn, loading: authLoading } = useAuth();
+  const isPhone = useMediaQuery(useTheme().breakpoints.down('sm'));
+  const [rowMenu, setRowMenu] = useState(null); // { anchor, workout } del menu "Altre azioni", null = chiuso
   const [workouts, setWorkouts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -284,6 +292,17 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
     setOpenEditDateDialog(true);
   };
   
+  // Le azioni di una riga: le usano le icone (desktop) e il menu (telefono); un gesto di swipe potrà usare le stesse
+  const rowActions = (workout) => [
+    { key: 'share', label: t('history.share_aria'), icon: <ShareIcon fontSize="small" />, run: () => handleShareClick(workout) },
+    {
+      key: 'edit-date', label: t('history.edit_date_aria'), icon: <EditCalendarIcon fontSize="small" />,
+      disabled: new Date(workout.date) < oldestMovable, disabledHint: t('history.date.too_old'),
+      run: (e) => handleEditDateClick(workout, e),
+    },
+    { key: 'delete', label: t('history.delete_aria'), icon: <DeleteIcon fontSize="small" />, run: (e) => handleDeleteClick(workout, e) },
+  ];
+
   const handleCloseEditDateDialog = () => {
     setOpenEditDateDialog(false);
     setWorkoutToEdit(null);
@@ -387,7 +406,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
             variant="contained"
             onClick={() => setOpenRecordDialog(true)}
             startIcon={<AssignmentIcon fontSize="small" />}
-            sx={{ fontSize: 13, fontWeight: 600 }}
+            sx={{ fontSize: 16, fontWeight: 600 }}
           >
             {t('record.title')}
           </Button>
@@ -427,7 +446,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                 aria-controls={monthPanelId}
                 sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.75, py: 0.5, borderRadius: 1, textAlign: 'left' }}
               >
-                <Typography component="span" sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 16, borderBottom: '2px solid', borderColor: 'primary.main', pb: 0.75 }}>
+                <Typography component="span" variant="cardTitle">
                   {isUnknownDate ? t('history.unknown_date') : `${getMonthName(parseInt(month))} ${year}`}
                 </Typography>
                 <Box component="span" sx={{ display: 'flex', p: 0.625, color: 'text.secondary' }}>
@@ -444,17 +463,17 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                         <React.Fragment key={workout.id}>
                           {/* La card intera apre i dettagli. Condividi, modifica e cestino stanno in
                               secondaryAction, fuori dal ListItemButton: il loro clic non apre la card. */}
-                          <ListItem disablePadding sx={{ '& > .MuiListItemButton-root': { pr: 19 } }} secondaryAction={
+                          <ListItem disablePadding sx={{ '& > .MuiListItemButton-root': { pr: isPhone ? 10 : 19 } }} secondaryAction={
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <IconButton onClick={() => handleShareClick(workout)} size="small" sx={{ color: 'text.secondary' }} aria-label={t('history.share_aria')}><ShareIcon fontSize="small" /></IconButton>
-                              {new Date(workout.date) < oldestMovable ? (
-                                <Tooltip title={t('history.date.too_old')}>
-                                  <span><IconButton disabled size="small" aria-label={t('history.edit_date_aria')}><EditCalendarIcon fontSize="small" /></IconButton></span>
+                              {isPhone ? (
+                                <IconButton onClick={(e) => setRowMenu({ anchor: e.currentTarget, workout })} size="small" sx={{ color: 'text.secondary' }} aria-label={t('history.more_actions_aria')}><MoreVertIcon fontSize="small" /></IconButton>
+                              ) : rowActions(workout).map((action) => (action.disabled ? (
+                                <Tooltip key={action.key} title={action.disabledHint}>
+                                  <span><IconButton disabled size="small" aria-label={action.label}>{action.icon}</IconButton></span>
                                 </Tooltip>
                               ) : (
-                                <IconButton onClick={(e) => handleEditDateClick(workout, e)} size="small" sx={{ color: 'text.secondary' }} aria-label={t('history.edit_date_aria')}><EditCalendarIcon fontSize="small" /></IconButton>
-                              )}
-                              <IconButton onClick={(e) => handleDeleteClick(workout, e)} size="small" sx={{ color: 'text.secondary' }} aria-label={t('history.delete_aria')}><DeleteIcon fontSize="small" /></IconButton>
+                                <IconButton key={action.key} onClick={action.run} size="small" sx={{ color: 'text.secondary' }} aria-label={action.label}>{action.icon}</IconButton>
+                              )))}
                               {/* Indicatore: per tastiera e lettori di schermo il comando è la card */}
                               <Box component="span" aria-hidden onClick={() => toggleWorkoutExpansion(workout.id)}
                                 sx={{ display: 'flex', p: 0.625, color: 'text.secondary', cursor: 'pointer' }}>
@@ -468,8 +487,8 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                               aria-controls={rowPanelId}
                             >
                               <ListItemText
-                                primary={<Typography sx={{ fontWeight: 600, fontSize: 14 }}>{new Date(workout.date).toLocaleDateString(intlLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</Typography>}
-                                secondary={<Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.25 }}>{`${new Date(workout.date).toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit' })} · ${t('focus.exercises_count', { count: workout.exercises?.length || 0 })}`}</Typography>}
+                                primary={<Typography sx={{ fontWeight: 600, fontSize: 16 }}>{new Date(workout.date).toLocaleDateString(intlLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</Typography>}
+                                secondary={<Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.25 }}>{`${new Date(workout.date).toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit' })} · ${t('focus.exercises_count', { count: workout.exercises?.length || 0 })}`}</Typography>}
                               />
                             </ListItemButton>
                           </ListItem>
@@ -517,6 +536,18 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
           <Button onClick={handleConfirmDelete} color="error" variant="contained" disabled={deleteLoading}>{t('history.delete.confirm')}</Button>
         </DialogActions>
       </Dialog>
+      <Menu anchorEl={rowMenu?.anchor} open={!!rowMenu} onClose={() => setRowMenu(null)}>
+        {rowMenu && rowActions(rowMenu.workout).map((action) => (
+          <MenuItem
+            key={action.key}
+            disabled={action.disabled}
+            onClick={(e) => { setRowMenu(null); action.run(e); }}
+          >
+            <ListItemIcon sx={{ color: 'text.secondary' }}>{action.icon}</ListItemIcon>
+            {action.label}
+          </MenuItem>
+        ))}
+      </Menu>
       <ShareCardDialog open={!!shareStats} stats={shareStats} onClose={() => setShareStats(null)} />
       <EditWorkoutDateDialog open={openEditDateDialog} onClose={handleCloseEditDateDialog} workout={workoutToEdit} onUpdateSuccess={handleUpdateDateSuccess} />
       <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })}>

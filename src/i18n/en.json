@@ -787,6 +787,7 @@
   "history.share_aria": "Share workout",
   "history.edit_date_aria": "Edit date",
   "history.delete_aria": "Delete workout",
+  "history.more_actions_aria": "More actions",
   "account.delete.password_required": "The password is required",
   "account.delete.confirm_required": "You must confirm you understand the consequences",
   "account.delete.error": "Error while deleting the account",
