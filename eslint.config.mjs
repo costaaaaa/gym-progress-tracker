@@ -2,12 +2,17 @@ import js from '@eslint/js';
 import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 
+const MESSAGGIO_LEXEND = 'Non scrivere "Lexend" a mano: usa TITLE_FONT_FAMILY da utils/fonts.js, oppure la variante cardTitle del tema.';
+
 /**
  * Prima introduzione di ESLint nel repo (in precedenza c'era solo un blocco
  * "eslintConfig" morto ereditato da Create React App, che estendeva
  * "react-app" senza avere il pacchetto installato). Su una codebase mai
- * passata da un linter, tutto e' impostato come "warn": va segnalato, non
- * bloccare il build finche' non viene ripulito a mano file per file.
+ * passata da un linter le regole generiche sono "warn": vanno segnalate, non
+ * bloccare il build finche' non vengono ripulite a mano file per file.
+ * Sono "error" solo le regole che proteggono da bug veri o da una convenzione
+ * decisa apposta: rules-of-hooks, no-use-before-define e il divieto di
+ * scrivere "Lexend" a mano (in fondo al file).
  *
  * Tutto e' ristretto esplicitamente a "files: src/**" (niente blocco globale
  * senza "files") — il repo contiene cartelle gitignorate ma non escluse di
@@ -71,11 +76,11 @@ export default [
         'error',
         {
           selector: 'Literal[value=/Lexend/]',
-          message: 'Non scrivere "Lexend" a mano: usa TITLE_FONT_FAMILY da utils/fonts.js, oppure la variante cardTitle del tema.',
+          message: MESSAGGIO_LEXEND,
         },
         {
           selector: 'TemplateElement[value.raw=/Lexend/]',
-          message: 'Non scrivere "Lexend" a mano: usa TITLE_FONT_FAMILY da utils/fonts.js, oppure la variante cardTitle del tema.',
+          message: MESSAGGIO_LEXEND,
         },
       ],
     },
