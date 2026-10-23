@@ -192,14 +192,14 @@ const Home = () => {
                 </Typography>
 
                 <Box sx={{ display: 'flex', gap: 1.5 }}>
-                  <Box sx={{ flex: 1, p: 2, bgcolor: 'action.hover', borderRadius: '10px', textAlign: 'center' }}>
+                  <Box sx={{ flex: 1 }}>
                     <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 22 }}>
                       {formatNumber(dashboardStats?.weekly_volume?.total_weight)}
                       <Box component="span" sx={{ fontSize: 13, fontWeight: 600, ml: 0.5 }}>kg</Box>
                     </Typography>
                     <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.volume')}</Typography>
                   </Box>
-                  <Box sx={{ flex: 1, p: 2, bgcolor: 'action.hover', borderRadius: '10px', textAlign: 'center' }}>
+                  <Box sx={{ flex: 1 }}>
                     <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 22 }}>
                       {formatNumber(dashboardStats?.weekly_volume?.total_reps)}
                     </Typography>
