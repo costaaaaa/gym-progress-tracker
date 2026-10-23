@@ -62,24 +62,24 @@ afterEach(() => {
 });
 
 describe('home dopo il login', () => {
-  it('"Inizia Allenamento" porta al Focus', async () => {
+  it('"Inizia allenamento" porta al Focus', async () => {
     renderHome();
-    const link = await screen.findByRole('link', { name: 'Inizia Allenamento' });
+    const link = await screen.findByRole('link', { name: 'Inizia allenamento' });
     expect(link.getAttribute('href')).toBe('/focus');
   });
 
-  it('Ultimo Allenamento porta alla cronologia e mostra data ed esercizi', async () => {
+  it('Ultimo allenamento porta alla cronologia e mostra data ed esercizi', async () => {
     renderHome();
-    const link = await screen.findByRole('link', { name: /Ultimo Allenamento/ });
+    const link = await screen.findByRole('link', { name: /Ultimo allenamento/ });
     expect(link.getAttribute('href')).toBe('/workouts?tab=history');
     expect(link.textContent).toContain('20 ottobre 2026');
     expect(link.textContent).toContain('Panca piana');
     expect(link.textContent).toContain('Squat');
   });
 
-  it('Piano Attivo porta ai piani e mostra il nome', async () => {
+  it('Piano attivo porta ai piani e mostra il nome', async () => {
     renderHome();
-    const link = await screen.findByRole('link', { name: /Piano Attivo/ });
+    const link = await screen.findByRole('link', { name: /Piano attivo/ });
     expect(link.getAttribute('href')).toBe('/workouts?tab=plans');
     expect(link.textContent).toContain('Push Pull Legs');
   });
@@ -89,7 +89,7 @@ describe('home dopo il login', () => {
     expect(await screen.findByText('2 / 3')).toBeTruthy();
   });
 
-  it.each(['Riepilogo Settimanale', 'Ultimo Allenamento', 'Piano Attivo', 'I tuoi gruppi'])(
+  it.each(['Riepilogo settimanale', 'Ultimo allenamento', 'Piano attivo', 'I tuoi gruppi'])(
     'la card "%s" ha un\'intestazione',
     async (name) => {
       renderHome();
@@ -114,13 +114,13 @@ describe('home: titoli delle card', () => {
 
   it('il titolo di una card (h2) è Lexend 700 a 17px', async () => {
     renderHome();
-    const h2 = await screen.findByRole('heading', { name: 'Riepilogo Settimanale' });
+    const h2 = await screen.findByRole('heading', { name: 'Riepilogo settimanale' });
     expect(style(h2)).toEqual({ tag: 'H2', ...titolo });
   });
 
   it('il titolo di sezione senza heading resta un <p> con lo stesso stile', async () => {
     renderHome();
-    await screen.findByRole('heading', { name: 'Riepilogo Settimanale' });
-    expect(style(screen.getByText('Azioni Rapide'))).toEqual({ tag: 'P', ...titolo });
+    await screen.findByRole('heading', { name: 'Riepilogo settimanale' });
+    expect(style(screen.getByText('Azioni rapide'))).toEqual({ tag: 'P', ...titolo });
   });
 });
