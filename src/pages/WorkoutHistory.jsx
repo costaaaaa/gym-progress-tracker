@@ -42,6 +42,7 @@ import { API_BASE_URL } from '../config';
 import { intlLocale } from '../i18n/format';
 import { muscleLabel, techniqueLabel } from '../i18n/labels';
 import { achievementCatalog } from '../utils/gamificationLevels';
+import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
 // Determina il formato dei dati e organizza gli esercizi di un allenamento in modo uniforme
 // (ex helper interno di WorkoutDetailDialog: il backend restituisce righe storiche in due forme
@@ -376,7 +377,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
   const renderContent = () => (
     <Box sx={{ pt: isEmbedded ? 0 : 3, pb: 6 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography sx={{ fontFamily: "'Lexend', sans-serif", fontWeight: 700, fontSize: 20 }}>
+        <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 20 }}>
           {t('history.title')}
         </Typography>
         {isLoggedIn && activePlan && (
@@ -424,7 +425,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                 aria-controls={monthPanelId}
                 sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.75, py: 0.5, borderRadius: 1, textAlign: 'left' }}
               >
-                <Typography component="span" sx={{ fontFamily: "'Lexend', sans-serif", fontWeight: 700, fontSize: 16, borderBottom: '2px solid', borderColor: 'primary.main', pb: 0.75 }}>
+                <Typography component="span" sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 16, borderBottom: '2px solid', borderColor: 'primary.main', pb: 0.75 }}>
                   {isUnknownDate ? t('history.unknown_date') : `${getMonthName(parseInt(month))} ${year}`}
                 </Typography>
                 <Box component="span" sx={{ display: 'flex', p: 0.625, color: 'text.secondary' }}>

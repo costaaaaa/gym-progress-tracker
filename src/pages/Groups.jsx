@@ -11,6 +11,7 @@ import RequireLogin from '../components/Groups/RequireLogin';
 import { createGroup, errorMessage, groupTypeLabel, listGroups, roleLabel } from '../api/groups';
 import { track } from '../utils/analytics';
 import { useTranslation } from 'react-i18next';
+import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
 const CreateGroupDialog = ({ open, onClose, onCreated }) => {
   const { t } = useTranslation();
@@ -37,7 +38,7 @@ const CreateGroupDialog = ({ open, onClose, onCreated }) => {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <Box component="form" onSubmit={submit}>
-        <DialogTitle sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700 }}>{t('groups.new.title')}</DialogTitle>
+        <DialogTitle sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700 }}>{t('groups.new.title')}</DialogTitle>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <TextField
@@ -92,7 +93,7 @@ const GroupsContent = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', mb: 3 }}>
-        <Typography component="h1" sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 28 }}>
+        <Typography component="h1" sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 28 }}>
           {t('groups.title')}
         </Typography>
         <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)}>
@@ -138,7 +139,7 @@ const GroupsContent = () => {
                     <GroupsOutlined sx={{ color: 'primary.main' }} />
                   </Box>
                   <Box sx={{ minWidth: 0, flex: 1 }}>
-                    <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 17, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {g.name}
                     </Typography>
                     <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>

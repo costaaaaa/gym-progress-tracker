@@ -6,6 +6,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import EqualizerIcon from '@mui/icons-material/Equalizer';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 
 // Voce di navigazione standard (icona + etichetta), come link/bottone accessibile
 // (component=RouterLink su ButtonBase: focus da tastiera, aria-current sulla voce attiva).
@@ -124,7 +125,7 @@ const BottomNav = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontFamily: '"Lexend", sans-serif',
+            fontFamily: TITLE_FONT_FAMILY,
             fontSize: '9.5px',
             fontWeight: 700,
           }}

@@ -9,6 +9,7 @@ import { useThemeMode } from '../../context/ThemeModeContext';
 import { safeNext } from '../../utils/safeNext';
 import { useTranslation } from 'react-i18next';
 import { stripLangPrefix, useLocalizedPath } from '../../i18n/paths';
+import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 
 // Voci del centro nav desktop: Home / Allenamenti / Dashboard / Gruppi.
 // Su mobile la navigazione vive in BottomNav.jsx (Home/Allenamenti/Focus/Dashboard/Profilo);
@@ -105,7 +106,7 @@ const Navbar = () => {
           </Box>
           <Typography
             sx={{
-              fontFamily: '"Lexend", sans-serif',
+              fontFamily: TITLE_FONT_FAMILY,
               fontWeight: 700,
               fontSize: 16,
               lineHeight: 1,
@@ -180,7 +181,7 @@ const Navbar = () => {
                     color: '#fff',
                     fontSize: 14,
                     fontWeight: 700,
-                    fontFamily: '"Lexend", sans-serif',
+                    fontFamily: TITLE_FONT_FAMILY,
                   }}
                 >
                   {initials}

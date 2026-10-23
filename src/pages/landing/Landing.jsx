@@ -7,13 +7,14 @@ import { useLocalizedPath } from '../../i18n/paths';
 import HeroRecovery from './HeroRecovery';
 import SceneFocus from './SceneFocus';
 import SceneProgress from './SceneProgress';
+import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 
 const FEATURES = ['plans', 'measures', 'charts'];
 const PLAN_ROWS = [['ex1', '4 × 8'], ['ex2', '3 × 10'], ['ex3', '3 × 12']];
 
 const PlanFragment = ({ t }) => (
   <Card data-ui aria-hidden="true" sx={{ p: { xs: 2.5, md: 3 }, mt: { xs: 3, md: 5 }, maxWidth: 440 }}>
-    <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 22, mb: 2 }}>
+    <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 22, mb: 2 }}>
       {t('home.landing.inside.plan.day')}
     </Typography>
     {PLAN_ROWS.map(([key, sets], i) => (

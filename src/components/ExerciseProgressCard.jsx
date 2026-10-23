@@ -8,6 +8,7 @@ import { muscleLabel } from '../i18n/labels';
 import { buildPoints } from './ChartCard';
 import { dayTime } from '../utils/calendarDay';
 import { STATUS, STATUS_TONE, showsDelta } from '../utils/progressOverview';
+import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
 export const formatDaysAgo = (t, days) => {
   if (days === 0) return t('progress.today');
@@ -57,7 +58,7 @@ const ExerciseProgressCard = ({ item, showMuscle = false, favorite, onToggleFavo
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mt: 1, flexWrap: 'wrap' }}>
-          <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 24, lineHeight: 1 }}>
+          <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 24, lineHeight: 1 }}>
             {formatValue(t, mode, last.value)}
           </Typography>
           {recentPR && <Chip size="small" color="secondary" label={t('progress.pr')} sx={{ height: 20, fontSize: 11, fontWeight: 700 }} />}

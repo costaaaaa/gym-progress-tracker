@@ -11,7 +11,7 @@ import StreakCard from '../components/StreakCard';
 import LevelCard from '../components/LevelCard';
 import GroupsHomeCard from '../components/Groups/GroupsHomeCard';
 import { useAuth } from '../context/AuthContext';
-import { CHIP_FONT } from '../utils/fonts';
+import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
 import { API_BASE_URL } from '../config';
 import { useTranslation, Trans } from 'react-i18next';
 import { usePageMeta } from '../hooks/usePageMeta';
@@ -193,14 +193,14 @@ const Home = () => {
 
                 <Box sx={{ display: 'flex', gap: 1.5 }}>
                   <Box sx={{ flex: 1 }}>
-                    <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 22 }}>
+                    <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
                       {formatNumber(dashboardStats?.weekly_volume?.total_weight)}
                       <Box component="span" sx={{ fontSize: 13, fontWeight: 600, ml: 0.5 }}>kg</Box>
                     </Typography>
                     <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.volume')}</Typography>
                   </Box>
                   <Box sx={{ flex: 1 }}>
-                    <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 22 }}>
+                    <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
                       {formatNumber(dashboardStats?.weekly_volume?.total_reps)}
                     </Typography>
                     <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.reps')}</Typography>

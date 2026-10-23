@@ -5,6 +5,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../i18n/format';
+import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
 const LevelCard = () => {
   const { t } = useTranslation();
@@ -40,7 +41,7 @@ const LevelCard = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, flexWrap: 'wrap' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <StarIcon sx={{ fontSize: 30 }} />
-            <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 30, lineHeight: 1 }}>
+            <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 30, lineHeight: 1 }}>
               {level}
             </Typography>
           </Box>

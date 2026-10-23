@@ -1,4 +1,5 @@
 import { Box, Card, Typography } from '@mui/material';
+import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
 const VIEWBOX_WIDTH = 220;
 const VIEWBOX_HEIGHT = 72;
@@ -92,7 +93,7 @@ const ChartCard = ({ title, points, domain, color = 'primary.main', valueLabel, 
       </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-        <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 24, lineHeight: 1 }}>
+        <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 24, lineHeight: 1 }}>
           {valueLabel}
         </Typography>
         {deltaText && (

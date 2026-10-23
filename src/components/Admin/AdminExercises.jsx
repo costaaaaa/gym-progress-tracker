@@ -6,6 +6,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import { adminExerciseAction, errorMessage, listAdminExercises } from '../../api/exercises';
 import { equipmentLabel, exerciseMatches } from '../../utils/exerciseCatalog';
+import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 
 const STATUS_LABELS = { pending: 'In attesa', approved: 'Approvati', rejected: 'Rifiutati' };
 
@@ -48,7 +49,7 @@ const ExerciseFormDialog = ({ open, exercise, muscleGroups, equipment, onClose, 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <Box component="form" onSubmit={submit}>
-        <DialogTitle sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700 }}>
+        <DialogTitle sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700 }}>
           {exercise ? 'Modifica esercizio' : 'Nuovo esercizio ufficiale'}
         </DialogTitle>
         <DialogContent>
@@ -140,7 +141,7 @@ const AdminExercises = () => {
   return (
     <Card sx={{ p: '24px' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', mb: 2 }}>
-        <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 18 }}>Esercizi</Typography>
+        <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 18 }}>Esercizi</Typography>
         <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setForm({ open: true, exercise: null })}>
           Nuovo esercizio
         </Button>

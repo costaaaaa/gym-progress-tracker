@@ -37,6 +37,7 @@ import ExerciseDialog, { INTENSITY_TECHNIQUES } from '../components/ExerciseDial
 import { API_BASE_URL } from '../config';
 import { useTranslation } from 'react-i18next';
 import { muscleLabel, techniqueLabel } from '../i18n/labels';
+import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
 const WorkoutPlans = ({ isEmbedded = false }) => {
   const { t } = useTranslation();
@@ -726,7 +727,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       )}
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography sx={{ fontFamily: "'Lexend', sans-serif", fontWeight: 700, fontSize: 20 }}>
+        <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 20 }}>
           {t('plans.section_title')}
         </Typography>
         <Button
@@ -752,7 +753,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1.5 }}>
                     <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 0.75, flexWrap: 'wrap' }}>
-                        <Typography sx={{ fontFamily: "'Lexend', sans-serif", fontWeight: 700, fontSize: 16 }}>
+                        <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 16 }}>
                           {plan.name}
                         </Typography>
                         {!!plan.is_active && (

@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import { errorMessage } from '../../api/exercises';
 import { renameAdminGroup, searchAdminGroups } from '../../api/adminGroups';
+import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 
 const formatDate = (value) => new Date(value.replace(' ', 'T')).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' });
 
@@ -43,7 +44,7 @@ const RenameDialog = ({ group, onClose, onDone }) => {
     <Dialog open={Boolean(group)} onClose={saving ? undefined : onClose} maxWidth="xs" fullWidth>
       {group && (
         <Box component="form" onSubmit={submit}>
-          <DialogTitle sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700 }}>Rinomina il gruppo</DialogTitle>
+          <DialogTitle sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700 }}>Rinomina il gruppo</DialogTitle>
           <DialogContent>
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
             <Typography sx={{ fontSize: 14, color: 'text.secondary', mb: 1 }}>
@@ -111,7 +112,7 @@ const AdminGroups = () => {
 
   return (
     <Card sx={{ p: '24px' }}>
-      <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 18, mb: 2 }}>Gruppi</Typography>
+      <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 18, mb: 2 }}>Gruppi</Typography>
 
       <Box component="form" onSubmit={search} sx={{ display: 'flex', gap: 1, mb: 2 }}>
         <TextField size="small" placeholder="Id o nome del gruppo" value={query} onChange={(e) => setQuery(e.target.value)} fullWidth />

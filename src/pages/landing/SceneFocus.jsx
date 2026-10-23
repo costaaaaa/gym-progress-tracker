@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../../i18n/format';
-import { TABULAR } from '../../utils/fonts';
+import { TABULAR, TITLE_FONT_FAMILY } from '../../utils/fonts';
 import { sceneSx, stageSx, useScrollScene } from './useScrollScene';
 
 const TOTAL_SETS = 4;
@@ -91,7 +91,7 @@ const Phone = ({ children, sx }) => (
 const WorkScreen = ({ t }) => (
   <Box data-screen="work" sx={{ position: 'absolute', inset: 0, p: 2.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
     <Box>
-      <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 22 }}>
+      <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 22 }}>
         {t('home.landing.focus.exercise')}
       </Typography>
       <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>

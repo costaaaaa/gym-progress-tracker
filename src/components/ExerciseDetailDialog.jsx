@@ -23,6 +23,7 @@ import { formatDate, formatNumber } from '../i18n/format';
 import { muscleLabel } from '../i18n/labels';
 import { formatValue } from './ExerciseProgressCard';
 import { dayTime } from '../utils/calendarDay';
+import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
 const HEAD_SX = { fontSize: 11, textTransform: 'uppercase', color: 'text.secondary', fontWeight: 700, border: 0, px: { xs: 0.75, sm: 2 }, lineHeight: 1.2, verticalAlign: 'bottom' };
 const ROWS_COLLAPSED = 5;
@@ -51,7 +52,7 @@ const ChartTooltip = ({ active, payload, mode, t }) => {
 const Stat = ({ label, value }) => (
   <Box sx={{ flex: 1, minWidth: 0 }}>
     <Typography sx={{ fontSize: 11, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700 }}>{label}</Typography>
-    <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 20 }}>{value}</Typography>
+    <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 20 }}>{value}</Typography>
   </Box>
 );
 
@@ -75,7 +76,7 @@ const ExerciseDetailDialog = ({ item, onClose }) => {
       {item && (
         <>
           <DialogTitle sx={{ pr: 6 }}>
-            <Typography component="span" sx={{ display: 'block', fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 18 }}>{item.name}</Typography>
+            <Typography component="span" sx={{ display: 'block', fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 18 }}>{item.name}</Typography>
             <Typography component="span" sx={{ display: 'block', fontSize: 13, color: 'text.secondary', fontWeight: 400 }}>{muscleLabel(item.muscle)}</Typography>
             <IconButton aria-label={t('progress.close')} onClick={onClose} sx={{ position: 'absolute', top: 12, right: 12 }}>
               <CloseIcon />
@@ -104,7 +105,7 @@ const ExerciseDetailDialog = ({ item, onClose }) => {
               </ResponsiveContainer>
             </Box>
 
-            <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 15, mt: 3, mb: 1 }}>{t('progress.history_title')}</Typography>
+            <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 15, mt: 3, mb: 1 }}>{t('progress.history_title')}</Typography>
             <TableContainer>
               <Table size="small">
                 <TableHead>

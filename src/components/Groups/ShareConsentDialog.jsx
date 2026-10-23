@@ -3,6 +3,7 @@ import {
   Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Link, Typography,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 
 // Consenso all'ingresso in un gruppo: cosa vedranno gli altri membri e cosa no.
 // Senza la spunta il server rifiuta l'ingresso (join.php, code consent_required).
@@ -17,7 +18,7 @@ const ShareConsentDialog = ({ open, groupName, username, loading, onClose, onCon
 
   return (
     <Dialog open={open} onClose={close} maxWidth="xs" fullWidth>
-      <DialogTitle sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700 }}>{t('groups.consent.title', { name: groupName })}</DialogTitle>
+      <DialogTitle sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700 }}>{t('groups.consent.title', { name: groupName })}</DialogTitle>
       <DialogContent>
         <Typography sx={{ fontWeight: 600, mb: 0.5 }}>{t('groups.consent.sees')}</Typography>
         <Box component="ul" sx={{ mt: 0, mb: 2, pl: 2.5, fontSize: 14 }}>

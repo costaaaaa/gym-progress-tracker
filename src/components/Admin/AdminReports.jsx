@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import { errorMessage } from '../../api/exercises';
 import { adminReportAction, listAdminReports } from '../../api/reports';
+import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 
 const STATUS_LABELS = { open: 'Aperte', resolved: 'Accolte', dismissed: 'Respinte' };
 const TARGET_LABELS = { group_name: 'Nome del gruppo', member: 'Username' };
@@ -67,7 +68,7 @@ const ReportActionDialog = ({ pending, onClose, onDone }) => {
     <Dialog open={Boolean(pending)} onClose={saving ? undefined : onClose} maxWidth="xs" fullWidth>
       {action && (
         <Box component="form" onSubmit={submit}>
-          <DialogTitle sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700 }}>{action.title}</DialogTitle>
+          <DialogTitle sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700 }}>{action.title}</DialogTitle>
           <DialogContent>
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
             {action.hint && (
@@ -139,7 +140,7 @@ const AdminReports = () => {
 
   return (
     <Card sx={{ p: '24px' }}>
-      <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 18, mb: 2 }}>Segnalazioni</Typography>
+      <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 18, mb: 2 }}>Segnalazioni</Typography>
 
       <ToggleButtonGroup size="small" exclusive value={status} onChange={(_, v) => v && setStatus(v)} sx={{ mb: 2 }}>
         {Object.entries(STATUS_LABELS).map(([value, label]) => (

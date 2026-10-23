@@ -3,6 +3,7 @@ import { Box, Card, Typography, useTheme } from '@mui/material';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import { API_BASE_URL } from '../config';
 import { useTranslation } from 'react-i18next';
+import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
 const RING_SIZE = 60;
 const RING_RADIUS = 26;
@@ -46,7 +47,7 @@ const StreakCard = () => {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, flexWrap: 'wrap' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <LocalFireDepartmentIcon sx={{ fontSize: 30, color: 'warning.main' }} />
-          <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 30, lineHeight: 1 }}>
+          <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 30, lineHeight: 1 }}>
             {current_streak_weeks}
           </Typography>
         </Box>
