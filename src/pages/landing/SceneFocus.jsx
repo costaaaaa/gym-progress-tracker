@@ -1,6 +1,7 @@
 import { Box, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../../i18n/format';
+import { TABULAR } from '../../utils/tabularFont';
 import { sceneSx, stageSx, useScrollScene } from './useScrollScene';
 
 const TOTAL_SETS = 4;
@@ -9,7 +10,6 @@ const RING = { size: 208, stroke: 10 };
 const STEPS = ['s1', 's2', 's3'];
 
 const clock = (seconds) => `${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, '0')}`;
-const TABULAR = { fontFamily: '"Inter", sans-serif', fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"' };
 
 // Timeline: .2-.34 conferma della serie, .38-.46 cambio schermata, .46-.80 recupero che scorre, .80-.95 fine e vibrazione.
 function build(tl, q) {
@@ -140,8 +140,8 @@ const RestScreen = ({ t, live }) => {
       data-screen="rest"
       sx={{ position: 'absolute', inset: 0, p: 2.5, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}
     >
-      <Typography sx={{ fontWeight: 700, fontSize: 16, letterSpacing: '0.08em', alignSelf: 'flex-start' }}>
-        {t('focus.rest_caps')}
+      <Typography sx={{ fontWeight: 700, fontSize: 16, alignSelf: 'flex-start' }}>
+        {t('focus.rest')}
       </Typography>
       <Box sx={{ position: 'relative', width: RING.size, height: RING.size, mt: 1 }}>
         <svg width={RING.size} height={RING.size} viewBox={`0 0 ${RING.size} ${RING.size}`} style={{ transform: 'rotate(-90deg)' }}>

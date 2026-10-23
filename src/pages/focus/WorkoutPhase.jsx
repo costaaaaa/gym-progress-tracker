@@ -8,6 +8,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
+import { TABULAR } from '../../utils/tabularFont';
 import ElapsedClock from './ElapsedClock';
 import QuitDialog from './QuitDialog';
 import { INTENSITY_TECHNIQUES } from '../../components/ExerciseDialog';
@@ -30,7 +31,7 @@ export default function WorkoutPhase({
         <IconButton onClick={onQuit} sx={{ color: colors.textSecondary }}><CloseIcon /></IconButton>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <AccessTimeIcon sx={{ fontSize: 16, color: colors.textMuted }} />
-          <Typography variant="caption" sx={{ color: colors.textMuted, fontFamily: 'monospace' }}><ElapsedClock startTime={startTime} /></Typography>
+          <Typography variant="caption" sx={{ ...TABULAR, color: colors.textMuted }}><ElapsedClock startTime={startTime} /></Typography>
         </Box>
         <Typography variant="caption" sx={{ color: colors.textMuted }}>{currentExerciseIndex + 1}/{totalExercises}</Typography>
       </Box>
@@ -41,11 +42,11 @@ export default function WorkoutPhase({
       <Fade in={exerciseTransition} timeout={300}>
         <Container maxWidth="sm" sx={{ py: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
           <Box sx={{ textAlign: 'center', mb: 3 }}>
-            <Chip label={muscleLabel(currentExercise.muscle_group)} size="small" sx={{ bgcolor: colors.primaryAlpha, color: colors.primaryLight, mb: 1, fontWeight: 500 }} />
+            <Chip label={muscleLabel(currentExercise.muscle_group)} size="small" sx={{ bgcolor: colors.bgElevated, color: colors.textSecondary, mb: 1, fontWeight: 500 }} />
             <Typography variant="h4" sx={{ fontWeight: 700, color: colors.text, lineHeight: 1.2 }}>{currentExercise.exercise_name}</Typography>
             {currentExercise.notes && (
-              <Alert severity="info" icon={<InfoIcon sx={{ color: colors.primaryLight }} />}
-                sx={{ mt: 2, bgcolor: colors.timerBg, color: colors.textSecondary, '& .MuiAlert-icon': { color: colors.primaryLight }, border: `1px solid ${colors.border}`, borderRadius: '8px' }}>
+              <Alert severity="info" icon={<InfoIcon />}
+                sx={{ mt: 2, bgcolor: colors.bgElevated, color: colors.textSecondary, '& .MuiAlert-icon': { color: colors.textSecondary }, border: `1px solid ${colors.border}`, borderRadius: '8px' }}>
                 {currentExercise.notes}
               </Alert>
             )}
@@ -68,8 +69,8 @@ export default function WorkoutPhase({
             })}
           </Box>
 
-          <Typography variant="subtitle2" sx={{ textAlign: 'center', color: colors.textMuted, mb: 3, letterSpacing: 1 }}>
-            SERIE {currentSetIndex + 1} DI {totalSetsForCurrentExercise}
+          <Typography variant="subtitle2" sx={{ textAlign: 'center', color: colors.textSecondary, mb: 3 }}>
+            {t('focus.set_of', { n: currentSetIndex + 1, total: totalSetsForCurrentExercise })}
           </Typography>
 
           {(() => {
@@ -82,7 +83,7 @@ export default function WorkoutPhase({
               }}>
                 <HistoryIcon sx={{ fontSize: 18, color: colors.textMuted, mt: 0.25 }} />
                 <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="caption" sx={{ color: colors.textMuted, letterSpacing: 0.5 }}>
+                  <Typography variant="caption" sx={{ color: colors.textSecondary }}>
                     {t('focus.last_time')}
                   </Typography>
                   {/* Una chip per serie, con la tecnica sotto; evidenziata quella pari alla serie in corso */}
@@ -98,7 +99,7 @@ export default function WorkoutPhase({
                             {set.label}
                           </Typography>
                           {set.technique && (
-                            <Typography variant="caption" sx={{ color: colors.primaryLight, display: 'block', lineHeight: 1.2, fontWeight: 600 }}>
+                            <Typography variant="caption" sx={{ color: colors.textSecondary, display: 'block', lineHeight: 1.2, fontWeight: 600 }}>
                               {techniqueLabel(set.technique)}
                             </Typography>
                           )}
@@ -178,7 +179,7 @@ export default function WorkoutPhase({
                 endIcon={canEditSession ? null : <LockIcon sx={{ fontSize: '16px !important' }} />}
                 onClick={() => onOpenPicker(pickerMode)}
                 sx={{ py: 1.25, opacity: pickerMode === 'swap' && currentSetIndex > 0 ? 0.45 : 1, color: colors.textSecondary, borderColor: colors.border, borderRadius: '12px',
-                  '&:hover': { borderColor: colors.primary, color: colors.primaryLight } }}>
+                  '&:hover': { borderColor: colors.text, color: colors.text } }}>
                 {label}
               </Button>
             ))}
@@ -187,7 +188,7 @@ export default function WorkoutPhase({
           {currentExerciseSets.length > 0 && (
             <Paper sx={{ bgcolor: colors.bgCard, overflow: 'hidden', border: `1px solid ${colors.border}` }}>
               <Box sx={{ px: 2, py: 1.5, bgcolor: colors.bgElevated }}>
-                <Typography variant="subtitle2" sx={{ color: colors.textMuted, letterSpacing: 1 }}>{t('focus.sets_done')}</Typography>
+                <Typography variant="subtitle2" sx={{ color: colors.textSecondary }}>{t('focus.sets_done')}</Typography>
               </Box>
               {currentExerciseSets.map((set, idx) => (
                 <Box key={set.setNumber} sx={{

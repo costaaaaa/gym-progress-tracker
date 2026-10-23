@@ -86,7 +86,7 @@ const FocusWorkout = () => {
         color: `${colors.text} !important`,
       },
       '.MuiMenuItem-root:hover': {
-        backgroundColor: isDarkMode ? 'rgba(229, 57, 53, 0.2) !important' : 'rgba(213, 0, 0, 0.1) !important',
+        backgroundColor: `${colors.bgElevated} !important`,
       },
       '.MuiTypography-root': {
         color: 'inherit',

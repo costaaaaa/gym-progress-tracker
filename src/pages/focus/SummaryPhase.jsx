@@ -7,6 +7,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
+import { TABULAR } from '../../utils/tabularFont';
 import QuitDialog from './QuitDialog';
 import { detectPersonalRecords } from '../../utils/workoutMetrics';
 import { buildShareStats, sessionRecords } from '../../utils/shareCard';
@@ -28,7 +29,7 @@ export default function SummaryPhase({
   quitDialogOpen, onCloseQuitDialog, onConfirmQuit
 }) {
   const { t } = useTranslation();
-  const { colors, isDarkMode } = useFocusColors();
+  const { colors } = useFocusColors();
 
   const xpWithheldText = (result) => {
     if (!result || result.xp_session_awarded !== false) return '';
@@ -41,7 +42,7 @@ export default function SummaryPhase({
     <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text }}>
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1, borderBottom: `1px solid ${colors.border}` }}>
         <IconButton onClick={onQuit} sx={{ color: colors.textSecondary }}><ArrowBackIcon /></IconButton>
-        <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: 1 }}>{t('focus.summary_caps')}</Typography>
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>{t('focus.summary')}</Typography>
       </Box>
 
       <Container maxWidth="sm" sx={{ py: 3 }}>
@@ -50,23 +51,23 @@ export default function SummaryPhase({
           <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>{t('focus.completed')}</Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mt: 2 }}>
             <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: colors.primary }}>{exercisesCompleted}</Typography>
-              <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.exercises_caps')}</Typography>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: colors.text }}>{exercisesCompleted}</Typography>
+              <Typography variant="caption" sx={{ color: colors.textSecondary }}>{t('focus.exercises')}</Typography>
             </Box>
             <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: colors.primary }}>{totalSets}</Typography>
-              <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.sets_caps')}</Typography>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: colors.text }}>{totalSets}</Typography>
+              <Typography variant="caption" sx={{ color: colors.textSecondary }}>{t('focus.sets')}</Typography>
             </Box>
             <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: colors.primary, fontFamily: 'monospace' }}>{elapsedTime}</Typography>
-              <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.duration_caps')}</Typography>
+              <Typography variant="h4" sx={{ ...TABULAR, fontWeight: 700, color: colors.text }}>{elapsedTime}</Typography>
+              <Typography variant="caption" sx={{ color: colors.textSecondary }}>{t('focus.duration')}</Typography>
             </Box>
           </Box>
         </Box>
 
         <Paper sx={{ bgcolor: colors.bgCard, overflow: 'hidden', mb: 3, border: `1px solid ${colors.border}` }}>
           <Box sx={{ px: 2, py: 1.5, bgcolor: colors.bgElevated }}>
-            <Typography variant="subtitle2" sx={{ color: colors.textMuted, letterSpacing: 1 }}>{t('focus.detail_caps')}</Typography>
+            <Typography variant="subtitle2" sx={{ color: colors.textSecondary }}>{t('focus.detail')}</Typography>
           </Box>
           {selectedDay?.exercises?.map((exercise) => {
             const sets = completedSets[exercise.id];
@@ -94,11 +95,11 @@ export default function SummaryPhase({
                   )}
                   {!!pr.volume && (
                     <Chip
-                      icon={<TrendingUpIcon sx={{ fontSize: 16, color: `${colors.primaryLight} !important` }} />}
+                      icon={<TrendingUpIcon sx={{ fontSize: 16, color: `${colors.textSecondary} !important` }} />}
                       label={t('focus.best_volume')}
                       size="small"
                       variant="outlined"
-                      sx={{ borderColor: colors.primary, color: colors.primaryLight, fontWeight: 700, fontSize: '0.7rem' }}
+                      sx={{ borderColor: colors.border, color: colors.textSecondary, fontWeight: 700, fontSize: '0.7rem' }}
                     />
                   )}
                 </Box>
@@ -122,12 +123,12 @@ export default function SummaryPhase({
             {/* Streak banner */}
             {(savedResult.week_completed_now || savedResult.streak_milestone || savedResult.new_longest) && (
               <Paper sx={{
-                bgcolor: isDarkMode ? 'rgba(213, 0, 0, 0.12)' : 'rgba(213, 0, 0, 0.06)',
-                border: `1px solid ${colors.primary}`,
+                bgcolor: colors.bgElevated,
+                border: `1px solid ${colors.border}`,
                 p: 2.5, mb: 3, textAlign: 'center'
               }}>
-                <FireIcon sx={{ fontSize: 40, color: colors.primary, mb: 0.5 }} />
-                <Typography variant="h6" sx={{ fontWeight: 700, color: colors.primary }}>
+                <FireIcon sx={{ fontSize: 40, color: colors.warning, mb: 0.5 }} />
+                <Typography variant="h6" sx={{ fontWeight: 700, color: colors.text }}>
                   {savedResult.new_longest
                     ? t('focus.streak_new_longest', { weeks: savedResult.current_streak_weeks })
                     : savedResult.streak_milestone && savedResult.current_streak_weeks > 1
@@ -175,8 +176,8 @@ export default function SummaryPhase({
 
               return (
                 <Paper sx={{ bgcolor: colors.bgCard, border: `1px solid ${colors.border}`, p: 2.5, mb: 3 }}>
-                  <Typography variant="subtitle2" sx={{ color: colors.textMuted, mb: 1.5, letterSpacing: 1 }}>
-                    {t('focus.session_summary_caps')}
+                  <Typography variant="subtitle2" sx={{ color: colors.textSecondary, mb: 1.5 }}>
+                    {t('focus.session_summary')}
                   </Typography>
                   <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 0.5 }}>
                     {activePlan?.name}{selectedDay?.name ? ` · ${selectedDay.name}` : ''}
@@ -190,12 +191,12 @@ export default function SummaryPhase({
                     </Typography>
                   )}
                   {volumeList.length > 0 && (
-                    <Typography variant="body2" sx={{ color: colors.primaryLight, mb: 0.5 }}>
+                    <Typography variant="body2" sx={{ color: colors.text, mb: 0.5 }}>
                       {t('focus.best_volume_list', { list: volumeList.join(', ') })}
                     </Typography>
                   )}
                   {savedResult.current_streak_weeks > 0 && (
-                    <Typography variant="body2" sx={{ color: colors.primary }}>
+                    <Typography variant="body2" sx={{ color: colors.text }}>
                       🔥 {t('focus.streak_line_plain', { count: savedResult.current_streak_weeks })}
                     </Typography>
                   )}
@@ -214,7 +215,7 @@ export default function SummaryPhase({
             <Button
               variant="contained" fullWidth size="large"
               onClick={onGoHistory}
-              sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.primary, color: '#fff', borderRadius: '14px', mb: 2 }}
+              sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, bgcolor: colors.primary, color: colors.primaryContrast, borderRadius: '12px', mb: 2 }}
             >
               {t('focus.go_history')}
             </Button>
@@ -232,7 +233,7 @@ export default function SummaryPhase({
               endIcon={canEditSession ? null : <LockIcon sx={{ fontSize: '16px !important' }} />}
               onClick={onAddExercise}
               sx={{ py: 1.25, mb: 3, color: colors.textSecondary, borderColor: colors.border, borderRadius: '12px',
-                '&:hover': { borderColor: colors.primary, color: colors.primaryLight } }}>
+                '&:hover': { borderColor: colors.text, color: colors.text } }}>
               {t('focus.add_exercise')}
             </Button>
 
@@ -241,10 +242,10 @@ export default function SummaryPhase({
               sx={{ mb: 3, '& .MuiOutlinedInput-root': { color: colors.text, '& fieldset': { borderColor: colors.border }, '&:hover fieldset': { borderColor: colors.primary }, '&.Mui-focused fieldset': { borderColor: colors.primary } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.primary } }} />
 
             <Button variant="contained" fullWidth size="large"
-              startIcon={saving ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : <SaveIcon />}
+              startIcon={saving ? <CircularProgress size={20} sx={{ color: colors.primaryContrast }} /> : <SaveIcon />}
               onClick={onSave} disabled={saving || totalCompletedSets === 0}
-              sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.primary, color: '#fff', borderRadius: '14px',
-                boxShadow: isDarkMode ? '0 4px 20px rgba(0, 0, 0, 0.4)' : '0 4px 20px rgba(213, 0, 0, 0.2)', '&:hover': { bgcolor: colors.primaryDark },
+              sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, bgcolor: colors.primary, color: colors.primaryContrast, borderRadius: '12px',
+                '&:hover': { bgcolor: colors.primaryDark },
                 '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted }, mb: 2 }}>
               {saving ? t('focus.saving') : t('focus.save')}
             </Button>

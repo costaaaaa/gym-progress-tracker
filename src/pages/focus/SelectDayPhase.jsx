@@ -13,7 +13,7 @@ export default function SelectDayPhase({
   activePlan, selectedDayId, selectedDay, timerEnabled, onDayChange, onStart, onBack, onGoToPlans
 }) {
   const { t } = useTranslation();
-  const { colors, isDarkMode } = useFocusColors();
+  const { colors } = useFocusColors();
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text }}>
       <Box sx={{
@@ -27,10 +27,10 @@ export default function SelectDayPhase({
           width: 26, height: 26, borderRadius: '7px', bgcolor: colors.primary,
           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         }}>
-          <FitnessCenterIcon sx={{ color: '#fff', fontSize: 15 }} />
+          <FitnessCenterIcon sx={{ color: colors.primaryContrast, fontSize: 15 }} />
         </Box>
-        <Typography sx={{ fontFamily: "'Lexend', sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: '0.06em' }}>
-          FOCUS MODE
+        <Typography sx={{ fontFamily: "'Lexend', sans-serif", fontWeight: 700, fontSize: 14 }}>
+          Focus mode
         </Typography>
       </Box>
 
@@ -58,7 +58,7 @@ export default function SelectDayPhase({
               bgcolor: colors.bgCard, p: 3, mb: 3,
               border: `1px solid ${colors.border}`
             }}>
-              <Typography variant="overline" sx={{ color: colors.textMuted, letterSpacing: 2 }}>
+              <Typography variant="subtitle2" sx={{ color: colors.textSecondary }}>
                 {t('focus.active_plan')}
               </Typography>
               <Typography variant="h5" sx={{ color: colors.text, fontWeight: 700, mb: 3 }}>
@@ -91,7 +91,7 @@ export default function SelectDayPhase({
 
               {selectedDay && selectedDay.exercises && (
                 <Box>
-                  <Typography variant="subtitle2" sx={{ color: colors.textMuted, mb: 1.5, letterSpacing: 1 }}>
+                  <Typography variant="subtitle2" sx={{ color: colors.textSecondary, mb: 1.5 }}>
                     {t('focus.exercises_header', { count: selectedDay.exercises.length })}
                   </Typography>
                   {selectedDay.exercises.map((ex, idx) => (
@@ -112,8 +112,8 @@ export default function SelectDayPhase({
                         label={muscleLabel(ex.muscle_group)}
                         size="small"
                         sx={{
-                          bgcolor: colors.primaryAlpha,
-                          color: colors.primaryLight,
+                          bgcolor: colors.bgElevated,
+                          color: colors.textSecondary,
                           fontWeight: 500,
                           fontSize: '0.7rem'
                         }}
@@ -132,12 +132,10 @@ export default function SelectDayPhase({
               disabled={!selectedDay || !selectedDay.exercises || selectedDay.exercises.length === 0}
               onClick={onStart}
               sx={{
-                py: 2, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1,
-                bgcolor: colors.primary, color: '#fff', borderRadius: '14px', textTransform: 'uppercase',
-                boxShadow: isDarkMode ? '0 4px 20px rgba(0, 0, 0, 0.4)' : '0 4px 20px rgba(213, 0, 0, 0.2)',
-                '&:hover': { bgcolor: colors.primaryDark, boxShadow: isDarkMode ? '0 6px 24px rgba(0, 0, 0, 0.5)' : '0 6px 24px rgba(213, 0, 0, 0.3)', transform: 'translateY(-2px)' },
+                py: 2, fontSize: '1.2rem', fontWeight: 700,
+                bgcolor: colors.primary, color: colors.primaryContrast, borderRadius: '12px',
+                '&:hover': { bgcolor: colors.primaryDark },
                 '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted },
-                transition: 'all 0.3s ease',
               }}
             >
               {t('focus.start')}

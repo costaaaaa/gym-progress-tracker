@@ -4,10 +4,8 @@ import { Link as RouterLink } from 'react-router-dom';
 import CalendarTodayOutlined from '@mui/icons-material/CalendarTodayOutlined';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StraightenOutlined from '@mui/icons-material/StraightenOutlined';
-import HistoryOutlined from '@mui/icons-material/HistoryOutlined';
 import AssessmentOutlined from '@mui/icons-material/AssessmentOutlined';
 import HealthAndSafetyOutlined from '@mui/icons-material/HealthAndSafetyOutlined';
-import AssignmentOutlined from '@mui/icons-material/AssignmentOutlined';
 import BodyVisualizer from '../components/BodyVisualizer';
 import StreakCard from '../components/StreakCard';
 import LevelCard from '../components/LevelCard';
@@ -22,7 +20,7 @@ import { formatDate as formatLocalDate, formatNumber } from '../i18n/format';
 // Landing per gli ospiti: carica GSAP solo per chi non ha fatto il login.
 const Landing = lazy(() => import('./landing/Landing'));
 
-// Pillola di Azioni Rapide: fondo bianco, bordo 1px, icona stroked rossa.
+// Pillola di Azioni Rapide: fondo bianco, bordo 1px, icona stroked grigia.
 const QuickActionPill = ({ to, icon, label }) => (
   <Box
     component={RouterLink}
@@ -42,10 +40,10 @@ const QuickActionPill = ({ to, icon, label }) => (
       ...CHIP_FONT,
       fontSize: 13,
       transition: 'border-color .2s ease',
-      '&:hover': { borderColor: 'primary.main' },
+      '&:hover': { borderColor: 'text.primary' },
     }}
   >
-    {React.cloneElement(icon, { sx: { fontSize: 18, color: 'primary.main' } })}
+    {React.cloneElement(icon, { sx: { fontSize: 18, color: 'text.secondary' } })}
     {label}
   </Box>
 );
@@ -132,39 +130,19 @@ const Home = () => {
 
   return (
     <>
-      <Box
-        sx={{
-          p: { xs: 4, md: '48px 44px' },
-          mb: 4,
-          borderRadius: '20px',
-          textAlign: 'left',
-          background: 'linear-gradient(135deg, #d50000 0%, #9b0000 100%)',
-          color: '#fff',
-        }}
-      >
-        <Typography
-          variant="h1"
-          sx={{ fontSize: { xs: '1.75rem', md: '2.25rem' }, mb: 1.5, color: '#fff' }}
-        >
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h1" sx={{ fontSize: { xs: '1.75rem', md: '2.25rem' }, mb: 1.5 }}>
           {t('home.hero.welcome', { username: user?.username || '' })}
         </Typography>
-        <Typography sx={{ fontSize: 16, color: 'rgba(255,255,255,.85)', mb: 3, maxWidth: 560, lineHeight: 1.6 }}>
+        <Typography sx={{ fontSize: 16, color: 'text.secondary', mb: 3, maxWidth: 560, lineHeight: 1.6 }}>
           {t('home.hero.sub_user')}
         </Typography>
-
         <Button
+          variant="contained"
           component={RouterLink}
           to="/focus"
           startIcon={<PlayArrowIcon />}
-          sx={{
-            bgcolor: '#fff',
-            color: '#9b0000',
-            borderRadius: '12px',
-            px: 3,
-            py: 1.25,
-            fontWeight: 700,
-            '&:hover': { bgcolor: 'rgba(255,255,255,.9)' },
-          }}
+          sx={{ borderRadius: '12px', px: 3, py: 1.25, fontWeight: 700 }}
         >
           {t('home.hero.start_workout')}
         </Button>
@@ -188,7 +166,7 @@ const Home = () => {
             {/* Riepilogo Settimanale */}
             <Grid item xs={12} md={6}>
               <Card sx={{ height: '100%', p: '22px' }}>
-                <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2.5 }}>
+                <Typography component="h2" sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2.5 }}>
                   {t('home.weekly.title')}
                 </Typography>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
@@ -202,7 +180,7 @@ const Home = () => {
                     sx={{
                       height: '100%',
                       width: `${weeklyGoal ? Math.min(100, (dashboardStats.weekly_workouts / weeklyGoal) * 100) : 0}%`,
-                      background: 'linear-gradient(90deg, #d50000, #ff5131)',
+                      bgcolor: 'primary.main',
                       borderRadius: '5px',
                     }}
                   />
@@ -214,15 +192,15 @@ const Home = () => {
                 </Typography>
 
                 <Box sx={{ display: 'flex', gap: 1.5 }}>
-                  <Box sx={{ flex: 1, p: 2, bgcolor: (theme) => theme.palette.mode === 'light' ? '#faf5f5' : 'rgba(213, 0, 0, 0.08)', borderRadius: '10px', textAlign: 'center' }}>
-                    <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 22, color: 'primary.main' }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 22 }}>
                       {formatNumber(dashboardStats?.weekly_volume?.total_weight)}
                       <Box component="span" sx={{ fontSize: 13, fontWeight: 600, ml: 0.5 }}>kg</Box>
                     </Typography>
                     <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.volume')}</Typography>
                   </Box>
-                  <Box sx={{ flex: 1, p: 2, bgcolor: (theme) => theme.palette.mode === 'light' ? '#faf5f5' : 'rgba(213, 0, 0, 0.08)', borderRadius: '10px', textAlign: 'center' }}>
-                    <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 22, color: 'primary.main' }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 800, fontSize: 22 }}>
                       {formatNumber(dashboardStats?.weekly_volume?.total_reps)}
                     </Typography>
                     <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.reps')}</Typography>
@@ -245,17 +223,12 @@ const Home = () => {
 
             {/* Ultimo Allenamento */}
             <Grid item xs={12} md={6}>
-              <Card sx={{ height: '100%', borderLeft: '4px solid #d50000' }}>
+              <Card sx={{ height: '100%' }}>
                 <CardActionArea component={RouterLink} to="/workouts?tab=history" sx={{ height: '100%', p: '26px' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2.5 }}>
-                    <Box sx={{ width: 42, height: 42, borderRadius: '10px', bgcolor: (theme) => theme.palette.mode === 'light' ? '#fbebeb' : 'rgba(213, 0, 0, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', mr: 2 }}>
-                      <HistoryOutlined sx={{ color: 'primary.main', fontSize: 22 }} />
-                    </Box>
-                    <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17 }}>{t('home.last.title')}</Typography>
-                  </Box>
+                  <Typography component="h2" sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2.5 }}>{t('home.last.title')}</Typography>
                   {lastWorkout ? (
                     <>
-                      <Typography sx={{ color: 'primary.main', fontWeight: 700, fontSize: 15, mb: 1 }}>
+                      <Typography sx={{ color: 'text.primary', fontWeight: 700, fontSize: 15, mb: 1 }}>
                         {formatDate(lastWorkout.date)}
                       </Typography>
                       <Typography sx={{ color: 'text.secondary', fontSize: 14, mb: 2 }}>
@@ -286,17 +259,12 @@ const Home = () => {
 
             {/* Piano Attivo */}
             <Grid item xs={12} md={6}>
-              <Card sx={{ height: '100%', borderLeft: '4px solid #d50000' }}>
+              <Card sx={{ height: '100%' }}>
                 <CardActionArea component={RouterLink} to="/workouts?tab=plans" sx={{ height: '100%', p: '26px' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2.5 }}>
-                    <Box sx={{ width: 42, height: 42, borderRadius: '10px', bgcolor: (theme) => theme.palette.mode === 'light' ? '#fbebeb' : 'rgba(213, 0, 0, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', mr: 2 }}>
-                      <AssignmentOutlined sx={{ color: 'primary.main', fontSize: 22 }} />
-                    </Box>
-                    <Typography sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17 }}>{t('home.plan.title')}</Typography>
-                  </Box>
+                  <Typography component="h2" sx={{ fontFamily: '"Lexend", sans-serif', fontWeight: 700, fontSize: 17, mb: 2.5 }}>{t('home.plan.title')}</Typography>
                   {activePlan ? (
                     <>
-                      <Typography sx={{ color: 'primary.main', fontWeight: 700, fontSize: 15, mb: 1 }}>
+                      <Typography sx={{ color: 'text.primary', fontWeight: 700, fontSize: 15, mb: 1 }}>
                         {activePlan.name}
                       </Typography>
                       <Typography
