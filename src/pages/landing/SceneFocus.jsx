@@ -147,7 +147,16 @@ const RestScreen = ({ t, live }) => {
       {/* Parte elastica: se il telefono è basso l'anello si rimpicciolisce, "Prossima" gli resta sotto
           e il bottone resta in fondo. --ring: lato dell'anello (48px = riga "Prossima" + spazi). */}
       <Box sx={{ flex: 1, minHeight: 0, alignSelf: 'stretch', containerType: 'size', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, pt: 1 }}>
-        <Box sx={{ '--ring': `min(${RING.size}px, 100cqw, 100cqh - 48px)`, position: 'relative', width: 'var(--ring)', aspectRatio: '1', flexShrink: 0 }}>
+        <Box
+          sx={{
+            '--ring': `min(${RING.size}px, 100cqw, 100cqh - 48px)`,
+            '@supports not (width: 1cqh)': { '--ring': `${RING.size}px` },
+            position: 'relative',
+            width: 'var(--ring)',
+            aspectRatio: '1',
+            flexShrink: 0,
+          }}
+        >
           <svg width="100%" height="100%" viewBox={`0 0 ${RING.size} ${RING.size}`} style={{ transform: 'rotate(-90deg)', display: 'block' }}>
             <circle cx={RING.size / 2} cy={RING.size / 2} r={r} fill="none" strokeWidth={RING.stroke} stroke="currentColor" opacity="0.12" />
             <Box
