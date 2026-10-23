@@ -865,6 +865,7 @@
   "account.delete.in_progress": "Deleting...",
   "profile.meta.title": "Profile and settings",
   "profile.meta.description": "Manage your profile, your achievements and your LiftIndex account settings.",
+  "workouts.title": "Workouts",
   "workouts.meta.title": "Workout plans",
   "workouts.meta.description": "Create and manage your gym workout plans: unlimited plans, custom exercises and a complete session history.",
   "consent.load_error": "Error loading consents",

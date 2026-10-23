@@ -726,10 +726,12 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
         </Typography>
       )}
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 20 }}>
-          {t('plans.section_title')}
-        </Typography>
+      <Box sx={{ display: 'flex', justifyContent: isEmbedded ? 'flex-end' : 'space-between', alignItems: 'center', mb: 3 }}>
+        {!isEmbedded && (
+          <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 20 }}>
+            {t('plans.section_title')}
+          </Typography>
+        )}
         <Button
           variant="contained"
           startIcon={<AddIcon sx={{ color: "white" }} fontSize="small" />}
