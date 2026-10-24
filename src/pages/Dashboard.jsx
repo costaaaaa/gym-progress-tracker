@@ -5,6 +5,7 @@ import StraightenIcon from '@mui/icons-material/Straighten';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { useTabbedPage } from '../hooks/useTabbedPage';
 import { useTranslation } from 'react-i18next';
+import { INK_TABS } from '../utils/inkTabs';
 
 // Lazy loading dei componenti tab
 const Progress = lazy(() => import('./Progress'));
@@ -25,19 +26,7 @@ const Dashboard = () => {
           value={tabIndex}
           onChange={handleTabChange}
           aria-label="dashboard hub tabs"
-          TabIndicatorProps={{ sx: { height: 2, bgcolor: 'text.primary' } }}
-          sx={{
-            minHeight: 0,
-            '& .MuiTab-root': {
-              textTransform: 'none',
-              fontSize: 16,
-              fontWeight: 500,
-              minHeight: 44,
-              color: 'text.secondary',
-              '&.Mui-selected': { color: 'text.primary', fontWeight: 600 },
-              '& .MuiTab-iconWrapper': { color: 'text.secondary' },
-            },
-          }}
+          {...INK_TABS}
         >
           <Tab
             icon={<BarChartIcon fontSize="small" />}

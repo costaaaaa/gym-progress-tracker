@@ -1,5 +1,6 @@
 import { Suspense, lazy } from 'react';
 import { useTranslation } from 'react-i18next';
+import { INK_TABS } from '../utils/inkTabs';
 import { Box, Tabs, Tab, CircularProgress, Typography } from '@mui/material';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -25,19 +26,7 @@ const Profile = () => {
           value={tabIndex}
           onChange={handleTabChange}
           aria-label="profile hub tabs"
-          TabIndicatorProps={{ sx: { height: 2, bgcolor: 'text.primary' } }}
-          sx={{
-            minHeight: 0,
-            '& .MuiTab-root': {
-              textTransform: 'none',
-              fontSize: 16,
-              fontWeight: 500,
-              minHeight: 44,
-              color: 'text.secondary',
-              '&.Mui-selected': { color: 'text.primary', fontWeight: 600 },
-              '& .MuiTab-iconWrapper': { color: 'text.secondary' },
-            },
-          }}
+          {...INK_TABS}
         >
           <Tab
             icon={<EmojiEventsIcon fontSize="small" />}

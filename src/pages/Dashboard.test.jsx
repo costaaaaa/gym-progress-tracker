@@ -53,4 +53,21 @@ describe('shell di Dashboard', () => {
     expect(getComputedStyle(indicator).height).toBe('2px');
     expect(getComputedStyle(tab.querySelector('svg')).color).toBe(GREY);
   });
+
+  it('sul telefono le due tab si dividono la riga e le etichette si leggono intere, senza scroll', async () => {
+    await mount();
+    // jsdom non valuta le media query: lo stile letto qui è quello da telefono, il primo
+    expect(document.querySelector('.MuiTabs-scrollableX')).toBeNull();
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs).toHaveLength(2);
+    tabs.forEach((tab) => {
+      const style = getComputedStyle(tab);
+      expect(style.flexGrow).toBe('1');
+      expect(style.flexShrink).toBe('1');
+      expect(style.minWidth).toBe('0px');
+      expect(style.whiteSpace).not.toBe('nowrap');
+      expect(style.textOverflow).not.toBe('ellipsis');
+      expect(getComputedStyle(tab.querySelector('.MuiTab-iconWrapper')).display).toBe('none');
+    });
+  });
 });
