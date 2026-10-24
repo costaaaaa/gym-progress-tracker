@@ -68,7 +68,7 @@ const Login = () => {
   };
 
   return (
-    <AuthLayout title={t('login.title')} side={{ title: t('login.side.title'), text: t('login.side.text') }}>
+    <AuthLayout title={t('login.title')}>
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}

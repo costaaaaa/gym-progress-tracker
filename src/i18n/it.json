@@ -11,8 +11,6 @@
   "login.forgot": "Password dimenticata?",
   "login.no_account": "Non hai un account?",
   "login.register": "Registrati",
-  "login.side.title": "Bentornato",
-  "login.side.text": "I tuoi muscoli ti aspettano: guarda cosa è pronto oggi.",
   "home.hero.welcome": "Bentornato, {{username}}",
   "home.hero.sub_user": "La tua evoluzione fisica, monitorata con precisione millimetrica.",
   "home.hero.start_workout": "Inizia allenamento",
