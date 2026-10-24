@@ -32,7 +32,7 @@ const MuscleRow = ({ group, status, percent, children }) => (
       aria-valuenow={percent ?? 0}
       sx={{ flex: 1, minWidth: 0, height: 6, borderRadius: '3px', bgcolor: 'divider', overflow: 'hidden' }}
     >
-      <Box sx={{ height: '100%', width: `${percent ?? 0}%`, bgcolor: STATUS_COLOR[status], borderRadius: '3px' }} />
+      <Box data-recovery-bar sx={{ height: '100%', width: `${percent ?? 0}%`, bgcolor: STATUS_COLOR[status], borderRadius: '3px' }} />
     </Box>
     <Box sx={{ width: 112, flexShrink: 0, textAlign: 'right' }}>{children}</Box>
   </Box>
