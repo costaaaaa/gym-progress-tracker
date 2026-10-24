@@ -7,6 +7,8 @@ const SAMPLE = buildRecovery('push');
 
 // Pagine di accesso. Con `side` lo schema è quello della home pubblica: su desktop a sinistra
 // frase e stato muscolare di esempio, a destra il modulo; sul telefono solo il modulo.
+// Su desktop la griglia ha tre righe (frase / card / didascalia) e il modulo sta solo nella riga
+// della card: modulo e card hanno lo stesso centro verticale, chi è più alto sporge uguale sopra e sotto.
 // Senza `side` (password dimenticata, reset) il modulo resta al centro.
 const AuthLayout = ({ title, side, children }) => {
   const { t } = useTranslation();
@@ -18,6 +20,9 @@ const AuthLayout = ({ title, side, children }) => {
         width: '100%',
         maxWidth: 440,
         justifySelf: { md: side ? 'end' : 'center' },
+        alignSelf: { md: 'center' },
+        gridColumn: { md: 2 },
+        gridRow: { md: 2 },
         // Aiuti ed errori sotto i campi: 14px invece dei 12 di MUI, si leggono e i loro link si toccano
         '& .MuiFormHelperText-root': { fontSize: '0.875rem', lineHeight: 1.45, mt: 0.75 },
       }}
@@ -38,24 +43,27 @@ const AuthLayout = ({ title, side, children }) => {
       sx={{
         display: 'grid',
         gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1.1fr) minmax(0, 1fr)' },
-        gap: { md: 8 },
-        alignItems: 'center',
+        gridTemplateRows: { md: 'auto auto auto' },
+        columnGap: { md: 8 },
+        alignContent: { md: 'center' },
         justifyItems: { xs: 'center', md: 'stretch' },
         // Come il primo schermo della home: sotto la Navbar (64) e il margine del Layout (32).
         minHeight: { md: 'calc(100svh - 96px)' },
         pb: { xs: 2, md: 4 },
       }}
     >
-      <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+      <Box sx={{ display: { xs: 'none', md: 'block' }, gridColumn: 1, gridRow: 1, alignSelf: 'end' }}>
         <Typography component="p" variant="h1" sx={{ fontSize: '3rem', lineHeight: 1.05, mb: 2, textWrap: 'balance' }}>
           {side.title}
         </Typography>
         <Typography sx={{ fontSize: 19, lineHeight: 1.55, mb: 4, maxWidth: 520 }}>{side.text}</Typography>
-        <Card data-ui aria-hidden sx={{ p: 3 }}>
-          <BodyVisualizer recoveryData={SAMPLE} />
-        </Card>
-        <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 1.5 }}>{t('home.showcase.subtitle')}</Typography>
       </Box>
+      <Card data-ui aria-hidden sx={{ display: { xs: 'none', md: 'block' }, gridColumn: 1, gridRow: 2, alignSelf: 'center', p: 3 }}>
+        <BodyVisualizer recoveryData={SAMPLE} />
+      </Card>
+      <Typography sx={{ display: { xs: 'none', md: 'block' }, gridColumn: 1, gridRow: 3, alignSelf: 'start', fontSize: 16, color: 'text.secondary', mt: 1.5 }}>
+        {t('home.showcase.subtitle')}
+      </Typography>
       {form}
     </Box>
   );
