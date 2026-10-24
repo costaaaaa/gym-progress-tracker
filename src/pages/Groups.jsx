@@ -56,13 +56,13 @@ const CreateGroupDialog = ({ open, onClose, onCreated }) => {
             <MenuItem value="friends">{t('groups.type.friends')}</MenuItem>
             <MenuItem value="gym">{t('groups.type.gym')}</MenuItem>
           </TextField>
-          <Typography sx={{ fontSize: 14, color: 'text.secondary', mt: 1.5 }}>
+          <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 1.5 }}>
             {t('groups.new.help')}
           </Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={onClose} disabled={saving}>{t('common.cancel')}</Button>
-          <Button type="submit" variant="contained" disabled={saving || !name.trim()}>{t('common.create')}</Button>
+          <Button onClick={onClose} disabled={saving} sx={{ fontSize: 16 }}>{t('common.cancel')}</Button>
+          <Button type="submit" variant="contained" disabled={saving || !name.trim()} sx={{ fontSize: 16 }}>{t('common.create')}</Button>
         </DialogActions>
       </Box>
     </Dialog>
@@ -97,7 +97,7 @@ const GroupsContent = () => {
         <Typography variant="pageTitle">
           {t('groups.title')}
         </Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)} sx={{ fontSize: 16 }}>
           {t('groups.create')}
         </Button>
       </Box>
@@ -125,7 +125,7 @@ const GroupsContent = () => {
         <Card sx={{ p: 4, textAlign: 'center' }}>
           <GroupsOutlined sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
           <Typography variant="cardTitle" sx={{ mb: 1 }}>{t('groups.empty.title')}</Typography>
-          <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>
+          <Typography sx={{ color: 'text.secondary', fontSize: 16 }}>
             {t('groups.empty.text')}
           </Typography>
         </Card>
@@ -140,7 +140,7 @@ const GroupsContent = () => {
                     <Typography variant="cardTitle" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {g.name}
                     </Typography>
-                    <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
+                    <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
                       {groupTypeLabel(g.type)} · {t('groups_card.members', { count: Number(g.members_count) })}
                     </Typography>
                   </Box>

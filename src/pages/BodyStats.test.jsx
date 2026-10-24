@@ -6,6 +6,7 @@ import BodyStats from './BodyStats';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { formatDate } from '../i18n/format';
 import { polylineX } from '../test/polyline';
+import { textBelow } from '../test/minText';
 
 const row = (date, weight, extra = {}) => ({ id: date, date, weight, ...extra });
 
@@ -234,11 +235,11 @@ describe('titoli, peso e variazione', () => {
     ['calo', ['85.0', '80.0'], /-5,0 kg negli ultimi 3 mesi/],
     ['aumento', ['80.0', '85.0'], /\+5,0 kg negli ultimi 3 mesi/],
     ['stabile', ['80.0', '80.0'], /Stabile negli ultimi 3 mesi/],
-  ])('la variazione del peso è grigia e da 14px: %s', async (_, [first, last], text) => {
+  ])('la variazione del peso è grigia e da 16px: %s', async (_, [first, last], text) => {
     records = [row('2026-10-01', first), row('2026-10-15', last)];
     await mount(themed);
     expect(style(screen.getByText(text)).color).toBe(GREY);
-    expect(style(screen.getByText(text)).fontSize).toBe('14px');
+    expect(style(screen.getByText(text)).fontSize).toBe('16px');
   });
 });
 
@@ -296,6 +297,25 @@ describe('composizione e circonferenze', () => {
   });
 });
 
+describe('testi', () => {
+  const phone = () => {
+    window.matchMedia = (query) => ({
+      matches: true, media: query, onchange: null,
+      addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false,
+    });
+  };
+  const original = window.matchMedia;
+  beforeEach(() => { localStorage.setItem('themeMode', 'light'); records = measured(); });
+  afterEach(() => { window.matchMedia = original; });
+
+  // Esenti: le pillole del periodo, che sono chip (13px)
+  it.each([['da tablet', () => {}], ['sul telefono', phone]])('nessun testo %s è sotto i 16px, salvo le pillole del periodo', async (_, setup) => {
+    setup();
+    await mount(themed);
+    expect(textBelow(document.body, 16, '.MuiChip-root')).toEqual([]);
+  });
+});
+
 describe('storico', () => {
   const phone = () => {
     window.matchMedia = (query) => ({
@@ -307,16 +327,16 @@ describe('storico', () => {
   beforeEach(() => { localStorage.setItem('themeMode', 'light'); records = measured(); });
   afterEach(() => { window.matchMedia = original; });
 
-  it('da tablet è una tabella con intestazioni in sentence case da 14px e celle da 14px', async () => {
+  it('da tablet è una tabella con intestazioni in sentence case da 16px e celle da 16px', async () => {
     await mount(themed);
     const headers = within(screen.getByRole('table')).getAllByRole('columnheader');
     expect(headers.map((h) => h.textContent)).toEqual(['Data', 'Peso', 'Grasso %', 'Muscolo %', 'Torace', 'Braccio', 'Vita', 'Gamba', 'Azioni']);
     headers.forEach((h) => {
       expect(style(h).textTransform).not.toBe('uppercase');
-      expect(style(h).fontSize).toBe('14px');
+      expect(style(h).fontSize).toBe('16px');
       expect(style(h).color).toBe(GREY);
     });
-    expect(style(within(tableRows()[0]).getAllByRole('cell')[0]).fontSize).toBe('14px');
+    expect(style(within(tableRows()[0]).getAllByRole('cell')[0]).fontSize).toBe('16px');
   });
 
   it('il cestino non è rosso e ha un nome', async () => {
@@ -337,7 +357,7 @@ describe('storico', () => {
     const detail = within(first).getByText(/Grasso 18\.5%/);
     expect(detail.textContent).toBe('Grasso 18.5% · Muscolo 41.0% · Torace 102 cm · Vita 83 cm');
     expect(style(detail).color).toBe(GREY);
-    expect(style(detail).fontSize).toBe('14px');
+    expect(style(detail).fontSize).toBe('16px');
   });
 
   it('sul telefono le misure mancanti non compaiono e una riga senza altro non ha la seconda linea', async () => {

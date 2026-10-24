@@ -54,7 +54,7 @@ const ExerciseProgressRow = ({ item, showMuscle = false, favorite, onToggleFavor
       >
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography sx={{ fontWeight: 600, fontSize: 16, lineHeight: 1.3 }}>{name}</Typography>
-          <Typography sx={{ fontSize: 14, color: 'text.secondary' }} noWrap>
+          <Typography sx={{ fontSize: 16, color: 'text.secondary' }} noWrap>
             {showMuscle ? `${muscleLabel(muscle)} · ` : ''}{t('progress.last_session', { when: formatDaysAgo(t, lastDays) })}
           </Typography>
         </Box>
@@ -64,8 +64,8 @@ const ExerciseProgressRow = ({ item, showMuscle = false, favorite, onToggleFavor
         <Box sx={{ textAlign: 'right', minWidth: { xs: 76, md: 120 } }}>
           <Typography variant="statNumber" sx={{ fontSize: 18 }}>{formatValue(t, mode, last.value)}</Typography>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'baseline', gap: 0.75 }}>
-            {recentPR && <Typography component="span" sx={{ fontSize: 13, fontWeight: 700 }}>{t('progress.pr')}</Typography>}
-            <Typography component="span" sx={{ fontSize: 14, fontWeight: 600, color: TONE_COLOR[tone] }}>
+            {recentPR && <Typography component="span" data-row-badge sx={{ fontSize: 13, fontWeight: 700 }}>{t('progress.pr')}</Typography>}
+            <Typography component="span" data-row-badge sx={{ fontSize: 14, fontWeight: 600, color: TONE_COLOR[tone] }}>
               {showsDelta(item)
                 ? `${deltaPct >= 0 ? '▲' : '▼'} ${formatNumber(Math.abs(deltaPct), { maximumFractionDigits: 1 })}%`
                 : t(`progress.status.${status}`)}

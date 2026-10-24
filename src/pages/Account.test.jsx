@@ -7,6 +7,7 @@ import { render, screen, within, fireEvent, waitFor } from '@testing-library/rea
 import { MemoryRouter } from 'react-router-dom';
 import Account from './Account';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
+import { textBelow } from '../test/minText';
 
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
 // Lo stesso oggetto a ogni render: la pagina ricarica i dati quando `user` cambia identità.
@@ -163,13 +164,8 @@ describe('interruttori e scelte', () => {
 });
 
 describe('testi', () => {
-  it('nessun testo della pagina è sotto i 14px (escluse le etichette dei campi, che MUI rimpicciolisce)', async () => {
+  it('nessun testo della pagina è sotto i 16px (escluse le etichette dei campi, che MUI rimpicciolisce)', async () => {
     await mount();
-    const small = [...document.querySelectorAll('p, a, span, label')]
-      .filter((el) => !el.closest('.MuiFormLabel-root, .MuiFormHelperText-root, legend'))
-      .filter((el) => el.textContent.trim() && [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()))
-      .filter((el) => parseFloat(getComputedStyle(el).fontSize) < 14)
-      .map((el) => `${el.textContent.trim().slice(0, 40)} (${getComputedStyle(el).fontSize})`);
-    expect(small).toEqual([]);
+    expect(textBelow(document.body, 16, '.MuiChip-root, .MuiFormLabel-root, .MuiFormHelperText-root, legend')).toEqual([]);
   });
 });

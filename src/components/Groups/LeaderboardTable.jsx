@@ -24,15 +24,15 @@ const Metric = ({ row, board }) => {
     return (
       <Box sx={{ textAlign: 'right' }}>
         <Typography sx={{ fontWeight: 700 }}>{t('groups.board.level', { level: row.level })}</Typography>
-        <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>{row.total_xp.toLocaleString(intlLocale())} XP</Typography>
+        <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{row.total_xp.toLocaleString(intlLocale())} XP</Typography>
       </Box>
     );
   }
   return (
     <Box sx={{ minWidth: 150 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-        <Typography sx={{ fontSize: 14, fontWeight: 700 }}>{row.workouts}/{row.goal}</Typography>
-        <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>{row.volume_kg.toLocaleString(intlLocale())} kg</Typography>
+        <Typography sx={{ fontSize: 16, fontWeight: 700 }}>{row.workouts}/{row.goal}</Typography>
+        <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{row.volume_kg.toLocaleString(intlLocale())} kg</Typography>
       </Box>
       <LinearProgress
         variant="determinate"

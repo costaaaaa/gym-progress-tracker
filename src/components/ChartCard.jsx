@@ -81,13 +81,13 @@ const ChartCard = ({ title, points, domain, color = 'primary.main', valueLabel, 
         )}
       </Box>
 
-      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
         <Typography variant="statNumber">{valueLabel}</Typography>
         {deltaText && (
           <Typography
             component="span"
             sx={{
-              fontSize: 14,
+              fontSize: 16,
               fontWeight: 600,
               color: TREND_STYLE[trend].color,
             }}

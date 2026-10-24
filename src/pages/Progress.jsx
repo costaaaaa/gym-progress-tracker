@@ -39,7 +39,7 @@ const OPEN_SECTIONS_DEFAULT = 2;
 const SummaryStat = ({ label, value, color }) => (
   <Box sx={{ flex: '0 0 auto' }}>
     <Typography variant="statNumber" sx={{ color: value === 0 ? 'text.secondary' : color }}>{value}</Typography>
-    <Typography sx={{ fontSize: 14, color: 'text.secondary', whiteSpace: 'nowrap' }}>{label}</Typography>
+    <Typography sx={{ fontSize: 16, color: 'text.secondary', whiteSpace: 'nowrap' }}>{label}</Typography>
   </Box>
 );
 
@@ -164,14 +164,14 @@ const Progress = ({ isEmbedded = false }) => {
               </Box>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mt: 2 }}>
                 {summary.prs.length === 0 ? (
-                  <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>{t('progress.summary.prs_none')}</Typography>
+                  <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{t('progress.summary.prs_none')}</Typography>
                 ) : (
                   <>
                     {summary.prs.slice(0, MAX_PR_CHIPS).map((a) => (
                       <Chip key={a.id} size="small" variant="outlined" label={`${t('progress.pr')} · ${a.name}`} onClick={() => setSelectedId(a.id)} />
                     ))}
                     {summary.prs.length > MAX_PR_CHIPS && (
-                      <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>+{summary.prs.length - MAX_PR_CHIPS}</Typography>
+                      <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>+{summary.prs.length - MAX_PR_CHIPS}</Typography>
                     )}
                   </>
                 )}
@@ -220,9 +220,9 @@ const Progress = ({ isEmbedded = false }) => {
                   <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 2.5 }}>
                     <Box sx={{ minWidth: 0 }}>
                       <Typography variant="cardTitle">
-                        {label} <Box component="span" sx={{ color: 'text.secondary', fontWeight: 500, fontSize: 14 }}>· {t('progress.section_count', { count: section.items.length })}</Box>
+                        {label} <Box component="span" sx={{ color: 'text.secondary', fontWeight: 500, fontSize: 16 }}>· {t('progress.section_count', { count: section.items.length })}</Box>
                       </Typography>
-                      <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
+                      <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
                         {section.improving > 0 && `${t('progress.section_improving', { count: section.improving })} · `}
                         {t('progress.last_session', { when: formatDaysAgo(t, section.lastDays) })}
                       </Typography>

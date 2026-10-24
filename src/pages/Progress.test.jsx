@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within, fireEvent } from '@testing-library/react';
 import Progress from './Progress';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
+import { textBelow } from '../test/minText';
 
 const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
@@ -89,12 +90,12 @@ describe('riepilogo', () => {
     expect(getComputedStyle(stat('Fermi').number).color).toBe(INK);
   });
 
-  it('le etichette sono in sentence case da 14px, non maiuscole, e non vanno a capo', async () => {
+  it('le etichette sono in sentence case da 16px, non maiuscole, e non vanno a capo', async () => {
     await mount();
     for (const name of ['In crescita', 'Fermi', 'In calo', 'Nuovi PR']) {
       const style = getComputedStyle(stat(name).label);
       expect(style.textTransform).not.toBe('uppercase');
-      expect(style.fontSize).toBe('14px');
+      expect(style.fontSize).toBe('16px');
       expect(style.whiteSpace).toBe('nowrap');
     }
   });
@@ -124,6 +125,14 @@ const openSection = (title) => {
   const header = within(section(title)).getByRole('button', { name: new RegExp(title) });
   if (header.getAttribute('aria-expanded') !== 'true') fireEvent.click(header);
 };
+
+describe('testi', () => {
+  it('nessun testo della pagina è sotto i 16px, salvo chip dei PR, badge della riga (PR e variazione) e campo di ricerca', async () => {
+    await mountOpen();
+    // Esenti: chip (PR del riepilogo), badge del dato nella riga, etichetta del campo di ricerca (MUI)
+    expect(textBelow(document.body, 16, '.MuiChip-root, [data-row-badge], .MuiFormLabel-root, legend')).toEqual([]);
+  });
+});
 
 describe('righe degli esercizi', () => {
   it('dentro la card del gruppo ogni esercizio è una riga, non una card', async () => {
@@ -172,10 +181,11 @@ describe('righe degli esercizi', () => {
     expect(colors).not.toContain('rgb(213, 0, 0)');
   });
 
-  it('il testo di riga è almeno 14px e la stella è un bersaglio da 44px', async () => {
+  it('il testo di riga è almeno 16px, salvo il «PR» e la variazione accanto al valore (badge del dato, 13px o più), e la stella è un bersaglio da 44px', async () => {
     await mountOpen();
     const r = row('Panca piana');
-    r.querySelectorAll('p').forEach((p) => expect(parseFloat(getComputedStyle(p).fontSize)).toBeGreaterThanOrEqual(14));
+    expect(textBelow(r, 16, '[data-row-badge]')).toEqual([]);
+    r.querySelectorAll('[data-row-badge]').forEach((b) => expect(parseFloat(getComputedStyle(b).fontSize)).toBeGreaterThanOrEqual(13));
     const star = within(r).getByRole('button', { name: 'Aggiungi ai preferiti' });
     expect(getComputedStyle(star).width).toBe('44px');
     expect(getComputedStyle(star).height).toBe('44px');
@@ -198,11 +208,11 @@ describe('righe degli esercizi', () => {
     expect(within(favorites).getByText(/Petto/)).toBeTruthy();
   });
 
-  it('il titolo del gruppo è nello stile titolo di card e la sottoriga è da 14px', async () => {
+  it('il titolo del gruppo è nello stile titolo di card e la sottoriga è da 16px', async () => {
     await mountOpen();
     const title = screen.getByText('Petto', { selector: 'p' });
     expect(parseFloat(getComputedStyle(title).fontSize)).toBeGreaterThanOrEqual(16);
     const sub = within(section('Petto').querySelector('.MuiAccordionSummary-root')).getByText(/ultimo 2 gg fa/);
-    expect(getComputedStyle(sub).fontSize).toBe('14px');
+    expect(getComputedStyle(sub).fontSize).toBe('16px');
   });
 });

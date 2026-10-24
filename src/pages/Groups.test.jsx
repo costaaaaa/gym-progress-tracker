@@ -8,6 +8,7 @@ import Groups from './Groups';
 import GroupDetail from './GroupDetail';
 import JoinGroup from './JoinGroup';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
+import { textBelow } from '../test/minText';
 
 vi.mock('../context/AuthContext', () => {
   const auth = { user: { id: 1, username: 'mario88' }, isLoggedIn: true, loading: false };
@@ -53,11 +54,8 @@ afterEach(() => {
 });
 
 const colorOf = (el) => getComputedStyle(el).color;
-const smallTexts = (root) => [...root.querySelectorAll('p, a, span, label, button')]
-  .filter((el) => !el.closest('.MuiChip-root, .MuiFormLabel-root, .MuiFormHelperText-root, legend'))
-  .filter((el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()))
-  .filter((el) => parseFloat(getComputedStyle(el).fontSize) < 14)
-  .map((el) => `${el.textContent.trim().slice(0, 40)} (${getComputedStyle(el).fontSize})`);
+// Esenti: chip e badge ("tu", tipo del gruppo) e le etichette dei campi, che MUI rimpicciolisce
+const small = () => textBelow(document.body, 16, '.MuiChip-root, .MuiFormLabel-root, .MuiFormHelperText-root, legend');
 
 describe('elenco dei gruppi', () => {
   const mount = async () => {
@@ -86,9 +84,9 @@ describe('elenco dei gruppi', () => {
     expect(getComputedStyle(screen.getByRole('button', { name: 'Crea gruppo' })).backgroundColor).toBe(RED);
   });
 
-  it('i testi sono almeno 14px', async () => {
+  it('i testi sono almeno 16px', async () => {
     await mount();
-    expect(smallTexts(document.body)).toEqual([]);
+    expect(small()).toEqual([]);
   });
 });
 
@@ -147,9 +145,9 @@ describe('dettaglio del gruppo', () => {
     expect(getComputedStyle(bar).backgroundColor).toBe(RED);
   });
 
-  it('i testi sono almeno 14px', async () => {
+  it('i testi sono almeno 16px', async () => {
     await mount();
-    expect(smallTexts(document.body)).toEqual([]);
+    expect(small()).toEqual([]);
   });
 });
 

@@ -47,17 +47,17 @@ const AchievementCard = ({ achievement, isNext, progress }) => {
     }}>
       {!locked && <CheckIcon sx={{ fontSize: 22, color: 'success.main', mb: 0.75 }} />}
       {locked && !isNext && <LockOutlinedIcon sx={{ fontSize: 22, color: 'text.disabled', mb: 0.75 }} />}
-      {isNext && <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 0.5 }}>{t('profile.achievements.next')}</Typography>}
-      <Typography sx={{ fontSize: 14, fontWeight: 600, lineHeight: 1.3, color: locked && !isNext ? 'text.secondary' : 'text.primary' }}>{label}</Typography>
+      {isNext && <Typography sx={{ fontSize: 16, color: 'text.secondary', mb: 0.5 }}>{t('profile.achievements.next')}</Typography>}
+      <Typography sx={{ fontSize: 16, fontWeight: 600, lineHeight: 1.3, color: locked && !isNext ? 'text.secondary' : 'text.primary' }}>{label}</Typography>
       {!locked && unlocked_at && (
-        <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.5 }}>
+        <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
           {formatDate(String(unlocked_at).replace(' ', 'T'), { day: 'numeric', month: 'short', year: 'numeric' })}
         </Typography>
       )}
       {isNext && (
         <Box sx={{ width: '100%', mt: 'auto', pt: 1 }}>
           <LinearProgress variant="determinate" value={progress.pct} sx={{ ...solidBar(6, 'text.primary'), mb: 0.75 }} />
-          <Typography sx={{ fontSize: 13, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>{progress.label}</Typography>
+          <Typography sx={{ fontSize: 16, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>{progress.label}</Typography>
         </Box>
       )}
     </Card>
@@ -123,15 +123,15 @@ const ProfileSummary = () => {
           <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 26, lineHeight: 1 }}>
             {t('profile.level', { level })}
           </Typography>
-          <Typography sx={{ fontSize: 14, color: 'text.secondary', mt: 0.5 }}>
+          <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
             {t('level.total_xp', { xp: formatNumber(total_xp) })}
           </Typography>
         </Box>
 
         <Box sx={{ mb: 2.5 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
-            <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>{t('profile.xp_current', { xp: xp_into_level })}</Typography>
-            <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
+            <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{t('profile.xp_current', { xp: xp_into_level })}</Typography>
+            <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
               {t('profile.xp_to_next', { xp: xp_for_next_level, level: level + 1 })}
             </Typography>
           </Box>
@@ -142,7 +142,7 @@ const ProfileSummary = () => {
           {statTiles.map((stat) => (
             <Box key={stat.label}>
               <Typography variant="statNumber">{stat.value}</Typography>
-              <Typography sx={{ fontSize: 14, color: 'text.secondary', mt: 0.5, whiteSpace: 'nowrap' }}>{stat.label}</Typography>
+              <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5, whiteSpace: 'nowrap' }}>{stat.label}</Typography>
             </Box>
           ))}
         </Box>
@@ -162,7 +162,7 @@ const ProfileSummary = () => {
                     <Typography sx={{ fontSize: 16, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {ex.name}
                     </Typography>
-                    <Box sx={{
+                    <Box data-level-chip sx={{
                       bgcolor: 'action.selected',
                       color: 'text.primary',
                       fontSize: 13,
@@ -177,7 +177,7 @@ const ProfileSummary = () => {
                     </Box>
                   </Box>
                   <LinearProgress variant="determinate" value={exProgressPct(ex.xp)} sx={{ ...solidBar(6), mb: 0.75 }} />
-                  <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>{t('profile.xp_current', { xp: ex.xp })}</Typography>
+                  <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{t('profile.xp_current', { xp: ex.xp })}</Typography>
                 </Card>
               </Grid>
             ))}
@@ -196,7 +196,7 @@ const ProfileSummary = () => {
           <Box key={cat} sx={{ mb: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1.25 }}>
               <Typography variant="cardTitle" sx={{ fontSize: 16 }}>{t(`profile.achievements.category.${cat}`)}</Typography>
-              <Typography sx={{ fontSize: 14, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
+              <Typography sx={{ fontSize: 16, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
                 {t('profile.achievements.count', { earned: items.filter((a) => !a.locked).length, total: items.length })}
               </Typography>
             </Box>

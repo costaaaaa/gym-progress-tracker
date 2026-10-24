@@ -151,14 +151,14 @@ const PeriodChips = ({ value, onChange }) => {
   );
 };
 
-const headCellSx = { fontWeight: 600, fontSize: 14, color: 'text.secondary' };
-const bodyCellSx = { fontSize: 14 };
+const headCellSx = { fontWeight: 600, fontSize: 16, color: 'text.secondary' };
+const bodyCellSx = { fontSize: 16 };
 
 // Storico sul telefono: data e peso sulla prima linea, le altre misure in grigio sulla seconda
 const HistoryList = ({ rows, empty, onDelete }) => {
   const { t } = useTranslation();
   if (empty) {
-    return <Typography sx={{ color: 'text.secondary', py: 3, textAlign: 'center', fontSize: 14 }}>{t('body.empty')}</Typography>;
+    return <Typography sx={{ color: 'text.secondary', py: 3, textAlign: 'center', fontSize: 16 }}>{t('body.empty')}</Typography>;
   }
   return (
     <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
@@ -174,7 +174,7 @@ const HistoryList = ({ rows, empty, onDelete }) => {
                 </Typography>
               </Box>
               {others.length > 0 && (
-                <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
+                <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
                   {others.map((s, i) => (
                     <Fragment key={s.key}>
                       {i > 0 && ' · '}{t(s.label)} {row[s.key]}{s.unit}{isFromHealth(row, s.key) && <HealthMark />}
@@ -361,7 +361,7 @@ const BodyStats = ({ isEmbedded = false }) => {
             {t('body.title')}
           </Typography>
         )}
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsDialogOpen(true)}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsDialogOpen(true)} sx={{ fontSize: 16 }}>
           {t('body.new')}
         </Button>
       </Box>
@@ -381,7 +381,7 @@ const BodyStats = ({ isEmbedded = false }) => {
               <Card sx={{ p: '28px 22px', textAlign: 'center' }}>
                 <EventBusyIcon sx={{ fontSize: 36, color: 'text.secondary', mb: 1 }} />
                 <Typography sx={{ fontWeight: 700, fontSize: 16 }}>{t('body.period_empty')}</Typography>
-                <Typography sx={{ color: 'text.secondary', fontSize: 14, mt: 0.5 }}>
+                <Typography sx={{ color: 'text.secondary', fontSize: 16, mt: 0.5 }}>
                   {t('body.period_empty_last', {
                     date: formatDate(latestRow.date),
                     weight: latestRow.weight ? `${latestRow.weight} kg` : '—',
@@ -456,7 +456,7 @@ const BodyStats = ({ isEmbedded = false }) => {
                     ))}
                     {stats.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={9} align="center" sx={{ color: 'text.secondary', py: 3, fontSize: 14 }}>{t('body.empty')}</TableCell>
+                        <TableCell colSpan={9} align="center" sx={{ color: 'text.secondary', py: 3, fontSize: 16 }}>{t('body.empty')}</TableCell>
                       </TableRow>
                     )}
                   </TableBody>
@@ -470,7 +470,7 @@ const BodyStats = ({ isEmbedded = false }) => {
                   <IconButton size="small" disabled={history.page === 0} onClick={() => setPage(history.page - 1)} aria-label={t('body.page_prev')}>
                     <NavigateBeforeIcon fontSize="small" />
                   </IconButton>
-                  <Typography sx={{ fontSize: 13, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
+                  <Typography sx={{ fontSize: 16, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
                     {t('body.page_range', { from: history.from, to: history.to, total: history.total })}
                   </Typography>
                   <IconButton size="small" disabled={history.page === history.lastPage} onClick={() => setPage(history.page + 1)} aria-label={t('body.page_next')}>

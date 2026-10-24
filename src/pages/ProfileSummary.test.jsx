@@ -5,6 +5,7 @@ import { render, screen, within } from '@testing-library/react';
 import ProfileSummary from './ProfileSummary';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import i18n from '../i18n';
+import { textBelow } from '../test/minText';
 
 const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
@@ -62,11 +63,11 @@ describe('livello', () => {
     });
   });
 
-  it('le etichette sotto la barra sono da 14px', async () => {
+  it('le etichette sotto la barra sono da 16px', async () => {
     await mount();
-    expect(style(screen.getByText('340 XP')).fontSize).toBe('14px');
-    expect(style(screen.getByText('600 XP per il livello 8')).fontSize).toBe('14px');
-    expect(style(screen.getByText('3140 XP totali')).fontSize).toBe('14px');
+    expect(style(screen.getByText('340 XP')).fontSize).toBe('16px');
+    expect(style(screen.getByText('600 XP per il livello 8')).fontSize).toBe('16px');
+    expect(style(screen.getByText('3140 XP totali')).fontSize).toBe('16px');
   });
 });
 
@@ -84,11 +85,11 @@ describe('statistiche', () => {
     expect(style(value).fontVariantNumeric).toBe('tabular-nums');
   });
 
-  it('le etichette sono grigie da 14px e non vanno a capo', async () => {
+  it('le etichette sono grigie da 16px e non vanno a capo', async () => {
     await mount();
     ['sessioni', 'kg sollevati', 'settimane record'].forEach((label) => {
       const s = style(screen.getByText(label));
-      expect(s.fontSize).toBe('14px');
+      expect(s.fontSize).toBe('16px');
       expect(s.color).toBe(GREY);
       expect(s.whiteSpace).toBe('nowrap');
     });
@@ -104,7 +105,7 @@ describe('livelli per esercizio', () => {
     expect(style(chip).color).toBe(INK);
     expect(style(chip).backgroundColor).not.toBe(RED);
     expect(style(chip).fontSize).toBe('13px');
-    expect(style(screen.getByText('820 XP')).fontSize).toBe('14px');
+    expect(style(screen.getByText('820 XP')).fontSize).toBe('16px');
   });
 });
 
@@ -170,15 +171,20 @@ describe('traguardi', () => {
     expect(item.classList.contains('MuiGrid-grid-sm-3')).toBe(true);
   });
 
-  it('nessun testo dei traguardi è sotto i 13px, le etichette sono a 14px', async () => {
+  it('i testi dei traguardi sono tutti da 16px: nome, data, «Prossimo» e «n di m»', async () => {
     await mount();
     ['Prime 10 sessioni', 'Centurione', '250 sessioni'].forEach((label) => {
-      expect(style(screen.getByText(label, { selector: 'p' })).fontSize).toBe('14px');
+      expect(style(screen.getByText(label, { selector: 'p' })).fontSize).toBe('16px');
     });
-    ['7 mar 2026', '58 di 100'].forEach((text) => {
-      expect(parseFloat(style(screen.getByText(text)).fontSize)).toBeGreaterThanOrEqual(13);
-    });
-    screen.getAllByText('Prossimo').forEach((el) => expect(parseFloat(style(el).fontSize)).toBeGreaterThanOrEqual(13));
+    ['7 mar 2026', '58 di 100'].forEach((text) => expect(style(screen.getByText(text)).fontSize).toBe('16px'));
+    screen.getAllByText('Prossimo').forEach((el) => expect(style(el).fontSize).toBe('16px'));
+  });
+});
+
+describe('testi', () => {
+  it('nessun testo del riepilogo è sotto i 16px, salvo il chip del livello per esercizio (13px)', async () => {
+    await mount();
+    expect(textBelow(document.body, 16, '.MuiChip-root, [data-level-chip]')).toEqual([]);
   });
 });
 

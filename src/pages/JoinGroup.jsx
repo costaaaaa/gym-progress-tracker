@@ -60,15 +60,15 @@ const JoinGroupContent = () => {
           <>
             <Alert severity="error" sx={{ mb: 2, textAlign: 'left' }}>{error}</Alert>
             {errorCode === 'birth_date_required' && (
-              <Button component={RouterLink} to="/profilo?tab=settings" sx={{ mr: 1 }}>{t('groups.join.settings')}</Button>
+              <Button component={RouterLink} to="/profilo?tab=settings" sx={{ fontSize: 16, mr: 1 }}>{t('groups.join.settings')}</Button>
             )}
-            <Button component={RouterLink} to="/gruppi">{t('groups.join.your_groups')}</Button>
+            <Button component={RouterLink} to="/gruppi" sx={{ fontSize: 16 }}>{t('groups.join.your_groups')}</Button>
           </>
         )}
         {!error && !preview && <CircularProgress sx={{ my: 2 }} />}
         {!error && preview && (
           <>
-            <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>{t('groups.join.invited')}</Typography>
+            <Typography sx={{ color: 'text.secondary', fontSize: 16 }}>{t('groups.join.invited')}</Typography>
             <Typography variant="pageTitle" sx={{ my: 1 }}>
               {preview.name}
             </Typography>
@@ -76,12 +76,12 @@ const JoinGroupContent = () => {
               {groupTypeLabel(preview.type)} · {t('groups_card.members', { count: Number(preview.members_count) })}
             </Typography>
             {preview.already_member ? (
-              <Button variant="contained" component={RouterLink} to={`/gruppi/${preview.id}`}>{t('groups.join.open')}</Button>
+              <Button variant="contained" component={RouterLink} to={`/gruppi/${preview.id}`} sx={{ fontSize: 16 }}>{t('groups.join.open')}</Button>
             ) : preview.is_full ? (
               <Alert severity="warning">{t('groups.join.full')}</Alert>
             ) : (
               <Box>
-                <Button variant="contained" size="large" onClick={() => setConsentOpen(true)}>{t('groups.join.cta')}</Button>
+                <Button variant="contained" size="large" onClick={() => setConsentOpen(true)} sx={{ fontSize: 16 }}>{t('groups.join.cta')}</Button>
               </Box>
             )}
           </>
