@@ -17,6 +17,7 @@ import {
 import { track } from '../utils/analytics';
 import { Trans, useTranslation } from 'react-i18next';
 import { intlLocale } from '../i18n/format';
+import { NEUTRAL_TEXT } from '../utils/neutralButton';
 
 const BOARDS = ['week', 'streak', 'level'];
 
@@ -74,7 +75,7 @@ const InvitePanel = ({ group, onChange, notify }) => {
           </span>
         </Tooltip>
       </Box>
-      <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 1 }}>
+      <Typography sx={{ fontSize: 14, color: 'text.secondary', mb: 1 }}>
         <Trans
           i18nKey="groups.detail.invite.code_line"
           values={{ code: group.invite_code, count: group.members_count, max: group.max_members }}
@@ -86,7 +87,7 @@ const InvitePanel = ({ group, onChange, notify }) => {
           control={<Switch checked={group.invite_enabled} onChange={(e) => toggle(e.target.checked)} />}
           label={t('groups.detail.invite.open')}
         />
-        <Button size="small" onClick={regenerate}>{t('groups.detail.invite.new_code')}</Button>
+        <Button onClick={regenerate} sx={NEUTRAL_TEXT}>{t('groups.detail.invite.new_code')}</Button>
       </Box>
     </Card>
   );
@@ -164,7 +165,7 @@ const GroupDetailContent = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
-      <Button component={RouterLink} to="/gruppi" startIcon={<ArrowBackIcon />} sx={{ mb: 1 }}>{t('groups.join.your_groups')}</Button>
+      <Button component={RouterLink} to="/gruppi" startIcon={<ArrowBackIcon />} sx={{ ...NEUTRAL_TEXT, mb: 1 }}>{t('groups.join.your_groups')}</Button>
       <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, flexWrap: 'wrap', mb: 3 }}>
         <Typography variant="pageTitle">{group.name}</Typography>
         <Chip size="small" label={groupTypeLabel(group.type)} />
@@ -178,14 +179,14 @@ const GroupDetailContent = () => {
           <Card sx={{ p: '22px' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 1, mb: 1 }}>
               <Typography variant="cardTitle">{t('groups.detail.leaderboard')}</Typography>
-              <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
+              <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
                 {t('groups.detail.week_range', { from: formatDay(week.from), to: formatDay(week.to) })}
               </Typography>
             </Box>
             <Tabs value={board} onChange={(e, v) => setBoard(v)} sx={{ mb: 1 }} variant="fullWidth">
               {BOARDS.map((b) => <Tab key={b} value={b} label={t(`groups.detail.board.${b}`)} />)}
             </Tabs>
-            <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 1 }}>{t(`groups.detail.board.${board}_hint`)}</Typography>
+            <Typography sx={{ fontSize: 14, color: 'text.secondary', mb: 1 }}>{t(`groups.detail.board.${board}_hint`)}</Typography>
             <LeaderboardTable rows={data.board} board={data.board_type} />
           </Card>
         </Grid>
@@ -226,8 +227,8 @@ const GroupDetailContent = () => {
               <Typography variant="cardTitle" sx={{ mb: 1.5 }}>{t('groups.detail.settings')}</Typography>
               {canManage && group.name_locked && (
                 <>
-                  <Button size="small" disabled sx={{ mb: 0.5 }}>{t('groups.detail.rename')}</Button>
-                  <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 1.5 }}>
+                  <Button disabled sx={{ mb: 0.5 }}>{t('groups.detail.rename')}</Button>
+                  <Typography sx={{ fontSize: 14, color: 'text.secondary', mb: 1.5 }}>
                     {group.name_locked_until
                       ? t('groups.detail.name_locked_until', { date: formatLockDate(group.name_locked_until) })
                       : t('groups.detail.name_locked')}
@@ -235,7 +236,7 @@ const GroupDetailContent = () => {
                 </>
               )}
               {canManage && !group.name_locked && (renaming === null ? (
-                <Button size="small" onClick={() => setRenaming(group.name)} sx={{ mb: 1 }}>{t('groups.detail.rename')}</Button>
+                <Button onClick={() => setRenaming(group.name)} sx={{ ...NEUTRAL_TEXT, mb: 1 }}>{t('groups.detail.rename')}</Button>
               ) : (
                 <Box component="form" onSubmit={saveName} sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
                   <TextField size="small" value={renaming} onChange={(e) => setRenaming(e.target.value)} inputProps={{ maxLength: 60, 'aria-label': t('groups.new.name') }} fullWidth autoFocus />
@@ -244,8 +245,7 @@ const GroupDetailContent = () => {
               ))}
               {isOwner ? (
                 <Button
-                  color="error"
-                  size="small"
+                  sx={NEUTRAL_TEXT}
                   onClick={() => setConfirm({
                     title: t('groups.detail.delete.title'),
                     text: t('groups.detail.delete.text'),
@@ -257,8 +257,7 @@ const GroupDetailContent = () => {
                 </Button>
               ) : (
                 <Button
-                  color="error"
-                  size="small"
+                  sx={NEUTRAL_TEXT}
                   onClick={() => setConfirm({
                     title: t('groups.detail.leave.title'),
                     text: t('groups.detail.leave.text'),
@@ -270,9 +269,8 @@ const GroupDetailContent = () => {
                 </Button>
               )}
               <Button
-                size="small"
                 onClick={() => setReporting(true)}
-                sx={{ display: 'block', mt: 1 }}
+                sx={{ ...NEUTRAL_TEXT, display: 'block', mt: 1 }}
               >
                 {t('groups.detail.report.button')}
               </Button>

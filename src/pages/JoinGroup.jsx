@@ -55,7 +55,7 @@ const JoinGroupContent = () => {
   return (
     <Container maxWidth="sm" sx={{ py: 5 }}>
       <Card sx={{ p: 4, textAlign: 'center' }}>
-        <GroupsOutlined sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />
+        <GroupsOutlined sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
         {error && (
           <>
             <Alert severity="error" sx={{ mb: 2, textAlign: 'left' }}>{error}</Alert>

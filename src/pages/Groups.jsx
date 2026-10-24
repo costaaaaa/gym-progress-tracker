@@ -12,6 +12,7 @@ import { createGroup, errorMessage, groupTypeLabel, listGroups, roleLabel } from
 import { track } from '../utils/analytics';
 import { useTranslation } from 'react-i18next';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
+import { NEUTRAL_OUTLINED } from '../utils/neutralButton';
 
 const CreateGroupDialog = ({ open, onClose, onCreated }) => {
   const { t } = useTranslation();
@@ -55,7 +56,7 @@ const CreateGroupDialog = ({ open, onClose, onCreated }) => {
             <MenuItem value="friends">{t('groups.type.friends')}</MenuItem>
             <MenuItem value="gym">{t('groups.type.gym')}</MenuItem>
           </TextField>
-          <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 1.5 }}>
+          <Typography sx={{ fontSize: 14, color: 'text.secondary', mt: 1.5 }}>
             {t('groups.new.help')}
           </Typography>
         </DialogContent>
@@ -102,7 +103,7 @@ const GroupsContent = () => {
       </Box>
 
       <Card sx={{ p: '22px', mb: 3 }}>
-        <Typography sx={{ fontWeight: 700, mb: 1.5 }}>{t('groups.code.title')}</Typography>
+        <Typography variant="cardTitle" sx={{ mb: 1.5 }}>{t('groups.code.title')}</Typography>
         <Box component="form" onSubmit={joinWithCode} sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
           <TextField
             size="small"
@@ -112,7 +113,7 @@ const GroupsContent = () => {
             inputProps={{ maxLength: 14, 'aria-label': t('groups.code.label'), style: { textTransform: 'uppercase', letterSpacing: '.08em' } }}
             sx={{ flex: '1 1 200px' }}
           />
-          <Button type="submit" variant="outlined" disabled={!code.trim()}>{t('groups.code.join')}</Button>
+          <Button type="submit" variant="outlined" disabled={!code.trim()} sx={NEUTRAL_OUTLINED}>{t('groups.code.join')}</Button>
         </Box>
       </Card>
 
@@ -123,7 +124,7 @@ const GroupsContent = () => {
       {groups?.length === 0 && (
         <Card sx={{ p: 4, textAlign: 'center' }}>
           <GroupsOutlined sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
-          <Typography sx={{ fontWeight: 700, mb: 1 }}>{t('groups.empty.title')}</Typography>
+          <Typography variant="cardTitle" sx={{ mb: 1 }}>{t('groups.empty.title')}</Typography>
           <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>
             {t('groups.empty.text')}
           </Typography>
@@ -135,14 +136,11 @@ const GroupsContent = () => {
             <Card>
               <CardActionArea component={RouterLink} to={`/gruppi/${g.id}`} sx={{ p: '22px' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box sx={{ width: 42, height: 42, borderRadius: '10px', bgcolor: (theme) => (theme.palette.mode === 'light' ? '#fbebeb' : 'rgba(213, 0, 0, 0.12)'), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <GroupsOutlined sx={{ color: 'primary.main' }} />
-                  </Box>
                   <Box sx={{ minWidth: 0, flex: 1 }}>
-                    <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 17, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <Typography variant="cardTitle" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {g.name}
                     </Typography>
-                    <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
+                    <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
                       {groupTypeLabel(g.type)} · {t('groups_card.members', { count: Number(g.members_count) })}
                     </Typography>
                   </Box>

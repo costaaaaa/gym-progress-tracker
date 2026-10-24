@@ -115,12 +115,12 @@ const fixtures = [
   ['exercise/read_all.php', () => ({ success: true, records: CATALOG })],
   ['user_stats/read.php', () => ({ success: true, records: BODY, consent_required: false, consent_updated: false })],
   ['groups/list.php', () => ({ success: true, groups: [
-    { id: 1, name: 'Palestra Esempio', type: 'open', members_count: 4, my_role: 'owner' },
-    { id: 2, name: 'Amici del sabato', type: 'open', members_count: 3, my_role: 'member' },
+    { id: 1, name: 'Palestra Esempio', type: 'gym', members_count: 4, my_role: 'owner' },
+    { id: 2, name: 'Amici del sabato', type: 'friends', members_count: 3, my_role: 'member' },
   ] })],
   ['groups/read.php', () => ({
     success: true,
-    group: { id: 1, name: 'Palestra Esempio', type: 'open', invite_code: 'ESEMPIO7', invite_enabled: true, members_count: 4, max_members: 30, my_role: 'owner', name_locked: false, name_locked_until: null },
+    group: { id: 1, name: 'Palestra Esempio', type: 'gym', invite_code: 'ESEMPIO7', invite_enabled: true, members_count: 4, max_members: 30, my_role: 'owner', name_locked: false, name_locked_until: null },
     week: { iso: '2026-W43', from: isoDay(-2), to: isoDay(4) },
     members: [
       { username: 'atleta_demo', role: 'owner', is_me: true, ref: null },
