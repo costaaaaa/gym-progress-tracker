@@ -234,7 +234,7 @@ const SHOT_LIST = [
 if (process.env.M28) {
   for (const vp of viewports) {
     for (const theme of themes) {
-      for (const v of ['A', 'B', 'C', 'D']) {
+      for (const v of (process.env.M28 === '1' ? 'ABCD' : process.env.M28).split('')) {
         const tag = `${vp.w}_${theme}`;
         await attempt(tag, `home_${v}`, async () => {
           const { ctx, page } = await openPage(vp, theme, { loggedIn: true }, tag);
@@ -245,7 +245,9 @@ if (process.env.M28) {
             const card = page.getByText('Stato muscolare', { exact: true }).first().locator('xpath=ancestor::*[contains(@class,"MuiPaper-root") or contains(@class,"MuiCard-root")][1]');
             const box = await card.boundingBox();
             const statuses = await page.$$eval('[data-proto-status]', (els) => els.map((e) => e.getBoundingClientRect().height));
-            console.log(`${v} ${tag} card ${Math.round(box.width)}x${Math.round(box.height)} wrapStatus=${statuses.filter((h) => h > 20).length}`);
+            console.log(`${v} ${tag} card ${Math.round(box.width)}x${Math.round(box.height)} wrapStatus=${statuses.filter((h) => h > 22).length}`);
+            const bars = await page.$$eval('[data-proto-barw]', (els) => els.map((e) => Math.round(e.getBoundingClientRect().width)));
+            if (bars.length) console.log(`   barra min ${Math.min(...bars)} max ${Math.max(...bars)}`);
             await card.screenshot({ path: path.join(outDir, `home_${v}_${tag}_card.png`), animations: 'disabled', caret: 'hide' });
           } finally {
             await ctx.close();

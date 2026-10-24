@@ -2,7 +2,7 @@ import { Box, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { muscleLabel } from '../i18n/labels';
 import { readyInDays } from '../utils/recoveryDay';
-import { VariantBar, VariantB, VariantC, VariantD, useVariant } from './BodyVisualizerPrototype';
+import { VariantBar, VariantB, VariantC, VariantD, VariantE, VariantF, VariantG, useVariant } from './BodyVisualizerPrototype';
 
 // Gruppi muscolari tracciati (stesse chiavi usate da
 // dashboardStats.recovery restituito da api/workout_stats/dashboard.php).
@@ -66,7 +66,7 @@ const BodyVisualizer = ({ recoveryData }) => {
   const leftColumn = MUSCLE_GROUPS.slice(0, half);
   const rightColumn = MUSCLE_GROUPS.slice(half);
   const variant = useVariant();
-  const Alt = { B: VariantB, C: VariantC, D: VariantD }[variant];
+  const Alt = { B: VariantB, C: VariantC, D: VariantD, E: VariantE, F: VariantF, G: VariantG }[variant];
 
   return (
     <Box sx={{ width: '100%' }}>

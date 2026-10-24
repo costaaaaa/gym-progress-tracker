@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Box, Typography } from '@mui/material';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useTranslation } from 'react-i18next';
 import { muscleLabel } from '../i18n/labels';
 import { readyInDays } from '../utils/recoveryDay';
@@ -11,6 +13,9 @@ export const VARIANTS = [
   { key: 'B', label: 'B (Griglia 2 colonne)' },
   { key: 'C', label: 'C (Per stato)' },
   { key: 'D', label: 'D (Righe a barra)' },
+  { key: 'E', label: 'E (D + scritte chiare)' },
+  { key: 'F', label: 'F (D a due gruppi)' },
+  { key: 'G', label: 'G (D con icone)' },
 ];
 
 const GROUPS = ['petto', 'schiena', 'spalle', 'bicipiti', 'tricipiti', 'addome', 'quadricipiti', 'femorali', 'glutei', 'polpacci'];
@@ -207,6 +212,83 @@ export function VariantD({ data }) {
           </Typography>
         </Box>
       ))}
+    </Box>
+  );
+}
+
+// ---- E / F / G: derivate da D, con scritte complete ----
+const byDay = (a, b) => (a.days ?? 0) - (b.days ?? 0);
+const rankD = (r) => (!r.meta ? 99 : r.status === 'PRONTO' ? -1 : r.days ?? 0);
+
+const LineRow = ({ r, icon, nameWidth = 104 }) => {
+  const { t } = useTranslation();
+  const ready = r.status === 'PRONTO';
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      {icon && (
+        ready
+          ? <CheckCircleIcon sx={{ fontSize: 20, flexShrink: 0, color: 'recovery.ready' }} />
+          : r.meta
+            ? <AccessTimeIcon sx={{ fontSize: 20, flexShrink: 0, color: r.meta.color }} />
+            : <Box sx={{ width: 20, flexShrink: 0 }} />
+      )}
+      <Typography noWrap sx={{ ...NAME, width: nameWidth, flexShrink: 0 }}>{muscleLabel(r.group)}</Typography>
+      <Box data-proto-barw sx={{ flex: 1, minWidth: 0 }}>
+        <Bar percent={r.meta && r.percent !== null ? r.percent : 0} color={r.meta ? r.meta.color : 'divider'} height={6} />
+      </Box>
+      <Typography
+        data-proto-status
+        noWrap
+        sx={{
+          width: 112, flexShrink: 0, textAlign: 'right', fontSize: ready ? 15 : 13,
+          fontWeight: ready ? 600 : 400,
+          color: ready ? r.meta.color : 'text.secondary',
+        }}
+      >
+        {ready ? t('recovery.ready') : r.meta && r.days !== null ? readyLabel(t, r.days) : t('recovery.no_data')}
+      </Typography>
+    </Box>
+  );
+};
+
+const LIST = { display: 'flex', flexDirection: 'column', gap: 1.75 };
+
+export function VariantE({ data }) {
+  const rows = GROUPS.map((g) => read(data, g)).sort((a, b) => rankD(a) - rankD(b));
+  return <Box sx={LIST}>{rows.map((r) => <LineRow key={r.group} r={r} />)}</Box>;
+}
+
+export function VariantG({ data }) {
+  const rows = GROUPS.map((g) => read(data, g)).sort((a, b) => rankD(a) - rankD(b));
+  return <Box sx={LIST}>{rows.map((r) => <LineRow key={r.group} r={r} icon nameWidth={96} />)}</Box>;
+}
+
+export function VariantF({ data }) {
+  const { t } = useTranslation();
+  const rows = GROUPS.map((g) => read(data, g));
+  const ready = rows.filter((r) => r.status === 'PRONTO');
+  const rest = rows.filter((r) => r.status === 'IN RECUPERO' || r.status === 'AFFATICATO').sort(byDay);
+  const none = rows.filter((r) => !r.meta);
+  const Title = ({ children }) => <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'text.primary', mb: 1.25 }}>{children}</Typography>;
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+      {ready.length > 0 && (
+        <Box>
+          <Title>Puoi allenare</Title>
+          <Box sx={LIST}>{ready.map((r) => <LineRow key={r.group} r={r} />)}</Box>
+        </Box>
+      )}
+      {rest.length > 0 && (
+        <Box>
+          <Title>A riposo</Title>
+          <Box sx={LIST}>{rest.map((r) => <LineRow key={r.group} r={r} />)}</Box>
+        </Box>
+      )}
+      {none.length > 0 && (
+        <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
+          {t('recovery.no_data')}: {none.map((r) => muscleLabel(r.group)).join(', ')}
+        </Typography>
+      )}
     </Box>
   );
 }
