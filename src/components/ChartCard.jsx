@@ -1,5 +1,4 @@
 import { Box, Card, Typography } from '@mui/material';
-import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
 const VIEWBOX_WIDTH = 220;
 const VIEWBOX_HEIGHT = 72;
@@ -32,17 +31,17 @@ export function buildPoints(points, [start, end], width = VIEWBOX_WIDTH, height 
  * Usata da BodyStats; buildPoints serve anche le sparkline di Progressi.
  *
  * Props:
- * - title: etichetta uppercase in alto
+ * - title: titolo della card
  * - points: [{ x, value }] (x = giorno della misura, da dayNumber in utils/calendarDay), normalizzati in una polyline
  * - domain: [inizio, fine] dell'asse x, stessa unità di x
  * - color: colore della linea — token tema (es. "primary.main") o valore CSS letterale
  * - valueLabel: valore corrente mostrato in grande (stringa già formattata)
- * - trend: 'up' = delta verde con ▲, 'down' = delta rosso con ▼, 'flat' = delta grigio senza freccia
+ * - trend: 'up' = ▲, 'down' = ▼, 'flat' = nessuna freccia; il delta è sempre grigio (il peso non ha una direzione buona)
  * - deltaText: testo del delta (es. "12% vs mese scorso"); se assente il delta non è renderizzato
  */
 const TREND_STYLE = {
-  up: { color: 'success.main', arrow: '▲ ' },
-  down: { color: 'error.main', arrow: '▼ ' },
+  up: { color: 'text.secondary', arrow: '▲ ' },
+  down: { color: 'text.secondary', arrow: '▼ ' },
   flat: { color: 'text.secondary', arrow: '' },
 };
 
@@ -59,17 +58,7 @@ const ChartCard = ({ title, points, domain, color = 'primary.main', valueLabel, 
         height: '100%',
       }}
     >
-      <Typography
-        sx={{
-          textTransform: 'uppercase',
-          letterSpacing: '.04em',
-          fontWeight: 700,
-          color: 'text.secondary',
-          fontSize: 12,
-        }}
-      >
-        {title}
-      </Typography>
+      <Typography variant="cardTitle">{title}</Typography>
 
       <Box sx={{ width: '100%', height: 72, color }}>
         {polyline && (
@@ -93,14 +82,12 @@ const ChartCard = ({ title, points, domain, color = 'primary.main', valueLabel, 
       </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-        <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 24, lineHeight: 1 }}>
-          {valueLabel}
-        </Typography>
+        <Typography variant="statNumber">{valueLabel}</Typography>
         {deltaText && (
           <Typography
             component="span"
             sx={{
-              fontSize: 12,
+              fontSize: 14,
               fontWeight: 600,
               color: TREND_STYLE[trend].color,
             }}
