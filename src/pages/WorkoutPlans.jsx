@@ -721,7 +721,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
   return (
     <Box sx={{ p: isEmbedded ? 0 : 3 }}>
       {!isEmbedded && (
-        <Typography variant="h4" gutterBottom>
+        <Typography variant="pageTitle" gutterBottom>
           {t('plans.page_title')}
         </Typography>
       )}

@@ -98,6 +98,14 @@ export const ThemeModeProvider = ({ children }) => {
           // Titolo di una card o di una sezione. Interlinea come body1 (1.5): è il Typography senza variante
           // che sostituisce, con un tag <p> (vedi variantMapping sotto).
           cardTitle: { fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: '17px', lineHeight: 1.5 },
+          // Titolo di pagina: 28px a tutte le larghezze (nelle schermate di lavoro il titolo sta tra 24 e 32px). Interlinea come h1.
+          pageTitle: {
+            fontFamily: TITLE_FONT_FAMILY,
+            fontWeight: 800,
+            letterSpacing: '-0.02em',
+            fontSize: '28px',
+            lineHeight: 1.167,
+          },
           button: {
             fontFamily: '"Inter", sans-serif',
             fontWeight: 600,
@@ -109,7 +117,7 @@ export const ThemeModeProvider = ({ children }) => {
           // Una variante sconosciuta uscirebbe <span> (in linea, senza margini verticali): cardTitle è un <p>.
           MuiTypography: {
             defaultProps: {
-              variantMapping: { cardTitle: 'p' },
+              variantMapping: { cardTitle: 'p', pageTitle: 'h1' },
             },
           },
           MuiCssBaseline: {

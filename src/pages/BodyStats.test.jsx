@@ -1,4 +1,4 @@
-// Misure Corporee visto dall'utente: selettore del periodo, variazione del peso, stato vuoto e storico a pagine.
+// Misure corporee visto dall'utente: selettore del periodo, variazione del peso, stato vuoto e storico a pagine.
 // La fetch è il confine; "oggi" è fissato al 20/10/2026.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
@@ -75,7 +75,7 @@ describe('periodo e variazione del peso', () => {
 });
 
 describe('grafico del peso', () => {
-  const weightLineX = () => polylineX(screen.getByText('Andamento Peso (kg)').closest('.MuiCard-root').querySelector('polyline'));
+  const weightLineX = () => polylineX(screen.getByText('Andamento peso (kg)').closest('.MuiCard-root').querySelector('polyline'));
 
   it('i punti stanno alla loro data, tra l\'inizio del periodo e oggi', async () => {
     // 3M: dal 20/07 al 20/10, 92 giorni. Il 10/08 è al giorno 21, il 15/10 al giorno 87.
@@ -154,5 +154,16 @@ describe('font delle pillole', () => {
     await mount((page) => <ThemeModeProvider>{page}</ThemeModeProvider>);
     const { fontFamily, fontWeight } = getComputedStyle(pill('3M'));
     expect({ fontFamily, fontWeight }).toEqual({ fontFamily: '"Lexend", sans-serif', fontWeight: '500' });
+  });
+});
+
+describe('titolo della pagina', () => {
+  it('"Statistiche fisiche" è l\'h1 della pagina, in Lexend 800 a 28px', async () => {
+    records = [row('2026-10-01', '80.0')];
+    await mount((page) => <ThemeModeProvider>{page}</ThemeModeProvider>);
+    const { fontFamily, fontWeight, fontSize } = getComputedStyle(
+      screen.getByRole('heading', { level: 1, name: 'Statistiche fisiche' }),
+    );
+    expect({ fontFamily, fontWeight, fontSize }).toEqual({ fontFamily: '"Lexend", sans-serif', fontWeight: '800', fontSize: '28px' });
   });
 });

@@ -131,7 +131,7 @@ const Progress = ({ isEmbedded = false }) => {
     <Grid container spacing={3}>
       {!isEmbedded && (
         <Grid item xs={12}>
-          <Typography variant="h4" gutterBottom>{t('progress.title')}</Typography>
+          <Typography variant="pageTitle" gutterBottom>{t('progress.title')}</Typography>
           <Typography variant="body1" color="text.secondary" paragraph>{t('progress.intro')}</Typography>
         </Grid>
       )}

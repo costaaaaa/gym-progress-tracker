@@ -41,12 +41,12 @@ const startDay = async (dayName) => {
   await mount();
   fireEvent.mouseDown(screen.getByRole('combobox'));
   fireEvent.click(screen.getByRole('option', { name: dayName }));
-  click('Inizia Allenamento');
+  click('Inizia allenamento');
 };
 const doSet = (weight = '60', reps = '8') => {
   fireEvent.change(screen.getByLabelText('Peso (kg)'), { target: { value: weight } });
   fireEvent.change(screen.getByLabelText('Ripetizioni'), { target: { value: reps } });
-  click('Conferma Serie');
+  click('Conferma serie');
 };
 const draft = () => JSON.parse(localStorage.getItem(DRAFT_KEY));
 
@@ -78,14 +78,14 @@ describe('flusso completo e salvataggio', () => {
     expect(screen.getByText('01:30')).toBeTruthy();
     await advance(30);
     expect(screen.getByText('01:00')).toBeTruthy();
-    click('Salta Timer');
+    click('Salta timer');
 
     await advance(30);
     doSet('62.5', '7');
     expect(screen.getByText('Riepilogo')).toBeTruthy();
 
     await advance(600);
-    await act(async () => { click('Salva Allenamento'); });
+    await act(async () => { click('Salva allenamento'); });
     await advance(0);
 
     expect(saveBody()).toEqual({
@@ -147,18 +147,18 @@ describe('bozza e ripresa', () => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(savedDraft));
     await mount();
     expect(screen.getByText('Allenamento in sospeso')).toBeTruthy();
-    click('Riprendi Allenamento');
+    click('Riprendi allenamento');
     expect(screen.getByRole('heading', { name: 'Panca piana' })).toBeTruthy();
-    // "Salta Serie" c'è solo dalla seconda serie
-    expect(screen.getByRole('button', { name: 'Salta Serie' })).toBeTruthy();
+    // "Salta serie" c'è solo dalla seconda serie
+    expect(screen.getByRole('button', { name: 'Salta serie' })).toBeTruthy();
   });
 
   it('scartare la bozza la cancella e torna alla scelta del giorno', async () => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(savedDraft));
     await mount();
-    click('Scarta e Inizia Nuovo');
+    click('Scarta e inizia nuovo');
     expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
-    expect(screen.getByRole('button', { name: 'Inizia Allenamento' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Inizia allenamento' })).toBeTruthy();
   });
 
   it('una bozza vecchia chiusa come già finita si salva sul giorno scelto, stesso orario', async () => {
@@ -172,7 +172,7 @@ describe('bozza e ripresa', () => {
     click('L\'avevo già finito');
     expect(screen.getByText('Riepilogo')).toBeTruthy();
 
-    await act(async () => { click('Salva Allenamento'); });
+    await act(async () => { click('Salva allenamento'); });
     await advance(0);
 
     expect(saveBody()).toEqual({
@@ -192,17 +192,17 @@ describe('salti e uscita', () => {
   it('saltare una serie non avvia il recupero e non la salva; saltare l\'ultimo esercizio porta al riepilogo', async () => {
     await startDay('Push completo');
     doSet();
-    click('Salta Timer');
+    click('Salta timer');
 
-    click('Salta Serie');
+    click('Salta serie');
     expect(screen.queryByText('Recupero')).toBeNull();
     await advance(0.3);
     expect(screen.getByRole('heading', { name: 'Croci' })).toBeTruthy();
 
-    click('Salta Esercizio');
+    click('Salta esercizio');
     expect(screen.getByText('Riepilogo')).toBeTruthy();
 
-    await act(async () => { click('Salva Allenamento'); });
+    await act(async () => { click('Salva allenamento'); });
     await advance(0);
     expect(saveBody().workout_records).toEqual([
       { exercise_id: 3, exercise_name: 'Panca piana', weight: 60, reps: '8', intensity_technique: '', day_id: 2, set_number: 1 },
@@ -212,7 +212,7 @@ describe('salti e uscita', () => {
   it('uscire con conferma cancella la bozza e torna alla home', async () => {
     await startDay('Push');
     doSet();
-    click('Salta Timer');
+    click('Salta timer');
     expect(localStorage.getItem(DRAFT_KEY)).not.toBeNull();
 
     fireEvent.click(screen.getByTestId('CloseIcon').closest('button'));
@@ -235,7 +235,7 @@ describe('errori e premium', () => {
   it('senza piano attivo avvisa e mostra la schermata senza piano', async () => {
     responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Push Pull', is_active: false, days: [pushDay] }] });
     await mount();
-    expect(screen.getByText('Nessun piano attivo trovato. Attiva un piano dalle Schede.')).toBeTruthy();
+    expect(screen.getByText('Nessun piano attivo trovato. Attiva un piano dalle schede.')).toBeTruthy();
     expect(screen.getByText('Nessun piano attivo')).toBeTruthy();
   });
 
@@ -244,5 +244,14 @@ describe('errori e premium', () => {
     click('Cambia esercizio');
     expect(screen.getByText('Funzione Premium')).toBeTruthy();
     expect(fetchMock.mock.calls.some(([url]) => url.includes('exercise/read_all.php'))).toBe(false);
+  });
+});
+
+describe('intestazione della scelta del giorno', () => {
+  it('mostra il marchio LiftIndex e non il manubrio', async () => {
+    await mount();
+    expect(screen.getByTestId('logo-mark')).toBeTruthy();
+    expect(screen.queryByRole('img', { name: 'LiftIndex' })).toBeNull();
+    expect(screen.queryByTestId('FitnessCenterIcon')).toBeNull();
   });
 });

@@ -121,7 +121,7 @@ const fixtures = [
   ['groups/read.php', () => ({
     success: true,
     group: { id: 1, name: 'Palestra Esempio', type: 'open', invite_code: 'ESEMPIO7', invite_enabled: true, members_count: 4, max_members: 30, my_role: 'owner', name_locked: false, name_locked_until: null },
-    week: { start: isoDay(-2), end: isoDay(4) },
+    week: { iso: '2026-W43', from: isoDay(-2), to: isoDay(4) },
     members: [
       { username: 'atleta_demo', role: 'owner', is_me: true, ref: null },
       { username: 'atleta_2', role: 'member', is_me: false, ref: 'm-2' },
@@ -248,24 +248,24 @@ for (const vp of viewports) {
       const { ctx, page } = await openPage(vp, theme, { loggedIn: true }, tag);
       try {
         await page.goto(`${base}/focus`, { waitUntil: 'domcontentloaded' });
-        await page.getByRole('button', { name: 'Inizia Allenamento', exact: true }).waitFor();
+        await page.getByRole('button', { name: 'Inizia allenamento', exact: true }).waitFor();
         await snap(page, 'focus-scelta-giorno', tag);
 
         await page.getByRole('combobox').click();
         await page.getByRole('option', { name: 'Spinta', exact: true }).click();
-        await page.getByRole('button', { name: 'Inizia Allenamento', exact: true }).click();
-        await page.getByRole('button', { name: 'Conferma Serie', exact: true }).waitFor();
+        await page.getByRole('button', { name: 'Inizia allenamento', exact: true }).click();
+        await page.getByRole('button', { name: 'Conferma serie', exact: true }).waitFor();
         await snap(page, 'focus-allenamento', tag);
 
         await page.getByLabel('Peso (kg)').fill('60');
         await page.getByLabel('Ripetizioni').fill('8');
-        await page.getByRole('button', { name: 'Conferma Serie', exact: true }).click();
+        await page.getByRole('button', { name: 'Conferma serie', exact: true }).click();
         await page.getByText('Recupero', { exact: true }).waitFor();
         await snap(page, 'focus-recupero', tag);
 
-        await page.getByRole('button', { name: 'Salta Timer', exact: true }).click();
+        await page.getByRole('button', { name: 'Salta timer', exact: true }).click();
         for (let i = 0; i < 10 && !(await page.getByText('Riepilogo', { exact: true }).isVisible()); i++) {
-          await page.getByRole('button', { name: 'Salta Esercizio', exact: true }).click();
+          await page.getByRole('button', { name: 'Salta esercizio', exact: true }).click();
           await page.waitForTimeout(300);
         }
         await page.getByText('Riepilogo', { exact: true }).waitFor();
