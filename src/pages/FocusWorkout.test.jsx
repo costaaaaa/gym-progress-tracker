@@ -316,11 +316,11 @@ describe('colori di Focus: rosso solo per ciò che è distruttivo', () => {
     expect(getComputedStyle(screen.getByText('Prossima: Serie 2 di 2')).color).toBe(GREY);
   });
 
-  it('nel dialogo di uscita dall\'allenamento nessun bottone è rosso', async () => {
+  it('nel dialogo di interruzione "Esci" è rosso (i dati non salvati si perdono) e "Continua" no', async () => {
     await startDay('Push');
     fireEvent.click(screen.getByTestId('CloseIcon').closest('button'));
-    expect(getComputedStyle(screen.getByRole('button', { name: 'Esci' })).color).not.toBe(RED);
-    expect(getComputedStyle(screen.getByRole('button', { name: 'Continua' })).color).not.toBe(RED);
+    expect(getComputedStyle(screen.getByRole('button', { name: 'Esci' })).color).toBe(RED);
+    expect(getComputedStyle(screen.getByRole('button', { name: 'Continua' })).color).toBe(GREY);
   });
 
   it('nel dialogo del riepilogo l\'unico bottone rosso è "Scarta ed esci"', async () => {
