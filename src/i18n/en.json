@@ -208,7 +208,7 @@
   "dashboard.tab.progress": "Workout progress",
   "dashboard.tab.body": "Body measurements",
   "progress.title": "Progress tracking",
-  "progress.intro": "The exercises you train, grouped by muscle. Tap a card for details.",
+  "progress.intro": "The exercises you train, grouped by muscle. Tap an exercise for details.",
   "progress.error.no_history": "No workout data yet. Log your first workout!",
   "progress.error.connection": "Error loading history: connection problem",
   "progress.summary.title": "Last {{days}} days",

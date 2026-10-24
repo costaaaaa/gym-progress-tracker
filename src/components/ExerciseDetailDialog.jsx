@@ -21,7 +21,7 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { useTranslation } from 'react-i18next';
 import { formatDate, formatNumber } from '../i18n/format';
 import { muscleLabel } from '../i18n/labels';
-import { formatValue } from './ExerciseProgressCard';
+import { formatValue } from './ExerciseProgressRow';
 import { dayTime } from '../utils/calendarDay';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
 

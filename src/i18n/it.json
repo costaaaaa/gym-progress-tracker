@@ -208,7 +208,7 @@
   "dashboard.tab.progress": "Progressi workout",
   "dashboard.tab.body": "Misure corporee",
   "progress.title": "Tracciamento progressi",
-  "progress.intro": "Gli esercizi che alleni, divisi per gruppo muscolare. Tocca una card per il dettaglio.",
+  "progress.intro": "Gli esercizi che alleni, divisi per gruppo muscolare. Tocca un esercizio per il dettaglio.",
   "progress.error.no_history": "Nessun dato di allenamento disponibile. Registra il tuo primo allenamento!",
   "progress.error.connection": "Errore nel caricamento della cronologia: problema di connessione",
   "progress.summary.title": "Ultimi {{days}} giorni",

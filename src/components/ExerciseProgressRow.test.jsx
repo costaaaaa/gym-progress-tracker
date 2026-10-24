@@ -1,7 +1,7 @@
 // Card di un esercizio in Progressi: la sparkline segue le date delle sessioni.
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
-import ExerciseProgressCard from './ExerciseProgressCard';
+import ExerciseProgressRow from './ExerciseProgressRow';
 import { STATUS } from '../utils/progressOverview';
 import { polylineX } from '../test/polyline';
 
@@ -31,7 +31,7 @@ describe('sparkline', () => {
       session('2026-10-11 18:00:00', 85),
     ];
     const { container } = render(
-      <ExerciseProgressCard item={item(sessions)} favorite={false} onToggleFavorite={() => {}} onOpen={() => {}} />,
+      <ExerciseProgressRow item={item(sessions)} favorite={false} onToggleFavorite={() => {}} onOpen={() => {}} />,
     );
     expect(sparklineX(container)).toEqual([0, 12, 120]);
   });
@@ -44,7 +44,7 @@ describe('sparkline', () => {
       session('2026-10-02 10:00:00', 85),
     ];
     const { container } = render(
-      <ExerciseProgressCard item={item(sessions)} favorite={false} onToggleFavorite={() => {}} onOpen={() => {}} />,
+      <ExerciseProgressRow item={item(sessions)} favorite={false} onToggleFavorite={() => {}} onOpen={() => {}} />,
     );
     expect(sparklineX(container)).toEqual([0, 40, 120]);
   });
