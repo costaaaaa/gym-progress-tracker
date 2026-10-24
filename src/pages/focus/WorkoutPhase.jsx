@@ -211,7 +211,7 @@ export default function WorkoutPhase({
 
       <QuitDialog open={quitDialogOpen} onClose={onCloseQuitDialog} onConfirm={onConfirmQuit}
         title={t('focus.quit_title')} text={t('focus.quit_text', { count: totalCompletedSets })}
-        stayLabel={t('focus.quit_continue')} exitLabel={t('focus.quit_exit')} />
+        stayLabel={t('focus.quit_continue')} exitLabel={t('focus.quit_exit')} destructive />
 
       <Dialog open={repsConfirmOpen} onClose={onCloseRepsConfirm}
         PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: '16px' } }}>
