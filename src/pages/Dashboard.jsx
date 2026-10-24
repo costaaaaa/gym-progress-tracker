@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { Box, Tabs, Tab, CircularProgress } from '@mui/material';
+import { Box, Tabs, Tab, CircularProgress, Typography } from '@mui/material';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import { usePageMeta } from '../hooks/usePageMeta';
@@ -19,21 +19,23 @@ const Dashboard = () => {
 
   return (
     <Box sx={{ width: '100%' }}>
+      <Typography variant="pageTitle" gutterBottom>{t('dashboard.title')}</Typography>
       <Box sx={{ borderBottom: '1px solid', borderColor: 'divider', mb: 2 }}>
         <Tabs
           value={tabIndex}
           onChange={handleTabChange}
           aria-label="dashboard hub tabs"
-          TabIndicatorProps={{ sx: { height: 2, bgcolor: 'primary.main' } }}
+          TabIndicatorProps={{ sx: { height: 2, bgcolor: 'text.primary' } }}
           sx={{
             minHeight: 0,
             '& .MuiTab-root': {
               textTransform: 'none',
-              fontSize: 14,
+              fontSize: 16,
               fontWeight: 500,
               minHeight: 44,
               color: 'text.secondary',
-              '&.Mui-selected': { color: 'primary.main', fontWeight: 600 },
+              '&.Mui-selected': { color: 'text.primary', fontWeight: 600 },
+              '& .MuiTab-iconWrapper': { color: 'text.secondary' },
             },
           }}
         >

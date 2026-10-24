@@ -203,6 +203,7 @@
   "groups_card.members_one": "{{count}} membro",
   "groups_card.members_other": "{{count}} membri",
   "groups_card.more": "e altri {{count}}",
+  "dashboard.title": "Dashboard",
   "dashboard.meta.title": "Dashboard progressi",
   "dashboard.meta.description": "Monitora i tuoi progressi in palestra: grafici sui carichi, statistiche corporee e andamento nel tempo per ogni esercizio.",
   "dashboard.tab.progress": "Progressi workout",

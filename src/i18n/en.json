@@ -203,6 +203,7 @@
   "groups_card.members_one": "{{count}} member",
   "groups_card.members_other": "{{count}} members",
   "groups_card.more": "and {{count}} more",
+  "dashboard.title": "Dashboard",
   "dashboard.meta.title": "Progress dashboard",
   "dashboard.meta.description": "Track your gym progress: charts of your loads, body stats and trends over time for every exercise.",
   "dashboard.tab.progress": "Workout progress",
