@@ -123,6 +123,23 @@ describe('azioni della riga su telefono', () => {
     expect(screen.getByText('Sei sicuro di voler eliminare questo allenamento?')).toBeTruthy();
   });
 
+  it('con un allenamento troppo vecchio "Modifica data" è disabilitata e il menu ne spiega il motivo', async () => {
+    const vecchio = { ...workout, date: '2026-08-01 02:00:00' };
+    vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
+      url.includes('read_plans.php') ? json({ records: [plan] })
+        : url.includes('workout_history/read.php') ? json({ records: [vecchio] })
+          : json({ success: true }),
+    )));
+    await mount();
+    fireEvent.click(screen.getByText('Agosto 2026'));
+    fireEvent.click(screen.getByRole('button', { name: 'Altre azioni' }));
+    const voce = within(screen.getByRole('menu')).getByRole('menuitem', { name: /Modifica data/ });
+    expect(voce.getAttribute('aria-disabled')).toBe('true');
+    expect(within(voce).getByText('Si possono spostare solo gli allenamenti degli ultimi 30 giorni')).toBeTruthy();
+    const altre = within(screen.getByRole('menu')).getByRole('menuitem', { name: 'Condividi allenamento' });
+    expect(altre.textContent).toBe('Condividi allenamento');
+  });
+
   it('toccare la riga ne apre il dettaglio', async () => {
     await mount();
     const riga = screen.getByText('02:00 · 3 esercizi').closest('[aria-expanded]');

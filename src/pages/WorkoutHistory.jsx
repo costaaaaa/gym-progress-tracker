@@ -542,9 +542,14 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
             key={action.key}
             disabled={action.disabled}
             onClick={(e) => { setRowMenu(null); action.run(e); }}
+            sx={{ maxWidth: 300 }}
           >
             <ListItemIcon sx={{ color: 'text.secondary' }}>{action.icon}</ListItemIcon>
-            {action.label}
+            <ListItemText
+              primary={action.label}
+              secondary={action.disabled ? action.disabledHint : undefined}
+              secondaryTypographyProps={{ sx: { whiteSpace: 'normal' } }}
+            />
           </MenuItem>
         ))}
       </Menu>
