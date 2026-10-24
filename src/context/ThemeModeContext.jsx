@@ -146,6 +146,8 @@ export const ThemeModeProvider = ({ children }) => {
               },
             },
           },
+          // Interruttori mai nel rosso del marchio: acceso = verde semantico
+          MuiSwitch: { defaultProps: { color: 'success' } },
           MuiButton: {
             styleOverrides: {
               root: {
