@@ -271,13 +271,13 @@ describe('composizione e circonferenze', () => {
     expect(screen.queryByText(/Grasso:/)).toBeNull();
   });
 
-  it('ogni misura ha il suo grafico con la propria scala e tutti hanno lo stesso colore', async () => {
+  it('ogni misura ha il suo grafico con la propria scala e tutti hanno lo stesso colore, il rosso del marchio come la linea del peso', async () => {
     await mount(themed);
     // Grasso scende da 20 a 18,5 e Muscolo sale da 40 a 41: scale diverse, ma entrambi occupano tutta l'altezza (4 e 32 su 36)
     for (const name of ['Grasso', 'Muscolo', 'Torace', 'Vita']) {
       const r = measureRow(name);
       expect([...polylineY(r)].sort((a, b) => a - b)).toEqual([4, 32]);
-      expect(style(r.querySelector('svg').parentElement).color).toBe(GREY);
+      expect(style(r.querySelector('svg').parentElement).color).toBe(RED);
     }
   });
 

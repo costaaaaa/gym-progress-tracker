@@ -193,6 +193,17 @@ describe('righe degli esercizi', () => {
     expect(delta('Stacco da terra', 'Inattivo').color).toBe(DISABLED);
   });
 
+  it('il mini grafico ha il colore della variazione: verde in crescita, ambra in calo, grigio se fermo, attenuato se inattivo', async () => {
+    await mountOpen();
+    const spark = (name) => getComputedStyle(row(name).querySelector('svg').parentElement).color;
+    expect(spark('Panca piana')).toBe(GREEN);
+    openSection('Quadricipiti');
+    expect(spark('Squat con bilanciere')).toBe(AMBER);
+    expect(spark('Croci ai cavi')).toBe(GREY);
+    openSection('Schiena');
+    expect(spark('Stacco da terra')).toBe(DISABLED);
+  });
+
   it('nessun rosso: il calo non usa error.main', async () => {
     await mountOpen();
     openSection('Quadricipiti');

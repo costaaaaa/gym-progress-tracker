@@ -103,7 +103,7 @@ const MeasureRow = ({ series, data, domain }) => {
     <Box data-measure-row sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, md: 3 }, py: 1.25 }}>
       <Typography sx={{ flex: 1, minWidth: 0, fontSize: 16 }}>{t(series.label)}</Typography>
       {polyline && (
-        <Box sx={{ width: { xs: 72, md: 160 }, height: { xs: 28, md: 32 }, flexShrink: 0, color: 'text.secondary' }}>
+        <Box sx={{ width: { xs: 72, md: 160 }, height: { xs: 28, md: 32 }, flexShrink: 0, color: 'primary.main' }}>
           <svg viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} width="100%" height="100%" preserveAspectRatio="none" aria-hidden="true">
             <polyline points={polyline} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
           </svg>

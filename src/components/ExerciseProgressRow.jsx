@@ -59,7 +59,7 @@ const ExerciseProgressRow = ({ item, showMuscle = false, favorite, onToggleFavor
           </Typography>
         </Box>
 
-        <Sparkline sessions={sessions} color={tone === 'positive' ? TONE_COLOR.positive : TONE_COLOR.neutral} />
+        <Sparkline sessions={sessions} color={TONE_COLOR[tone]} />
 
         <Box sx={{ textAlign: 'right', minWidth: { xs: 76, md: 120 }, ml: { md: 'auto' } }}>
           <Typography variant="statNumber" sx={{ fontSize: 18 }}>{formatValue(t, mode, last.value)}</Typography>
