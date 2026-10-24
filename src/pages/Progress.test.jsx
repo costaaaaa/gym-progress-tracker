@@ -6,6 +6,7 @@ import { render, screen, within, fireEvent } from '@testing-library/react';
 import Progress from './Progress';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { textBelow } from '../test/minText';
+import { mediaStyle } from '../test/mediaStyle';
 
 const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
@@ -108,6 +109,13 @@ describe('riepilogo', () => {
     expect(getComputedStyle(stat('In crescita').label.parentElement).flexShrink).toBe('0');
   });
 
+  it('da md in su le quattro voci stanno a sinistra con un vuoto fisso di 48px; sul telefono restano distribuite', async () => {
+    await mount();
+    const rowEl = stat('In crescita').label.parentElement.parentElement;
+    expect(mediaStyle(rowEl, 0)).toMatchObject({ 'justify-content': 'space-between', gap: '16px' });
+    expect(mediaStyle(rowEl, 900)).toMatchObject({ 'justify-content': 'flex-start', gap: '48px' });
+  });
+
   it('i chip dei PR sono neutri: bordo grigio, testo in inchiostro, 13px', async () => {
     const records = [session(1, daysAgo(40), 1, 'Panca piana', 80), session(2, daysAgo(2), 1, 'Panca piana', 90)];
     stubFetch(records);
@@ -152,6 +160,17 @@ describe('righe degli esercizi', () => {
     expect(style.textOverflow).not.toBe('ellipsis');
     expect(style.fontSize).toBe('16px');
     expect(within(row('Panca piana')).getByText('ultimo 2 gg fa')).toBeTruthy();
+  });
+
+  it('da md in su il nome sta in una colonna di larghezza fissa, poi il grafico, poi il valore a destra', async () => {
+    await mountOpen();
+    const r = row('Panca piana');
+    const name = screen.getByText('Panca piana', { selector: '[data-exercise-row] p' }).parentElement;
+    const nameMd = mediaStyle(name, 900);
+    expect(nameMd['flex']).toMatch(/^0 0 (2[89]\d|3[0-2]\d)px$/);
+    const value = within(r).getByText(/kg$/).parentElement;
+    expect(mediaStyle(value, 900)['margin-left']).toBe('auto');
+    expect(getComputedStyle(value).textAlign).toBe('right');
   });
 
   it('il valore è nello stile numero grande, con l\'unità', async () => {

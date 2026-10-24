@@ -156,7 +156,7 @@ const Progress = ({ isEmbedded = false }) => {
           <Grid item xs={12}>
             <Card sx={{ ...BORDERED, p: { xs: 2, sm: '20px 22px' } }}>
               <Typography variant="cardTitle" sx={{ mb: 1.5 }}>{t('progress.summary.title', { days: RECENT_DAYS })}</Typography>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: { xs: 'space-between', md: 'flex-start' }, gap: { xs: 2, md: 6 } }}>
                 <SummaryStat label={t('progress.summary.improving')} value={summary.improving} color="success.main" />
                 <SummaryStat label={t('progress.summary.stalled')} value={summary.stalled} />
                 <SummaryStat label={t('progress.summary.declining')} value={summary.declining} color="recovery.recovering" />

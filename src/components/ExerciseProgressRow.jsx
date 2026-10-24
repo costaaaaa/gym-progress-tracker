@@ -52,7 +52,7 @@ const ExerciseProgressRow = ({ item, showMuscle = false, favorite, onToggleFavor
         onClick={() => onOpen(item.id)}
         sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: { xs: 1.5, md: 3 }, py: 1.25, px: 1, borderRadius: 1 }}
       >
-        <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Box sx={{ flex: { xs: 1, md: '0 0 300px' }, minWidth: 0 }}>
           <Typography sx={{ fontWeight: 600, fontSize: 16, lineHeight: 1.3 }}>{name}</Typography>
           <Typography sx={{ fontSize: 16, color: 'text.secondary' }} noWrap>
             {showMuscle ? `${muscleLabel(muscle)} · ` : ''}{t('progress.last_session', { when: formatDaysAgo(t, lastDays) })}
@@ -61,7 +61,7 @@ const ExerciseProgressRow = ({ item, showMuscle = false, favorite, onToggleFavor
 
         <Sparkline sessions={sessions} color={tone === 'positive' ? TONE_COLOR.positive : TONE_COLOR.neutral} />
 
-        <Box sx={{ textAlign: 'right', minWidth: { xs: 76, md: 120 } }}>
+        <Box sx={{ textAlign: 'right', minWidth: { xs: 76, md: 120 }, ml: { md: 'auto' } }}>
           <Typography variant="statNumber" sx={{ fontSize: 18 }}>{formatValue(t, mode, last.value)}</Typography>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'baseline', gap: 0.75 }}>
             {recentPR && <Typography component="span" data-row-badge sx={{ fontSize: 13, fontWeight: 700 }}>{t('progress.pr')}</Typography>}
