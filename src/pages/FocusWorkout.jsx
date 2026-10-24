@@ -105,7 +105,7 @@ const FocusWorkout = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={premiumDialog.onClose} sx={{ color: colors.primary }}>{t('focus.premium_ok')}</Button>
+          <Button onClick={premiumDialog.onClose} sx={{ color: colors.text }}>{t('focus.premium_ok')}</Button>
         </DialogActions>
       </Dialog>
       <Snackbar

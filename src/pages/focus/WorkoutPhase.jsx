@@ -30,10 +30,10 @@ export default function WorkoutPhase({
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${colors.border}` }}>
         <IconButton onClick={onQuit} sx={{ color: colors.textSecondary }}><CloseIcon /></IconButton>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <AccessTimeIcon sx={{ fontSize: 16, color: colors.textMuted }} />
-          <Typography variant="caption" sx={{ ...TABULAR, color: colors.textMuted }}><ElapsedClock startTime={startTime} /></Typography>
+          <AccessTimeIcon sx={{ fontSize: 16, color: colors.textSecondary }} />
+          <Typography variant="caption" sx={{ ...TABULAR, color: colors.textSecondary }}><ElapsedClock startTime={startTime} /></Typography>
         </Box>
-        <Typography variant="caption" sx={{ color: colors.textMuted }}>{currentExerciseIndex + 1}/{totalExercises}</Typography>
+        <Typography variant="caption" sx={{ color: colors.textSecondary }}>{currentExerciseIndex + 1}/{totalExercises}</Typography>
       </Box>
 
       <LinearProgress variant="determinate" value={((currentExerciseIndex) / totalExercises) * 100}
@@ -58,9 +58,9 @@ export default function WorkoutPhase({
               return (
                 <Box key={idx} title={status === 'skipped' ? t('focus.set_skipped') : undefined} sx={{
                   width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: `2px ${status === 'skipped' ? 'dashed' : 'solid'} ${status === 'done' ? colors.success : status === 'active' ? colors.primary : colors.border}`,
+                  border: `2px ${status === 'skipped' ? 'dashed' : 'solid'} ${status === 'done' ? colors.success : status === 'active' ? colors.text : colors.border}`,
                   bgcolor: status === 'done' ? colors.success : status === 'skipped' ? colors.bgElevated : 'transparent',
-                  color: status === 'done' ? '#fff' : status === 'active' ? colors.primary : colors.textMuted,
+                  color: status === 'done' ? '#fff' : status === 'active' ? colors.text : colors.textSecondary,
                   fontWeight: 700, fontSize: '0.875rem', transition: 'all 0.3s ease'
                 }}>
                   {status === 'done' ? <CheckIcon sx={{ fontSize: 18 }} /> : status === 'skipped' ? <RemoveIcon sx={{ fontSize: 18 }} /> : idx + 1}
@@ -81,7 +81,7 @@ export default function WorkoutPhase({
                 display: 'flex', alignItems: 'flex-start', gap: 1, mb: 2, px: 1.5, py: 1,
                 borderRadius: '10px', bgcolor: colors.bgElevated, border: `1px solid ${colors.border}`
               }}>
-                <HistoryIcon sx={{ fontSize: 18, color: colors.textMuted, mt: 0.25 }} />
+                <HistoryIcon sx={{ fontSize: 18, color: colors.textSecondary, mt: 0.25 }} />
                 <Box sx={{ minWidth: 0 }}>
                   <Typography variant="caption" sx={{ color: colors.textSecondary }}>
                     {t('focus.last_time')}
@@ -93,7 +93,7 @@ export default function WorkoutPhase({
                       return (
                         <Box key={idx} sx={{
                           px: 1, py: 0.5, borderRadius: '6px', bgcolor: colors.bgCard,
-                          border: `1px solid ${isCurrent ? colors.primary : colors.border}`,
+                          border: `1px solid ${isCurrent ? colors.text : colors.border}`,
                         }}>
                           <Typography variant="body2" sx={{ color: isCurrent ? colors.text : colors.textSecondary, fontWeight: isCurrent ? 700 : 600, lineHeight: 1.3 }}>
                             {set.label}
@@ -115,13 +115,13 @@ export default function WorkoutPhase({
           <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
             <TextField label={t('record.weight')} type="number" value={weightInput} onChange={(e) => onWeightChange(e.target.value)}
               fullWidth autoFocus inputProps={{ step: 0.5, min: 0, max: MAX_WEIGHT, inputMode: 'decimal' }}
-              sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.primary }, '&.Mui-focused fieldset': { borderColor: colors.primary } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.primary } }} />
+              sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.text }, '&.Mui-focused fieldset': { borderColor: colors.text } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.text } }} />
             {/* Vuoto a ogni serie: la scheda in grigio è solo un suggerimento, va scritta */}
             <TextField label={t('record.reps')} value={repsInput} onChange={(e) => onRepsChange(e.target.value)}
               placeholder={planRepsForSet(currentExercise.reps, currentSetIndex)} InputLabelProps={{ shrink: true }}
               onFocus={(e) => e.target.select()}
               fullWidth inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
-              sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.primary }, '&.Mui-focused fieldset': { borderColor: colors.primary } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.primary } }} />
+              sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.text }, '&.Mui-focused fieldset': { borderColor: colors.text } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.text } }} />
           </Box>
 
           <FormControl fullWidth sx={{
@@ -129,11 +129,11 @@ export default function WorkoutPhase({
             '& .MuiOutlinedInput-root': {
               color: colors.text,
               '& fieldset': { borderColor: colors.border, borderWidth: 2 },
-              '&:hover fieldset': { borderColor: colors.primary },
-              '&.Mui-focused fieldset': { borderColor: colors.primary },
+              '&:hover fieldset': { borderColor: colors.text },
+              '&.Mui-focused fieldset': { borderColor: colors.text },
             },
             '& .MuiInputLabel-root': { color: colors.textSecondary },
-            '& .MuiInputLabel-root.Mui-focused': { color: colors.primary },
+            '& .MuiInputLabel-root.Mui-focused': { color: colors.text },
             '& .MuiSvgIcon-root': { color: colors.textSecondary },
           }}>
             <InputLabel>{t('focus.technique')}</InputLabel>
@@ -151,8 +151,8 @@ export default function WorkoutPhase({
 
           <Button variant="contained" fullWidth size="large" startIcon={<CheckIcon />} onClick={onConfirmSet} disabled={!isValidWeight(weightInput) || !isValidReps(repsInput)}
             sx={{ py: 2.5, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.success, color: '#fff', borderRadius: '14px',
-              boxShadow: '0 4px 16px rgba(76, 175, 80, 0.3)', '&:hover': { bgcolor: 'success.dark', boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)' },
-              '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted }, mb: 2, transition: 'all 0.3s ease' }}>
+              boxShadow: 'none', '&:hover': { bgcolor: 'success.dark', boxShadow: 'none' },
+              '&:disabled': { bgcolor: colors.bgElevated, color: colors.textSecondary }, mb: 2, transition: 'all 0.3s ease' }}>
             {t('focus.confirm_set')}
           </Button>
 
@@ -160,12 +160,12 @@ export default function WorkoutPhase({
             {/* Dalla seconda serie: saltare la prima equivale a saltare l'esercizio */}
             {currentSetIndex > 0 && (
               <Button variant="text" fullWidth startIcon={<SkipNextIcon />} onClick={onSkipSet}
-                sx={{ py: 1.5, color: colors.textMuted, '&:hover': { color: colors.textSecondary, bgcolor: 'rgba(255,255,255,0.05)' } }}>
+                sx={{ py: 1.5, color: colors.textSecondary, '&:hover': { color: colors.text, bgcolor: 'rgba(255,255,255,0.05)' } }}>
                 {t('focus.skip_set')}
               </Button>
             )}
             <Button variant="text" fullWidth startIcon={<SkipNextIcon />} onClick={onSkipExercise}
-              sx={{ py: 1.5, color: colors.textMuted, '&:hover': { color: colors.textSecondary, bgcolor: 'rgba(255,255,255,0.05)' } }}>
+              sx={{ py: 1.5, color: colors.textSecondary, '&:hover': { color: colors.text, bgcolor: 'rgba(255,255,255,0.05)' } }}>
               {t('focus.skip_exercise')}
             </Button>
           </Box>
@@ -195,11 +195,11 @@ export default function WorkoutPhase({
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   px: 2, py: 1.25, borderTop: idx > 0 ? `1px solid ${colors.border}` : 'none',
                 }}>
-                  <Typography variant="body2" sx={{ color: colors.textMuted }}>{t('focus.set_n', { n: set.setNumber })}</Typography>
+                  <Typography variant="body2" sx={{ color: colors.textSecondary }}>{t('focus.set_n', { n: set.setNumber })}</Typography>
                   <Box sx={{ textAlign: 'right' }}>
                     <Typography variant="body2" sx={{ color: colors.text, fontWeight: 600 }}>{set.weight} kg × {set.reps}</Typography>
                     {set.intensity_technique && (
-                      <Typography variant="caption" sx={{ color: colors.textMuted, display: 'block' }}>{techniqueLabel(set.intensity_technique)}</Typography>
+                      <Typography variant="caption" sx={{ color: colors.textSecondary, display: 'block' }}>{techniqueLabel(set.intensity_technique)}</Typography>
                     )}
                   </Box>
                 </Box>
@@ -211,14 +211,14 @@ export default function WorkoutPhase({
 
       <QuitDialog open={quitDialogOpen} onClose={onCloseQuitDialog} onConfirm={onConfirmQuit}
         title={t('focus.quit_title')} text={t('focus.quit_text', { count: totalCompletedSets })}
-        stayLabel={t('focus.quit_continue')} exitLabel={t('focus.quit_exit')} />
+        stayLabel={t('focus.quit_continue')} exitLabel={t('focus.quit_exit')} destructive />
 
       <Dialog open={repsConfirmOpen} onClose={onCloseRepsConfirm}
         PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: '16px' } }}>
         <DialogTitle sx={{ color: colors.text }}>{t('record.confirm_reps', { reps: parseInt(repsInput, 10) })}</DialogTitle>
         <DialogActions>
           <Button onClick={onCloseRepsConfirm} sx={{ color: colors.textSecondary }}>{t('record.fix')}</Button>
-          <Button onClick={onConfirmReps} sx={{ color: colors.primary }}>{t('record.confirm_yes')}</Button>
+          <Button onClick={onConfirmReps} sx={{ color: colors.text }}>{t('record.confirm_yes')}</Button>
         </DialogActions>
       </Dialog>
     </Box>

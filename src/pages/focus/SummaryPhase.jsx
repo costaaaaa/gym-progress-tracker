@@ -47,7 +47,6 @@ export default function SummaryPhase({
 
       <Container maxWidth="sm" sx={{ py: 3 }}>
         <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <TrophyIcon sx={{ fontSize: 56, color: colors.warning, mb: 1 }} />
           <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>{t('focus.completed')}</Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mt: 2 }}>
             <Box sx={{ textAlign: 'center' }}>
@@ -66,7 +65,7 @@ export default function SummaryPhase({
         </Box>
 
         <Paper sx={{ bgcolor: colors.bgCard, overflow: 'hidden', mb: 3, border: `1px solid ${colors.border}` }}>
-          <Box sx={{ px: 2, py: 1.5, bgcolor: colors.bgElevated }}>
+          <Box sx={{ px: 2, py: 1.5 }}>
             <Typography variant="subtitle2" sx={{ color: colors.textSecondary }}>{t('focus.detail')}</Typography>
           </Box>
           {selectedDay?.exercises?.map((exercise) => {
@@ -83,7 +82,7 @@ export default function SummaryPhase({
                 <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, mb: 1 }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 600, color: colors.text }}>{exercise.exercise_name}</Typography>
                   {exercise.replaces && (
-                    <Typography variant="caption" sx={{ color: colors.textMuted }}>{t('focus.replaces', { name: exercise.replaces })}</Typography>
+                    <Typography variant="caption" sx={{ color: colors.textSecondary }}>{t('focus.replaces', { name: exercise.replaces })}</Typography>
                   )}
                   {pr.isPR && (
                     <Chip
@@ -220,7 +219,7 @@ export default function SummaryPhase({
               {t('focus.go_history')}
             </Button>
 
-            <Button variant="text" fullWidth onClick={onGoHome} sx={{ color: colors.textMuted, py: 1.5 }}>
+            <Button variant="text" fullWidth onClick={onGoHome} sx={{ color: colors.textSecondary, py: 1.5 }}>
               {t('focus.go_home')}
             </Button>
 
@@ -246,18 +245,18 @@ export default function SummaryPhase({
               onClick={onSave} disabled={saving || totalCompletedSets === 0}
               sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, bgcolor: colors.primary, color: colors.primaryContrast, borderRadius: '12px',
                 '&:hover': { bgcolor: colors.primaryDark },
-                '&:disabled': { bgcolor: colors.bgElevated, color: colors.textMuted }, mb: 2 }}>
+                '&:disabled': { bgcolor: colors.bgElevated, color: colors.textSecondary }, mb: 2 }}>
               {saving ? t('focus.saving') : t('focus.save')}
             </Button>
 
-            <Button variant="text" fullWidth onClick={onQuit} disabled={saving} sx={{ color: colors.textMuted, py: 1.5 }}>{t('common.cancel')}</Button>
+            <Button variant="text" fullWidth onClick={onQuit} disabled={saving} sx={{ color: colors.textSecondary, py: 1.5 }}>{t('common.cancel')}</Button>
           </>
         )}
       </Container>
 
       <QuitDialog open={quitDialogOpen} onClose={onCloseQuitDialog} onConfirm={onConfirmQuit}
         title={t('focus.discard_title')} text={t('focus.discard_text', { count: totalCompletedSets })}
-        stayLabel={t('focus.discard_stay')} exitLabel={t('focus.discard_exit')} />
+        stayLabel={t('focus.discard_stay')} exitLabel={t('focus.discard_exit')} destructive />
     </Box>
   );
 }
