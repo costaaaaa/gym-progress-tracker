@@ -7,7 +7,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import { intlLocale } from '../../i18n/format';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 
-export const ACH_VARIANT_NAMES = { A: 'griglia neutra', B: 'tappe per categoria', C: 'prossimi + ottenuti' };
+export const ACH_VARIANT_NAMES = { A: 'griglia neutra', B: 'tappe per categoria', C: 'prossimi + ottenuti', D: 'griglia A + barra di C' };
 
 const CATEGORY_ORDER = ['sessions', 'tonnage', 'streak'];
 const CATEGORY_LABEL = { sessions: 'Sessioni', tonnage: 'Tonnellaggio', streak: 'Costanza' };
@@ -145,4 +145,58 @@ const VariantC = ({ data }) => {
   );
 };
 
-export const AchievementVariants = { A: VariantA, B: VariantB, C: VariantC };
+// ---------- D: le card di A, ma la prossima tappa di ogni categoria ha la barra di C ----------
+const PROGRESS = {
+  sessions: (d, a) => [d.total_sessions, a.threshold].map(fmtNum),
+  tonnage: (d, a) => [d.lifetime_volume_kg, a.threshold].map((kg) => `${fmtNum(kg / 1000)} t`),
+  streak: (d, a) => [d.longest_streak, a.threshold].map(fmtNum),
+};
+const CURRENT_VALUE = { sessions: (d) => d.total_sessions, tonnage: (d) => d.lifetime_volume_kg, streak: (d) => d.longest_streak };
+
+const VariantD = ({ data }) => (
+  <>
+    <Title />
+    {byCategory(data.achievements).map(({ cat, items }) => {
+      const nextKey = items.find((a) => a.locked)?.key;
+      const earned = items.filter((a) => !a.locked).length;
+      return (
+        <Box key={cat} sx={{ mb: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1.25 }}>
+            <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 16 }}>{CATEGORY_LABEL[cat]}</Typography>
+            <Typography sx={{ fontSize: 14, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>{earned} di {items.length}</Typography>
+          </Box>
+          <Grid container spacing={1.5}>
+            {items.map((a) => {
+              const isNext = a.key === nextKey;
+              const [cur, of] = isNext ? PROGRESS[cat](data, a) : [];
+              return (
+                <Grid item xs={6} sm={3} key={a.key}>
+                  <Card sx={{ ...flatCard, borderRadius: '12px', p: '16px 12px', textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center',
+                    ...(isNext && { borderColor: 'text.primary' }) }}>
+                    {!a.locked && <CheckIcon sx={{ fontSize: 22, color: 'success.main', mb: 0.75 }} />}
+                    {a.locked && !isNext && <LockOutlinedIcon sx={{ fontSize: 22, color: 'text.disabled', mb: 0.75 }} />}
+                    {isNext && <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 0.5 }}>Prossimo</Typography>}
+                    <Typography sx={{ fontSize: 14, fontWeight: 600, lineHeight: 1.3, color: a.locked && !isNext ? 'text.secondary' : 'text.primary' }}>{a.label}</Typography>
+                    {!a.locked && <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.5 }}>{fmtDate(a.unlocked_at)}</Typography>}
+                    {isNext && (
+                      <Box sx={{ width: '100%', mt: 'auto', pt: 1 }}>
+                        <LinearProgress
+                          variant="determinate"
+                          value={Math.min(100, (CURRENT_VALUE[cat](data) / a.threshold) * 100)}
+                          sx={{ height: 6, borderRadius: '3px', bgcolor: 'divider', mb: 0.75, '& .MuiLinearProgress-bar': { borderRadius: '3px', bgcolor: 'text.primary' } }}
+                        />
+                        <Typography sx={{ fontSize: 13, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>{cur} di {of}</Typography>
+                      </Box>
+                    )}
+                  </Card>
+                </Grid>
+              );
+            })}
+          </Grid>
+        </Box>
+      );
+    })}
+  </>
+);
+
+export const AchievementVariants = { A: VariantA, B: VariantB, C: VariantC, D: VariantD };

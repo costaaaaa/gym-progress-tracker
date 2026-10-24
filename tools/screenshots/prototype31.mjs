@@ -255,16 +255,18 @@ async function openPage(vp, theme, opts, tag) {
 
 // nasconde la barra delle varianti: la variante è nel nome del file
 const HIDE_SWITCHER = '[data-prototype-switcher]{display:none!important}';
-const SHOTS = [
-  ['progressi', '/dashboard?tab=progress', 'input[aria-label="Cerca esercizio"]'],
-  ['profilo', '/profilo', null],
-];
+const SHOTS = process.env.ONLY_D4
+  ? [['profilo', '/profilo', null, ['D']]]
+  : [
+    ['progressi', '/dashboard?tab=progress', 'input[aria-label="Cerca esercizio"]', ['A', 'B', 'C']],
+    ['profilo', '/profilo', null, ['A', 'B', 'C', 'D']],
+  ];
 const CASES = [{ w: 390, h: 844, theme: 'light' }, { w: 390, h: 844, theme: 'dark' }, { w: 1440, h: 900, theme: 'light' }];
 
 for (const c of CASES) {
   const tag = `${c.w}_${c.theme}`;
-  for (const [name, url, anchor] of SHOTS) {
-    for (const v of ['A', 'B', 'C']) {
+  for (const [name, url, anchor, vs] of SHOTS) {
+    for (const v of vs) {
       await attempt(tag, `${name}-${v}`, async () => {
         const { ctx, page } = await openPage({ w: c.w, h: c.h }, c.theme, { loggedIn: true }, tag);
         try {

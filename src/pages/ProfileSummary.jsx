@@ -14,7 +14,7 @@ function exProgressPct(xp) {
 }
 
 const Achievements = ({ data }) => {
-  const V = AchievementVariants[useVariant(['A', 'B', 'C'])];
+  const V = AchievementVariants[useVariant(['A', 'B', 'C', 'D'])];
   return <V data={data} />;
 };
 
@@ -159,7 +159,7 @@ const ProfileSummary = () => {
       )}
 
       <Achievements data={data} />
-      <PrototypeSwitcher variants={['A', 'B', 'C']} names={ACH_VARIANT_NAMES} />
+      <PrototypeSwitcher variants={['A', 'B', 'C', 'D']} names={ACH_VARIANT_NAMES} />
     </Box>
   );
 };
