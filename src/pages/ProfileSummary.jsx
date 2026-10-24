@@ -1,20 +1,24 @@
 import { useState, useEffect } from 'react';
-import { Box, Card, CircularProgress, Grid, LinearProgress, Tooltip, Typography } from '@mui/material';
-import StarIcon from '@mui/icons-material/Star';
+import { Box, Card, CircularProgress, Grid, LinearProgress, Typography } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import CheckIcon from '@mui/icons-material/Check';
+import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../config';
 import { xpIntoLevel, xpForNextLevel } from '../utils/gamificationLevels';
-import { intlLocale } from '../i18n/format';
+import { formatDate, formatNumber } from '../i18n/format';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
 // Solo queste tre categorie hanno una griglia dedicata: "strength" è esclusa perché il suo
-// ruolo è coperto dalla sezione "Livelli per Esercizio" (il catalogo backend resta invariato).
+// ruolo è coperto dalla sezione "Livelli per esercizio" (il catalogo backend resta invariato).
 const CATEGORY_ORDER = ['sessions', 'tonnage', 'streak'];
-const CATEGORY_LABEL = {
-  sessions: 'Sessioni',
-  tonnage:  'Tonnellaggio',
-  streak:   'Costanza',
-};
+
+const BORDERED = { boxShadow: 'none', border: '1px solid', borderColor: 'divider' };
+const solidBar = (height, color = 'primary.main') => ({
+  height,
+  borderRadius: `${height / 2}px`,
+  bgcolor: 'divider',
+  '& .MuiLinearProgress-bar': { borderRadius: `${height / 2}px`, bgcolor: color },
+});
 
 function exProgressPct(xp) {
   const xpNum = parseInt(xp, 10);
@@ -22,7 +26,46 @@ function exProgressPct(xp) {
   return span > 0 ? Math.round((xpIntoLevel(xpNum) / span) * 100) : 100;
 }
 
+// Valore attuale e soglia di una tappa, come testo ("58 di 100", "184 t di 420 t")
+const progressOf = (t, cat, data, achievement) => {
+  const tonnes = (kg) => t('profile.achievements.tonnes', { value: formatNumber(kg / 1000, { maximumFractionDigits: 1 }) });
+  const current = { sessions: data.total_sessions, tonnage: data.lifetime_volume_kg, streak: data.longest_streak }[cat];
+  const text = cat === 'tonnage'
+    ? [tonnes(current), tonnes(achievement.threshold)]
+    : [formatNumber(current), formatNumber(achievement.threshold)];
+  return { pct: Math.min(100, (current / achievement.threshold) * 100), label: t('profile.achievements.progress', { current: text[0], target: text[1] }) };
+};
+
+const AchievementCard = ({ achievement, isNext, progress }) => {
+  const { t } = useTranslation();
+  const { label, locked, unlocked_at } = achievement;
+  return (
+    <Card sx={{
+      ...BORDERED, borderRadius: '12px', p: '16px 12px', textAlign: 'center', height: '100%',
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      ...(isNext && { borderColor: 'text.primary' }),
+    }}>
+      {!locked && <CheckIcon sx={{ fontSize: 22, color: 'success.main', mb: 0.75 }} />}
+      {locked && !isNext && <LockOutlinedIcon sx={{ fontSize: 22, color: 'text.disabled', mb: 0.75 }} />}
+      {isNext && <Typography sx={{ fontSize: 16, color: 'text.secondary', mb: 0.5 }}>{t('profile.achievements.next')}</Typography>}
+      <Typography sx={{ fontSize: 16, fontWeight: 600, lineHeight: 1.3, color: locked && !isNext ? 'text.secondary' : 'text.primary' }}>{label}</Typography>
+      {!locked && unlocked_at && (
+        <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
+          {formatDate(String(unlocked_at).replace(' ', 'T'), { day: 'numeric', month: 'short', year: 'numeric' })}
+        </Typography>
+      )}
+      {isNext && (
+        <Box sx={{ width: '100%', mt: 'auto', pt: 1 }}>
+          <LinearProgress variant="determinate" value={progress.pct} sx={{ ...solidBar(6, 'text.primary'), mb: 0.75 }} />
+          <Typography sx={{ fontSize: 16, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>{progress.label}</Typography>
+        </Box>
+      )}
+    </Card>
+  );
+};
+
 const ProfileSummary = () => {
+  const { t } = useTranslation();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -45,7 +88,7 @@ const ProfileSummary = () => {
   if (!data) {
     return (
       <Typography color="text.secondary" sx={{ textAlign: 'center', pt: 8 }}>
-        Profilo non disponibile.
+        {t('profile.unavailable')}
       </Typography>
     );
   }
@@ -67,101 +110,74 @@ const ProfileSummary = () => {
   });
 
   const statTiles = [
-    { value: total_sessions, label: 'sessioni' },
-    { value: `${Math.round(lifetime_volume_kg).toLocaleString(intlLocale())} kg`, label: 'tonnellaggio a vita' },
-    { value: longest_streak, label: 'settimane record' },
+    { value: formatNumber(total_sessions), label: t('profile.stat.sessions') },
+    { value: formatNumber(Math.round(lifetime_volume_kg)), label: t('profile.stat.volume') },
+    { value: formatNumber(longest_streak), label: t('profile.stat.streak') },
   ];
 
   return (
     <Box sx={{ pb: 4 }}>
       {/* Card livello */}
-      <Card sx={{ p: '26px', mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2.5 }}>
-          <StarIcon sx={{ fontSize: 44, color: 'primary.main' }} />
-          <Box>
-            <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 26, lineHeight: 1 }}>
-              Livello {level}
-            </Typography>
-            <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.5 }}>
-              {total_xp.toLocaleString(intlLocale())} XP totali
-            </Typography>
-          </Box>
+      <Card sx={{ ...BORDERED, p: { xs: 2.5, sm: '26px' }, mb: 3 }}>
+        <Box sx={{ mb: 2.5 }}>
+          <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 26, lineHeight: 1 }}>
+            {t('profile.level', { level })}
+          </Typography>
+          <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
+            {t('level.total_xp', { xp: formatNumber(total_xp) })}
+          </Typography>
         </Box>
 
         <Box sx={{ mb: 2.5 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{xp_into_level} XP</Typography>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
-              {xp_for_next_level} XP per livello {level + 1}
+            <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{t('profile.xp_current', { xp: xp_into_level })}</Typography>
+            <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
+              {t('profile.xp_to_next', { xp: xp_for_next_level, level: level + 1 })}
             </Typography>
           </Box>
-          <LinearProgress
-            variant="determinate"
-            value={progress}
-            sx={{
-              height: 9,
-              borderRadius: '5px',
-              bgcolor: 'divider',
-              '& .MuiLinearProgress-bar': {
-                borderRadius: '5px',
-                background: 'linear-gradient(90deg, #d50000, #ff5131)',
-              },
-            }}
-          />
+          <LinearProgress variant="determinate" value={progress} sx={solidBar(9)} />
         </Box>
 
-        <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', justifyContent: 'start', columnGap: { xs: 3, md: 5 } }}>
           {statTiles.map((stat) => (
             <Box key={stat.label}>
-              <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 19, lineHeight: 1 }}>
-                {stat.value}
-              </Typography>
-              <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>{stat.label}</Typography>
+              <Typography variant="statNumber">{stat.value}</Typography>
+              <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5, whiteSpace: 'nowrap' }}>{stat.label}</Typography>
             </Box>
           ))}
         </Box>
       </Card>
 
-      {/* Livelli per Esercizio — precede Achievement */}
+      {/* Livelli per esercizio — precede i traguardi */}
       {exercises.length > 0 && (
         <Box sx={{ mb: 3 }}>
           <Typography variant="cardTitle" sx={{ mb: 2 }}>
-            Livelli per Esercizio
+            {t('profile.exercises_title')}
           </Typography>
           <Grid container spacing={2}>
             {exercises.map(ex => (
               <Grid item xs={12} sm={6} key={ex.exercise_id}>
-                <Card sx={{ borderRadius: '14px', p: '18px' }}>
+                <Card sx={{ ...BORDERED, borderRadius: '14px', p: '18px' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.25 }}>
-                    <Typography sx={{ fontSize: 14, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <Typography sx={{ fontSize: 16, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {ex.name}
                     </Typography>
-                    <Box sx={{
-                      bgcolor: 'primary.main',
-                      color: '#fff',
-                      fontSize: 11,
-                      fontWeight: 800,
+                    <Box data-level-chip sx={{
+                      bgcolor: 'action.selected',
+                      color: 'text.primary',
+                      fontSize: 13,
+                      fontWeight: 700,
                       borderRadius: '999px',
                       px: 1.25,
                       py: 0.25,
                       ml: 1,
                       flexShrink: 0,
                     }}>
-                      Lv {ex.level}
+                      {t('profile.exercise_level', { level: ex.level })}
                     </Box>
                   </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={exProgressPct(ex.xp)}
-                    sx={{
-                      height: 6,
-                      borderRadius: '3px',
-                      bgcolor: 'divider',
-                      mb: 0.75,
-                      '& .MuiLinearProgress-bar': { borderRadius: '3px', background: 'linear-gradient(90deg, #d50000, #ff5131)' },
-                    }}
-                  />
-                  <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{ex.xp} XP</Typography>
+                  <LinearProgress variant="determinate" value={exProgressPct(ex.xp)} sx={{ ...solidBar(6), mb: 0.75 }} />
+                  <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{t('profile.xp_current', { xp: ex.xp })}</Typography>
                 </Card>
               </Grid>
             ))}
@@ -169,50 +185,31 @@ const ProfileSummary = () => {
         </Box>
       )}
 
-      {/* Achievement — solo sessions / tonnage / streak, "strength" esclusa dal rendering */}
+      {/* Traguardi — solo sessions / tonnage / streak, "strength" esclusa dal rendering */}
       <Typography variant="cardTitle" sx={{ mb: 2 }}>
-        Achievement
+        {t('profile.achievements.title')}
       </Typography>
-      {CATEGORY_ORDER.filter(cat => byCategory[cat]?.length).map(cat => (
-        <Box key={cat} sx={{ mb: 3 }}>
-          <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'text.secondary', mb: 1.25 }}>
-            {CATEGORY_LABEL[cat]}
-          </Typography>
-          <Grid container spacing={1.5}>
-            {byCategory[cat].map(a => (
-              <Grid item xs={6} sm={3} key={a.key}>
-                <Tooltip
-                  title={a.locked
-                    ? `Soglia: ${a.threshold}`
-                    : a.unlocked_at
-                      ? new Date(a.unlocked_at).toLocaleDateString(intlLocale())
-                      : ''}
-                  placement="top"
-                >
-                  <Card sx={{
-                    borderRadius: '12px',
-                    p: '16px 10px',
-                    textAlign: 'center',
-                    opacity: a.locked ? 0.5 : 1,
-                    border: a.locked ? '1px solid' : '2px solid',
-                    borderColor: a.locked ? 'divider' : 'primary.main',
-                    cursor: 'default',
-                    height: '100%',
-                  }}>
-                    {a.locked
-                      ? <LockOutlinedIcon sx={{ fontSize: 24, color: 'text.disabled', mb: 0.75 }} />
-                      : <StarIcon sx={{ fontSize: 24, color: 'primary.main', mb: 0.75 }} />
-                    }
-                    <Typography sx={{ fontSize: 12, fontWeight: 600, lineHeight: 1.3 }}>
-                      {a.label}
-                    </Typography>
-                  </Card>
-                </Tooltip>
-              </Grid>
-            ))}
-          </Grid>
-        </Box>
-      ))}
+      {CATEGORY_ORDER.filter(cat => byCategory[cat]?.length).map(cat => {
+        const items = byCategory[cat];
+        const next = items.find((a) => a.locked);
+        return (
+          <Box key={cat} sx={{ mb: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1.25 }}>
+              <Typography variant="cardTitle" sx={{ fontSize: 16 }}>{t(`profile.achievements.category.${cat}`)}</Typography>
+              <Typography sx={{ fontSize: 16, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
+                {t('profile.achievements.count', { earned: items.filter((a) => !a.locked).length, total: items.length })}
+              </Typography>
+            </Box>
+            <Grid container spacing={1.5}>
+              {items.map(a => (
+                <Grid item xs={6} sm={3} key={a.key}>
+                  <AchievementCard achievement={a} isNext={a === next} progress={a === next ? progressOf(t, cat, data, a) : null} />
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        );
+      })}
     </Box>
   );
 };

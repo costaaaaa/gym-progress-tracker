@@ -49,6 +49,7 @@ import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import { validatePassword } from '../utils/passwordPolicy';
 import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
+import { NEUTRAL_OUTLINED } from '../utils/neutralButton';
 import { getConsents, setConsent } from '../utils/consent';
 import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
 
@@ -581,32 +582,32 @@ const Account = ({ isEmbedded = false }) => {
           </Avatar>
 
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography sx={{ fontSize: 18, fontWeight: 700, lineHeight: 1.3 }} noWrap>
+            <Typography sx={{ fontSize: 18, fontWeight: 700, lineHeight: 1.3, overflowWrap: 'anywhere' }}>
               {userData?.username || t('account.user_fallback')}
             </Typography>
-            <Typography sx={{ fontSize: 13, color: 'text.secondary' }} noWrap>
+            <Typography sx={{ fontSize: 16, color: 'text.secondary', overflowWrap: 'anywhere' }}>
               {userData?.email || t('account.email_unavailable')}
             </Typography>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
+            <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
               {t('account.member_since', { date: joinDate ? format(joinDate, 'MMMM yyyy', { locale: dateFnsLocale() }) : t('account.date_unavailable') })}
             </Typography>
           </Box>
-
-          <Button
-            variant="outlined"
-            startIcon={<EditIcon />}
-            onClick={() => setEditOpen(o => !o)}
-            sx={{ flexShrink: 0 }}
-          >
-            {t('account.edit')}
-          </Button>
         </Box>
+
+        <Button
+          variant="outlined"
+          startIcon={<EditIcon />}
+          onClick={() => setEditOpen(o => !o)}
+          sx={{ ...NEUTRAL_OUTLINED, mt: 2 }}
+        >
+          {t('account.edit')}
+        </Button>
 
         {/* Card "Profilo fisico" e "Allenamento": fuori dal design, restano collassate */}
         <Collapse in={editOpen}>
           <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 3 }}>
             <Box>
-              <Typography sx={{ fontSize: 13, fontWeight: 700, mb: 1.5 }}>{t('account.physical_profile')}</Typography>
+              <Typography sx={{ fontSize: 16, fontWeight: 700, mb: 1.5 }}>{t('account.physical_profile')}</Typography>
               <DateLocalization>
                 <Grid container spacing={2} alignItems="flex-start">
                   <Grid item xs={12} sm={6}>
@@ -666,7 +667,7 @@ const Account = ({ isEmbedded = false }) => {
                 startIcon={<SaveIcon />}
                 onClick={handleUpdateProfile}
                 disabled={updatingProfile}
-                sx={{ mt: 2 }}
+                sx={{ fontSize: 16, mt: 2 }}
               >
                 {updatingProfile ? t('focus.saving') : t('account.save_profile')}
               </Button>
@@ -674,8 +675,8 @@ const Account = ({ isEmbedded = false }) => {
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
               <Box>
-                <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{t('account.rest_timer')}</Typography>
-                <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
+                <Typography sx={{ fontSize: 16, fontWeight: 700 }}>{t('account.rest_timer')}</Typography>
+                <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
                   {t('account.rest_timer_help')}
                 </Typography>
               </Box>
@@ -712,14 +713,13 @@ const Account = ({ isEmbedded = false }) => {
                   }
                 }}
                 disabled={savingSettings}
-                color="primary"
               />
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
               <Box>
-                <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{t('account.language')}</Typography>
-                <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
+                <Typography sx={{ fontSize: 16, fontWeight: 700 }}>{t('account.language')}</Typography>
+                <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
                   {t('account.language_help')}
                 </Typography>
               </Box>
@@ -760,15 +760,14 @@ const Account = ({ isEmbedded = false }) => {
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
               <Box>
-                <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{t('account.weekly_goal.title')}</Typography>
-                <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
+                <Typography sx={{ fontSize: 16, fontWeight: 700 }}>{t('account.weekly_goal.title')}</Typography>
+                <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
                   {t('account.weekly_goal.help')}
                 </Typography>
               </Box>
               <ToggleButtonGroup
                 exclusive
                 size="small"
-                color="primary"
                 value={weeklyGoalChoice}
                 onChange={handleWeeklyGoalChange}
                 disabled={savingSettings}
@@ -776,13 +775,13 @@ const Account = ({ isEmbedded = false }) => {
                 sx={{ flexWrap: 'wrap', alignSelf: 'flex-start' }}
               >
                 {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-                  <ToggleButton key={n} value={n} sx={{ minWidth: 40, ...CHIP_FONT }}>{n}</ToggleButton>
+                  <ToggleButton key={n} value={n} sx={{ minWidth: 40, fontSize: 16, ...CHIP_FONT }}>{n}</ToggleButton>
                 ))}
-                <ToggleButton value="default" sx={CHIP_FONT}>
+                <ToggleButton value="default" sx={{ fontSize: 16, ...CHIP_FONT }}>
                   {t('account.weekly_goal.default', { n: weeklyGoal.weekly_goal_default })}
                 </ToggleButton>
               </ToggleButtonGroup>
-              <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+              <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
                 {weeklyGoal.weekly_goal_pending
                   ? t('account.weekly_goal.from_date', { date: format(parseISO(weeklyGoal.weekly_goal_pending.from), 'dd/MM') })
                   : t('account.weekly_goal.now')}
@@ -796,10 +795,10 @@ const Account = ({ isEmbedded = false }) => {
       <Card sx={{ p: '24px' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
           <Box>
-            <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{t('account.password.title')}</Typography>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>{passwordChangedLabel}</Typography>
+            <Typography variant="cardTitle">{t('account.password.title')}</Typography>
+            <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>{passwordChangedLabel}</Typography>
           </Box>
-          <Button variant="outlined" startIcon={<LockIcon />} onClick={handleOpenPasswordDialog}>
+          <Button variant="outlined" startIcon={<LockIcon />} onClick={handleOpenPasswordDialog} sx={NEUTRAL_OUTLINED}>
             {t('account.password.change')}
           </Button>
         </Box>
@@ -809,8 +808,8 @@ const Account = ({ isEmbedded = false }) => {
       <Card sx={{ p: '24px' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
           <Box>
-            <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{t('account.export.title')}</Typography>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
+            <Typography variant="cardTitle">{t('account.export.title')}</Typography>
+            <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
               {t('account.export.help')}
             </Typography>
           </Box>
@@ -819,6 +818,7 @@ const Account = ({ isEmbedded = false }) => {
             startIcon={exportLoading ? <CircularProgress size={16} /> : <DownloadIcon />}
             onClick={handleDownloadData}
             disabled={exportLoading}
+            sx={NEUTRAL_OUTLINED}
           >
             {t('account.export.button')}
           </Button>
@@ -829,12 +829,12 @@ const Account = ({ isEmbedded = false }) => {
       <Card sx={{ p: '24px' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
           <Box sx={{ maxWidth: 520 }}>
-            <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{t('account.consent.title')}</Typography>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
+            <Typography variant="cardTitle">{t('account.consent.title')}</Typography>
+            <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
               {t('account.consent.help')}
             </Typography>
             {healthConsentOutdated && healthConsent !== true && (
-              <Typography sx={{ fontSize: 12, color: 'warning.main', mt: 0.5 }}>
+              <Typography sx={{ fontSize: 16, color: 'warning.main', mt: 0.5 }}>
                 {t('account.consent.outdated')}
               </Typography>
             )}
@@ -846,7 +846,7 @@ const Account = ({ isEmbedded = false }) => {
             inputProps={{ 'aria-label': t('account.consent.aria') }}
           />
         </Box>
-        <Typography sx={{ fontSize: 12, mt: 1.5 }}>
+        <Typography sx={{ fontSize: 16, mt: 1.5 }}>
           <a href="/privacy.html" target="_blank" rel="noopener noreferrer">{t('account.privacy')}</a>
           {' · '}
           <a href="/termini.html" target="_blank" rel="noopener noreferrer">{t('account.terms')}</a>
@@ -858,10 +858,10 @@ const Account = ({ isEmbedded = false }) => {
       {userData?.is_admin && (
         <Card sx={{ p: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
           <Box>
-            <Typography sx={{ fontSize: 15, fontWeight: 700 }}>{t('account.admin.title')}</Typography>
-            <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{t('account.admin.help')}</Typography>
+            <Typography variant="cardTitle">{t('account.admin.title')}</Typography>
+            <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{t('account.admin.help')}</Typography>
           </Box>
-          <Button variant="outlined" onClick={() => navigate('/admin')} sx={{ flexShrink: 0 }}>{t('account.admin.open')}</Button>
+          <Button variant="outlined" onClick={() => navigate('/admin')} sx={{ ...NEUTRAL_OUTLINED, flexShrink: 0 }}>{t('account.admin.open')}</Button>
         </Card>
       )}
 
@@ -869,43 +869,31 @@ const Account = ({ isEmbedded = false }) => {
       <Card sx={{ p: '24px' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
           <Box>
-            <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{t('account.session.title')}</Typography>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
+            <Typography variant="cardTitle">{t('account.session.title')}</Typography>
+            <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
               {t('account.session.help')}
             </Typography>
           </Box>
-          <Button variant="outlined" startIcon={<LogoutIcon />} onClick={logout}>
+          <Button variant="outlined" startIcon={<LogoutIcon />} onClick={logout} sx={NEUTRAL_OUTLINED}>
             {t('account.session.logout')}
           </Button>
         </Box>
       </Card>
 
       {/* Zona Pericolosa */}
-      <Card sx={{
-        p: '24px',
-        borderRadius: '16px',
-        bgcolor: (theme) => theme.palette.mode === 'light' ? '#fdf3f3' : 'rgba(213, 0, 0, 0.08)',
-        border: (theme) => theme.palette.mode === 'light' ? '1px solid #f5c6c6' : '1px solid rgba(213, 0, 0, 0.3)',
-      }}>
+      <Card sx={{ p: '24px' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
           <Box>
-            <Typography sx={{
-              fontFamily: TITLE_FONT_FAMILY,
-              fontWeight: 700,
-              fontSize: 15,
-              color: (theme) => theme.palette.mode === 'light' ? '#9b0000' : 'error.main',
-            }}>
-              {t('account.danger.title')}
-            </Typography>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
+            <Typography variant="cardTitle">{t('account.danger.title')}</Typography>
+            <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
               {t('account.danger.help')}
             </Typography>
           </Box>
           <Button
-            variant="contained"
-            color="error"
+            variant="outlined"
             startIcon={<DeleteForeverIcon />}
             onClick={handleOpenDeleteDialog}
+            sx={NEUTRAL_OUTLINED}
           >
             {t('account.delete.title')}
           </Button>
@@ -924,13 +912,14 @@ const Account = ({ isEmbedded = false }) => {
             startIcon={exportLoading ? <CircularProgress size={16} /> : <DownloadIcon />}
             onClick={handleDownloadData}
             disabled={exportLoading || consentBusy}
+            sx={{ fontSize: 16 }}
           >
             {t('account.revoke.export_first')}
           </Button>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setRevokeDialogOpen(false)} disabled={consentBusy}>{t('common.cancel')}</Button>
-          <Button onClick={handleConfirmRevoke} color="error" variant="contained" disabled={consentBusy}>
+          <Button onClick={() => setRevokeDialogOpen(false)} disabled={consentBusy} sx={{ fontSize: 16 }}>{t('common.cancel')}</Button>
+          <Button onClick={handleConfirmRevoke} color="error" variant="contained" disabled={consentBusy} sx={{ fontSize: 16 }}>
             {t('account.revoke.confirm')}
           </Button>
         </DialogActions>
@@ -1034,6 +1023,7 @@ const Account = ({ isEmbedded = false }) => {
             onClick={handleClosePasswordDialog}
             startIcon={<CancelIcon />}
             disabled={changingPassword}
+            sx={{ fontSize: 16 }}
           >
             {t('common.cancel')}
           </Button>
@@ -1042,6 +1032,7 @@ const Account = ({ isEmbedded = false }) => {
             variant="contained"
             startIcon={<SaveIcon />}
             disabled={changingPassword}
+            sx={{ fontSize: 16 }}
           >
             {changingPassword ? t('focus.saving') : t('common.save')}
           </Button>
@@ -1118,6 +1109,7 @@ const Account = ({ isEmbedded = false }) => {
             onClick={handleCloseDeleteDialog}
             startIcon={<CancelIcon />}
             disabled={deletingAccount}
+            sx={{ fontSize: 16 }}
           >
             {t('common.cancel')}
           </Button>
@@ -1127,6 +1119,7 @@ const Account = ({ isEmbedded = false }) => {
             color="error"
             startIcon={<DeleteForeverIcon />}
             disabled={deletingAccount || !deleteConfirmed}
+            sx={{ fontSize: 16 }}
           >
             {deletingAccount ? t('account.delete.in_progress') : t('account.delete.title')}
           </Button>

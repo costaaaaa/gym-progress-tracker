@@ -6,6 +6,7 @@ import {
   Box,
   Card,
   Chip,
+  Divider,
   CircularProgress,
   TextField,
   InputAdornment,
@@ -30,18 +31,19 @@ import {
   MAX_PR_CHIPS,
 } from '../utils/progressOverview';
 import { useFavoriteExercises } from '../hooks/useFavoriteExercises';
-import ExerciseProgressCard, { formatDaysAgo } from '../components/ExerciseProgressCard';
+import ExerciseProgressRow, { formatDaysAgo } from '../components/ExerciseProgressRow';
 import ExerciseDetailDialog from '../components/ExerciseDetailDialog';
-import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
 const OPEN_SECTIONS_DEFAULT = 2;
 
 const SummaryStat = ({ label, value, color }) => (
-  <Box sx={{ flex: 1, minWidth: 0 }}>
-    <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 28, lineHeight: 1, color }}>{value}</Typography>
-    <Typography sx={{ fontSize: 12, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700, mt: 0.5 }}>{label}</Typography>
+  <Box sx={{ flex: '0 0 auto' }}>
+    <Typography variant="statNumber" sx={{ color: value === 0 ? 'text.secondary' : color }}>{value}</Typography>
+    <Typography sx={{ fontSize: 16, color: 'text.secondary', whiteSpace: 'nowrap' }}>{label}</Typography>
   </Box>
 );
+
+const BORDERED = { border: '1px solid', borderColor: 'divider' };
 
 const Progress = ({ isEmbedded = false }) => {
   const { t } = useTranslation();
@@ -115,17 +117,18 @@ const Progress = ({ isEmbedded = false }) => {
 
   const selectedItem = analyzed.find((a) => a.id === selectedId) || null;
 
-  const renderCard = (item, showMuscle) => (
-    <Grid item xs={12} sm={6} md={4} key={item.id}>
-      <ExerciseProgressCard
+  const renderRows = (items, showMuscle) => items.map((item, i) => (
+    <Box key={item.id}>
+      {i > 0 && <Divider />}
+      <ExerciseProgressRow
         item={item}
         showMuscle={showMuscle}
         favorite={favoriteSet.has(item.id)}
         onToggleFavorite={toggleFavorite}
         onOpen={setSelectedId}
       />
-    </Grid>
-  );
+    </Box>
+  ));
 
   const renderContent = () => (
     <Grid container spacing={3}>
@@ -151,26 +154,24 @@ const Progress = ({ isEmbedded = false }) => {
       ) : (
         <>
           <Grid item xs={12}>
-            <Card sx={{ p: '20px 22px' }}>
-              <Typography sx={{ fontSize: 12, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700, mb: 1.5 }}>
-                {t('progress.summary.title', { days: RECENT_DAYS })}
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 2 }}>
+            <Card sx={{ ...BORDERED, p: { xs: 2, sm: '20px 22px' } }}>
+              <Typography variant="cardTitle" sx={{ mb: 1.5 }}>{t('progress.summary.title', { days: RECENT_DAYS })}</Typography>
+              <Box sx={{ display: 'flex', justifyContent: { xs: 'space-between', md: 'flex-start' }, gap: { xs: 2, md: 6 } }}>
                 <SummaryStat label={t('progress.summary.improving')} value={summary.improving} color="success.main" />
                 <SummaryStat label={t('progress.summary.stalled')} value={summary.stalled} />
-                <SummaryStat label={t('progress.summary.declining')} value={summary.declining} color={summary.declining ? 'error.main' : undefined} />
-                <SummaryStat label={t('progress.summary.prs')} value={summary.prs.length} color={summary.prs.length ? 'primary.main' : undefined} />
+                <SummaryStat label={t('progress.summary.declining')} value={summary.declining} color="recovery.recovering" />
+                <SummaryStat label={t('progress.summary.prs')} value={summary.prs.length} />
               </Box>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mt: 2 }}>
                 {summary.prs.length === 0 ? (
-                  <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('progress.summary.prs_none')}</Typography>
+                  <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{t('progress.summary.prs_none')}</Typography>
                 ) : (
                   <>
                     {summary.prs.slice(0, MAX_PR_CHIPS).map((a) => (
-                      <Chip key={a.id} size="small" color="primary" variant="outlined" label={`${t('progress.pr')} · ${a.name}`} onClick={() => setSelectedId(a.id)} />
+                      <Chip key={a.id} size="small" variant="outlined" label={`${t('progress.pr')} · ${a.name}`} onClick={() => setSelectedId(a.id)} />
                     ))}
                     {summary.prs.length > MAX_PR_CHIPS && (
-                      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>+{summary.prs.length - MAX_PR_CHIPS}</Typography>
+                      <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>+{summary.prs.length - MAX_PR_CHIPS}</Typography>
                     )}
                   </>
                 )}
@@ -198,8 +199,10 @@ const Progress = ({ isEmbedded = false }) => {
 
           {favoriteItems.length > 0 && (
             <Grid item xs={12}>
-              <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 15, mb: 1.5 }}>{t('progress.favorites')}</Typography>
-              <Grid container spacing={2}>{favoriteItems.map((item) => renderCard(item, true))}</Grid>
+              <Card sx={{ ...BORDERED, px: { xs: 1, md: 1.5 }, py: 1.5 }}>
+                <Typography variant="cardTitle" sx={{ px: 1.5, pb: 0.5 }}>{t('progress.favorites')}</Typography>
+                {renderRows(favoriteItems, true)}
+              </Card>
             </Grid>
           )}
 
@@ -212,22 +215,20 @@ const Progress = ({ isEmbedded = false }) => {
                   disableGutters
                   expanded={isOpen}
                   onChange={(_, value) => setExpanded((prev) => ({ ...prev, [section.muscle]: value }))}
-                  sx={{ border: '1px solid', borderColor: 'divider', boxShadow: 'none', borderRadius: '12px !important', '&:before': { display: 'none' } }}
+                  sx={{ ...BORDERED, boxShadow: 'none', borderRadius: '12px !important', '&:before': { display: 'none' } }}
                 >
                   <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 2.5 }}>
                     <Box sx={{ minWidth: 0 }}>
-                      <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 16 }}>
-                        {label} <Box component="span" sx={{ color: 'text.secondary', fontWeight: 500, fontSize: 13 }}>· {t('progress.section_count', { count: section.items.length })}</Box>
+                      <Typography variant="cardTitle">
+                        {label} <Box component="span" sx={{ color: 'text.secondary', fontWeight: 500, fontSize: 16 }}>· {t('progress.section_count', { count: section.items.length })}</Box>
                       </Typography>
-                      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+                      <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
                         {section.improving > 0 && `${t('progress.section_improving', { count: section.improving })} · `}
                         {t('progress.last_session', { when: formatDaysAgo(t, section.lastDays) })}
                       </Typography>
                     </Box>
                   </AccordionSummary>
-                  <AccordionDetails sx={{ px: 2.5, pb: 2.5 }}>
-                    <Grid container spacing={2}>{section.items.map((item) => renderCard(item, false))}</Grid>
-                  </AccordionDetails>
+                  <AccordionDetails sx={{ px: { xs: 1, md: 1.5 }, pt: 0, pb: 1 }}>{renderRows(section.items, false)}</AccordionDetails>
                 </Accordion>
               </Grid>
             );

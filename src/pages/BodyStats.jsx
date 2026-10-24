@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -18,12 +18,13 @@ import {
   TextField,
   IconButton,
   Chip,
+  useMediaQuery,
+  useTheme,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
 } from '@mui/material';
-import { ResponsiveContainer, LineChart, Line, XAxis } from 'recharts';
 import { API_BASE_URL } from '../config';
 import { DatePicker } from '@mui/x-date-pickers';
 import { useTranslation } from 'react-i18next';
@@ -38,88 +39,91 @@ import LastPageIcon from '@mui/icons-material/LastPage';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import EventBusyIcon from '@mui/icons-material/EventBusy';
-import ChartCard from '../components/ChartCard';
+import ChartCard, { buildPoints } from '../components/ChartCard';
 import { dayNumber } from '../utils/calendarDay';
 import HealthConsentCard from '../components/HealthConsentCard';
 import HealthAppHint from '../components/HealthAppHint';
 import { DEFAULT_PERIOD, PERIODS, PERIOD_UI, filterByPeriod, periodStart, periodWeightDelta, weightTrend, sortByDate, paginate } from '../utils/bodyStatsPeriod';
 
-// Valore della tabella, con un cuore se è arrivato da Apple Salute / Health Connect
+// Cuore accanto a un valore arrivato da Apple Salute / Health Connect
 // (health_fields è l'elenco dei campi importati, separati da virgola).
-const StatValue = ({ row, field }) => {
+const isFromHealth = (row, field) => (row.health_fields || '').split(',').includes(field);
+
+const HealthMark = () => {
   const { t } = useTranslation();
+  return (
+    <Box component="span" title={t('body.from_health')} sx={{ ml: 0.5, verticalAlign: 'middle' }}>
+      <FavoriteIcon sx={{ fontSize: 11, color: '#ff2d55' }} />
+    </Box>
+  );
+};
+
+const StatValue = ({ row, field }) => {
   if (!row[field]) return '-';
-  const fromHealth = (row.health_fields || '').split(',').includes(field);
   return (
     <>
       {row[field]}
-      {fromHealth && (
-        <Box component="span" title={t('body.from_health')} sx={{ ml: 0.5, verticalAlign: 'middle' }}>
-          <FavoriteIcon sx={{ fontSize: 11, color: '#ff2d55' }} />
-        </Box>
-      )}
+      {isFromHealth(row, field) && <HealthMark />}
     </>
   );
 };
 
-// Serie per il grafico "Composizione Corporea" e "Circonferenze": chiave dato, etichetta, colore.
+// Misure della card "Composizione corporea" e "Circonferenze": chiave dato, etichetta, unità.
 const BODY_COMPOSITION_SERIES = [
-  { key: 'body_fat_percentage', label: 'body.fat', color: '#4f46e5', unit: '%' },
-  { key: 'muscle_mass_percentage', label: 'body.muscle', color: '#16a34a', unit: '%' },
+  { key: 'body_fat_percentage', label: 'body.fat', unit: '%' },
+  { key: 'muscle_mass_percentage', label: 'body.muscle', unit: '%' },
 ];
 const CIRCUMFERENCE_SERIES = [
-  { key: 'chest_size', label: 'body.chest', color: '#d50000', unit: 'cm' },
-  { key: 'waist_size', label: 'body.waist', color: '#d97706', unit: 'cm' },
-  { key: 'arm_size', label: 'body.arm', color: '#4f46e5', unit: 'cm' },
-  { key: 'leg_size', label: 'body.leg', color: '#7c3aed', unit: 'cm' },
+  { key: 'chest_size', label: 'body.chest', unit: ' cm' },
+  { key: 'waist_size', label: 'body.waist', unit: ' cm' },
+  { key: 'arm_size', label: 'body.arm', unit: ' cm' },
+  { key: 'leg_size', label: 'body.leg', unit: ' cm' },
 ];
+const HISTORY_SERIES = [...BODY_COMPOSITION_SERIES, ...CIRCUMFERENCE_SERIES];
+
+const hasValue = (v) => v !== null && v !== undefined && v !== '';
 
 const lastValueOf = (data, key) => {
   for (let i = data.length - 1; i >= 0; i--) {
-    if (data[i][key] !== null && data[i][key] !== undefined && data[i][key] !== '') return data[i][key];
+    if (hasValue(data[i][key])) return data[i][key];
   }
   return null;
 };
 
-// Mini grafico multi-serie senza assi, usato dalle card "Composizione Corporea" e "Circonferenze".
-const MiniMultiLineChart = ({ data, series, domain }) => (
-  <Box sx={{ height: 90 }}>
-    <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={data} margin={{ top: 4, right: 4, left: 4, bottom: 4 }}>
-        <XAxis dataKey="day" type="number" domain={domain} hide />
-        {series.map((s) => (
-          <Line
-            key={s.key}
-            type="monotone"
-            dataKey={s.key}
-            stroke={s.color}
-            strokeWidth={2}
-            dot={false}
-            connectNulls
-          />
-        ))}
-      </LineChart>
-    </ResponsiveContainer>
-  </Box>
-);
+const SPARK_W = 120;
+const SPARK_H = 36;
 
-const MiniChartLegend = ({ data, series }) => (
-  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 1.5 }}>
-    {series.map((s) => {
-      const value = lastValueOf(data, s.key);
-      return (
-        <Box key={s.key} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: s.color }} />
-          <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
-            {i18n.t(s.label)}: <strong>{value !== null ? `${value}${s.unit}` : '—'}</strong>
-          </Typography>
+// Una misura: nome, mini grafico con la sua scala (da 2 punti) e ultimo valore
+const MeasureRow = ({ series, data, domain }) => {
+  const { t } = useTranslation();
+  const value = lastValueOf(data, series.key);
+  const points = data.filter((d) => hasValue(d[series.key])).map((d) => ({ x: d.day, value: Number(d[series.key]) }));
+  const polyline = points.length >= 2 ? buildPoints(points, domain, SPARK_W, SPARK_H, 4) : '';
+  return (
+    <Box data-measure-row sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, md: 3 }, py: 1.25 }}>
+      <Typography sx={{ flex: 1, minWidth: 0, fontSize: 16 }}>{t(series.label)}</Typography>
+      {polyline && (
+        <Box sx={{ width: { xs: 72, md: 160 }, height: { xs: 28, md: 32 }, flexShrink: 0, color: 'text.secondary' }}>
+          <svg viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} width="100%" height="100%" preserveAspectRatio="none" aria-hidden="true">
+            <polyline points={polyline} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          </svg>
         </Box>
-      );
-    })}
-  </Box>
+      )}
+      <Typography variant="statNumber" sx={{ fontSize: 16, minWidth: { xs: 72, md: 96 }, textAlign: 'right' }}>
+        {value !== null ? `${value}${series.unit}` : '—'}
+      </Typography>
+    </Box>
+  );
+};
+
+const MeasureCard = ({ title, series, data, domain }) => (
+  <Card sx={{ p: '22px' }}>
+    <Typography variant="cardTitle" sx={{ mb: 0.5 }}>{title}</Typography>
+    {series.map((s) => <MeasureRow key={s.key} series={s} data={data} domain={domain} />)}
+  </Card>
 );
 
-// Pillole come sull'app mobile: piena rossa se selezionata, con il contorno le altre.
+// Pillole: piena in inchiostro se selezionata, con il contorno le altre (il rosso resta sull'azione principale).
 const PeriodChips = ({ value, onChange }) => {
   const { t } = useTranslation();
   return (
@@ -131,13 +135,14 @@ const PeriodChips = ({ value, onChange }) => {
             key={period}
             label={t(PERIOD_UI[period].label)}
             clickable
-            color="primary"
             variant={selected ? 'filled' : 'outlined'}
             onClick={() => onChange(period)}
             aria-pressed={selected}
             sx={{
               fontSize: 13, height: 32, borderRadius: 999, px: 0.5,
-              ...(!selected && { borderColor: 'divider', color: 'text.primary' }),
+              ...(selected
+                ? { bgcolor: 'text.primary', color: 'background.paper', '&:hover, &.Mui-focusVisible': { bgcolor: 'text.primary' } }
+                : { borderColor: 'divider', color: 'text.primary' }),
             }}
           />
         );
@@ -146,7 +151,47 @@ const PeriodChips = ({ value, onChange }) => {
   );
 };
 
-const headCellSx = { fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: 'text.secondary' };
+const headCellSx = { fontWeight: 600, fontSize: 16, color: 'text.secondary' };
+const bodyCellSx = { fontSize: 16 };
+
+// Storico sul telefono: data e peso sulla prima linea, le altre misure in grigio sulla seconda
+const HistoryList = ({ rows, empty, onDelete }) => {
+  const { t } = useTranslation();
+  if (empty) {
+    return <Typography sx={{ color: 'text.secondary', py: 3, textAlign: 'center', fontSize: 16 }}>{t('body.empty')}</Typography>;
+  }
+  return (
+    <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
+      {rows.map((row) => {
+        const others = HISTORY_SERIES.filter((s) => hasValue(row[s.key]));
+        return (
+          <Box component="li" key={row.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, pl: 2, pr: 0.5, py: 0.75, '& + li': { borderTop: '1px solid', borderColor: 'divider' } }}>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 1 }}>
+                <Typography sx={{ fontSize: 16 }}>{formatDate(row.date)}</Typography>
+                <Typography sx={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+                  {row.weight ? <><StatValue row={row} field="weight" /> kg</> : '-'}
+                </Typography>
+              </Box>
+              {others.length > 0 && (
+                <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
+                  {others.map((s, i) => (
+                    <Fragment key={s.key}>
+                      {i > 0 && ' · '}{t(s.label)} {row[s.key]}{s.unit}{isFromHealth(row, s.key) && <HealthMark />}
+                    </Fragment>
+                  ))}
+                </Typography>
+              )}
+            </Box>
+            <IconButton aria-label={t('common.delete')} onClick={() => onDelete(row.id)} sx={{ width: 44, height: 44, color: 'text.secondary' }}>
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        );
+      })}
+    </Box>
+  );
+};
 
 const numberFieldSx = {
   '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': { display: 'none' },
@@ -155,6 +200,7 @@ const numberFieldSx = {
 
 const BodyStats = ({ isEmbedded = false }) => {
   const { t } = useTranslation();
+  const isPhone = useMediaQuery(useTheme().breakpoints.down('sm'));
   const [stats, setStats] = useState([]);
   const [period, setPeriod] = useState(DEFAULT_PERIOD);
   const [page, setPage] = useState(0);
@@ -315,7 +361,7 @@ const BodyStats = ({ isEmbedded = false }) => {
             {t('body.title')}
           </Typography>
         )}
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsDialogOpen(true)}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsDialogOpen(true)} sx={{ fontSize: 16 }}>
           {t('body.new')}
         </Button>
       </Box>
@@ -335,7 +381,7 @@ const BodyStats = ({ isEmbedded = false }) => {
               <Card sx={{ p: '28px 22px', textAlign: 'center' }}>
                 <EventBusyIcon sx={{ fontSize: 36, color: 'text.secondary', mb: 1 }} />
                 <Typography sx={{ fontWeight: 700, fontSize: 16 }}>{t('body.period_empty')}</Typography>
-                <Typography sx={{ color: 'text.secondary', fontSize: 14, mt: 0.5 }}>
+                <Typography sx={{ color: 'text.secondary', fontSize: 16, mt: 0.5 }}>
                   {t('body.period_empty_last', {
                     date: formatDate(latestRow.date),
                     weight: latestRow.weight ? `${latestRow.weight} kg` : '—',
@@ -358,26 +404,14 @@ const BodyStats = ({ isEmbedded = false }) => {
                 />
               </Grid>
 
-              {/* Composizione Corporea */}
+              {/* Composizione corporea */}
               <Grid item xs={12} md={6}>
-                <Card sx={{ p: '22px' }}>
-                  <Typography sx={{ textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700, fontSize: 12, color: 'text.secondary', mb: 1.5 }}>
-                    {t('body.composition')}
-                  </Typography>
-                  <MiniMultiLineChart data={chartData} series={BODY_COMPOSITION_SERIES} domain={chartDomain} />
-                  <MiniChartLegend data={chartData} series={BODY_COMPOSITION_SERIES} />
-                </Card>
+                <MeasureCard title={t('body.composition')} series={BODY_COMPOSITION_SERIES} data={chartData} domain={chartDomain} />
               </Grid>
 
               {/* Circonferenze */}
               <Grid item xs={12} md={6}>
-                <Card sx={{ p: '22px' }}>
-                  <Typography sx={{ textTransform: 'uppercase', letterSpacing: '.04em', fontWeight: 700, fontSize: 12, color: 'text.secondary', mb: 1.5 }}>
-                    {t('body.circumferences')}
-                  </Typography>
-                  <MiniMultiLineChart data={chartData} series={CIRCUMFERENCE_SERIES} domain={chartDomain} />
-                  <MiniChartLegend data={chartData} series={CIRCUMFERENCE_SERIES} />
-                </Card>
+                <MeasureCard title={t('body.circumferences')} series={CIRCUMFERENCE_SERIES} data={chartData} domain={chartDomain} />
               </Grid>
             </>
           )}
@@ -385,45 +419,49 @@ const BodyStats = ({ isEmbedded = false }) => {
           {/* Tabella Storico */}
           <Grid item xs={12}>
             <TableContainer component={Card} sx={{ p: 0 }}>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={headCellSx}>{t('body.col.date')}</TableCell>
-                    <TableCell align="right" sx={headCellSx}>{t('body.col.weight')}</TableCell>
-                    <TableCell align="right" sx={headCellSx}>{t('body.col.fat')}</TableCell>
-                    <TableCell align="right" sx={headCellSx}>{t('body.col.muscle')}</TableCell>
-                    <TableCell align="right" sx={headCellSx}>{t('body.chest')}</TableCell>
-                    <TableCell align="right" sx={headCellSx}>{t('body.arm')}</TableCell>
-                    <TableCell align="right" sx={headCellSx}>{t('body.waist')}</TableCell>
-                    <TableCell align="right" sx={headCellSx}>{t('body.leg')}</TableCell>
-                    <TableCell align="center" sx={headCellSx}>{t('body.col.actions')}</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {history.rows.map((row) => (
-                    <TableRow key={row.id}>
-                      <TableCell sx={{ fontSize: 13 }}>{formatDate(row.date)}</TableCell>
-                      <TableCell align="right" sx={{ fontSize: 13, fontWeight: 700 }}><StatValue row={row} field="weight" /></TableCell>
-                      <TableCell align="right" sx={{ fontSize: 13 }}><StatValue row={row} field="body_fat_percentage" /></TableCell>
-                      <TableCell align="right" sx={{ fontSize: 13 }}>{row.muscle_mass_percentage || '-'}</TableCell>
-                      <TableCell align="right" sx={{ fontSize: 13 }}>{row.chest_size || '-'}</TableCell>
-                      <TableCell align="right" sx={{ fontSize: 13 }}>{row.arm_size || '-'}</TableCell>
-                      <TableCell align="right" sx={{ fontSize: 13 }}><StatValue row={row} field="waist_size" /></TableCell>
-                      <TableCell align="right" sx={{ fontSize: 13 }}>{row.leg_size || '-'}</TableCell>
-                      <TableCell align="center">
-                        <IconButton size="small" color="error" onClick={() => handleDelete(row.id)}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {stats.length === 0 && (
+              {isPhone ? (
+                <HistoryList rows={history.rows} empty={stats.length === 0} onDelete={handleDelete} />
+              ) : (
+                <Table size="small">
+                  <TableHead>
                     <TableRow>
-                      <TableCell colSpan={9} align="center" sx={{ color: 'text.secondary', py: 3 }}>{t('body.empty')}</TableCell>
+                      <TableCell sx={headCellSx}>{t('body.col.date')}</TableCell>
+                      <TableCell align="right" sx={headCellSx}>{t('body.col.weight')}</TableCell>
+                      <TableCell align="right" sx={headCellSx}>{t('body.col.fat')}</TableCell>
+                      <TableCell align="right" sx={headCellSx}>{t('body.col.muscle')}</TableCell>
+                      <TableCell align="right" sx={headCellSx}>{t('body.chest')}</TableCell>
+                      <TableCell align="right" sx={headCellSx}>{t('body.arm')}</TableCell>
+                      <TableCell align="right" sx={headCellSx}>{t('body.waist')}</TableCell>
+                      <TableCell align="right" sx={headCellSx}>{t('body.leg')}</TableCell>
+                      <TableCell align="center" sx={headCellSx}>{t('body.col.actions')}</TableCell>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                  </TableHead>
+                  <TableBody>
+                    {history.rows.map((row) => (
+                      <TableRow key={row.id}>
+                        <TableCell sx={bodyCellSx}>{formatDate(row.date)}</TableCell>
+                        <TableCell align="right" sx={{ ...bodyCellSx, fontWeight: 700 }}><StatValue row={row} field="weight" /></TableCell>
+                        <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="body_fat_percentage" /></TableCell>
+                        <TableCell align="right" sx={bodyCellSx}>{row.muscle_mass_percentage || '-'}</TableCell>
+                        <TableCell align="right" sx={bodyCellSx}>{row.chest_size || '-'}</TableCell>
+                        <TableCell align="right" sx={bodyCellSx}>{row.arm_size || '-'}</TableCell>
+                        <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="waist_size" /></TableCell>
+                        <TableCell align="right" sx={bodyCellSx}>{row.leg_size || '-'}</TableCell>
+                        <TableCell align="center">
+                          <IconButton size="small" aria-label={t('common.delete')} onClick={() => handleDelete(row.id)} sx={{ color: 'text.secondary' }}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {stats.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={9} align="center" sx={{ color: 'text.secondary', py: 3, fontSize: 16 }}>{t('body.empty')}</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
               {history.total > 0 && (
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, py: 1.25, borderTop: '1px solid', borderColor: 'divider' }}>
                   <IconButton size="small" disabled={history.page === 0} onClick={() => setPage(0)} aria-label={t('body.page_first')}>
@@ -432,7 +470,7 @@ const BodyStats = ({ isEmbedded = false }) => {
                   <IconButton size="small" disabled={history.page === 0} onClick={() => setPage(history.page - 1)} aria-label={t('body.page_prev')}>
                     <NavigateBeforeIcon fontSize="small" />
                   </IconButton>
-                  <Typography sx={{ fontSize: 13, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
+                  <Typography sx={{ fontSize: 16, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
                     {t('body.page_range', { from: history.from, to: history.to, total: history.total })}
                   </Typography>
                   <IconButton size="small" disabled={history.page === history.lastPage} onClick={() => setPage(history.page + 1)} aria-label={t('body.page_next')}>

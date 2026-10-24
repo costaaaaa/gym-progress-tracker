@@ -106,6 +106,14 @@ export const ThemeModeProvider = ({ children }) => {
             fontSize: '28px',
             lineHeight: 1.167,
           },
+          // Numero grande (riepiloghi, 1RM, peso attuale, statistiche): cifre tabulari, così non ballano.
+          statNumber: {
+            fontFamily: TITLE_FONT_FAMILY,
+            fontWeight: 700,
+            fontSize: '22px',
+            lineHeight: 1.2,
+            fontVariantNumeric: 'tabular-nums',
+          },
           button: {
             fontFamily: '"Inter", sans-serif',
             fontWeight: 600,
@@ -117,7 +125,7 @@ export const ThemeModeProvider = ({ children }) => {
           // Una variante sconosciuta uscirebbe <span> (in linea, senza margini verticali): cardTitle è un <p>.
           MuiTypography: {
             defaultProps: {
-              variantMapping: { cardTitle: 'p', pageTitle: 'h1' },
+              variantMapping: { cardTitle: 'p', pageTitle: 'h1', statNumber: 'p' },
             },
           },
           MuiCssBaseline: {
@@ -138,6 +146,8 @@ export const ThemeModeProvider = ({ children }) => {
               },
             },
           },
+          // Interruttori mai nel rosso del marchio: acceso = verde semantico
+          MuiSwitch: { defaultProps: { color: 'success' } },
           MuiButton: {
             styleOverrides: {
               root: {

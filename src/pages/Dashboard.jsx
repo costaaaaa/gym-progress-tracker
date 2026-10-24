@@ -1,10 +1,11 @@
 import { Suspense, lazy } from 'react';
-import { Box, Tabs, Tab, CircularProgress } from '@mui/material';
+import { Box, Tabs, Tab, CircularProgress, Typography } from '@mui/material';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { useTabbedPage } from '../hooks/useTabbedPage';
 import { useTranslation } from 'react-i18next';
+import { INK_TABS } from '../utils/inkTabs';
 
 // Lazy loading dei componenti tab
 const Progress = lazy(() => import('./Progress'));
@@ -19,23 +20,13 @@ const Dashboard = () => {
 
   return (
     <Box sx={{ width: '100%' }}>
+      <Typography variant="pageTitle" gutterBottom>{t('dashboard.title')}</Typography>
       <Box sx={{ borderBottom: '1px solid', borderColor: 'divider', mb: 2 }}>
         <Tabs
           value={tabIndex}
           onChange={handleTabChange}
           aria-label="dashboard hub tabs"
-          TabIndicatorProps={{ sx: { height: 2, bgcolor: 'primary.main' } }}
-          sx={{
-            minHeight: 0,
-            '& .MuiTab-root': {
-              textTransform: 'none',
-              fontSize: 14,
-              fontWeight: 500,
-              minHeight: 44,
-              color: 'text.secondary',
-              '&.Mui-selected': { color: 'primary.main', fontWeight: 600 },
-            },
-          }}
+          {...INK_TABS}
         >
           <Tab
             icon={<BarChartIcon fontSize="small" />}

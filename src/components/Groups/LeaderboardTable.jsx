@@ -24,15 +24,15 @@ const Metric = ({ row, board }) => {
     return (
       <Box sx={{ textAlign: 'right' }}>
         <Typography sx={{ fontWeight: 700 }}>{t('groups.board.level', { level: row.level })}</Typography>
-        <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{row.total_xp.toLocaleString(intlLocale())} XP</Typography>
+        <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{row.total_xp.toLocaleString(intlLocale())} XP</Typography>
       </Box>
     );
   }
   return (
     <Box sx={{ minWidth: 150 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-        <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{row.workouts}/{row.goal}</Typography>
-        <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{row.volume_kg.toLocaleString(intlLocale())} kg</Typography>
+        <Typography sx={{ fontSize: 16, fontWeight: 700 }}>{row.workouts}/{row.goal}</Typography>
+        <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{row.volume_kg.toLocaleString(intlLocale())} kg</Typography>
       </Box>
       <LinearProgress
         variant="determinate"
@@ -69,7 +69,7 @@ const LeaderboardTable = ({ rows, board }) => {
             borderBottom: '1px solid',
             borderColor: 'divider',
             borderRadius: row.is_me ? '10px' : 0,
-            bgcolor: row.is_me ? (theme) => (theme.palette.mode === 'light' ? '#fbebeb' : 'rgba(213, 0, 0, 0.12)') : 'transparent',
+            bgcolor: row.is_me ? 'action.selected' : 'transparent',
           }}
         >
           <Typography
@@ -88,7 +88,7 @@ const LeaderboardTable = ({ rows, board }) => {
             <Typography sx={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {row.username}
             </Typography>
-            {row.is_me && <Chip label={t('groups.board.me')} size="small" color="primary" sx={{ height: 20, fontSize: 11 }} />}
+            {row.is_me && <Chip label={t('groups.board.me')} size="small" variant="outlined" sx={{ height: 24, fontSize: 14, color: 'text.primary', borderColor: 'text.secondary' }} />}
           </Box>
           <Box sx={wide ? { width: { xs: '100%', sm: 'auto' }, pl: { xs: '44px', sm: 0 } } : undefined}>
             <Metric row={row} board={board} />

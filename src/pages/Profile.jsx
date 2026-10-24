@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Box, Tabs, Tab, CircularProgress } from '@mui/material';
+import { INK_TABS } from '../utils/inkTabs';
+import { Box, Tabs, Tab, CircularProgress, Typography } from '@mui/material';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { usePageMeta } from '../hooks/usePageMeta';
@@ -19,23 +20,13 @@ const Profile = () => {
 
   return (
     <Box sx={{ width: '100%' }}>
+      <Typography variant="pageTitle" gutterBottom>{t('profile.title')}</Typography>
       <Box sx={{ borderBottom: '1px solid', borderColor: 'divider', mb: 2 }}>
         <Tabs
           value={tabIndex}
           onChange={handleTabChange}
           aria-label="profile hub tabs"
-          TabIndicatorProps={{ sx: { height: 2, bgcolor: 'primary.main' } }}
-          sx={{
-            minHeight: 0,
-            '& .MuiTab-root': {
-              textTransform: 'none',
-              fontSize: 14,
-              fontWeight: 500,
-              minHeight: 44,
-              color: 'text.secondary',
-              '&.Mui-selected': { color: 'primary.main', fontWeight: 600 },
-            },
-          }}
+          {...INK_TABS}
         >
           <Tab
             icon={<EmojiEventsIcon fontSize="small" />}
