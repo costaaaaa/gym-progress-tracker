@@ -139,6 +139,19 @@ describe('dettaglio del gruppo', () => {
     expect(getComputedStyle(other).backgroundColor).not.toBe(SELECTED);
   });
 
+  it('i tab Settimana / Streak / Livello: quello attivo e la sua linea sono in inchiostro (2px), non rossi', async () => {
+    await mount();
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs.map((tab) => tab.textContent)).toEqual(['Settimana', 'Streak', 'Livello']);
+    const active = tabs.find((tab) => tab.getAttribute('aria-selected') === 'true');
+    expect(getComputedStyle(active).color).toBe(INK);
+    expect(getComputedStyle(tabs.find((tab) => tab !== active)).color).toBe(GREY);
+    const indicator = document.querySelector('.MuiTabs-indicator');
+    expect(getComputedStyle(indicator).backgroundColor).toBe(INK);
+    expect(getComputedStyle(indicator).height).toBe('2px');
+    expect(parseFloat(getComputedStyle(active).fontSize)).toBeGreaterThanOrEqual(16);
+  });
+
   it('la barra dell\'aderenza resta rossa: è il dato', async () => {
     await mount();
     const bar = screen.getAllByRole('progressbar')[0].querySelector('.MuiLinearProgress-bar');

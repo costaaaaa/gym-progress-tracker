@@ -18,6 +18,7 @@ import { track } from '../utils/analytics';
 import { Trans, useTranslation } from 'react-i18next';
 import { intlLocale } from '../i18n/format';
 import { NEUTRAL_TEXT } from '../utils/neutralButton';
+import { INK_TABS } from '../utils/inkTabs';
 
 const BOARDS = ['week', 'streak', 'level'];
 
@@ -183,7 +184,7 @@ const GroupDetailContent = () => {
                 {t('groups.detail.week_range', { from: formatDay(week.from), to: formatDay(week.to) })}
               </Typography>
             </Box>
-            <Tabs value={board} onChange={(e, v) => setBoard(v)} sx={{ mb: 1, '& .MuiTab-root': { fontSize: 16 } }} variant="fullWidth">
+            <Tabs value={board} onChange={(e, v) => setBoard(v)} {...INK_TABS} sx={[INK_TABS.sx, { mb: 1 }]} variant="fullWidth">
               {BOARDS.map((b) => <Tab key={b} value={b} label={t(`groups.detail.board.${b}`)} />)}
             </Tabs>
             <Typography sx={{ fontSize: 16, color: 'text.secondary', mb: 1 }}>{t(`groups.detail.board.${board}_hint`)}</Typography>
