@@ -2,11 +2,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import FocusWorkout from './FocusWorkout';
+import { ThemeModeProvider } from '../context/ThemeModeContext';
 
 const { mockNavigate, mockTrack } = vi.hoisted(() => ({ mockNavigate: vi.fn(), mockTrack: vi.fn() }));
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => mockNavigate }));
 vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ isLoggedIn: true, loading: false }) }));
-vi.mock('../context/ThemeModeContext', () => ({ useThemeMode: () => ({ mode: 'light' }) }));
 vi.mock('../utils/celebrate', () => ({
   celebrate: () => {}, celebratePR: () => {}, celebrateStreak: () => {}, celebrateLevelUp: () => {},
 }));
@@ -33,7 +33,7 @@ const saveBody = () => {
 
 const advance = (seconds) => act(async () => { await vi.advanceTimersByTimeAsync(seconds * 1000); });
 const mount = async () => {
-  render(<FocusWorkout />);
+  render(<ThemeModeProvider><FocusWorkout /></ThemeModeProvider>);
   await advance(0);
 };
 const click = (name) => fireEvent.click(screen.getByRole('button', { name }));
@@ -54,6 +54,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(NOW);
   vi.clearAllMocks();
+  localStorage.setItem('themeMode', 'light');
   vi.stubGlobal('fetch', fetchMock);
   responses = {
     'read_plans.php': () => json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [pushDay, fullDay] }] }),
@@ -253,5 +254,110 @@ describe('intestazione della scelta del giorno', () => {
     expect(screen.getByTestId('logo-mark')).toBeTruthy();
     expect(screen.queryByRole('img', { name: 'LiftIndex' })).toBeNull();
     expect(screen.queryByTestId('FitnessCenterIcon')).toBeNull();
+  });
+});
+
+// Colori del tema chiaro scritti a mano: text.primary #1a1816, text.secondary #6b6663, rosso brand #d50000, success #15803d.
+const INK = 'rgb(26, 24, 22)';
+const GREY = 'rgb(107, 102, 99)';
+const RED = 'rgb(213, 0, 0)';
+const GREEN = 'rgb(21, 128, 61)';
+const noShadow = (el) => ['', 'none'].includes(getComputedStyle(el).boxShadow);
+
+describe('colori di Focus: rosso solo per ciò che è distruttivo', () => {
+  it('"Conferma serie" resta verde pieno con la spunta, senza ombra', async () => {
+    await startDay('Push');
+    fireEvent.change(screen.getByLabelText('Peso (kg)'), { target: { value: '60' } });
+    fireEvent.change(screen.getByLabelText('Ripetizioni'), { target: { value: '8' } });
+    const button = screen.getByRole('button', { name: 'Conferma serie' });
+    expect(getComputedStyle(button).backgroundColor).toBe(GREEN);
+    expect(noShadow(button)).toBe(true);
+    expect(button.querySelector('[data-testid="CheckIcon"]')).not.toBeNull();
+  });
+
+  it('il cerchio della serie attiva ha bordo e numero in inchiostro, non rossi', async () => {
+    await startDay('Push');
+    const circle = screen.getByText('1');
+    expect(getComputedStyle(circle).borderColor).toBe(INK);
+    expect(getComputedStyle(circle).color).toBe(INK);
+  });
+
+  it('il cerchio di una serie ancora da fare ha il numero in text.secondary', async () => {
+    await startDay('Push');
+    expect(getComputedStyle(screen.getByText('2')).color).toBe(GREY);
+  });
+
+  it('il cronometro e il contatore degli esercizi sono in text.secondary', async () => {
+    await startDay('Push');
+    expect(getComputedStyle(screen.getByText('00:00')).color).toBe(GREY);
+    expect(getComputedStyle(screen.getByText('1/1')).color).toBe(GREY);
+  });
+
+  it('il campo con il focus ha il bordo in inchiostro, non rosso', async () => {
+    await startDay('Push');
+    const fieldset = screen.getByLabelText('Peso (kg)').closest('.MuiOutlinedInput-root').querySelector('fieldset');
+    expect(getComputedStyle(fieldset).borderColor).toBe(INK);
+  });
+
+  it('la chip "Ultima volta" della serie in corso ha il bordo in inchiostro, le altre restano al divisore', async () => {
+    const sets = [{ weight: 60, reps: '8' }, { weight: 55, reps: '10' }];
+    responses['workout_history/read.php'] = () => json({ records: [{ id: 1, date: '2026-10-13', exercises: [{ exercise_id: 3, name: 'Panca piana', sets }] }] });
+    await startDay('Push');
+    const current = screen.getByText('60kg×8').parentElement;
+    const other = screen.getByText('55kg×10').parentElement;
+    expect(getComputedStyle(current).borderColor).toBe(INK);
+    expect(getComputedStyle(other).borderColor).not.toBe(RED);
+    expect(getComputedStyle(other).borderColor).not.toBe(INK);
+  });
+
+  it('"Prossima: Serie 2 di 2" nel recupero è in text.secondary', async () => {
+    await startDay('Push');
+    doSet();
+    expect(getComputedStyle(screen.getByText('Prossima: Serie 2 di 2')).color).toBe(GREY);
+  });
+
+  it('nel dialogo di interruzione "Esci" è rosso (i dati non salvati si perdono) e "Continua" no', async () => {
+    await startDay('Push');
+    fireEvent.click(screen.getByTestId('CloseIcon').closest('button'));
+    expect(getComputedStyle(screen.getByRole('button', { name: 'Esci' })).color).toBe(RED);
+    expect(getComputedStyle(screen.getByRole('button', { name: 'Continua' })).color).toBe(GREY);
+  });
+
+  it('nel dialogo del riepilogo l\'unico bottone rosso è "Scarta ed esci"', async () => {
+    await startDay('Push');
+    doSet();
+    click('Salta timer');
+    doSet();
+    click('Annulla');
+    const red = screen.getAllByRole('button').filter((b) => getComputedStyle(b).color === RED).map((b) => b.textContent);
+    expect(red).toEqual(['Scarta ed esci']);
+  });
+
+  it('il dialogo premium ha il bottone "Ho capito" non rosso', async () => {
+    await startDay('Push');
+    click('Cambia esercizio');
+    expect(getComputedStyle(screen.getByRole('button', { name: 'Ho capito' })).color).not.toBe(RED);
+  });
+});
+
+describe('riepilogo', () => {
+  const toSummary = async () => {
+    await startDay('Push');
+    doSet();
+    click('Salta timer');
+    doSet();
+  };
+
+  it('niente trofeo decorativo sopra il titolo', async () => {
+    await toSummary();
+    const title = screen.getByText('Allenamento completato!');
+    expect(title.parentElement.querySelector('[data-testid="EmojiEventsIcon"]')).toBeNull();
+  });
+
+  it('"Dettaglio esercizi" non ha una fascia di sfondo e resta in text.secondary', async () => {
+    await toSummary();
+    const header = screen.getByText('Dettaglio esercizi');
+    expect(getComputedStyle(header).color).toBe(GREY);
+    expect(['', 'rgba(0, 0, 0, 0)', 'transparent']).toContain(getComputedStyle(header.parentElement).backgroundColor);
   });
 });
