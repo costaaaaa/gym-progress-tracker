@@ -2,6 +2,7 @@ import { Box, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { muscleLabel } from '../i18n/labels';
 import { readyInDays } from '../utils/recoveryDay';
+import { VariantBar, VariantB, VariantC, VariantD, useVariant } from './BodyVisualizerPrototype';
 
 // Gruppi muscolari tracciati (stesse chiavi usate da
 // dashboardStats.recovery restituito da api/workout_stats/dashboard.php).
@@ -64,6 +65,8 @@ const BodyVisualizer = ({ recoveryData }) => {
   const half = Math.ceil(MUSCLE_GROUPS.length / 2);
   const leftColumn = MUSCLE_GROUPS.slice(0, half);
   const rightColumn = MUSCLE_GROUPS.slice(half);
+  const variant = useVariant();
+  const Alt = { B: VariantB, C: VariantC, D: VariantD }[variant];
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -71,6 +74,8 @@ const BodyVisualizer = ({ recoveryData }) => {
         {t('recovery.title')}
       </Typography>
 
+      <VariantBar />
+      {Alt ? <Alt data={recoveryData} /> : <>
       {/* Due liste separate da un divisore verticale, per evitare l'ambiguità della griglia
           implicita (dove non era chiaro quali righe appartenessero a quale colonna).
           Sui telefoni le colonne sarebbero troppo strette ("Quadricipiti" + "In recupero"
@@ -88,6 +93,7 @@ const BodyVisualizer = ({ recoveryData }) => {
           ))}
         </Box>
       </Box>
+      </>}
     </Box>
   );
 };

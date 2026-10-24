@@ -64,12 +64,14 @@ const BODY = Array.from({ length: 10 }, (_, i) => ({
 }));
 
 const recovery = {
-  petto: { status: 'PRONTO', ready_at: null },
-  glutei: { status: 'PRONTO', ready_at: null },
-  schiena: { status: 'IN RECUPERO', ready_at: stamp(1, '08:00:00') },
-  spalle: { status: 'IN RECUPERO', ready_at: stamp(1, '08:00:00') },
-  quadricipiti: { status: 'AFFATICATO', ready_at: stamp(2, '08:00:00') },
-  femorali: { status: 'AFFATICATO', ready_at: stamp(3, '08:00:00') },
+  petto: { status: 'PRONTO', percent: 100, ready_at: null },
+  glutei: { status: 'PRONTO', percent: 100, ready_at: null },
+  polpacci: { status: 'PRONTO', percent: 100, ready_at: null },
+  schiena: { status: 'IN RECUPERO', percent: 60, ready_at: stamp(0, '18:00:00') },
+  spalle: { status: 'IN RECUPERO', percent: 75, ready_at: stamp(1, '08:00:00') },
+  bicipiti: { status: 'IN RECUPERO', percent: 85, ready_at: stamp(0, '20:00:00') },
+  quadricipiti: { status: 'AFFATICATO', percent: 20, ready_at: stamp(3, '08:00:00') },
+  femorali: { status: 'AFFATICATO', percent: 40, ready_at: stamp(2, '08:00:00') },
 };
 
 const GROUP_ROWS = [
@@ -227,6 +229,36 @@ const SHOT_LIST = [
   ['allenamenti-cronologia', '/workouts?tab=history', { loggedIn: true }],
   ['admin', '/admin', { loggedIn: true, admin: true }],
 ];
+
+// Prototipo #28: pagina home per ogni variante A-D (M28=1), card ritagliata con suffisso _card.
+if (process.env.M28) {
+  for (const vp of viewports) {
+    for (const theme of themes) {
+      for (const v of ['A', 'B', 'C', 'D']) {
+        const tag = `${vp.w}_${theme}`;
+        await attempt(tag, `home_${v}`, async () => {
+          const { ctx, page } = await openPage(vp, theme, { loggedIn: true }, tag);
+          try {
+            await page.goto(`${base}/?variant=${v}`, { waitUntil: 'domcontentloaded' });
+            await page.addStyleTag({ content: '[data-proto-bar]{display:none!important}' });
+            await snap(page, `home_${v}`, tag);
+            const card = page.getByText('Stato muscolare', { exact: true }).first().locator('xpath=ancestor::*[contains(@class,"MuiPaper-root") or contains(@class,"MuiCard-root")][1]');
+            const box = await card.boundingBox();
+            const statuses = await page.$$eval('[data-proto-status]', (els) => els.map((e) => e.getBoundingClientRect().height));
+            console.log(`${v} ${tag} card ${Math.round(box.width)}x${Math.round(box.height)} wrapStatus=${statuses.filter((h) => h > 20).length}`);
+            await card.screenshot({ path: path.join(outDir, `home_${v}_${tag}_card.png`), animations: 'disabled', caret: 'hide' });
+          } finally {
+            await ctx.close();
+          }
+        });
+      }
+    }
+  }
+  await browser.close();
+  failures.forEach((f) => console.log(`FAIL ${f}`));
+  problems.forEach((p) => console.log(`WARN ${p}`));
+  process.exit(failures.length ? 1 : 0);
+}
 
 for (const vp of viewports) {
   for (const theme of themes) {
