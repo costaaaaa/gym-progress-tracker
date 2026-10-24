@@ -1,3 +1,5 @@
+import { MUSCLE_GROUPS } from './recoveryGroups';
+
 // Stato muscolare di esempio per la home pubblica e le pagine di accesso.
 // Esempi precalcolati a circa 24 ore dall'allenamento: [stato, percentuale, giorni al "pronto"].
 // Non c'è nessuna formula nel client: sono dati di esempio, dichiarati tali sotto la card.
@@ -13,7 +15,6 @@ const SETS = {
     polpacci: ['IN RECUPERO', 60, 1],
   },
 };
-const MUSCLES = ['petto', 'schiena', 'spalle', 'bicipiti', 'tricipiti', 'addome', 'quadricipiti', 'femorali', 'glutei', 'polpacci'];
 
 const pad = (n) => String(n).padStart(2, '0');
 const toReadyAt = (days) => {
@@ -23,7 +24,7 @@ const toReadyAt = (days) => {
 
 export const buildRecovery = (option) =>
   Object.fromEntries(
-    MUSCLES.map((m) => {
+    MUSCLE_GROUPS.map((m) => {
       const [status, percent, days] = SETS[option][m] || R;
       return [m, { status, percent, ready_at: days ? toReadyAt(days) : null }];
     }),

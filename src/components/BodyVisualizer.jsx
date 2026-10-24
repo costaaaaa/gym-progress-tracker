@@ -18,7 +18,8 @@ const readyLabel = (t, days) => {
   return t('recovery.ready_in_days', { count: days });
 };
 
-// Una riga: nome (colonna fissa), barra di avanzamento del recupero, scritta a destra.
+// Una riga: nome, barra di avanzamento del recupero, scritta a destra.
+// Larghezze fisse: 104 px per "Quadricipiti", 112 px per "pronto tra N giorni" / "ready in N days".
 const MuscleRow = ({ group, status, percent, children }) => (
   <Box component="li" sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
     <Typography noWrap sx={{ fontSize: 15, color: 'text.primary', width: 104, flexShrink: 0 }}>
@@ -42,7 +43,7 @@ const Block = ({ title, children }) => {
   const titleId = useId();
   return (
     <Box>
-      <Typography id={titleId} sx={{ fontSize: 14, fontWeight: 600, color: 'text.primary', mb: 1.25 }}>
+      <Typography id={titleId} sx={{ fontSize: 15, fontWeight: 600, color: 'text.primary', mb: 1.25 }}>
         {title}
       </Typography>
       <Box component="ul" aria-labelledby={titleId} sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: 1.75 }}>
