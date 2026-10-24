@@ -36,3 +36,18 @@ describe('tema: titolo di pagina', () => {
     });
   });
 });
+
+describe('tema: numero grande', () => {
+  it('la variante statNumber è un <p> in Lexend 700 a 22px con cifre tabulari', () => {
+    render(<ThemeModeProvider><Typography variant="statNumber">184.250</Typography></ThemeModeProvider>);
+    const el = screen.getByText('184.250');
+    const { fontFamily, fontWeight, fontSize, fontVariantNumeric } = getComputedStyle(el);
+    expect(el.tagName).toBe('P');
+    expect({ fontFamily, fontWeight, fontSize, fontVariantNumeric }).toEqual({
+      fontFamily: '"Lexend", sans-serif',
+      fontWeight: '700',
+      fontSize: '22px',
+      fontVariantNumeric: 'tabular-nums',
+    });
+  });
+});
