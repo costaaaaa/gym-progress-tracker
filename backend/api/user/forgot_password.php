@@ -28,8 +28,7 @@ try {
     $db = $database->getConnection();
     $limiter = rate_limiter($db);
 
-    $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
-    $ipKey = 'forgot:ip:' . hash('sha256', $ip);
+    $ipKey = client_ip_key('forgot');
     $emailKey = 'forgot:email:' . hash('sha256', strtolower($email));
     list($ipMax, $ipDecay) = rate_limit_rule('forgot_ip');
     list($emailMax, $emailDecay) = rate_limit_rule('forgot_email');
@@ -57,7 +56,11 @@ try {
             $baseUrl = rtrim(getenv('APP_PUBLIC_URL') ?: 'http://localhost:3000', '/');
             $link = $baseUrl . ($lang === 'en' ? '/en' : '') . '/reset-password?token=' . $token;
             $text = t_server('forgot.email_body', array('username' => $user['username'], 'link' => $link), $lang);
-            mail_send($email, t_server('forgot.email_subject', array(), $lang), $text);
+            // Dopo la risposta: l'invio è la parte lenta e la distinguerebbe dal caso "account inesistente"
+            $subject = t_server('forgot.email_subject', array(), $lang);
+            after_response(function () use ($email, $subject, $text) {
+                mail_send($email, $subject, $text);
+            });
         }
     }
 

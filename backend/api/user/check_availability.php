@@ -32,8 +32,7 @@ try {
     $db = $database->getConnection();
 
     $limiter = rate_limiter($db);
-    $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
-    $key = 'check:ip:' . hash('sha256', $ip);
+    $key = client_ip_key('check');
     list($max, $decay) = rate_limit_rule('check_ip');
     if ($limiter->tooManyAttempts($key, $max)) {
         $retryAfter = $limiter->availableIn($key);

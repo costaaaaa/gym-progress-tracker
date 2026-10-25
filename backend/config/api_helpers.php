@@ -307,10 +307,13 @@ function exercise_params_error($data)
     };
     $reps = isset($data->reps) ? $data->reps : null;
     $reps_ok = (is_string($reps) || is_int($reps)) && trim((string)$reps) !== '' && mb_strlen((string)$reps) <= 20;
+    // Note e tecnica sono facoltative: se ci sono, stringhe nei limiti delle colonne (notes text, intensity_technique varchar(100))
+    $text_ok = (!isset($data->notes) || (is_string($data->notes) && mb_strlen($data->notes) <= 5000))
+        && (!isset($data->intensity_technique) || (is_string($data->intensity_technique) && mb_strlen($data->intensity_technique) <= 100));
     if (
         !isset($data->sets) || !$int_in_range($data->sets, 1, 20) ||
         !isset($data->rest) || !$int_in_range($data->rest, 0, 3600) ||
-        !$reps_ok
+        !$reps_ok || !$text_ok
     ) {
         return t_server('exercise.params_invalid');
     }
@@ -422,10 +425,24 @@ function enforce_rate_limit($db, $rule, $key)
     $limiter->hit($key, $decay);
 }
 
-function client_ip_key($prefix)
+// Indirizzo del client per i limiti per IP. Un IPv6 vale per la sua rete /64: chi ne ha una
+// può cambiare indirizzo a ogni richiesta e aggirerebbe qualunque limite per indirizzo intero.
+function client_ip()
 {
     $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
-    return $prefix . ':ip:' . hash('sha256', $ip);
+    $packed = @inet_pton($ip);
+    if ($packed === false || strlen($packed) !== 16) {
+        return $ip;
+    }
+    if (strncmp($packed, str_repeat("\0", 10) . "\xff\xff", 12) === 0) {
+        return inet_ntop(substr($packed, 12)); // IPv4 scritto come ::ffff:a.b.c.d
+    }
+    return bin2hex(substr($packed, 0, 8)) . '::/64';
+}
+
+function client_ip_key($prefix)
+{
+    return $prefix . ':ip:' . hash('sha256', client_ip());
 }
 
 // ── Admin ───────────────────────────────────────────────────────────────────

@@ -12,6 +12,21 @@ date_default_timezone_set('Europe/Rome');
 // Avvia l'output buffering immediatamente
 ob_start();
 
+// Rete di sicurezza per ogni endpoint: un'eccezione non gestita (errore del database, tipo inatteso
+// nel JSON ricevuto) diventa un 500 JSON generico invece di una risposta vuota. Il dettaglio resta nel log.
+set_exception_handler(function ($e) {
+    error_log('Eccezione non gestita (' . get_class($e) . '): ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    if (ob_get_length()) {
+        ob_clean();
+    }
+    http_response_code(500);
+    header('Content-Type: application/json; charset=UTF-8');
+    echo json_encode(array(
+        'success' => false,
+        'message' => function_exists('t_server') ? t_server('common.server_error') : 'Internal server error.',
+    ));
+});
+
 // Common CORS headers for all API endpoints
 $default_allowed_origins = [
     'http://localhost:3000',
@@ -75,6 +90,18 @@ header("Vary: Origin");
 if ($http_origin && in_array($http_origin, $allowed_origins, true)) {
     header("Access-Control-Allow-Origin: {$http_origin}");
     header("Access-Control-Allow-Credentials: true");
+}
+
+// CSRF, oltre a SameSite=Lax: una scrittura fatta con la sessione web deve arrivare da un'origine
+// nostra. Senza Origin (curl, test) passa; il client mobile usa il token e non la sessione.
+if (
+    !$has_bearer_token && isset($_SESSION['user_id']) && $http_origin !== null
+    && !in_array($_SERVER['REQUEST_METHOD'], array('GET', 'HEAD', 'OPTIONS'), true)
+    && !in_array($http_origin, $allowed_origins, true)
+) {
+    http_response_code(403);
+    echo json_encode(array('success' => false, 'message' => 'Forbidden'));
+    exit;
 }
 
 // Handle preflight OPTIONS request

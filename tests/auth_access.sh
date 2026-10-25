@@ -146,6 +146,14 @@ A2="$(login "$A_USER" "$A_PASS")"
 expect "secondo dispositivo di A collegato" 200 "$(call GET api/user/read.php "$A2")"
 expect "logout web via GET rifiutato" 405 "$(call GET api/user/logout.php web)"
 expect "e la sessione resta" 200 "$(call GET api/user/read.php web)"
+# CSRF oltre a SameSite: una scrittura con la sessione web da un'origine estranea è rifiutata (la lettura no)
+foreign_origin() { # METODO path → status
+    curl -s -o /dev/null -w '%{http_code}' -b "$JAR" -X "$1" -H 'Content-Type: application/json' \
+        -H 'Origin: https://origine-estranea.example' --data '{}' "$BASE$2"
+}
+expect "scrittura con sessione da un'origine estranea rifiutata" 403 "$(foreign_origin POST api/workout/create_plan.php)"
+expect "lettura con sessione da un'origine estranea ammessa (la CORS ne nega la risposta)" 200 "$(foreign_origin GET api/user/read.php)"
+expect "scrittura con sessione senza Origin ammessa" 400 "$(call POST api/workout/create_plan.php web '{}')"
 sleep 1  # password_changed_at e l'ora del login si confrontano al secondo
 expect "A cambia password dal primo dispositivo" 200 "$(call POST api/user/change_password.php "$A" "$(jq -nc --arg c "$PASS" --arg n "$NEW_PASS" '{current_password:$c, new_password:$n}')")"
 A_PASS="$NEW_PASS"
