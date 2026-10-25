@@ -294,6 +294,16 @@ function training_start_date_error($value)
     return null;
 }
 
+// Limiti dei testi liberi (colonne: notes text, intensity_technique varchar(100))
+const NOTES_MAX_LENGTH = 5000;
+const INTENSITY_TECHNIQUE_MAX_LENGTH = 100;
+
+// True se un testo facoltativo è presente ma non è una stringa o supera il limite.
+function optional_text_invalid($value, $max)
+{
+    return isset($value) && (!is_string($value) || mb_strlen($value) > $max);
+}
+
 // Valida serie, ripetizioni e recupero di un esercizio in scheda (limiti delle colonne
 // gym_workout_exercises: reps varchar(20)). Il recupero 0 e' ammesso.
 // Ritorna null se validi, altrimenti il messaggio d'errore.
@@ -307,9 +317,9 @@ function exercise_params_error($data)
     };
     $reps = isset($data->reps) ? $data->reps : null;
     $reps_ok = (is_string($reps) || is_int($reps)) && trim((string)$reps) !== '' && mb_strlen((string)$reps) <= 20;
-    // Note e tecnica sono facoltative: se ci sono, stringhe nei limiti delle colonne (notes text, intensity_technique varchar(100))
-    $text_ok = (!isset($data->notes) || (is_string($data->notes) && mb_strlen($data->notes) <= 5000))
-        && (!isset($data->intensity_technique) || (is_string($data->intensity_technique) && mb_strlen($data->intensity_technique) <= 100));
+    // Note e tecnica sono facoltative: se ci sono, stringhe nei limiti delle colonne
+    $text_ok = !optional_text_invalid($data->notes ?? null, NOTES_MAX_LENGTH)
+        && !optional_text_invalid($data->intensity_technique ?? null, INTENSITY_TECHNIQUE_MAX_LENGTH);
     if (
         !isset($data->sets) || !$int_in_range($data->sets, 1, 20) ||
         !isset($data->rest) || !$int_in_range($data->rest, 0, 3600) ||
@@ -440,9 +450,10 @@ function client_ip()
     return bin2hex(substr($packed, 0, 8)) . '::/64';
 }
 
-function client_ip_key($prefix)
+// $ip: indirizzo già ottenuto con client_ip(), per chi lo usa anche per altre chiavi.
+function client_ip_key($prefix, $ip = null)
 {
-    return $prefix . ':ip:' . hash('sha256', client_ip());
+    return $prefix . ':ip:' . hash('sha256', $ip ?? client_ip());
 }
 
 // ── Admin ───────────────────────────────────────────────────────────────────

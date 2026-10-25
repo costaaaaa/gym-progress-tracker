@@ -29,7 +29,7 @@ function authenticate_login_request($db, $data)
     // distribuito). trim: MySQL ignora gli spazi finali nel confronto dello username.
     $ip = client_ip();
     $username = strtolower(trim($data->username));
-    $ipKey = client_ip_key('login');
+    $ipKey = client_ip_key('login', $ip);
     $userKey = 'login:user:' . hash('sha256', $ip . '|' . $username);
     $accountKey = 'login:acct:' . hash('sha256', $username);
 

@@ -13,9 +13,11 @@ date_default_timezone_set('Europe/Rome');
 ob_start();
 
 // Rete di sicurezza per ogni endpoint: un'eccezione non gestita (errore del database, tipo inatteso
-// nel JSON ricevuto) diventa un 500 JSON generico invece di una risposta vuota. Il dettaglio resta nel log.
-set_exception_handler(function ($e) {
-    error_log('Eccezione non gestita (' . get_class($e) . '): ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+// nel JSON ricevuto) o un errore fatale diventa un 500 JSON generico invece di una risposta vuota.
+// Il dettaglio resta nel log. Qui api_helpers.php potrebbe non essere ancora caricato: niente api_log_exception().
+function unhandled_error_response($detail)
+{
+    error_log($detail);
     if (ob_get_length()) {
         ob_clean();
     }
@@ -25,6 +27,19 @@ set_exception_handler(function ($e) {
         'success' => false,
         'message' => function_exists('t_server') ? t_server('common.server_error') : 'Internal server error.',
     ));
+}
+
+set_exception_handler(function ($e) {
+    unhandled_error_response('Eccezione non gestita (' . get_class($e) . '): ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+});
+
+// Gli errori fatali (anche memoria esaurita) non passano dall'exception handler: php-fpm risponderebbe 500 vuoto.
+register_shutdown_function(function () {
+    $error = error_get_last();
+    $fatal = E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR;
+    if ($error !== null && ($error['type'] & $fatal) && !headers_sent()) {
+        unhandled_error_response('Errore fatale: ' . $error['message'] . ' in ' . $error['file'] . ':' . $error['line']);
+    }
 });
 
 // Common CORS headers for all API endpoints
@@ -100,7 +115,7 @@ if (
     && !in_array($http_origin, $allowed_origins, true)
 ) {
     http_response_code(403);
-    echo json_encode(array('success' => false, 'message' => 'Forbidden'));
+    echo json_encode(array('success' => false, 'message' => function_exists('t_server') ? t_server('common.forbidden') : 'Forbidden'));
     exit;
 }
 

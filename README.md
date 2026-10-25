@@ -108,7 +108,7 @@ You can test the app directly here: 👉 [LiftIndex](https://liftindex.app/)
 
 | Variable | Purpose |
 |---|---|
-| `CORS_ALLOWED_ORIGINS` | Allowed origins, comma-separated (default: localhost:3000 and the production domain) |
+| `CORS_ALLOWED_ORIGINS` | Allowed origins, comma-separated (default: localhost:3000 and the production domain). Writes made with the web session from any other origin get 403, so with `vite --host` from a LAN IP add that origin (e.g. `http://192.168.1.20:3000`) |
 | `APP_PUBLIC_URL` | Public URL of the app, used in the links sent by email |
 | `MAIL_DRIVER` | `log` (default, development only: writes the email to the PHP error log, sends nothing), `mail` (PHP `mail()`, i.e. the server's sendmail) or `brevo` (Brevo transactional API, needs `MAIL_API_KEY`) |
 | `MAIL_FROM_EMAIL`, `MAIL_FROM_NAME` | Sender of the emails (name defaults to "LiftIndex") |
@@ -269,7 +269,7 @@ Puoi testare l'app direttamente al seguente link: 👉 [LiftIndex](https://lifti
 
 | Variabile | A cosa serve |
 |---|---|
-| `CORS_ALLOWED_ORIGINS` | Origin consentiti, separati da virgola (default: localhost:3000 e il dominio di produzione) |
+| `CORS_ALLOWED_ORIGINS` | Origin consentiti, separati da virgola (default: localhost:3000 e il dominio di produzione). Le scritture con la sessione web da un altro origin ricevono 403: con `vite --host` da un IP di rete locale aggiungi quell'origin (es. `http://192.168.1.20:3000`) |
 | `APP_PUBLIC_URL` | URL pubblico dell'app, usato nei link inviati per email |
 | `MAIL_DRIVER` | `log` (predefinito, solo sviluppo: scrive l'email nel log degli errori PHP, non invia nulla), `mail` (`mail()` di PHP, cioè il sendmail del server) o `brevo` (API transazionale Brevo, richiede `MAIL_API_KEY`) |
 | `MAIL_FROM_EMAIL`, `MAIL_FROM_NAME` | Mittente delle email (il nome è "LiftIndex" se omesso) |

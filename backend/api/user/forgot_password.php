@@ -48,18 +48,20 @@ try {
         $reset = new PasswordReset($db);
         $user = $reset->findUserByEmail($email);
         if ($user) {
-            $token = $reset->create($user['id']);
+            // Token e invio dopo la risposta: scrittura sul database e invio sono la parte lenta e
+            // distinguerebbero il caso "account esistente" da "account inesistente". Gli errori
+            // finiscono nel log da after_response().
             // APP_PUBLIC_URL: indirizzo pubblico dell'app, es. https://liftindex.app
             // (env sul server, come MAIL_*). L'app sta alla radice del dominio; la pagina
             // inglese sta sotto /en. Email e link sono nella lingua dell'account.
+            // Il token sta nel fragment (#): il browser non lo manda al server, quindi resta fuori dai log di accesso e dal Referer.
             $lang = normalize_locale($user['locale'] ?? null) ?? 'it';
             $baseUrl = rtrim(getenv('APP_PUBLIC_URL') ?: 'http://localhost:3000', '/');
-            $link = $baseUrl . ($lang === 'en' ? '/en' : '') . '/reset-password?token=' . $token;
-            $text = t_server('forgot.email_body', array('username' => $user['username'], 'link' => $link), $lang);
-            // Dopo la risposta: l'invio è la parte lenta e la distinguerebbe dal caso "account inesistente"
-            $subject = t_server('forgot.email_subject', array(), $lang);
-            after_response(function () use ($email, $subject, $text) {
-                mail_send($email, $subject, $text);
+            after_response(function () use ($reset, $user, $email, $lang, $baseUrl) {
+                $token = $reset->create($user['id']);
+                $link = $baseUrl . ($lang === 'en' ? '/en' : '') . '/reset-password#token=' . $token;
+                $text = t_server('forgot.email_body', array('username' => $user['username'], 'link' => $link), $lang);
+                mail_send($email, t_server('forgot.email_subject', array(), $lang), $text);
             });
         }
     }
