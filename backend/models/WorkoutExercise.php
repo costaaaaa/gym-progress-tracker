@@ -221,8 +221,6 @@ class WorkoutExercise
                       ORDER BY id DESC
                       LIMIT 1";
 
-            error_log("Ricerca esercizio precedente: day_id={$this->day_id}, current_id={$this->id}");
-
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':day_id', $this->day_id);
             $stmt->bindParam(':current_id', $this->id);
@@ -230,14 +228,11 @@ class WorkoutExercise
 
             if ($stmt->rowCount() === 0) {
                 // Non ci sono esercizi sopra questo, quindi è già in cima
-                error_log("Nessun esercizio trovato sopra l'esercizio {$this->id}, è già in cima");
                 return true;
             }
 
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             $previous_id = $row['id'];
-
-            error_log("Esercizio precedente trovato con ID: {$previous_id}");
 
             // Leggiamo i dati dei due esercizi da scambiare
             // Primo esercizio (corrente)
@@ -290,7 +285,6 @@ class WorkoutExercise
 
             // Commit della transazione
             $this->conn->commit();
-            error_log("Scambio completato con successo tra esercizi {$this->id} e {$previous_id}");
             return true;
         } catch (Exception $e) {
             // Rollback in caso di errore
@@ -322,8 +316,6 @@ class WorkoutExercise
                       ORDER BY id ASC
                       LIMIT 1";
 
-            error_log("Ricerca esercizio successivo: day_id={$this->day_id}, current_id={$this->id}");
-
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':day_id', $this->day_id);
             $stmt->bindParam(':current_id', $this->id);
@@ -331,14 +323,11 @@ class WorkoutExercise
 
             if ($stmt->rowCount() === 0) {
                 // Non ci sono esercizi sotto questo, quindi è già in fondo
-                error_log("Nessun esercizio trovato sotto l'esercizio {$this->id}, è già in fondo");
                 return true;
             }
 
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             $next_id = $row['id'];
-
-            error_log("Esercizio successivo trovato con ID: {$next_id}");
 
             // Leggiamo i dati dei due esercizi da scambiare
             // Primo esercizio (corrente)
@@ -391,7 +380,6 @@ class WorkoutExercise
 
             // Commit della transazione
             $this->conn->commit();
-            error_log("Scambio completato con successo tra esercizi {$this->id} e {$next_id}");
             return true;
         } catch (Exception $e) {
             // Rollback in caso di errore

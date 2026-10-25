@@ -31,59 +31,29 @@ if (
         api_not_found(t_server('workout.exercise_not_found'));
     }
 
-    // Prima di aggiornare, dobbiamo trovare l'ID dell'esercizio nella scheda
-    // Il frontend invia direttamente l'ID dell'esercizio nella tabella gym_workout_exercises
-    $query = "SELECT id FROM gym_workout_exercises WHERE id = ? AND day_id = ? LIMIT 0,1";
-    $stmt = $db->prepare($query);
-    $stmt->bindParam(1, $data->exercise_id);
-    $stmt->bindParam(2, $data->day_id);
-    $stmt->execute();
+    // Il controllo di proprietà ha già verificato che la riga esista: exercise_id è l'id della riga
+    // in gym_workout_exercises (non l'id dell'esercizio del catalogo)
+    $workoutExercise->id = (int) $data->exercise_id;
+    $workoutExercise->day_id = (int) $data->day_id;
+    $workoutExercise->sets = $data->sets;
+    $workoutExercise->reps = $data->reps;
+    $workoutExercise->rest = $data->rest;
+    $workoutExercise->notes = isset($data->notes) && $data->notes !== "" ? $data->notes : null;
+    $workoutExercise->intensity_technique = isset($data->intensity_technique) && $data->intensity_technique !== "" ? $data->intensity_technique : null;
 
-    // Debug: Registriamo i parametri della query e il risultato
-    error_log("Numero di righe trovate: " . $stmt->rowCount());
-
-    if ($stmt->rowCount() > 0) {
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $workout_exercise_id = $row['id'];
-
-        // Assegna i valori alle proprietà del modello
-        $workoutExercise->id = $workout_exercise_id; // Imposta l'ID trovato
-        $workoutExercise->day_id = $data->day_id;
-        $workoutExercise->exercise_id = $data->exercise_id;
-        $workoutExercise->sets = $data->sets;
-        $workoutExercise->reps = $data->reps;
-        $workoutExercise->rest = $data->rest;
-        $workoutExercise->notes = isset($data->notes) && $data->notes !== "" ? $data->notes : null; // Gestiamo correttamente il campo notes
-        $workoutExercise->intensity_technique = isset($data->intensity_technique) && $data->intensity_technique !== "" ? $data->intensity_technique : null;
-
-        // Log per debug
-
-        // Esegui l'aggiornamento
-        if ($workoutExercise->update()) {
-            // Crea la risposta
-            echo json_encode(
-                array(
-                    'success' => true,
-                    'message' => t_server('workout.exercise_updated')
-                )
-            );
-        } else {
-            // Se l'aggiornamento fallisce
-            http_response_code(503);
-            echo json_encode(
-                array(
-                    'success' => false,
-                    'message' => t_server('workout.exercise_update_failed')
-                )
-            );
-        }
+    if ($workoutExercise->update()) {
+        echo json_encode(
+            array(
+                'success' => true,
+                'message' => t_server('workout.exercise_updated')
+            )
+        );
     } else {
-        // Se non troviamo l'esercizio nella scheda
-        http_response_code(404);
+        http_response_code(503);
         echo json_encode(
             array(
                 'success' => false,
-                'message' => t_server('workout.exercise_not_in_plan')
+                'message' => t_server('workout.exercise_update_failed')
             )
         );
     }

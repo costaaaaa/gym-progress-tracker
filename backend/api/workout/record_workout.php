@@ -43,8 +43,16 @@ try {
     if (count($data->workout_records) > 500) {
         api_json_response(['success' => false, 'message' => t_server('workout.record_too_many_sets')], 400);
     }
+    // Testi liberi: stringhe, con i limiti delle colonne (intensity_technique varchar(100), notes text)
+    if (isset($data->notes) && (!is_string($data->notes) || mb_strlen($data->notes) > 5000)) {
+        api_json_response(['success' => false, 'message' => t_server('workout.record_invalid')], 400);
+    }
     foreach ($data->workout_records as $record) {
         if (!is_object($record)) {
+            api_json_response(['success' => false, 'message' => t_server('workout.record_invalid')], 400);
+        }
+        if (isset($record->intensity_technique)
+            && (!is_string($record->intensity_technique) || mb_strlen($record->intensity_technique) > 100)) {
             api_json_response(['success' => false, 'message' => t_server('workout.record_invalid')], 400);
         }
         if (!isset($record->exercise_id) || empty($record->exercise_id)) continue;
