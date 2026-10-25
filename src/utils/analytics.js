@@ -7,7 +7,8 @@ const UTM_PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', '
 
 // Dell'indirizzo inviato ad Umami teniamo solo i parametri UTM (allowlist): servono a capire
 // da quale annuncio arriva la visita, mentre token di reset-password, codici di invito e
-// click id delle piattaforme pubblicitarie non devono mai uscire dal browser.
+// click id delle piattaforme pubblicitarie non devono mai uscire dal browser. Il fragment
+// (#token=... di reset-password) si scarta per intero.
 export const stripSearch = (rawUrl) => {
   try {
     const url = new URL(rawUrl, window.location.origin);
@@ -17,7 +18,7 @@ export const stripSearch = (rawUrl) => {
       if (value) kept.set(name, value.slice(0, 100));
     });
     const query = kept.toString();
-    const clean = url.pathname + (query ? `?${query}` : '') + url.hash;
+    const clean = url.pathname + (query ? `?${query}` : '');
     return /^[a-z][a-z0-9+.-]*:/i.test(rawUrl) ? url.origin + clean : clean;
   } catch {
     // se l'indirizzo non e' interpretabile meglio non inviarne nessun parametro
@@ -40,7 +41,7 @@ export const initAnalytics = () => {
   script.defer = true;
   script.src = src;
   script.dataset.websiteId = websiteId;
-  // Il token di /reset-password?token=... sta nella query string: ad Umami passano solo gli UTM
+  // Il token di /reset-password sta nel fragment (o nella query dei vecchi link): ad Umami passano solo gli UTM
   window.liftindexBeforeSend = beforeSend;
   script.dataset.beforeSend = 'liftindexBeforeSend';
   script.dataset.doNotTrack = 'true';

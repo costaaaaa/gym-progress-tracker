@@ -30,4 +30,35 @@ describe('AuthProvider: intercettore di fetch', () => {
     expect(response.status).toBe(401);
     expect(backend).toHaveBeenCalledTimes(1); // nessun logout: il 401 di login.php è un errore di credenziali
   });
+
+  it.each([
+    ['stringa', (u) => u.pathname],
+    ['URL', (u) => u],
+    ['Request', (u) => new Request(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"a":1}' })],
+  ])('aggiunge X-Locale alle chiamate al backend anche con %s, senza perdere metodo e corpo', async (_name, make) => {
+    backend.mockImplementation(() => Promise.resolve(new Response('{}', { status: 200 })));
+    render(<AuthProvider><div /></AuthProvider>);
+    await waitFor(() => expect(window.fetch).not.toBe(backend));
+
+    await window.fetch(make(new URL('/backend/api/workout/read.php', window.location.origin)));
+
+    const [input, init] = backend.mock.calls[0];
+    const req = input instanceof Request ? input : new Request(new URL(input, window.location.origin), init);
+    expect(req.headers.get('X-Locale')).toBeTruthy();
+    if (input instanceof Request) {
+      expect(req.method).toBe('POST');
+      expect(req.headers.get('Content-Type')).toBe('application/json');
+      expect(await req.text()).toBe('{"a":1}');
+    }
+  });
+
+  it('non aggiunge X-Locale alle chiamate verso altri siti', async () => {
+    backend.mockImplementation(() => Promise.resolve(new Response('{}', { status: 200 })));
+    render(<AuthProvider><div /></AuthProvider>);
+    await waitFor(() => expect(window.fetch).not.toBe(backend));
+
+    await window.fetch(new Request('https://altro.example/backend/api/x.php'));
+
+    expect(backend.mock.calls[0][0].headers.get('X-Locale')).toBeNull();
+  });
 });

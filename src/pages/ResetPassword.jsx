@@ -15,11 +15,15 @@ const ResetPassword = () => {
   const localizedPath = useLocalizedPath();
   usePageMeta(t('reset.meta.title'), t('reset.meta.description'));
   const [searchParams] = useSearchParams();
-  const [token] = useState(() => searchParams.get('token') || '');
+  // Il link nuovo porta il token nel fragment (#token=...), che non arriva al server né ai suoi log;
+  // quello dei link già inviati sta ancora nella query (?token=...) e vale finché non scade
+  const [token] = useState(
+    () => new URLSearchParams(window.location.hash.replace(/^#/, '')).get('token') || searchParams.get('token') || '',
+  );
 
   // Il token resta in memoria e sparisce dalla barra e dalla cronologia (non deve finire in un segnalibro)
   useEffect(() => {
-    if (searchParams.has('token')) {
+    if (searchParams.has('token') || window.location.hash) {
       window.history.replaceState(window.history.state, '', window.location.pathname);
     }
   }, [searchParams]);

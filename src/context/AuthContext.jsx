@@ -80,15 +80,18 @@ export const AuthProvider = ({ children }) => {
     const originalFetch = window.fetch;
     
     window.fetch = async (...args) => {
-      // Lingua dell'interfaccia per i messaggi del server
-      if (typeof args[0] === 'string' && args[0].startsWith(API_BASE_URL)) {
-        const headers = new Headers(args[1]?.headers);
-        if (!headers.has('X-Locale')) headers.set('X-Locale', i18n.language);
-        args[1] = { ...args[1], headers };
-      }
-      const response = await originalFetch(...args);
       // fetch accetta anche URL e Request: l'indirizzo si legge in tutti i casi
       const requestUrl = typeof args[0] === 'string' ? args[0] : (args[0]?.url ?? String(args[0]));
+      // Lingua dell'interfaccia per i messaggi del server
+      const target = new URL(requestUrl, window.location.origin);
+      if (target.origin === window.location.origin && target.pathname.startsWith(API_BASE_URL)) {
+        const [input, init] = args;
+        const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
+        if (!headers.has('X-Locale')) headers.set('X-Locale', i18n.language);
+        // Un Request si ricostruisce (metodo e corpo si ereditano), non si può modificare
+        args = input instanceof Request ? [new Request(input, { ...init, headers })] : [input, { ...init, headers }];
+      }
+      const response = await originalFetch(...args);
       // Se 401 Unauthorized e non è una chiamata di login o verifica sessione
       if (response.status === 401 && 
           localStorage.getItem('isLoggedIn') === 'true' && 
