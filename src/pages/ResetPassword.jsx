@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TextField, Button, Box, Alert, Link, InputAdornment, IconButton } from '@mui/material';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
@@ -15,7 +15,14 @@ const ResetPassword = () => {
   const localizedPath = useLocalizedPath();
   usePageMeta(t('reset.meta.title'), t('reset.meta.description'));
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token') || '';
+  const [token] = useState(() => searchParams.get('token') || '');
+
+  // Il token resta in memoria e sparisce dalla barra e dalla cronologia (non deve finire in un segnalibro)
+  useEffect(() => {
+    if (searchParams.has('token')) {
+      window.history.replaceState(window.history.state, '', window.location.pathname);
+    }
+  }, [searchParams]);
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);

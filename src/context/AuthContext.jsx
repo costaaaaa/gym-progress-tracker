@@ -87,11 +87,13 @@ export const AuthProvider = ({ children }) => {
         args[1] = { ...args[1], headers };
       }
       const response = await originalFetch(...args);
+      // fetch accetta anche URL e Request: l'indirizzo si legge in tutti i casi
+      const requestUrl = typeof args[0] === 'string' ? args[0] : (args[0]?.url ?? String(args[0]));
       // Se 401 Unauthorized e non è una chiamata di login o verifica sessione
       if (response.status === 401 && 
           localStorage.getItem('isLoggedIn') === 'true' && 
-          !args[0].includes('login.php') && 
-          !args[0].includes('api/user/read.php')) {
+          !requestUrl.includes('login.php') && 
+          !requestUrl.includes('api/user/read.php')) {
         logout();
       }
       return response;
