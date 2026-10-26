@@ -294,6 +294,16 @@ function training_start_date_error($value)
     return null;
 }
 
+// Limiti dei testi liberi, per campo (colonne: notes text, intensity_technique varchar(100))
+const FREE_TEXT_MAX_LENGTH = array('notes' => 5000, 'intensity_technique' => 100);
+
+// True se il testo facoltativo $field di $obj manca o è una stringa nel suo limite.
+function free_text_ok($obj, $field)
+{
+    $value = $obj->$field ?? null;
+    return !isset($value) || (is_string($value) && mb_strlen($value) <= FREE_TEXT_MAX_LENGTH[$field]);
+}
+
 // Valida serie, ripetizioni e recupero di un esercizio in scheda (limiti delle colonne
 // gym_workout_exercises: reps varchar(20)). Il recupero 0 e' ammesso.
 // Ritorna null se validi, altrimenti il messaggio d'errore.
@@ -307,10 +317,12 @@ function exercise_params_error($data)
     };
     $reps = isset($data->reps) ? $data->reps : null;
     $reps_ok = (is_string($reps) || is_int($reps)) && trim((string)$reps) !== '' && mb_strlen((string)$reps) <= 20;
+    // Note e tecnica sono facoltative: se ci sono, stringhe nei limiti delle colonne
+    $text_ok = free_text_ok($data, 'notes') && free_text_ok($data, 'intensity_technique');
     if (
         !isset($data->sets) || !$int_in_range($data->sets, 1, 20) ||
         !isset($data->rest) || !$int_in_range($data->rest, 0, 3600) ||
-        !$reps_ok
+        !$reps_ok || !$text_ok
     ) {
         return t_server('exercise.params_invalid');
     }
@@ -422,10 +434,25 @@ function enforce_rate_limit($db, $rule, $key)
     $limiter->hit($key, $decay);
 }
 
-function client_ip_key($prefix)
+// Indirizzo del client per i limiti per IP. Un IPv6 vale per la sua rete /64: chi ne ha una
+// può cambiare indirizzo a ogni richiesta e aggirerebbe qualunque limite per indirizzo intero.
+function client_ip()
 {
     $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
-    return $prefix . ':ip:' . hash('sha256', $ip);
+    $packed = @inet_pton($ip);
+    if ($packed === false || strlen($packed) !== 16) {
+        return $ip;
+    }
+    if (strncmp($packed, str_repeat("\0", 10) . "\xff\xff", 12) === 0) {
+        return inet_ntop(substr($packed, 12)); // IPv4 scritto come ::ffff:a.b.c.d
+    }
+    return bin2hex(substr($packed, 0, 8)) . '::/64';
+}
+
+// $ip: indirizzo già ottenuto con client_ip(), per chi lo usa anche per altre chiavi.
+function client_ip_key($prefix, $ip = null)
+{
+    return $prefix . ':ip:' . hash('sha256', $ip ?? client_ip());
 }
 
 // ── Admin ───────────────────────────────────────────────────────────────────

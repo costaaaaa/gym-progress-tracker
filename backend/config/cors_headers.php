@@ -12,6 +12,39 @@ date_default_timezone_set('Europe/Rome');
 // Avvia l'output buffering immediatamente
 ob_start();
 
+// t_server() per i messaggi d'errore qui sotto: gli endpoint includono api_helpers.php dopo questo file
+include_once __DIR__ . '/api_helpers.php';
+
+// Rete di sicurezza per ogni endpoint: un'eccezione non gestita (errore del database, tipo inatteso
+// nel JSON ricevuto) o un errore fatale diventa un 500 JSON generico invece di una risposta vuota.
+// Il dettaglio resta nel log.
+function unhandled_error_response($detail)
+{
+    error_log($detail);
+    if (ob_get_length()) {
+        ob_clean();
+    }
+    http_response_code(500);
+    header('Content-Type: application/json; charset=UTF-8');
+    echo json_encode(array(
+        'success' => false,
+        'message' => t_server('common.server_error'),
+    ));
+}
+
+set_exception_handler(function ($e) {
+    unhandled_error_response('Eccezione non gestita (' . get_class($e) . '): ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+});
+
+// Gli errori fatali (anche memoria esaurita) non passano dall'exception handler: php-fpm risponderebbe 500 vuoto.
+register_shutdown_function(function () {
+    $error = error_get_last();
+    $fatal = E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR;
+    if ($error !== null && ($error['type'] & $fatal) && !headers_sent()) {
+        unhandled_error_response('Errore fatale: ' . $error['message'] . ' in ' . $error['file'] . ':' . $error['line']);
+    }
+});
+
 // Common CORS headers for all API endpoints
 $default_allowed_origins = [
     'http://localhost:3000',
@@ -75,6 +108,18 @@ header("Vary: Origin");
 if ($http_origin && in_array($http_origin, $allowed_origins, true)) {
     header("Access-Control-Allow-Origin: {$http_origin}");
     header("Access-Control-Allow-Credentials: true");
+}
+
+// CSRF, oltre a SameSite=Lax: una scrittura fatta con la sessione web deve arrivare da un'origine
+// nostra. Senza Origin (curl, test) passa; il client mobile usa il token e non la sessione.
+if (
+    !$has_bearer_token && isset($_SESSION['user_id']) && $http_origin !== null
+    && !in_array($_SERVER['REQUEST_METHOD'], array('GET', 'HEAD', 'OPTIONS'), true)
+    && !in_array($http_origin, $allowed_origins, true)
+) {
+    http_response_code(403);
+    echo json_encode(array('success' => false, 'message' => t_server('common.forbidden')));
+    exit;
 }
 
 // Handle preflight OPTIONS request

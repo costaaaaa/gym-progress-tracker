@@ -34,8 +34,7 @@ try {
         !empty($data->username) && !empty($data->email) && !empty($data->password)
     ) {
         // Throttling per-IP: anti registrazioni di massa
-        $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
-        $regKey = 'register:ip:' . hash('sha256', $ip);
+        $regKey = client_ip_key('register');
         list($regMax, $regDecay) = rate_limit_rule('register_ip');
 
         if ($limiter->tooManyAttempts($regKey, $regMax)) {

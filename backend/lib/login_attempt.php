@@ -27,9 +27,9 @@ function authenticate_login_request($db, $data)
 
     // Tre contatori: per IP, per coppia IP+utente e per utente da qualunque IP (brute force
     // distribuito). trim: MySQL ignora gli spazi finali nel confronto dello username.
-    $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
+    $ip = client_ip();
     $username = strtolower(trim($data->username));
-    $ipKey = 'login:ip:' . hash('sha256', $ip);
+    $ipKey = client_ip_key('login', $ip);
     $userKey = 'login:user:' . hash('sha256', $ip . '|' . $username);
     $accountKey = 'login:acct:' . hash('sha256', $username);
 

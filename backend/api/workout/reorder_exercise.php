@@ -13,7 +13,6 @@ $user_id = require_authenticated_user($db);
 // Registra gli errori server-side senza esporli nelle response pubbliche.
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
-error_log("Inizio elaborazione riordinamento esercizi");
 
 // Inizializza il modello WorkoutExercise
 $workoutExercise = new WorkoutExercise($db);
@@ -40,7 +39,6 @@ try {
 
         // Verifica che l'esercizio esista
         if (!$workoutExercise->readOne()) {
-            error_log("Errore: esercizio non trovato con ID {$workoutExercise->id}");
             http_response_code(404);
             echo json_encode(
                 array(
@@ -55,10 +53,8 @@ try {
         $success = false;
 
         if ($direction === 'up') {
-            error_log("Tentativo di spostare l'esercizio {$workoutExercise->id} verso l'alto");
             $success = $workoutExercise->moveUp();
         } else if ($direction === 'down') {
-            error_log("Tentativo di spostare l'esercizio {$workoutExercise->id} verso il basso");
             $success = $workoutExercise->moveDown();
         } else {
             error_log("Direzione non valida: {$direction}");
@@ -73,7 +69,6 @@ try {
         }
 
         if ($success) {
-            error_log("Riordinamento completato con successo");
             // Crea la risposta
             echo json_encode(
                 array(
@@ -82,7 +77,6 @@ try {
                 )
             );
         } else {
-            error_log("Fallimento nel riordinamento degli esercizi");
             // Se il riordinamento fallisce
             http_response_code(503);
             echo json_encode(
@@ -93,7 +87,6 @@ try {
             );
         }
     } else {
-        error_log("Dati incompleti nella richiesta di riordinamento");
         // Se i dati sono incompleti
         http_response_code(400);
         echo json_encode(

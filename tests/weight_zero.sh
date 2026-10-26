@@ -8,7 +8,8 @@
 # Regole: una serie con peso 0 e ripetizioni vale per XP di esercizio e PR; a peso 0 il record
 # è sulle ripetizioni, con zavorra su peso e 1RM. Peso fuori da 0..999,99, ripetizioni che non
 # sono un intero da 1 a 250 e set_number non valido rispondono 400; serie/ripetizioni/recupero di
-# un esercizio in scheda e data di inizio allenamento fuori range pure. Gli obiettivi di
+# un esercizio in scheda e data di inizio allenamento fuori range pure, come note e tecnica di
+# intensità che non sono stringhe o superano le colonne (5000 e 100 caratteri). Gli obiettivi di
 # tonnellaggio seguono la scala dall'automobile alla Torre Eiffel. Registra un account usa e getta (token Bearer) e lo
 # cancella alla fine. Non va lanciato in produzione: crea account veri.
 #
@@ -138,6 +139,26 @@ reg() { # data di inizio → "status corpo" della registrazione; l'account creat
 status_is "registrazione con mese 13: 400" "$(reg 2026-13-01)" 400
 status_is "registrazione con data futura: 400" "$(reg "$(date -d '+1 year' +%Y-%m-%d)")" 400
 status_is "registrazione con data valida: 201" "$(reg 2024-03-01)" 201
+
+echo "Testi liberi"
+long() { printf "%${1}s" | tr ' ' x; }
+rec() { # campi jq aggiunti alla serie e all'allenamento → corpo per record_workout
+    jq -nc --argjson e "$E1" --argjson d "$DAY" --arg l100 "$(long 100)" --arg l101 "$(long 101)" --arg l5001 "$(long 5001)" \
+        "{workout_records:[{exercise_id:\$e, day_id:\$d, set_number:1, weight:20, reps:\"8\"} + $1]} + $2"
+}
+status_is "tecnica da 100 caratteri e note accettate" "$(call POST api/workout/record_workout.php "$T" "$(rec '{intensity_technique:$l100}' '{notes:"ok"}')")" 201
+status_is "tecnica da 101 caratteri: 400" "$(call POST api/workout/record_workout.php "$T" "$(rec '{intensity_technique:$l101}' '{}')")" 400
+status_is "tecnica numero: 400" "$(call POST api/workout/record_workout.php "$T" "$(rec '{intensity_technique:5}' '{}')")" 400
+status_is "note da 5001 caratteri: 400" "$(call POST api/workout/record_workout.php "$T" "$(rec '{}' '{notes:$l5001}')")" 400
+status_is "note oggetto: 400" "$(call POST api/workout/record_workout.php "$T" "$(rec '{}' '{notes:{}}')")" 400
+exn() { # campi jq aggiunti → corpo per add_exercise
+    jq -nc --argjson d "$DAY" --argjson e "$E1" --arg l100 "$(long 100)" --arg l101 "$(long 101)" --arg l5001 "$(long 5001)" \
+        "{day_id:\$d, exercise_id:\$e, sets:3, reps:\"10\", rest:60} + $1"
+}
+status_is "esercizio con note e tecnica da 100 caratteri accettato" "$(call POST api/workout/add_exercise.php "$T" "$(exn '{notes:"ok", intensity_technique:$l100}')")" 201
+status_is "esercizio con tecnica da 101 caratteri: 400" "$(call POST api/workout/add_exercise.php "$T" "$(exn '{intensity_technique:$l101}')")" 400
+status_is "esercizio con note da 5001 caratteri: 400" "$(call POST api/workout/add_exercise.php "$T" "$(exn '{notes:$l5001}')")" 400
+status_is "esercizio con note array: 400" "$(call POST api/workout/add_exercise.php "$T" "$(exn '{notes:[1]}')")" 400
 
 echo
 if [[ $fails -eq 0 ]]; then printf '\033[32mTutti i %d controlli passati.\033[0m\n' "$checks"; else printf '\033[31m%d controlli su %d falliti.\033[0m\n' "$fails" "$checks"; exit 1; fi

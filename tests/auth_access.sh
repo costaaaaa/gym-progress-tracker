@@ -12,12 +12,16 @@
 # e mobile chiudono davvero; token di reset falsi rifiutati. Alla fine cancella gli account.
 # Non va lanciato in produzione: crea account veri.
 #
+# OWN_ORIGIN è un'origine in CORS_ALLOWED_ORIGINS (default: quella dell'URL del backend, come con
+# `npm run dev` su http://localhost:3000/backend/ o in staging).
+#
 # Richiede curl e jq. Esce con 1 se un controllo fallisce.
 
 set -uo pipefail
 
 BASE="${1:?uso: $(basename "$0") <url del backend, es. http://localhost:8080/backend/>}"
 [[ "$BASE" == */ ]] || BASE="$BASE/"
+OWN_ORIGIN="${OWN_ORIGIN:-$(printf '%s' "$BASE" | grep -oE '^https?://[^/]+')}"
 
 PASS='Prova!Accessi2026'
 NEW_PASS='Prova!Accessi2027'
@@ -146,6 +150,19 @@ A2="$(login "$A_USER" "$A_PASS")"
 expect "secondo dispositivo di A collegato" 200 "$(call GET api/user/read.php "$A2")"
 expect "logout web via GET rifiutato" 405 "$(call GET api/user/logout.php web)"
 expect "e la sessione resta" 200 "$(call GET api/user/read.php web)"
+# CSRF oltre a SameSite: una scrittura con la sessione web da un'origine estranea è rifiutata (la lettura no)
+with_origin() { # origine METODO path → "status corpo"
+    curl -s -w '\n%{http_code}' -b "$JAR" -X "$2" -H 'Content-Type: application/json' \
+        -H "Origin: $1" --data '{}' "$BASE$3" \
+        | { body="$(cat)"; printf '%s %s' "${body##*$'\n'}" "${body%$'\n'*}"; }
+}
+foreign_origin() { with_origin https://origine-estranea.example "$@"; }
+rejected="$(foreign_origin POST api/workout/create_plan.php)"
+expect "scrittura con sessione da un'origine estranea rifiutata" 403 "$rejected"
+check "il rifiuto è tradotto (common.forbidden)" "$rejected" '.message == "Non hai i permessi per questa azione."'
+expect "lettura con sessione da un'origine estranea ammessa (la CORS ne nega la risposta)" 200 "$(foreign_origin GET api/user/read.php)"
+expect "scrittura con sessione dall'origine nostra ($OWN_ORIGIN) ammessa" 400 "$(with_origin "$OWN_ORIGIN" POST api/workout/create_plan.php)"
+expect "scrittura con sessione senza Origin ammessa" 400 "$(call POST api/workout/create_plan.php web '{}')"
 sleep 1  # password_changed_at e l'ora del login si confrontano al secondo
 expect "A cambia password dal primo dispositivo" 200 "$(call POST api/user/change_password.php "$A" "$(jq -nc --arg c "$PASS" --arg n "$NEW_PASS" '{current_password:$c, new_password:$n}')")"
 A_PASS="$NEW_PASS"

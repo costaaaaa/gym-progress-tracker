@@ -108,7 +108,7 @@ You can test the app directly here: 👉 [LiftIndex](https://liftindex.app/)
 
 | Variable | Purpose |
 |---|---|
-| `CORS_ALLOWED_ORIGINS` | Allowed origins, comma-separated (default: localhost:3000 and the production domain) |
+| `CORS_ALLOWED_ORIGINS` | Allowed origins, comma-separated (default: localhost:3000 and the production domain). Writes made with the web session from any other origin get 403, so with `vite --host` from a LAN IP add that origin (e.g. `http://192.168.1.20:3000`) |
 | `APP_PUBLIC_URL` | Public URL of the app, used in the links sent by email |
 | `MAIL_DRIVER` | `log` (default, development only: writes the email to the PHP error log, sends nothing), `mail` (PHP `mail()`, i.e. the server's sendmail) or `brevo` (Brevo transactional API, needs `MAIL_API_KEY`) |
 | `MAIL_FROM_EMAIL`, `MAIL_FROM_NAME` | Sender of the emails (name defaults to "LiftIndex") |
@@ -124,7 +124,7 @@ Under `backend/tools/` (CLI only, they answer 404 over HTTP): `admin.php list|gr
 
 ### Tests
 
-`tests/*.sh` are integration checks (access rules for personal exercises and groups, and the Apple Health / Health Connect sync rules) run against a live instance, for example `tests/groups_access.sh http://localhost/gym-progress-tracker/backend/`. They register throwaway accounts and delete them at the end: run them on a local or test instance, **never on a production one**.
+`tests/*.sh` are integration checks (access rules for personal exercises and groups, and the Apple Health / Health Connect sync rules) run against a live instance, for example `tests/groups_access.sh http://localhost/gym-progress-tracker/backend/`. They register throwaway accounts and delete them at the end: run them on a local or test instance, **never on a production one**. The ones with a `tests/*_test.php` next to them (`admin_notify`, `client_ip`, `gamification_rules`) are different: they run that file with the PHP of the web image, in Docker, and need no live instance or database.
 
 ### Blog (optional)
 
@@ -269,7 +269,7 @@ Puoi testare l'app direttamente al seguente link: 👉 [LiftIndex](https://lifti
 
 | Variabile | A cosa serve |
 |---|---|
-| `CORS_ALLOWED_ORIGINS` | Origin consentiti, separati da virgola (default: localhost:3000 e il dominio di produzione) |
+| `CORS_ALLOWED_ORIGINS` | Origin consentiti, separati da virgola (default: localhost:3000 e il dominio di produzione). Le scritture con la sessione web da un altro origin ricevono 403: con `vite --host` da un IP di rete locale aggiungi quell'origin (es. `http://192.168.1.20:3000`) |
 | `APP_PUBLIC_URL` | URL pubblico dell'app, usato nei link inviati per email |
 | `MAIL_DRIVER` | `log` (predefinito, solo sviluppo: scrive l'email nel log degli errori PHP, non invia nulla), `mail` (`mail()` di PHP, cioè il sendmail del server) o `brevo` (API transazionale Brevo, richiede `MAIL_API_KEY`) |
 | `MAIL_FROM_EMAIL`, `MAIL_FROM_NAME` | Mittente delle email (il nome è "LiftIndex" se omesso) |
@@ -285,7 +285,7 @@ In `backend/tools/` (solo CLI, via HTTP rispondono 404): `admin.php list|grant|r
 
 ### Test
 
-`tests/*.sh` sono controlli di integrazione (regole di accesso a esercizi personali e gruppi, regole della sincronizzazione con Apple Salute / Health Connect) da lanciare contro un'istanza attiva, per esempio `tests/groups_access.sh http://localhost/gym-progress-tracker/backend/`. Registrano account usa e getta e li cancellano alla fine: vanno usati su un'istanza locale o di prova, **mai in produzione**.
+`tests/*.sh` sono controlli di integrazione (regole di accesso a esercizi personali e gruppi, regole della sincronizzazione con Apple Salute / Health Connect) da lanciare contro un'istanza attiva, per esempio `tests/groups_access.sh http://localhost/gym-progress-tracker/backend/`. Registrano account usa e getta e li cancellano alla fine: vanno usati su un'istanza locale o di prova, **mai in produzione**. Fanno eccezione quelli con accanto un `tests/*_test.php` (`admin_notify`, `client_ip`, `gamification_rules`): eseguono quel file con il PHP dell'immagine web, in Docker, e non richiedono un'istanza attiva né un database.
 
 ### Blog (facoltativo)
 

@@ -103,7 +103,6 @@ return array(
     'workout.days_create_failed' => "Couldn't create all the workout days. Try again later.",
     'workout.days_create_incomplete' => "Couldn't create the workout days. Incomplete data.",
     'workout.exercise_not_found' => 'Exercise not found.',
-    'workout.exercise_not_in_plan' => 'Exercise not found in the plan.',
     'workout.exercise_added' => 'Exercise added.',
     'workout.exercise_add_failed' => "Couldn't add the exercise. Try again later.",
     'workout.exercise_add_incomplete' => "Couldn't add the exercise. Incomplete data.",

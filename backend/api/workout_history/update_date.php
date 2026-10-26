@@ -33,7 +33,6 @@ if (
     // Se la data è solo in formato YYYY-MM-DD, aggiungiamo l'ora corrente
     if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $new_date)) {
         $new_date .= ' ' . date('H:i:s');
-        error_log("Data formattata con ora corrente: " . $new_date);
     }
 
     // Verifica che sia una data valida
@@ -72,7 +71,6 @@ if (
 
     // Formatta la data in un formato standardizzato per MySQL
     $formatted_date = date('Y-m-d H:i:s', $timestamp);
-    error_log("Data finale formattata per MySQL: " . $formatted_date);
 
     // Imposta le proprietà dell'oggetto
     $workout->id = $data->id;
