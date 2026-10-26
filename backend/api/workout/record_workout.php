@@ -44,14 +44,14 @@ try {
         api_json_response(['success' => false, 'message' => t_server('workout.record_too_many_sets')], 400);
     }
     // Testi liberi: stringhe, con i limiti delle colonne
-    if (optional_text_invalid($data->notes ?? null, NOTES_MAX_LENGTH)) {
+    if (!free_text_ok($data, 'notes')) {
         api_json_response(['success' => false, 'message' => t_server('workout.record_invalid')], 400);
     }
     foreach ($data->workout_records as $record) {
         if (!is_object($record)) {
             api_json_response(['success' => false, 'message' => t_server('workout.record_invalid')], 400);
         }
-        if (optional_text_invalid($record->intensity_technique ?? null, INTENSITY_TECHNIQUE_MAX_LENGTH)) {
+        if (!free_text_ok($record, 'intensity_technique')) {
             api_json_response(['success' => false, 'message' => t_server('workout.record_invalid')], 400);
         }
         if (!isset($record->exercise_id) || empty($record->exercise_id)) continue;

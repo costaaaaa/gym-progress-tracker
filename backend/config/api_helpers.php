@@ -294,14 +294,14 @@ function training_start_date_error($value)
     return null;
 }
 
-// Limiti dei testi liberi (colonne: notes text, intensity_technique varchar(100))
-const NOTES_MAX_LENGTH = 5000;
-const INTENSITY_TECHNIQUE_MAX_LENGTH = 100;
+// Limiti dei testi liberi, per campo (colonne: notes text, intensity_technique varchar(100))
+const FREE_TEXT_MAX_LENGTH = array('notes' => 5000, 'intensity_technique' => 100);
 
-// True se un testo facoltativo è presente ma non è una stringa o supera il limite.
-function optional_text_invalid($value, $max)
+// True se il testo facoltativo $field di $obj manca o è una stringa nel suo limite.
+function free_text_ok($obj, $field)
 {
-    return isset($value) && (!is_string($value) || mb_strlen($value) > $max);
+    $value = $obj->$field ?? null;
+    return !isset($value) || (is_string($value) && mb_strlen($value) <= FREE_TEXT_MAX_LENGTH[$field]);
 }
 
 // Valida serie, ripetizioni e recupero di un esercizio in scheda (limiti delle colonne
@@ -318,8 +318,7 @@ function exercise_params_error($data)
     $reps = isset($data->reps) ? $data->reps : null;
     $reps_ok = (is_string($reps) || is_int($reps)) && trim((string)$reps) !== '' && mb_strlen((string)$reps) <= 20;
     // Note e tecnica sono facoltative: se ci sono, stringhe nei limiti delle colonne
-    $text_ok = !optional_text_invalid($data->notes ?? null, NOTES_MAX_LENGTH)
-        && !optional_text_invalid($data->intensity_technique ?? null, INTENSITY_TECHNIQUE_MAX_LENGTH);
+    $text_ok = free_text_ok($data, 'notes') && free_text_ok($data, 'intensity_technique');
     if (
         !isset($data->sets) || !$int_in_range($data->sets, 1, 20) ||
         !isset($data->rest) || !$int_in_range($data->rest, 0, 3600) ||
