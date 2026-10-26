@@ -147,11 +147,14 @@ expect "secondo dispositivo di A collegato" 200 "$(call GET api/user/read.php "$
 expect "logout web via GET rifiutato" 405 "$(call GET api/user/logout.php web)"
 expect "e la sessione resta" 200 "$(call GET api/user/read.php web)"
 # CSRF oltre a SameSite: una scrittura con la sessione web da un'origine estranea è rifiutata (la lettura no)
-foreign_origin() { # METODO path → status
-    curl -s -o /dev/null -w '%{http_code}' -b "$JAR" -X "$1" -H 'Content-Type: application/json' \
-        -H 'Origin: https://origine-estranea.example' --data '{}' "$BASE$2"
+foreign_origin() { # METODO path → "status corpo"
+    curl -s -w '\n%{http_code}' -b "$JAR" -X "$1" -H 'Content-Type: application/json' \
+        -H 'Origin: https://origine-estranea.example' --data '{}' "$BASE$2" \
+        | { body="$(cat)"; printf '%s %s' "${body##*$'\n'}" "${body%$'\n'*}"; }
 }
-expect "scrittura con sessione da un'origine estranea rifiutata" 403 "$(foreign_origin POST api/workout/create_plan.php)"
+rejected="$(foreign_origin POST api/workout/create_plan.php)"
+expect "scrittura con sessione da un'origine estranea rifiutata" 403 "$rejected"
+check "il rifiuto è tradotto (common.forbidden)" "$rejected" '.message == "Non hai i permessi per questa azione."'
 expect "lettura con sessione da un'origine estranea ammessa (la CORS ne nega la risposta)" 200 "$(foreign_origin GET api/user/read.php)"
 expect "scrittura con sessione senza Origin ammessa" 400 "$(call POST api/workout/create_plan.php web '{}')"
 sleep 1  # password_changed_at e l'ora del login si confrontano al secondo

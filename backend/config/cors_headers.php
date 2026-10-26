@@ -12,9 +12,12 @@ date_default_timezone_set('Europe/Rome');
 // Avvia l'output buffering immediatamente
 ob_start();
 
+// t_server() per i messaggi d'errore qui sotto: gli endpoint includono api_helpers.php dopo questo file
+include_once __DIR__ . '/api_helpers.php';
+
 // Rete di sicurezza per ogni endpoint: un'eccezione non gestita (errore del database, tipo inatteso
 // nel JSON ricevuto) o un errore fatale diventa un 500 JSON generico invece di una risposta vuota.
-// Il dettaglio resta nel log. Qui api_helpers.php potrebbe non essere ancora caricato: niente api_log_exception().
+// Il dettaglio resta nel log.
 function unhandled_error_response($detail)
 {
     error_log($detail);
@@ -25,7 +28,7 @@ function unhandled_error_response($detail)
     header('Content-Type: application/json; charset=UTF-8');
     echo json_encode(array(
         'success' => false,
-        'message' => function_exists('t_server') ? t_server('common.server_error') : 'Internal server error.',
+        'message' => t_server('common.server_error'),
     ));
 }
 
@@ -115,7 +118,7 @@ if (
     && !in_array($http_origin, $allowed_origins, true)
 ) {
     http_response_code(403);
-    echo json_encode(array('success' => false, 'message' => function_exists('t_server') ? t_server('common.forbidden') : 'Forbidden'));
+    echo json_encode(array('success' => false, 'message' => t_server('common.forbidden')));
     exit;
 }
 
