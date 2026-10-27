@@ -49,7 +49,7 @@ import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import { validatePassword } from '../utils/passwordPolicy';
 import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
-import { NEUTRAL_OUTLINED } from '../utils/neutralButton';
+import { NEUTRAL_OUTLINED } from '../utils/buttonStyles';
 import { getConsents, setConsent } from '../utils/consent';
 import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
 
@@ -881,19 +881,20 @@ const Account = ({ isEmbedded = false }) => {
       </Card>
 
       {/* Zona Pericolosa */}
-      <Card sx={{ p: '24px' }}>
+      <Card sx={{ p: '24px', bgcolor: 'error.muted', border: '1px solid', borderColor: 'error.border' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
           <Box>
-            <Typography variant="cardTitle">{t('account.danger.title')}</Typography>
+            <Typography variant="cardTitle" sx={{ color: 'error.title' }}>{t('account.danger.title')}</Typography>
             <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
               {t('account.danger.help')}
             </Typography>
           </Box>
           <Button
-            variant="outlined"
+            variant="contained"
+            color="error"
             startIcon={<DeleteForeverIcon />}
             onClick={handleOpenDeleteDialog}
-            sx={NEUTRAL_OUTLINED}
+            sx={{ fontSize: 16 }}
           >
             {t('account.delete.title')}
           </Button>

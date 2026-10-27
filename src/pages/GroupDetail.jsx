@@ -17,7 +17,7 @@ import {
 import { track } from '../utils/analytics';
 import { Trans, useTranslation } from 'react-i18next';
 import { intlLocale } from '../i18n/format';
-import { NEUTRAL_TEXT } from '../utils/neutralButton';
+import { NEUTRAL_TEXT, DANGER_TEXT } from '../utils/buttonStyles';
 import { INK_TABS } from '../utils/inkTabs';
 
 const BOARDS = ['week', 'streak', 'level'];
@@ -246,7 +246,7 @@ const GroupDetailContent = () => {
               ))}
               {isOwner ? (
                 <Button
-                  sx={NEUTRAL_TEXT}
+                  sx={DANGER_TEXT}
                   onClick={() => setConfirm({
                     title: t('groups.detail.delete.title'),
                     text: t('groups.detail.delete.text'),

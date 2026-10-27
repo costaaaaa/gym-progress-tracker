@@ -1,5 +1,6 @@
 // Gruppi vista dall'utente (elenco, dettaglio con classifica, invito): il rosso del marchio resta all'azione
-// principale, il resto è inchiostro, grigio o verde. La fetch è il confine. Colori del tema chiaro scritti a mano:
+// principale e a quella che non si annulla («Elimina il gruppo», con il bottone di conferma pieno rosso), il resto è
+// inchiostro, grigio o verde. La fetch è il confine. Colori del tema chiaro scritti a mano:
 // text.primary #1a1816, text.secondary #6b6663, success #15803d, primary/error #d50000, action.selected rgba(0,0,0,.08).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
@@ -9,6 +10,7 @@ import GroupDetail from './GroupDetail';
 import JoinGroup from './JoinGroup';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { textBelow } from '../test/minText';
+import { json, colorOf } from '../test/dom';
 
 vi.mock('../context/AuthContext', () => {
   const auth = { user: { id: 1, username: 'mario88' }, isLoggedIn: true, loading: false };
@@ -36,7 +38,6 @@ const members = [
   { username: 'mario88', role: 'owner', is_me: true, ref: null },
 ];
 
-const json = (data) => ({ ok: true, status: 200, json: async () => data });
 const stub = ({ myRole = 'owner' } = {}) => vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
   url.includes('groups/list.php') ? json({ success: true, groups: [group({ my_role: myRole }), group({ id: 8, name: 'Amici del giovedì', type: 'friends', my_role: 'member' })] })
     : url.includes('groups/read.php') ? json({ success: true, group: group({ my_role: myRole }), week, members, board: rows, board_type: 'week' })
@@ -53,7 +54,6 @@ afterEach(() => {
   localStorage.clear();
 });
 
-const colorOf = (el) => getComputedStyle(el).color;
 // Esenti: chip e badge ("tu", tipo del gruppo) e le etichette dei campi, che MUI rimpicciolisce
 const small = () => textBelow(document.body, 16, '.MuiChip-root, .MuiFormLabel-root, .MuiFormHelperText-root, legend');
 
@@ -107,7 +107,7 @@ describe('dettaglio del gruppo', () => {
     expect(getComputedStyle(base.parentElement.querySelector('.MuiSwitch-track')).backgroundColor).toBe(GREEN);
   });
 
-  it.each(['Nuovo codice', 'Rinomina il gruppo', 'Elimina il gruppo', 'Segnala un contenuto', 'I tuoi gruppi'])(
+  it.each(['Nuovo codice', 'Rinomina il gruppo', 'Segnala un contenuto', 'I tuoi gruppi'])(
     '«%s» è un bottone di testo in inchiostro, il rosso non c\'è',
     async (name) => {
       await mount();
@@ -115,13 +115,21 @@ describe('dettaglio del gruppo', () => {
     },
   );
 
+  it('«Elimina il gruppo» è un bottone di testo rosso in grassetto, come nell\'app', async () => {
+    await mount();
+    const style = getComputedStyle(screen.getByRole('button', { name: 'Elimina il gruppo' }));
+    expect(style.color).toBe(RED);
+    expect(style.fontWeight).toBe('700');
+    expect(style.backgroundColor).not.toBe(RED);
+  });
+
   it('chi non è proprietario vede «Esci dal gruppo» in inchiostro', async () => {
     stub({ myRole: 'member' });
     await mount();
     expect(colorOf(screen.getByRole('button', { name: 'Esci dal gruppo' }))).toBe(INK);
   });
 
-  it('il rosso c\'è solo nel dialogo di conferma dell\'eliminazione', async () => {
+  it('il dialogo di conferma dell\'eliminazione ha il bottone pieno rosso', async () => {
     await mount();
     fireEvent.click(screen.getByRole('button', { name: 'Elimina il gruppo' }));
     await waitFor(() => expect(document.querySelector('.MuiDialog-root .MuiButton-containedError')).not.toBeNull());

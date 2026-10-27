@@ -1,9 +1,15 @@
 // Font dei chip, uguale all'app: Lexend 500 su quelli che si premono, i badge restano Inter.
-// Titolo di pagina: Lexend 800 a 28px, un <h1>.
-import { describe, it, expect } from 'vitest';
+// Titolo di pagina: Lexend 800 a 28px, un <h1>. Bottone pieno di errore: rosso del marchio #d50000 con testo bianco,
+// anche in scuro; disabilitato resta grigio (scuro: fondo bianco al 12%, testo bianco al 30%).
+import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { Chip, Typography } from '@mui/material';
+import { Button, Chip, Typography } from '@mui/material';
 import { ThemeModeProvider } from './ThemeModeContext';
+
+const RED = 'rgb(213, 0, 0)';
+const WHITE = 'rgb(255, 255, 255)';
+const DISABLED_BG_DARK = 'rgba(255, 255, 255, 0.12)';
+const DISABLED_TEXT_DARK = 'rgba(255, 255, 255, 0.3)';
 
 const font = (label) => {
   const { fontFamily, fontWeight } = getComputedStyle(screen.getByText(label).closest('.MuiChip-root'));
@@ -49,5 +55,29 @@ describe('tema: numero grande', () => {
       fontSize: '22px',
       fontVariantNumeric: 'tabular-nums',
     });
+  });
+});
+
+describe('tema: bottone pieno di errore', () => {
+  afterEach(() => localStorage.clear());
+  const style = (mode, disabled = false) => {
+    localStorage.setItem('themeMode', mode);
+    render(<ThemeModeProvider><Button variant="contained" color="error" disabled={disabled}>Elimina</Button></ThemeModeProvider>);
+    const { backgroundColor, color } = getComputedStyle(screen.getByRole('button', { name: 'Elimina' }));
+    return { backgroundColor, color };
+  };
+
+  it('in chiaro è il rosso del marchio con testo bianco', () => {
+    expect(style('light')).toEqual({ backgroundColor: RED, color: WHITE });
+  });
+
+  it('in scuro è lo stesso rosso del marchio con testo bianco, non il #ff5252 dei testi', () => {
+    expect(style('dark')).toEqual({ backgroundColor: RED, color: WHITE });
+  });
+
+  it('in scuro, disabilitato (conferma in corso) resta grigio e non diventa rosso del marchio', () => {
+    const { backgroundColor, color } = style('dark', true);
+    expect(backgroundColor).toBe(DISABLED_BG_DARK);
+    expect(color).toBe(DISABLED_TEXT_DARK);
   });
 });

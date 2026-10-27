@@ -12,7 +12,7 @@ import { createGroup, errorMessage, groupTypeLabel, listGroups, roleLabel } from
 import { track } from '../utils/analytics';
 import { useTranslation } from 'react-i18next';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
-import { NEUTRAL_OUTLINED } from '../utils/neutralButton';
+import { NEUTRAL_OUTLINED } from '../utils/buttonStyles';
 
 const CreateGroupDialog = ({ open, onClose, onCreated }) => {
   const { t } = useTranslation();

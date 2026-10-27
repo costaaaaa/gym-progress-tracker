@@ -4,7 +4,7 @@ import { Box, Button, Card, Link, Typography } from '@mui/material';
 import { errorMessage, leaveGroup, listGroups, roleLabel } from '../../api/groups';
 import { track } from '../../utils/analytics';
 import { useTranslation } from 'react-i18next';
-import { NEUTRAL_TEXT } from '../../utils/neutralButton';
+import { NEUTRAL_TEXT } from '../../utils/buttonStyles';
 
 // Impostazioni account: in quali gruppi sei, cosa vedono gli altri, uscita con un clic
 const GroupsVisibilityCard = () => {

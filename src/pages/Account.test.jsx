@@ -1,6 +1,8 @@
-// Account: l'obiettivo settimanale ha il font dei chip, come nell'app (lì è una riga di chip); il rosso resta
-// all'azione che cancella (dialogo di eliminazione), il resto è inchiostro. Colori del tema chiaro scritti a mano:
-// text.primary #1a1816, text.secondary #6b6663, divider #ececea, background.paper #fff, primary/error #d50000.
+// Account: l'obiettivo settimanale ha il font dei chip, come nell'app (lì è una riga di chip); la "Zona pericolosa" è
+// rosata con il bottone pieno rosso, il resto è inchiostro. Colori scritti a mano. Tema chiaro: text.primary #1a1816,
+// text.secondary #6b6663, background.paper #fff, primary/error #d50000, error.muted #fdecec, error.border #f5c6c6,
+// error.title #9b0000. Tema scuro (solo la zona pericolosa): error.main #ff5252 con alpha 0.1 (fondo) e 0.35 (bordo),
+// error.title #ff9e9e; bottoni pieni di errore #d50000 con testo bianco.
 // La fetch è il confine. Le impostazioni sono chiuse in un Collapse, che le tiene comunque montate.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
@@ -8,6 +10,7 @@ import { MemoryRouter } from 'react-router-dom';
 import Account from './Account';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { textBelow } from '../test/minText';
+import { json } from '../test/dom';
 
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
 // Lo stesso oggetto a ogni render: la pagina ricarica i dati quando `user` cambia identità.
@@ -20,14 +23,18 @@ const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
 const GREEN = 'rgb(21, 128, 61)';
 const RED = 'rgb(213, 0, 0)';
-const DIVIDER = 'rgb(236, 236, 234)';
+const DANGER_PINK = 'rgb(253, 236, 236)';
+const DANGER_BORDER = 'rgb(245, 198, 198)';
+const DANGER_TITLE = 'rgb(155, 0, 0)';
+const DANGER_PINK_DARK = 'rgba(255, 82, 82, 0.1)';
+const DANGER_BORDER_DARK = 'rgba(255, 82, 82, 0.35)';
+const DANGER_TITLE_DARK = 'rgb(255, 158, 158)';
 const WHITE = 'rgb(255, 255, 255)';
 
 const groups = [
   { id: 7, name: 'Palestra Rossi', my_role: 'owner' },
   { id: 8, name: 'Amici del giovedì', my_role: 'member' },
 ];
-const json = (data) => ({ ok: true, status: 200, json: async () => data });
 const stubFetch = ({ is_admin = false } = {}) => vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
   url.includes('groups/list.php') ? json({ success: true, groups })
     : url.includes('user/consent.php') ? json({ success: true, consents: { terms: { granted: true, version: 1 }, health_data: { granted: true, version: 1 } } })
@@ -116,23 +123,40 @@ describe('gruppi', () => {
 describe('zona pericolosa', () => {
   const card = () => screen.getByText('Zona pericolosa', { selector: 'p' }).closest('.MuiCard-root');
 
-  it('è una card normale: sfondo bianco, bordo divisore, titolo in inchiostro', async () => {
+  it('la card è rosata: sfondo e bordo rosa, titolo in rosso scuro', async () => {
     await mount();
     const style = getComputedStyle(card());
-    expect(style.backgroundColor).toBe(WHITE);
-    expect(style.borderColor).toBe(DIVIDER);
-    expect(getComputedStyle(screen.getByText('Zona pericolosa', { selector: 'p' })).color).toBe(INK);
+    expect(style.backgroundColor).toBe(DANGER_PINK);
+    expect(style.borderColor).toBe(DANGER_BORDER);
+    expect(getComputedStyle(screen.getByText('Zona pericolosa', { selector: 'p' })).color).toBe(DANGER_TITLE);
   });
 
-  it('«Elimina account» è outlined neutro, non pieno rosso', async () => {
+  it('«Elimina account» è pieno rosso con testo bianco', async () => {
     await mount();
     const del = within(card()).getByRole('button', { name: 'Elimina account' });
-    expect(del.classList.contains('MuiButton-outlined')).toBe(true);
-    expect(getComputedStyle(del).color).toBe(INK);
-    expect(getComputedStyle(del).backgroundColor).not.toBe(RED);
+    expect(del.classList.contains('MuiButton-containedError')).toBe(true);
+    expect(getComputedStyle(del).backgroundColor).toBe(RED);
+    expect(getComputedStyle(del).color).toBe(WHITE);
   });
 
-  it('il rosso c\'è solo nel dialogo di conferma: titolo e bottone di eliminazione', async () => {
+  it('in scuro: fondo e bordo sono un rosso trasparente sulla card, titolo rosa chiaro, bottone rosso del marchio con testo bianco', async () => {
+    localStorage.setItem('themeMode', 'dark');
+    await mount();
+    const style = getComputedStyle(card());
+    expect(style.backgroundColor).toBe(DANGER_PINK_DARK);
+    expect(style.borderColor).toBe(DANGER_BORDER_DARK);
+    expect(getComputedStyle(screen.getByText('Zona pericolosa', { selector: 'p' })).color).toBe(DANGER_TITLE_DARK);
+    const del = getComputedStyle(within(card()).getByRole('button', { name: 'Elimina account' }));
+    expect(del.backgroundColor).toBe(RED);
+    expect(del.color).toBe(WHITE);
+  });
+
+  it('i testi della card restano leggibili sul rosa (grigio del tema)', async () => {
+    await mount();
+    expect(getComputedStyle(screen.getByText(/Elimina definitivamente/)).color).toBe(GREY);
+  });
+
+  it('il dialogo di conferma resta rosso: titolo e bottone di eliminazione', async () => {
     await mount();
     fireEvent.click(within(card()).getByRole('button', { name: 'Elimina account' }));
     await screen.findByText(/consapevole/);

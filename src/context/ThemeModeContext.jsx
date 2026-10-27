@@ -1,10 +1,14 @@
 import { createContext, useState, useContext, useMemo, useEffect } from 'react';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeProvider, createTheme, alpha } from '@mui/material/styles';
 import { grey } from '@mui/material/colors';
 import { GlobalStyles } from '@mui/material';
 import { itIT, enUS } from '@mui/material/locale';
 import { useTranslation } from 'react-i18next';
 import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
+
+const BRAND = '#d50000';
+const BRAND_DARK = '#9b0000';
+const ERROR_ON_DARK = '#ff5252';
 
 const ThemeModeContext = createContext();
 
@@ -33,9 +37,9 @@ export const ThemeModeProvider = ({ children }) => {
         palette: {
           mode,
           primary: {
-            main: '#d50000',
+            main: BRAND,
             light: '#ff5131',
-            dark: '#9b0000',
+            dark: BRAND_DARK,
           },
           secondary: {
             main: mode === 'light' ? grey[900] : grey[300],
@@ -57,8 +61,14 @@ export const ThemeModeProvider = ({ children }) => {
           warning: {
             main: mode === 'light' ? '#d97706' : '#f59e0b',
           },
+          // muted/border/title: la card "Zona pericolosa" (rosa, bordo rosa, titolo rosso scuro come nell'app).
+          // In scuro: fondo e bordo sono il rosso di error.main trasparente, che sostituisce il fondo della card e
+          // quindi sta sullo sfondo pagina (#0a0a0b): il titolo ha 9.2 : 1, il testo secondario 6.9 : 1.
           error: {
-            main: mode === 'light' ? '#d50000' : '#ff5252',
+            main: mode === 'light' ? BRAND : ERROR_ON_DARK,
+            muted: mode === 'light' ? '#fdecec' : alpha(ERROR_ON_DARK, 0.1),
+            border: mode === 'light' ? '#f5c6c6' : alpha(ERROR_ON_DARK, 0.35),
+            title: mode === 'light' ? BRAND_DARK : '#ff9e9e',
           },
           info: {
             main: mode === 'light' ? '#4f46e5' : '#818cf8',
@@ -161,6 +171,16 @@ export const ThemeModeProvider = ({ children }) => {
                   boxShadow: 'none',
                 },
               },
+              // In scuro i bottoni pieni di errore sono rosso del marchio con testo bianco (5.5 : 1), come i primari:
+              // il bianco su error.main scuro (#ff5252) si ferma a 3.2 : 1.
+              ...(mode === 'dark' && {
+                containedError: {
+                  backgroundColor: BRAND,
+                  color: '#ffffff',
+                  // MUI rimette palette.main sul tocco (hover: none): senza il reset il bottone resterebbe scuro dopo il tap
+                  '&:hover': { backgroundColor: BRAND_DARK, '@media (hover: none)': { backgroundColor: BRAND } },
+                },
+              }),
             },
           },
           // Ogni Chip con onClick: due classi, quindi vince su fontFamily e fontWeight dati con sx
@@ -216,7 +236,7 @@ export const ThemeModeProvider = ({ children }) => {
               root: {
                 color: mode === 'light' ? grey[600] : grey[500],
                 '&.Mui-selected': {
-                  color: '#d50000',
+                  color: BRAND,
                 }
               }
             }
@@ -231,7 +251,7 @@ export const ThemeModeProvider = ({ children }) => {
       <GlobalStyles
         styles={{
           ':root': {
-            '--primary-main': '#d50000',
+            '--primary-main': BRAND,
             '--primary-light': '#ff5131',
           },
         }}
