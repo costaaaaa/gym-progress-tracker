@@ -5,6 +5,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Workouts from './Workouts';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
+import { json } from '../test/dom';
 
 vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ isLoggedIn: true, loading: false }) }));
 
@@ -14,7 +15,6 @@ const GREY = 'rgb(107, 102, 99)';
 const day = { id: 1, name: 'Push', exercises: [{ id: 11, exercise_name: 'Panca piana', sets: 3, reps: '8', rest: 90, muscle_group: 'petto' }] };
 const plan = { id: 5, name: 'Push Pull', description: 'Spinta e tirata', is_active: true, days: [day] };
 const otherPlan = { id: 6, name: 'Full body', description: 'Tre giorni a settimana', is_active: false, days: [day] };
-const json = (data) => ({ ok: true, status: 200, json: async () => data, text: async () => '' });
 
 // Le tab sono lazy: il primo import della Cronologia (con i suoi dialoghi) è lento, lo scaldiamo prima dei test
 beforeAll(() => import('./WorkoutHistory'), 30000);

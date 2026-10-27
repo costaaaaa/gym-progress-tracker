@@ -5,6 +5,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import WorkoutHistory from './WorkoutHistory';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
+import { json } from '../test/dom';
 
 vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ isLoggedIn: true, loading: false }) }));
 
@@ -20,7 +21,6 @@ const workout = {
   exercises: [exercise(1, 'Panca piana'), exercise(2, 'Croci'), exercise(3, 'Dip')],
 };
 const plan = { id: 5, name: 'Push Pull', is_active: true, days: [] };
-const json = (data) => ({ ok: true, status: 200, json: async () => data, text: async () => '' });
 
 const originalMatchMedia = window.matchMedia;
 // Telefono: le media query "max-width" (breakpoint sotto sm) combaciano, le altre no

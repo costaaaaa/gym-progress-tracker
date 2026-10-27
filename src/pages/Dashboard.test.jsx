@@ -5,12 +5,12 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Dashboard from './Dashboard';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
+import { json } from '../test/dom';
 
 vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ isLoggedIn: true, loading: false }) }));
 
 const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
-const json = (data) => ({ ok: true, status: 200, json: async () => data, text: async () => '' });
 
 // Le tab sono lazy: il primo import di Progressi (con grafici e dialoghi) è lento, lo scaldiamo prima dei test
 beforeAll(() => import('./Progress'), 30000);

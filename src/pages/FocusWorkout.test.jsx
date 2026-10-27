@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import FocusWorkout from './FocusWorkout';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
+import { json } from '../test/dom';
 
 const { mockNavigate, mockTrack } = vi.hoisted(() => ({ mockNavigate: vi.fn(), mockTrack: vi.fn() }));
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => mockNavigate }));
@@ -20,7 +21,6 @@ const fly = { id: 10, exercise_id: 4, exercise_name: 'Croci', sets: 2, reps: '12
 const pushDay = { id: 1, name: 'Push', exercises: [bench] };
 const fullDay = { id: 2, name: 'Push completo', exercises: [bench, fly] };
 
-const json = (data, status = 200) => ({ ok: status < 400, status, json: async () => data, text: async () => '' });
 let responses;
 const fetchMock = vi.fn((url) => {
   const key = Object.keys(responses).find((k) => url.includes(k));

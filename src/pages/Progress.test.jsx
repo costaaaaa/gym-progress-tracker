@@ -7,6 +7,7 @@ import Progress from './Progress';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { textBelow } from '../test/minText';
 import { mediaStyle } from '../test/mediaStyle';
+import { json } from '../test/dom';
 
 const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
@@ -14,7 +15,6 @@ const GREEN = 'rgb(21, 128, 61)';
 const AMBER = 'rgb(180, 83, 9)';
 const DISABLED = 'rgba(0, 0, 0, 0.38)';
 
-const json = (data) => ({ ok: true, status: 200, json: async () => data, text: async () => '' });
 const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 19).replace('T', ' ');
 const session = (id, date, exerciseId, name, weight, reps = 5) => ({
   id, date, exercises: [{ exercise_id: exerciseId, name, sets: [{ weight, reps }] }],
