@@ -120,6 +120,22 @@ describe('gruppi', () => {
   });
 });
 
+describe('informativa e termini', () => {
+  it.each([['light', INK], ['dark', WHITE]])('in %s i due link hanno il colore del testo, sottolineati', async (mode, ink) => {
+    localStorage.setItem('themeMode', mode);
+    await mount();
+    for (const [name, href] of [['Informativa privacy', '/privacy.html'], ['Termini d\'uso', '/termini.html']]) {
+      const link = screen.getByRole('link', { name });
+      expect(link.getAttribute('href')).toBe(href);
+      expect(link.getAttribute('target')).toBe('_blank');
+      expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+      const style = getComputedStyle(link);
+      expect(style.color).toBe(ink);
+      expect(style.textDecoration).toContain('underline');
+    }
+  });
+});
+
 describe('zona pericolosa', () => {
   const card = () => screen.getByText('Zona pericolosa', { selector: 'p' }).closest('.MuiCard-root');
 

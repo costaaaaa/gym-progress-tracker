@@ -24,6 +24,7 @@ import {
   MenuItem,
   Grid,
   Collapse,
+  Link,
   ToggleButton,
   ToggleButtonGroup,
 } from '@mui/material';
@@ -847,9 +848,9 @@ const Account = ({ isEmbedded = false }) => {
           />
         </Box>
         <Typography sx={{ fontSize: 16, mt: 1.5 }}>
-          <a href="/privacy.html" target="_blank" rel="noopener noreferrer">{t('account.privacy')}</a>
+          <Link href="/privacy.html" target="_blank" rel="noopener noreferrer">{t('account.privacy')}</Link>
           {' · '}
-          <a href="/termini.html" target="_blank" rel="noopener noreferrer">{t('account.terms')}</a>
+          <Link href="/termini.html" target="_blank" rel="noopener noreferrer">{t('account.terms')}</Link>
         </Typography>
       </Card>
 
