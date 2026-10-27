@@ -857,8 +857,8 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                 {day.exercises && day.exercises.length > 0 ? (
                                   groupExercisesByMuscleGroup(day.exercises).map((group, groupIdx) => (
                                     <Box key={groupIdx} sx={{ mb: 2, mt: groupIdx > 0 ? 2 : 0, '&:last-of-type': { mb: 0 } }}>
-                                      <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center' }}>
-                                        <FitnessCenterIcon fontSize="small" sx={{ mr: 1 }} /> {muscleLabel(group.name)}
+                                      <Typography variant="subtitle2" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', color: 'text.primary' }}>
+                                        <FitnessCenterIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} /> {muscleLabel(group.name)}
                                       </Typography>
                                       <Divider sx={{ mt: 1, mb: 1.5 }} />
                                       {group.exercises.map((exercise) => {
@@ -907,16 +907,17 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                                 </ButtonGroup>
                                                 <IconButton
                                                   size="small"
-                                                  color="primary"
+                                                  aria-label={t('plans.edit_exercise.aria')}
                                                   onClick={() => handleOpenEditExerciseDialog(day.id, exercise)}
-                                                  sx={{ mr: 1 }}
+                                                  sx={{ mr: 1, color: 'text.secondary' }}
                                                 >
                                                   <EditIcon fontSize="small" />
                                                 </IconButton>
                                                 <IconButton
                                                   size="small"
-                                                  color="error"
+                                                  aria-label={t('plans.delete_exercise.aria')}
                                                   onClick={() => handleOpenDeleteExerciseDialog(day.id, exercise)}
+                                                  sx={{ color: 'text.secondary' }}
                                                 >
                                                   <DeleteIcon fontSize="small" />
                                                 </IconButton>
