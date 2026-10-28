@@ -124,7 +124,7 @@ Under `backend/tools/` (CLI only, they answer 404 over HTTP): `admin.php list|gr
 
 ### Tests
 
-`tests/*.sh` are integration checks (access rules for personal exercises and groups, and the Apple Health / Health Connect sync rules) run against a live instance, for example `tests/groups_access.sh http://localhost/gym-progress-tracker/backend/`. They register throwaway accounts and delete them at the end: run them on a local or test instance, **never on a production one**. The ones with a `tests/*_test.php` next to them (`admin_notify`, `client_ip`, `gamification_rules`) are different: they run that file with the PHP of the web image, in Docker, and need no live instance or database.
+`tests/*.sh` are integration checks (access rules for personal exercises and groups, and the Apple Health / Health Connect sync rules) run against a live instance, for example `tests/groups_access.sh http://localhost/gym-progress-tracker/backend/`. They register throwaway accounts and delete them at the end: run them on a local or test instance, **never on a production one**. The ones with a `tests/*_test.php` next to them (`admin_notify`, `client_ip`, `client_time`, `gamification_rules`) are different: they run that file with the PHP of the web image, in Docker, and need no live instance or database.
 
 ### Blog (optional)
 
@@ -285,7 +285,7 @@ In `backend/tools/` (solo CLI, via HTTP rispondono 404): `admin.php list|grant|r
 
 ### Test
 
-`tests/*.sh` sono controlli di integrazione (regole di accesso a esercizi personali e gruppi, regole della sincronizzazione con Apple Salute / Health Connect) da lanciare contro un'istanza attiva, per esempio `tests/groups_access.sh http://localhost/gym-progress-tracker/backend/`. Registrano account usa e getta e li cancellano alla fine: vanno usati su un'istanza locale o di prova, **mai in produzione**. Fanno eccezione quelli con accanto un `tests/*_test.php` (`admin_notify`, `client_ip`, `gamification_rules`): eseguono quel file con il PHP dell'immagine web, in Docker, e non richiedono un'istanza attiva né un database.
+`tests/*.sh` sono controlli di integrazione (regole di accesso a esercizi personali e gruppi, regole della sincronizzazione con Apple Salute / Health Connect) da lanciare contro un'istanza attiva, per esempio `tests/groups_access.sh http://localhost/gym-progress-tracker/backend/`. Registrano account usa e getta e li cancellano alla fine: vanno usati su un'istanza locale o di prova, **mai in produzione**. Fanno eccezione quelli con accanto un `tests/*_test.php` (`admin_notify`, `client_ip`, `client_time`, `gamification_rules`): eseguono quel file con il PHP dell'immagine web, in Docker, e non richiedono un'istanza attiva né un database.
 
 ### Blog (facoltativo)
 

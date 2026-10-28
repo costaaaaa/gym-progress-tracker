@@ -143,7 +143,7 @@ try {
 
     if (!empty($data->start_time)) {
         try {
-            $start = new DateTime($data->start_time);
+            $start = client_datetime($data->start_time);
             $gap_seconds = $now->getTimestamp() - $start->getTimestamp();
             if ($gap_seconds >= 0 && $gap_seconds <= 4 * 3600) {
                 $data_workout = $start->format('Y-m-d H:i:s');
@@ -176,7 +176,7 @@ try {
 
         if (!empty($data->ended_at)) {
             try {
-                $ended_gap = (new DateTime($data->ended_at))->getTimestamp() - $start->getTimestamp();
+                $ended_gap = client_datetime($data->ended_at)->getTimestamp() - $start->getTimestamp();
                 if ($ended_gap > 0 && $ended_gap <= 12 * 3600) $duration_seconds = $ended_gap;
             } catch (Exception $e) {
                 // ended_at non valido: durata NULL

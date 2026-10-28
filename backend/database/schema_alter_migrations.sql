@@ -524,3 +524,28 @@ UPDATE `gym_workout_sets`
 
 ALTER TABLE `gym_workout_history`
   ADD COLUMN `health_written_at` DATETIME NULL DEFAULT NULL AFTER `idempotency_key`;
+
+-- ------------------------------------------------------------------------------
+-- 28. Orario degli allenamenti salvato in UTC. record_workout.php formattava start_time
+--     (UTC, "...Z") senza portarlo nel fuso del server (Europe/Rome): un allenamento
+--     iniziato alle 17:00 finiva nel DB come 16:00. Ora il codice converte; qui si portano
+--     in ora italiana le righe con duration_seconds valorizzato (+2 ore se il valore UTC
+--     cade nell'ora legale, +1 altrimenti; finestre scritte a mano perché le tabelle dei
+--     fusi di MySQL possono non essere caricate). Da eseguire una volta sola.
+--     Non corregge: i salvataggi senza duration_seconds (da giugno a inizio ottobre 2026),
+--     le sessioni recuperate senza ended_at valido e le durate sotto i 60 s restano in UTC.
+--     Può spostare per errore le righe con duration_seconds già in ora del server: data
+--     cambiata con update_date.php, sessione recuperata con start_time nel futuro salvata
+--     con l'ora attuale. Non toccano gym_user_gamification.last_xp_session_at (il cooldown
+--     degli XP è sfalsato una volta sola) né gym_streak_weeks.
+-- ------------------------------------------------------------------------------
+
+UPDATE `gym_workout_history`
+  SET `date` = `date` + INTERVAL (
+    CASE
+      WHEN `date` >= '2025-03-30 01:00:00' AND `date` < '2025-10-26 01:00:00' THEN 2
+      WHEN `date` >= '2026-03-29 01:00:00' AND `date` < '2026-10-25 01:00:00' THEN 2
+      ELSE 1
+    END
+  ) HOUR
+  WHERE `duration_seconds` IS NOT NULL;
