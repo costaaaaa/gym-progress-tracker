@@ -216,6 +216,14 @@ function api_log_exception($context, $exception)
     error_log($context . ': ' . $exception->getMessage());
 }
 
+// Orario mandato dal client (di solito UTC, "...Z"): stesso istante, ma nel fuso del server, che è quello
+// con cui il database memorizza le date. Senza fuso nella stringa vale già il fuso del server.
+function client_datetime($value)
+{
+    $dt = new DateTime($value);
+    return $dt->setTimezone(new DateTimeZone(date_default_timezone_get()));
+}
+
 function workout_plan_belongs_to_user($db, $plan_id, $user_id)
 {
     $query = "SELECT id FROM gym_workout_plans WHERE id = ? AND user_id = ? LIMIT 1";
