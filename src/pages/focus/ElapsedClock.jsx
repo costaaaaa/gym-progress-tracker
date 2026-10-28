@@ -10,14 +10,12 @@ const formatTime = (seconds) => {
 // secondo si ridisegna solo questo testo e non tutta la pagina. Il tick cade sul confine di
 // secondo rispetto a startTime e si ricalcola a ogni giro: un timer in ritardo non si accumula.
 // startTime è l'inizio del conteggio, cioè l'inizio dell'allenamento spostato delle pause.
-// Con endTime il cronometro è fermo (allenamento già finito).
-export default function ElapsedClock({ startTime, endTime = null }) {
+export default function ElapsedClock({ startTime }) {
   const [now, setNow] = useState(() => Date.now());
   const start = startTime ? startTime.getTime() : null;
-  const end = endTime ? endTime.getTime() : null;
 
   useEffect(() => {
-    if (!start || end) return undefined;
+    if (!start) return undefined;
     let id = null;
     const tick = () => {
       const t = Date.now();
@@ -26,7 +24,7 @@ export default function ElapsedClock({ startTime, endTime = null }) {
     };
     tick();
     return () => clearTimeout(id);
-  }, [start, end]);
+  }, [start]);
 
-  return formatTime(start ? Math.floor(((end || now) - start) / 1000) : 0);
+  return formatTime(start ? Math.floor((now - start) / 1000) : 0);
 }
