@@ -1,6 +1,7 @@
 // Eliminazione con «Annulla»: l'elemento sparisce subito dalla lista, la richiesta al server parte solo allo scadere.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import process from 'node:process';
 import useUndoableDelete, { UNDO_DELAY_MS } from './useUndoableDelete';
 
 beforeEach(() => { vi.useFakeTimers(); });
@@ -82,5 +83,28 @@ describe('useUndoableDelete', () => {
     act(() => { result.current.schedule(7); });
     unmount();
     expect(commit).toHaveBeenCalledWith(7);
+  });
+
+  it('se la pagina si smonta e la richiesta poi fallisce, non c\'è nessuna segnalazione né eccezione', async () => {
+    const onUnhandled = vi.fn();
+    process.on('unhandledRejection', onUnhandled);
+    const { unmount, result, onError } = setup(vi.fn().mockRejectedValue(new Error('no')));
+    act(() => { result.current.schedule(7); });
+    unmount();
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    process.off('unhandledRejection', onUnhandled);
+    expect(onError).not.toHaveBeenCalled();
+    expect(onUnhandled).not.toHaveBeenCalled();
+  });
+
+  it('usa il commit più recente, anche se cambia fra l\'eliminazione e la scadenza', async () => {
+    const vecchio = vi.fn().mockResolvedValue(undefined);
+    const nuovo = vi.fn().mockResolvedValue(undefined);
+    const hook = renderHook(({ commit }) => useUndoableDelete({ commit }), { initialProps: { commit: vecchio } });
+    act(() => { hook.result.current.schedule(7); });
+    hook.rerender({ commit: nuovo });
+    await act(async () => { vi.advanceTimersByTime(UNDO_DELAY_MS); });
+    expect(vecchio).not.toHaveBeenCalled();
+    expect(nuovo).toHaveBeenCalledWith(7);
   });
 });

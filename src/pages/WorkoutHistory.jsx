@@ -561,7 +561,8 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
         message={t('history.delete.removed')}
         action={<Button color="inherit" size="small" onClick={undoDelete}>{t('history.delete.undo')}</Button>}
       />
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+      {/* Con l'«Annulla» in attesa gli altri messaggi stanno sopra, senza coprirlo */}
+      <Snackbar open={snackbar.open} autoHideDuration={6000} sx={pendingId !== null ? { bottom: 88 } : undefined} onClose={() => setSnackbar({ ...snackbar, open: false })}>
         <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity}>{snackbar.message}</Alert>
       </Snackbar>
     </>

@@ -2,7 +2,7 @@
 // Elimina) sono grigie come le frecce; il rosso sta solo nel bottone di conferma dei dialoghi. La fetch è il confine.
 // Colori del tema chiaro scritti a mano: text.primary #1a1816, text.secondary #6b6663, error #d50000.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, within, fireEvent } from '@testing-library/react';
+import { render, screen, within, fireEvent, waitForElementToBeRemoved, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import WorkoutPlans from './WorkoutPlans';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
@@ -70,17 +70,22 @@ describe('dialogo di eliminazione di un esercizio', () => {
 
 describe('dialogo di eliminazione di una scheda', () => {
   const STORICO = 'Gli allenamenti già fatti restano nello storico.';
-  const OBIETTIVO = 'L\'obiettivo della settimana tornerà a quello predefinito (3 allenamenti).';
+  const obiettivo = (n) => `L'obiettivo della settimana tornerà a quello predefinito (${n} allenamenti).`;
   const inactive = { ...plan, is_active: 0 };
+  const other = { ...inactive, id: 2, name: 'Forza B' };
 
-  const apriEliminaScheda = async (records, user) => {
-    vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
-      url.includes('user/read.php') ? json(user) : json({ records }),
-    )));
-    render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
-    const dialogoAperto = (await screen.findByText('Forza A', { selector: 'h6, h5, h4, p, span' })).closest('[class*="MuiCard"], [class*="MuiPaper"]');
-    fireEvent.click(within(dialogoAperto).getByTestId('DeleteIcon').closest('button'));
+  const stubFetch = (records, user) => vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
+    url.includes('user/read.php') ? user() : json({ records }),
+  )));
+  const clickDeleteOf = async (name) => {
+    const card = (await screen.findByText(name, { selector: 'h6, h5, h4, p, span' })).closest('[class*="MuiCard"], [class*="MuiPaper"]');
+    fireEvent.click(within(card).getByTestId('DeleteIcon').closest('button'));
     return screen.findByRole('dialog');
+  };
+  const apriEliminaScheda = async (records, user) => {
+    stubFetch(records, () => json(user));
+    render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
+    return clickDeleteOf('Forza A');
   };
 
   it('dice sempre che lo storico resta', async () => {
@@ -88,27 +93,40 @@ describe('dialogo di eliminazione di una scheda', () => {
     expect(within(dialog).getByText(STORICO)).toBeTruthy();
   });
 
-  it('con la scheda attiva e nessun obiettivo scelto avvisa che l\'obiettivo torna a quello predefinito', async () => {
-    const dialog = await apriEliminaScheda([plan], { weekly_goal: null, weekly_goal_default: 1 });
-    expect(await within(dialog).findByText(OBIETTIVO)).toBeTruthy();
+  it('con la scheda attiva e nessun obiettivo scelto avvisa che l\'obiettivo torna a quello senza scheda, col numero del server', async () => {
+    const dialog = await apriEliminaScheda([plan], { weekly_goal: null, weekly_goal_default: 1, weekly_goal_without_plan: 4 });
+    expect(await within(dialog).findByText(obiettivo(4))).toBeTruthy();
   });
 
   it('se l\'utente ha scelto un obiettivo non ne parla', async () => {
-    const dialog = await apriEliminaScheda([plan], { weekly_goal: 2, weekly_goal_default: 1 });
+    const dialog = await apriEliminaScheda([plan], { weekly_goal: 2, weekly_goal_default: 1, weekly_goal_without_plan: 3 });
     await within(dialog).findByText(STORICO);
-    expect(within(dialog).queryByText(OBIETTIVO)).toBeNull();
+    expect(within(dialog).queryByText(obiettivo(3))).toBeNull();
   });
 
-  it('se l\'obiettivo predefinito è già quello senza scheda (3) non c\'è nulla da avvisare', async () => {
-    const dialog = await apriEliminaScheda([plan], { weekly_goal: null, weekly_goal_default: 3 });
+  it('se l\'obiettivo predefinito è già quello senza scheda non c\'è nulla da avvisare', async () => {
+    const dialog = await apriEliminaScheda([plan], { weekly_goal: null, weekly_goal_default: 5, weekly_goal_without_plan: 5 });
     await within(dialog).findByText(STORICO);
-    expect(within(dialog).queryByText(OBIETTIVO)).toBeNull();
+    expect(within(dialog).queryByText(obiettivo(5))).toBeNull();
   });
 
   it('con una scheda non attiva non ne parla e non chiede l\'obiettivo al server', async () => {
-    const dialog = await apriEliminaScheda([inactive], { weekly_goal: null, weekly_goal_default: 1 });
+    const dialog = await apriEliminaScheda([inactive], { weekly_goal: null, weekly_goal_default: 1, weekly_goal_without_plan: 3 });
     await within(dialog).findByText(STORICO);
-    expect(within(dialog).queryByText(OBIETTIVO)).toBeNull();
+    expect(within(dialog).queryByText(obiettivo(3))).toBeNull();
     expect(fetch.mock.calls.some(([url]) => url.includes('user/read.php'))).toBe(false);
+  });
+
+  it('la risposta tardiva per una scheda attiva non finisce nel dialogo di un\'altra scheda', async () => {
+    let rispondi;
+    stubFetch([plan, other], () => new Promise((resolve) => { rispondi = () => resolve(json({ weekly_goal: null, weekly_goal_default: 1, weekly_goal_without_plan: 3 })); }));
+    render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
+    const primo = await clickDeleteOf('Forza A');
+    fireEvent.click(within(primo).getByRole('button', { name: 'Annulla' }));
+    await waitForElementToBeRemoved(() => screen.queryByRole('dialog'));
+    const secondo = await clickDeleteOf('Forza B');
+    await act(async () => { rispondi(); });
+    await within(secondo).findByText(STORICO);
+    expect(within(secondo).queryByText(obiettivo(3))).toBeNull();
   });
 });

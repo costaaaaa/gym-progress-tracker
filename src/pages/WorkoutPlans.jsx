@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Typography, 
   Grid, 
@@ -39,9 +39,6 @@ import { useTranslation } from 'react-i18next';
 import { muscleLabel, techniqueLabel } from '../i18n/labels';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
-// Obiettivo settimanale senza scheda attiva (stesso valore di WEEKLY_GOAL_DEFAULT nel backend)
-const WEEKLY_GOAL_DEFAULT = 3;
-
 const WorkoutPlans = ({ isEmbedded = false }) => {
   const { t } = useTranslation();
   const [workoutPlans, setWorkoutPlans] = useState([]);
@@ -56,7 +53,8 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
   const [openDeletePlanDialog, setOpenDeletePlanDialog] = useState(false);
   const [planToDelete, setPlanToDelete] = useState(null);
   const [deletePlanLoading, setDeletePlanLoading] = useState(false);
-  const [goalResetsOnDelete, setGoalResetsOnDelete] = useState(false); // l'obiettivo settimanale cambierebbe eliminando la scheda attiva
+  const [goalAfterDelete, setGoalAfterDelete] = useState(null); // obiettivo a cui tornerebbe la settimana eliminando la scheda attiva, null = non cambia
+  const goalRequest = useRef(0); // distingue la richiesta dell'obiettivo del dialog aperto da quelle di dialog già chiusi
   
   // Stati per il dialog di conferma eliminazione esercizio
   const [openDeleteExerciseDialog, setOpenDeleteExerciseDialog] = useState(false);
@@ -342,20 +340,23 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
   // Gestione apertura dialog conferma eliminazione scheda
   const handleOpenDeletePlanDialog = (plan) => {
     setPlanToDelete(plan);
-    setGoalResetsOnDelete(false);
+    setGoalAfterDelete(null);
+    const request = ++goalRequest.current;
     setOpenDeletePlanDialog(true);
     if (!plan.is_active) return;
-    // Senza scheda attiva, e senza un obiettivo scelto dall'utente, l'obiettivo della settimana torna a WEEKLY_GOAL_DEFAULT
+    // Senza scheda attiva, e senza un obiettivo scelto dall'utente, l'obiettivo della settimana torna a quello senza scheda
     fetch(`${API_BASE_URL}api/user/read.php`, { credentials: 'include' })
       .then(response => (response.ok ? response.json() : null))
       .then(user => {
-        if (user && user.weekly_goal == null && user.weekly_goal_default !== WEEKLY_GOAL_DEFAULT) setGoalResetsOnDelete(true);
+        if (request !== goalRequest.current) return;
+        if (user && user.weekly_goal == null && user.weekly_goal_default !== user.weekly_goal_without_plan) setGoalAfterDelete(user.weekly_goal_without_plan);
       })
       .catch(() => {});
   };
   
   // Chiusura dialog eliminazione scheda
   const handleCloseDeletePlanDialog = () => {
+    goalRequest.current += 1;
     setOpenDeletePlanDialog(false);
     setTimeout(() => setPlanToDelete(null), 200); // Piccolo ritardo per evitare flickering
   };
@@ -1099,11 +1100,11 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       >
         <DialogTitle id="alert-dialog-title">{t('plans.delete_plan.title')}</DialogTitle>
         <DialogContent>
-          <DialogContentText id="alert-dialog-description">
+          <DialogContentText id="alert-dialog-description" component="div">
             {t('plans.delete_plan.text')}
             <Box sx={{ mt: 1.5 }}>{t('plans.delete_plan.history_kept')}</Box>
-            {goalResetsOnDelete && (
-              <Box sx={{ mt: 1.5 }}>{t('plans.delete_plan.goal_reset', { n: WEEKLY_GOAL_DEFAULT })}</Box>
+            {goalAfterDelete !== null && (
+              <Box sx={{ mt: 1.5 }}>{t('plans.delete_plan.goal_reset', { n: goalAfterDelete })}</Box>
             )}
             {planToDelete && (
               <Box sx={{ mt: 2, fontWeight: 'bold' }}>
