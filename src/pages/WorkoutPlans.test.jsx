@@ -67,3 +67,48 @@ describe('dialogo di eliminazione di un esercizio', () => {
     expect(getComputedStyle(confirm).backgroundColor).toBe(RED);
   });
 });
+
+describe('dialogo di eliminazione di una scheda', () => {
+  const STORICO = 'Gli allenamenti già fatti restano nello storico.';
+  const OBIETTIVO = 'L\'obiettivo della settimana tornerà a quello predefinito (3 allenamenti).';
+  const inactive = { ...plan, is_active: 0 };
+
+  const apriEliminaScheda = async (records, user) => {
+    vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
+      url.includes('user/read.php') ? json(user) : json({ records }),
+    )));
+    render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
+    const dialogoAperto = (await screen.findByText('Forza A', { selector: 'h6, h5, h4, p, span' })).closest('[class*="MuiCard"], [class*="MuiPaper"]');
+    fireEvent.click(within(dialogoAperto).getByTestId('DeleteIcon').closest('button'));
+    return screen.findByRole('dialog');
+  };
+
+  it('dice sempre che lo storico resta', async () => {
+    const dialog = await apriEliminaScheda([inactive], {});
+    expect(within(dialog).getByText(STORICO)).toBeTruthy();
+  });
+
+  it('con la scheda attiva e nessun obiettivo scelto avvisa che l\'obiettivo torna a quello predefinito', async () => {
+    const dialog = await apriEliminaScheda([plan], { weekly_goal: null, weekly_goal_default: 1 });
+    expect(await within(dialog).findByText(OBIETTIVO)).toBeTruthy();
+  });
+
+  it('se l\'utente ha scelto un obiettivo non ne parla', async () => {
+    const dialog = await apriEliminaScheda([plan], { weekly_goal: 2, weekly_goal_default: 1 });
+    await within(dialog).findByText(STORICO);
+    expect(within(dialog).queryByText(OBIETTIVO)).toBeNull();
+  });
+
+  it('se l\'obiettivo predefinito è già quello senza scheda (3) non c\'è nulla da avvisare', async () => {
+    const dialog = await apriEliminaScheda([plan], { weekly_goal: null, weekly_goal_default: 3 });
+    await within(dialog).findByText(STORICO);
+    expect(within(dialog).queryByText(OBIETTIVO)).toBeNull();
+  });
+
+  it('con una scheda non attiva non ne parla e non chiede l\'obiettivo al server', async () => {
+    const dialog = await apriEliminaScheda([inactive], { weekly_goal: null, weekly_goal_default: 1 });
+    await within(dialog).findByText(STORICO);
+    expect(within(dialog).queryByText(OBIETTIVO)).toBeNull();
+    expect(fetch.mock.calls.some(([url]) => url.includes('user/read.php'))).toBe(false);
+  });
+});

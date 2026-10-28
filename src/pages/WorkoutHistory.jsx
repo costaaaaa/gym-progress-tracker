@@ -41,6 +41,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import RecordWorkoutDialog from '../components/RecordWorkoutDialog';
 import EditWorkoutDateDialog from '../components/EditWorkoutDateDialog';
 import ShareCardDialog from '../components/ShareCardDialog';
+import useUndoableDelete from '../hooks/useUndoableDelete';
 import { buildShareStats, historyRecords, muscleGroupsTitle } from '../utils/shareCard';
 import { track } from '../utils/analytics';
 import { useAuth } from '../context/AuthContext';
@@ -107,7 +108,6 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
   const [openRecordDialog, setOpenRecordDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
   const [deletePreview, setDeletePreview] = useState(null); // cosa si perde cancellando, dall'anteprima del server
   const [openEditDateDialog, setOpenEditDateDialog] = useState(false);
   const [workoutToEdit, setWorkoutToEdit] = useState(null);
@@ -241,30 +241,27 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
     return () => { cancelled = true; };
   }, [workoutToDelete]);
   
-  const handleConfirmDelete = async () => {
-    if (!workoutToDelete) return;
-    setDeleteLoading(true);
-    try {
+  // La riga sparisce subito; la richiesta al server parte solo allo scadere dell'«Annulla» (vedi useUndoableDelete)
+  const { hiddenIds, pendingId, schedule: scheduleDelete, undo: undoDelete } = useUndoableDelete({
+    commit: async (id) => {
       const response = await fetch(`${API_BASE_URL}api/workout_history/delete.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: workoutToDelete.id }),
+        body: JSON.stringify({ id }),
         credentials: 'include'
       });
       if (!response.ok) {
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
         throw new Error(data.message || t('history.delete.error'));
       }
-      setWorkouts(prev => prev.filter(w => w.id !== workoutToDelete.id));
-      setSnackbar({ open: true, message: t('history.delete.done'), severity: 'success' });
-    } catch (error) {
-      setSnackbar({ open: true, message: error.message, severity: 'error' });
-    } finally {
-      setDeleteLoading(false);
-      setOpenDeleteDialog(false);
-      setWorkoutToDelete(null);
-      setDeletePreview(null);
-    }
+    },
+    onError: (error) => setSnackbar({ open: true, message: error.message, severity: 'error' }),
+  });
+
+  const handleConfirmDelete = () => {
+    if (!workoutToDelete) return;
+    scheduleDelete(workoutToDelete.id);
+    handleCloseDeleteDialog();
   };
 
   const handleShareClick = (workout) => {
@@ -273,7 +270,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
       date: workout.date,
       durationSec: workout.duration_seconds,
       title: muscleGroupsTitle(workout.exercises, muscleLabel),
-      records: historyRecords(workouts, workout),
+      records: historyRecords(visibleWorkouts, workout),
     }));
     track('workout_card', { action: 'open', from: 'history' });
   };
@@ -322,7 +319,8 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
     setExpandedMonths(prev => ({ ...prev, [monthYear]: !prev[monthYear] }));
   };
 
-  const groupedWorkouts = useMemo(() => groupWorkoutsByMonth(workouts), [workouts]);
+  const visibleWorkouts = useMemo(() => workouts.filter(w => !hiddenIds.includes(w.id)), [workouts, hiddenIds]);
+  const groupedWorkouts = useMemo(() => groupWorkoutsByMonth(visibleWorkouts), [visibleWorkouts]);
 
   // Dettaglio esercizi inline di un allenamento (ex contenuto di WorkoutDetailDialog)
   const renderWorkoutExerciseDetails = (workout) => {
@@ -422,7 +420,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
         </Paper>
       ) : loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}><CircularProgress /></Box>
-      ) : workouts.length === 0 ? (
+      ) : visibleWorkouts.length === 0 ? (
         <Paper elevation={2} sx={{ p: 4 }}>
           <Typography variant="h6">{t('history.empty')}</Typography>
           {activePlan && (
@@ -530,10 +528,13 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
               {t('history.delete.lose_achievement', { label: achievementCatalog.find(a => a.key === key)?.label ?? key })}
             </Typography>
           ))}
+          {workoutToDelete?.health_written && (
+            <Typography variant="body2" sx={{ mt: 1.5 }}>{t('history.delete.health_note')}</Typography>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDeleteDialog}>{t('common.cancel')}</Button>
-          <Button onClick={handleConfirmDelete} color="error" variant="contained" disabled={deleteLoading}>{t('history.delete.confirm')}</Button>
+          <Button onClick={handleConfirmDelete} color="error" variant="contained">{t('history.delete.confirm')}</Button>
         </DialogActions>
       </Dialog>
       <Menu anchorEl={rowMenu?.anchor} open={!!rowMenu} onClose={() => setRowMenu(null)}>
@@ -555,6 +556,11 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
       </Menu>
       <ShareCardDialog open={!!shareStats} stats={shareStats} onClose={() => setShareStats(null)} />
       <EditWorkoutDateDialog open={openEditDateDialog} onClose={handleCloseEditDateDialog} workout={workoutToEdit} onUpdateSuccess={handleUpdateDateSuccess} />
+      <Snackbar
+        open={pendingId !== null}
+        message={t('history.delete.removed')}
+        action={<Button color="inherit" size="small" onClick={undoDelete}>{t('history.delete.undo')}</Button>}
+      />
       <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
         <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity}>{snackbar.message}</Alert>
       </Snackbar>

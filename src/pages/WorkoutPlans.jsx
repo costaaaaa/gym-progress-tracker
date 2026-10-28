@@ -39,6 +39,9 @@ import { useTranslation } from 'react-i18next';
 import { muscleLabel, techniqueLabel } from '../i18n/labels';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
+// Obiettivo settimanale senza scheda attiva (stesso valore di WEEKLY_GOAL_DEFAULT nel backend)
+const WEEKLY_GOAL_DEFAULT = 3;
+
 const WorkoutPlans = ({ isEmbedded = false }) => {
   const { t } = useTranslation();
   const [workoutPlans, setWorkoutPlans] = useState([]);
@@ -53,6 +56,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
   const [openDeletePlanDialog, setOpenDeletePlanDialog] = useState(false);
   const [planToDelete, setPlanToDelete] = useState(null);
   const [deletePlanLoading, setDeletePlanLoading] = useState(false);
+  const [goalResetsOnDelete, setGoalResetsOnDelete] = useState(false); // l'obiettivo settimanale cambierebbe eliminando la scheda attiva
   
   // Stati per il dialog di conferma eliminazione esercizio
   const [openDeleteExerciseDialog, setOpenDeleteExerciseDialog] = useState(false);
@@ -338,7 +342,16 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
   // Gestione apertura dialog conferma eliminazione scheda
   const handleOpenDeletePlanDialog = (plan) => {
     setPlanToDelete(plan);
+    setGoalResetsOnDelete(false);
     setOpenDeletePlanDialog(true);
+    if (!plan.is_active) return;
+    // Senza scheda attiva, e senza un obiettivo scelto dall'utente, l'obiettivo della settimana torna a WEEKLY_GOAL_DEFAULT
+    fetch(`${API_BASE_URL}api/user/read.php`, { credentials: 'include' })
+      .then(response => (response.ok ? response.json() : null))
+      .then(user => {
+        if (user && user.weekly_goal == null && user.weekly_goal_default !== WEEKLY_GOAL_DEFAULT) setGoalResetsOnDelete(true);
+      })
+      .catch(() => {});
   };
   
   // Chiusura dialog eliminazione scheda
@@ -1088,6 +1101,10 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
             {t('plans.delete_plan.text')}
+            <Box sx={{ mt: 1.5 }}>{t('plans.delete_plan.history_kept')}</Box>
+            {goalResetsOnDelete && (
+              <Box sx={{ mt: 1.5 }}>{t('plans.delete_plan.goal_reset', { n: WEEKLY_GOAL_DEFAULT })}</Box>
+            )}
             {planToDelete && (
               <Box sx={{ mt: 2, fontWeight: 'bold' }}>
                 {t('plans.delete_plan.name', { name: planToDelete.name })}
