@@ -111,7 +111,11 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
   const [deletePreview, setDeletePreview] = useState(null); // cosa si perde cancellando, dall'anteprima del server
   const [openEditDateDialog, setOpenEditDateDialog] = useState(false);
   const [workoutToEdit, setWorkoutToEdit] = useState(null);
-  const [expandedMonths, setExpandedMonths] = useState({});
+  // Il mese corrente parte aperto già al primo render (con un effetto le righe comparivano un attimo chiuse)
+  const [expandedMonths, setExpandedMonths] = useState(() => {
+    const now = new Date();
+    return { [`${now.getMonth() + 1}/${now.getFullYear()}`]: true }; // formato MM/YYYY
+  });
   const [expandedWorkouts, setExpandedWorkouts] = useState({});
   const [shareStats, setShareStats] = useState(null); // card da condividere, null = dialog chiuso
 
@@ -131,18 +135,6 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
       fetchWorkoutHistory();
     }
   }, [refreshKey, isLoggedIn]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (workouts.length > 0 && Object.keys(expandedMonths).length === 0) {
-      const now = new Date();
-      const monthYear = `${now.getMonth() + 1}/${now.getFullYear()}`; // formato MM/YYYY
-      
-      // Inizializza con il mese corrente espanso
-      const initialExpanded = {};
-      initialExpanded[monthYear] = true;
-      setExpandedMonths(initialExpanded);
-    }
-  }, [workouts, expandedMonths]);
 
   const fetchActivePlan = async () => {
     try {
