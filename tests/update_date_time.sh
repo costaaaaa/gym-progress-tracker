@@ -67,7 +67,8 @@ call POST api/workout/add_exercise.php "$A" "{\"day_id\":$DAY,\"exercise_id\":$E
 # Allenamento a una data e ora scelte ("3 days ago 07:41"): ne stampa l'id
 make_workout() { # quando
     local start end
-    start="$(date -u -d "$1" +%Y-%m-%dT%H:%M:%SZ)"; end="$(date -u -d "$1 + 30 min" +%Y-%m-%dT%H:%M:%SZ)"
+    local t; t="$(date -d "$1" +%s)" # "2 days ago 00:05 + 30 min" non lo capisce date: si somma sui secondi
+    start="$(date -u -d "@$t" +%Y-%m-%dT%H:%M:%SZ)"; end="$(date -u -d "@$((t + 1800))" +%Y-%m-%dT%H:%M:%SZ)"
     call POST api/workout/record_workout.php "$A" \
         "{\"workout_records\":[{\"exercise_id\":$EX,\"day_id\":$DAY,\"set_number\":1,\"weight\":20,\"reps\":10}],\"start_time\":\"$start\",\"ended_at\":\"$end\",\"backdated\":true}" \
         | cut -d' ' -f2- | jq -r '.id'
