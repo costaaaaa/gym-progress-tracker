@@ -96,7 +96,7 @@ describe('intestazioni e testi', () => {
 describe('azioni della riga su desktop', () => {
   it('condividi, cambia data ed elimina restano icone; il menu "Altre azioni" non c\'è', async () => {
     await mount();
-    expect(screen.getByRole('button', { name: 'Condividi allenamento' })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: 'Condividi allenamento' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Modifica data' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Elimina allenamento' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Altre azioni' })).toBeNull();
@@ -110,14 +110,14 @@ describe('azioni della riga su telefono', () => {
     await mount();
     expect(screen.queryByRole('button', { name: 'Condividi allenamento' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Elimina allenamento' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Altre azioni' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Altre azioni' }));
     const menu = screen.getByRole('menu');
     expect(within(menu).getAllByRole('menuitem').map((v) => v.textContent)).toEqual(['Condividi allenamento', 'Modifica data', 'Elimina allenamento']);
   });
 
   it('"Elimina allenamento" dal menu apre la conferma', async () => {
     await mount();
-    fireEvent.click(screen.getByRole('button', { name: 'Altre azioni' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Altre azioni' }));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Elimina allenamento' }));
     expect(await screen.findByText('Conferma eliminazione')).toBeTruthy();
     expect(screen.getByText('Sei sicuro di voler eliminare questo allenamento?')).toBeTruthy();
