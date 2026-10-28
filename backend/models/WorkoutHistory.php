@@ -83,7 +83,7 @@ class WorkoutHistory
     public function readAllByUser()
     {
         // Query to read all records
-        $query = "SELECT id, exercises, date, duration_seconds, notes
+        $query = "SELECT id, exercises, date, duration_seconds, notes, health_written_at
                 FROM " . $this->table_name . "
                 WHERE user_id = ?
                 ORDER BY date DESC";

@@ -513,3 +513,14 @@ UPDATE `gym_workout_sets`
   SET `reps` = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(`reps`, '&#039;', ''''), '&quot;', '"'), '&lt;', '<'), '&gt;', '>'), '&amp;', '&'),
       `intensity_technique` = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(`intensity_technique`, '&#039;', ''''), '&quot;', '"'), '&lt;', '<'), '&gt;', '>'), '&amp;', '&')
   WHERE `reps` LIKE '%&%;%' OR `intensity_technique` LIKE '%&%;%';
+
+-- ------------------------------------------------------------------------------
+-- 27. gym_workout_history.health_written_at: quando il telefono ha scritto l'allenamento
+--     nell'app Salute (Apple Salute o Health Connect). NULL = non è in Salute. Lo imposta
+--     workout_history/health_mark.php su segnalazione del telefono; read.php lo espone come
+--     health_written, così il web sa se avvisare, eliminando o spostando un allenamento, che
+--     in Salute resta. Colonna nuova nullable: il rollback del codice resta possibile.
+-- ------------------------------------------------------------------------------
+
+ALTER TABLE `gym_workout_history`
+  ADD COLUMN `health_written_at` DATETIME NULL DEFAULT NULL AFTER `idempotency_key`;

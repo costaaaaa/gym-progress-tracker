@@ -196,6 +196,9 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
           {(preview?.achievements_removed ?? []).map(key => (
             <Typography key={key} variant="body2">{t('history.delete.lose_achievement', { label: achievementLabel(key) })}</Typography>
           ))}
+          {workout.health_written && (
+            <Typography variant="body2">{t('history.date.health_note')}</Typography>
+          )}
           {error && (
             <Typography color="error" variant="body2">
               {error}

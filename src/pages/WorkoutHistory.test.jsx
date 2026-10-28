@@ -1,7 +1,7 @@
 // Cronologia allenamenti vista dall'utente: intestazioni dei mesi, riga con azioni (icone su desktop, menu "⋮" su telefono).
 // Colori del tema chiaro scritti a mano: text.primary #1a1816, text.secondary #6b6663, rosso del marchio #d50000.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import WorkoutHistory from './WorkoutHistory';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
@@ -146,5 +146,110 @@ describe('azioni della riga su telefono', () => {
     expect(riga.getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(riga);
     expect(riga.getAttribute('aria-expanded')).toBe('true');
+  });
+});
+
+describe('eliminazione con «Annulla»', () => {
+  const eliminazioni = () => fetch.mock.calls.filter(([url, init]) => url.includes('workout_history/delete.php') && !JSON.parse(init.body).preview);
+  const RIGA = '02:00 · 3 esercizi';
+
+  // Dopo la conferma i timer dell'app (il conto dei 10 secondi) sono finti, così il test li fa scorrere
+  const confermaEliminazione = async () => {
+    await mount();
+    fireEvent.click(await screen.findByRole('button', { name: 'Elimina allenamento' }));
+    await screen.findByText('Conferma eliminazione');
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
+    vi.setSystemTime(new Date(2026, 9, 20, 12, 0));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Elimina' }));
+    await passano(500); // il dialog finisce di chiudersi e il resto della pagina torna accessibile
+  };
+  const passano = (ms) => act(async () => { vi.advanceTimersByTime(ms); });
+  const RESTO = 10000 - 500; // dei 10 secondi dell'«Annulla» ne sono passati 500 mentre il dialog si chiudeva
+
+  it('dopo la conferma la riga sparisce subito, compare «Allenamento eliminato» con «Annulla» e il server non è ancora chiamato', async () => {
+    await confermaEliminazione();
+    expect(screen.queryByText(RIGA)).toBeNull();
+    expect(screen.getByText('Allenamento eliminato')).toBeTruthy();
+    expect(within(screen.getByRole('alert')).getByRole('button', { name: 'Annulla' })).toBeTruthy();
+    await passano(RESTO - 1);
+    expect(eliminazioni()).toHaveLength(0);
+  });
+
+  it('allo scadere dei 10 secondi parte la richiesta di eliminazione', async () => {
+    await confermaEliminazione();
+    await passano(RESTO);
+    expect(eliminazioni()).toHaveLength(1);
+    expect(JSON.parse(eliminazioni()[0][1].body)).toEqual({ id: 7 });
+    expect(screen.queryByText(RIGA)).toBeNull();
+  });
+
+  it('«Annulla» riporta la riga in lista e il server non viene mai chiamato', async () => {
+    await confermaEliminazione();
+    fireEvent.click(within(screen.getByRole('alert')).getByRole('button', { name: 'Annulla' }));
+    expect(screen.getByText(RIGA)).toBeTruthy();
+    await passano(20000);
+    expect(eliminazioni()).toHaveLength(0);
+  });
+
+  it('se il server rifiuta, la riga torna in lista e compare l\'errore', async () => {
+    vi.stubGlobal('fetch', vi.fn((url, init) => Promise.resolve(
+      url.includes('read_plans.php') ? json({ records: [plan] })
+        : url.includes('workout_history/read.php') ? json({ records: [workout] })
+          : url.includes('workout_history/delete.php') && !JSON.parse(init.body).preview ? json({ message: 'Allenamento bloccato' }, 400)
+            : json({ success: true }),
+    )));
+    await confermaEliminazione();
+    await passano(RESTO);
+    expect(screen.getByText(RIGA)).toBeTruthy();
+    expect(screen.getByText('Allenamento bloccato')).toBeTruthy();
+  });
+
+  it('se una richiesta fallisce mentre un\'altra eliminazione aspetta, «Annulla» e l\'errore non si sovrappongono', async () => {
+    const altro = { ...workout, id: 8, date: '2026-10-17 02:00:00', exercises: workout.exercises.slice(0, 2) };
+    vi.stubGlobal('fetch', vi.fn((url, init) => Promise.resolve(
+      url.includes('read_plans.php') ? json({ records: [plan] })
+        : url.includes('workout_history/read.php') ? json({ records: [workout, altro] })
+          : url.includes('workout_history/delete.php') && !JSON.parse(init.body).preview ? json({ message: 'Allenamento bloccato' }, 400)
+            : json({ success: true }),
+    )));
+    await mount();
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Elimina allenamento' }))[0]);
+    await screen.findByText('Conferma eliminazione');
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
+    vi.setSystemTime(new Date(2026, 9, 20, 12, 0));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Elimina' }));
+    await passano(500);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Elimina allenamento' })[0]);
+    await passano(0);
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Elimina' }));
+    await passano(500);
+
+    const errore = screen.getByText('Allenamento bloccato').closest('.MuiSnackbar-root');
+    const annulla = screen.getByText('Allenamento eliminato').closest('.MuiSnackbar-root');
+    expect(getComputedStyle(errore).bottom).not.toBe(getComputedStyle(annulla).bottom);
+  });
+});
+
+describe('avvisi su Salute del telefono', () => {
+  const AVVISO_ELIMINA = 'Questo allenamento è anche nell\'app Salute del telefono e lì resta. Per toglierlo anche da lì, eliminalo dall\'app LiftIndex sul telefono.';
+  const serveWorkout = (w) => vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
+    url.includes('read_plans.php') ? json({ records: [plan] })
+      : url.includes('workout_history/read.php') ? json({ records: [w] })
+        : json({ success: true }),
+  )));
+
+  it('eliminando un allenamento che è in Salute il dialog lo dice', async () => {
+    serveWorkout({ ...workout, health_written: true });
+    await mount();
+    fireEvent.click(await screen.findByRole('button', { name: 'Elimina allenamento' }));
+    expect(await screen.findByText(AVVISO_ELIMINA)).toBeTruthy();
+  });
+
+  it('eliminando un allenamento che non è in Salute il dialog non ne parla', async () => {
+    serveWorkout({ ...workout, health_written: false });
+    await mount();
+    fireEvent.click(await screen.findByRole('button', { name: 'Elimina allenamento' }));
+    await screen.findByText('Conferma eliminazione');
+    expect(screen.queryByText(AVVISO_ELIMINA)).toBeNull();
   });
 });

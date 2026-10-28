@@ -52,7 +52,8 @@ function weekly_goals(PDO $db, array $user_ids): array {
 }
 
 // Impostazioni dell'obiettivo per l'utente: weekly_goal = scelto e in vigore (null = default),
-// weekly_goal_default = quello che vale senza scelta, weekly_goal_pending = cambio dal lunedì
+// weekly_goal_default = quello che vale senza scelta, weekly_goal_without_plan = quello che
+// varrebbe senza scheda attiva, weekly_goal_pending = cambio dal lunedì
 // prossimo ({goal (null = default), from}) o null
 function weekly_goal_settings(PDO $db, int $user_id): array {
     $this_week = (int) (new DateTime())->format('oW');
@@ -62,9 +63,10 @@ function weekly_goal_settings(PDO $db, int $user_id): array {
     $stmt->execute([$user_id, $this_week]);
     $next = $stmt->fetch(PDO::FETCH_ASSOC);
     return [
-        'weekly_goal'         => chosen_weekly_goals($db, [$user_id], $this_week)[$user_id] ?? null,
-        'weekly_goal_default' => default_weekly_goals($db, [$user_id])[$user_id],
-        'weekly_goal_pending' => $next ? [
+        'weekly_goal'              => chosen_weekly_goals($db, [$user_id], $this_week)[$user_id] ?? null,
+        'weekly_goal_default'      => default_weekly_goals($db, [$user_id])[$user_id],
+        'weekly_goal_without_plan' => WEEKLY_GOAL_DEFAULT,
+        'weekly_goal_pending'      => $next ? [
             'goal' => $next['goal'] === null ? null : (int) $next['goal'],
             'from' => yearweekMonday((int) $next['from_yearweek'])->format('Y-m-d'),
         ] : null,

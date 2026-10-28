@@ -143,6 +143,7 @@ CREATE TABLE IF NOT EXISTS `gym_workout_history` (
   `duration_seconds` int unsigned DEFAULT NULL,
   `notes` text DEFAULT NULL,
   `idempotency_key` varchar(64) DEFAULT NULL, -- chiave del client contro i doppi invii (NULL = app vecchie)
+  `health_written_at` datetime DEFAULT NULL, -- quando il telefono l'ha scritto nell'app Salute (NULL = non è in Salute)
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   KEY `idx_user_date` (`user_id`, `date`),

@@ -29,10 +29,24 @@ if (
     // Verifica e formatta la data
     $new_date = $data->new_date;
 
-    // Assicuriamoci che la data sia in un formato valido per MySQL (YYYY-MM-DD)
-    // Se la data è solo in formato YYYY-MM-DD, aggiungiamo l'ora corrente
+    // Con la sola data (YYYY-MM-DD) l'orario originale dell'allenamento resta: va riletto prima di
+    // calcolare la nuova data. Se data nuova + orario originale cade nel futuro (oggi, orario non
+    // ancora arrivato) si usa l'ora attuale.
     if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $new_date)) {
-        $new_date .= ' ' . date('H:i:s');
+        $stmt_time = $db->prepare("SELECT TIME(date) FROM gym_workout_history WHERE id = ? AND user_id = ?");
+        $stmt_time->execute([$data->id, $user_id]);
+        $original_time = $stmt_time->fetchColumn();
+        if ($original_time === false) {
+            http_response_code(404);
+            echo json_encode(array(
+                "success" => false,
+                "code" => "not_found",
+                "message" => t_server('history.not_yours')
+            ));
+            exit;
+        }
+        $with_original_time = $new_date . ' ' . $original_time;
+        $new_date .= ' ' . (strtotime($with_original_time) > time() ? date('H:i:s') : $original_time);
     }
 
     // Verifica che sia una data valida
