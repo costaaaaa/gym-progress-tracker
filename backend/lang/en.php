@@ -196,6 +196,8 @@ return array(
     'history.date_updated' => 'Workout date updated.',
     'history.none_found' => 'No workouts found.',
     'history.date_incomplete' => 'Incomplete data. Specify the workout ID and the new date.',
+    'history.health_invalid' => 'Invalid data: expected lists of workout IDs (500 at most).',
+    'history.health_failed' => "Couldn't update the Health status of the workouts.",
 
     // Esercizi, gamification, statistiche, utente
     'exercise.name_invalid' => "The name must be 2 to 60 characters (letters, numbers and simple punctuation) and can't contain links.",

@@ -77,6 +77,7 @@ try {
                 "date" => $row['date'],
                 "duration_seconds" => $row['duration_seconds'] !== null ? (int) $row['duration_seconds'] : null,
                 "notes" => $row['notes'],
+                "health_written" => $row['health_written_at'] !== null,
                 "exercises" => isset($sets_by_workout[$row['id']]) ? $sets_by_workout[$row['id']] : []
             );
             array_push($records_arr["records"], $record_item);

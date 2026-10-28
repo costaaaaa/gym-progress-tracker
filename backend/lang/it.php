@@ -196,6 +196,8 @@ return array(
     'history.date_updated' => "Data dell'allenamento aggiornata con successo.",
     'history.none_found' => 'Nessun allenamento trovato.',
     'history.date_incomplete' => 'Dati incompleti. Specificare ID allenamento e nuova data.',
+    'history.health_invalid' => 'Dati non validi: servono liste di ID allenamento (al massimo 500).',
+    'history.health_failed' => 'Impossibile aggiornare lo stato di Salute degli allenamenti.',
 
     // Esercizi, gamification, statistiche, utente
     'exercise.name_invalid' => 'Il nome deve avere da 2 a 60 caratteri (lettere, numeri e punteggiatura semplice) e non può contenere link.',
