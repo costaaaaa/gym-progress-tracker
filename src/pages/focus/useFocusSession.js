@@ -63,8 +63,12 @@ export default function useFocusSession() {
   const [workoutNotes, setWorkoutNotes] = useState('');
   const [startTime, setStartTime] = useState(null);
   const [idempotencyKey, setIdempotencyKey] = useState(null);
-  // Fine allenamento, fissata all'arrivo nel riepilogo: la durata non cresce più mentre si scrivono le note
+  // Fine allenamento: si fissa all'arrivo nel riepilogo (la durata non cresce più mentre si scrivono le note),
+  // alla ripresa di una bozza ferma nel riepilogo e in «già finita». null: si sta ancora allenando
+  // (in «già finita»: fine sconosciuta)
   const [endTime, setEndTime] = useState(null);
+  // Tempo a pagina chiusa tra il riepilogo e "Riprendi": non è allenamento, la durata lo toglie
+  const [pausedMs, setPausedMs] = useState(0);
   const [saving, setSaving] = useState(false);
   const [savedResult, setSavedResult] = useState(null); // streak flags after successful save
   const [shareStats, setShareStats] = useState(null); // card da condividere, null = dialog chiuso
@@ -75,15 +79,16 @@ export default function useFocusSession() {
   const [repsConfirmDialog, setRepsConfirmDialog] = useState(false);
   const [exerciseTransition, setExerciseTransition] = useState(true);
   const [draftToResume, setDraftToResume] = useState(null);
-  // Orario dell'ultima serie registrata: fine reale di una sessione salvata in ritardo
+  // Orario dell'ultima serie registrata, o della ripresa dal riepilogo: fine reale di una sessione salvata
+  // in ritardo. Mai prima dell'ultima pausa, così si può sottrarre pausedMs senza andare sotto l'inizio
   const [lastActivityAt, setLastActivityAt] = useState(null);
   // Giorno scelto (YYYY-MM-DD) per una bozza vecchia; null = salvataggio normale
   const [retroDate, setRetroDate] = useState(null);
   const [retroDateInput, setRetroDateInput] = useState('');
 
   useEffect(() => {
-    if (phase === 'summary') setEndTime((prev) => prev || new Date());
-  }, [phase]);
+    if (phase === 'summary' && !retroDate) setEndTime((prev) => prev || new Date());
+  }, [phase, retroDate]);
 
   // ================================================
   // AUTOSAVE LOGIC
@@ -104,12 +109,15 @@ export default function useFocusSession() {
         startTime,
         idempotencyKey,
         lastActivityAt,
+        pausedMs,
+        // Fine mostrata nel riepilogo, o fissa se già finita: la ripresa riparte da qui
+        summaryEndAt: phase === 'summary' || retroDate ? endTime : null,
         phase: phase === 'rest_timer' ? 'workout' : phase, // Se crasha durante il timer, riprendi dall'esercizio
         timestamp: new Date().getTime()
       };
       localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
     }
-  }, [phase, activePlan, selectedDay, selectedDayId, completedSets, skippedExercises, skippedSets, currentExerciseIndex, currentSetIndex, workoutNotes, startTime, idempotencyKey, lastActivityAt]);
+  }, [phase, activePlan, selectedDay, selectedDayId, completedSets, skippedExercises, skippedSets, currentExerciseIndex, currentSetIndex, workoutNotes, startTime, idempotencyKey, lastActivityAt, pausedMs, endTime, retroDate]);
 
   const clearDraft = useCallback(() => {
     localStorage.removeItem(DRAFT_STORAGE_KEY);
@@ -264,10 +272,20 @@ export default function useFocusSession() {
     setIdempotencyKey(draftIdempotencyKey(draftToResume));
     const lastActivity = draftToResume.lastActivityAt ? new Date(draftToResume.lastActivityAt) : null;
     setLastActivityAt(lastActivity);
+    // Le bozze vecchie non hanno summaryEndAt: la fine è l'ultima serie
+    const summaryEnd = draftToResume.summaryEndAt ? new Date(draftToResume.summaryEndAt) : lastActivity;
+    let paused = draftToResume.pausedMs || 0;
     if (finishedOn) {
       setRetroDate(finishedOn);
-      setEndTime(lastActivity || new Date(draftToResume.startTime));
+      setEndTime(summaryEnd);
+    } else if (draftToResume.phase === 'summary' && summaryEnd) {
+      // Il tempo da quando si è chiusa a ora è una pausa; la durata riparte da qui
+      const resumedAt = new Date();
+      paused += Math.max(0, resumedAt - summaryEnd);
+      setEndTime(resumedAt);
+      setLastActivityAt(resumedAt);
     }
+    setPausedMs(paused);
 
     // Ripristina input correnti
     const currentEx = draftToResume.selectedDay.exercises[draftToResume.currentExerciseIndex];
@@ -329,6 +347,7 @@ export default function useFocusSession() {
     setStartTime(new Date());
     setIdempotencyKey(newIdempotencyKey());
     setEndTime(null);
+    setPausedMs(0);
     setLastActivityAt(null);
     setRetroDate(null);
 
@@ -486,8 +505,9 @@ export default function useFocusSession() {
       const position = fromSummary || opts.position === 'end' ? exercises.length : currentExerciseIndex + 1;
       setSelectedDay({ ...selectedDay, exercises: insertExercise(exercises, position, entry) });
       if (fromSummary) {
-        // Si torna ad allenarsi: la durata riparte (endTime era fissato all'arrivo nel riepilogo)
-        setEndTime(null);
+        // Si torna ad allenarsi: la durata riparte (endTime vale finché si resta nel riepilogo).
+        // Se è già finita la fine resta quella: le serie aggiunte non la spostano.
+        if (!retroDate) setEndTime(null);
         enterExercise(position, entry);
         setPhase('workout');
       } else {
@@ -555,10 +575,21 @@ export default function useFocusSession() {
     };
   }, []);
 
+  // Fine al netto delle pause: da qui si ricavano durata, riepilogo e fine salvata.
+  // null: già finita con fine sconosciuta
+  const netEnd = () => {
+    const end = endTime || (retroDate ? null : new Date());
+    return end ? end.getTime() - pausedMs : null;
+  };
+
+  // Inizio del cronometro in allenamento: l'inizio spostato delle pause, così riparte dalla durata già fatta
+  const clockStart = startTime ? new Date(startTime.getTime() + pausedMs) : null;
+
   // Tempo totale allenamento
   const getElapsedSeconds = () => {
-    if (!startTime) return 0;
-    return Math.floor(((endTime || new Date()) - startTime) / 1000);
+    const end = netEnd();
+    if (!startTime || end === null) return 0;
+    return Math.floor((end - startTime) / 1000);
   };
 
   const getElapsedTime = () => {
@@ -576,10 +607,11 @@ export default function useFocusSession() {
     const moved = new Date(start);
     moved.setFullYear(y, m - 1, d);
     const shift = moved.getTime() - start.getTime();
+    const end = netEnd();
     return {
       backdated: true,
       start_time: moved.toISOString(),
-      ended_at: lastActivityAt ? new Date(lastActivityAt.getTime() + shift).toISOString() : null,
+      ended_at: end === null ? null : new Date(end + shift).toISOString(),
     };
   };
 
@@ -752,7 +784,9 @@ export default function useFocusSession() {
     currentSkippedSets,
     lastSession: getLastSession(currentExercise),
     exerciseTransition,
-    startTime,
+    clockStart,
+    // Già finita: la durata è quella del riepilogo e il cronometro non cammina
+    finishedClock: retroDate ? getElapsedTime() : null,
     weightInput,
     onWeightChange: setWeightInput,
     repsInput,

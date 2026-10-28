@@ -1,6 +1,6 @@
 // Focus Mode visto dall'utente: pulsanti e campi della pagina, con fetch e localStorage come confini.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import FocusWorkout from './FocusWorkout';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { json } from '../test/dom';
@@ -49,6 +49,22 @@ const doSet = (weight = '60', reps = '8') => {
   click('Conferma serie');
 };
 const draft = () => JSON.parse(localStorage.getItem(DRAFT_KEY));
+
+const savedDraft = {
+  activePlan: { id: 5, name: 'Push Pull', days: [fullDay] },
+  selectedDay: fullDay,
+  selectedDayId: 2,
+  completedSets: { 9: [{ setNumber: 1, weight: 60, reps: '8', intensity_technique: '' }] },
+  skippedExercises: [],
+  skippedSets: {},
+  currentExerciseIndex: 0,
+  currentSetIndex: 1,
+  workoutNotes: 'spalla ok',
+  startTime: new Date(2026, 9, 20, 17, 40).toISOString(),
+  idempotencyKey: 'chiave-bozza',
+  lastActivityAt: new Date(2026, 9, 20, 17, 45).toISOString(),
+  phase: 'workout',
+};
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -115,22 +131,6 @@ describe('flusso completo e salvataggio', () => {
 });
 
 describe('bozza e ripresa', () => {
-  const savedDraft = {
-    activePlan: { id: 5, name: 'Push Pull', days: [fullDay] },
-    selectedDay: fullDay,
-    selectedDayId: 2,
-    completedSets: { 9: [{ setNumber: 1, weight: 60, reps: '8', intensity_technique: '' }] },
-    skippedExercises: [],
-    skippedSets: {},
-    currentExerciseIndex: 0,
-    currentSetIndex: 1,
-    workoutNotes: 'spalla ok',
-    startTime: new Date(2026, 9, 20, 17, 40).toISOString(),
-    idempotencyKey: 'chiave-bozza',
-    lastActivityAt: new Date(2026, 9, 20, 17, 45).toISOString(),
-    phase: 'workout',
-  };
-
   it('salva la bozza a ogni serie, come allenamento anche durante il recupero', async () => {
     await startDay('Push');
     doSet();
@@ -185,6 +185,240 @@ describe('bozza e ripresa', () => {
       backdated: true,
       start_time: new Date(2026, 9, 18, 17, 40).toISOString(),
       ended_at: new Date(2026, 9, 18, 17, 45).toISOString(),
+    });
+  });
+});
+
+describe('ripresa dal riepilogo: il tempo a pagina chiusa è una pausa', () => {
+  const at = (h, m, day = 20) => new Date(2026, 9, day, h, m);
+  const CATALOG = [{ id: 20, name: 'Croci ai cavi', muscle_group: 'petto', equipment: 'cavi' }];
+
+  beforeEach(() => {
+    responses['user/read.php'] = () => json({ rest_timer_enabled: true, features: ['focus_session_edit'] });
+    responses['exercise/read_all.php'] = () => json({ records: CATALOG });
+  });
+
+  // Allenamento Push dalle 18:00, riepilogo alle 19:00
+  const reachSummaryAt19 = async () => {
+    await startDay('Push');
+    vi.setSystemTime(at(19, 0));
+    doSet();
+    click('Salta timer');
+    doSet();
+    expect(screen.getByText('Riepilogo')).toBeTruthy();
+  };
+  // Bozza dell'allenamento Push delle 18:00, ferma nel riepilogo alle 19:00; overrides cambia i campi
+  const summaryDraft = (overrides = {}) => ({
+    ...savedDraft,
+    activePlan: { id: 5, name: 'Push Pull', days: [pushDay] },
+    selectedDay: pushDay,
+    selectedDayId: 1,
+    workoutNotes: '',
+    startTime: at(18, 0).toISOString(),
+    lastActivityAt: at(19, 0).toISOString(),
+    phase: 'summary',
+    ...overrides,
+  });
+  const storeDraft = (overrides) => localStorage.setItem(DRAFT_KEY, JSON.stringify(summaryDraft(overrides)));
+  const closeApp = () => cleanup();
+  const reopen = async (when, { label = 'Riprendi allenamento', finishedOn = null } = {}) => {
+    vi.setSystemTime(when);
+    await mount();
+    if (finishedOn) fireEvent.change(screen.getByLabelText('Giorno dell\'allenamento'), { target: { value: finishedOn } });
+    click(label);
+  };
+  const addExerciseFromSummary = async (sets = 1) => {
+    click('Aggiungi esercizio');
+    await advance(0);
+    fireEvent.click(screen.getByText('Croci ai cavi'));
+    fireEvent.change(screen.getByLabelText('Serie'), { target: { value: String(sets) } });
+    click('Aggiungi');
+    await advance(0.5); // chiusura del dialog
+  };
+  const save = async () => {
+    await act(async () => { click('Salva allenamento'); });
+    await advance(0);
+    return saveBody();
+  };
+
+  it('ripresa alle 21:00, un esercizio, una serie alle 21:05: la durata è 1 h 05, non 3 h 05', async () => {
+    await reachSummaryAt19();
+    closeApp();
+    await reopen(at(21, 0));
+    await addExerciseFromSummary();
+    vi.setSystemTime(at(21, 5));
+    doSet('40', '12');
+    expect(screen.getByText('Riepilogo')).toBeTruthy();
+
+    expect((await save()).duration_seconds).toBe(3900);
+  });
+
+  it('il cronometro in allenamento riparte da 60:00 e cammina da lì', async () => {
+    await reachSummaryAt19();
+    closeApp();
+    await reopen(at(21, 0));
+    await addExerciseFromSummary();
+
+    expect(screen.getByText('60:00')).toBeTruthy();
+    await advance(30);
+    expect(screen.getByText('60:30')).toBeTruthy();
+  });
+
+  it('due chiusure: le pause si sommano nella bozza e la durata resta 1 h 05', async () => {
+    await reachSummaryAt19();
+    closeApp();
+    await reopen(at(21, 0));
+    await addExerciseFromSummary();
+    vi.setSystemTime(at(21, 5));
+    doSet('40', '12');
+    closeApp();
+
+    await reopen(at(23, 0), { label: 'Continuo ora' });
+    expect((await save()).duration_seconds).toBe(3900);
+  });
+
+  it('ripresa nel riepilogo senza aggiungere niente: la durata resta 1 h', async () => {
+    await reachSummaryAt19();
+    closeApp();
+    await reopen(at(21, 0));
+
+    expect((await save()).duration_seconds).toBe(3600);
+  });
+
+  it('una bozza vecchia senza la fine del riepilogo conta la pausa dall\'ultima serie', async () => {
+    storeDraft({
+      completedSets: { 9: [
+        { setNumber: 1, weight: 60, reps: '8', intensity_technique: '' },
+        { setNumber: 2, weight: 62.5, reps: '7', intensity_technique: '' },
+      ] },
+      idempotencyKey: 'chiave-vecchia',
+    });
+    vi.setSystemTime(at(21, 0));
+    await mount();
+    click('Riprendi allenamento');
+
+    expect((await save()).duration_seconds).toBe(3600);
+  });
+
+  it('il riepilogo mostra la durata al netto della pausa', async () => {
+    await reachSummaryAt19();
+    closeApp();
+    await reopen(at(21, 0));
+
+    expect(screen.getByText('60:00')).toBeTruthy();
+  });
+
+  it('una bozza ferma in allenamento con una pausa già dentro la conserva, senza aggiungerne altre', async () => {
+    storeDraft({ phase: 'workout', pausedMs: 2 * 3600 * 1000, lastActivityAt: at(21, 0).toISOString() });
+    vi.setSystemTime(at(21, 30));
+    await mount();
+    click('Riprendi allenamento');
+    expect(screen.getByText('90:00')).toBeTruthy();
+
+    vi.setSystemTime(at(21, 35));
+    doSet('62.5', '7');
+    expect((await save()).duration_seconds).toBe(5700);
+  });
+
+  it('tornare ad allenarsi dal riepilogo e rientrarci senza chiudere la pagina fissa di nuovo la fine', async () => {
+    await reachSummaryAt19();
+    await addExerciseFromSummary();
+    vi.setSystemTime(at(19, 10));
+    doSet('40', '12');
+    expect(screen.getByText('Riepilogo')).toBeTruthy();
+    await advance(600);
+
+    expect(screen.getByText('70:00')).toBeTruthy();
+    expect((await save()).duration_seconds).toBe(4200);
+  });
+
+  it('una pausa è l\'ultima attività: se si chiude in allenamento senza serie, già finita non va sotto zero', async () => {
+    await reachSummaryAt19();
+    closeApp();
+    await reopen(at(21, 0));
+    await addExerciseFromSummary();
+    closeApp();
+
+    await reopen(at(10, 0, 21), { label: 'L\'avevo già finito', finishedOn: '2026-10-19' });
+    expect(screen.getByText('60:00')).toBeTruthy();
+    expect(await save()).toMatchObject({
+      start_time: at(18, 0, 19).toISOString(),
+      ended_at: at(19, 0, 19).toISOString(),
+    });
+  });
+
+  describe('già finita il giorno scelto', () => {
+    const reopenAsFinished = (when) => reopen(when, { label: 'L\'avevo già finito', finishedOn: '2026-10-19' });
+
+    it('un esercizio e una serie aggiunti dal riepilogo non spostano la fine: 1 h, fine alle 19:00', async () => {
+      await reachSummaryAt19();
+      closeApp();
+      await reopenAsFinished(at(10, 0, 21));
+      await addExerciseFromSummary();
+      vi.setSystemTime(at(10, 5, 21));
+      doSet('40', '12');
+      expect(screen.getByText('Riepilogo')).toBeTruthy();
+
+      expect(await save()).toMatchObject({
+        backdated: true,
+        start_time: at(18, 0, 19).toISOString(),
+        ended_at: at(19, 0, 19).toISOString(),
+      });
+    });
+
+    it('senza una fine nota (né fine del riepilogo né ultima serie) ended_at è null e la durata mostrata 0', async () => {
+      storeDraft({ lastActivityAt: null });
+      await reopenAsFinished(at(10, 0, 21));
+
+      expect(screen.getByText('00:00')).toBeTruthy();
+      const body = await save();
+      expect(body).toMatchObject({ backdated: true, start_time: at(18, 0, 19).toISOString(), ended_at: null });
+    });
+
+    it('il cronometro in allenamento è fermo sulla durata del riepilogo', async () => {
+      await reachSummaryAt19();
+      closeApp();
+      await reopenAsFinished(at(10, 0, 21));
+      await addExerciseFromSummary();
+
+      expect(screen.getByText('60:00')).toBeTruthy();
+      await advance(30);
+      expect(screen.getByText('60:00')).toBeTruthy();
+    });
+
+    it('con una pausa già in bozza la fine è al netto della pausa: 1 h 05, fine alle 19:05', async () => {
+      storeDraft({
+        idempotencyKey: 'chiave-con-pausa',
+        lastActivityAt: at(21, 5).toISOString(),
+        pausedMs: 2 * 3600 * 1000,
+        summaryEndAt: at(21, 5).toISOString(),
+      });
+      await reopenAsFinished(at(10, 0, 21));
+      await addExerciseFromSummary();
+      vi.setSystemTime(at(10, 5, 21));
+      doSet('40', '12');
+
+      expect(await save()).toMatchObject({
+        start_time: at(18, 0, 19).toISOString(),
+        ended_at: at(19, 5, 19).toISOString(),
+      });
+    });
+
+    it('pagina chiusa a metà delle serie aggiunte e riaperta come già finita: la fine è sempre alle 19:00', async () => {
+      await reachSummaryAt19();
+      closeApp();
+      await reopenAsFinished(at(10, 0, 21));
+      await addExerciseFromSummary(2);
+      vi.setSystemTime(at(10, 5, 21));
+      doSet('40', '12');
+      expect(screen.getByText('Recupero')).toBeTruthy();
+      closeApp();
+
+      await reopenAsFinished(at(10, 10, 21));
+      expect(await save()).toMatchObject({
+        start_time: at(18, 0, 19).toISOString(),
+        ended_at: at(19, 0, 19).toISOString(),
+      });
     });
   });
 });

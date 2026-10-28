@@ -9,6 +9,7 @@ const formatTime = (seconds) => {
 // Cronometro della fase workout, come ElapsedClock del mobile: ha il suo tick da 1 s, così ogni
 // secondo si ridisegna solo questo testo e non tutta la pagina. Il tick cade sul confine di
 // secondo rispetto a startTime e si ricalcola a ogni giro: un timer in ritardo non si accumula.
+// startTime è l'inizio del conteggio, cioè l'inizio dell'allenamento spostato delle pause.
 export default function ElapsedClock({ startTime }) {
   const [now, setNow] = useState(() => Date.now());
   const start = startTime ? startTime.getTime() : null;
