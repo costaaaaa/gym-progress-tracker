@@ -93,6 +93,14 @@ check "written e removed insieme nello stesso corpo" \
     "$(call POST api/workout_history/health_mark.php "$A" "{\"written\":[$WA],\"removed\":[999999999]}")" '$status == 200 and .success == true'
 [[ "$(health_written "$A" "$WA")" == "true" ]] && ok "l'id sconosciuto in removed non disturba gli altri" || ko "l'id sconosciuto in removed non disturba gli altri" "ricevuto: $(health_written "$A" "$WA")"
 
+echo "ID come stringa e id in entrambe le liste"
+call POST api/workout_history/health_mark.php "$A" "{\"removed\":[$WA]}" >/dev/null
+check "id come stringa di cifre: accettato, 200" "$(call POST api/workout_history/health_mark.php "$A" "{\"written\":[\"$WA\"]}")" '$status == 200 and .success == true'
+[[ "$(health_written "$A" "$WA")" == "true" ]] && ok "l'id stringa segna l'allenamento come in Salute" || ko "l'id stringa segna l'allenamento come in Salute" "ricevuto: $(health_written "$A" "$WA")"
+check "id sia in written sia in removed: 200" "$(call POST api/workout_history/health_mark.php "$A" "{\"written\":[$WA],\"removed\":[$WA]}")" '$status == 200 and .success == true'
+[[ "$(health_written "$A" "$WA")" == "false" ]] && ok "se un id è in entrambe le liste vince removed" || ko "se un id è in entrambe le liste vince removed" "ricevuto: $(health_written "$A" "$WA")"
+call POST api/workout_history/health_mark.php "$A" "{\"written\":[$WA]}" >/dev/null
+
 echo "Solo le righe dell'utente"
 check "id di un altro utente: ignorato, 200" "$(call POST api/workout_history/health_mark.php "$A" "{\"written\":[$WB]}")" '$status == 200 and .success == true'
 [[ "$(health_written "$B" "$WB")" == "false" ]] && ok "l'allenamento dell'altro utente resta health_written false" || ko "l'allenamento dell'altro utente resta health_written false" "ricevuto: $(health_written "$B" "$WB")"
@@ -108,6 +116,7 @@ check "esattamente 500 id: accettati" "$(call POST api/workout_history/health_ma
 check "corpo senza written né removed: 400" "$(call POST api/workout_history/health_mark.php "$A" '{}')" '$status == 400 and .success == false'
 check "written che non è una lista: 400" "$(call POST api/workout_history/health_mark.php "$A" '{"written":"7"}')" '$status == 400 and .success == false'
 check "id che non sono numeri interi positivi: 400" "$(call POST api/workout_history/health_mark.php "$A" '{"written":["a",-1]}')" '$status == 400 and .success == false'
+check "stringa non numerica o zero: 400" "$(call POST api/workout_history/health_mark.php "$A" '{"written":["12a","0"]}')" '$status == 400 and .success == false'
 check "il messaggio d'errore c'è (italiano di default)" "$(call POST api/workout_history/health_mark.php "$A" '{}')" '(.message | type) == "string" and (.message | length) > 0'
 
 echo

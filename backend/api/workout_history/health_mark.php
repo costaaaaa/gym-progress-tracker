@@ -11,7 +11,7 @@ $database = new Database();
 $db = $database->getConnection();
 $user_id = require_authenticated_user($db);
 
-// Lista di interi positivi, oppure null se il campo manca; false se non è valido
+// Lista di ID positivi (interi o stringhe di sole cifre), oppure null se il campo manca; false se non è valida
 function health_mark_ids($value)
 {
     if ($value === null) {
@@ -22,6 +22,9 @@ function health_mark_ids($value)
     }
     $ids = [];
     foreach ($value as $id) {
+        if (is_string($id) && ctype_digit($id)) {
+            $id = (int) $id;
+        }
         if (!is_int($id) || $id <= 0) {
             return false;
         }
@@ -44,12 +47,13 @@ if (
 
 try {
     $db->beginTransaction();
-    foreach ([[$written, 'NOW()'], [$removed, 'NULL']] as [$ids, $value]) {
+    // Se un ID è in entrambe le liste vince removed, che viene applicata per ultima
+    foreach ([[$written, 'NOW()'], [$removed, 'NULL']] as [$ids, $sql_value]) {
         if (empty($ids)) {
             continue;
         }
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $stmt = $db->prepare("UPDATE gym_workout_history SET health_written_at = $value WHERE user_id = ? AND id IN ($placeholders)");
+        $stmt = $db->prepare("UPDATE gym_workout_history SET health_written_at = $sql_value WHERE user_id = ? AND id IN ($placeholders)");
         $stmt->execute(array_merge([$user_id], $ids));
     }
     $db->commit();
