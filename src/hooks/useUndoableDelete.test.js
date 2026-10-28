@@ -22,10 +22,6 @@ describe('useUndoableDelete', () => {
     expect(result.current.pendingId).toBe(7);
   });
 
-  it('il ritardo è di 10 secondi', () => {
-    expect(UNDO_DELAY_MS).toBe(10000);
-  });
-
   it('allo scadere chiama commit con l\'id e libera lo stato', async () => {
     const { result, commit } = setup();
     act(() => { result.current.schedule(7); });

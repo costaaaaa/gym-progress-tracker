@@ -394,8 +394,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       });
     } finally {
       setDeletePlanLoading(false);
-      setOpenDeletePlanDialog(false);
-      setPlanToDelete(null);
+      handleCloseDeletePlanDialog();
     }
   };
 

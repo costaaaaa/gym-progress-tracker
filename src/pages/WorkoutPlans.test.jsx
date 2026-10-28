@@ -2,7 +2,7 @@
 // Elimina) sono grigie come le frecce; il rosso sta solo nel bottone di conferma dei dialoghi. La fetch è il confine.
 // Colori del tema chiaro scritti a mano: text.primary #1a1816, text.secondary #6b6663, error #d50000.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, within, fireEvent, waitForElementToBeRemoved, act } from '@testing-library/react';
+import { render, screen, within, fireEvent, waitForElementToBeRemoved, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import WorkoutPlans from './WorkoutPlans';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
@@ -128,5 +128,17 @@ describe('dialogo di eliminazione di una scheda', () => {
     await act(async () => { rispondi(); });
     await within(secondo).findByText(STORICO);
     expect(within(secondo).queryByText(obiettivo(3))).toBeNull();
+  });
+
+  it('la risposta tardiva arrivata dopo la conferma dell\'eliminazione non rimette l\'avviso nel dialogo che si sta chiudendo', async () => {
+    let rispondi;
+    stubFetch([plan], () => new Promise((resolve) => { rispondi = () => resolve(json({ weekly_goal: null, weekly_goal_default: 1, weekly_goal_without_plan: 3 })); }));
+    render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
+    const dialog = await clickDeleteOf('Forza A');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Elimina' }));
+    await waitFor(() => expect(fetch.mock.calls.some(([url]) => url.includes('delete_plan.php'))).toBe(true));
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Elimina', hidden: true }).disabled).toBe(false));
+    await act(async () => { rispondi(); });
+    expect(screen.queryByText(obiettivo(3))).toBeNull();
   });
 });

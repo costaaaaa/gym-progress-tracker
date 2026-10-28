@@ -61,7 +61,7 @@ try {
     if ($db->inTransaction()) {
         $db->rollBack();
     }
-    error_log('health_mark: ' . $e->getMessage());
+    api_log_exception('health_mark', $e);
     api_error(500, 'server_error', t_server('history.health_failed'));
 }
 

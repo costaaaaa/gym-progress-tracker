@@ -106,6 +106,18 @@ else
     [[ "${D2%% *}" == "$TODAY" && "${D2#* }" != "23:58:00" && ! "$D2" > "$LIMIT" ]] && ok "oggi, con l'ora attuale e non nel futuro ($D2)" || ko "oggi, con l'ora attuale e non nel futuro" "data: $D2, limite: $LIMIT"
 fi
 
+echo "Orario originale già passato oggi: resta quello"
+if [[ "$NOW_HM" < "00:10" ]]; then
+    echo "  (saltato: è troppo presto perché 00:05 sia già passato oggi)"
+else
+    W3="$(make_workout '2 days ago 00:05')"
+    [[ "$W3" =~ ^[0-9]+$ ]] || { echo "salvataggio dell'allenamento di prova fallito" >&2; exit 1; }
+    check "spostato a oggi con orario originale 00:05 già passato: 200" \
+        "$(call POST api/workout_history/update_date.php "$A" "{\"id\":$W3,\"new_date\":\"$(date +%F)\"}")" '$status == 200 and .success == true'
+    D3="$(stored_date "$W3")"
+    [[ "$D3" == "$(date +%F) 00:05:00" ]] && ok "oggi, con l'orario originale 00:05:00" || ko "oggi, con l'orario originale 00:05:00" "dopo: $D3"
+fi
+
 echo "Regole che restano"
 check "data nel futuro: 400" "$(call POST api/workout_history/update_date.php "$A" "{\"id\":$W1,\"new_date\":\"$(date -d '+2 days' +%F)\"}")" '$status == 400 and .code == "future_date"'
 check "oltre 30 giorni fa: 400" "$(call POST api/workout_history/update_date.php "$A" "{\"id\":$W1,\"new_date\":\"$(date -d '40 days ago' +%F)\"}")" '$status == 400 and .code == "target_too_old"'
