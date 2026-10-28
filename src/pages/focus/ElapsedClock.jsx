@@ -9,12 +9,15 @@ const formatTime = (seconds) => {
 // Cronometro della fase workout, come ElapsedClock del mobile: ha il suo tick da 1 s, così ogni
 // secondo si ridisegna solo questo testo e non tutta la pagina. Il tick cade sul confine di
 // secondo rispetto a startTime e si ricalcola a ogni giro: un timer in ritardo non si accumula.
-export default function ElapsedClock({ startTime }) {
+// startTime è l'inizio del conteggio, cioè l'inizio dell'allenamento spostato delle pause.
+// Con endTime il cronometro è fermo (allenamento già finito).
+export default function ElapsedClock({ startTime, endTime = null }) {
   const [now, setNow] = useState(() => Date.now());
   const start = startTime ? startTime.getTime() : null;
+  const end = endTime ? endTime.getTime() : null;
 
   useEffect(() => {
-    if (!start) return undefined;
+    if (!start || end) return undefined;
     let id = null;
     const tick = () => {
       const t = Date.now();
@@ -23,7 +26,7 @@ export default function ElapsedClock({ startTime }) {
     };
     tick();
     return () => clearTimeout(id);
-  }, [start]);
+  }, [start, end]);
 
-  return formatTime(start ? Math.floor((now - start) / 1000) : 0);
+  return formatTime(start ? Math.floor(((end || now) - start) / 1000) : 0);
 }

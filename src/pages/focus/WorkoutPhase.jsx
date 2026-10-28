@@ -17,7 +17,7 @@ import { muscleLabel, techniqueLabel } from '../../i18n/labels';
 
 export default function WorkoutPhase({
   currentExercise, currentExerciseIndex, totalExercises, currentSetIndex, totalSetsForCurrentExercise,
-  currentExerciseSets, currentSkippedSets, lastSession, exerciseTransition, startTime,
+  currentExerciseSets, currentSkippedSets, lastSession, exerciseTransition, clockStart, clockEnd,
   weightInput, onWeightChange, repsInput, onRepsChange, intensityTechniqueInput, onIntensityChange,
   onConfirmSet, onSkipSet, onSkipExercise, canEditSession, onOpenPicker, onQuit,
   quitDialogOpen, onCloseQuitDialog, onConfirmQuit, totalCompletedSets,
@@ -31,7 +31,7 @@ export default function WorkoutPhase({
         <IconButton onClick={onQuit} sx={{ color: colors.textSecondary }}><CloseIcon /></IconButton>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <AccessTimeIcon sx={{ fontSize: 16, color: colors.textSecondary }} />
-          <Typography variant="caption" sx={{ ...TABULAR, color: colors.textSecondary }}><ElapsedClock startTime={startTime} /></Typography>
+          <Typography variant="caption" sx={{ ...TABULAR, color: colors.textSecondary }}><ElapsedClock startTime={clockStart} endTime={clockEnd} /></Typography>
         </Box>
         <Typography variant="caption" sx={{ color: colors.textSecondary }}>{currentExerciseIndex + 1}/{totalExercises}</Typography>
       </Box>
