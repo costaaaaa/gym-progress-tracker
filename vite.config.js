@@ -37,8 +37,11 @@ const englishLanding = () => ({
     const alternates = ['it', 'en', 'x-default']
       .map((lang) => `    <xhtml:link rel="alternate" hreflang="${lang}" href="${SITE}${lang === 'en' ? '/en/' : '/'}" />`)
       .join('\n');
+    // Pagine PHP del blog con URL fisso (solo italiano, niente hreflang). Gli articoli no: i .md non
+    // sono nel repo (vedi blog/content/README.md), quindi la build non li conosce.
     const urls = ['/', '/en/']
       .map((path) => `  <url>\n    <loc>${SITE}${path}</loc>\n${alternates}\n  </url>`)
+      .concat(['/blog/', '/blog/calcolatore-1rm/'].map((path) => `  <url>\n    <loc>${SITE}${path}</loc>\n  </url>`))
       .join('\n');
     writeFileSync(
       'build/sitemap.xml',

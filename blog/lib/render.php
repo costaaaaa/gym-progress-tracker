@@ -242,9 +242,9 @@ main.wrap { padding-top: 40px; padding-bottom: 56px; }
   padding: 20px 22px;
   margin-bottom: 16px;
 }
-.post-card h2 { margin: 0 0 0.4rem; font-size: 1.25rem; }
-.post-card h2 a { color: var(--text-primary); }
-.post-card h2 a:hover { color: var(--primary-main); text-decoration: none; }
+.post-card h2, .post-card h3 { margin: 0 0 0.4rem; font-size: 1.25rem; }
+.post-card h2 a, .post-card h3 a { color: var(--text-primary); }
+.post-card h2 a:hover, .post-card h3 a:hover { color: var(--primary-main); text-decoration: none; }
 .post-card p { margin: 0 0 0.6rem; color: var(--text-secondary); font-size: 0.97rem; }
 .post-card .post-meta { margin: 0; font-size: 0.85rem; }
 .article-cta {
@@ -266,10 +266,55 @@ main.wrap { padding-top: 40px; padding-bottom: 56px; }
 .site-footer p { margin: 0 0 0.3rem; }
 .muted { color: var(--text-secondary); }
 .empty-state { color: var(--text-secondary); }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1.1rem;
+  font-size: 0.95rem;
+}
+caption { text-align: left; font-weight: 600; margin-bottom: 0.4rem; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--divider); }
+thead th { color: var(--text-secondary); font-weight: 600; }
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.calc-card {
+  background: var(--bg-paper);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius);
+  padding: 22px;
+  margin-bottom: 2.5rem;
+}
+.calc-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; }
+.calc-field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 140px; }
+.calc-field label { font-size: 0.9rem; font-weight: 600; }
+.calc-field input {
+  font: inherit;
+  color: inherit;
+  background: var(--bg-default);
+  border: 1px solid var(--divider);
+  border-radius: 10px;
+  padding: 9px 12px;
+}
+.calc-field input:focus { outline: 2px solid var(--primary-main); outline-offset: 1px; }
+.calc-submit { border: 0; font-family: inherit; cursor: pointer; }
+.calc-result { margin: 1.6rem 0 1.2rem; }
+.calc-result p { margin: 0; }
+.calc-result-label { color: var(--text-secondary); font-size: 0.92rem; }
+.calc-result-value { font-family: "Lexend", sans-serif; font-weight: 800; font-size: 2.4rem; line-height: 1.2; }
+.calc-warning { font-size: 0.92rem; margin-top: 0.4rem; }
+.calc-note { font-size: 0.88rem; margin: 0; }
 @media (max-width: 600px) {
   body { font-size: 16px; }
   h1 { font-size: 1.7rem; }
   h2 { font-size: 1.3rem; }
+  /* Le tabelle larghe degli articoli scorrono da sole, senza allargare la pagina. */
+  table:not(.pct-table) { display: block; overflow-x: auto; }
 }
 CSS;
 }
