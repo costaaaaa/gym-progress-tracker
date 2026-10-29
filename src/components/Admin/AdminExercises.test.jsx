@@ -6,15 +6,19 @@ import { render, screen, fireEvent, act, within } from '@testing-library/react';
 import AdminExercises from './AdminExercises';
 import { json } from '../../test/dom';
 
-const MUSCLE_GROUPS = ['petto', 'glutei', 'gambe'];
+const MUSCLE_GROUPS = ['petto', 'glutei', 'gambe', 'spalle'];
+
+// Esercizi già esistenti da mostrare in lista (per i test di modifica); [] = solo creazione.
+let exercisesFixture;
 
 let fetchMock;
 beforeEach(() => {
+  exercisesFixture = [];
   fetchMock = vi.fn((url, opts) => {
     if (opts?.method === 'POST') {
       return Promise.resolve(json({ success: true, id: 123 }, 201));
     }
-    return Promise.resolve(json({ success: true, exercises: [], muscle_groups: MUSCLE_GROUPS, equipment: [] }));
+    return Promise.resolve(json({ success: true, exercises: exercisesFixture, muscle_groups: MUSCLE_GROUPS, equipment: [] }));
   });
   vi.stubGlobal('fetch', fetchMock);
 });
@@ -27,9 +31,18 @@ const apri = async () => {
   await act(async () => {});
 };
 
-// Apre la select "Gruppo muscolare" del form e sceglie il valore (capitalizzato, come mostrato)
+// Apre il dialog di modifica del (solo) esercizio di exercisesFixture, cliccando "Modifica"
+const apriModifica = async () => {
+  render(<AdminExercises />);
+  await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+  fireEvent.click(screen.getByRole('button', { name: 'Modifica' }));
+  await act(async () => {});
+};
+
+// Apre la select "Gruppo muscolare" del form e sceglie il valore (capitalizzato, come mostrato).
+// Il nome accessibile può includere il valore già scelto (in modifica): matcher con prefisso.
 const scegliGruppo = (label) => {
-  fireEvent.mouseDown(within(screen.getByRole('dialog')).getByRole('combobox', { name: 'Gruppo muscolare' }));
+  fireEvent.mouseDown(within(screen.getByRole('dialog')).getByRole('combobox', { name: /^Gruppo muscolare/ }));
   fireEvent.click(screen.getByRole('option', { name: label }));
 };
 
@@ -49,7 +62,7 @@ describe('AdminExercises · ExerciseFormDialog · muscolo principale', () => {
     scegliGruppo('Gambe');
 
     expect(screen.getAllByText('Muscolo principale').length).toBeGreaterThan(0);
-    fireEvent.mouseDown(within(screen.getByRole('dialog')).getByRole('combobox', { name: 'Muscolo principale' }));
+    fireEvent.mouseDown(within(screen.getByRole('dialog')).getByRole('combobox', { name: /^Muscolo principale/ }));
     const options = screen.getAllByRole('option').map((o) => o.textContent);
     expect(options).toEqual(['Quadricipiti', 'Femorali', 'Glutei', 'Adduttori', 'Abduttori']);
   });
@@ -66,7 +79,7 @@ describe('AdminExercises · ExerciseFormDialog · muscolo principale', () => {
     await apri();
     fireEvent.change(screen.getByLabelText(/^Nome\s*\*?$/), { target: { value: 'Nuovo Esercizio Gambe' } });
     scegliGruppo('Gambe');
-    fireEvent.mouseDown(within(screen.getByRole('dialog')).getByRole('combobox', { name: 'Muscolo principale' }));
+    fireEvent.mouseDown(within(screen.getByRole('dialog')).getByRole('combobox', { name: /^Muscolo principale/ }));
     fireEvent.click(screen.getByRole('option', { name: 'Adduttori' }));
 
     await salva();
@@ -94,5 +107,39 @@ describe('AdminExercises · ExerciseFormDialog · muscolo principale', () => {
     await salva();
 
     expect(ultimaCreate().primary_muscle).toBeUndefined();
+  });
+
+  it('modifica: cambiando da "glutei" (abduttori) a un altro gruppo non invia più primary_muscle', async () => {
+    exercisesFixture = [
+      { id: 10, name: 'Hip Thrust', muscle_group: 'glutei', primary_muscle: 'abduttori', equipment: '', uses: 0 },
+    ];
+    await apriModifica();
+    expect(screen.getByLabelText(/^Nome\s*\*?$/).value).toBe('Hip Thrust');
+
+    scegliGruppo('Spalle');
+    expect(screen.queryAllByText('Muscolo principale')).toHaveLength(0);
+
+    await salva();
+
+    const body = ultimaCreate();
+    expect(body).toMatchObject({ id: 10, muscle_group: 'spalle' });
+    expect(body.primary_muscle).toBeUndefined();
+  });
+
+  it('modifica: passando a "gambe" richiede comunque la scelta del muscolo principale', async () => {
+    exercisesFixture = [
+      { id: 11, name: 'Panca Piana', muscle_group: 'petto', primary_muscle: null, equipment: '', uses: 0 },
+    ];
+    await apriModifica();
+
+    scegliGruppo('Gambe');
+    expect(screen.getByRole('button', { name: 'Salva' }).disabled).toBe(true);
+
+    fireEvent.mouseDown(within(screen.getByRole('dialog')).getByRole('combobox', { name: /^Muscolo principale/ }));
+    fireEvent.click(screen.getByRole('option', { name: 'Femorali' }));
+
+    await salva();
+
+    expect(ultimaCreate()).toMatchObject({ id: 11, muscle_group: 'gambe', primary_muscle: 'femorali' });
   });
 });
