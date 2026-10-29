@@ -6,7 +6,9 @@
 #
 #   tests/time_zone.sh http://localhost:8080/backend/
 #
-# Registra account usa e getta (token Bearer) e li cancella alla fine.
+# Registra una quindicina di account usa e getta (token Bearer) e li cancella alla fine: più del limite
+# di registrazioni per IP di default (RL_REGISTER_MAX = 10 l'ora) e dei login per IP (RL_LOGIN_IP_MAX = 20
+# ogni 15 minuti), quindi sull'ambiente di prova vanno alzati o azzerati i contatori prima di lanciarlo.
 # Non va lanciato in produzione: crea account veri.
 #
 # Richiede curl, jq e date GNU. Esce con 1 se un controllo fallisce.
@@ -245,13 +247,13 @@ same "un nuovo fuso valido sostituisce quello salvato" "$(history_field "$ID" ti
 echo
 echo "Recupero: il limite degli 8 giorni è quello del fuso del dispositivo, non del payload"
 make_user j
-cut() { TZ="$1" date -d "$(TZ="$1" date -d '8 days ago' +%F) 00:00" +%s; }   # mezzanotte di 8 giorni fa nel fuso
+midnight_8d() { TZ="$1" date -d "$(TZ="$1" date -d '8 days ago' +%F) 00:00" +%s; }   # mezzanotte di 8 giorni fa nel fuso
 # Le due coppie scambiate danno sempre un accettato e un rifiutato, qualunque sia l'ora del giorno
 for pair in "Pacific/Pago_Pago Pacific/Kiritimati" "Pacific/Kiritimati Pacific/Pago_Pago"; do
     DEVICE="${pair% *}"
     PAYLOAD="${pair#* }"
-    DEV_CUT="$(cut "$DEVICE")"
-    PAY_CUT="$(cut "$PAYLOAD")"
+    DEV_CUT="$(midnight_8d "$DEVICE")"
+    PAY_CUT="$(midnight_8d "$PAYLOAD")"
     MID=$(((DEV_CUT + PAY_CUT) / 2))   # fra i due limiti: il vecchio calcolo (fuso del payload) dà l'esito opposto
     XTZ="$DEVICE"
     R="$(call POST api/workout/record_workout.php "$T" "$(body 80 "$(iso "$MID")" "$(iso $((MID + 1500)))" true "$PAYLOAD")")"
@@ -261,6 +263,83 @@ for pair in "Pacific/Pago_Pago Pacific/Kiritimati" "Pacific/Kiritimati Pacific/P
         check "dispositivo $DEVICE, payload $PAYLOAD: oltre il limite del dispositivo, rifiutato" "$R" '.success == false'
     fi
 done
+
+echo
+echo "Recupero di domenica sera: conta nella settimana di quella domenica, non nella successiva"
+make_user k
+XTZ="America/New_York"
+NY_BACK=$(($(TZ=America/New_York date +%u) % 7))   # giorni dall'ultima domenica (0 = oggi è domenica)
+SUN="$(TZ=America/New_York date -d "$NY_BACK days ago" +%F)"
+SUN_START="$(TZ=America/New_York date -d "$SUN 21:00" +%s)"
+if (( SUN_START > $(date +%s) )); then   # domenica sera non ancora arrivata: quella di sette giorni fa
+    SUN="$(TZ=America/New_York date -d "$SUN - 7 days" +%F)"
+    SUN_START="$(TZ=America/New_York date -d "$SUN 21:00" +%s)"
+fi
+ID="$(save "$(body 90 "$(iso "$SUN_START")" "$(iso $((SUN_START + 1500)))" true)")"
+same "domenica $SUN alle 21:00 a New York: date è l'ora locale" "$(history_field "$ID" date)" "$SUN 21:00:00"
+R="$(call GET api/workout_stats/frequency.php "$T")"
+SUN_YW="$(date -d "$SUN" +%G%V)"
+check "frequenza: l'allenamento è nella settimana ISO $SUN_YW (la sua domenica)" "$R" "[.. | objects | select(.year_week? == $SUN_YW and .workout_count? == 1 and .week_start? == \"$SUN\")] | length == 1"
+
+echo
+echo "Cambio data con il passaggio dell'ora legale: l'orario locale resta, cambia l'offset"
+make_user l
+DST_ZONE=""
+for z in Europe/Rome America/New_York Europe/London Australia/Sydney Pacific/Auckland America/Santiago Australia/Lord_Howe Africa/Casablanca; do
+    for n in $(seq 27 -1 2); do
+        o1="$(TZ=$z date -d "$n days ago 12:00" +%z)"
+        o2="$(TZ=$z date -d "$((n - 1)) days ago 12:00" +%z)"
+        if [[ "$o1" != "$o2" ]]; then DST_ZONE="$z"; DST_BEFORE="$(TZ=$z date -d "$n days ago" +%F)"; DST_AFTER="$(TZ=$z date -d "$((n - 1)) days ago" +%F)"; break 2; fi
+    done
+done
+if [[ -z "$DST_ZONE" ]]; then
+    echo "  - nessun cambio d'ora negli ultimi 27 giorni nei fusi provati: controllo saltato (gli offset stagionali sono nei test unitari)"
+else
+    iso_off() { echo "${1:0:3}:${1:3:2}"; }   # +0200 → +02:00
+    OFF_BEFORE="$(iso_off "$o1")"
+    OFF_AFTER="$(iso_off "$o2")"
+    XTZ="$DST_ZONE"
+    ID="$(save "$(body 91 "$(iso "$(date -d '10 minutes ago' +%s)")")")"
+    R="$(move "$DST_BEFORE 12:00:00")"
+    check "$DST_ZONE: data completa prima del cambio, started_at con l'offset $OFF_BEFORE" "$R" ".success == true and (.started_at | endswith(\"$OFF_BEFORE\"))"
+    R="$(move "$DST_AFTER")"
+    same "$DST_ZONE: solo data dopo il cambio, l'orario locale resta" "$(history_field "$ID" date)" "$DST_AFTER 12:00:00"
+    check "$DST_ZONE: started_at con l'offset $OFF_AFTER" "$R" ".success == true and (.started_at | endswith(\"$OFF_AFTER\"))"
+    R="$(move "$DST_BEFORE")"
+    check "$DST_ZONE: di nuovo prima del cambio, offset $OFF_BEFORE" "$R" ".success == true and (.started_at | endswith(\"$OFF_BEFORE\"))"
+fi
+
+echo
+echo "Cambio data: il fuso del dispositivo non cambia il «futuro» dell'allenamento (D10)"
+make_user m
+XTZ="Pacific/Pago_Pago"
+ID="$(save "$(body 92 "$(iso "$(date -d '10 minutes ago' +%s)")")")"
+BEFORE_DATE="$(history_field "$ID" date)"
+XTZ="Pacific/Kiritimati"
+R="$(move "$(TZ=Pacific/Kiritimati date +%F)")"
+check "dispositivo a Kiritimati, allenamento a Pago Pago: data nuova nel futuro di Pago Pago → future_date" "$R" '.code == "future_date"'
+same "la data dell'allenamento non è cambiata" "$(history_field "$ID" date)" "$BEFORE_DATE"
+same "il fuso dell'allenamento non è cambiato" "$(history_field "$ID" time_zone)" "Pacific/Pago_Pago"
+
+echo
+echo "Classifica con due membri in fusi diversi: la settimana di chi guarda sui giorni locali di ciascuno (D11)"
+make_user p
+TP="$T"
+XTZ="Pacific/Pago_Pago"
+res="$(call POST api/groups/create.php "$TP" '{"name":"Due fusi","type":"friends"}')"
+GID2="$(echo "${res#* }" | jq -r '.group.id')"
+CODE2="$(echo "${res#* }" | jq -r '.group.invite_code')"
+make_user q
+XTZ="Pacific/Kiritimati"
+call POST api/groups/join.php "$T" "{\"code\":\"$CODE2\",\"consent\":true}" >/dev/null
+PAGO_DOW="$(TZ=Pacific/Pago_Pago date +%u)"
+PAGO_MONDAY="$(TZ=Pacific/Pago_Pago date -d "$((PAGO_DOW - 1)) days ago" +%F)"
+Q_START="$(TZ=Pacific/Kiritimati date -d "$PAGO_MONDAY 00:30" +%s)"   # lunedì 00:30 locale di Kiritimati, ancora domenica per chi guarda da Pago Pago in UTC
+save "$(body 93 "$(iso "$Q_START")" "$(iso $((Q_START + 1500)))" true)" >/dev/null
+XTZ="Pacific/Pago_Pago"
+R="$(call GET "api/groups/read.php?group_id=$GID2&board=week" "$TP")"
+check "settimana del gruppo = quella di chi guarda, da Pago Pago ($PAGO_MONDAY)" "$R" ".week.from == \"$PAGO_MONDAY\""
+check "l'allenamento locale di lunedì 00:30 a Kiritimati conta nella settimana di chi guarda" "$R" '[.board[] | select(.is_me | not)][0].workouts == 1'
 
 echo
 if (( fails )); then
