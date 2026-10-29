@@ -99,7 +99,9 @@ function weekly_workout_counts(PDO $db, array $user_ids, DateTime $dt, int $excl
 
 // Volume (kg × ripetizioni) nella settimana ISO di $dt per ogni utente: [user_id => kg].
 // Le ripetizioni sono testo ("8-10", "max"): si sommano in PHP con parseReps(), contando
-// solo i set con peso e ripetizioni maggiori di zero, come record_workout.php.
+// solo i set con peso e ripetizioni maggiori di zero, come record_workout.php. Le serie di
+// riscaldamento (#66) non sono allenanti: escluse dal volume (quindi anche dalla classifica
+// dei gruppi, models/Group.php, che chiama questa funzione).
 function weekly_volumes(PDO $db, array $user_ids, DateTime $dt): array {
     $volumes = [];
     foreach ($user_ids as $id) $volumes[(int) $id] = 0.0;
@@ -111,7 +113,7 @@ function weekly_volumes(PDO $db, array $user_ids, DateTime $dt): array {
         "SELECT wh.user_id, ws.weight, ws.reps
          FROM gym_workout_sets ws
          JOIN gym_workout_history wh ON ws.workout_history_id = wh.id
-         WHERE wh.user_id IN ($placeholders) AND wh.date >= ? AND wh.date <= ?"
+         WHERE wh.user_id IN ($placeholders) AND wh.date >= ? AND wh.date <= ? AND ws.is_warmup = 0"
     );
     $stmt->execute(array_merge(
         array_values(array_map('intval', $user_ids)),
