@@ -33,7 +33,7 @@ const ACTIONS = {
   rename_user: { title: "Rinomina l'utente", cta: 'Rinomina', field: 'username', fieldLabel: 'Nuovo username', max: 50 },
 };
 
-const formatDate = (value) => (value ? new Date(value.replace(' ', 'T')).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' }) : '');
+const formatDate = (value) => (value ? new Date(value).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' }) : '');
 
 const ReportActionDialog = ({ pending, onClose, onDone }) => {
   const [note, setNote] = useState('');

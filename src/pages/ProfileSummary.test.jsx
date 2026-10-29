@@ -22,14 +22,14 @@ const profile = {
     { exercise_id: 6, name: 'Rematore con bilanciere', level: 5, xp: 610 },
   ],
   achievements: [
-    a('s10', 'sessions', 'Prime 10 sessioni', 10, '2026-03-07 18:00:00'),
-    a('s50', 'sessions', '50 sessioni', 50, '2026-10-02 18:00:00'),
+    a('s10', 'sessions', 'Prime 10 sessioni', 10, '2026-03-07T12:00:00+00:00'),
+    a('s50', 'sessions', '50 sessioni', 50, '2026-10-02T12:00:00+00:00'),
     a('s100', 'sessions', 'Centurione', 100),
     a('s250', 'sessions', '250 sessioni', 250),
-    a('t1500', 'tonnage', '1,5 t — automobile', 1500, '2026-02-05 18:00:00'),
+    a('t1500', 'tonnage', '1,5 t — automobile', 1500, '2026-02-05T12:00:00+00:00'),
     a('t420000', 'tonnage', '420 t — Stazione Spaziale', 420000),
     a('t2000000', 'tonnage', '2.000 t — Space Shuttle', 2000000),
-    a('st4', 'streak', '4 settimane consecutive', 4, '2026-07-20 18:00:00'),
+    a('st4', 'streak', '4 settimane consecutive', 4, '2026-07-20T12:00:00+00:00'),
     a('st8', 'streak', '8 settimane consecutive', 8),
   ],
 };

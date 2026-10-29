@@ -51,7 +51,7 @@ const AchievementCard = ({ achievement, isNext, progress }) => {
       <Typography sx={{ fontSize: 16, fontWeight: 600, lineHeight: 1.3, color: locked && !isNext ? 'text.secondary' : 'text.primary' }}>{label}</Typography>
       {!locked && unlocked_at && (
         <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
-          {formatDate(String(unlocked_at).replace(' ', 'T'), { day: 'numeric', month: 'short', year: 'numeric' })}
+          {formatDate(unlocked_at, { day: 'numeric', month: 'short', year: 'numeric' })}
         </Typography>
       )}
       {isNext && (

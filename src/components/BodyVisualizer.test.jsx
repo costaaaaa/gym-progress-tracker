@@ -16,10 +16,10 @@ const GREY = 'rgb(107, 102, 99)';
 const data = {
   petto: { status: 'PRONTO', percent: 100, ready_at: null },
   glutei: { status: 'PRONTO', percent: 100, ready_at: null },
-  schiena: { status: 'IN RECUPERO', percent: 60, ready_at: '2026-10-22 08:00:00' },
-  bicipiti: { status: 'IN RECUPERO', percent: 150, ready_at: '2026-10-21 20:00:00' },
-  quadricipiti: { status: 'AFFATICATO', percent: 20, ready_at: '2026-10-24 08:00:00' },
-  femorali: { status: 'AFFATICATO', percent: 40, ready_at: '2026-10-23 08:00:00' },
+  schiena: { status: 'IN RECUPERO', percent: 60, ready_at: '2026-10-22T08:00:00+02:00' },
+  bicipiti: { status: 'IN RECUPERO', percent: 150, ready_at: '2026-10-21T20:00:00+02:00' },
+  quadricipiti: { status: 'AFFATICATO', percent: 20, ready_at: '2026-10-24T08:00:00+02:00' },
+  femorali: { status: 'AFFATICATO', percent: 40, ready_at: '2026-10-23T08:00:00+02:00' },
   tricipiti: { status: null },
 };
 

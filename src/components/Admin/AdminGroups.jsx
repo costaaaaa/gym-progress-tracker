@@ -7,7 +7,7 @@ import { errorMessage } from '../../api/exercises';
 import { renameAdminGroup, searchAdminGroups } from '../../api/adminGroups';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 
-const formatDate = (value) => new Date(value.replace(' ', 'T')).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' });
+const formatDate = (value) => new Date(value).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' });
 
 const lockLabel = (g) => {
   if (!g.name_locked) return null;
