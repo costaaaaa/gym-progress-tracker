@@ -46,6 +46,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
   const [exercise, setExercise] = useState({
     name: '',
     sets: '',
+    warmupSets: '',
     reps: '',
     rest: '',
     notes: '',
@@ -222,6 +223,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
     setExercise({
       name: '',
       sets: '',
+      warmupSets: '',
       reps: '',
       rest: '',
       notes: '',
@@ -240,6 +242,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
     exercise.name &&
     exercise.muscleGroup &&
     intInRange(exercise.sets, 1, 20) &&
+    (exercise.warmupSets === '' || intInRange(exercise.warmupSets, 0, 10)) &&
     String(exercise.reps).trim() &&
     exercise.reps.length <= 20 &&
     intInRange(exercise.rest, 0, 3600)
@@ -392,6 +395,23 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
               type="number"
               inputProps={{ min: 1, max: 20, step: 1 }}
               value={exercise.sets}
+              onChange={handleChange}
+              fullWidth
+              sx={{
+                '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                  display: 'none',
+                },
+                '& input[type=number]': {
+                  MozAppearance: 'textfield',
+                },
+              }}
+            />
+            <TextField
+              name="warmupSets"
+              label={t('exercise_dialog.warmup_sets')}
+              type="number"
+              inputProps={{ min: 0, max: 10, step: 1 }}
+              value={exercise.warmupSets}
               onChange={handleChange}
               fullWidth
               sx={{

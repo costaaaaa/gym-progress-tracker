@@ -290,3 +290,34 @@ describe('data e ora dell\'allenamento: l\'orologio del luogo, non quello del br
     expect(getComputedStyle(screen.getByText('New York · UTC−4')).fontSize).toBe('16px');
   });
 });
+
+describe('serie di riscaldamento (#66): visibili ma escluse dal conteggio', () => {
+  const stubRecords = (records) => vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
+    url.includes('read_plans.php') ? json({ records: [plan] })
+      : url.includes('workout_history/read.php') ? json({ records }) : json({ success: true }),
+  )));
+
+  it('marca la serie di riscaldamento e conta solo le allenanti nel badge "serie"', async () => {
+    const withWarmup = {
+      ...workout,
+      exercises: [
+        {
+          ...exercise(1, 'Panca piana'),
+          sets: [
+            { set_number: 1, weight: 20, reps: 10, is_warmup: true },
+            { set_number: 2, weight: 60, reps: 8 },
+          ],
+        },
+        exercise(2, 'Croci'),
+        exercise(3, 'Dip'),
+      ],
+    };
+    stubRecords([withWarmup]);
+    render(<ThemeModeProvider><MemoryRouter><WorkoutHistory isEmbedded /></MemoryRouter></ThemeModeProvider>);
+    const riga = (await screen.findByText('02:00 · 3 esercizi')).closest('[aria-expanded]');
+    fireEvent.click(riga);
+    const pancaBox = screen.getByText('Panca piana').closest('div').parentElement;
+    expect(within(pancaBox).getByText('Risc.')).toBeTruthy();
+    expect(within(pancaBox).getByText('1 serie')).toBeTruthy();
+  });
+});

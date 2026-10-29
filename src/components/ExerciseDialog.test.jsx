@@ -92,3 +92,43 @@ describe('ExerciseDialog · creazione con gruppo "Gambe"', () => {
     expect(body.primary_muscle).toBeUndefined();
   });
 });
+
+// Scelgo l'esercizio esistente "Panca Piana" via autocomplete e riempio serie/ripetizioni/recupero
+const scegliEsercizioEsistente = async () => {
+  await scegliGruppo('Petto');
+  const input = screen.getByLabelText('Nome esercizio');
+  fireEvent.change(input, { target: { value: 'Panca' } });
+  await act(async () => {});
+  fireEvent.click(screen.getByRole('option', { name: 'Panca Piana' }));
+  fireEvent.change(screen.getByLabelText('Serie'), { target: { value: '3' } });
+  fireEvent.change(screen.getByLabelText('Ripetizioni'), { target: { value: '8-10' } });
+  fireEvent.change(screen.getByLabelText('Recupero (s)'), { target: { value: '90' } });
+};
+
+describe('ExerciseDialog · serie di riscaldamento (#66)', () => {
+  it('di base è vuoto (0) e non invalida il form', async () => {
+    await apri();
+    await scegliEsercizioEsistente();
+    expect(screen.getByLabelText('Serie di riscaldamento').value).toBe('');
+    expect(screen.getByRole('button', { name: 'Aggiungi' }).disabled).toBe(false);
+  });
+
+  it('fuori range (0-10) disabilita "Aggiungi"', async () => {
+    await apri();
+    await scegliEsercizioEsistente();
+    fireEvent.change(screen.getByLabelText('Serie di riscaldamento'), { target: { value: '11' } });
+    expect(screen.getByRole('button', { name: 'Aggiungi' }).disabled).toBe(true);
+  });
+
+  it('passa warmupSets a onAdd', async () => {
+    const onAdd = vi.fn();
+    render(<ExerciseDialog open onClose={() => {}} onAdd={onAdd} dayIndex={0} />);
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    await scegliEsercizioEsistente();
+    fireEvent.change(screen.getByLabelText('Serie di riscaldamento'), { target: { value: '2' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Aggiungi' }));
+
+    expect(onAdd).toHaveBeenCalledWith(0, expect.objectContaining({ warmupSets: '2', sets: '3' }));
+  });
+});

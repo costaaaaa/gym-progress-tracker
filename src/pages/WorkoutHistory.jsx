@@ -352,7 +352,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                   border: '1px solid', borderColor: 'divider', borderRadius: '8px',
                   px: 1.25, py: 0.4, fontSize: 12, fontWeight: 600, color: 'text.secondary', flexShrink: 0,
                 }}>
-                  {t('history.sets_count', { count: exercise.sets.length })}
+                  {t('history.sets_count', { count: exercise.sets.filter((set) => !set.is_warmup).length })}
                 </Box>
               </Box>
               {exercise.sets.length > 0 ? (
@@ -366,7 +366,18 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                         borderRadius: '8px', px: 1.75, py: 1,
                       }}
                     >
-                      <Typography variant="body2" color="text.secondary">{t('focus.set_n', { n: idx + 1 })}</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        <Typography variant="body2" color="text.secondary">{t('focus.set_n', { n: idx + 1 })}</Typography>
+                        {set.is_warmup && (
+                          <Box sx={{
+                            fontSize: 10, fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase',
+                            color: 'warning.main', border: '1px solid', borderColor: 'warning.main',
+                            borderRadius: '6px', px: 0.5, lineHeight: 1.6,
+                          }}>
+                            {t('history.warmup_badge')}
+                          </Box>
+                        )}
+                      </Box>
                       <Box sx={{ textAlign: 'right' }}>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>{set.weight || 0} kg × {set.reps}</Typography>
                         {set.intensity_technique && (

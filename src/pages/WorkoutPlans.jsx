@@ -70,6 +70,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
   const [exerciseToEdit, setExerciseToEdit] = useState(null);
   const [editedExerciseValues, setEditedExerciseValues] = useState({
     sets: '',
+    warmupSets: '',
     reps: '',
     rest: '',
     notes: '',
@@ -304,6 +305,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
           day_id: workoutPlans[selectedPlanIndex].days[dayIndex].id,
           exercise_id: selectedExerciseId, // Questo è l'ID dell'esercizio dalla tabella gym_exercises
           sets: parseInt(exercise.sets),
+          warmup_sets: exercise.warmupSets ? parseInt(exercise.warmupSets) : 0,
           reps: exercise.reps,
           rest: parseInt(exercise.rest),
           notes: exercise.notes,
@@ -491,6 +493,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
     setDayIdToDeleteFrom(dayId); // Riuso lo stesso stato per identificare il giorno
     setEditedExerciseValues({
       sets: exercise.sets,
+      warmupSets: exercise.warmup_sets || 0,
       reps: exercise.reps,
       rest: exercise.rest,
       notes: exercise.notes || '',
@@ -498,7 +501,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
     });
     setOpenEditExerciseDialog(true);
   };
-  
+
   // Chiusura dialog modifica esercizio
   const handleCloseEditExerciseDialog = () => {
     setOpenEditExerciseDialog(false);
@@ -507,6 +510,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       setDayIdToDeleteFrom(null);
       setEditedExerciseValues({
         sets: '',
+        warmupSets: '',
         reps: '',
         rest: '',
         notes: '',
@@ -534,6 +538,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
         day_id: dayIdToDeleteFrom,
         exercise_id: exerciseToEdit.id,
         sets: parseInt(editedExerciseValues.sets) || 0,
+        warmup_sets: parseInt(editedExerciseValues.warmupSets) || 0,
         reps: editedExerciseValues.reps || '',
         rest: parseInt(editedExerciseValues.rest) || 0,
         notes: editedExerciseValues.notes || '',
@@ -884,6 +889,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                                   {exercise.exercise_name}
                                                 </Typography>
                                                 <Typography variant="body2" color="text.secondary">
+                                                  {exercise.warmup_sets > 0 && t('plans.warmup_prefix', { n: exercise.warmup_sets })}
                                                   {t('plans.sets_line', { sets: exercise.sets, reps: exercise.reps, rest: exercise.rest })}
                                                 </Typography>
                                                 {exercise.intensity_technique && (
@@ -1192,6 +1198,15 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                   onChange={handleEditExerciseChange}
                   fullWidth
                   InputProps={{ inputProps: { min: 1 } }}
+                />
+                <TextField
+                  name="warmupSets"
+                  label={t('plans.edit_exercise.warmup_sets')}
+                  type="number"
+                  value={editedExerciseValues.warmupSets}
+                  onChange={handleEditExerciseChange}
+                  fullWidth
+                  InputProps={{ inputProps: { min: 0, max: 10 } }}
                 />
                 <TextField
                   name="reps"
