@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatClockTime, differentZone, workoutInstant, offsetLabel, zoneCity, workoutZoneBadge, isoClock } from './workoutTime';
+import { formatClockTime, differentZone, workoutInstant, offsetLabel, zoneCity, workoutZoneBadge, isoClock, zoneClock, moveToZoneDay } from './workoutTime';
 
 describe('formatClockTime', () => {
   it('mostra l\'ora scritta, senza convertirla nel fuso del browser', () => {
@@ -91,5 +91,41 @@ describe('isoClock', () => {
   it('valore illeggibile: null', () => {
     expect(isoClock('boh')).toBeNull();
     expect(isoClock(undefined)).toBeNull();
+  });
+});
+
+describe('zoneClock: l\'orologio di un istante in un fuso', () => {
+  const instant = Date.UTC(2026, 9, 18, 2, 30, 15);
+  it('lo stesso istante ha un orologio diverso per ogni fuso', () => {
+    expect(zoneClock(instant, 'America/New_York')).toBe('2026-10-17 22:30:15');
+    expect(zoneClock(instant, 'Europe/Rome')).toBe('2026-10-18 04:30:15');
+    expect(zoneClock(instant, 'Asia/Tokyo')).toBe('2026-10-18 11:30:15');
+  });
+  it('mezzanotte è 00:00, non 24:00', () => {
+    expect(zoneClock(Date.UTC(2026, 9, 18, 4, 0, 0), 'America/New_York')).toBe('2026-10-18 00:00:00');
+  });
+  it('accetta anche un Date', () => {
+    expect(zoneClock(new Date(instant), 'Asia/Tokyo')).toBe('2026-10-18 11:30:15');
+  });
+});
+
+describe('moveToZoneDay: stesso orario del luogo, su un altro giorno', () => {
+  it('New York: le 22:30 del 17 spostate al 18 sono le 22:30 del 18 a New York', () => {
+    const start = Date.UTC(2026, 9, 18, 2, 30, 0); // 17 ottobre 22:30 a New York (UTC−4)
+    expect(moveToZoneDay(start, '2026-10-18', 'America/New_York')).toBe(Date.UTC(2026, 9, 19, 2, 30, 0));
+  });
+  it('lo stesso giorno non sposta nulla', () => {
+    const start = Date.UTC(2026, 9, 18, 2, 30, 0);
+    expect(moveToZoneDay(start, '2026-10-17', 'America/New_York')).toBe(start);
+  });
+  it('attraverso il cambio dell\'ora legale l\'orario del luogo resta lo stesso', () => {
+    const start = Date.UTC(2026, 9, 30, 21, 0, 0); // 30 ottobre 17:00 a New York (UTC−4)
+    const moved = moveToZoneDay(start, '2026-11-02', 'America/New_York'); // dopo il 1 novembre: UTC−5
+    expect(moved).toBe(Date.UTC(2026, 10, 2, 22, 0, 0));
+    expect(zoneClock(moved, 'America/New_York')).toBe('2026-11-02 17:00:00');
+  });
+  it('Tokyo, a est di UTC: il giorno del luogo è quello scritto, non quello UTC', () => {
+    const start = Date.UTC(2026, 9, 17, 16, 0, 0); // 18 ottobre 01:00 a Tokyo
+    expect(moveToZoneDay(start, '2026-10-20', 'Asia/Tokyo')).toBe(Date.UTC(2026, 9, 19, 16, 0, 0));
   });
 });

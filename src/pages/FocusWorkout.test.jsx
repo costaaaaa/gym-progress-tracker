@@ -5,6 +5,7 @@ import FocusWorkout from './FocusWorkout';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { json } from '../test/dom';
 import { currentTimeZone } from '../utils/workoutTime';
+import { setBrowserTimeZone } from '../test/timeZone';
 
 const { mockNavigate, mockTrack } = vi.hoisted(() => ({ mockNavigate: vi.fn(), mockTrack: vi.fn() }));
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => mockNavigate }));
@@ -17,6 +18,7 @@ vi.mock('../utils/workoutTime', async (importOriginal) => ({ ...(await importOri
 
 const DRAFT_KEY = 'gym_focus_workout_draft';
 const NOW = new Date(2026, 9, 20, 18, 0);
+const BROWSER_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 const bench = { id: 9, exercise_id: 3, exercise_name: 'Panca piana', sets: 2, reps: '8-10', rest: 90, muscle_group: 'petto' };
 const fly = { id: 10, exercise_id: 4, exercise_name: 'Croci', sets: 2, reps: '12', rest: 60, muscle_group: 'petto' };
@@ -72,7 +74,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(NOW);
   vi.clearAllMocks();
-  currentTimeZone.mockReturnValue('Europe/Rome');
+  currentTimeZone.mockReturnValue(BROWSER_ZONE);
   localStorage.setItem('themeMode', 'light');
   vi.stubGlobal('fetch', fetchMock);
   responses = {
@@ -117,7 +119,7 @@ describe('flusso completo e salvataggio', () => {
       idempotency_key: expect.any(String),
       start_time: new Date(2026, 9, 20, 18, 0).toISOString(),
       duration_seconds: 120,
-      time_zone: 'Europe/Rome',
+      time_zone: BROWSER_ZONE,
     });
     expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
     expect(mockTrack).toHaveBeenCalledWith('workout_saved');
@@ -189,7 +191,7 @@ describe('bozza e ripresa', () => {
       backdated: true,
       start_time: new Date(2026, 9, 18, 17, 40).toISOString(),
       ended_at: new Date(2026, 9, 18, 17, 45).toISOString(),
-      time_zone: 'Europe/Rome',
+      time_zone: BROWSER_ZONE,
     });
   });
 });
@@ -235,6 +237,77 @@ describe('fuso dell\'allenamento', () => {
     await advance(0);
 
     expect(saveBody()).toMatchObject({ backdated: true, time_zone: 'America/New_York' });
+  });
+});
+
+describe('bozza di un altro fuso ripresa a Roma: il giorno è quello del luogo dell\'allenamento', () => {
+  // Iniziata a New York il 17 ottobre alle 22:30 (UTC−4), cioè il 18 alle 04:30 a Roma
+  const nyDraft = {
+    ...savedDraft,
+    timeZone: 'America/New_York',
+    startTime: '2026-10-18T02:30:00.000Z',
+    lastActivityAt: '2026-10-18T02:45:00.000Z',
+  };
+  beforeEach(() => {
+    setBrowserTimeZone('Europe/Rome');
+    currentTimeZone.mockReturnValue('Europe/Rome');
+    vi.setSystemTime(new Date('2026-10-20T16:00:00.000Z'));
+  });
+  const openNyDraft = async () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(nyDraft));
+    await mount();
+  };
+  const finishAndSave = async () => {
+    click('L\'avevo già finito');
+    await act(async () => { click('Salva allenamento'); });
+    await advance(0);
+    return saveBody();
+  };
+
+  it('il giorno proposto è il 17, quello scritto a New York, e salvarlo non sposta nulla', async () => {
+    await openNyDraft();
+    expect(screen.getByLabelText('Giorno dell\'allenamento').value).toBe('2026-10-17');
+
+    expect(await finishAndSave()).toMatchObject({
+      backdated: true,
+      time_zone: 'America/New_York',
+      start_time: '2026-10-18T02:30:00.000Z',
+      ended_at: '2026-10-18T02:45:00.000Z',
+    });
+  });
+
+  it('un altro giorno si salva con lo stesso orario di New York (22:30), non quello di Roma', async () => {
+    await openNyDraft();
+    fireEvent.change(screen.getByLabelText('Giorno dell\'allenamento'), { target: { value: '2026-10-18' } });
+
+    expect(await finishAndSave()).toMatchObject({
+      start_time: '2026-10-19T02:30:00.000Z',
+      ended_at: '2026-10-19T02:45:00.000Z',
+    });
+  });
+
+  it('i giorni scelti vanno da 7 giorni prima di oggi a oggi, contati a New York', async () => {
+    vi.setSystemTime(new Date('2026-10-20T01:00:00.000Z')); // 20 ottobre 03:00 a Roma, ancora il 19 a New York
+    await openNyDraft();
+    const input = screen.getByLabelText('Giorno dell\'allenamento');
+
+    expect(input.max).toBe('2026-10-19');
+    expect(input.min).toBe('2026-10-12');
+  });
+
+  it('l\'inizio mostrato è l\'orologio di New York', async () => {
+    await openNyDraft();
+    expect(screen.getByText(/Iniziato il .*22:30/)).toBeTruthy();
+  });
+
+  it('una bozza senza fuso usa quello attuale del dispositivo, come prima', async () => {
+    const old = { ...nyDraft };
+    delete old.timeZone;
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(old));
+    await mount();
+
+    expect(screen.getByLabelText('Giorno dell\'allenamento').value).toBe('2026-10-18');
+    expect(await finishAndSave()).toMatchObject({ time_zone: 'Europe/Rome', start_time: '2026-10-18T02:30:00.000Z' });
   });
 });
 

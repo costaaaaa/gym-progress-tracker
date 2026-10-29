@@ -13,7 +13,7 @@ import {
 } from '../../utils/focusSession';
 import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../../utils/celebrate';
 import { track } from '../../utils/analytics';
-import { currentTimeZone } from '../../utils/workoutTime';
+import { currentTimeZone, moveToZoneDay } from '../../utils/workoutTime';
 import i18n from '../../i18n';
 
 const DRAFT_STORAGE_KEY = 'gym_focus_workout_draft';
@@ -609,10 +609,8 @@ export default function useFocusSession() {
 
   // Sessione salvata in ritardo: inizio e fine spostati sul giorno scelto, stesso orario e stessa durata
   const retroPayload = () => {
-    const [y, m, d] = retroDate.split('-').map(Number);
     const start = new Date(startTime);
-    const moved = new Date(start);
-    moved.setFullYear(y, m - 1, d);
+    const moved = new Date(moveToZoneDay(start, retroDate, timeZone || currentTimeZone()));
     const shift = moved.getTime() - start.getTime();
     const end = netEnd();
     return {

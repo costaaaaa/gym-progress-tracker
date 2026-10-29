@@ -59,3 +59,22 @@ export const workoutZoneBadge = (workout, browserZone = currentTimeZone()) => {
   if (!offset || !differentZone(workout.time_zone, browserZone)) return null;
   return `${zoneCity(workout.time_zone)} · ${offset}`;
 };
+
+const clockParts = (zone) => new Intl.DateTimeFormat('en-US', {
+  timeZone: zone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',
+});
+
+/** L'orologio ("YYYY-MM-DD HH:MM:SS") che segna `instant` (ms o Date) in `zone`, a prescindere dal fuso del browser. */
+export const zoneClock = (instant, zone) => {
+  const p = Object.fromEntries(clockParts(zone).formatToParts(new Date(instant)).map(({ type, value }) => [type, value]));
+  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}:${p.second}`;
+};
+
+/** Stesso orario che `instant` ha in `zone`, ma sul giorno `day` ('YYYY-MM-DD') di quel luogo; ritorna ms. */
+export const moveToZoneDay = (instant, day, zone) => {
+  const wanted = clockDate(`${day} ${zoneClock(instant, zone).slice(11)}`).getTime();
+  // L'offset del fuso può cambiare fra i due giorni (ora legale): si corregge finché l'orologio torna.
+  let result = wanted - (clockDate(zoneClock(wanted, zone)).getTime() - wanted);
+  result = wanted - (clockDate(zoneClock(result, zone)).getTime() - result);
+  return result;
+};
