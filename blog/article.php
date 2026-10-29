@@ -40,12 +40,16 @@ if ($slug === '' || !preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) {
     blog_not_found();
 }
 
-$parsed = blog_parse_markdown_file(BLOG_CONTENT_DIR . '/' . $slug . '.md');
+$file = blog_find_article_file(BLOG_CONTENT_DIR, $slug);
+$parsed = $file === null ? null : blog_parse_markdown_file($file);
 if ($parsed === null) {
     blog_not_found();
 }
 
 list($meta, $markdown) = $parsed;
+if (!blog_is_published($meta, blog_today())) {
+    blog_not_found();
+}
 
 $title = isset($meta['title']) ? $meta['title'] : $slug;
 $description = isset($meta['description']) ? $meta['description'] : '';
