@@ -12,11 +12,18 @@ const STATUS_LABELS = { pending: 'In attesa', approved: 'Approvati', rejected: '
 
 const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
 
+// Muscolo principale (conteggio serie/recupero): "gambe" lo richiede sempre (nessun default,
+// 5 opzioni), "glutei" propone glutei di default ma accetta anche abduttori; gli altri gruppi
+// lo derivano da soli lato server e qui non si mostra nulla.
+const GAMBE_PRIMARY_MUSCLES = ['quadricipiti', 'femorali', 'glutei', 'adduttori', 'abduttori'];
+const GLUTEI_PRIMARY_MUSCLES = ['glutei', 'abduttori'];
+
 // Nuovo esercizio ufficiale (exercise = null) o modifica di nome, nome inglese, gruppo muscolare e attrezzo
 const ExerciseFormDialog = ({ open, exercise, muscleGroups, equipment, onClose, onSaved }) => {
   const [name, setName] = useState('');
   const [nameEn, setNameEn] = useState('');
   const [muscleGroup, setMuscleGroup] = useState('');
+  const [primaryMuscle, setPrimaryMuscle] = useState('');
   const [equipmentValue, setEquipmentValue] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -26,15 +33,28 @@ const ExerciseFormDialog = ({ open, exercise, muscleGroups, equipment, onClose, 
       setName(exercise?.name || '');
       setNameEn(exercise?.name_en || '');
       setMuscleGroup(exercise?.muscle_group || '');
+      setPrimaryMuscle(exercise?.primary_muscle || '');
       setEquipmentValue(exercise?.equipment || '');
       setError('');
     }
   }, [open, exercise]);
 
+  const handleGroupChange = (value) => {
+    setMuscleGroup(value);
+    if (value === 'glutei') {
+      setPrimaryMuscle((prev) => (GLUTEI_PRIMARY_MUSCLES.includes(prev) ? prev : 'glutei'));
+    } else {
+      setPrimaryMuscle('');
+    }
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    const fields = { name: name.trim(), name_en: nameEn.trim(), muscle_group: muscleGroup, equipment: equipmentValue };
+    const fields = {
+      name: name.trim(), name_en: nameEn.trim(), muscle_group: muscleGroup, equipment: equipmentValue,
+      ...(primaryMuscle ? { primary_muscle: primaryMuscle } : {}),
+    };
     const res = exercise
       ? await adminExerciseAction('update', { id: exercise.id, ...fields })
       : await adminExerciseAction('create', fields);
@@ -45,6 +65,9 @@ const ExerciseFormDialog = ({ open, exercise, muscleGroups, equipment, onClose, 
     }
     onSaved();
   };
+
+  const primaryMuscleOptions = muscleGroup === 'gambe' ? GAMBE_PRIMARY_MUSCLES
+    : muscleGroup === 'glutei' ? GLUTEI_PRIMARY_MUSCLES : null;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
@@ -72,10 +95,16 @@ const ExerciseFormDialog = ({ open, exercise, muscleGroups, equipment, onClose, 
             fullWidth
             margin="dense"
           />
-          <TextField select label="Gruppo muscolare" value={muscleGroup} onChange={(e) => setMuscleGroup(e.target.value)}
+          <TextField select label="Gruppo muscolare" value={muscleGroup} onChange={(e) => handleGroupChange(e.target.value)}
             fullWidth required margin="dense">
             {muscleGroups.map((g) => <MenuItem key={g} value={g}>{capitalize(g)}</MenuItem>)}
           </TextField>
+          {primaryMuscleOptions && (
+            <TextField select label="Muscolo principale" value={primaryMuscle} onChange={(e) => setPrimaryMuscle(e.target.value)}
+              fullWidth required margin="dense">
+              {primaryMuscleOptions.map((m) => <MenuItem key={m} value={m}>{capitalize(m)}</MenuItem>)}
+            </TextField>
+          )}
           <TextField select label="Attrezzo" value={equipmentValue} onChange={(e) => setEquipmentValue(e.target.value)}
             fullWidth margin="dense">
             <MenuItem value="">Nessuno</MenuItem>
@@ -89,7 +118,8 @@ const ExerciseFormDialog = ({ open, exercise, muscleGroups, equipment, onClose, 
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={onClose} disabled={saving}>Annulla</Button>
-          <Button type="submit" variant="contained" disabled={saving || !name.trim() || !muscleGroup}>Salva</Button>
+          <Button type="submit" variant="contained"
+            disabled={saving || !name.trim() || !muscleGroup || (muscleGroup === 'gambe' && !primaryMuscle)}>Salva</Button>
         </DialogActions>
       </Box>
     </Dialog>
