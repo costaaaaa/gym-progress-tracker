@@ -10,7 +10,7 @@ class WorkoutHistory
     public $user_id;
     public $exercises;
     public $date;
-    public $time_zone = 'Europe/Rome';
+    public $time_zone = DEFAULT_TIME_ZONE;
     public $duration_seconds = null;
     public $notes;
     public $idempotency_key = null;

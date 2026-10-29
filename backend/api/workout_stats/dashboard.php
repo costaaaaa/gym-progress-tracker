@@ -146,6 +146,7 @@ try {
 
         $last_ready_at = null;
         $last_trained = null;
+        $last_trained_at = null;
 
         foreach ($mg_sessions as $date_str => $session) {
             $session_date = clone $session['started_at'];

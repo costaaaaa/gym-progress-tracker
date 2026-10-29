@@ -32,7 +32,7 @@ if (
     $stmt_row = $db->prepare("SELECT TIME(date) AS time_of_day, time_zone FROM gym_workout_history WHERE id = ? AND user_id = ?");
     $stmt_row->execute([$data->id, $user_id]);
     $row = $stmt_row->fetch(PDO::FETCH_ASSOC);
-    $time_zone = $row ? $row['time_zone'] : request_time_zone();
+    $time_zone = $row ? (valid_time_zone($row['time_zone']) ?? DEFAULT_TIME_ZONE) : request_time_zone();
     $zone = new DateTimeZone($time_zone);
 
     // Con la sola data (YYYY-MM-DD) l'orario originale dell'allenamento resta: va riletto prima di
@@ -81,7 +81,7 @@ if (
     // Spostamenti solo dentro gli ultimi 30 giorni, sia la data di partenza sia quella nuova: i giorni
     // si contano nel fuso attuale del dispositivo, sul giorno locale dell'allenamento
     $oldest_day = user_now()->modify('-30 days')->format('Y-m-d');
-    if (substr($new_local->format('Y-m-d'), 0, 10) < $oldest_day) {
+    if ($new_local->format('Y-m-d') < $oldest_day) {
         http_response_code(400);
         echo json_encode(array(
             "success" => false,
@@ -171,14 +171,15 @@ if (
         exit;
     }
 
+    $started_at = workout_started_at($formatted_date, $time_zone);
     http_response_code(200);
     echo json_encode(array(
         "success" => true,
         "preview" => $preview,
         "message" => $preview ? t_server('history.date_preview') : t_server('history.date_updated'),
         "id" => $workout->id,
-        "new_date" => workout_started_at($formatted_date, $time_zone),
-        "started_at" => workout_started_at($formatted_date, $time_zone),
+        "new_date" => $started_at,
+        "started_at" => $started_at,
         "time_zone" => $time_zone,
         "xp_delta" => $xp_delta,
         "streak_before" => $streak_before,

@@ -4,7 +4,7 @@
 # quale, "oggi" e la settimana seguono il fuso del dispositivo (header X-Timezone), senza fuso tutto
 # resta in Europe/Rome come prima.
 #
-#   tests/time_zone.sh http://100.102.68.47:8080/backend/
+#   tests/time_zone.sh http://localhost:8080/backend/
 #
 # Registra account usa e getta (token Bearer) e li cancella alla fine.
 # Non va lanciato in produzione: crea account veri.
