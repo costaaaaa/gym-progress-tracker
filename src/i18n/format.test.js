@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { formatDate } from './format';
+import { setBrowserTimeZone } from '../test/timeZone';
 
 describe('formatDate', () => {
   it('una data senza orario è quel giorno, anche a ovest di UTC (no giorno prima)', () => {
+    setBrowserTimeZone('America/New_York');
     expect(formatDate('2026-10-20', { day: 'numeric', month: 'long' })).toBe('20 ottobre');
     expect(formatDate('2026-01-01', { day: 'numeric', month: 'long', year: 'numeric' })).toBe('1 gennaio 2026');
   });

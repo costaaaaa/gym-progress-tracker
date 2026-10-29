@@ -11,6 +11,7 @@ import Account from './Account';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { textBelow } from '../test/minText';
 import { json } from '../test/dom';
+import { setBrowserTimeZone } from '../test/timeZone';
 
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
 // Lo stesso oggetto a ogni render: la pagina ricarica i dati quando `user` cambia identità.
@@ -213,7 +214,9 @@ describe('testi', () => {
 describe('esporta i dati', () => {
   afterEach(() => vi.useRealTimers());
 
-  it.each([[0, 30], [23, 30]])('il file porta il giorno locale (%i:%i), non quello UTC', async (hour, minute) => {
+  // 00:30 a Roma è ancora ieri in UTC; 23:30 a New York è già domani in UTC
+  it.each([['Europe/Rome', 0, 30], ['America/New_York', 23, 30]])('il file porta il giorno locale (%s, %i:%i), non quello UTC', async (zone, hour, minute) => {
+    setBrowserTimeZone(zone);
     await mount();
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date(2026, 9, 20, hour, minute));
