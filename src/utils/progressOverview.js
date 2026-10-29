@@ -5,7 +5,8 @@
 // (sempre peso 0) si usa il massimo di ripetizioni in una serie.
 // ============================================================================
 import { extractReps, estimateOneRepMax } from './workoutMetrics';
-import { clockDate, workoutInstant } from './workoutTime';
+import { clockDate } from './calendarDay';
+import { workoutInstant } from './workoutTime';
 
 export const RECENT_DAYS = 60;
 export const IMPROVING_PCT = 2;

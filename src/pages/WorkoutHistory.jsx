@@ -47,8 +47,9 @@ import { buildShareStats, historyRecords, muscleGroupsTitle } from '../utils/sha
 import { track } from '../utils/analytics';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
-import { intlLocale } from '../i18n/format';
-import { clockDate, formatClockDate, formatClockTime } from '../utils/workoutTime';
+import { intlLocale, formatDate } from '../i18n/format';
+import { clockDate, clockDay } from '../utils/calendarDay';
+import { formatClockTime } from '../utils/workoutTime';
 import TimeZoneBadge from '../components/TimeZoneBadge';
 import { muscleLabel, techniqueLabel } from '../i18n/labels';
 import { achievementCatalog } from '../utils/gamificationLevels';
@@ -287,7 +288,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
     { key: 'share', label: t('history.share_aria'), icon: <ShareIcon fontSize="small" />, run: () => handleShareClick(workout) },
     {
       key: 'edit-date', label: t('history.edit_date_aria'), icon: <EditCalendarIcon fontSize="small" />,
-      disabled: String(workout.date).slice(0, 10) < oldestMovable, disabledHint: t('history.date.too_old'),
+      disabled: (clockDay(workout.date) ?? oldestMovable) < oldestMovable, disabledHint: t('history.date.too_old'),
       run: (e) => handleEditDateClick(workout, e),
     },
     { key: 'delete', label: t('history.delete_aria'), icon: <DeleteIcon fontSize="small" />, run: (e) => handleDeleteClick(workout, e) },
@@ -478,7 +479,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                               aria-controls={rowPanelId}
                             >
                               <ListItemText
-                                primary={<Typography sx={{ fontWeight: 600, fontSize: 16 }}>{formatClockDate(workout.date, { weekday: 'long', day: 'numeric', month: 'long' })}</Typography>}
+                                primary={<Typography sx={{ fontWeight: 600, fontSize: 16 }}>{formatDate(workout.date, { weekday: 'long', day: 'numeric', month: 'long' })}</Typography>}
                                 secondaryTypographyProps={{ component: 'div' }}
                                 secondary={(
                                   <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, mt: 0.25 }}>

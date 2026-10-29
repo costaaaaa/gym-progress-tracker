@@ -1,14 +1,12 @@
 // Badge del fuso: compare solo per un allenamento fatto in un fuso diverso da quello del dispositivo.
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import TimeZoneBadge from './TimeZoneBadge';
-import { currentTimeZone } from '../utils/workoutTime';
-
-vi.mock('../utils/workoutTime', async (importOriginal) => ({ ...(await importOriginal()), currentTimeZone: vi.fn() }));
+import { setBrowserTimeZone } from '../test/timeZone';
 
 const ny = { time_zone: 'America/New_York', started_at: '2026-10-18T02:00:00-04:00' };
 
-beforeEach(() => currentTimeZone.mockReturnValue('Europe/Rome'));
+beforeEach(() => setBrowserTimeZone('Europe/Rome'));
 
 describe('TimeZoneBadge', () => {
   it('fuso diverso: città e offset, con l\'etichetta per i lettori di schermo', () => {
@@ -17,7 +15,7 @@ describe('TimeZoneBadge', () => {
     expect(screen.getByLabelText('Fuso orario: New York · UTC−4')).toBeTruthy();
   });
   it('stesso fuso del dispositivo: niente', () => {
-    currentTimeZone.mockReturnValue('America/New_York');
+    setBrowserTimeZone('America/New_York');
     const { container } = render(<TimeZoneBadge workout={ny} />);
     expect(container.firstChild).toBeNull();
   });

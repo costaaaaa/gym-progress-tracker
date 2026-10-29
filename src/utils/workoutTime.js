@@ -5,10 +5,6 @@ import { clockDate } from './calendarDay';
 // istante: si mostra come sta scritta, a prescindere dal fuso del browser. Per i conti fra istanti (giorni
 // da allora, recupero) c'è `started_at`, ISO con offset.
 
-export { clockDate };
-
-export const formatClockDate = (value, options) => clockDate(value).toLocaleDateString(intlLocale(), { ...options, timeZone: 'UTC' });
-
 export const formatClockTime = (value) => clockDate(value).toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
 
 /** Istante dell'allenamento in ms. Senza `started_at` (risposta di un backend vecchio) l'orologio si legge nel fuso del browser, come prima. */

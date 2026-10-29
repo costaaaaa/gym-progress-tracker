@@ -1,11 +1,11 @@
 import { Chip } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { workoutZoneBadge, currentTimeZone } from '../utils/workoutTime';
+import { workoutZoneBadge } from '../utils/workoutTime';
 
 // Accanto all'orario di un allenamento fatto in un fuso diverso da quello del dispositivo ("New York · UTC−4")
 const TimeZoneBadge = ({ workout, sx }) => {
   const { t } = useTranslation();
-  const label = workoutZoneBadge(workout, currentTimeZone());
+  const label = workoutZoneBadge(workout);
   if (!label) return null;
   return (
     <Chip

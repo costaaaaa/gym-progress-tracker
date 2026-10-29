@@ -13,8 +13,9 @@ import {
 } from '@mui/material';
 import { format, subDays } from 'date-fns';
 import { API_BASE_URL } from '../config';
-import { isClockString } from '../utils/calendarDay';
-import { formatClockDate, isoClock } from '../utils/workoutTime';
+import { formatDate } from '../i18n/format';
+import { isClockString, clockDay } from '../utils/calendarDay';
+import { isoClock } from '../utils/workoutTime';
 import { achievementCatalog } from '../utils/gamificationLevels';
 
 const achievementLabel = (key) => achievementCatalog.find(a => a.key === key)?.label ?? key;
@@ -45,7 +46,7 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
     if (workout) {
       // `date` è l'orologio del luogo: il giorno è quello scritto, non quello del browser
       if (isClockString(workout.date)) {
-        const day = workout.date.slice(0, 10);
+        const day = clockDay(workout.date);
         setNewDate(day);
         setOriginalDate(day);
       } else {
@@ -136,7 +137,7 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
           <Typography variant="body1">
             {t('history.date.current')} {
               isClockString(workout.date)
-                ? formatClockDate(workout.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+                ? formatDate(workout.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
                 : (workout.date || t('history.date.unavailable'))
             }
           </Typography>

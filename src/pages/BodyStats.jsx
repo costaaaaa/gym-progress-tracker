@@ -28,6 +28,7 @@ import {
 import { API_BASE_URL } from '../config';
 import { DatePicker } from '@mui/x-date-pickers';
 import { useTranslation } from 'react-i18next';
+import { format } from 'date-fns';
 import i18n from '../i18n';
 import DateLocalization from '../i18n/DateLocalization';
 import { formatDate, formatNumber } from '../i18n/format';
@@ -40,7 +41,6 @@ import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import EventBusyIcon from '@mui/icons-material/EventBusy';
 import ChartCard, { buildPoints } from '../components/ChartCard';
-import { format } from 'date-fns';
 import { dayNumber } from '../utils/calendarDay';
 import HealthConsentCard from '../components/HealthConsentCard';
 import HealthAppHint from '../components/HealthAppHint';

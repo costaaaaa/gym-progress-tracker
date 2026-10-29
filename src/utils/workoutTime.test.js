@@ -1,33 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { clockDate, formatClockDate, formatClockTime, workoutInstant, offsetLabel, zoneCity, workoutZoneBadge, isoClock } from './workoutTime';
+import { formatClockTime, workoutInstant, offsetLabel, zoneCity, workoutZoneBadge, isoClock } from './workoutTime';
 
-describe('clockDate: l\'ora locale del luogo letta come orologio', () => {
-  it('i campi di calendario e orologio sono quelli della stringa, in qualunque fuso del browser', () => {
-    const d = clockDate('2026-10-18 21:30:15');
-    expect([d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds()])
-      .toEqual([2026, 10, 18, 21, 30, 15]);
-  });
-  it('accetta anche la "T" e la sola data (mezzanotte)', () => {
-    expect(clockDate('2026-10-18T21:30:00').getUTCHours()).toBe(21);
-    expect(clockDate('2026-10-18').getUTCHours()).toBe(0);
-  });
-  it('un\'ora che nel fuso del browser non esiste resta quella scritta (02:30 del 29/03/2026 a Roma)', () => {
-    expect(clockDate('2026-03-29 02:30:00').getUTCHours()).toBe(2);
-  });
-  it('valore illeggibile o mancante: data non valida', () => {
-    expect(Number.isNaN(clockDate('boh').getTime())).toBe(true);
-    expect(Number.isNaN(clockDate(undefined).getTime())).toBe(true);
-  });
-});
-
-describe('formatClockDate e formatClockTime', () => {
-  it('mostrano giorno e ora scritti, senza convertirli nel fuso del browser', () => {
-    expect(formatClockDate('2026-10-18 02:00:00', { day: 'numeric', month: 'long', year: 'numeric' })).toBe('18 ottobre 2026');
+describe('formatClockTime', () => {
+  it('mostra l\'ora scritta, senza convertirla nel fuso del browser', () => {
     expect(formatClockTime('2026-10-18 02:00:00')).toBe('02:00');
     expect(formatClockTime('2026-10-18 23:59:00')).toBe('23:59');
-  });
-  it('una sola data (YYYY-MM-DD) è quel giorno, non il giorno prima a ovest di UTC', () => {
-    expect(formatClockDate('2026-10-20', { day: 'numeric', month: 'long' })).toBe('20 ottobre');
   });
 });
 

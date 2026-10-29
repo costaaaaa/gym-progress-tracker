@@ -16,6 +16,9 @@ export const dayTime = (dateTime) => {
   return dayNumber(dateTime) + (h * 3600 + min * 60 + s) / 86400;
 };
 
+/** Il giorno 'YYYY-MM-DD' scritto all'inizio di un orologio o di un ISO con offset (il giorno è quello scritto, non quello UTC); null se non c'è. */
+export const clockDay = (value) => /^(\d{4}-\d{2}-\d{2})(?:[ T]|$)/.exec(String(value ?? ''))?.[1] ?? null;
+
 const CLOCK_RE = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/;
 
 /** Una stringa di calendario senza fuso: 'YYYY-MM-DD' o 'YYYY-MM-DD[ T]HH:MM[:SS]'. */

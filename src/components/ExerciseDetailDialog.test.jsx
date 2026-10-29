@@ -1,17 +1,15 @@
 // Dettaglio esercizio: la cronologia mostra il giorno scritto e il badge del fuso per le sessioni fatte altrove.
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import ExerciseDetailDialog from './ExerciseDetailDialog';
-import { currentTimeZone } from '../utils/workoutTime';
-
-vi.mock('../utils/workoutTime', async (importOriginal) => ({ ...(await importOriginal()), currentTimeZone: vi.fn() }));
+import { setBrowserTimeZone } from '../test/timeZone';
 
 const session = (id, date, extra = {}) => ({ id, date, value: 100, volume: 800, bestSet: { weight: 100, reps: 8 }, isPR: false, ...extra });
 const item = (sessions) => ({
   id: 'squat', name: 'Squat', muscle: 'legs', mode: 'e1rm', best: 100, last: { value: 100 }, skipped: 0, sessions,
 });
 
-beforeEach(() => currentTimeZone.mockReturnValue('Europe/Rome'));
+beforeEach(() => setBrowserTimeZone('Europe/Rome'));
 
 describe('ExerciseDetailDialog: fuso nella cronologia', () => {
   it('una sessione fatta a New York mostra il giorno scritto e il badge', () => {

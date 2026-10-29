@@ -6,10 +6,9 @@ import { MemoryRouter } from 'react-router-dom';
 import WorkoutHistory from './WorkoutHistory';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { json } from '../test/dom';
-import { currentTimeZone } from '../utils/workoutTime';
+import { setBrowserTimeZone } from '../test/timeZone';
 
 vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ isLoggedIn: true, loading: false }) }));
-vi.mock('../utils/workoutTime', async (importOriginal) => ({ ...(await importOriginal()), currentTimeZone: vi.fn() }));
 
 const GREY = 'rgb(107, 102, 99)';
 const RED = 'rgb(213, 0, 0)';
@@ -34,7 +33,7 @@ const simulaTelefono = () => {
 };
 
 beforeEach(() => {
-  currentTimeZone.mockReturnValue('Europe/Rome');
+  setBrowserTimeZone('Europe/Rome');
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date(2026, 9, 20, 12, 0));
   localStorage.setItem('themeMode', 'light');
@@ -281,7 +280,7 @@ describe('data e ora dell\'allenamento: l\'orologio del luogo, non quello del br
   });
 
   it('stesso fuso del dispositivo o allenamento senza fuso: nessun badge', async () => {
-    currentTimeZone.mockReturnValue('America/New_York');
+    setBrowserTimeZone('America/New_York');
     await mountWith([{ ...workout, time_zone: 'America/New_York', started_at: '2026-10-18T02:00:00-04:00' }], '02:00 · 3 esercizi');
     expect(screen.queryByLabelText(/Fuso orario/)).toBeNull();
   });
