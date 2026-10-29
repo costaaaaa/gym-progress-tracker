@@ -203,6 +203,15 @@ function workout_instant($date, $time_zone)
     return new DateTimeImmutable($date, new DateTimeZone(valid_time_zone($time_zone) ?? DEFAULT_TIME_ZONE));
 }
 
+// Un istante come lo tiene il database: data e ora nel fuso del server ("Y-m-d H:i:s"), per confrontarlo
+// con colonne come last_xp_session_at.
+function server_time_from_instant(DateTimeInterface $instant)
+{
+    return DateTimeImmutable::createFromInterface($instant)
+        ->setTimezone(new DateTimeZone(date_default_timezone_get()))
+        ->format('Y-m-d H:i:s');
+}
+
 // Come workout_instant(), in ISO 8601 con l'offset del luogo ("2026-10-25T21:00:00-04:00").
 function workout_started_at($date, $time_zone)
 {

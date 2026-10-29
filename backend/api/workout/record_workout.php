@@ -139,7 +139,7 @@ try {
     // ended_at (ultimo set registrato) spostato dello stesso scarto.
     $time_zone = valid_time_zone($data->time_zone ?? null) ?? request_time_zone();
     $now = new DateTime('now', new DateTimeZone($time_zone));
-    $data_workout = $now->format('Y-m-d H:i:s');
+    $started = DateTimeImmutable::createFromMutable($now);
     $start_gap = null;
     $start = null;
 
@@ -148,7 +148,7 @@ try {
             $start = client_datetime($data->start_time, $time_zone);
             $gap_seconds = $now->getTimestamp() - $start->getTimestamp();
             if ($gap_seconds >= 0 && $gap_seconds <= 4 * 3600) {
-                $data_workout = $start->format('Y-m-d H:i:s');
+                $started = DateTimeImmutable::createFromMutable($start);
                 $start_gap = $gap_seconds;
             }
         } catch (Exception $e) {
@@ -175,7 +175,7 @@ try {
         if ($start < (new DateTime('today', new DateTimeZone(request_time_zone())))->modify('-8 days')) {
             api_json_response(['success' => false, 'message' => t_server('workout.record_date_invalid')], 400);
         }
-        $data_workout = ($start > $now ? $now : $start)->format('Y-m-d H:i:s');
+        $started = DateTimeImmutable::createFromMutable($start > $now ? $now : $start);
 
         if (!empty($data->ended_at)) {
             try {
@@ -193,7 +193,7 @@ try {
     try {
         $workout_history = new WorkoutHistory($db);
         $workout_history->user_id = $user_id;
-        $workout_history->date = $data_workout;
+        $workout_history->date = $started->format('Y-m-d H:i:s');
         $workout_history->time_zone = $time_zone;
         $workout_history->duration_seconds = $duration_seconds;
         $workout_history->notes = isset($data->notes) ? $data->notes : '';
@@ -225,7 +225,7 @@ try {
             }
         }
 
-        $gamification = apply_workout_gamification($db, $user_id, (int) $workout_id, $data_workout, $time_zone, $duration_seconds, $data->workout_records);
+        $gamification = apply_workout_gamification($db, $user_id, (int) $workout_id, $started, $duration_seconds, $data->workout_records);
 
         $db->commit();
 

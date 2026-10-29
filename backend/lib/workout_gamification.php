@@ -3,16 +3,17 @@
 // La chiamante (record_workout.php) la esegue dentro la transazione del salvataggio.
 require_once __DIR__ . '/weekly_stats.php';
 
-// $data_workout è l'ora locale del luogo ($time_zone): giorno e settimana si leggono dalla stringa,
-// la pausa XP e last_xp_session_at (ora del server) lavorano sull'istante.
+// $started è l'inizio dell'allenamento nel fuso del suo luogo: giorno e settimana si leggono dall'ora
+// locale, la pausa XP e last_xp_session_at (ora del server) lavorano sull'istante.
 // $workout_records: le serie come arrivano dal client (oggetti con exercise_id, day_id, weight, reps).
 // Ritorna i campi di gamification della risposta di record_workout.php, nello stesso ordine.
-function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, string $data_workout, string $time_zone, ?int $duration_seconds, array $workout_records): array {
+function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, DateTimeImmutable $started, ?int $duration_seconds, array $workout_records): array {
+    $data_workout = $started->format('Y-m-d H:i:s');
     // ── Streak: la settimana dell'allenamento si chiude se raggiunge l'obiettivo, anche se è passata
     // (salvataggio ripreso in ritardo): lo streak si ricava dal registro e si riattacca se riempie un buco
     $gam_row = lock_gamification_row($db, $user_id);
     $before = ensure_streak_registry($db, $user_id, $gam_row, $workout_id);
-    $week_completed_now = close_week_if_reached($db, $user_id, new DateTime($data_workout)) > 0;
+    $week_completed_now = close_week_if_reached($db, $user_id, DateTime::createFromImmutable($started)) > 0;
     $streak = recompute_streak($db, $user_id);
     $current_streak_val = effectiveStreakWeeks($streak['current'], $streak['last_completed_week'], user_now());
     $new_longest = $streak['longest'] > $before['longest'];
@@ -32,7 +33,7 @@ function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, stri
     // Migliori valori precedenti degli esercizi allenati, escluso il workout appena inserito
     $prev_bests = [];
     $pr_paid_today = [];
-    $workout_day = substr($data_workout, 0, 10);
+    $workout_day = $started->format('Y-m-d');
     if (!empty($current_ex_sets)) {
         $eids_list    = array_keys($current_ex_sets);
         $placeholders = implode(',', array_fill(0, count($eids_list), '?'));
@@ -81,10 +82,10 @@ function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, stri
         $stmt_plan->execute([$day_id, $user_id]);
         $planned_sets = (int) $stmt_plan->fetchColumn();
     }
-    $workout_server_time = workout_instant($data_workout, $time_zone)->setTimezone(new DateTimeZone(date_default_timezone_get()))->format('Y-m-d H:i:s');
+    $workout_server_time = server_time_from_instant($started);
     $seconds_since_last_xp = null;
     if (!empty($gam_row['last_xp_session_at'])) {
-        $seconds_since_last_xp = abs((new DateTime($workout_server_time))->getTimestamp() - (new DateTime($gam_row['last_xp_session_at']))->getTimestamp());
+        $seconds_since_last_xp = abs($started->getTimestamp() - (new DateTime($gam_row['last_xp_session_at']))->getTimestamp());
     }
     $xp_status  = sessionXpStatus($planned_sets, $done_sets, $duration_seconds, $seconds_since_last_xp);
     $xp_session = $xp_status === 'ok';
@@ -240,10 +241,9 @@ function undo_workout_gamification(PDO $db, int $user_id, int $workout_id): arra
              WHERE r.user_id = ? AND r.xp_session = 1 AND r.workout_id != ?"
         );
         $stmt_last->execute([$user_id, $workout_id]);
-        $server_zone = new DateTimeZone(date_default_timezone_get());
         $last_xp_session_at = null;
         while ($row = $stmt_last->fetch(PDO::FETCH_ASSOC)) {
-            $at = workout_instant($row['date'], $row['time_zone'])->setTimezone($server_zone)->format('Y-m-d H:i:s');
+            $at = server_time_from_instant(workout_instant($row['date'], $row['time_zone']));
             if ($last_xp_session_at === null || $at > $last_xp_session_at) $last_xp_session_at = $at;
         }
     }

@@ -63,6 +63,10 @@ check('started_at con offset di Tokyo', workout_started_at('2026-10-28 17:00:00'
 check('ora che non esiste (salto in avanti) si sposta avanti', workout_started_at('2026-03-29 02:30:00', 'Europe/Rome') === '2026-03-29T03:30:00+02:00');
 check('ora doppia accettata: una delle due occorrenze, senza errore', in_array(workout_started_at('2026-10-25 02:30:00', 'Europe/Rome'), array('2026-10-25T02:30:00+02:00', '2026-10-25T02:30:00+01:00'), true));
 check('fuso non valido: ripiego su Roma', workout_started_at('2026-10-28 17:00:00', 'Mars/Olympus') === '2026-10-28T17:00:00+01:00');
+check('istante in ora del server: New York 21:00 → 02:00 del giorno dopo a Roma', server_time_from_instant(workout_instant('2026-10-25 21:00:00', 'America/New_York')) === '2026-10-26 02:00:00');
+check('istante in ora del server: Tokyo 08:00 in ora legale → 01:00 a Roma', server_time_from_instant(workout_instant('2026-07-01 08:00:00', 'Asia/Tokyo')) === '2026-07-01 01:00:00');
+check('istante in ora del server: Roma resta uguale', server_time_from_instant(workout_instant('2026-10-28 17:00:00', 'Europe/Rome')) === '2026-10-28 17:00:00');
+check('istante in ora del server: accetta anche un DateTime', server_time_from_instant(new DateTime('2026-10-25 21:00:00', new DateTimeZone('America/New_York'))) === '2026-10-26 02:00:00');
 
 echo "\ndatetime del server in ISO con offset\n";
 check('ora del server → ISO con offset di Roma', server_time_iso('2026-10-28 17:00:00') === '2026-10-28T17:00:00+01:00');
