@@ -14,6 +14,7 @@
  */
 
 require __DIR__ . '/../lib/config.php';
+require __DIR__ . '/../lib/frontmatter.php';
 require __DIR__ . '/../lib/render.php';
 
 const CALC_MAX_WEIGHT = 500;
@@ -67,10 +68,13 @@ $canonical = BLOG_BASE_URL . '/calcolatore-1rm/';
 $title = 'Calcolatore 1RM: calcola il tuo massimale online';
 $description = 'Calcola il massimale (1RM) da peso e ripetizioni con la formula di Epley e ottieni i carichi dal 95% al 60%. Gratis, senza registrazione.';
 
-// Il link alla guida compare solo se l'articolo e' pubblicato: i .md non sono
-// nel repo (vedi content/README.md) e un link rotto costa piu' di nessun link.
+// Il link alla guida compare solo se l'articolo e' pubblicato (file presente, anche con il
+// numero d'ordine, e data arrivata): i .md non sono nel repo (vedi content/README.md) e un
+// link rotto costa piu' di nessun link.
 $guideSlug = 'come-calcolare-1rm';
-$hasGuide = is_file(BLOG_CONTENT_DIR . '/' . $guideSlug . '.md');
+$guideFile = blog_find_article_file(BLOG_CONTENT_DIR, $guideSlug);
+$guide = $guideFile === null ? null : blog_parse_markdown_file($guideFile);
+$hasGuide = $guide !== null && blog_is_published($guide[0], blog_today());
 
 ob_start();
 ?>
