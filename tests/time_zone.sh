@@ -151,6 +151,31 @@ check "due giorni avanti: future_date" "$(move "$(TZ=Asia/Tokyo date -d '+2 days
 check "oltre 30 giorni fa: target_too_old" "$(move "$(TZ=Asia/Tokyo date -d '-40 days' +%F)")" '.code == "target_too_old"'
 
 echo
+echo "Gamification: la pausa XP di 10 ore conta sugli istanti, non sulle ore locali"
+make_user d
+XTZ="Asia/Tokyo"
+S="$(date -d '25 minutes ago' +%s)"
+R="$(call POST api/workout/record_workout.php "$T" "$(body 40 "$(iso "$S")")")"
+check "prima sessione a Tokyo: XP di sessione" "$R" '.xp_session_awarded == true'
+XTZ="America/New_York"
+R="$(call POST api/workout/record_workout.php "$T" "$(body 41 "$(iso "$S")")")"
+check "stesso istante da New York (13 ore di scarto sull'orologio): pausa" "$R" '.xp_session_awarded == false and .xp_session_reason == "cooldown"'
+
+make_user e
+XTZ="Asia/Tokyo"
+SA="$(date -d '25 minutes ago' +%s)"
+IDA="$(save "$(body 50 "$(iso "$SA")")")"
+XTZ="America/New_York"
+SB="$(date -d '745 minutes ago' +%s)"
+R="$(call POST api/workout/record_workout.php "$T" "$(body 51 "$(iso "$SB")" "$(iso $((SB + 1500)))" true)")"
+check "sessione di 12 ore prima da New York: XP di sessione" "$R" '.xp_session_awarded == true'
+call POST api/workout_history/delete.php "$T" "{\"id\":$IDA}" >/dev/null
+XTZ="Asia/Tokyo"
+SC="$(date -d '265 minutes ago' +%s)"
+R="$(call POST api/workout/record_workout.php "$T" "$(body 52 "$(iso "$SC")" "$(iso $((SC + 1500)))" true)")"
+check "tolta la più recente, la pausa riparte dall'istante di quella rimasta (8 ore dopo)" "$R" '.xp_session_awarded == false and .xp_session_reason == "cooldown"'
+
+echo
 if (( fails )); then
     echo "✗ $fails controlli su $checks falliti"
     exit 1

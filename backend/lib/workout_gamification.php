@@ -3,16 +3,18 @@
 // La chiamante (record_workout.php) la esegue dentro la transazione del salvataggio.
 require_once __DIR__ . '/weekly_stats.php';
 
+// $data_workout è l'ora locale del luogo ($time_zone): giorno e settimana si leggono dalla stringa,
+// la pausa XP e last_xp_session_at (ora del server) lavorano sull'istante.
 // $workout_records: le serie come arrivano dal client (oggetti con exercise_id, day_id, weight, reps).
 // Ritorna i campi di gamification della risposta di record_workout.php, nello stesso ordine.
-function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, string $data_workout, ?int $duration_seconds, array $workout_records): array {
+function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, string $data_workout, string $time_zone, ?int $duration_seconds, array $workout_records): array {
     // ── Streak: la settimana dell'allenamento si chiude se raggiunge l'obiettivo, anche se è passata
     // (salvataggio ripreso in ritardo): lo streak si ricava dal registro e si riattacca se riempie un buco
     $gam_row = lock_gamification_row($db, $user_id);
     $before = ensure_streak_registry($db, $user_id, $gam_row, $workout_id);
     $week_completed_now = close_week_if_reached($db, $user_id, new DateTime($data_workout)) > 0;
     $streak = recompute_streak($db, $user_id);
-    $current_streak_val = effectiveStreakWeeks($streak['current'], $streak['last_completed_week'], new DateTime());
+    $current_streak_val = effectiveStreakWeeks($streak['current'], $streak['last_completed_week'], user_now());
     $new_longest = $streak['longest'] > $before['longest'];
     $streak_milestone = $week_completed_now && ($current_streak_val === 1 || $current_streak_val % 4 === 0);
 
@@ -79,9 +81,10 @@ function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, stri
         $stmt_plan->execute([$day_id, $user_id]);
         $planned_sets = (int) $stmt_plan->fetchColumn();
     }
+    $workout_server_time = workout_instant($data_workout, $time_zone)->setTimezone(new DateTimeZone(date_default_timezone_get()))->format('Y-m-d H:i:s');
     $seconds_since_last_xp = null;
     if (!empty($gam_row['last_xp_session_at'])) {
-        $seconds_since_last_xp = abs((new DateTime($data_workout))->getTimestamp() - (new DateTime($gam_row['last_xp_session_at']))->getTimestamp());
+        $seconds_since_last_xp = abs((new DateTime($workout_server_time))->getTimestamp() - (new DateTime($gam_row['last_xp_session_at']))->getTimestamp());
     }
     $xp_status  = sessionXpStatus($planned_sets, $done_sets, $duration_seconds, $seconds_since_last_xp);
     $xp_session = $xp_status === 'ok';
@@ -113,7 +116,7 @@ function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, stri
          WHERE user_id = ?"
     )->execute([
         $new_total_xp, $new_level_gam, $new_lifetime_vol,
-        $xp_session ? max($data_workout, (string) ($gam_row['last_xp_session_at'] ?? '')) : null, $user_id,
+        $xp_session ? max($workout_server_time, (string) ($gam_row['last_xp_session_at'] ?? '')) : null, $user_id,
     ]);
 
     // Upsert per-esercizio e rileva level-up
@@ -208,7 +211,7 @@ function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, stri
 // Ritorna ['xp_removed' => int, 'achievements_removed' => [chiavi], 'streak_before' => int, 'streak_after' => int].
 function undo_workout_gamification(PDO $db, int $user_id, int $workout_id): array {
     $gam_row = lock_gamification_row($db, $user_id);
-    $now = new DateTime();
+    $now = user_now();
 
     // Già cancellato da una richiesta contemporanea: non c'è più nulla da togliere
     $stmt_date = $db->prepare("SELECT date FROM gym_workout_history WHERE id = ? AND user_id = ? FOR UPDATE");
@@ -231,13 +234,18 @@ function undo_workout_gamification(PDO $db, int $user_id, int $workout_id): arra
     $last_xp_session_at = $gam_row['last_xp_session_at'];
     if ((int) $reward['xp_session'] === 1) {
         $stmt_last = $db->prepare(
-            "SELECT MAX(wh.date)
+            "SELECT wh.date, wh.time_zone
              FROM gym_workout_rewards r
              JOIN gym_workout_history wh ON wh.id = r.workout_id
              WHERE r.user_id = ? AND r.xp_session = 1 AND r.workout_id != ?"
         );
         $stmt_last->execute([$user_id, $workout_id]);
-        $last_xp_session_at = $stmt_last->fetchColumn() ?: null;
+        $server_zone = new DateTimeZone(date_default_timezone_get());
+        $last_xp_session_at = null;
+        while ($row = $stmt_last->fetch(PDO::FETCH_ASSOC)) {
+            $at = workout_instant($row['date'], $row['time_zone'])->setTimezone($server_zone)->format('Y-m-d H:i:s');
+            if ($last_xp_session_at === null || $at > $last_xp_session_at) $last_xp_session_at = $at;
+        }
     }
 
     $old_total_xp = (int) $gam_row['total_xp'];
@@ -339,7 +347,7 @@ function ensure_streak_registry(PDO $db, int $user_id, array $gam_row, int $excl
         ];
     }
 
-    $now = new DateTime();
+    $now = user_now();
     $goal = weekly_goals($db, [$user_id])[$user_id];
     $ins = $db->prepare("INSERT IGNORE INTO gym_streak_weeks (user_id, yearweek, goal) VALUES (?, ?, ?)");
 

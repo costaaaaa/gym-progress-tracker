@@ -45,7 +45,7 @@ function chosen_weekly_goals(PDO $db, array $user_ids, int $yearweek): array {
 // Obiettivo settimanale attuale per ogni utente: quello scelto, altrimenti il default → [user_id => goal]
 function weekly_goals(PDO $db, array $user_ids): array {
     $goals = default_weekly_goals($db, $user_ids);
-    foreach (chosen_weekly_goals($db, $user_ids, (int) (new DateTime())->format('oW')) as $id => $goal) {
+    foreach (chosen_weekly_goals($db, $user_ids, (int) user_now()->format('oW')) as $id => $goal) {
         $goals[$id] = $goal;
     }
     return $goals;
@@ -56,7 +56,7 @@ function weekly_goals(PDO $db, array $user_ids): array {
 // varrebbe senza scheda attiva, weekly_goal_pending = cambio dal lunedì
 // prossimo ({goal (null = default), from}) o null
 function weekly_goal_settings(PDO $db, int $user_id): array {
-    $this_week = (int) (new DateTime())->format('oW');
+    $this_week = (int) user_now()->format('oW');
     $stmt = $db->prepare(
         "SELECT from_yearweek, goal FROM gym_weekly_goal_changes WHERE user_id = ? AND from_yearweek > ? ORDER BY from_yearweek LIMIT 1"
     );

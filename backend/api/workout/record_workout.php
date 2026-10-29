@@ -224,7 +224,7 @@ try {
             }
         }
 
-        $gamification = apply_workout_gamification($db, $user_id, (int) $workout_id, $data_workout, $duration_seconds, $data->workout_records);
+        $gamification = apply_workout_gamification($db, $user_id, (int) $workout_id, $data_workout, $time_zone, $duration_seconds, $data->workout_records);
 
         $db->commit();
 
