@@ -260,6 +260,7 @@ call GET api/user/read.php "$T" >/dev/null
 XTZ=""
 ID="$(save "$(body 72 "$(iso "$S")")")"
 same "un nuovo fuso valido sostituisce quello salvato" "$(history_field "$ID" time_zone)" "America/New_York"
+check "export: profile.time_zone è il fuso salvato sul profilo" "$(call GET api/user/export.php "$T")" '.profile.time_zone == "America/New_York"'
 
 echo
 echo "Recupero: il limite degli 8 giorni è quello del fuso del dispositivo, non del payload"
