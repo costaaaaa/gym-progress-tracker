@@ -363,6 +363,10 @@ thead th { color: var(--text-secondary); font-weight: 600; }
 }
 @media (max-width: 600px) {
   body { font-size: 16px; }
+  h1 { font-size: 1.7rem; }
+  h2 { font-size: 1.3rem; }
+  /* Le tabelle larghe degli articoli scorrono da sole, senza allargare la pagina. */
+  table:not(.pct-table) { display: block; overflow-x: auto; }
   .header-actions { gap: 8px; }
   .nav-link { padding: 10px 4px; }
   .header-actions .cta { padding: 10px 14px; }
@@ -370,10 +374,6 @@ thead th { color: var(--text-secondary); font-weight: 600; }
 /* Sotto i 360px marchio, toggle e i due bottoni non stanno: resta il solo marchio, col nome per i lettori di schermo. */
 @media (max-width: 359px) {
   .brand-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  h1 { font-size: 1.7rem; }
-  h2 { font-size: 1.3rem; }
-  /* Le tabelle larghe degli articoli scorrono da sole, senza allargare la pagina. */
-  table:not(.pct-table) { display: block; overflow-x: auto; }
 }
 CSS;
 }
