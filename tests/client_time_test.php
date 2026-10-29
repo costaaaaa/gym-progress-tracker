@@ -31,6 +31,7 @@ check('offset esplicito diverso da UTC: stesso istante, ora del server', client_
 check('senza fuso: preso già nel fuso del server', client_datetime('2026-10-28 17:00:00')->format('Y-m-d H:i:s') === '2026-10-28 17:00:00');
 check('l\'istante non cambia (timestamp)', client_datetime('2026-10-28T16:00:00.000Z')->getTimestamp() === (new DateTime('2026-10-28T16:00:00Z'))->getTimestamp());
 check('il fuso del risultato è quello del server', client_datetime('2026-10-28T16:00:00.000Z')->getTimezone()->getName() === 'Europe/Rome');
+check('è un istante immutabile', client_datetime('2026-10-28T16:00:00.000Z') instanceof DateTimeImmutable);
 check('stringa non valida: eccezione', (function () { try { client_datetime('non-una-data'); return false; } catch (Exception $e) { return true; } })());
 
 
@@ -151,6 +152,37 @@ check('colonna non migrata: nessun errore nel salvataggio', true);
 check('colonna non migrata: l\'header vale lo stesso', request_time_zone(true) === 'Asia/Tokyo');
 unset($_SERVER['HTTP_X_TIMEZONE']);
 check('colonna non migrata e niente header: Europe/Rome', request_time_zone(true) === 'Europe/Rome');
+
+
+echo "\nspostare un allenamento su un altro giorno (moved_workout_instant)\n";
+$at = function ($new_date, $time_of_day, $zone, $now = '2026-12-01T12:00:00Z') {
+    return moved_workout_instant($new_date, $time_of_day, $zone, new DateTimeImmutable($now))->format('c');
+};
+check('è un istante immutabile', moved_workout_instant('2026-10-20', '12:00:00', 'Europe/Rome', new DateTimeImmutable('2026-12-01T12:00:00Z')) instanceof DateTimeImmutable);
+check('Roma, fine ora legale (25/10/2026): verso la solare, l\'orario locale resta e cambia l\'offset', $at('2026-10-26', '12:00:00', 'Europe/Rome') === '2026-10-26T12:00:00+01:00');
+check('Roma, fine ora legale: verso l\'ora legale', $at('2026-10-24', '12:00:00', 'Europe/Rome') === '2026-10-24T12:00:00+02:00');
+check('Roma, inizio ora legale (29/03/2026): verso l\'ora legale', $at('2026-03-30', '12:00:00', 'Europe/Rome') === '2026-03-30T12:00:00+02:00');
+check('Roma, inizio ora legale: verso la solare', $at('2026-03-28', '12:00:00', 'Europe/Rome') === '2026-03-28T12:00:00+01:00');
+check('New York, fine ora legale (01/11/2026): verso la solare', $at('2026-11-02', '07:15:00', 'America/New_York') === '2026-11-02T07:15:00-05:00');
+check('New York, fine ora legale: verso l\'ora legale', $at('2026-10-31', '07:15:00', 'America/New_York') === '2026-10-31T07:15:00-04:00');
+check('ora che non esiste (02:30 del 29/03/2026 a Roma): PHP la sposta avanti alle 03:30', $at('2026-03-29', '02:30:00', 'Europe/Rome') === '2026-03-29T03:30:00+02:00');
+// Ora doppia: PHP sceglie una delle due occorrenze e non sempre la stessa fra fusi (PHP 8.5: a Roma
+// la seconda, +01:00; a New York la prima, -04:00). Conta che l'orario locale resti quello e che non
+// ci sia errore: il test accetta entrambe.
+check('ora doppia (02:30 del 25/10/2026 a Roma): orario locale intatto, una delle due occorrenze', in_array($at('2026-10-25', '02:30:00', 'Europe/Rome'), array('2026-10-25T02:30:00+02:00', '2026-10-25T02:30:00+01:00'), true));
+check('ora doppia (01:30 del 01/11/2026 a New York): orario locale intatto, una delle due occorrenze', in_array($at('2026-11-01', '01:30:00', 'America/New_York'), array('2026-11-01T01:30:00-04:00', '2026-11-01T01:30:00-05:00'), true));
+check('ora che non esiste (02:30 dell\'08/03/2026 a New York): spostata avanti alle 03:30', $at('2026-03-08', '02:30:00', 'America/New_York') === '2026-03-08T03:30:00-04:00');
+
+$now = '2026-10-26T10:00:00Z';   // 11:00 a Roma, 06:00 a New York
+check('orario originale non ancora arrivato oggi: vale l\'ora attuale del luogo (Roma)', $at('2026-10-26', '12:00:00', 'Europe/Rome', $now) === '2026-10-26T11:00:00+01:00');
+check('stessa regola a New York', $at('2026-10-26', '07:15:00', 'America/New_York', $now) === '2026-10-26T06:00:00-04:00');
+check('orario originale già passato oggi: resta', $at('2026-10-26', '10:30:00', 'Europe/Rome', $now) === '2026-10-26T10:30:00+01:00');
+check('orario originale uguale a adesso: resta', $at('2026-10-26', '11:00:00', 'Europe/Rome', $now) === '2026-10-26T11:00:00+01:00');
+check('giorno futuro: resta nel futuro, lo rifiuta chi chiama', moved_workout_instant('2026-10-27', '12:00:00', 'Europe/Rome', new DateTimeImmutable($now)) > new DateTimeImmutable($now));
+check('data e ora complete: valgono così, l\'orario originale non conta', $at('2026-10-24 18:20:00', '12:00:00', 'Europe/Rome') === '2026-10-24T18:20:00+02:00');
+check('data e ora con offset: stesso istante, ora del luogo', $at('2026-10-25T00:30:00Z', '12:00:00', 'Europe/Rome') === '2026-10-25T02:30:00+02:00');
+check('fuso non valido: Europe/Rome', $at('2026-10-26', '12:00:00', 'Mars/Olympus') === '2026-10-26T12:00:00+01:00');
+check('data non valida: eccezione', (function () { try { moved_workout_instant('non-una-data', '12:00:00', 'Europe/Rome', new DateTimeImmutable()); return false; } catch (Exception $e) { return true; } })());
 
 echo "\n" . ($checks - $fails) . "/$checks controlli riusciti\n";
 exit($fails > 0 ? 1 : 0);

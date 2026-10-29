@@ -33,30 +33,22 @@ if (
     $stmt_row->execute([$data->id, $user_id]);
     $row = $stmt_row->fetch(PDO::FETCH_ASSOC);
     $time_zone = $row ? (valid_time_zone($row['time_zone']) ?? DEFAULT_TIME_ZONE) : request_time_zone();
-    $zone = new DateTimeZone($time_zone);
 
     // Con la sola data (YYYY-MM-DD) l'orario originale dell'allenamento resta: va riletto prima di
-    // calcolare la nuova data. Se data nuova + orario originale cade nel futuro (oggi, orario non
-    // ancora arrivato) si usa l'ora attuale del luogo.
-    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $new_date)) {
-        if (!$row) {
-            http_response_code(404);
-            echo json_encode(array(
-                "success" => false,
-                "code" => "not_found",
-                "message" => t_server('history.not_yours')
-            ));
-            exit;
-        }
-        $with_original_time = $new_date . ' ' . $row['time_of_day'];
-        $new_date .= ' ' . (workout_instant($with_original_time, $time_zone)->getTimestamp() > time()
-            ? (new DateTime('now', $zone))->format('H:i:s')
-            : $row['time_of_day']);
+    // calcolare la nuova data (vedi moved_workout_instant). Un allenamento che non c'è è un 404.
+    if (!$row && preg_match('/^\d{4}-\d{2}-\d{2}$/', $new_date)) {
+        http_response_code(404);
+        echo json_encode(array(
+            "success" => false,
+            "code" => "not_found",
+            "message" => t_server('history.not_yours')
+        ));
+        exit;
     }
 
     // Verifica che sia una data valida
     try {
-        $new_local = client_datetime($new_date, $time_zone);
+        $new_local = moved_workout_instant($new_date, $row['time_of_day'] ?? '00:00:00', $time_zone, new DateTimeImmutable());
     } catch (Exception $e) {
         http_response_code(400);
         echo json_encode(array(

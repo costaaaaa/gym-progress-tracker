@@ -333,8 +333,23 @@ function api_log_exception($context, $exception)
 function client_datetime($value, $time_zone = null)
 {
     $zone = new DateTimeZone($time_zone ?? date_default_timezone_get());
-    $dt = new DateTime($value, $zone);
-    return $dt->setTimezone($zone);
+    return (new DateTimeImmutable($value, $zone))->setTimezone($zone);
+}
+
+// Il nuovo istante di un allenamento spostato su $new_date, nel fuso $time_zone dell'allenamento.
+// $new_date è un giorno ("Y-m-d"): l'orario originale ($time_of_day, "H:i:s") resta, tranne se in quel
+// giorno non è ancora arrivato ($now): allora vale l'ora attuale del luogo. Altrimenti $new_date è già
+// data e ora e vale così com'è. Un'ora che non esiste (salto in avanti) si sposta avanti, una doppia
+// vale la prima occorrenza (ora legale): sono le scelte di PHP. Exception se $new_date non è una data.
+function moved_workout_instant($new_date, $time_of_day, $time_zone, DateTimeInterface $now)
+{
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $new_date)) {
+        $original = workout_instant($new_date . ' ' . $time_of_day, $time_zone);
+        if ($original <= $now) return $original;
+        $new_date .= ' ' . DateTimeImmutable::createFromInterface($now)
+            ->setTimezone(new DateTimeZone(valid_time_zone($time_zone) ?? DEFAULT_TIME_ZONE))->format('H:i:s');
+    }
+    return client_datetime($new_date, valid_time_zone($time_zone) ?? DEFAULT_TIME_ZONE);
 }
 
 function workout_plan_belongs_to_user($db, $plan_id, $user_id)
