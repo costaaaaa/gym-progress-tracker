@@ -30,6 +30,7 @@ function blog_e($value)
  *     @type string $canonical   URL canonico assoluto.
  *     @type string $bodyHtml    Contenuto <main> gia' in HTML.
  *     @type array|null $jsonLd  Payload JSON-LD, o null.
+ *     @type bool   $noindex     true: la pagina non va indicizzata (i link si seguono comunque).
  * }
  * @return void
  */
@@ -40,6 +41,7 @@ function blog_render_page(array $opts)
     $canonical = isset($opts['canonical']) ? $opts['canonical'] : BLOG_BASE_URL;
     $bodyHtml = isset($opts['bodyHtml']) ? $opts['bodyHtml'] : '';
     $jsonLd = isset($opts['jsonLd']) ? $opts['jsonLd'] : null;
+    $noindex = !empty($opts['noindex']);
 
     // Suffisso brand solo se il <title> resta entro i ~60 caratteri che Google
     // mostra nella SERP: su un titolo d'articolo gia' lungo, aggiungerlo
@@ -60,6 +62,9 @@ function blog_render_page(array $opts)
     <title><?php echo blog_e($fullTitle); ?></title>
     <meta name="description" content="<?php echo blog_e($description); ?>">
     <link rel="canonical" href="<?php echo blog_e($canonical); ?>">
+<?php if ($noindex): ?>
+    <meta name="robots" content="noindex">
+<?php endif; ?>
 
     <meta property="og:type" content="article">
     <meta property="og:title" content="<?php echo blog_e($fullTitle); ?>">
