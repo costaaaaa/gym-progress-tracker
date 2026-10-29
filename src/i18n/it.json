@@ -595,6 +595,8 @@
   "record.show_notes": "mostra note",
   "record.close": "chiudi",
   "record.set": "Serie {{n}}:",
+  "record.warmup": "Risc.",
+  "record.warmup_aria": "Riscaldamento: serie {{n}}",
   "record.weight": "Peso (kg)",
   "record.reps": "Ripetizioni",
   "record.technique": "Tecnica",

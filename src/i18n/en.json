@@ -595,6 +595,8 @@
   "record.show_notes": "show notes",
   "record.close": "close",
   "record.set": "Set {{n}}:",
+  "record.warmup": "Warm-up",
+  "record.warmup_aria": "Warm-up: set {{n}}",
   "record.weight": "Weight (kg)",
   "record.reps": "Reps",
   "record.technique": "Technique",
