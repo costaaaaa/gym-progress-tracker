@@ -159,7 +159,8 @@ function request_time_zone($refresh = false)
                 $stmt->execute(array($context['user_id']));
                 $saved = valid_time_zone($stmt->fetchColumn());
             } catch (PDOException $e) {
-                // colonna non ancora migrata: si passa a Europe/Rome
+                // colonna non ancora migrata (42S22): si passa a Europe/Rome; ogni altro errore si registra
+                if (!is_missing_column_error($e)) api_log_exception('request_time_zone', $e);
             }
         }
         $cache[$key] = $header ?? $saved ?? DEFAULT_TIME_ZONE;
@@ -177,8 +178,16 @@ function remember_request_time_zone($db, $user_id)
         $db->prepare("UPDATE gym_users SET time_zone = ? WHERE id = ? AND (time_zone IS NULL OR time_zone <> ?)")
             ->execute(array($header, $user_id, $header));
     } catch (PDOException $e) {
-        // colonna non ancora migrata: vale l'header di ogni richiesta
+        // colonna non ancora migrata (42S22): vale l'header di ogni richiesta; ogni altro errore si
+        // registra, ma la richiesta prosegue
+        if (!is_missing_column_error($e)) api_log_exception('remember_request_time_zone', $e);
     }
+}
+
+// Colonna inesistente (SQLSTATE 42S22): il codice nuovo gira prima della migrazione.
+function is_missing_column_error(PDOException $e)
+{
+    return ($e->errorInfo[0] ?? $e->getCode()) === '42S22';
 }
 
 // "Adesso" per l'utente: stesso istante di new DateTime(), ma nel fuso del suo dispositivo. Da usare

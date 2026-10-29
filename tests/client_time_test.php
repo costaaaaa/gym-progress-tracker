@@ -141,18 +141,39 @@ $_SERVER['HTTP_X_TIMEZONE'] = 'Asia/Tokyo';
 remember_request_time_zone($db, 2);
 check('un nuovo fuso valido lo sostituisce', $saved(2) === 'Asia/Tokyo');
 
-$old = new PDO('sqlite::memory:');
-$old->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$old->exec('CREATE TABLE gym_users (id INTEGER PRIMARY KEY)');
-$old->exec('INSERT INTO gym_users (id) VALUES (1)');
-request_user_context($old, 1);
-$_SERVER['HTTP_X_TIMEZONE'] = 'Asia/Tokyo';
-remember_request_time_zone($old, 1);
-check('colonna non migrata: nessun errore nel salvataggio', true);
-check('colonna non migrata: l\'header vale lo stesso', request_time_zone(true) === 'Asia/Tokyo');
-unset($_SERVER['HTTP_X_TIMEZONE']);
-check('colonna non migrata e niente header: Europe/Rome', request_time_zone(true) === 'Europe/Rome');
+echo "\nerrori del database: solo la colonna mancante è silenziosa\n";
+$missing = new PDOException('Unknown column');
+$missing->errorInfo = array('42S22', 1054, 'Unknown column \'time_zone\' in \'field list\'');
+$other = new PDOException('MySQL server has gone away');
+$other->errorInfo = array('HY000', 2006, 'MySQL server has gone away');
+check('42S22 è colonna mancante', is_missing_column_error($missing));
+check('HY000 non lo è', !is_missing_column_error($other));
+check('senza errorInfo conta il codice dell\'eccezione', !is_missing_column_error(new PDOException('x')));
 
+class FailingDb
+{
+    public function __construct(private PDOException $error) {}
+    public function prepare($sql) { throw $this->error; }
+}
+$log_file = tempnam(sys_get_temp_dir(), 'tzlog');
+ini_set('error_log', $log_file);
+$logged = function () use ($log_file) { return (string)file_get_contents($log_file); };
+
+$_SERVER['HTTP_X_TIMEZONE'] = 'Asia/Tokyo';
+request_user_context(new FailingDb($missing), 1);
+remember_request_time_zone(request_user_context()['db'], 1);
+check('colonna non migrata: salvataggio silenzioso, nessun errore', $logged() === '');
+unset($_SERVER['HTTP_X_TIMEZONE']);
+check('colonna non migrata e niente header: Europe/Rome, silenzioso', request_time_zone(true) === 'Europe/Rome' && $logged() === '');
+$_SERVER['HTTP_X_TIMEZONE'] = 'Asia/Tokyo';
+check('colonna non migrata: l\'header vale lo stesso', request_time_zone(true) === 'Asia/Tokyo');
+
+request_user_context(new FailingDb($other), 1);
+remember_request_time_zone(request_user_context()['db'], 1);
+check('altro errore nel salvataggio: registrato, la richiesta prosegue', strpos($logged(), 'remember_request_time_zone: MySQL server has gone away') !== false);
+unset($_SERVER['HTTP_X_TIMEZONE']);
+check('altro errore nella lettura: registrato, ripiego su Europe/Rome', request_time_zone(true) === 'Europe/Rome' && strpos($logged(), 'request_time_zone: MySQL server has gone away') !== false);
+unlink($log_file);
 
 echo "\nspostare un allenamento su un altro giorno (moved_workout_instant)\n";
 $at = function ($new_date, $time_of_day, $zone, $now = '2026-12-01T12:00:00Z') {
