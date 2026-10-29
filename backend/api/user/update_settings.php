@@ -94,7 +94,7 @@ try {
     if ($saved && $weekly_goal_given) {
         $db->beginTransaction();
         try {
-            apply_weekly_goal_change($db, $user_id, $data->weekly_goal, new DateTime());
+            apply_weekly_goal_change($db, $user_id, $data->weekly_goal, user_now());
             $db->commit();
         } catch (Throwable $e) {
             $db->rollBack();

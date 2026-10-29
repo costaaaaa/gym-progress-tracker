@@ -176,6 +176,33 @@ R="$(call POST api/workout/record_workout.php "$T" "$(body 52 "$(iso "$SC")" "$(
 check "tolta la più recente, la pausa riparte dall'istante di quella rimasta (8 ore dopo)" "$R" '.xp_session_awarded == false and .xp_session_reason == "cooldown"'
 
 echo
+echo "Classifica del gruppo: la settimana è quella di chi guarda"
+make_user g
+TG="$T"
+XTZ="Pacific/Kiritimati"
+res="$(call POST api/groups/create.php "$TG" '{"name":"Fusi di prova","type":"friends"}')"
+GID="$(echo "${res#* }" | jq -r '.group.id')"
+CODE="$(echo "${res#* }" | jq -r '.group.invite_code')"
+make_user h
+call POST api/groups/join.php "$T" "{\"code\":\"$CODE\",\"consent\":true}" >/dev/null
+KI_DOW="$(TZ=Pacific/Kiritimati date +%u)"
+KI_MONDAY="$(TZ=Pacific/Kiritimati date -d "$((KI_DOW - 1)) days ago" +%F)"
+MON_START="$(TZ=Pacific/Kiritimati date -d "$KI_MONDAY 00:30" +%s)"
+save "$(body 60 "$(iso "$MON_START")" "$(iso $((MON_START + 1500)))" true)" >/dev/null
+R="$(call GET "api/groups/read.php?group_id=$GID&board=week" "$TG")"
+check "settimana del gruppo = quella di Kiritimati ($KI_MONDAY)" "$R" ".week.from == \"$KI_MONDAY\""
+check "l'allenamento del lunedì 00:30 a Kiritimati conta nella sua settimana" "$R" '[.board[] | select(.is_me | not)][0].workouts == 1'
+
+echo
+echo "Statistiche: ready_at con l'offset del fuso del dispositivo"
+save "$(body 61 "$(iso "$(date -d '30 minutes ago' +%s)")")" >/dev/null
+R="$(call GET api/workout_stats/dashboard.php "$T")"
+check "dashboard: ready_at ISO con offset +14:00" "$R" '[.recovery[] | select(.ready_at != null) | .ready_at] | length >= 1 and all(test("T[0-9:]+\\+14:00$"))'
+XTZ="America/New_York"
+R="$(call GET api/workout_stats/dashboard.php "$T")"
+check "dashboard con un altro fuso: stesso istante, offset di New York" "$R" '[.recovery[] | select(.ready_at != null) | .ready_at] | all(test("-0[45]:00$"))'
+
+echo
 if (( fails )); then
     echo "✗ $fails controlli su $checks falliti"
     exit 1

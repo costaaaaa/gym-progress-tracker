@@ -15,12 +15,12 @@ $query = "SELECT
             SUM(s.weight * s.reps) as total_volume
           FROM gym_workout_history h
           JOIN gym_workout_sets s ON h.id = s.workout_history_id
-          WHERE h.user_id = ? AND h.date >= DATE_SUB(NOW(), INTERVAL 3 MONTH)
+          WHERE h.user_id = ? AND h.date >= ?
           GROUP BY h.id, workout_date
           ORDER BY workout_date ASC";
 
 $stmt = $db->prepare($query);
-$stmt->execute([$user_id]);
+$stmt->execute([$user_id, user_now()->modify('-3 months')->format('Y-m-d H:i:s')]);
 
 $results = array();
 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {

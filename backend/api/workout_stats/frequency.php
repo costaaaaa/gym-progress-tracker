@@ -15,12 +15,12 @@ $query = "SELECT
             DATE_FORMAT(MIN(date), '%Y-%m-%d') as week_start,
             COUNT(*) as workout_count
           FROM gym_workout_history
-          WHERE user_id = ? AND date >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
+          WHERE user_id = ? AND date >= ?
           GROUP BY year_week
           ORDER BY year_week ASC";
 
 $stmt = $db->prepare($query);
-$stmt->execute([$user_id]);
+$stmt->execute([$user_id, user_now()->modify('-12 weeks')->format('Y-m-d H:i:s')]);
 
 $results = array();
 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {

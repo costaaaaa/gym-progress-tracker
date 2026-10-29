@@ -14,7 +14,7 @@ try {
     $group = new Group($db);
     $info = $group->find($group_id);
     $can_manage = in_array($membership['role'], array('owner', 'admin'), true);
-    $now = new DateTime();
+    $now = user_now();
     list($monday, $sunday) = isoWeekBounds($now);
 
     $payload = array(

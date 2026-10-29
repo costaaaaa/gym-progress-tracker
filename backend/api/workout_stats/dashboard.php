@@ -34,7 +34,7 @@ try {
     else $level = 'avanzato';
 
     // 2. Statistiche Settimanali (Lunedì - Domenica)
-    $today = new DateTime();
+    $today = user_now();
     $dayOfWeek = $today->format('N'); // 1 (Lunedì) - 7 (Domenica)
     $monday = clone $today;
     $monday->modify('-' . ($dayOfWeek - 1) . ' days')->setTime(0, 0, 0);
@@ -102,14 +102,15 @@ try {
     ];
 
     // Recupera tutte le serie degli ultimi 10 giorni
-    $query_sets = "SELECT wh.date, e.muscle_group, ws.reps, ws.weight
+    $since_str = (clone $today)->modify('-10 days')->format('Y-m-d H:i:s');
+    $query_sets = "SELECT wh.date, wh.time_zone, e.muscle_group, ws.reps, ws.weight
                    FROM gym_workout_sets ws
                    JOIN gym_workout_history wh ON ws.workout_history_id = wh.id
                    JOIN gym_exercises e ON ws.exercise_id = e.id
-                   WHERE wh.user_id = ? AND wh.date >= DATE_SUB(NOW(), INTERVAL 10 DAY)
+                   WHERE wh.user_id = ? AND wh.date >= ?
                    ORDER BY wh.date ASC";
     $stmt_sets = $db->prepare($query_sets);
-    $stmt_sets->execute([$user_id]);
+    $stmt_sets->execute([$user_id, $since_str]);
     $all_sets = $stmt_sets->fetchAll(PDO::FETCH_ASSOC);
 
     // Raggruppa per sessione e gruppo muscolare
@@ -126,6 +127,7 @@ try {
         if (!isset($sessions_by_muscle[$mg][$date])) {
             $sessions_by_muscle[$mg][$date] = [
                 'date' => $date,
+                'started_at' => DateTime::createFromImmutable(workout_instant($date, $set['time_zone'])),
                 'sets_count' => 0
             ];
         }
@@ -146,8 +148,9 @@ try {
         $last_trained = null;
 
         foreach ($mg_sessions as $date_str => $session) {
-            $session_date = new DateTime($date_str);
+            $session_date = clone $session['started_at'];
             $last_trained = $date_str;
+            $last_trained_at = $session['started_at'];
 
             $base_h = $times[$level];
 
@@ -189,8 +192,8 @@ try {
             $percent = 100;
             $status = 'PRONTO';
         } else {
-            $total_h = ($last_ready_at->getTimestamp() - (new DateTime($last_trained))->getTimestamp()) / 3600;
-            $passed_h = ($now->getTimestamp() - (new DateTime($last_trained))->getTimestamp()) / 3600;
+            $total_h = ($last_ready_at->getTimestamp() - $last_trained_at->getTimestamp()) / 3600;
+            $passed_h = ($now->getTimestamp() - $last_trained_at->getTimestamp()) / 3600;
             $percent = $total_h > 0 ? min(99, round(($passed_h / $total_h) * 100)) : 100;
 
             if ($percent < 50) $status = 'AFFATICATO';
@@ -201,12 +204,12 @@ try {
             'percent' => $percent,
             'status' => $status,
             'last_trained' => $last_trained,
-            'ready_at' => $last_ready_at->format('Y-m-d H:i:s')
+            'ready_at' => $last_ready_at->setTimezone($today->getTimezone())->format('c')
         ];
     }
 
     // 4. Serie per muscolo (Settimana e Mese)
-    $month_start = (new DateTime())->modify('first day of this month')->setTime(0,0,0)->format('Y-m-d H:i:s');
+    $month_start = (clone $today)->modify('first day of this month')->setTime(0,0,0)->format('Y-m-d H:i:s');
 
     // Recupero grezzo per calcolo in PHP (più sicuro)
     $query_sets_stats_raw = "SELECT e.muscle_group, wh.date
