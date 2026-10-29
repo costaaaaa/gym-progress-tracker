@@ -20,6 +20,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { useTranslation } from 'react-i18next';
 import { formatDate, formatNumber } from '../i18n/format';
+import TimeZoneBadge from './TimeZoneBadge';
 import { muscleLabel } from '../i18n/labels';
 import { formatValue } from './ExerciseProgressRow';
 import { dayTime } from '../utils/calendarDay';
@@ -121,7 +122,10 @@ const ExerciseDetailDialog = ({ item, onClose }) => {
                     const cellSx = { fontSize: { xs: 12, sm: 13 }, px: { xs: 0.75, sm: 2 }, whiteSpace: 'nowrap', borderColor: 'divider', ...(i === visibleRows.length - 1 ? { border: 0 } : {}) };
                     return (
                       <TableRow key={row.id}>
-                        <TableCell sx={cellSx}>{row.dateLabel}</TableCell>
+                        <TableCell sx={cellSx}>
+                          {row.dateLabel}
+                          <TimeZoneBadge workout={row} sx={{ display: 'flex', width: 'fit-content', height: 20, fontSize: 11, mt: 0.25 }} />
+                        </TableCell>
                         <TableCell align="right" sx={cellSx}>
                           {row.bestSet
                             ? (row.bestSet.weight > 0 ? `${formatNumber(row.bestSet.weight, { maximumFractionDigits: 2 })} × ${row.bestSet.reps}` : `${row.bestSet.reps} ${t('progress.unit.reps')}`)
