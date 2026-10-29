@@ -74,6 +74,16 @@ describe('ripetizioni suggerite dalla scheda', () => {
   });
 });
 
+describe('tecnica di una riga che smette di essere riscaldamento', () => {
+  it('prende la tecnica della scheda, come le serie allenanti originali', () => {
+    open();
+    const techniques = () => screen.getAllByRole('combobox').slice(1).map((s) => s.textContent.replace('\u200b', ''));
+    expect(techniques()).toEqual(['', '', 'Rest pause', 'Rest pause']);
+    fireEvent.click(toggles()[0]);
+    expect(techniques()).toEqual(['Rest pause', '', 'Rest pause', 'Rest pause']);
+  });
+});
+
 describe('ripetizioni precompilate dalla scheda', () => {
   const values = () => screen.getAllByLabelText('Ripetizioni').map((i) => i.value);
 

@@ -29,8 +29,9 @@ import { track } from '../utils/analytics';
 import { useTranslation } from 'react-i18next';
 import { techniqueLabel } from '../i18n/labels';
 import {
-  MAX_WEIGHT, isValidWeight, newIdempotencyKey, isValidReps, repsNeedConfirm, initialSetRows, toggleWarmupRow, rowPlanReps,
+  MAX_WEIGHT, isValidWeight, newIdempotencyKey, isValidReps, repsNeedConfirm,
 } from '../utils/focusSession';
+import { initialSetRows, toggleWarmupRow, rowPlanReps } from '../utils/manualEntryRows';
 
 const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
   const { t } = useTranslation();
@@ -78,7 +79,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
   const handleWarmupToggle = (exercise, setIndex) => {
     setWorkoutData(prev => ({
       ...prev,
-      [exercise.id]: toggleWarmupRow(prev[exercise.id], setIndex, exercise.reps)
+      [exercise.id]: toggleWarmupRow(prev[exercise.id], setIndex, exercise)
     }));
   };
 
@@ -293,7 +294,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                               control={
                                 <Checkbox
                                   size="small"
-                                  sx={{ p: 0.25 }}
+                                  sx={{ p: 0.5 }}
                                   checked={!!row.is_warmup}
                                   onChange={() => handleWarmupToggle(exercise, setIndex)}
                                   inputProps={{ 'aria-label': t('record.warmup_aria', { n: setIndex + 1 }) }}
