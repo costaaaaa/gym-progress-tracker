@@ -9,6 +9,7 @@ include_once '../../config/api_helpers.php';
 include_once '../../config/rate_limiter.php';
 include_once '../../models/Exercise.php';
 include_once '../../lib/admin_notify.php';
+require_once '../../lib/muscle_rules.php';
 
 header('Content-Type: application/json');
 
@@ -36,6 +37,12 @@ try {
     if (!in_array($muscle_group, $exercise->muscleGroups(), true)) {
         api_error(400, 'invalid_muscle_group', t_server('exercise.muscle_invalid'));
     }
+    // "Gambe" non ha un default: la scelta del muscolo principale è obbligatoria. Gli altri
+    // gruppi si derivano da soli, ma accettano anche una scelta esplicita coerente (es. glutei → abduttori).
+    $primary_muscle = muscleResolvePrimary($muscle_group, is_string($data['primary_muscle'] ?? null) ? $data['primary_muscle'] : null);
+    if ($primary_muscle === null) {
+        api_error(400, 'invalid_primary_muscle', t_server('exercise.primary_muscle_invalid'));
+    }
 
     $existing = $exercise->findVisibleByName($name, $user_id);
     if ($existing) {
@@ -55,6 +62,7 @@ try {
 
     $exercise->name = $name;
     $exercise->muscle_group = $muscle_group;
+    $exercise->primary_muscle = $primary_muscle;
     $exercise->created_by = $user_id;
     $exercise->status = 'pending';
     if (!$exercise->create()) {

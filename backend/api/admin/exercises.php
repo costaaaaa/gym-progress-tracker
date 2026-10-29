@@ -5,18 +5,19 @@
 //   POST {action, ...}
 //     approve {id}                              in attesa o rifiutato → visibile a tutti
 //     reject {id}                               in attesa → resta solo di chi l'ha creato
-//     update {id, name, muscle_group[, name_en, equipment]}   corregge nome, gruppo, nome inglese e attrezzo
-//     create {name, muscle_group[, name_en, equipment]}       esercizio ufficiale, già approvato
+//     update {id, name, muscle_group[, primary_muscle, name_en, equipment]}   corregge nome, gruppo, muscolo principale, nome inglese e attrezzo
+//     create {name, muscle_group[, primary_muscle, name_en, equipment]}       esercizio ufficiale, già approvato
 // Gli esercizi uniti a un altro (merged_into) restano rifiutati e nascosti: non si approvano né si modificano.
 //     delete {id}                               solo se nessuno lo usa
 include_once __DIR__ . '/../../config/cors_headers.php';
 include_once __DIR__ . '/../../config/database.php';
 include_once __DIR__ . '/../../config/api_helpers.php';
 include_once __DIR__ . '/../../models/Exercise.php';
+require_once __DIR__ . '/../../lib/muscle_rules.php';
 
 header('Content-Type: application/json');
 
-// Nome, gruppo muscolare, nome inglese e attrezzo validati, o esce con 400
+// Nome, gruppo muscolare, muscolo principale, nome inglese e attrezzo validati, o esce con 400
 function admin_exercise_input($exercise, $data)
 {
     $name = Exercise::cleanName($data['name'] ?? null);
@@ -26,6 +27,12 @@ function admin_exercise_input($exercise, $data)
     $muscle_group = is_string($data['muscle_group'] ?? null) ? mb_strtolower(trim($data['muscle_group']), 'UTF-8') : '';
     if (!in_array($muscle_group, $exercise->muscleGroups(), true)) {
         api_error(400, 'invalid_muscle_group', 'Gruppo muscolare non valido.');
+    }
+    // "Gambe" non ha un default: va scelto esplicitamente. Se l'admin cambia gruppo, il
+    // muscolo principale deve restare coerente col nuovo gruppo (vedi muscleResolvePrimary).
+    $primary_muscle = muscleResolvePrimary($muscle_group, is_string($data['primary_muscle'] ?? null) ? $data['primary_muscle'] : null);
+    if ($primary_muscle === null) {
+        api_error(400, 'invalid_primary_muscle', 'Muscolo principale obbligatorio o non valido per questo gruppo.');
     }
     $name_en = Exercise::cleanNameEn($data['name_en'] ?? null);
     if ($name_en === null && is_string($data['name_en'] ?? null) && trim($data['name_en']) !== '') {
@@ -38,7 +45,7 @@ function admin_exercise_input($exercise, $data)
             api_error(400, 'invalid_equipment', 'Attrezzo non valido.');
         }
     }
-    return array($name, $muscle_group, $name_en, $equipment);
+    return array($name, $muscle_group, $primary_muscle, $name_en, $equipment);
 }
 
 // True se un esercizio approvato diverso da $except_id ha già il nome italiano o quello inglese
@@ -111,21 +118,22 @@ try {
             if ($row['merged_into'] !== null) {
                 api_error(409, 'merged', 'Esercizio unito a un altro: non si può modificare.');
             }
-            list($name, $muscle_group, $name_en, $equipment) = admin_exercise_input($exercise, $data);
+            list($name, $muscle_group, $primary_muscle, $name_en, $equipment) = admin_exercise_input($exercise, $data);
             if ($row['status'] === 'approved' && admin_exercise_name_taken($exercise, $name, $name_en, $id)) {
                 api_error(409, 'duplicate', 'Nel catalogo c\'è già un esercizio con questo nome.');
             }
-            $exercise->updateDetails($id, $name, $name_en, $muscle_group, $equipment);
-            api_json_response(array('success' => true, 'name' => $name, 'name_en' => $name_en, 'muscle_group' => $muscle_group, 'equipment' => $equipment));
+            $exercise->updateDetails($id, $name, $name_en, $muscle_group, $primary_muscle, $equipment);
+            api_json_response(array('success' => true, 'name' => $name, 'name_en' => $name_en, 'muscle_group' => $muscle_group, 'primary_muscle' => $primary_muscle, 'equipment' => $equipment));
 
         case 'create':
-            list($name, $muscle_group, $name_en, $equipment) = admin_exercise_input($exercise, $data);
+            list($name, $muscle_group, $primary_muscle, $name_en, $equipment) = admin_exercise_input($exercise, $data);
             if (admin_exercise_name_taken($exercise, $name, $name_en)) {
                 api_error(409, 'duplicate', 'Nel catalogo c\'è già un esercizio con questo nome.');
             }
             $exercise->name = $name;
             $exercise->name_en = $name_en;
             $exercise->muscle_group = $muscle_group;
+            $exercise->primary_muscle = $primary_muscle;
             $exercise->equipment = $equipment;
             $exercise->created_by = null;
             $exercise->status = 'approved';

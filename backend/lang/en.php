@@ -202,6 +202,7 @@ return array(
     // Esercizi, gamification, statistiche, utente
     'exercise.name_invalid' => "The name must be 2 to 60 characters (letters, numbers and simple punctuation) and can't contain links.",
     'exercise.muscle_invalid' => 'Invalid muscle group.',
+    'exercise.primary_muscle_invalid' => 'Primary muscle required or invalid.',
     'exercise.exists' => 'An exercise with this name already exists.',
     'exercise.too_many' => 'You already have {max} personal exercises awaiting review.',
     'exercise.created' => "Exercise created: only you can see it until it's approved.",
