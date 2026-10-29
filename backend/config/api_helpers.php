@@ -203,6 +203,13 @@ function workout_instant($date, $time_zone)
     return new DateTimeImmutable($date, new DateTimeZone(valid_time_zone($time_zone) ?? DEFAULT_TIME_ZONE));
 }
 
+// Un orario che il database tiene nel fuso del server (name_locked_until, ...) come DateTime nel fuso
+// della richiesta, per scriverlo in un messaggio all'utente.
+function server_time_in_request_zone($value)
+{
+    return (new DateTime($value))->setTimezone(new DateTimeZone(request_time_zone()));
+}
+
 // Un istante come lo tiene il database: data e ora nel fuso del server ("Y-m-d H:i:s"), per confrontarlo
 // con colonne come last_xp_session_at.
 function server_time_from_instant(DateTimeInterface $instant)

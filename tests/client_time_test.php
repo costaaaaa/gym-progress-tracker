@@ -96,6 +96,16 @@ $db->exec('CREATE TABLE gym_users (id INTEGER PRIMARY KEY, time_zone TEXT NULL)'
 $db->exec("INSERT INTO gym_users (id, time_zone) VALUES (1, NULL), (2, 'Asia/Tokyo'), (3, 'Mars/Olympus')");
 $saved = function ($id) use ($db) { return $db->query("SELECT time_zone FROM gym_users WHERE id = $id")->fetchColumn(); };
 
+echo "\norario del server nel fuso della richiesta\n";
+request_user_context(null, null);
+$_SERVER['HTTP_X_TIMEZONE'] = 'America/New_York';
+request_time_zone(true);
+check('ora del server → ora di New York', server_time_in_request_zone('2026-10-28 17:00:00')->format('Y-m-d H:i') === '2026-10-28 12:00');
+check('il giorno può cambiare (Tokyo)', (function () { $_SERVER['HTTP_X_TIMEZONE'] = 'Asia/Tokyo'; request_time_zone(true); return server_time_in_request_zone('2026-10-28 17:00:00')->format('Y-m-d H:i') === '2026-10-29 01:00'; })());
+unset($_SERVER['HTTP_X_TIMEZONE']);
+request_time_zone(true);
+check('senza fuso: Roma, com\'è nel database', server_time_in_request_zone('2026-10-28 17:00:00')->format('Y-m-d H:i') === '2026-10-28 17:00');
+
 echo "\nfuso della richiesta con un utente (getter: non scrive)\n";
 unset($_SERVER['HTTP_X_TIMEZONE']);
 request_user_context($db, 2);
