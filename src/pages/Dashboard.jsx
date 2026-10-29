@@ -3,6 +3,7 @@ import { Box, Tabs, Tab, CircularProgress, Typography } from '@mui/material';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import StackedBarChartIcon from '@mui/icons-material/StackedBarChart';
+import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
 import PrototypeSwitcher, { useVariant } from '../components/PrototypeSwitcher';
 import VolumeView, { VARIANT_NAMES } from './prototypeVolume/VolumeVariants';
 import { usePageMeta } from '../hooks/usePageMeta';
@@ -14,13 +15,23 @@ import { INK_TABS } from '../utils/inkTabs';
 const Progress = lazy(() => import('./Progress'));
 const BodyStats = lazy(() => import('./BodyStats'));
 
-const TABS = ['progress', 'volume', 'body'];
+// PROTOTIPO giro 2: P1 scheda "Volume" · P2 scheda "Muscoli" (serie + recupero) · P3 sezione in cima a Progressi
+const TABS_BY_VARIANT = {
+  P1: ['progress', 'volume', 'body'],
+  P2: ['progress', 'muscles', 'body'],
+  P3: ['progress', 'body'],
+};
+const MIDDLE = { volume: { label: 'Volume', icon: <StackedBarChartIcon fontSize="small" /> }, muscles: { label: 'Muscoli', icon: <AccessibilityNewIcon fontSize="small" /> } };
 
 const Dashboard = () => {
   const { t } = useTranslation();
   usePageMeta(t('dashboard.meta.title'), t('dashboard.meta.description'));
-  const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS);
-  const variant = useVariant(['A', 'B', 'C']);
+  const variant = useVariant(['P1', 'P2', 'P3']);
+  const tabs = TABS_BY_VARIANT[variant];
+  const middle = tabs.length === 3 ? tabs[1] : null;
+  // con tre schede servono etichette corte, altrimenti a 390 px vanno a capo
+  const short = middle !== null;
+  const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(tabs);
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -35,19 +46,21 @@ const Dashboard = () => {
           <Tab
             icon={<BarChartIcon fontSize="small" />}
             iconPosition="start"
-            label={t('dashboard.tab.progress')}
+            label={short ? 'Esercizi' : t('dashboard.tab.progress')}
             id="dashboard-tab-0"
           />
-          <Tab
-            icon={<StackedBarChartIcon fontSize="small" />}
-            iconPosition="start"
-            label="Volume"
-            id="dashboard-tab-volume"
-          />
+          {middle && (
+            <Tab
+              icon={MIDDLE[middle].icon}
+              iconPosition="start"
+              label={MIDDLE[middle].label}
+              id="dashboard-tab-middle"
+            />
+          )}
           <Tab
             icon={<StraightenIcon fontSize="small" />}
             iconPosition="start"
-            label={t('dashboard.tab.body')}
+            label={short ? 'Misure' : t('dashboard.tab.body')}
             id="dashboard-tab-1"
           />
         </Tabs>
@@ -61,13 +74,13 @@ const Dashboard = () => {
         }>
           {visitedTabs.progress && (
             <Box sx={{ display: currentTab === 'progress' ? 'block' : 'none' }}>
+              {variant === 'P3' && <Box sx={{ mb: 3 }}><VolumeView kind="volume" /></Box>}
               <Progress isEmbedded={true} />
             </Box>
           )}
-          {visitedTabs.volume && (
-            <Box sx={{ display: currentTab === 'volume' ? 'block' : 'none' }}>
-              <VolumeView variant={variant} />
-              <PrototypeSwitcher variants={['A', 'B', 'C']} names={VARIANT_NAMES} />
+          {middle && visitedTabs[middle] && (
+            <Box sx={{ display: currentTab === middle ? 'block' : 'none' }}>
+              <VolumeView kind={middle} />
             </Box>
           )}
           {visitedTabs.body && (
@@ -77,6 +90,7 @@ const Dashboard = () => {
           )}
         </Suspense>
       </Box>
+      <PrototypeSwitcher variants={['P1', 'P2', 'P3']} names={VARIANT_NAMES} />
     </Box>
   );
 };

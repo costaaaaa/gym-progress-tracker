@@ -57,7 +57,9 @@ const Home = () => {
   const [lastWorkout, setLastWorkout] = useState(null);
   const [activePlan, setActivePlan] = useState(null);
   const [dashboardStats, setDashboardStats] = useState(null);
-  const homeVariant = useVariant(['A', 'B']);
+  // PROTOTIPO giro 2: la Home segue la collocazione scelta in Dashboard (P1 Volume, P2 Muscoli, P3 Progressi)
+  const placement = useVariant(['P1', 'P2', 'P3']);
+  const setsTab = { P1: 'volume', P2: 'muscles', P3: 'progress' }[placement];
   const weeklySets = Object.values(dashboardStats?.weekly_sets?.week || {}).reduce((s, n) => s + n, 0);
   // weekly_goal è l'obiettivo effettivo; plan_days_total resta per i server più vecchi
   const weeklyGoal = dashboardStats?.weekly_goal ?? dashboardStats?.plan_days_total;
@@ -194,7 +196,7 @@ const Home = () => {
                     : t('home.weekly.missing', { count: Math.max(0, (weeklyGoal || 0) - (dashboardStats?.weekly_workouts || 0)) })}
                 </Typography>
 
-                {/* PROTOTIPO volume: A = kg + serie (apre la vista Volume), B = kg · serie · ripetizioni */}
+                {/* PROTOTIPO volume: kg + serie (variante A scelta), il numero delle serie apre la vista */}
                 <Box sx={{ display: 'flex', gap: 1.5 }}>
                   <Box sx={{ flex: 1 }}>
                     <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
@@ -203,30 +205,28 @@ const Home = () => {
                     </Typography>
                     <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.volume')}</Typography>
                   </Box>
-                  <CardActionArea component={RouterLink} to="/dashboard?tab=volume" sx={{ flex: 1, borderRadius: 1, mx: -1, px: 1, width: 'auto' }}>
+                  <CardActionArea component={RouterLink} to={`/dashboard?tab=${setsTab}&variant=${placement}`} sx={{ flex: 1, borderRadius: 1, mx: -1, px: 1, width: 'auto' }}>
                     <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
                       {formatNumber(weeklySets)}
                       <Box component="span" sx={{ fontSize: 15, fontWeight: 600, ml: 0.5, color: 'primary.main' }}>›</Box>
                     </Typography>
                     <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Serie allenanti</Typography>
                   </CardActionArea>
-                  {homeVariant === 'B' && (
-                    <Box sx={{ flex: 1 }}>
-                      <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
-                        {formatNumber(dashboardStats?.weekly_volume?.total_reps)}
-                      </Typography>
-                      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.reps')}</Typography>
-                    </Box>
-                  )}
                 </Box>
-                <PrototypeSwitcher variants={['A', 'B']} names={{ A: 'kg + serie', B: 'kg · serie · reps' }} />
               </Card>
             </Grid>
+
+            <PrototypeSwitcher variants={['P1', 'P2', 'P3']} names={{ P1: 'scheda Volume', P2: 'scheda Muscoli', P3: 'sezione in Progressi' }} />
 
             {/* Stato Muscolare */}
             <Grid item xs={12} md={6}>
               <Card sx={{ height: '100%', p: '22px' }}>
                 <BodyVisualizer recoveryData={dashboardStats?.recovery} />
+                {placement === 'P2' && (
+                  <Button component={RouterLink} to="/dashboard?tab=muscles&variant=P2" size="small" sx={{ mt: 1.5, px: 0 }}>
+                    Serie e recupero per muscolo ›
+                  </Button>
+                )}
               </Card>
             </Grid>
 

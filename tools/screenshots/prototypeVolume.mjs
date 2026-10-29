@@ -92,6 +92,11 @@ const BODY = Array.from({ length: 10 }, (_, i) => ({
 const recovery = {
   petto: { status: 'PRONTO', ready_at: null },
   glutei: { status: 'PRONTO', ready_at: null },
+  bicipiti: { status: 'PRONTO', ready_at: null },
+  tricipiti: { status: 'PRONTO', ready_at: null },
+  addome: { status: 'PRONTO', ready_at: null },
+  adduttori: { status: 'PRONTO', ready_at: null },
+  polpacci: { status: 'PRONTO', ready_at: null },
   schiena: { status: 'IN RECUPERO', ready_at: stamp(1, '08:00:00') },
   spalle: { status: 'IN RECUPERO', ready_at: stamp(1, '08:00:00') },
   quadricipiti: { status: 'AFFATICATO', ready_at: stamp(2, '08:00:00') },
@@ -121,7 +126,9 @@ const fixtures = [
     weekly_volume: { total_weight: 4820, total_reps: 418 }, recovery,
     weekly_sets: {
       week: { petto: 12, schiena: 10, spalle: 6, bicipiti: 4, tricipiti: 3, addome: 0, quadricipiti: 8, femorali: 5, glutei: 3, adduttori: 2, abduttori: 0, polpacci: 0 },
-      previous: { petto: 10, schiena: 12, spalle: 6, bicipiti: 6, tricipiti: 4, addome: 3, quadricipiti: 9, femorali: 4, glutei: 3, adduttori: 0, abduttori: 0, polpacci: 4 },
+      // Q16: settimana scorsa fino allo stesso giorno (somma 48) + totale intero solo come riferimento
+      previous_to_date: { petto: 8, schiena: 8, spalle: 4, bicipiti: 4, tricipiti: 3, addome: 3, quadricipiti: 9, femorali: 4, glutei: 3, adduttori: 0, abduttori: 0, polpacci: 2 },
+      previous_total: 61,
     },
   })],
   ['gamification/streak.php', () => ({ success: true, current_streak_weeks: 3, longest_streak_weeks: 5, this_week: { count: 2, goal: 3, completed: false } })],
@@ -259,9 +266,12 @@ async function openPage(vp, theme, opts, tag) {
 
 // nasconde la barra delle varianti: la variante è nel nome del file
 const HIDE_SWITCHER = '[data-prototype-switcher]{display:none!important}';
+// [nome, url, testo da cui parte il ritaglio (null = dall'alto), varianti]
 const SHOTS = [
-  ['home', '/', 'Riepilogo settimanale', ['A', 'B']],
-  ['volume', '/dashboard?tab=volume', 'serie allenanti', ['A', 'B', 'C']],
+  ['home', '/', 'Riepilogo settimanale', ['P2']],
+  ['place', '/dashboard?tab=volume', null, ['P1']],
+  ['place', '/dashboard?tab=muscles', null, ['P2']],
+  ['place', '/dashboard?tab=progress', null, ['P3']],
 ];
 const CASES = [{ w: 390, h: 844, theme: 'light' }, { w: 390, h: 844, theme: 'dark' }, { w: 1440, h: 900, theme: 'light' }];
 
@@ -279,12 +289,11 @@ for (const c of CASES) {
           await page.evaluate(() => document.querySelectorAll('nav').forEach((n) => { if (getComputedStyle(n).position === 'fixed') n.style.display = 'none'; }));
           await snap(page, `${name}-${v}`, tag);
           // ritaglio JPEG della parte che cambia, per il documento
-          const startSel = page.getByText(anchor).first();
-          const box = await startSel.boundingBox();
+          const box = anchor ? await page.getByText(anchor).first().boundingBox() : { y: 16 };
           const full = await page.evaluate(() => document.documentElement.scrollHeight);
           const y = Math.max(0, Math.floor(box.y) - 16);
           await page.screenshot({ path: path.join(outDir, `${name}-${v}_${tag}.jpg`), type: 'jpeg', quality: 62, fullPage: true,
-            clip: { x: 0, y, width: c.w, height: Math.min(full - y, name === 'home' ? 420 : (c.w === 390 ? 1500 : 1100)) } });
+            clip: { x: 0, y, width: c.w, height: Math.min(full - y, name === 'home' ? 900 : (c.w === 390 ? 1500 : 1100)) } });
         } finally {
           await ctx.close();
         }
