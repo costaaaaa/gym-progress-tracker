@@ -50,6 +50,8 @@ class Report
             $row['id'] = (int)$row['id'];
             $row['group_id'] = $row['group_id'] === null ? null : (int)$row['group_id'];
             $row['group_admin_renames'] = (int)$row['group_admin_renames'];
+            $row['created_at'] = server_time_iso($row['created_at']);
+            $row['decided_at'] = server_time_iso($row['decided_at']);
         }
         return $rows;
     }

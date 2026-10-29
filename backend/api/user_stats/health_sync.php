@@ -73,7 +73,7 @@ if (count($days) > 1000) {
 // Stessi tetti di create.php
 $limits = array('weight' => 500, 'body_fat_percentage' => 100, 'waist_size' => 300);
 // Il telefono conta i giorni nel suo fuso: accanto al nostro può già essere domani
-$maxDate = new DateTime('tomorrow');
+$maxDate = user_today()->modify('+1 day');
 
 $counts = array('created' => 0, 'updated' => 0, 'cleared' => 0, 'skipped' => 0);
 $errors = array();

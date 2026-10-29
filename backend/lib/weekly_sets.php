@@ -32,7 +32,9 @@ function weeklySetsBuckets(array $rows, DateTimeInterface $monday, DateTimeInter
         $muscle = muscleCountedOf($row['primary_muscle'] ?? null);
         if ($muscle === null) continue;
 
-        $date = new DateTime($row['date']);
+        // `date` è l'ora locale del luogo dell'allenamento (#55): si confronta come orologio con la
+        // settimana di chi guarda, quindi si legge nello stesso fuso di $monday
+        $date = new DateTime($row['date'], $monday->getTimezone());
 
         if ($date >= $monday) {
             $week[$muscle]++;

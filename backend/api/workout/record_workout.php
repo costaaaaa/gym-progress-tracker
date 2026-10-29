@@ -133,20 +133,22 @@ try {
         }
     }
 
-    // Data dell'allenamento: start_time se l'inizio è entro 4 ore, altrimenti adesso.
+    // Data dell'allenamento: start_time se l'inizio è entro 4 ore, altrimenti adesso. È l'ora locale
+    // del luogo ($time_zone: quello del payload se valido, altrimenti il fuso del dispositivo).
     // Bozza ripresa in ritardo: il client manda backdated=true, start_time sul giorno scelto e
     // ended_at (ultimo set registrato) spostato dello stesso scarto.
-    $now = new DateTime();
-    $data_workout = $now->format('Y-m-d H:i:s');
+    $time_zone = valid_time_zone($data->time_zone ?? null) ?? request_time_zone();
+    $now = new DateTimeImmutable('now', new DateTimeZone($time_zone));
+    $started = $now;
     $start_gap = null;
     $start = null;
 
     if (!empty($data->start_time)) {
         try {
-            $start = client_datetime($data->start_time);
+            $start = client_datetime($data->start_time, $time_zone);
             $gap_seconds = $now->getTimestamp() - $start->getTimestamp();
             if ($gap_seconds >= 0 && $gap_seconds <= 4 * 3600) {
-                $data_workout = $start->format('Y-m-d H:i:s');
+                $started = $start;
                 $start_gap = $gap_seconds;
             }
         } catch (Exception $e) {
@@ -168,15 +170,17 @@ try {
         }
     } elseif (!empty($data->backdated) && $start) {
         // Sessione ripresa in ritardo: start_time è già sul giorno scelto dall'utente. Il client
-        // limita la scelta a 7 giorni fa; qui 8 per assorbire i fusi orari.
-        if ($start < (new DateTime('today'))->modify('-8 days')) {
+        // limita la scelta a 7 giorni fa, contati nel fuso della bozza; qui 8 giorni, contati nel fuso
+        // del dispositivo: il margine assorbe la differenza fra i due fusi. Il resto (data locale,
+        // tetto al futuro, ended_at) resta nel fuso dell'allenamento.
+        if ($start < user_now()->setTime(0, 0)->modify('-8 days')) {
             api_json_response(['success' => false, 'message' => t_server('workout.record_date_invalid')], 400);
         }
-        $data_workout = ($start > $now ? $now : $start)->format('Y-m-d H:i:s');
+        $started = $start > $now ? $now : $start;
 
         if (!empty($data->ended_at)) {
             try {
-                $ended_gap = client_datetime($data->ended_at)->getTimestamp() - $start->getTimestamp();
+                $ended_gap = client_datetime($data->ended_at, $time_zone)->getTimestamp() - $start->getTimestamp();
                 if ($ended_gap > 0 && $ended_gap <= 12 * 3600) $duration_seconds = $ended_gap;
             } catch (Exception $e) {
                 // ended_at non valido: durata NULL
@@ -190,7 +194,8 @@ try {
     try {
         $workout_history = new WorkoutHistory($db);
         $workout_history->user_id = $user_id;
-        $workout_history->date = $data_workout;
+        $workout_history->date = $started->format('Y-m-d H:i:s');
+        $workout_history->time_zone = $time_zone;
         $workout_history->duration_seconds = $duration_seconds;
         $workout_history->notes = isset($data->notes) ? $data->notes : '';
         $workout_history->exercises = json_encode($data->workout_records);
@@ -221,7 +226,7 @@ try {
             }
         }
 
-        $gamification = apply_workout_gamification($db, $user_id, (int) $workout_id, $data_workout, $duration_seconds, $data->workout_records);
+        $gamification = apply_workout_gamification($db, $user_id, (int) $workout_id, $started, $duration_seconds, $data->workout_records);
 
         $db->commit();
 

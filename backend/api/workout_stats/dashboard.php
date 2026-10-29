@@ -36,9 +36,9 @@ try {
     else $level = 'avanzato';
 
     // 2. Statistiche Settimanali (Lunedì - Domenica)
-    $today = new DateTime();
-    $dayOfWeek = $today->format('N'); // 1 (Lunedì) - 7 (Domenica)
-    $monday = clone $today;
+    $now = user_now();
+    $dayOfWeek = $now->format('N'); // 1 (Lunedì) - 7 (Domenica)
+    $monday = clone $now;
     $monday->modify('-' . ($dayOfWeek - 1) . ' days')->setTime(0, 0, 0);
 
     $monday_str = $monday->format('Y-m-d H:i:s');
@@ -92,14 +92,15 @@ try {
     ];
 
     // Recupera tutte le serie degli ultimi 10 giorni
-    $query_sets = "SELECT wh.date, e.primary_muscle, ws.reps, ws.weight
+    $since_str = (clone $now)->modify('-10 days')->format('Y-m-d H:i:s');
+    $query_sets = "SELECT wh.date, wh.time_zone, e.primary_muscle, ws.reps, ws.weight
                    FROM gym_workout_sets ws
                    JOIN gym_workout_history wh ON ws.workout_history_id = wh.id
                    JOIN gym_exercises e ON ws.exercise_id = e.id
-                   WHERE wh.user_id = ? AND wh.date >= DATE_SUB(NOW(), INTERVAL 10 DAY)
+                   WHERE wh.user_id = ? AND wh.date >= ?
                    ORDER BY wh.date ASC";
     $stmt_sets = $db->prepare($query_sets);
-    $stmt_sets->execute([$user_id]);
+    $stmt_sets->execute([$user_id, $since_str]);
     $all_sets = $stmt_sets->fetchAll(PDO::FETCH_ASSOC);
 
     // Raggruppa per sessione e muscolo principale (gli esercizi senza, es. "gambe" personali
@@ -116,6 +117,7 @@ try {
         if (!isset($sessions_by_muscle[$mg][$date])) {
             $sessions_by_muscle[$mg][$date] = [
                 'date' => $date,
+                'started_at' => workout_instant($date, $set['time_zone']),
                 'sets_count' => 0
             ];
         }
@@ -134,10 +136,12 @@ try {
 
         $last_ready_at = null;
         $last_trained = null;
+        $last_trained_at = null;
 
         foreach ($mg_sessions as $date_str => $session) {
-            $session_date = new DateTime($date_str);
+            $session_date = $session['started_at'];
             $last_trained = $date_str;
+            $last_trained_at = $session['started_at'];
 
             $base_h = $times[$level];
 
@@ -170,17 +174,15 @@ try {
                 $recovery_h += ($residuo_h * 0.50);
             }
 
-            $last_ready_at = clone $session_date;
-            $last_ready_at->modify('+' . round($recovery_h) . ' hours');
+            $last_ready_at = $session_date->modify('+' . round($recovery_h) . ' hours');
         }
 
-        $now = new DateTime();
         if ($now >= $last_ready_at) {
             $percent = 100;
             $status = 'PRONTO';
         } else {
-            $total_h = ($last_ready_at->getTimestamp() - (new DateTime($last_trained))->getTimestamp()) / 3600;
-            $passed_h = ($now->getTimestamp() - (new DateTime($last_trained))->getTimestamp()) / 3600;
+            $total_h = ($last_ready_at->getTimestamp() - $last_trained_at->getTimestamp()) / 3600;
+            $passed_h = ($now->getTimestamp() - $last_trained_at->getTimestamp()) / 3600;
             $percent = $total_h > 0 ? min(99, round(($passed_h / $total_h) * 100)) : 100;
 
             if ($percent < 50) $status = 'AFFATICATO';
@@ -191,7 +193,7 @@ try {
             'percent' => $percent,
             'status' => $status,
             'last_trained' => $last_trained,
-            'ready_at' => $last_ready_at->format('Y-m-d H:i:s')
+            'ready_at' => $last_ready_at->setTimezone($now->getTimezone())->format('c')
         ];
     }
 
@@ -208,7 +210,7 @@ try {
         'previous_monday' => $previous_monday_str,
         'user_id' => $user_id
     ]);
-    $weekly_sets = weeklySetsBuckets($stmt_weekly_sets->fetchAll(PDO::FETCH_ASSOC), $monday, $today);
+    $weekly_sets = weeklySetsBuckets($stmt_weekly_sets->fetchAll(PDO::FETCH_ASSOC), $monday, $now);
 
     if (ob_get_length()) ob_clean();
     header('Content-Type: application/json');

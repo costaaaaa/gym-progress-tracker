@@ -30,7 +30,7 @@ $limits = array(
     'chest_size' => 300, 'arm_size' => 150, 'waist_size' => 300, 'leg_size' => 200,
 );
 $dateObj = (isset($data->date) && is_string($data->date)) ? DateTime::createFromFormat('!Y-m-d', $data->date) : false;
-if (!empty($data->date) && (!$dateObj || $dateObj->format('Y-m-d') !== $data->date || $dateObj > new DateTime('today'))) {
+if (!empty($data->date) && (!$dateObj || $dateObj->format('Y-m-d') !== $data->date || $dateObj > user_today())) {
     http_response_code(400);
     echo json_encode(array("message" => t_server('stats.date_invalid')));
     exit;

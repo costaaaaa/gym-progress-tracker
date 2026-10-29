@@ -24,7 +24,7 @@ try {
             }
             if ($lock !== null) {
                 $format = request_locale() === 'en' ? 'M j, Y g:i A' : 'd/m/Y H:i';
-                api_error(403, 'name_locked', t_server('groups.name_locked_until', array('date' => date($format, strtotime($lock['until'])))));
+                api_error(403, 'name_locked', t_server('groups.name_locked_until', array('date' => server_time_in_request_zone($lock['until'])->format($format))));
             }
             $name = Group::cleanName($data['name'] ?? null);
             if ($name === null) {

@@ -13,17 +13,33 @@ $db = $database->getConnection();
 
 $user_id = require_authenticated_user($db);
 
+// Colonne data+ora che il database tiene nel fuso del server: nell'export diventano ISO 8601 con
+// offset. Una colonna nuova di questo tipo va aggiunta qui. Le colonne DATE (date, birth_date, ...)
+// restano com'erano.
+const EXPORT_DATETIME_COLUMNS = array(
+    'created_at', 'password_changed_at', 'last_login_at', 'unlocked_at', 'expires_at', 'revoked_at',
+    'granted_at', 'share_consent_at', 'joined_at', 'decided_at',
+);
+
 // Esegue una query con parametri e ritorna tutte le righe
 function export_rows($db, $sql, $params)
 {
     $stmt = $db->prepare($sql);
     $stmt->execute($params);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as &$row) {
+        foreach ($row as $column => &$value) {
+            if (in_array($column, EXPORT_DATETIME_COLUMNS, true)) $value = server_time_iso($value);
+        }
+        unset($value);
+    }
+    unset($row);
+    return $rows;
 }
 
 try {
     $profile = export_rows($db,
-        "SELECT username, email, birth_date, gender, training_start_date, rest_timer_enabled,
+        "SELECT username, email, birth_date, gender, training_start_date, rest_timer_enabled, time_zone,
                 created_at, password_changed_at, last_login_at
          FROM gym_users WHERE id = ?", array($user_id));
     if (!$profile) {
@@ -75,7 +91,7 @@ try {
 
     // Storico allenamenti con le serie
     $history = export_rows($db,
-        "SELECT id, date, duration_seconds, notes, exercises FROM gym_workout_history WHERE user_id = ? ORDER BY date, id",
+        "SELECT id, date, time_zone, duration_seconds, notes, exercises FROM gym_workout_history WHERE user_id = ? ORDER BY date, id",
         array($user_id));
     $sets = export_rows($db,
         "SELECT s.workout_history_id, e.name AS exercise, s.set_number, s.weight, s.reps, s.intensity_technique
@@ -93,6 +109,8 @@ try {
     foreach ($history as $h) {
         $workouts[] = array(
             'date' => $h['date'],
+            'time_zone' => $h['time_zone'],
+            'started_at' => workout_started_at($h['date'], $h['time_zone']),
             'duration_seconds' => $h['duration_seconds'] !== null ? (int)$h['duration_seconds'] : null,
             'notes' => $h['notes'],
             'exercises' => $h['exercises'],

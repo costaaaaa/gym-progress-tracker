@@ -54,6 +54,19 @@ $rows4 = [
 $result4 = weeklySetsBuckets($rows4, $monday, $now);
 check('solo quadricipiti conta, NULL e valori sconosciuti no', array_sum($result4['week']) === 1 && $result4['week']['quadricipiti'] === 1);
 
+echo "\nSettimana nel fuso del dispositivo, righe in ora locale (#55)\n";
+// Il server è a Roma, il dispositivo a New York: `date` si confronta come orologio, non come istante
+date_default_timezone_set('Europe/Rome');
+$ny = new DateTimeZone('America/New_York');
+$mondayNy = new DateTime('2026-10-26 00:00:00', $ny);
+$nowNy = new DateTime('2026-10-29 10:00:00', $ny);
+$rows5 = [
+    ['date' => '2026-10-25 21:00:00', 'primary_muscle' => 'spalle'], // domenica sera a NY (a Roma è già lunedì): settimana scorsa
+    ['date' => '2026-10-26 01:00:00', 'primary_muscle' => 'spalle'], // lunedì notte a NY: questa settimana
+];
+$result5 = weeklySetsBuckets($rows5, $mondayNy, $nowNy);
+check('domenica 21:00 di NY resta nella settimana scorsa, lunedì 01:00 in questa', $result5['week']['spalle'] === 1 && $result5['previous_total'] === 1);
+
 echo "\nForma del bucket\n";
 $empty = weeklySetsBuckets([], $monday, $now);
 check('week ha le 12 chiavi di COUNTED_MUSCLES, nell\'ordine del corpo, tutte a 0', array_keys($empty['week']) === COUNTED_MUSCLES && array_sum($empty['week']) === 0);

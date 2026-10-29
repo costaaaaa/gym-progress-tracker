@@ -29,7 +29,7 @@ class User
     {
         if (!$this->birth_date) return null;
         $birthDate = new DateTime($this->birth_date);
-        $today = new DateTime();
+        $today = user_today();
         return $today->diff($birthDate)->y;
     }
 
@@ -38,7 +38,7 @@ class User
     {
         if (!$this->training_start_date) return 0;
         $startDate = new DateTime($this->training_start_date);
-        $today = new DateTime();
+        $today = user_today();
         $diff = $today->diff($startDate);
         // Calcola anni + frazione di anno (mesi / 12)
         return $diff->y + round($diff->m / 12, 1);

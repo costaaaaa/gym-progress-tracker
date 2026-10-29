@@ -24,7 +24,7 @@ try {
             'id' => $user->id,
             'username' => $user->username,
             'email' => $user->email,
-            'created_at' => $user->created_at,
+            'created_at' => server_time_iso($user->created_at),
             'rest_timer_enabled' => $user->rest_timer_enabled,
             'age' => $user->age,
             'birth_date' => $user->birth_date,
@@ -32,7 +32,7 @@ try {
             'training_start_date' => $user->training_start_date,
             'locale' => $user->locale,
             'experience_years' => $user->experience_years,
-            'password_changed_at' => $user->password_changed_at,
+            'password_changed_at' => server_time_iso($user->password_changed_at),
             'is_admin' => user_is_admin($db, $user_id),
             'features' => user_features($db, $user_id)
         ) + weekly_goal_settings($db, $user_id));

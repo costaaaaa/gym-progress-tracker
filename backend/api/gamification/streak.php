@@ -20,7 +20,7 @@ try {
     $last_completed_week = $row ? $row['last_completed_week'] : null;
 
     // Lazy-reset: if a full week was skipped without completing, streak is broken
-    $now = new DateTime();
+    $now = user_now();
     $effective_streak = effectiveStreakWeeks($current_streak, $last_completed_week, $now);
     if ($effective_streak !== $current_streak) {
         $current_streak = $effective_streak;

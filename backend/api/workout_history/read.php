@@ -75,6 +75,8 @@ try {
             $record_item = array(
                 "id" => $row['id'],
                 "date" => $row['date'],
+                "time_zone" => $row['time_zone'],
+                "started_at" => workout_started_at($row['date'], $row['time_zone']),
                 "duration_seconds" => $row['duration_seconds'] !== null ? (int) $row['duration_seconds'] : null,
                 "notes" => $row['notes'],
                 "health_written" => $row['health_written_at'] !== null,

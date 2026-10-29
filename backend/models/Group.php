@@ -151,7 +151,7 @@ class Group
                 'type' => $r['type'],
                 'my_role' => $r['my_role'],
                 'members_count' => (int)$r['members_count'],
-                'joined_at' => $r['joined_at'],
+                'joined_at' => server_time_iso($r['joined_at']),
             );
         }, $rows);
     }
@@ -170,7 +170,7 @@ class Group
             $item = array(
                 'username' => $r['username'],
                 'role' => $r['role'],
-                'joined_at' => $r['joined_at'],
+                'joined_at' => server_time_iso($r['joined_at']),
                 'is_me' => (int)$r['user_id'] === (int)$viewer_id,
             );
             if ($can_manage) {
@@ -316,9 +316,9 @@ class Group
                 'name' => $r['name'],
                 'owner' => $r['owner'],
                 'members_count' => (int)$r['members_count'],
-                'created_at' => $r['created_at'],
+                'created_at' => server_time_iso($r['created_at']),
                 'name_locked' => $lock !== null,
-                'name_locked_until' => $lock['until'] ?? null,
+                'name_locked_until' => server_time_iso($lock['until'] ?? null),
             );
         }, $stmt->fetchAll(PDO::FETCH_ASSOC));
     }

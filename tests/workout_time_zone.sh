@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 #
-# workout_time_zone.sh — controlla che record_workout.php salvi l'orario dell'allenamento nel fuso del
-# server (Europe/Rome) e non in UTC, per start_time e per ended_at mandati con la "Z" finale.
+# workout_time_zone.sh — controlla che record_workout.php salvi l'orario dell'allenamento come ora
+# locale del suo fuso e non in UTC, per start_time e per ended_at mandati con la "Z" finale. Il test
+# non manda X-Timezone né time_zone, quindi il fuso è il ripiego Europe/Rome; il comportamento con un
+# fuso scelto dal dispositivo è in time_zone.sh.
 #
 #   tests/workout_time_zone.sh http://localhost:8080/backend/
 #
