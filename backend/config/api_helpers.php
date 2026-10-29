@@ -59,6 +59,11 @@ function resolve_authenticated_user_id($db)
 {
     $user_id = find_authenticated_user_id($db);
     request_user_context($db, $user_id);
+    if ($user_id) {
+        // Qui e non in request_time_zone(): vale per ogni richiesta autenticata, anche per gli endpoint
+        // che il fuso non lo usano, così il «fuso salvato» è sempre l'ultimo visto dall'app
+        remember_request_time_zone($db, $user_id);
+    }
     return $user_id;
 }
 
@@ -138,9 +143,8 @@ function valid_time_zone($value)
 }
 
 // Fuso del dispositivo per questa richiesta: header X-Timezone se valido, altrimenti l'ultimo fuso
-// visto sull'account (gym_users.time_zone), altrimenti Europe/Rome: i client che non lo mandano si
-// comportano come prima. Un header valido e diverso da quello salvato lo aggiorna. $refresh svuota
-// la cache (test).
+// visto sull'account (gym_users.time_zone, salvato da remember_request_time_zone()), altrimenti
+// Europe/Rome: i client che non lo mandano si comportano come prima. $refresh svuota la cache (test).
 function request_time_zone($refresh = false)
 {
     static $cache = array();
@@ -149,22 +153,32 @@ function request_time_zone($refresh = false)
     if ($refresh || !isset($cache[$key])) {
         $header = valid_time_zone($_SERVER['HTTP_X_TIMEZONE'] ?? null);
         $saved = null;
-        if ($context['user_id'] !== null) {
+        if ($header === null && $context['user_id'] !== null) {
             try {
                 $stmt = $context['db']->prepare("SELECT time_zone FROM gym_users WHERE id = ? LIMIT 1");
                 $stmt->execute(array($context['user_id']));
                 $saved = valid_time_zone($stmt->fetchColumn());
-                if ($header !== null && $header !== $saved) {
-                    $update = $context['db']->prepare("UPDATE gym_users SET time_zone = ? WHERE id = ?");
-                    $update->execute(array($header, $context['user_id']));
-                }
             } catch (PDOException $e) {
-                // colonna non ancora migrata: vale l'header
+                // colonna non ancora migrata: si passa a Europe/Rome
             }
         }
         $cache[$key] = $header ?? $saved ?? DEFAULT_TIME_ZONE;
     }
     return $cache[$key];
+}
+
+// Salva sull'account il fuso dell'header X-Timezone, se valido e diverso da quello salvato: un solo
+// UPDATE condizionato. Header assente o non valido non toccano nulla.
+function remember_request_time_zone($db, $user_id)
+{
+    $header = valid_time_zone($_SERVER['HTTP_X_TIMEZONE'] ?? null);
+    if ($header === null) return;
+    try {
+        $db->prepare("UPDATE gym_users SET time_zone = ? WHERE id = ? AND (time_zone IS NULL OR time_zone <> ?)")
+            ->execute(array($header, $user_id, $header));
+    } catch (PDOException $e) {
+        // colonna non ancora migrata: vale l'header di ogni richiesta
+    }
 }
 
 // "Adesso" per l'utente: stesso istante di new DateTime(), ma nel fuso del suo dispositivo. Da usare

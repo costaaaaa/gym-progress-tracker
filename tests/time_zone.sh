@@ -48,6 +48,7 @@ same() { # descrizione ottenuto atteso
 TOKENS=()
 make_user() { # nome → imposta T e DAY (account nuovo, con una scheda), lo ricorda per la pulizia
     local name="tz$1$SUFFIX" plan
+    XTZ=""   # ogni richiesta autenticata con un fuso valido lo salva sull'account: l'account nuovo parte senza
     call POST api/user/register.php "" "$(jq -nc --arg u "$name" --arg e "$name@example.com" --arg p "$PASS" --arg b "$(date -d '-30 years' +%Y-%m-%d)" \
         '{username:$u, email:$e, password:$p, birth_date:$b, gender:"O", accept_terms:true}')" >/dev/null
     T="$(call POST api/user/mobile_login.php "" "$(jq -nc --arg u "$name" --arg p "$PASS" '{username:$u, password:$p, device_info:"time_zone.sh"}')" \
@@ -184,6 +185,7 @@ res="$(call POST api/groups/create.php "$TG" '{"name":"Fusi di prova","type":"fr
 GID="$(echo "${res#* }" | jq -r '.group.id')"
 CODE="$(echo "${res#* }" | jq -r '.group.invite_code')"
 make_user h
+XTZ="Pacific/Kiritimati"
 call POST api/groups/join.php "$T" "{\"code\":\"$CODE\",\"consent\":true}" >/dev/null
 KI_DOW="$(TZ=Pacific/Kiritimati date +%u)"
 KI_MONDAY="$(TZ=Pacific/Kiritimati date -d "$((KI_DOW - 1)) days ago" +%F)"
@@ -219,6 +221,26 @@ R="$(call GET "api/groups/read.php?group_id=$GID" "$TG")"
 check "groups/read: joined_at dei membri ISO con offset" "$R" "[.members[].joined_at] | length >= 1 and all(test(\"$OFF\"))"
 R="$(call GET api/user/export.php "$T")"
 check "export: i campi *_at sono ISO con offset" "$R" "[.profile.created_at, .profile.last_login_at, .plans[0].created_at, .gamification.achievements[0].unlocked_at, .devices[0].created_at, .consents[0].granted_at, .groups[0].joined_at] | all(. == null or test(\"$OFF\"))"
+
+echo
+echo "Fuso salvato su ogni richiesta autenticata, anche negli endpoint che non lo usano"
+make_user i
+XTZ="Asia/Tokyo"
+call GET api/gamification/profile.php "$T" >/dev/null   # un endpoint che il fuso non lo usa
+XTZ=""
+S="$(date -d '10 minutes ago' +%s)"
+ID="$(save "$(body 70 "$(iso "$S")")")"
+same "gamification/profile con X-Timezone: il fuso va sul profilo" "$(history_field "$ID" time_zone)" "Asia/Tokyo"
+XTZ="Mars/Olympus"
+call GET api/user/read.php "$T" >/dev/null
+XTZ=""
+ID="$(save "$(body 71 "$(iso "$S")")")"
+same "header non valido: il fuso salvato non cambia" "$(history_field "$ID" time_zone)" "Asia/Tokyo"
+XTZ="America/New_York"
+call GET api/user/read.php "$T" >/dev/null
+XTZ=""
+ID="$(save "$(body 72 "$(iso "$S")")")"
+same "un nuovo fuso valido sostituisce quello salvato" "$(history_field "$ID" time_zone)" "America/New_York"
 
 echo
 if (( fails )); then

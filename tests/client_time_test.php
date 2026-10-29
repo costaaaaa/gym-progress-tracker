@@ -92,7 +92,7 @@ $db->exec('CREATE TABLE gym_users (id INTEGER PRIMARY KEY, time_zone TEXT NULL)'
 $db->exec("INSERT INTO gym_users (id, time_zone) VALUES (1, NULL), (2, 'Asia/Tokyo'), (3, 'Mars/Olympus')");
 $saved = function ($id) use ($db) { return $db->query("SELECT time_zone FROM gym_users WHERE id = $id")->fetchColumn(); };
 
-echo "\nfuso della richiesta con un utente\n";
+echo "\nfuso della richiesta con un utente (getter: non scrive)\n";
 unset($_SERVER['HTTP_X_TIMEZONE']);
 request_user_context($db, 2);
 check('senza header: quello salvato sull\'utente', request_time_zone(true) === 'Asia/Tokyo');
@@ -103,12 +103,28 @@ check('fuso salvato non valido ignorato', request_time_zone(true) === 'Europe/Ro
 request_user_context($db, 2);
 $_SERVER['HTTP_X_TIMEZONE'] = 'America/New_York';
 check('header valido batte quello salvato', request_time_zone(true) === 'America/New_York');
+check('leggerlo non aggiorna gym_users.time_zone', $saved(2) === 'Asia/Tokyo');
+
+echo "\nfuso salvato su ogni richiesta autenticata\n";
+$_SERVER['HTTP_X_TIMEZONE'] = 'America/New_York';
+remember_request_time_zone($db, 2);
 check('l\'header diverso aggiorna gym_users.time_zone', $saved(2) === 'America/New_York');
-request_user_context($db, 1);
-check('primo fuso dell\'utente salvato dall\'header', request_time_zone(true) === 'America/New_York' && $saved(1) === 'America/New_York');
-request_user_context($db, 2);
+remember_request_time_zone($db, 1);
+check('primo fuso dell\'utente salvato dall\'header', $saved(1) === 'America/New_York');
+remember_request_time_zone($db, 3);
+check('fuso salvato non valido sostituito', $saved(3) === 'America/New_York');
 $_SERVER['HTTP_X_TIMEZONE'] = 'Mars/Olympus';
-check('header non valido: non tocca il fuso salvato', request_time_zone(true) === 'America/New_York' && $saved(2) === 'America/New_York');
+remember_request_time_zone($db, 2);
+check('header non valido: non tocca il fuso salvato', $saved(2) === 'America/New_York');
+$_SERVER['HTTP_X_TIMEZONE'] = '+02:00';
+remember_request_time_zone($db, 2);
+check('offset nell\'header: non tocca il fuso salvato', $saved(2) === 'America/New_York');
+unset($_SERVER['HTTP_X_TIMEZONE']);
+remember_request_time_zone($db, 2);
+check('senza header: non tocca il fuso salvato', $saved(2) === 'America/New_York');
+$_SERVER['HTTP_X_TIMEZONE'] = 'Asia/Tokyo';
+remember_request_time_zone($db, 2);
+check('un nuovo fuso valido lo sostituisce', $saved(2) === 'Asia/Tokyo');
 
 $old = new PDO('sqlite::memory:');
 $old->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -116,7 +132,9 @@ $old->exec('CREATE TABLE gym_users (id INTEGER PRIMARY KEY)');
 $old->exec('INSERT INTO gym_users (id) VALUES (1)');
 request_user_context($old, 1);
 $_SERVER['HTTP_X_TIMEZONE'] = 'Asia/Tokyo';
-check('colonna non migrata: l\'header vale lo stesso, nessun errore', request_time_zone(true) === 'Asia/Tokyo');
+remember_request_time_zone($old, 1);
+check('colonna non migrata: nessun errore nel salvataggio', true);
+check('colonna non migrata: l\'header vale lo stesso', request_time_zone(true) === 'Asia/Tokyo');
 unset($_SERVER['HTTP_X_TIMEZONE']);
 check('colonna non migrata e niente header: Europe/Rome', request_time_zone(true) === 'Europe/Rome');
 
