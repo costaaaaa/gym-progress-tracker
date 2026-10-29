@@ -39,7 +39,7 @@ function export_rows($db, $sql, $params)
 
 try {
     $profile = export_rows($db,
-        "SELECT username, email, birth_date, gender, training_start_date, rest_timer_enabled,
+        "SELECT username, email, birth_date, gender, training_start_date, rest_timer_enabled, time_zone,
                 created_at, password_changed_at, last_login_at
          FROM gym_users WHERE id = ?", array($user_id));
     if (!$profile) {
