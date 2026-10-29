@@ -20,9 +20,9 @@ header('Content-Type: application/xml; charset=utf-8');
 echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
 if (!empty($articles)) {
-    echo '  <url>' . "\n";
+    echo "  <url>\n";
     echo '    <loc>' . htmlspecialchars(BLOG_BASE_URL . '/', ENT_XML1, 'UTF-8') . "</loc>\n";
-    echo '  </url>' . "\n";
+    echo "  </url>\n";
 }
 foreach ($articles as $article) {
     $loc = BLOG_BASE_URL . '/' . rawurlencode($article['slug']);

@@ -141,7 +141,7 @@ ob_start();
         <aside class="article-cta">
             <h2>Il tuo 1RM, aggiornato a ogni allenamento</h2>
             <p>Su LiftIndex registri le serie e il 1RM stimato si calcola da solo per ogni esercizio, con il grafico dei progressi e i nuovi record evidenziati.</p>
-            <a class="cta" href="<?php echo blog_e(BLOG_APP_URL . 'register'); ?>">Crea l'account gratis</a>
+            <a class="cta" href="<?php echo blog_e(BLOG_REGISTER_URL); ?>">Crea l'account gratis</a>
         </aside>
         <script src="/blog/assets/calcolatore-1rm.js" defer></script>
 <?php

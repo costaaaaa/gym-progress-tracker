@@ -14,6 +14,7 @@
 define('BLOG_BASE_URL', 'https://liftindex.app/blog');
 
 define('BLOG_APP_URL', 'https://liftindex.app/');
+define('BLOG_REGISTER_URL', BLOG_APP_URL . 'register');
 
 define('BLOG_SITE_NAME', 'LiftIndex');
 define('BLOG_LOGO_URL', BLOG_APP_URL . 'logo512.png');
