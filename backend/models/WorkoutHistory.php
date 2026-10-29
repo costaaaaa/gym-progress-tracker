@@ -10,6 +10,7 @@ class WorkoutHistory
     public $user_id;
     public $exercises;
     public $date;
+    public $time_zone = 'Europe/Rome';
     public $duration_seconds = null;
     public $notes;
     public $idempotency_key = null;
@@ -41,6 +42,7 @@ class WorkoutHistory
                         user_id = :user_id,
                         exercises = :exercises,
                         date = :date,
+                        time_zone = :time_zone,
                         duration_seconds = :duration_seconds,
                         notes = :notes" . $key_clause;
 
@@ -51,6 +53,7 @@ class WorkoutHistory
             $stmt->bindParam(":user_id", $this->user_id);
             $stmt->bindParam(":exercises", $this->exercises);
             $stmt->bindParam(":date", $this->date);
+            $stmt->bindParam(":time_zone", $this->time_zone);
             $stmt->bindValue(":duration_seconds", $this->duration_seconds, $this->duration_seconds === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
             $stmt->bindParam(":notes", $this->notes);
             if ($this->idempotency_key !== null) {
@@ -83,7 +86,7 @@ class WorkoutHistory
     public function readAllByUser()
     {
         // Query to read all records
-        $query = "SELECT id, exercises, date, duration_seconds, notes, health_written_at
+        $query = "SELECT id, exercises, date, time_zone, duration_seconds, notes, health_written_at
                 FROM " . $this->table_name . "
                 WHERE user_id = ?
                 ORDER BY date DESC";
