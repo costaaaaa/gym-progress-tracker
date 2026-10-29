@@ -170,8 +170,9 @@ try {
         }
     } elseif (!empty($data->backdated) && $start) {
         // Sessione ripresa in ritardo: start_time è già sul giorno scelto dall'utente. Il client
-        // limita la scelta a 7 giorni fa; qui 8 per assorbire i fusi orari.
-        if ($start < (new DateTime('today', new DateTimeZone($time_zone)))->modify('-8 days')) {
+        // limita la scelta a 7 giorni fa, contati nel fuso attuale del dispositivo; qui 8 per assorbire
+        // i fusi orari. Il resto (data locale, tetto al futuro, ended_at) resta nel fuso dell'allenamento.
+        if ($start < (new DateTime('today', new DateTimeZone(request_time_zone())))->modify('-8 days')) {
             api_json_response(['success' => false, 'message' => t_server('workout.record_date_invalid')], 400);
         }
         $data_workout = ($start > $now ? $now : $start)->format('Y-m-d H:i:s');

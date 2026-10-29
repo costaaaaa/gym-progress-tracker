@@ -243,6 +243,26 @@ ID="$(save "$(body 72 "$(iso "$S")")")"
 same "un nuovo fuso valido sostituisce quello salvato" "$(history_field "$ID" time_zone)" "America/New_York"
 
 echo
+echo "Recupero: il limite degli 8 giorni è quello del fuso del dispositivo, non del payload"
+make_user j
+cut() { TZ="$1" date -d "$(TZ="$1" date -d '8 days ago' +%F) 00:00" +%s; }   # mezzanotte di 8 giorni fa nel fuso
+# Le due coppie scambiate danno sempre un accettato e un rifiutato, qualunque sia l'ora del giorno
+for pair in "Pacific/Pago_Pago Pacific/Kiritimati" "Pacific/Kiritimati Pacific/Pago_Pago"; do
+    DEVICE="${pair% *}"
+    PAYLOAD="${pair#* }"
+    DEV_CUT="$(cut "$DEVICE")"
+    PAY_CUT="$(cut "$PAYLOAD")"
+    MID=$(((DEV_CUT + PAY_CUT) / 2))   # fra i due limiti: il vecchio calcolo (fuso del payload) dà l'esito opposto
+    XTZ="$DEVICE"
+    R="$(call POST api/workout/record_workout.php "$T" "$(body 80 "$(iso "$MID")" "$(iso $((MID + 1500)))" true "$PAYLOAD")")"
+    if (( DEV_CUT <= MID )); then
+        check "dispositivo $DEVICE, payload $PAYLOAD: dentro il limite del dispositivo, accettato" "$R" '.success == true'
+    else
+        check "dispositivo $DEVICE, payload $PAYLOAD: oltre il limite del dispositivo, rifiutato" "$R" '.success == false'
+    fi
+done
+
+echo
 if (( fails )); then
     echo "✗ $fails controlli su $checks falliti"
     exit 1
