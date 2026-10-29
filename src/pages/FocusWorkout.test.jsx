@@ -4,6 +4,7 @@ import { render, screen, fireEvent, act, cleanup } from '@testing-library/react'
 import FocusWorkout from './FocusWorkout';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { json } from '../test/dom';
+import { currentTimeZone } from '../utils/workoutTime';
 
 const { mockNavigate, mockTrack } = vi.hoisted(() => ({ mockNavigate: vi.fn(), mockTrack: vi.fn() }));
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => mockNavigate }));
@@ -12,6 +13,7 @@ vi.mock('../utils/celebrate', () => ({
   celebrate: () => {}, celebratePR: () => {}, celebrateStreak: () => {}, celebrateLevelUp: () => {},
 }));
 vi.mock('../utils/analytics', () => ({ track: mockTrack }));
+vi.mock('../utils/workoutTime', async (importOriginal) => ({ ...(await importOriginal()), currentTimeZone: vi.fn() }));
 
 const DRAFT_KEY = 'gym_focus_workout_draft';
 const NOW = new Date(2026, 9, 20, 18, 0);
@@ -70,6 +72,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(NOW);
   vi.clearAllMocks();
+  currentTimeZone.mockReturnValue('Europe/Rome');
   localStorage.setItem('themeMode', 'light');
   vi.stubGlobal('fetch', fetchMock);
   responses = {
@@ -114,6 +117,7 @@ describe('flusso completo e salvataggio', () => {
       idempotency_key: expect.any(String),
       start_time: new Date(2026, 9, 20, 18, 0).toISOString(),
       duration_seconds: 120,
+      time_zone: 'Europe/Rome',
     });
     expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
     expect(mockTrack).toHaveBeenCalledWith('workout_saved');
@@ -185,7 +189,52 @@ describe('bozza e ripresa', () => {
       backdated: true,
       start_time: new Date(2026, 9, 18, 17, 40).toISOString(),
       ended_at: new Date(2026, 9, 18, 17, 45).toISOString(),
+      time_zone: 'Europe/Rome',
     });
+  });
+});
+
+describe('fuso dell\'allenamento', () => {
+  it('si legge all\'inizio, sta nella bozza e parte nel salvataggio anche se nel frattempo il dispositivo cambia fuso', async () => {
+    currentTimeZone.mockReturnValue('America/New_York');
+    await startDay('Push');
+    expect(draft().timeZone).toBe('America/New_York');
+
+    currentTimeZone.mockReturnValue('Europe/Rome');
+    doSet();
+    click('Salta timer');
+    doSet();
+    await act(async () => { click('Salva allenamento'); });
+    await advance(0);
+
+    expect(saveBody().time_zone).toBe('America/New_York');
+  });
+
+  it('una bozza senza fuso (salvata da una versione vecchia) usa quello attuale del dispositivo', async () => {
+    currentTimeZone.mockReturnValue('Asia/Tokyo');
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...savedDraft, selectedDay: pushDay, selectedDayId: 1, phase: 'summary' }));
+    await mount();
+    click('Riprendi allenamento');
+    await act(async () => { click('Salva allenamento'); });
+    await advance(0);
+
+    expect(saveBody().time_zone).toBe('Asia/Tokyo');
+  });
+
+  it('una bozza con il suo fuso lo conserva alla ripresa, anche salvata in ritardo', async () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      ...savedDraft,
+      timeZone: 'America/New_York',
+      startTime: new Date(2026, 9, 17, 17, 40).toISOString(),
+      lastActivityAt: new Date(2026, 9, 17, 17, 45).toISOString(),
+    }));
+    await mount();
+    fireEvent.change(screen.getByLabelText('Giorno dell\'allenamento'), { target: { value: '2026-10-18' } });
+    click('L\'avevo già finito');
+    await act(async () => { click('Salva allenamento'); });
+    await advance(0);
+
+    expect(saveBody()).toMatchObject({ backdated: true, time_zone: 'America/New_York' });
   });
 });
 

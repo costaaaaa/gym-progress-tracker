@@ -13,6 +13,7 @@ import {
 } from '../../utils/focusSession';
 import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../../utils/celebrate';
 import { track } from '../../utils/analytics';
+import { currentTimeZone } from '../../utils/workoutTime';
 import i18n from '../../i18n';
 
 const DRAFT_STORAGE_KEY = 'gym_focus_workout_draft';
@@ -62,6 +63,8 @@ export default function useFocusSession() {
   // Summary state
   const [workoutNotes, setWorkoutNotes] = useState('');
   const [startTime, setStartTime] = useState(null);
+  // Fuso del dispositivo quando l'allenamento è iniziato: la bozza lo porta con sé, così un viaggio fra l'inizio e il salvataggio non lo cambia
+  const [timeZone, setTimeZone] = useState(null);
   const [idempotencyKey, setIdempotencyKey] = useState(null);
   // Fine allenamento: si fissa all'arrivo nel riepilogo (la durata non cresce più mentre si scrivono le note),
   // alla ripresa di una bozza ferma nel riepilogo e in «già finita». null: si sta ancora allenando
@@ -107,6 +110,7 @@ export default function useFocusSession() {
         currentSetIndex,
         workoutNotes,
         startTime,
+        timeZone,
         idempotencyKey,
         lastActivityAt,
         pausedMs,
@@ -117,7 +121,7 @@ export default function useFocusSession() {
       };
       localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
     }
-  }, [phase, activePlan, selectedDay, selectedDayId, completedSets, skippedExercises, skippedSets, currentExerciseIndex, currentSetIndex, workoutNotes, startTime, idempotencyKey, lastActivityAt, pausedMs, endTime, retroDate]);
+  }, [phase, activePlan, selectedDay, selectedDayId, completedSets, skippedExercises, skippedSets, currentExerciseIndex, currentSetIndex, workoutNotes, startTime, timeZone, idempotencyKey, lastActivityAt, pausedMs, endTime, retroDate]);
 
   const clearDraft = useCallback(() => {
     localStorage.removeItem(DRAFT_STORAGE_KEY);
@@ -269,6 +273,8 @@ export default function useFocusSession() {
     setCurrentSetIndex(draftToResume.currentSetIndex);
     setWorkoutNotes(draftToResume.workoutNotes);
     setStartTime(new Date(draftToResume.startTime));
+    // Bozza di una versione vecchia, senza fuso: vale quello di adesso
+    setTimeZone(draftToResume.timeZone || currentTimeZone());
     setIdempotencyKey(draftIdempotencyKey(draftToResume));
     const lastActivity = draftToResume.lastActivityAt ? new Date(draftToResume.lastActivityAt) : null;
     setLastActivityAt(lastActivity);
@@ -345,6 +351,7 @@ export default function useFocusSession() {
     setSkippedSets({});
     setWorkoutNotes('');
     setStartTime(new Date());
+    setTimeZone(currentTimeZone());
     setIdempotencyKey(newIdempotencyKey());
     setEndTime(null);
     setPausedMs(0);
@@ -610,6 +617,7 @@ export default function useFocusSession() {
     const end = netEnd();
     return {
       backdated: true,
+      time_zone: timeZone,
       start_time: moved.toISOString(),
       ended_at: end === null ? null : new Date(end + shift).toISOString(),
     };
@@ -659,6 +667,7 @@ export default function useFocusSession() {
           notes: workoutNotes || '',
           idempotency_key: idempotencyKey,
           ...(retroDate ? retroPayload() : {
+            time_zone: timeZone,
             start_time: startTime ? startTime.toISOString() : null,
             duration_seconds: startTime ? getElapsedSeconds() : null
           })
