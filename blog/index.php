@@ -21,6 +21,15 @@ ob_start();
         <h1>Blog</h1>
         <p class="page-intro"><?php echo blog_e($description); ?></p>
 
+        <h2>Strumenti</h2>
+        <ul class="post-list">
+            <li class="post-card">
+                <h3><a href="<?php echo blog_e(BLOG_BASE_URL . '/calcolatore-1rm/'); ?>">Calcolatore 1RM</a></h3>
+                <p>Stima il tuo massimale da peso e ripetizioni e ottieni i carichi in percentuale. Gratis, senza registrazione.</p>
+            </li>
+        </ul>
+
+        <h2>Articoli</h2>
 <?php if (empty($articles)): ?>
         <p class="empty-state">Nessun articolo pubblicato al momento.</p>
 <?php else: ?>
