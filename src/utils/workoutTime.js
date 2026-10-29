@@ -1,11 +1,8 @@
-import { intlLocale } from '../i18n/format';
 import { clockDate } from './calendarDay';
 
 // La `date` di un allenamento è l'ora locale del luogo in cui è stato fatto ("YYYY-MM-DD HH:MM:SS"), non un
 // istante: si mostra come sta scritta, a prescindere dal fuso del browser. Per i conti fra istanti (giorni
 // da allora, recupero) c'è `started_at`, ISO con offset.
-
-export const formatClockTime = (value) => clockDate(value).toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
 
 /** Istante dell'allenamento in ms: `started_at` lo manda sempre read.php, unica sorgente degli allenamenti che arrivano qui. */
 export const workoutInstant = (workout) => Date.parse(workout.started_at);

@@ -1,13 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { formatClockTime, differentZone, workoutInstant, zoneCity, workoutZoneBadge, isoClock, zoneClock, moveToZoneDay } from './workoutTime';
+import { differentZone, workoutInstant, zoneCity, workoutZoneBadge, isoClock, zoneClock, moveToZoneDay } from './workoutTime';
 import { setBrowserTimeZone } from '../test/timeZone';
-
-describe('formatClockTime', () => {
-  it('mostra l\'ora scritta, senza convertirla nel fuso del browser', () => {
-    expect(formatClockTime('2026-10-18 02:00:00')).toBe('02:00');
-    expect(formatClockTime('2026-10-18 23:59:00')).toBe('23:59');
-  });
-});
 
 describe('workoutInstant: l\'istante vero di un allenamento', () => {
   it('vale l\'istante di started_at, qualunque sia il fuso del browser', () => {

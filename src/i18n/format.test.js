@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatDate } from './format';
+import { formatDate, formatClockTime } from './format';
 import { setBrowserTimeZone } from '../test/timeZone';
 
 describe('formatDate', () => {
@@ -18,5 +18,13 @@ describe('formatDate', () => {
   });
   it('una Date è il suo giorno locale', () => {
     expect(formatDate(new Date(2026, 9, 20, 23, 30), { day: 'numeric', month: 'long' })).toBe('20 ottobre');
+  });
+});
+
+describe('formatClockTime', () => {
+  it('mostra l\'ora scritta, senza convertirla nel fuso del browser', () => {
+    setBrowserTimeZone('America/New_York');
+    expect(formatClockTime('2026-10-18 02:00:00')).toBe('02:00');
+    expect(formatClockTime('2026-10-18 23:59:00')).toBe('23:59');
   });
 });

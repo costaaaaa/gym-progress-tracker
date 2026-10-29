@@ -47,9 +47,8 @@ import { buildShareStats, historyRecords, muscleGroupsTitle } from '../utils/sha
 import { track } from '../utils/analytics';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
-import { intlLocale, formatDate } from '../i18n/format';
+import { intlLocale, formatDate, formatClockTime } from '../i18n/format';
 import { clockDate, clockDay } from '../utils/calendarDay';
-import { formatClockTime } from '../utils/workoutTime';
 import TimeZoneBadge from '../components/TimeZoneBadge';
 import { muscleLabel, techniqueLabel } from '../i18n/labels';
 import { achievementCatalog } from '../utils/gamificationLevels';

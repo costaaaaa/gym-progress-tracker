@@ -20,4 +20,7 @@ export const formatDate = (value, options) => (isClockString(value)
   ? clockDate(value).toLocaleDateString(intlLocale(), { ...options, timeZone: 'UTC' })
   : new Date(value).toLocaleDateString(intlLocale(), options));
 
+// L'ora scritta in una data-ora senza fuso ("2026-10-20 18:30:00" → "18:30"), senza convertirla nel fuso del browser.
+export const formatClockTime = (value) => clockDate(value).toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+
 export const formatNumber = (value, options) => Number(value || 0).toLocaleString(intlLocale(), options);
