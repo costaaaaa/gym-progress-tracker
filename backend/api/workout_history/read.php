@@ -54,7 +54,8 @@ try {
                     "set_number" => $set['set_number'],
                     "weight" => $set['weight'],
                     "reps" => $set['reps'],
-                    "intensity_technique" => $set['intensity_technique']
+                    "intensity_technique" => $set['intensity_technique'],
+                    "is_warmup" => (bool) $set['is_warmup']
                 ];
             } else {
                 $sets_by_workout[$wh_id][] = [
@@ -65,7 +66,8 @@ try {
                         "set_number" => $set['set_number'],
                         "weight" => $set['weight'],
                         "reps" => $set['reps'],
-                        "intensity_technique" => $set['intensity_technique']
+                        "intensity_technique" => $set['intensity_technique'],
+                        "is_warmup" => (bool) $set['is_warmup']
                     ]]
                 ];
             }

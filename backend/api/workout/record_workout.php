@@ -218,6 +218,7 @@ try {
             $workout_set->weight = $record->weight;
             $workout_set->reps = $record->reps;
             $workout_set->intensity_technique = isset($record->intensity_technique) && $record->intensity_technique !== "" ? $record->intensity_technique : null;
+            $workout_set->is_warmup = !empty($record->is_warmup);
 
             if ($workout_set->create()) {
                 $sets_saved++;
