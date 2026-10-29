@@ -11,9 +11,11 @@ import {
   Box,
   Typography
 } from '@mui/material';
-import { format, parseISO, isValid, subDays } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { API_BASE_URL } from '../config';
-import { intlLocale } from '../i18n/format';
+import { formatDate } from '../i18n/format';
+import { isClockString, clockDay } from '../utils/calendarDay';
+import { isoClock, differentZone, zoneCity } from '../utils/workoutTime';
 import { achievementCatalog } from '../utils/gamificationLevels';
 
 const achievementLabel = (key) => achievementCatalog.find(a => a.key === key)?.label ?? key;
@@ -42,32 +44,13 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
   // Reinizializza la data quando cambia il workout
   useEffect(() => {
     if (workout) {
-      // Gestione più robusta della data
-      try {
-        let dateObj;
-        
-        // Se la data è una stringa ISO, usiamo parseISO per una gestione più sicura
-        if (typeof workout.date === 'string' && workout.date.includes('T')) {
-          dateObj = parseISO(workout.date);
-        } else {
-          // Altrimenti proviamo a usare il costruttore Date standard
-          dateObj = new Date(workout.date);
-        }
-        
-        // Verifica che la data sia valida
-        if (isValid(dateObj)) {
-          const formattedDate = format(dateObj, 'yyyy-MM-dd');
-          setNewDate(formattedDate);
-          setOriginalDate(formattedDate);
-        } else {
-          // Se la data non è valida, prendiamo la data corrente
-          console.warn("Data non valida, uso la data corrente");
-          setNewDate(format(new Date(), 'yyyy-MM-dd'));
-          setError(t('history.date.invalid_original'));
-        }
-      } catch (e) {
-        // Gestione errori più dettagliata
-        console.error("Errore nel formato della data:", e);
+      // `date` è l'orologio del luogo: il giorno è quello scritto, non quello del browser
+      if (isClockString(workout.date)) {
+        const day = clockDay(workout.date);
+        setNewDate(day);
+        setOriginalDate(day);
+      } else {
+        console.warn("Data non valida, uso la data corrente");
         setNewDate(format(new Date(), 'yyyy-MM-dd'));
         setError(t('history.date.invalid_original'));
       }
@@ -125,12 +108,21 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
+        // Il giorno scelto è già arrivato qui ma non nel luogo dell'allenamento: il server lo conta nel suo fuso
+        if (data.code === 'future_date' && differentZone(workout.time_zone)) {
+          throw new Error(t('history.date.error_future_zone', {
+            city: zoneCity(workout.time_zone), date: formatDate(newDate, { day: 'numeric', month: 'long' }),
+          }));
+        }
         throw new Error(t(ERROR_KEYS[data.code] ?? 'history.date.error'));
       }
 
-      // Chiamiamo il callback per informare il parent del successo
-      // Utilizziamo la data restituita dal server che è in formato ISO completo
-      onUpdateSuccess(workout.id, data.new_date || newDate);
+      // new_date è un ISO con offset: l'orologio scritto è la data dell'allenamento (nel suo fuso), l'ISO è l'istante
+      onUpdateSuccess(workout.id, {
+        date: isoClock(data.new_date) ?? newDate,
+        started_at: data.started_at,
+        time_zone: data.time_zone,
+      });
       onClose();
     } catch (error) {
       console.error("Errore nell'aggiornamento della data:", error);
@@ -150,24 +142,9 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
           <Typography variant="body1">
             {t('history.date.current')} {
-              (() => {
-                try {
-                  // Mostra la data in formato leggibile italiano
-                  const dateObj = new Date(workout.date);
-                  if (isValid(dateObj)) {
-                    return dateObj.toLocaleDateString(intlLocale(), {
-                      weekday: 'long',
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric'
-                    });
-                  } else {
-                    return workout.date || t('history.date.unavailable');
-                  }
-                } catch {
-                  return workout.date || t('history.date.unavailable');
-                }
-              })()
+              isClockString(workout.date)
+                ? formatDate(workout.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+                : (workout.date || t('history.date.unavailable'))
             }
           </Typography>
           <TextField

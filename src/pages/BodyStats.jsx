@@ -28,6 +28,7 @@ import {
 import { API_BASE_URL } from '../config';
 import { DatePicker } from '@mui/x-date-pickers';
 import { useTranslation } from 'react-i18next';
+import { format } from 'date-fns';
 import i18n from '../i18n';
 import DateLocalization from '../i18n/DateLocalization';
 import { formatDate, formatNumber } from '../i18n/format';
@@ -260,7 +261,7 @@ const BodyStats = ({ isEmbedded = false }) => {
     try {
       const formattedData = {
         ...formData,
-        date: formData.date.toISOString().split('T')[0],
+        date: format(formData.date, 'yyyy-MM-dd'),
         weight: formData.weight || null,
         body_fat_percentage: formData.body_fat_percentage || null,
         muscle_mass_percentage: formData.muscle_mass_percentage || null,

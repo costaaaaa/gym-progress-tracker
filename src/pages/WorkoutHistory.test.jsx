@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router-dom';
 import WorkoutHistory from './WorkoutHistory';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { json } from '../test/dom';
+import { setBrowserTimeZone } from '../test/timeZone';
 
 vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ isLoggedIn: true, loading: false }) }));
 
@@ -32,6 +33,7 @@ const simulaTelefono = () => {
 };
 
 beforeEach(() => {
+  setBrowserTimeZone('Europe/Rome');
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date(2026, 9, 20, 12, 0));
   localStorage.setItem('themeMode', 'light');
@@ -251,5 +253,40 @@ describe('avvisi su Salute del telefono', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Elimina allenamento' }));
     await screen.findByText('Conferma eliminazione');
     expect(screen.queryByText(AVVISO_ELIMINA)).toBeNull();
+  });
+});
+
+describe('data e ora dell\'allenamento: l\'orologio del luogo, non quello del browser', () => {
+  const stubRecords = (records) => vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
+    url.includes('read_plans.php') ? json({ records: [plan] })
+      : url.includes('workout_history/read.php') ? json({ records }) : json({ success: true }),
+  )));
+  const mountWith = async (records, firstText) => {
+    stubRecords(records);
+    render(<ThemeModeProvider><MemoryRouter><WorkoutHistory isEmbedded /></MemoryRouter></ThemeModeProvider>);
+    await screen.findByText(firstText);
+  };
+
+  it('un\'ora che nel fuso del browser non esiste (02:30 del cambio ora) resta quella scritta', async () => {
+    await mountWith([{ ...workout, id: 1, date: '2026-03-29 02:30:00' }, { ...workout, id: 2, date: '2026-03-08 02:30:00' }], 'Marzo 2026');
+    fireEvent.click(screen.getByText('Marzo 2026'));
+    expect(screen.getAllByText('02:30 · 3 esercizi')).toHaveLength(2);
+  });
+
+  it('allenamento fatto a New York mentre il dispositivo è a Roma: badge accanto all\'orario', async () => {
+    await mountWith([{ ...workout, time_zone: 'America/New_York', started_at: '2026-10-18T02:00:00-04:00' }], '02:00 · 3 esercizi');
+    expect(screen.getByLabelText('Fuso orario: New York · UTC−4')).toBeTruthy();
+    expect(screen.getByText('02:00 · 3 esercizi')).toBeTruthy();
+  });
+
+  it('stesso fuso del dispositivo o allenamento senza fuso: nessun badge', async () => {
+    setBrowserTimeZone('America/New_York');
+    await mountWith([{ ...workout, time_zone: 'America/New_York', started_at: '2026-10-18T02:00:00-04:00' }], '02:00 · 3 esercizi');
+    expect(screen.queryByLabelText(/Fuso orario/)).toBeNull();
+  });
+
+  it('il testo del badge non scende sotto i 16px', async () => {
+    await mountWith([{ ...workout, time_zone: 'America/New_York', started_at: '2026-10-18T02:00:00-04:00' }], '02:00 · 3 esercizi');
+    expect(getComputedStyle(screen.getByText('New York · UTC−4')).fontSize).toBe('16px');
   });
 });

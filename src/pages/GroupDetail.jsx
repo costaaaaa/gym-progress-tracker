@@ -23,8 +23,8 @@ import { INK_TABS } from '../utils/inkTabs';
 const BOARDS = ['week', 'streak', 'level'];
 
 const formatDay = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short' });
-// "2026-10-30 18:05:00" (MySQL): con la "T" lo leggono anche Safari e Hermes
-const formatLockDate = (value) => new Date(value.replace(' ', 'T')).toLocaleString(intlLocale(), { dateStyle: 'medium', timeStyle: 'short' });
+// Il server manda un ISO con offset ("2026-10-30T18:05:00+01:00"): è un istante, si mostra nel fuso del browser
+const formatLockDate = (value) => new Date(value).toLocaleString(intlLocale(), { dateStyle: 'medium', timeStyle: 'short' });
 
 // Conferma per le azioni che non si annullano (uscire, eliminare, rimuovere un membro)
 const ConfirmDialog = ({ confirm, onClose }) => {

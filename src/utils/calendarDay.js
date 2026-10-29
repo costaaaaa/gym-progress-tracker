@@ -15,3 +15,28 @@ export const dayTime = (dateTime) => {
   const [h = 0, min = 0, s = 0] = dateTime.slice(11).split(':').filter(Boolean).map(Number);
   return dayNumber(dateTime) + (h * 3600 + min * 60 + s) / 86400;
 };
+
+/** 'YYYY-MM-DD' più (o meno, se negativo) `days` giorni di calendario. */
+export const shiftDay = (day, days) => new Date(dayNumber(day) * DAY_MS + days * DAY_MS).toISOString().slice(0, 10);
+
+/** Il giorno 'YYYY-MM-DD' scritto all'inizio di un orologio o di un ISO con offset (il giorno è quello scritto, non quello UTC); null se non c'è. */
+export const clockDay = (value) => /^(\d{4}-\d{2}-\d{2})(?:[ T]|$)/.exec(String(value ?? ''))?.[1] ?? null;
+
+const CLOCK_RE = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/;
+
+/** Una stringa di calendario senza fuso: 'YYYY-MM-DD' o 'YYYY-MM-DD[ T]HH:MM[:SS]'. */
+export const isClockString = (value) => typeof value === 'string' && CLOCK_RE.test(value);
+
+/** L'orologio di una stringa di calendario come Date in UTC: i campi UTC sono quelli scritti, nessun fuso e nessuna ora legale di mezzo. */
+export const clockDate = (value) => {
+  const m = CLOCK_RE.exec(String(value ?? ''));
+  if (!m) return new Date(NaN);
+  const [y, mo, d, h, mi, s] = m.slice(1).map((n) => Number(n || 0));
+  return new Date(Date.UTC(y, mo - 1, d, h, mi, s));
+};
+
+/** Come clockDate, ma con quei campi nel fuso del browser (Date locale): per chi deve confrontare con "adesso" del dispositivo. */
+export const localDate = (value) => {
+  const c = clockDate(value);
+  return new Date(c.getUTCFullYear(), c.getUTCMonth(), c.getUTCDate(), c.getUTCHours(), c.getUTCMinutes(), c.getUTCSeconds());
+};

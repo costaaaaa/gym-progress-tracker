@@ -13,6 +13,7 @@ import {
 } from '../../utils/focusSession';
 import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../../utils/celebrate';
 import { track } from '../../utils/analytics';
+import { currentTimeZone, moveToZoneDay, zoneClock } from '../../utils/workoutTime';
 import i18n from '../../i18n';
 
 const DRAFT_STORAGE_KEY = 'gym_focus_workout_draft';
@@ -62,6 +63,8 @@ export default function useFocusSession() {
   // Summary state
   const [workoutNotes, setWorkoutNotes] = useState('');
   const [startTime, setStartTime] = useState(null);
+  // Fuso del dispositivo quando l'allenamento è iniziato: la bozza lo porta con sé, così un viaggio fra l'inizio e il salvataggio non lo cambia
+  const [timeZone, setTimeZone] = useState(null);
   const [idempotencyKey, setIdempotencyKey] = useState(null);
   // Fine allenamento: si fissa all'arrivo nel riepilogo (la durata non cresce più mentre si scrivono le note),
   // alla ripresa di una bozza ferma nel riepilogo e in «già finita». null: si sta ancora allenando
@@ -79,6 +82,8 @@ export default function useFocusSession() {
   const [repsConfirmDialog, setRepsConfirmDialog] = useState(false);
   const [exerciseTransition, setExerciseTransition] = useState(true);
   const [draftToResume, setDraftToResume] = useState(null);
+  // Una bozza di una versione vecchia non ha il fuso: vale quello di adesso
+  const draftTimeZone = draftToResume ? draftToResume.timeZone || currentTimeZone() : null;
   // Orario dell'ultima serie registrata, o della ripresa dal riepilogo: fine reale di una sessione salvata
   // in ritardo. Mai prima dell'ultima pausa, così si può sottrarre pausedMs senza andare sotto l'inizio
   const [lastActivityAt, setLastActivityAt] = useState(null);
@@ -107,6 +112,7 @@ export default function useFocusSession() {
         currentSetIndex,
         workoutNotes,
         startTime,
+        timeZone,
         idempotencyKey,
         lastActivityAt,
         pausedMs,
@@ -117,7 +123,7 @@ export default function useFocusSession() {
       };
       localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
     }
-  }, [phase, activePlan, selectedDay, selectedDayId, completedSets, skippedExercises, skippedSets, currentExerciseIndex, currentSetIndex, workoutNotes, startTime, idempotencyKey, lastActivityAt, pausedMs, endTime, retroDate]);
+  }, [phase, activePlan, selectedDay, selectedDayId, completedSets, skippedExercises, skippedSets, currentExerciseIndex, currentSetIndex, workoutNotes, startTime, timeZone, idempotencyKey, lastActivityAt, pausedMs, endTime, retroDate]);
 
   const clearDraft = useCallback(() => {
     localStorage.removeItem(DRAFT_STORAGE_KEY);
@@ -269,6 +275,7 @@ export default function useFocusSession() {
     setCurrentSetIndex(draftToResume.currentSetIndex);
     setWorkoutNotes(draftToResume.workoutNotes);
     setStartTime(new Date(draftToResume.startTime));
+    setTimeZone(draftTimeZone);
     setIdempotencyKey(draftIdempotencyKey(draftToResume));
     const lastActivity = draftToResume.lastActivityAt ? new Date(draftToResume.lastActivityAt) : null;
     setLastActivityAt(lastActivity);
@@ -345,6 +352,7 @@ export default function useFocusSession() {
     setSkippedSets({});
     setWorkoutNotes('');
     setStartTime(new Date());
+    setTimeZone(currentTimeZone());
     setIdempotencyKey(newIdempotencyKey());
     setEndTime(null);
     setPausedMs(0);
@@ -600,17 +608,17 @@ export default function useFocusSession() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Inizio che si salva: con un giorno scelto è lo stesso orario del luogo, spostato su quel giorno
+  const savedStart = startTime && retroDate ? new Date(moveToZoneDay(startTime, retroDate, timeZone)) : startTime;
+
   // Sessione salvata in ritardo: inizio e fine spostati sul giorno scelto, stesso orario e stessa durata
   const retroPayload = () => {
-    const [y, m, d] = retroDate.split('-').map(Number);
-    const start = new Date(startTime);
-    const moved = new Date(start);
-    moved.setFullYear(y, m - 1, d);
-    const shift = moved.getTime() - start.getTime();
+    const shift = savedStart.getTime() - startTime.getTime();
     const end = netEnd();
     return {
       backdated: true,
-      start_time: moved.toISOString(),
+      time_zone: timeZone,
+      start_time: savedStart.toISOString(),
       ended_at: end === null ? null : new Date(end + shift).toISOString(),
     };
   };
@@ -659,6 +667,7 @@ export default function useFocusSession() {
           notes: workoutNotes || '',
           idempotency_key: idempotencyKey,
           ...(retroDate ? retroPayload() : {
+            time_zone: timeZone,
             start_time: startTime ? startTime.toISOString() : null,
             duration_seconds: startTime ? getElapsedSeconds() : null
           })
@@ -750,6 +759,7 @@ export default function useFocusSession() {
   };
   const resumePrompt = {
     draftToResume,
+    timeZone: draftTimeZone,
     retroDateInput,
     onRetroDateChange: setRetroDateInput,
     onResume: () => handleResumeDraft(),
@@ -809,7 +819,7 @@ export default function useFocusSession() {
     selectedDay,
     completedSets,
     historyIndex,
-    startTime,
+    shareDate: savedStart ? zoneClock(savedStart, timeZone) : null,
     elapsedSeconds: getElapsedSeconds(),
     elapsedTime: getElapsedTime(),
     workoutNotes,

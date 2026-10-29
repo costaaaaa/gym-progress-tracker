@@ -52,6 +52,32 @@ describe('AuthProvider: intercettore di fetch', () => {
     }
   });
 
+  it('manda X-Timezone col fuso del dispositivo, così "oggi" e "questa settimana" seguono dove si trova l\'utente', async () => {
+    backend.mockImplementation(() => Promise.resolve(new Response('{}', { status: 200 })));
+    const spy = vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({ timeZone: 'America/New_York' });
+    render(<AuthProvider><div /></AuthProvider>);
+    await waitFor(() => expect(window.fetch).not.toBe(backend));
+
+    await window.fetch('/backend/api/workout/read.php');
+
+    const [, init] = backend.mock.calls[0];
+    expect(new Headers(init.headers).get('X-Timezone')).toBe('America/New_York');
+    spy.mockRestore();
+  });
+
+  it('senza fuso leggibile dal browser non manda X-Timezone', async () => {
+    backend.mockImplementation(() => Promise.resolve(new Response('{}', { status: 200 })));
+    const spy = vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({ timeZone: undefined });
+    render(<AuthProvider><div /></AuthProvider>);
+    await waitFor(() => expect(window.fetch).not.toBe(backend));
+
+    await window.fetch('/backend/api/workout/read.php');
+
+    const [, init] = backend.mock.calls[0];
+    expect(new Headers(init.headers).has('X-Timezone')).toBe(false);
+    spy.mockRestore();
+  });
+
   it('non aggiunge X-Locale alle chiamate verso altri siti', async () => {
     backend.mockImplementation(() => Promise.resolve(new Response('{}', { status: 200 })));
     render(<AuthProvider><div /></AuthProvider>);

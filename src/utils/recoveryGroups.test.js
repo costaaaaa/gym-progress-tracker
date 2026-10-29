@@ -1,14 +1,20 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { groupRecovery } from './recoveryGroups';
-
-const now = new Date(2026, 9, 21, 18, 30);
+import { setBrowserTimeZone } from '../test/timeZone';
 
 describe('groupRecovery', () => {
+  // ready_at è un istante: il giorno dipende dal fuso del browser, che qui è fissato
+  let now;
+  beforeEach(() => {
+    setBrowserTimeZone('Europe/Rome');
+    now = new Date(2026, 9, 21, 18, 30);
+  });
+
   it('divide i gruppi in "puoi allenare", "a riposo" e "nessun dato"', () => {
     const result = groupRecovery({
       petto: { status: 'PRONTO', percent: 100, ready_at: null },
-      schiena: { status: 'IN RECUPERO', percent: 60, ready_at: '2026-10-22 08:00:00' },
-      spalle: { status: 'AFFATICATO', percent: 20, ready_at: '2026-10-24 08:00:00' },
+      schiena: { status: 'IN RECUPERO', percent: 60, ready_at: '2026-10-22T08:00:00+02:00' },
+      spalle: { status: 'AFFATICATO', percent: 20, ready_at: '2026-10-24T08:00:00+02:00' },
       tricipiti: { status: null },
     }, now);
 
@@ -22,12 +28,12 @@ describe('groupRecovery', () => {
 
   it('"a riposo" va per giorni crescenti, a parità nell\'ordine del corpo; senza giorno in fondo, sempre nell\'ordine del corpo', () => {
     const result = groupRecovery({
-      spalle: { status: 'AFFATICATO', percent: 20, ready_at: '2026-10-24 08:00:00' },
+      spalle: { status: 'AFFATICATO', percent: 20, ready_at: '2026-10-24T08:00:00+02:00' },
       femorali: { status: 'IN RECUPERO', percent: 50, ready_at: null },
       glutei: { status: 'AFFATICATO', percent: 30, ready_at: null },
-      quadricipiti: { status: 'IN RECUPERO', percent: 70, ready_at: '2026-10-22 09:00:00' },
-      bicipiti: { status: 'IN RECUPERO', percent: 85, ready_at: '2026-10-21 20:00:00' },
-      schiena: { status: 'IN RECUPERO', percent: 60, ready_at: '2026-10-22 08:00:00' },
+      quadricipiti: { status: 'IN RECUPERO', percent: 70, ready_at: '2026-10-22T09:00:00+02:00' },
+      bicipiti: { status: 'IN RECUPERO', percent: 85, ready_at: '2026-10-21T20:00:00+02:00' },
+      schiena: { status: 'IN RECUPERO', percent: 60, ready_at: '2026-10-22T08:00:00+02:00' },
     }, now);
 
     expect(result.resting.map((r) => [r.group, r.days])).toEqual([
@@ -47,9 +53,9 @@ describe('groupRecovery', () => {
 
   it('la percentuale è limitata tra 0 e 100; se manca resta null', () => {
     const result = groupRecovery({
-      petto: { status: 'IN RECUPERO', percent: 150, ready_at: '2026-10-22 08:00:00' },
-      schiena: { status: 'IN RECUPERO', percent: -5, ready_at: '2026-10-22 08:00:00' },
-      spalle: { status: 'IN RECUPERO', ready_at: '2026-10-22 08:00:00' },
+      petto: { status: 'IN RECUPERO', percent: 150, ready_at: '2026-10-22T08:00:00+02:00' },
+      schiena: { status: 'IN RECUPERO', percent: -5, ready_at: '2026-10-22T08:00:00+02:00' },
+      spalle: { status: 'IN RECUPERO', ready_at: '2026-10-22T08:00:00+02:00' },
     }, now);
 
     expect(result.resting.map((r) => [r.group, r.percent])).toEqual([['petto', 100], ['schiena', 0], ['spalle', null]]);
