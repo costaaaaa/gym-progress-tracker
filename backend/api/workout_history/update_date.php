@@ -26,17 +26,20 @@ if (
 ) {
     // Log per debug
 
-    // Verifica e formatta la data
+    // Verifica e formatta la data. La data di un allenamento è l'ora locale del suo luogo: cambiarla
+    // ne conserva il fuso (l'ora legale si ricalcola dal nome IANA) e il "futuro" è quello di quel luogo.
     $new_date = $data->new_date;
+    $stmt_row = $db->prepare("SELECT TIME(date) AS time_of_day, time_zone FROM gym_workout_history WHERE id = ? AND user_id = ?");
+    $stmt_row->execute([$data->id, $user_id]);
+    $row = $stmt_row->fetch(PDO::FETCH_ASSOC);
+    $time_zone = $row ? $row['time_zone'] : request_time_zone();
+    $zone = new DateTimeZone($time_zone);
 
     // Con la sola data (YYYY-MM-DD) l'orario originale dell'allenamento resta: va riletto prima di
     // calcolare la nuova data. Se data nuova + orario originale cade nel futuro (oggi, orario non
-    // ancora arrivato) si usa l'ora attuale.
+    // ancora arrivato) si usa l'ora attuale del luogo.
     if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $new_date)) {
-        $stmt_time = $db->prepare("SELECT TIME(date) FROM gym_workout_history WHERE id = ? AND user_id = ?");
-        $stmt_time->execute([$data->id, $user_id]);
-        $original_time = $stmt_time->fetchColumn();
-        if ($original_time === false) {
+        if (!$row) {
             http_response_code(404);
             echo json_encode(array(
                 "success" => false,
@@ -45,13 +48,16 @@ if (
             ));
             exit;
         }
-        $with_original_time = $new_date . ' ' . $original_time;
-        $new_date .= ' ' . (strtotime($with_original_time) > time() ? date('H:i:s') : $original_time);
+        $with_original_time = $new_date . ' ' . $row['time_of_day'];
+        $new_date .= ' ' . (workout_instant($with_original_time, $time_zone)->getTimestamp() > time()
+            ? (new DateTime('now', $zone))->format('H:i:s')
+            : $row['time_of_day']);
     }
 
     // Verifica che sia una data valida
-    $timestamp = strtotime($new_date);
-    if ($timestamp === false) {
+    try {
+        $new_local = client_datetime($new_date, $time_zone);
+    } catch (Exception $e) {
         http_response_code(400);
         echo json_encode(array(
             "success" => false,
@@ -60,6 +66,7 @@ if (
         ));
         exit;
     }
+    $timestamp = $new_local->getTimestamp();
 
     if ($timestamp > time()) {
         http_response_code(400);
@@ -71,9 +78,10 @@ if (
         exit;
     }
 
-    // Spostamenti solo dentro gli ultimi 30 giorni, sia la data di partenza sia quella nuova
-    $oldest_allowed = (new DateTime('today'))->modify('-30 days')->getTimestamp();
-    if ($timestamp < $oldest_allowed) {
+    // Spostamenti solo dentro gli ultimi 30 giorni, sia la data di partenza sia quella nuova: i giorni
+    // si contano nel fuso attuale del dispositivo, sul giorno locale dell'allenamento
+    $oldest_day = user_now()->modify('-30 days')->format('Y-m-d');
+    if (substr($new_local->format('Y-m-d'), 0, 10) < $oldest_day) {
         http_response_code(400);
         echo json_encode(array(
             "success" => false,
@@ -84,7 +92,7 @@ if (
     }
 
     // Formatta la data in un formato standardizzato per MySQL
-    $formatted_date = date('Y-m-d H:i:s', $timestamp);
+    $formatted_date = $new_local->format('Y-m-d H:i:s');
 
     // Imposta le proprietà dell'oggetto
     $workout->id = $data->id;
@@ -125,7 +133,7 @@ if (
                 "message" => t_server('history.not_yours')
             ], 404);
         }
-        if (strtotime($old_date) < $oldest_allowed) {
+        if (substr($old_date, 0, 10) < $oldest_day) {
             $db->rollBack();
             api_json_response([
                 "success" => false,
@@ -136,7 +144,7 @@ if (
         $old_dt = new DateTime($old_date);
 
         $before = ensure_streak_registry($db, $user_id, $gam_row);
-        $now = new DateTime();
+        $now = user_now();
         $streak_before = effectiveStreakWeeks($before['current'], $before['last_completed_week'], $now);
 
         if (!$workout->update()) {
@@ -169,7 +177,9 @@ if (
         "preview" => $preview,
         "message" => $preview ? t_server('history.date_preview') : t_server('history.date_updated'),
         "id" => $workout->id,
-        "new_date" => date('c', $timestamp),
+        "new_date" => workout_started_at($formatted_date, $time_zone),
+        "started_at" => workout_started_at($formatted_date, $time_zone),
+        "time_zone" => $time_zone,
         "xp_delta" => $xp_delta,
         "streak_before" => $streak_before,
         "streak_after" => effectiveStreakWeeks($streak['current'], $streak['last_completed_week'], $now),

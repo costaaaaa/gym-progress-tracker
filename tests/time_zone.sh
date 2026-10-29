@@ -127,6 +127,30 @@ ID="$(save "$(body 25 "$(iso "$S")")")"
 same "header con un offset (non IANA): ignorato, Roma" "$(history_field "$ID" date)" "$(local_in Europe/Rome "$S")"
 
 echo
+echo "Cambio data: conserva fuso e orario, il futuro è quello del luogo"
+make_user c
+XTZ="Asia/Tokyo"
+S="$(date -d '10 minutes ago' +%s)"
+ID="$(save "$(body 30 "$(iso "$S")")")"
+TOKYO_TIME="$(local_in Asia/Tokyo "$S")"
+TOKYO_TODAY="$(TZ=Asia/Tokyo date +%F)"
+move() { call POST api/workout_history/update_date.php "$T" "$(jq -nc --argjson id "$ID" --arg d "$1" '{id:$id, new_date:$d}')"; }
+
+R="$(move "$TOKYO_TODAY")"
+check "solo data = oggi a Tokyo: accettata (non è futuro)" "$R" '.success == true'
+same "il cambio data conserva l'orario" "$(history_field "$ID" date)" "$TOKYO_TODAY ${TOKYO_TIME#* }"
+same "il cambio data conserva il fuso" "$(history_field "$ID" time_zone)" "Asia/Tokyo"
+check "new_date con l'offset di Tokyo e started_at/time_zone" "$R" '.new_date | endswith("+09:00")'
+check "risposta con started_at e time_zone" "$R" '.started_at == .new_date and .time_zone == "Asia/Tokyo"'
+
+BEFORE_TOKYO="$(TZ=Asia/Tokyo date -d '1 hour ago' '+%F %T')"
+check "data completa un'ora fa a Tokyo: accettata" "$(move "$BEFORE_TOKYO")" '.success == true'
+same "data completa salvata come scritta" "$(history_field "$ID" date)" "$BEFORE_TOKYO"
+check "un'ora avanti a Tokyo: future_date" "$(move "$(TZ=Asia/Tokyo date -d '1 hour' '+%F %T')")" '.code == "future_date"'
+check "due giorni avanti: future_date" "$(move "$(TZ=Asia/Tokyo date -d '+2 days' +%F)")" '.code == "future_date"'
+check "oltre 30 giorni fa: target_too_old" "$(move "$(TZ=Asia/Tokyo date -d '-40 days' +%F)")" '.code == "target_too_old"'
+
+echo
 if (( fails )); then
     echo "✗ $fails controlli su $checks falliti"
     exit 1
