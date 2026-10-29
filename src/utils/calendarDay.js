@@ -31,3 +31,9 @@ export const clockDate = (value) => {
   const [y, mo, d, h, mi, s] = m.slice(1).map((n) => Number(n || 0));
   return new Date(Date.UTC(y, mo - 1, d, h, mi, s));
 };
+
+/** Come clockDate, ma con quei campi nel fuso del browser (Date locale): per chi deve confrontare con "adesso" del dispositivo. */
+export const localDate = (value) => {
+  const c = clockDate(value);
+  return new Date(c.getUTCFullYear(), c.getUTCMonth(), c.getUTCDate(), c.getUTCHours(), c.getUTCMinutes(), c.getUTCSeconds());
+};

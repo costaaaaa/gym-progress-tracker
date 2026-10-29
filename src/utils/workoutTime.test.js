@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatClockTime, differentZone, workoutInstant, offsetLabel, zoneCity, workoutZoneBadge, isoClock, zoneClock, moveToZoneDay } from './workoutTime';
+import { formatClockTime, differentZone, workoutInstant, zoneCity, workoutZoneBadge, isoClock, zoneClock, moveToZoneDay } from './workoutTime';
 
 describe('formatClockTime', () => {
   it('mostra l\'ora scritta, senza convertirla nel fuso del browser', () => {
@@ -17,26 +17,28 @@ describe('workoutInstant: l\'istante vero di un allenamento', () => {
   });
 });
 
-describe('offsetLabel', () => {
+describe('offset nel badge', () => {
+  // L'offset si legge dall'ISO di started_at; il fuso (New York) serve solo perché il badge compaia
+  const offset = (iso) => workoutZoneBadge({ time_zone: 'America/New_York', started_at: iso }, 'Europe/Rome')?.split(' · ')[1] ?? null;
   it('UTC−4 con il meno tipografico', () => {
-    expect(offsetLabel('2026-10-18T02:00:00-04:00')).toBe('UTC−4');
+    expect(offset('2026-10-18T02:00:00-04:00')).toBe('UTC−4');
   });
   it('UTC+2, UTC+9', () => {
-    expect(offsetLabel('2026-10-18T02:00:00+02:00')).toBe('UTC+2');
-    expect(offsetLabel('2026-10-18T02:00:00+09:00')).toBe('UTC+9');
+    expect(offset('2026-10-18T02:00:00+02:00')).toBe('UTC+2');
+    expect(offset('2026-10-18T02:00:00+09:00')).toBe('UTC+9');
   });
   it('mezze ore: UTC+5:30, UTC−9:30', () => {
-    expect(offsetLabel('2026-10-18T02:00:00+05:30')).toBe('UTC+5:30');
-    expect(offsetLabel('2026-10-18T02:00:00-09:30')).toBe('UTC−9:30');
+    expect(offset('2026-10-18T02:00:00+05:30')).toBe('UTC+5:30');
+    expect(offset('2026-10-18T02:00:00-09:30')).toBe('UTC−9:30');
   });
   it('offset zero: UTC', () => {
-    expect(offsetLabel('2026-10-18T02:00:00+00:00')).toBe('UTC');
-    expect(offsetLabel('2026-10-18T02:00:00Z')).toBe('UTC');
+    expect(offset('2026-10-18T02:00:00+00:00')).toBe('UTC');
+    expect(offset('2026-10-18T02:00:00Z')).toBe('UTC');
   });
   it('più di due cifre di ore e valore illeggibile', () => {
-    expect(offsetLabel('2026-10-18T02:00:00+12:00')).toBe('UTC+12');
-    expect(offsetLabel('boh')).toBeNull();
-    expect(offsetLabel(undefined)).toBeNull();
+    expect(offset('2026-10-18T02:00:00+12:00')).toBe('UTC+12');
+    expect(offset('boh')).toBeNull();
+    expect(offset(undefined)).toBeNull();
   });
 });
 

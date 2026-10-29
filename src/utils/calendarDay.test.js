@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { clockDate, clockDay } from './calendarDay';
+import { clockDate, clockDay, localDate } from './calendarDay';
+import { setBrowserTimeZone } from '../test/timeZone';
 
 describe('clockDate: l\'ora locale del luogo letta come orologio', () => {
   it('i campi di calendario e orologio sono quelli della stringa, in qualunque fuso del browser', () => {
@@ -34,5 +35,23 @@ describe('clockDay: il giorno scritto', () => {
     expect(clockDay('boh')).toBeNull();
     expect(clockDay('2026-10-1')).toBeNull();
     expect(clockDay(undefined)).toBeNull();
+  });
+});
+
+describe('localDate: l\'orologio scritto come Date nel fuso del browser', () => {
+  it('i campi locali sono quelli della stringa, a ovest e a est di UTC', () => {
+    for (const zone of ['America/New_York', 'Asia/Tokyo']) {
+      setBrowserTimeZone(zone);
+      const d = localDate('2026-10-18 23:30:15');
+      expect([d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds()]).toEqual([2026, 10, 18, 23, 30, 15]);
+    }
+  });
+  it('la sola data è mezzanotte locale', () => {
+    setBrowserTimeZone('America/New_York');
+    const d = localDate('2026-10-18');
+    expect([d.getDate(), d.getHours()]).toEqual([18, 0]);
+  });
+  it('valore illeggibile: data non valida', () => {
+    expect(Number.isNaN(localDate('boh').getTime())).toBe(true);
   });
 });
