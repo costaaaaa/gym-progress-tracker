@@ -12,6 +12,7 @@ import QuitDialog from './QuitDialog';
 import { detectPersonalRecords, isWorkingSet } from '../../utils/workoutMetrics';
 import { buildShareStats, sessionRecords } from '../../utils/shareCard';
 import ShareCardDialog from '../../components/ShareCardDialog';
+import WarmupBadge from '../../components/WarmupBadge';
 import { track } from '../../utils/analytics';
 import { techniqueLabel } from '../../i18n/labels';
 
@@ -38,7 +39,8 @@ export default function SummaryPhase({
   };
   // Il riscaldamento non conta fra le serie del riepilogo (totalCompletedSets le conta tutte: serve a salvare e a uscire)
   const totalSets = Object.values(completedSets).flat().filter(isWorkingSet).length;
-  const exercisesCompleted = Object.keys(completedSets).length;
+  // Un esercizio con soli riscaldamenti fatti non è un esercizio completato
+  const exercisesCompleted = Object.values(completedSets).filter((sets) => sets.some(isWorkingSet)).length;
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text }}>
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1, borderBottom: `1px solid ${colors.border}` }}>
@@ -109,15 +111,7 @@ export default function SummaryPhase({
                       bgcolor: colors.bgElevated, borderRadius: '6px', px: 1.125, py: 0.625,
                       fontSize: 12, fontWeight: 600, color: colors.textSecondary,
                     }}>
-                      {set.is_warmup && (
-                        <Box component="span" sx={{
-                          fontSize: 10, fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase', mr: 0.75,
-                          color: 'warning.main', border: '1px solid', borderColor: 'warning.main',
-                          borderRadius: '6px', px: 0.5, lineHeight: 1.6,
-                        }}>
-                          {t('history.warmup_badge')}
-                        </Box>
-                      )}
+                      {set.is_warmup && <WarmupBadge color={colors.warning} sx={{ mr: 0.75 }} />}
                       {set.weight}kg×{set.reps}{set.intensity_technique ? ` · ${techniqueLabel(set.intensity_technique)}` : ''}
                     </Box>
                   ))}

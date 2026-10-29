@@ -92,6 +92,14 @@ export const lastSessionSets = (lastSession) => {
   });
 };
 
+// Peso suggerito = il più alto tra le serie allenanti dell'ultima sessione, come stringa
+// (sovraccarico progressivo); i riscaldamenti non contano. Vuoto se non c'è niente da suggerire.
+export const suggestedWeight = (lastSession) => {
+  if (!lastSession || !Array.isArray(lastSession.sets)) return '';
+  const max = lastSession.sets.filter(isWorkingSet).reduce((m, s) => Math.max(m, parseFloat(s.weight) || 0), 0);
+  return max > 0 ? String(max) : '';
+};
+
 // Stato del pallino di una serie: done | skipped | active | pending.
 // skipped = indici (0-based) delle serie saltate dell'esercizio corrente.
 export const setStatus = (idx, currentSetIndex, skipped = []) => {

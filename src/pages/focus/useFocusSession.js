@@ -6,7 +6,7 @@ import { API_BASE_URL } from '../../config';
 import { hapticFeedback } from '../../utils/vibration';
 import { buildExerciseHistoryIndex, detectPersonalRecords } from '../../utils/workoutMetrics';
 import {
-  FEATURE_SESSION_EDIT, isValidWeight, slotWeight, totalSlots, setSlot, skipWarmup,
+  FEATURE_SESSION_EDIT, isValidWeight, suggestedWeight, slotWeight, totalSlots, setSlot, skipWarmup,
   isValidReps, repsNeedConfirm,
   numberedSets, buildSessionEntry, swapExercise, insertExercise,
   newIdempotencyKey, draftIdempotencyKey
@@ -330,16 +330,8 @@ export default function useFocusSession() {
     return entry?.lastSession || null;
   }, [historyIndex]);
 
-  // Peso suggerito = top set (peso più alto) dell'ultima sessione, come stringa.
-  const getSuggestedWeight = useCallback((exercise) => {
-    const last = getLastSession(exercise);
-    if (!last || !Array.isArray(last.sets) || last.sets.length === 0) return '';
-    const maxWeight = last.sets.reduce((m, s) => {
-      const w = parseFloat(s.weight) || 0;
-      return w > m ? w : m;
-    }, 0);
-    return maxWeight > 0 ? maxWeight.toString() : '';
-  }, [getLastSession]);
+  // Peso suggerito = top set (peso più alto) delle serie allenanti dell'ultima sessione.
+  const getSuggestedWeight = useCallback((exercise) => suggestedWeight(getLastSession(exercise)), [getLastSession]);
 
   const handleStartWorkout = () => {
     if (!selectedDay || !selectedDay.exercises || selectedDay.exercises.length === 0) return;
@@ -375,7 +367,7 @@ export default function useFocusSession() {
   const currentExercise = selectedDay?.exercises?.[currentExerciseIndex];
   const totalExercises = selectedDay?.exercises?.length || 0;
   // Posizioni dell'esercizio: prima il riscaldamento della scheda, poi le serie allenanti
-  const totalSetsForCurrentExercise = currentExercise ? totalSlots(currentExercise) : 0;
+  const totalSlotsForCurrentExercise = currentExercise ? totalSlots(currentExercise) : 0;
   const currentExerciseSets = completedSets[currentExercise?.id] || [];
   const currentSkippedSets = skippedSets[currentExercise?.id] || [];
   const canEditSession = features.includes(FEATURE_SESSION_EDIT);
@@ -425,7 +417,7 @@ export default function useFocusSession() {
 
     const nextSetIndex = currentSetIndex + 1;
 
-    if (nextSetIndex >= totalSetsForCurrentExercise) {
+    if (nextSetIndex >= totalSlotsForCurrentExercise) {
       // Tutte le serie completate per questo esercizio
       goToNextExercise();
     } else {
@@ -473,13 +465,13 @@ export default function useFocusSession() {
   // Salta solo la serie corrente: non viene registrata e non parte il recupero.
   // Il peso già scritto resta, servirà per la serie dopo.
   const handleSkipSet = () => {
-    const { isWarmup, workingIndex } = setSlot(currentExercise, currentSetIndex);
-    if (isWarmup || workingIndex === 0) return;
+    // workingIndex è -1 in riscaldamento e 0 alla prima serie allenante (= salta esercizio)
+    if (setSlot(currentExercise, currentSetIndex).workingIndex < 1) return;
     hapticFeedback.light();
     const exerciseId = currentExercise.id;
     setSkippedSets(prev => ({ ...prev, [exerciseId]: [...(prev[exerciseId] || []), currentSetIndex] }));
     const nextSetIndex = currentSetIndex + 1;
-    if (nextSetIndex >= totalSetsForCurrentExercise) {
+    if (nextSetIndex >= totalSlotsForCurrentExercise) {
       goToNextExercise();
     } else {
       setCurrentSetIndex(nextSetIndex);
@@ -510,7 +502,7 @@ export default function useFocusSession() {
       setPremiumDialog(true);
       return;
     }
-    if (pickerMode === 'swap' && currentSetIndex > 0) {
+    if (pickerMode === 'swap' && currentExerciseSets.length > 0) {
       setSnackbar({ open: true, message: t('focus.swap_only_first_set'), severity: 'info' });
       return;
     }
@@ -806,7 +798,7 @@ export default function useFocusSession() {
     currentExerciseIndex,
     totalExercises,
     currentSetIndex,
-    totalSetsForCurrentExercise,
+    totalSlotsForCurrentExercise,
     currentExerciseSets,
     currentSkippedSets,
     lastSession: getLastSession(currentExercise),

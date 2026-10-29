@@ -894,4 +894,85 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     expect(screen.getByText('Risc.').parentElement.textContent).toContain('20kg×10');
     expect(screen.getByText('Serie').previousSibling.textContent).toBe('2');
   });
+  it('nell\'elenco "Serie completate" la prima serie allenante è "Serie 1", i riscaldamenti "Riscaldamento 1" e "Riscaldamento 2"', async () => {
+    await startDay('Gambe');
+    doSet('20', '10');
+    click('Salta timer');
+    doSet('60', '5');
+    click('Salta timer');
+    doSet('100', '5');
+    click('Salta timer');
+    expect(screen.getByText('Riscaldamento 1')).toBeTruthy();
+    expect(screen.getByText('Riscaldamento 2')).toBeTruthy();
+    expect(screen.getByText('Serie 1')).toBeTruthy();
+    expect(screen.queryByText('Serie 3')).toBeNull();
+  });
+
+  describe('cambio esercizio', () => {
+    beforeEach(() => {
+      responses['user/read.php'] = () => json({ rest_timer_enabled: true, features: ['focus_session_edit'] });
+      responses['exercise/read_all.php'] = () => json({ records: [{ id: 20, name: 'Croci ai cavi', muscle_group: 'petto', equipment: 'cavi' }] });
+    });
+    const swapToCroci = async () => {
+      click('Cambia esercizio');
+      await advance(0);
+      // Il catalogo è in cache di modulo e parte dal gruppo muscolare dell'esercizio: si cerca per nome
+      fireEvent.change(screen.getByPlaceholderText(/^Cerca/), { target: { value: 'Croci' } });
+      fireEvent.click(screen.getByText('Croci ai cavi'));
+    };
+
+    it('dopo "Salta riscaldamento", senza serie fatte, si può cambiare e si riparte dal riscaldamento della scheda', async () => {
+      await startDay('Gambe');
+      click('Salta riscaldamento');
+      await swapToCroci();
+      expect(screen.queryByText('Puoi cambiare l\'esercizio solo prima di aver fatto una serie')).toBeNull();
+      expect(screen.getByText('Ora: Croci ai cavi')).toBeTruthy();
+      expect(screen.getByText('Riscaldamento 1 di 2')).toBeTruthy();
+    });
+
+    it('con una serie di riscaldamento già fatta il cambio è rifiutato', async () => {
+      await startDay('Gambe');
+      doSet('20', '10');
+      click('Salta timer');
+      click('Cambia esercizio');
+      expect(screen.getByText('Puoi cambiare l\'esercizio solo prima di aver fatto una serie')).toBeTruthy();
+      expect(fetchMock.mock.calls.some(([url]) => url.includes('exercise/read_all.php'))).toBe(false);
+    });
+  });
+
+  it('se nell\'ultima sessione ci sono solo riscaldamenti non suggerisce nessun peso', async () => {
+    responses['workout_history/read.php'] = () => json({ records: [{ id: 1, date: '2026-10-13', exercises: [{ exercise_id: 5, name: 'Squat', sets: [
+      { weight: 40, reps: '8', is_warmup: true },
+    ] }] }] });
+    await startDay('Gambe');
+    click('Salta riscaldamento');
+    expect(screen.getByLabelText('Peso (kg)').value).toBe('');
+  });
+
+  it('un esercizio saltato dopo soli riscaldamenti non conta tra gli esercizi del riepilogo', async () => {
+    responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Gambe', is_active: true, days: [{ id: 3, name: 'Gambe', exercises: [squat, { ...fly, id: 12 }] }] }] });
+    await startDay('Gambe');
+    doSet('20', '10');
+    click('Salta timer');
+    click('Salta esercizio');
+    await advance(0.3);
+    doSet('30', '12');
+    click('Salta timer');
+    doSet('30', '12');
+    expect(screen.getByText('Riepilogo')).toBeTruthy();
+    expect(screen.getByText('Esercizi').previousSibling.textContent).toBe('1');
+  });
+
+  it('ogni pallino ha un testo accessibile con numero e stato', async () => {
+    await startDay('Gambe');
+    expect(screen.getByLabelText('Riscaldamento 1, in corso')).toBeTruthy();
+    expect(screen.getByLabelText('Riscaldamento 2, da fare')).toBeTruthy();
+    expect(screen.getByLabelText('Serie 1, da fare')).toBeTruthy();
+    doSet('20', '10');
+    click('Salta timer');
+    expect(screen.getByLabelText('Riscaldamento 1, fatta')).toBeTruthy();
+    click('Salta riscaldamento');
+    expect(screen.getByLabelText('Riscaldamento 2, saltata')).toBeTruthy();
+    expect(screen.getByLabelText('Serie 1, in corso')).toBeTruthy();
+  });
 });

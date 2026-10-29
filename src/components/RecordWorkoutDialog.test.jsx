@@ -10,14 +10,15 @@ const squat = {
   id: 11, exercise_id: 5, exercise_name: 'Squat', sets: 2, warmup_sets: 2, reps: '5', rest: 60,
   equipment: 'bilanciere', intensity_technique: 'Rest Pause',
 };
-const activePlan = { id: 5, name: 'Gambe', days: [{ id: 3, name: 'Gambe', exercises: [squat] }] };
+const basePlan = { id: 5, name: 'Gambe', days: [{ id: 3, name: 'Gambe', exercises: [squat] }] };
+let activePlan = basePlan;
 
 let fetchMock;
 beforeEach(() => {
   fetchMock = vi.fn(() => Promise.resolve(json({ success: true })));
   vi.stubGlobal('fetch', fetchMock);
 });
-afterEach(() => { vi.unstubAllGlobals(); });
+afterEach(() => { vi.unstubAllGlobals(); activePlan = basePlan; });
 
 const open = () => {
   render(<RecordWorkoutDialog open onClose={() => {}} activePlan={activePlan} />);
@@ -56,6 +57,20 @@ describe('righe di un esercizio con riscaldamento', () => {
     fireEvent.click(toggles()[3]);
     fireEvent.click(toggles()[0]);
     expect(toggles().map((c) => c.checked)).toEqual([false, true, false, true]);
+  });
+});
+
+describe('ripetizioni suggerite dalla scheda', () => {
+  const placeholders = () => screen.getAllByLabelText('Ripetizioni').map((i) => i.getAttribute('placeholder') ?? '');
+
+  it('seguono le righe che in questo momento non sono riscaldamento, non la loro posizione', () => {
+    activePlan = { id: 5, name: 'Gambe', days: [{ id: 3, name: 'Gambe', exercises: [{ ...squat, warmup_sets: 1, sets: 3, reps: '8/6/4' }] }] };
+    open();
+    expect(placeholders()).toEqual(['', '8', '6', '4']);
+    // Il riscaldamento passa in fondo: le tre serie allenanti ripartono da 8
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Riscaldamento: serie 1' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Riscaldamento: serie 4' }));
+    expect(placeholders()).toEqual(['8', '6', '4', '']);
   });
 });
 

@@ -1,7 +1,23 @@
 import { describe, it, expect } from 'vitest';
 import {
-  lastSessionSets, totalSlots, setSlot, skipWarmup, slotWeight, numberedSets, swapExercise, buildSessionEntry, initialSetRows,
+  lastSessionSets, totalSlots, setSlot, skipWarmup, slotWeight, numberedSets, swapExercise, buildSessionEntry, initialSetRows, suggestedWeight,
 } from './focusSession';
+
+describe('suggestedWeight: il peso suggerito viene dalle serie allenanti dell\'ultima volta (#67)', () => {
+  it('è il peso più alto tra le serie allenanti, come stringa', () => {
+    expect(suggestedWeight({ sets: [{ weight: 40, reps: 8, is_warmup: true }, { weight: 100, reps: 5 }, { weight: 95, reps: 6 }] })).toBe('100');
+  });
+
+  it('un riscaldamento più pesante di tutte le serie non conta', () => {
+    expect(suggestedWeight({ sets: [{ weight: 120, reps: 1, is_warmup: true }, { weight: 100, reps: 5 }] })).toBe('100');
+  });
+
+  it('con soli riscaldamenti, senza serie o senza sessione non suggerisce niente', () => {
+    expect(suggestedWeight({ sets: [{ weight: 40, reps: 8, is_warmup: true }] })).toBe('');
+    expect(suggestedWeight({ sets: [] })).toBe('');
+    expect(suggestedWeight(null)).toBe('');
+  });
+});
 
 describe('lastSessionSets: il riscaldamento non è "ultima volta" (#66)', () => {
   it('esclude le serie is_warmup dalle chip "ultima volta"', () => {

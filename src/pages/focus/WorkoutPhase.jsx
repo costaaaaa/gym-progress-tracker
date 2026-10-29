@@ -16,7 +16,7 @@ import { MAX_WEIGHT, isValidWeight, isValidReps, planRepsForSet, lastSessionSets
 import { muscleLabel, techniqueLabel } from '../../i18n/labels';
 
 export default function WorkoutPhase({
-  currentExercise, currentExerciseIndex, totalExercises, currentSetIndex, totalSetsForCurrentExercise,
+  currentExercise, currentExerciseIndex, totalExercises, currentSetIndex, totalSlotsForCurrentExercise,
   currentExerciseSets, currentSkippedSets, lastSession, exerciseTransition, clockStart, finishedClock,
   weightInput, onWeightChange, repsInput, onRepsChange, intensityTechniqueInput, onIntensityChange,
   onConfirmSet, onSkipSet, onSkipWarmup, onSkipExercise, canEditSession, onOpenPicker, onQuit,
@@ -26,6 +26,7 @@ export default function WorkoutPhase({
   const { t } = useTranslation();
   const { colors } = useFocusColors();
   const currentSlot = setSlot(currentExercise, currentSetIndex);
+  const skipButtonSx = { py: 1.5, color: colors.textSecondary, '&:hover': { color: colors.text, bgcolor: colors.bgElevated } };
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text, display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${colors.border}` }}>
@@ -54,13 +55,15 @@ export default function WorkoutPhase({
           </Box>
 
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1.5, mb: 3 }}>
-            {Array.from({ length: Number(totalSetsForCurrentExercise) || 0 }, (_, idx) => {
+            {Array.from({ length: Number(totalSlotsForCurrentExercise) || 0 }, (_, idx) => {
               const status = setStatus(idx, currentSetIndex, currentSkippedSets);
               const slot = setSlot(currentExercise, idx);
               // Il riscaldamento ha pallini più piccoli (R1, R2) davanti a quelli delle serie allenanti
               const size = slot.isWarmup ? 32 : 40;
+              const name = t(slot.isWarmup ? 'focus.warmup_n' : 'focus.set_n', { n: slot.number });
               return (
-                <Box key={idx} title={status === 'skipped' ? t('focus.set_skipped') : undefined} sx={{
+                <Box key={idx} role="img" aria-label={t('focus.dot_label', { name, status: t(`focus.dot_${status}`) })}
+                  title={status === 'skipped' ? t('focus.set_skipped') : undefined} sx={{
                   width: size, height: size, alignSelf: 'center', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   border: `2px ${status === 'skipped' ? 'dashed' : 'solid'} ${status === 'done' ? colors.success : status === 'active' ? colors.text : colors.border}`,
                   bgcolor: status === 'done' ? colors.success : status === 'skipped' ? colors.bgElevated : 'transparent',
@@ -168,18 +171,18 @@ export default function WorkoutPhase({
                 (saltare la prima equivale a saltare l'esercizio) */}
             {currentSlot.isWarmup && (
               <Button variant="text" fullWidth startIcon={<SkipNextIcon />} onClick={onSkipWarmup}
-                sx={{ py: 1.5, color: colors.textSecondary, '&:hover': { color: colors.text, bgcolor: 'rgba(255,255,255,0.05)' } }}>
+                sx={skipButtonSx}>
                 {t('focus.skip_warmup')}
               </Button>
             )}
             {currentSlot.workingIndex > 0 && (
               <Button variant="text" fullWidth startIcon={<SkipNextIcon />} onClick={onSkipSet}
-                sx={{ py: 1.5, color: colors.textSecondary, '&:hover': { color: colors.text, bgcolor: 'rgba(255,255,255,0.05)' } }}>
+                sx={skipButtonSx}>
                 {t('focus.skip_set')}
               </Button>
             )}
             <Button variant="text" fullWidth startIcon={<SkipNextIcon />} onClick={onSkipExercise}
-              sx={{ py: 1.5, color: colors.textSecondary, '&:hover': { color: colors.text, bgcolor: 'rgba(255,255,255,0.05)' } }}>
+              sx={skipButtonSx}>
               {t('focus.skip_exercise')}
             </Button>
           </Box>
@@ -192,7 +195,7 @@ export default function WorkoutPhase({
               <Button key={pickerMode} variant="outlined" fullWidth startIcon={icon}
                 endIcon={canEditSession ? null : <LockIcon sx={{ fontSize: '16px !important' }} />}
                 onClick={() => onOpenPicker(pickerMode)}
-                sx={{ py: 1.25, opacity: pickerMode === 'swap' && currentSetIndex > 0 ? 0.45 : 1, color: colors.textSecondary, borderColor: colors.border, borderRadius: '12px',
+                sx={{ py: 1.25, opacity: pickerMode === 'swap' && currentExerciseSets.length > 0 ? 0.45 : 1, color: colors.textSecondary, borderColor: colors.border, borderRadius: '12px',
                   '&:hover': { borderColor: colors.text, color: colors.text } }}>
                 {label}
               </Button>
@@ -210,7 +213,11 @@ export default function WorkoutPhase({
                   px: 2, py: 1.25, borderTop: idx > 0 ? `1px solid ${colors.border}` : 'none',
                 }}>
                   <Typography variant="body2" sx={{ color: colors.textSecondary }}>
-                    {set.is_warmup ? t('history.warmup_badge') : t('focus.set_n', { n: set.setNumber })}
+                    {(() => {
+                      // setNumber è la posizione (da 1) della serie: si mostra il numero dentro il suo tipo
+                      const { isWarmup, number } = setSlot(currentExercise, set.setNumber - 1);
+                      return t(isWarmup ? 'focus.warmup_n' : 'focus.set_n', { n: number });
+                    })()}
                   </Typography>
                   <Box sx={{ textAlign: 'right' }}>
                     <Typography variant="body2" sx={{ color: colors.text, fontWeight: 600 }}>{set.weight} kg × {set.reps}</Typography>

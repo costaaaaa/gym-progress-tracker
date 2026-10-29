@@ -29,7 +29,7 @@ import { track } from '../utils/analytics';
 import { useTranslation } from 'react-i18next';
 import { techniqueLabel } from '../i18n/labels';
 import {
-  MAX_WEIGHT, isValidWeight, newIdempotencyKey, isValidReps, planRepsForSet, repsNeedConfirm, initialSetRows, setSlot,
+  MAX_WEIGHT, isValidWeight, newIdempotencyKey, isValidReps, planRepsForSet, repsNeedConfirm, initialSetRows,
 } from '../utils/focusSession';
 
 const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
@@ -274,7 +274,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                       }
                     />
                     <Box sx={{ mt: 2 }}>
-                      {(workoutData[exercise.id] || []).map((row, setIndex) => (
+                      {(workoutData[exercise.id] || []).map((row, setIndex, rows) => (
                         <Box key={setIndex} sx={{ display: 'flex', gap: 2, mb: 2 }}>
                           <Box sx={{ minWidth: 60, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                             <Typography variant="body2">{t('record.set', { n: setIndex + 1 })}</Typography>
@@ -296,7 +296,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                           <TextField
                             label={t('record.weight')}
                             type="number"
-                            value={workoutData[exercise.id]?.[setIndex]?.weight || ''}
+                            value={row.weight || ''}
                             onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'weight', e.target.value)}
                             inputProps={{ min: 0, max: MAX_WEIGHT, step: 0.5 }}
                             fullWidth
@@ -312,8 +312,9 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                           />
                           <TextField
                             label={t('record.reps')}
-                            value={workoutData[exercise.id]?.[setIndex]?.reps ?? ''}
-                            placeholder={row.is_warmup ? '' : planRepsForSet(exercise.reps, setSlot(exercise, setIndex).workingIndex)}
+                            value={row.reps ?? ''}
+                            // La scheda indica le ripetizioni per le sole righe che ora non sono riscaldamento
+                            placeholder={row.is_warmup ? '' : planRepsForSet(exercise.reps, rows.slice(0, setIndex).filter((r) => !r.is_warmup).length)}
                             InputLabelProps={{ shrink: true }}
                             inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
                             onFocus={(e) => e.target.select()}
