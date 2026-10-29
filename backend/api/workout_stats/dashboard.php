@@ -12,6 +12,7 @@ include_once '../../config/api_helpers.php';
 include_once '../../models/User.php';
 require_once '../../lib/weekly_stats.php';
 require_once '../../lib/muscle_rules.php';
+require_once '../../lib/weekly_sets.php';
 include_once '../../models/WorkoutHistory.php';
 include_once '../../models/WorkoutSet.php';
 include_once '../../models/WorkoutPlan.php';
@@ -194,35 +195,20 @@ try {
         ];
     }
 
-    // 4. Serie per muscolo (Settimana e Mese)
-    $month_start = (new DateTime())->modify('first day of this month')->setTime(0,0,0)->format('Y-m-d H:i:s');
-
-    // Recupero grezzo per calcolo in PHP (più sicuro)
-    $query_sets_stats_raw = "SELECT e.primary_muscle, wh.date
+    // 4. Serie allenanti per muscolo: questa settimana vs la settimana scorsa allo stesso punto
+    // (bucketing puro in weeklySetsBuckets, testato a parte in tests/weekly_sets_test.php)
+    $previous_monday_str = (clone $monday)->modify('-7 days')->format('Y-m-d H:i:s');
+    $query_weekly_sets = "SELECT e.primary_muscle, wh.date
                         FROM gym_workout_sets ws
                         JOIN gym_workout_history wh ON ws.workout_history_id = wh.id
                         JOIN gym_exercises e ON ws.exercise_id = e.id
-                        WHERE wh.user_id = :user_id AND wh.date >= :month";
-    $stmt_sets_stats = $db->prepare($query_sets_stats_raw);
-    $stmt_sets_stats->execute([
-        'month' => $month_start,
+                        WHERE wh.user_id = :user_id AND wh.date >= :previous_monday";
+    $stmt_weekly_sets = $db->prepare($query_weekly_sets);
+    $stmt_weekly_sets->execute([
+        'previous_monday' => $previous_monday_str,
         'user_id' => $user_id
     ]);
-
-    $sets_stats = [];
-    while($row = $stmt_sets_stats->fetch(PDO::FETCH_ASSOC)) {
-        $mg = muscleCountedOf($row['primary_muscle']);
-        if ($mg === null) continue;
-
-        if (!isset($sets_stats[$mg])) {
-            $sets_stats[$mg] = ['week' => 0, 'month' => 0];
-        }
-
-        $sets_stats[$mg]['month']++;
-        if ($row['date'] >= $monday_str) {
-            $sets_stats[$mg]['week']++;
-        }
-    }
+    $weekly_sets = weeklySetsBuckets($stmt_weekly_sets->fetchAll(PDO::FETCH_ASSOC), $monday, $today);
 
     if (ob_get_length()) ob_clean();
     header('Content-Type: application/json');
@@ -236,7 +222,7 @@ try {
             'total_reps' => $total_reps
         ],
         'recovery' => $recovery_status,
-        'sets_stats' => $sets_stats,
+        'weekly_sets' => $weekly_sets,
         'user_level' => $level
     ]);
 

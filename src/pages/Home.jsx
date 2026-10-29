@@ -58,6 +58,8 @@ const Home = () => {
   const [dashboardStats, setDashboardStats] = useState(null);
   // weekly_goal è l'obiettivo effettivo; plan_days_total resta per i server più vecchi
   const weeklyGoal = dashboardStats?.weekly_goal ?? dashboardStats?.plan_days_total;
+  // weekly_sets manca sui server più vecchi (sicurezza del rollout): conta 0
+  const weeklySets = Object.values(dashboardStats?.weekly_sets?.week || {}).reduce((sum, n) => sum + n, 0);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -199,12 +201,17 @@ const Home = () => {
                     </Typography>
                     <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.volume')}</Typography>
                   </Box>
-                  <Box sx={{ flex: 1 }}>
+                  <CardActionArea
+                    component={RouterLink}
+                    to="/dashboard?tab=muscles"
+                    sx={{ flex: 1, borderRadius: 1, mx: -1, px: 1, width: 'auto' }}
+                  >
                     <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
-                      {formatNumber(dashboardStats?.weekly_volume?.total_reps)}
+                      {formatNumber(weeklySets)}
+                      <Box component="span" sx={{ fontSize: 15, fontWeight: 600, ml: 0.5, color: 'primary.main' }}>›</Box>
                     </Typography>
-                    <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.reps')}</Typography>
-                  </Box>
+                    <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.sets')}</Typography>
+                  </CardActionArea>
                 </Box>
               </Card>
             </Grid>
@@ -213,6 +220,9 @@ const Home = () => {
             <Grid item xs={12} md={6}>
               <Card sx={{ height: '100%', p: '22px' }}>
                 <BodyVisualizer recoveryData={dashboardStats?.recovery} />
+                <Button component={RouterLink} to="/dashboard?tab=muscles" size="small" sx={{ mt: 1.5, px: 0 }}>
+                  {t('home.recovery_link')}
+                </Button>
               </Card>
             </Grid>
 

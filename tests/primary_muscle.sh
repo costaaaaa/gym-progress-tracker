@@ -2,7 +2,7 @@
 #
 # primary_muscle.sh — controlla il muscolo principale (#64): obbligatorio per un esercizio
 # personale "gambe", ricavato dal gruppo negli altri casi, e usato da dashboard.php per le serie
-# (sets_stats) e il recupero al posto di muscle_group.
+# (weekly_sets) e il recupero al posto di muscle_group.
 #
 #   tests/primary_muscle.sh http://localhost:8080/backend/
 #
@@ -94,10 +94,11 @@ check "allenamento salvato" "$(call POST api/workout/record_workout.php "$A" "$(
 echo
 echo "Dashboard"
 D="200 $(call GET api/workout_stats/dashboard.php "$A" | cut -d' ' -f2-)"
-check "stacco da terra: 3 serie sui glutei" "$D" '.sets_stats.glutei.week == 3'
-check "adductor machine: 2 serie sugli adduttori" "$D" '.sets_stats.adduttori.week == 2'
-check "gambe personale femorali: 2 serie sui femorali" "$D" '.sets_stats.femorali.week == 2'
-check "niente sui quadricipiti (gambe non vale più quadricipiti)" "$D" '.sets_stats.quadricipiti == null'
+check "weekly_sets.week ha le 12 chiavi dei muscoli contati" "$D" '(.weekly_sets.week | keys | length) == 12'
+check "stacco da terra: 3 serie sui glutei" "$D" '.weekly_sets.week.glutei == 3'
+check "adductor machine: 2 serie sugli adduttori" "$D" '.weekly_sets.week.adduttori == 2'
+check "gambe personale femorali: 2 serie sui femorali" "$D" '.weekly_sets.week.femorali == 2'
+check "niente sui quadricipiti (gambe non vale più quadricipiti)" "$D" '.weekly_sets.week.quadricipiti == 0'
 check "recupero: glutei, adduttori e femorali allenati" "$D" \
     '.recovery.glutei.last_trained != null and .recovery.adduttori.last_trained != null and .recovery.femorali.last_trained != null'
 check "recupero: abduttori presente e mai allenato" "$D" '.recovery.abduttori.last_trained == null and .recovery.abduttori.status == "PRONTO"'
