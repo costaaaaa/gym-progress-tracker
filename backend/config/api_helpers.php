@@ -451,8 +451,9 @@ function free_text_ok($obj, $field)
     return !isset($value) || (is_string($value) && mb_strlen($value) <= FREE_TEXT_MAX_LENGTH[$field]);
 }
 
-// Valida serie, ripetizioni e recupero di un esercizio in scheda (limiti delle colonne
-// gym_workout_exercises: reps varchar(20)). Il recupero 0 e' ammesso.
+// Valida serie, riscaldamento, ripetizioni e recupero di un esercizio in scheda (limiti delle
+// colonne gym_workout_exercises: reps varchar(20)). Il recupero 0 e' ammesso. warmup_sets (#66)
+// e' facoltativo: se manca vale 0 (client vecchi), se c'e' deve essere 0-10.
 // Ritorna null se validi, altrimenti il messaggio d'errore.
 function exercise_params_error($data)
 {
@@ -466,10 +467,11 @@ function exercise_params_error($data)
     $reps_ok = (is_string($reps) || is_int($reps)) && trim((string)$reps) !== '' && mb_strlen((string)$reps) <= 20;
     // Note e tecnica sono facoltative: se ci sono, stringhe nei limiti delle colonne
     $text_ok = free_text_ok($data, 'notes') && free_text_ok($data, 'intensity_technique');
+    $warmup_ok = !isset($data->warmup_sets) || $int_in_range($data->warmup_sets, 0, 10);
     if (
         !isset($data->sets) || !$int_in_range($data->sets, 1, 20) ||
         !isset($data->rest) || !$int_in_range($data->rest, 0, 3600) ||
-        !$reps_ok || !$text_ok
+        !$reps_ok || !$text_ok || !$warmup_ok
     ) {
         return t_server('exercise.params_invalid');
     }
