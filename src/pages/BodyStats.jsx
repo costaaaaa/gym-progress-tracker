@@ -40,6 +40,7 @@ import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import EventBusyIcon from '@mui/icons-material/EventBusy';
 import ChartCard, { buildPoints } from '../components/ChartCard';
+import { format } from 'date-fns';
 import { dayNumber } from '../utils/calendarDay';
 import HealthConsentCard from '../components/HealthConsentCard';
 import HealthAppHint from '../components/HealthAppHint';
@@ -260,7 +261,7 @@ const BodyStats = ({ isEmbedded = false }) => {
     try {
       const formattedData = {
         ...formData,
-        date: formData.date.toISOString().split('T')[0],
+        date: format(formData.date, 'yyyy-MM-dd'),
         weight: formData.weight || null,
         body_fat_percentage: formData.body_fat_percentage || null,
         muscle_mass_percentage: formData.muscle_mass_percentage || null,

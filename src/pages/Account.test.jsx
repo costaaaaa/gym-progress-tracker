@@ -40,7 +40,7 @@ const stubFetch = ({ is_admin = false } = {}) => vi.stubGlobal('fetch', vi.fn((u
     : url.includes('user/consent.php') ? json({ success: true, consents: { terms: { granted: true, version: 1 }, health_data: { granted: true, version: 1 } } })
     : url.includes('user/read.php') ? json({
       id: 1, username: 'atleta_con_un_nome_molto_lungo', email: 'atleta.con.un.indirizzo.lungo@example.com',
-      created_at: '2025-03-01 10:00:00', is_admin, weekly_goal_default: 3,
+      created_at: '2025-03-01T10:00:00+01:00', is_admin, weekly_goal_default: 3,
     })
       : json({ success: true, consents: [], id: 1, weekly_goal_default: 3 }),
 )));
@@ -207,5 +207,22 @@ describe('testi', () => {
   it('nessun testo della pagina è sotto i 16px (escluse le etichette dei campi, che MUI rimpicciolisce)', async () => {
     await mount();
     expect(textBelow(document.body, 16, '.MuiChip-root, .MuiFormLabel-root, .MuiFormHelperText-root, legend')).toEqual([]);
+  });
+});
+
+describe('esporta i dati', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it.each([[0, 30], [23, 30]])('il file porta il giorno locale (%i:%i), non quello UTC', async (hour, minute) => {
+    await mount();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 20, hour, minute));
+    URL.createObjectURL = vi.fn(() => 'blob:x');
+    URL.revokeObjectURL = vi.fn();
+    const names = [];
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function click() { names.push(this.download); });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Esporta' })[0]);
+    await waitFor(() => expect(names).toHaveLength(1));
+    expect(names[0]).toBe('dati_liftindex_atleta_con_un_nome_molto_lungo_2026-10-20.json');
   });
 });

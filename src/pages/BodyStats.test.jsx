@@ -389,3 +389,22 @@ describe('storico', () => {
     expect(await screen.findByText('Nessuna misurazione registrata')).toBeTruthy();
   });
 });
+
+describe('giorno della nuova misura', () => {
+  const saveAt = async (hour, minute) => {
+    records = [row('2026-10-15', '80.0')];
+    vi.setSystemTime(new Date(2026, 9, 20, hour, minute));
+    await mount();
+    fireEvent.click(screen.getByRole('button', { name: 'Nuova misurazione' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Salva' }));
+    const post = fetch.mock.calls.find(([, init]) => init?.method === 'POST');
+    return JSON.parse(post[1].body).date;
+  };
+
+  it('subito dopo mezzanotte è il giorno locale, non quello UTC del giorno prima', async () => {
+    expect(await saveAt(0, 30)).toBe('2026-10-20');
+  });
+  it('a fine giornata è il giorno locale, non quello UTC del giorno dopo', async () => {
+    expect(await saveAt(23, 30)).toBe('2026-10-20');
+  });
+});

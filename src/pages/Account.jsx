@@ -260,7 +260,7 @@ const Account = ({ isEmbedded = false }) => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `dati_liftindex_${userData?.username || 'utente'}_${new Date().toISOString().split('T')[0]}.json`;
+      link.download = `dati_liftindex_${userData?.username || 'utente'}_${format(new Date(), 'yyyy-MM-dd')}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
