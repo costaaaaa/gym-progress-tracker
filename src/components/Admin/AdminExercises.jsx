@@ -6,17 +6,12 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import { adminExerciseAction, errorMessage, listAdminExercises } from '../../api/exercises';
 import { equipmentLabel, exerciseMatches } from '../../utils/exerciseCatalog';
+import { primaryMuscleOptions } from '../../utils/muscleRules';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 
 const STATUS_LABELS = { pending: 'In attesa', approved: 'Approvati', rejected: 'Rifiutati' };
 
 const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
-
-// Muscolo principale (conteggio serie/recupero): "gambe" lo richiede sempre (nessun default,
-// 5 opzioni), "glutei" propone glutei di default ma accetta anche abduttori; gli altri gruppi
-// lo derivano da soli lato server e qui non si mostra nulla.
-const GAMBE_PRIMARY_MUSCLES = ['quadricipiti', 'femorali', 'glutei', 'adduttori', 'abduttori'];
-const GLUTEI_PRIMARY_MUSCLES = ['glutei', 'abduttori'];
 
 // Nuovo esercizio ufficiale (exercise = null) o modifica di nome, nome inglese, gruppo muscolare e attrezzo
 const ExerciseFormDialog = ({ open, exercise, muscleGroups, equipment, onClose, onSaved }) => {
@@ -42,7 +37,7 @@ const ExerciseFormDialog = ({ open, exercise, muscleGroups, equipment, onClose, 
   const handleGroupChange = (value) => {
     setMuscleGroup(value);
     if (value === 'glutei') {
-      setPrimaryMuscle((prev) => (GLUTEI_PRIMARY_MUSCLES.includes(prev) ? prev : 'glutei'));
+      setPrimaryMuscle((prev) => (primaryMuscleOptions(value).includes(prev) ? prev : 'glutei'));
     } else {
       setPrimaryMuscle('');
     }
@@ -66,8 +61,7 @@ const ExerciseFormDialog = ({ open, exercise, muscleGroups, equipment, onClose, 
     onSaved();
   };
 
-  const primaryMuscleOptions = muscleGroup === 'gambe' ? GAMBE_PRIMARY_MUSCLES
-    : muscleGroup === 'glutei' ? GLUTEI_PRIMARY_MUSCLES : null;
+  const primaryMuscleChoices = primaryMuscleOptions(muscleGroup);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
@@ -99,10 +93,10 @@ const ExerciseFormDialog = ({ open, exercise, muscleGroups, equipment, onClose, 
             fullWidth required margin="dense">
             {muscleGroups.map((g) => <MenuItem key={g} value={g}>{capitalize(g)}</MenuItem>)}
           </TextField>
-          {primaryMuscleOptions && (
+          {primaryMuscleChoices && (
             <TextField select label="Muscolo principale" value={primaryMuscle} onChange={(e) => setPrimaryMuscle(e.target.value)}
               fullWidth required margin="dense">
-              {primaryMuscleOptions.map((m) => <MenuItem key={m} value={m}>{capitalize(m)}</MenuItem>)}
+              {primaryMuscleChoices.map((m) => <MenuItem key={m} value={m}>{capitalize(m)}</MenuItem>)}
             </TextField>
           )}
           <TextField select label="Attrezzo" value={equipmentValue} onChange={(e) => setEquipmentValue(e.target.value)}

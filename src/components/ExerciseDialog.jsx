@@ -21,15 +21,12 @@ import AddIcon from '@mui/icons-material/Add';
 import { API_BASE_URL } from '../config';
 import { createExercise, errorMessage, findSimilarExercises, personalLabel } from '../api/exercises';
 import { equipmentLabel, exerciseMatches } from '../utils/exerciseCatalog';
+import { primaryMuscleOptions } from '../utils/muscleRules';
 import { useTranslation } from 'react-i18next';
 import { muscleLabel, techniqueLabel } from '../i18n/labels';
 
 // Helper per rendere maiuscola la prima lettera
 const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
-
-// Muscolo principale per un esercizio personale di gruppo "Gambe": obbligatorio, nessun default
-// (backend/lib/muscle_rules.php, muscleAllowedOptions). Gli altri gruppi lo derivano da soli.
-const GAMBE_PRIMARY_MUSCLES = ['quadricipiti', 'femorali', 'glutei', 'adduttori', 'abduttori'];
 
 export const INTENSITY_TECHNIQUES = [
   'Nessuna (Normale)',
@@ -360,7 +357,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
                     label={t('exercise_dialog.primary_muscle')}
                     onChange={(e) => { setNewPrimaryMuscle(e.target.value); setCreateError(''); }}
                   >
-                    {GAMBE_PRIMARY_MUSCLES.map((m) => (
+                    {primaryMuscleOptions(exercise.muscleGroup).map((m) => (
                       <MenuItem key={m} value={m}>{muscleLabel(m)}</MenuItem>
                     ))}
                   </Select>
