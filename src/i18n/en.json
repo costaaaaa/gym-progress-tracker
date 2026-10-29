@@ -562,6 +562,7 @@
   "exercise.personal": "Personal",
   "exercise_dialog.title": "Add exercise",
   "exercise_dialog.muscle_group": "Muscle group",
+  "exercise_dialog.primary_muscle": "Primary muscle",
   "exercise_dialog.all_equipment": "All equipment",
   "exercise_dialog.loading": "Loading exercises...",
   "exercise_dialog.name": "Exercise name",
