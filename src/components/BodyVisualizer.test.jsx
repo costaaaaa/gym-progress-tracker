@@ -69,14 +69,17 @@ describe('card Stato muscolare', () => {
 
   it('elenca in fondo i gruppi senza dati, in secondario', () => {
     mount(data);
-    const line = screen.getByText('Nessun dato: Spalle, Tricipiti, Addome, Polpacci');
+    const line = screen.getByText('Nessun dato: Spalle, Tricipiti, Addome, Adduttori, Abduttori, Polpacci');
     expect(getComputedStyle(line).color).toBe(GREY);
     expect(getComputedStyle(line).fontSize).toBe('13px');
   });
 
   it('tutto pronto: solo "Puoi allenare"', () => {
     mount(Object.fromEntries(
-      ['petto', 'schiena', 'spalle', 'bicipiti', 'tricipiti', 'addome', 'quadricipiti', 'femorali', 'glutei', 'polpacci']
+      [
+        'petto', 'schiena', 'spalle', 'bicipiti', 'tricipiti', 'addome', 'quadricipiti', 'femorali', 'glutei',
+        'adduttori', 'abduttori', 'polpacci',
+      ]
         .map((g) => [g, { status: 'PRONTO', percent: 100, ready_at: null }]),
     ));
     expect(screen.getByText('Puoi allenare')).toBeTruthy();

@@ -17,7 +17,7 @@ describe('groupRecovery', () => {
       { group: 'schiena', status: 'IN RECUPERO', percent: 60, days: 1 },
       { group: 'spalle', status: 'AFFATICATO', percent: 20, days: 3 },
     ]);
-    expect(result.noData).toEqual(['bicipiti', 'tricipiti', 'addome', 'quadricipiti', 'femorali', 'glutei', 'polpacci']);
+    expect(result.noData).toEqual(['bicipiti', 'tricipiti', 'addome', 'quadricipiti', 'femorali', 'glutei', 'adduttori', 'abduttori', 'polpacci']);
   });
 
   it('"a riposo" va per giorni crescenti, a parità nell\'ordine del corpo; senza giorno in fondo, sempre nell\'ordine del corpo', () => {
@@ -57,21 +57,21 @@ describe('groupRecovery', () => {
 
   it('tutto pronto: "a riposo" è vuoto', () => {
     const data = Object.fromEntries(
-      ['petto', 'schiena', 'spalle', 'bicipiti', 'tricipiti', 'addome', 'quadricipiti', 'femorali', 'glutei', 'polpacci']
+      ['petto', 'schiena', 'spalle', 'bicipiti', 'tricipiti', 'addome', 'quadricipiti', 'femorali', 'glutei', 'adduttori', 'abduttori', 'polpacci']
         .map((g) => [g, { status: 'PRONTO', percent: 100, ready_at: null }]),
     );
     const result = groupRecovery(data, now);
 
     expect(result.resting).toEqual([]);
     expect(result.noData).toEqual([]);
-    expect(result.canTrain).toHaveLength(10);
+    expect(result.canTrain).toHaveLength(12);
   });
 
   it('senza dati (undefined) tutti i gruppi sono "nessun dato", nell\'ordine del corpo', () => {
     expect(groupRecovery(undefined, now)).toEqual({
       canTrain: [],
       resting: [],
-      noData: ['petto', 'schiena', 'spalle', 'bicipiti', 'tricipiti', 'addome', 'quadricipiti', 'femorali', 'glutei', 'polpacci'],
+      noData: ['petto', 'schiena', 'spalle', 'bicipiti', 'tricipiti', 'addome', 'quadricipiti', 'femorali', 'glutei', 'adduttori', 'abduttori', 'polpacci'],
     });
   });
 });
