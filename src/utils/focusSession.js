@@ -58,7 +58,7 @@ export const nextSetWeight = (exercise, currentWeight) => (isBodyweight(exercise
 // Serie dell'ultima sessione per le chip "Ultima volta": [{ label, technique }]
 export const lastSessionSets = (lastSession) => {
   if (!lastSession || !Array.isArray(lastSession.sets)) return [];
-  return lastSession.sets.map((s) => {
+  return lastSession.sets.filter((s) => !s.is_warmup).map((s) => {
     const w = parseFloat(s.weight) || 0;
     return {
       label: w > 0 ? `${w}kg×${s.reps}` : `${s.reps} rip`,

@@ -63,6 +63,7 @@ export const summarizeSets = (sets) => {
 
   if (Array.isArray(sets)) {
     sets.forEach((set) => {
+      if (set.is_warmup) return; // riscaldamento: non allenante, escluso da record e volume (#66)
       const weight = parseFloat(set.weight) || 0;
       const reps = extractReps(set.reps);
       if (reps <= 0) return;

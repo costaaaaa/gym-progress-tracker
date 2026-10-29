@@ -14,6 +14,33 @@ describe('daysSince: i giorni fra istanti, non fra orologi di fusi diversi', () 
   });
 });
 
+describe('buildExerciseSeries: il riscaldamento non è allenante (#66)', () => {
+  it('esclude le serie is_warmup da volume, ripetizioni e 1RM della sessione', () => {
+    const series = buildExerciseSeries([{
+      id: 1,
+      date: '2026-10-18 02:00:00',
+      exercises: [{
+        exercise_id: 1,
+        name: 'Panca',
+        sets: [
+          { weight: 20, reps: 10, is_warmup: true },
+          { weight: 80, reps: 5 },
+        ],
+      }],
+    }]);
+    expect(series['1'].sessions[0]).toMatchObject({ totalReps: 5, volume: 400 });
+  });
+
+  it('una sessione con solo riscaldamento non entra nella serie', () => {
+    const series = buildExerciseSeries([{
+      id: 1,
+      date: '2026-10-18 02:00:00',
+      exercises: [{ exercise_id: 1, name: 'Panca', sets: [{ weight: 20, reps: 10, is_warmup: true }] }],
+    }]);
+    expect(series['1']).toBeUndefined();
+  });
+});
+
 describe('buildExerciseSeries: le sessioni portano fuso e istante', () => {
   it('ogni sessione ha time_zone e started_at dell\'allenamento, per il badge e per i conti', () => {
     const series = buildExerciseSeries([

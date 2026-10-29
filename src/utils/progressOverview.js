@@ -35,6 +35,7 @@ export const buildExerciseSeries = (records) => {
       let bestOneRM = 0, bestReps = 0, volume = 0, totalReps = 0;
       let bestSet = null, bestRepSet = null;
       (ex.sets || []).forEach((set) => {
+        if (set.is_warmup) return; // riscaldamento: non allenante, escluso dai progressi (#66)
         const weight = parseFloat(set.weight) || 0;
         const reps = extractReps(set.reps);
         if (reps <= 0) return;

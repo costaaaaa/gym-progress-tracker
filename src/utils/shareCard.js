@@ -60,6 +60,9 @@ export const STRINGS_IT = {
 
 const fill = (template, values) => template.replace(/\{(\w+)\}/g, (_, key) => values[key]);
 
+// Le serie di riscaldamento non sono allenanti: escluse da conteggi, volume e record (#66)
+const workingSets = (sets) => (sets || []).filter((set) => !set.is_warmup);
+
 // "2026-10-02 18:30:00" (orologio del luogo, non ISO: Safari e Hermes non lo leggono) diventa una Date con quei campi nel fuso locale.
 export const toDate = (value) => {
   if (value instanceof Date) return value;
@@ -98,7 +101,7 @@ export const muscleGroupsTitle = (exercises, label) => {
   const counts = {};
   (exercises || []).forEach((ex) => {
     if (!ex.muscle_group) return;
-    counts[ex.muscle_group] = (counts[ex.muscle_group] || 0) + (ex.sets?.length || 0);
+    counts[ex.muscle_group] = (counts[ex.muscle_group] || 0) + workingSets(ex.sets).length;
   });
   return Object.keys(counts)
     .sort((a, b) => counts[b] - counts[a])
@@ -111,7 +114,7 @@ export const muscleGroupsTitle = (exercises, label) => {
 // Il miglior volume di sessione non conta come record: sta in fondo alla lista solo se l'utente lo sceglie.
 const RECORD_TYPES = ['weight', 'oneRM', 'reps'];
 
-const playedSets = (sets) => sets
+const playedSets = (sets) => workingSets(sets)
   .map((set) => ({ weight: parseFloat(set.weight) || 0, reps: extractReps(set.reps) }))
   .filter((set) => set.reps > 0);
 
@@ -140,7 +143,7 @@ const exerciseRecord = (ex, historyEntry) => {
  * historyIndex = buildExerciseHistoryIndex degli allenamenti precedenti.
  */
 export const sessionRecords = (exercises, historyIndex) => (exercises || [])
-  .filter((ex) => ex.sets?.length)
+  .filter((ex) => workingSets(ex.sets).length)
   .map((ex) => exerciseRecord(ex, historyIndex?.[ex.exercise_id]))
   .filter(Boolean);
 
@@ -181,7 +184,7 @@ const MUSCLES_SHOWN = 4;
 const muscleShares = (exercises) => {
   const counts = new Map();
   exercises.forEach((ex) => {
-    if (ex.muscle_group) counts.set(ex.muscle_group, (counts.get(ex.muscle_group) || 0) + ex.sets.length);
+    if (ex.muscle_group) counts.set(ex.muscle_group, (counts.get(ex.muscle_group) || 0) + workingSets(ex.sets).length);
   });
   const total = [...counts.values()].reduce((a, b) => a + b, 0);
   return [...counts.entries()]
@@ -196,12 +199,12 @@ const muscleShares = (exercises) => {
  * ({ weight, reps } o null) e se è un record, per ogni esercizio fatto.
  */
 export const buildShareStats = ({ exercises, date, durationSec, title, records, streakWeeks }) => {
-  const done = (exercises || []).filter((ex) => ex.sets?.length);
+  const done = (exercises || []).filter((ex) => workingSets(ex.sets).length);
   let volume = 0;
   let sets = 0;
   done.forEach((ex) => {
     volume += summarizeSets(ex.sets).sessionVolume;
-    sets += ex.sets.length;
+    sets += workingSets(ex.sets).length;
   });
   const ordered = sortRecords(records || []);
   const hero = ordered[0] && ordered[0].type !== 'volume' ? ordered[0] : null;
@@ -215,7 +218,7 @@ export const buildShareStats = ({ exercises, date, durationSec, title, records, 
     otherRecords: hero ? realRecords.length - 1 : 0,
     recordList: hero ? ordered.slice(1) : [],
     exerciseList: done.map((ex) => ({
-      name: ex.name, sets: ex.sets.length, best: bestSet(ex.sets), isRecord: realRecords.some((r) => r.name === ex.name),
+      name: ex.name, sets: workingSets(ex.sets).length, best: bestSet(ex.sets), isRecord: realRecords.some((r) => r.name === ex.name),
     })),
     muscles: muscleShares(done),
     streakWeeks: streakWeeks || 0,
