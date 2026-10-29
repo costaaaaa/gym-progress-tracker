@@ -15,3 +15,16 @@ export const dayTime = (dateTime) => {
   const [h = 0, min = 0, s = 0] = dateTime.slice(11).split(':').filter(Boolean).map(Number);
   return dayNumber(dateTime) + (h * 3600 + min * 60 + s) / 86400;
 };
+
+const CLOCK_RE = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/;
+
+/** Una stringa di calendario senza fuso: 'YYYY-MM-DD' o 'YYYY-MM-DD[ T]HH:MM[:SS]'. */
+export const isClockString = (value) => typeof value === 'string' && CLOCK_RE.test(value);
+
+/** L'orologio di una stringa di calendario come Date in UTC: i campi UTC sono quelli scritti, nessun fuso e nessuna ora legale di mezzo. */
+export const clockDate = (value) => {
+  const m = CLOCK_RE.exec(String(value ?? ''));
+  if (!m) return new Date(NaN);
+  const [y, mo, d, h, mi, s] = m.slice(1).map((n) => Number(n || 0));
+  return new Date(Date.UTC(y, mo - 1, d, h, mi, s));
+};
