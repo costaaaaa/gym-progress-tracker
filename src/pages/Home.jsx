@@ -16,6 +16,7 @@ import { API_BASE_URL } from '../config';
 import { useTranslation, Trans } from 'react-i18next';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { formatDate as formatLocalDate, formatNumber } from '../i18n/format';
+import { totalSets } from '../utils/weeklySets';
 
 // Landing per gli ospiti: carica GSAP solo per chi non ha fatto il login.
 const Landing = lazy(() => import('./landing/Landing'));
@@ -58,8 +59,7 @@ const Home = () => {
   const [dashboardStats, setDashboardStats] = useState(null);
   // weekly_goal è l'obiettivo effettivo; plan_days_total resta per i server più vecchi
   const weeklyGoal = dashboardStats?.weekly_goal ?? dashboardStats?.plan_days_total;
-  // weekly_sets manca sui server più vecchi (sicurezza del rollout): conta 0
-  const weeklySets = Object.values(dashboardStats?.weekly_sets?.week || {}).reduce((sum, n) => sum + n, 0);
+  const weeklySets = totalSets(dashboardStats?.weekly_sets?.week);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {

@@ -7,9 +7,10 @@ import { MUSCLE_GROUPS } from '../utils/recoveryGroups';
 import { readyInDays } from '../utils/recoveryDay';
 import { STATUS_COLOR, readyLabel } from '../utils/recoveryStatus';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
+import { totalSets } from '../utils/weeklySets';
 
-// Variazione contro la settimana scorsa allo stesso punto: ▲ in verde, ▼ e = in grigio (come il
-// delta di ChartCard). Condivisa dall'intestazione (totali) e da ogni riga (per muscolo).
+// Variazione contro la settimana scorsa allo stesso punto: ▲ in verde, ▼ e = in grigio (qui più serie è
+// un buon segno; il delta di ChartCard invece resta sempre grigio). Usata dall'intestazione e da ogni riga.
 const Delta = ({ value }) => {
   if (value === 0) return <Typography component="span" sx={{ fontSize: 13, color: 'text.secondary' }}>=</Typography>;
   return (
@@ -119,8 +120,8 @@ const Muscles = () => {
   }
 
   const sets = data.weekly_sets || { week: {}, previous_to_date: {}, previous_total: 0 };
-  const weekTotal = MUSCLE_GROUPS.reduce((sum, m) => sum + (sets.week?.[m] || 0), 0);
-  const prevToDateTotal = MUSCLE_GROUPS.reduce((sum, m) => sum + (sets.previous_to_date?.[m] || 0), 0);
+  const weekTotal = totalSets(sets.week);
+  const prevToDateTotal = totalSets(sets.previous_to_date);
   const max = Math.max(1, ...MUSCLE_GROUPS.map((m) => sets.week?.[m] || 0));
 
   return (
