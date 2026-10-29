@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
 import { intlLocale } from '../../i18n/format';
 import { clockDay, shiftDay } from '../../utils/calendarDay';
-import { currentTimeZone, zoneClock } from '../../utils/workoutTime';
+import { zoneClock } from '../../utils/workoutTime';
 
 // Oltre questa età la bozza è una sessione dimenticata: il backend non usa più start_time da solo
 const DRAFT_STALE_MS = 4 * 60 * 60 * 1000;
@@ -13,15 +13,14 @@ const RETRO_MAX_DAYS = 7;
 const draftIsStale = (draft) => Date.now() - new Date(draft.startTime).getTime() > DRAFT_STALE_MS;
 
 // Bozza trovata all'apertura: riprendi, scarta, oppure (se vecchia) chiudila come già finita su un giorno scelto
-export default function ResumePromptPhase({ draftToResume, retroDateInput, onRetroDateChange, onResume, onFinished, onDiscard }) {
+export default function ResumePromptPhase({ draftToResume, timeZone, retroDateInput, onRetroDateChange, onResume, onFinished, onDiscard }) {
   const { t } = useTranslation();
   const { colors } = useFocusColors();
   const stale = draftIsStale(draftToResume);
   // Il giorno è quello del luogo dell'allenamento (lo stesso che ricava il server), non quello del browser
-  const zone = draftToResume.timeZone || currentTimeZone();
-  const today = clockDay(zoneClock(Date.now(), zone));
+  const today = clockDay(zoneClock(Date.now(), timeZone));
   const retroDateBounds = { min: shiftDay(today, -RETRO_MAX_DAYS), max: today };
-  const startDay = clockDay(zoneClock(draftToResume.startTime, zone));
+  const startDay = clockDay(zoneClock(draftToResume.startTime, timeZone));
   retroDateBounds.initial = startDay < retroDateBounds.min ? retroDateBounds.min : startDay;
   const chosenRetro = retroDateInput || retroDateBounds.initial;
   const retroDateValid = chosenRetro >= retroDateBounds.min && chosenRetro <= retroDateBounds.max;
@@ -46,7 +45,7 @@ export default function ResumePromptPhase({ draftToResume, retroDateInput, onRet
           {draftToResume.selectedDay?.name}
         </Typography>
         <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 3 }}>
-          {t('focus.draft_started', { date: new Date(draftToResume.startTime).toLocaleString(intlLocale(), { timeZone: zone }) })}
+          {t('focus.draft_started', { date: new Date(draftToResume.startTime).toLocaleString(intlLocale(), { timeZone }) })}
         </Typography>
 
         {stale && (

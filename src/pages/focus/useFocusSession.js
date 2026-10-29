@@ -82,6 +82,8 @@ export default function useFocusSession() {
   const [repsConfirmDialog, setRepsConfirmDialog] = useState(false);
   const [exerciseTransition, setExerciseTransition] = useState(true);
   const [draftToResume, setDraftToResume] = useState(null);
+  // Una bozza di una versione vecchia non ha il fuso: vale quello di adesso
+  const draftTimeZone = draftToResume ? draftToResume.timeZone || currentTimeZone() : null;
   // Orario dell'ultima serie registrata, o della ripresa dal riepilogo: fine reale di una sessione salvata
   // in ritardo. Mai prima dell'ultima pausa, così si può sottrarre pausedMs senza andare sotto l'inizio
   const [lastActivityAt, setLastActivityAt] = useState(null);
@@ -273,8 +275,7 @@ export default function useFocusSession() {
     setCurrentSetIndex(draftToResume.currentSetIndex);
     setWorkoutNotes(draftToResume.workoutNotes);
     setStartTime(new Date(draftToResume.startTime));
-    // Bozza di una versione vecchia, senza fuso: vale quello di adesso
-    setTimeZone(draftToResume.timeZone || currentTimeZone());
+    setTimeZone(draftTimeZone);
     setIdempotencyKey(draftIdempotencyKey(draftToResume));
     const lastActivity = draftToResume.lastActivityAt ? new Date(draftToResume.lastActivityAt) : null;
     setLastActivityAt(lastActivity);
@@ -607,16 +608,17 @@ export default function useFocusSession() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Inizio che si salva: con un giorno scelto è lo stesso orario del luogo, spostato su quel giorno
+  const savedStart = startTime && retroDate ? new Date(moveToZoneDay(startTime, retroDate, timeZone)) : startTime;
+
   // Sessione salvata in ritardo: inizio e fine spostati sul giorno scelto, stesso orario e stessa durata
   const retroPayload = () => {
-    const start = new Date(startTime);
-    const moved = new Date(moveToZoneDay(start, retroDate, timeZone));
-    const shift = moved.getTime() - start.getTime();
+    const shift = savedStart.getTime() - startTime.getTime();
     const end = netEnd();
     return {
       backdated: true,
       time_zone: timeZone,
-      start_time: moved.toISOString(),
+      start_time: savedStart.toISOString(),
       ended_at: end === null ? null : new Date(end + shift).toISOString(),
     };
   };
@@ -757,6 +759,7 @@ export default function useFocusSession() {
   };
   const resumePrompt = {
     draftToResume,
+    timeZone: draftTimeZone,
     retroDateInput,
     onRetroDateChange: setRetroDateInput,
     onResume: () => handleResumeDraft(),
@@ -816,7 +819,7 @@ export default function useFocusSession() {
     selectedDay,
     completedSets,
     historyIndex,
-    shareDate: startTime ? zoneClock(retroDate ? moveToZoneDay(startTime, retroDate, timeZone) : startTime, timeZone) : null,
+    shareDate: savedStart ? zoneClock(savedStart, timeZone) : null,
     elapsedSeconds: getElapsedSeconds(),
     elapsedTime: getElapsedTime(),
     workoutNotes,
