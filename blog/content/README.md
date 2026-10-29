@@ -34,7 +34,9 @@ commit in `gym-content`, poi build e deploy.
   a quel giorno, in ora italiana: più articoli possono entrare con una sola
   build e ognuno esce alla sua data.
 - Gli articoli pubblicati finiscono in `/blog/sitemap.xml` (`sitemap.php`),
-  segnalata in `public/robots.txt`.
+  segnalata in `public/robots.txt`. Finché non ne è uscito nessuno, l'indice
+  `/blog/` è `noindex` e non è in nessuna sitemap; dal primo articolo è
+  indicizzabile ed entra in `/blog/sitemap.xml`.
 - Un clone fresco di questo repo trova la cartella vuota: il blog risponde
   regolarmente ma mostra "Nessun articolo pubblicato al momento".
 

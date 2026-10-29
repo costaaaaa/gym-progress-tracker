@@ -59,6 +59,9 @@ blog_render_page(array(
     'description' => $description,
     'canonical' => BLOG_BASE_URL . '/',
     'bodyHtml' => $bodyHtml,
+    // Senza articoli usciti l'indice e' quasi vuoto: fuori da Google finche' non esce il primo
+    // (sitemap.php lo elenca solo da quel momento).
+    'noindex' => empty($articles),
     'jsonLd' => array(
         '@context' => 'https://schema.org',
         '@type' => 'Blog',
