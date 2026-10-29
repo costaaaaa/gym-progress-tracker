@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
 import { TABULAR } from '../../utils/fonts';
 import QuitDialog from './QuitDialog';
-import { detectPersonalRecords } from '../../utils/workoutMetrics';
+import { detectPersonalRecords, isWorkingSet } from '../../utils/workoutMetrics';
 import { buildShareStats, sessionRecords } from '../../utils/shareCard';
 import ShareCardDialog from '../../components/ShareCardDialog';
 import { track } from '../../utils/analytics';
@@ -36,7 +36,8 @@ export default function SummaryPhase({
     const key = XP_WITHHELD_KEYS[result.xp_session_reason];
     return key ? t(key, { pct: result.completion_pct ?? 0 }) : '';
   };
-  const totalSets = totalCompletedSets;
+  // Il riscaldamento non conta fra le serie del riepilogo (totalCompletedSets le conta tutte: serve a salvare e a uscire)
+  const totalSets = Object.values(completedSets).flat().filter(isWorkingSet).length;
   const exercisesCompleted = Object.keys(completedSets).length;
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text }}>
@@ -108,6 +109,15 @@ export default function SummaryPhase({
                       bgcolor: colors.bgElevated, borderRadius: '6px', px: 1.125, py: 0.625,
                       fontSize: 12, fontWeight: 600, color: colors.textSecondary,
                     }}>
+                      {set.is_warmup && (
+                        <Box component="span" sx={{
+                          fontSize: 10, fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase', mr: 0.75,
+                          color: 'warning.main', border: '1px solid', borderColor: 'warning.main',
+                          borderRadius: '6px', px: 0.5, lineHeight: 1.6,
+                        }}>
+                          {t('history.warmup_badge')}
+                        </Box>
+                      )}
                       {set.weight}kg×{set.reps}{set.intensity_technique ? ` · ${techniqueLabel(set.intensity_technique)}` : ''}
                     </Box>
                   ))}

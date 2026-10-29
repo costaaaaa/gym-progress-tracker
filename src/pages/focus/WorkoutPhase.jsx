@@ -12,19 +12,20 @@ import { TABULAR } from '../../utils/fonts';
 import ElapsedClock from './ElapsedClock';
 import QuitDialog from './QuitDialog';
 import { INTENSITY_TECHNIQUES } from '../../components/ExerciseDialog';
-import { MAX_WEIGHT, isValidWeight, isValidReps, planRepsForSet, lastSessionSets, setStatus } from '../../utils/focusSession';
+import { MAX_WEIGHT, isValidWeight, isValidReps, planRepsForSet, lastSessionSets, setStatus, setSlot } from '../../utils/focusSession';
 import { muscleLabel, techniqueLabel } from '../../i18n/labels';
 
 export default function WorkoutPhase({
   currentExercise, currentExerciseIndex, totalExercises, currentSetIndex, totalSetsForCurrentExercise,
   currentExerciseSets, currentSkippedSets, lastSession, exerciseTransition, clockStart, finishedClock,
   weightInput, onWeightChange, repsInput, onRepsChange, intensityTechniqueInput, onIntensityChange,
-  onConfirmSet, onSkipSet, onSkipExercise, canEditSession, onOpenPicker, onQuit,
+  onConfirmSet, onSkipSet, onSkipWarmup, onSkipExercise, canEditSession, onOpenPicker, onQuit,
   quitDialogOpen, onCloseQuitDialog, onConfirmQuit, totalCompletedSets,
   repsConfirmOpen, onCloseRepsConfirm, onConfirmReps
 }) {
   const { t } = useTranslation();
   const { colors } = useFocusColors();
+  const currentSlot = setSlot(currentExercise, currentSetIndex);
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text, display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${colors.border}` }}>
@@ -55,22 +56,25 @@ export default function WorkoutPhase({
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1.5, mb: 3 }}>
             {Array.from({ length: Number(totalSetsForCurrentExercise) || 0 }, (_, idx) => {
               const status = setStatus(idx, currentSetIndex, currentSkippedSets);
+              const slot = setSlot(currentExercise, idx);
+              // Il riscaldamento ha pallini più piccoli (R1, R2) davanti a quelli delle serie allenanti
+              const size = slot.isWarmup ? 32 : 40;
               return (
                 <Box key={idx} title={status === 'skipped' ? t('focus.set_skipped') : undefined} sx={{
-                  width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: size, height: size, alignSelf: 'center', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   border: `2px ${status === 'skipped' ? 'dashed' : 'solid'} ${status === 'done' ? colors.success : status === 'active' ? colors.text : colors.border}`,
                   bgcolor: status === 'done' ? colors.success : status === 'skipped' ? colors.bgElevated : 'transparent',
                   color: status === 'done' ? '#fff' : status === 'active' ? colors.text : colors.textSecondary,
-                  fontWeight: 700, fontSize: '0.875rem', transition: 'all 0.3s ease'
+                  fontWeight: 700, fontSize: slot.isWarmup ? '0.75rem' : '0.875rem', transition: 'all 0.3s ease'
                 }}>
-                  {status === 'done' ? <CheckIcon sx={{ fontSize: 18 }} /> : status === 'skipped' ? <RemoveIcon sx={{ fontSize: 18 }} /> : idx + 1}
+                  {status === 'done' ? <CheckIcon sx={{ fontSize: 18 }} /> : status === 'skipped' ? <RemoveIcon sx={{ fontSize: 18 }} /> : (slot.isWarmup ? t('focus.warmup_dot', { n: slot.number }) : slot.number)}
                 </Box>
               );
             })}
           </Box>
 
           <Typography variant="subtitle2" sx={{ textAlign: 'center', color: colors.textSecondary, mb: 3 }}>
-            {t('focus.set_of', { n: currentSetIndex + 1, total: totalSetsForCurrentExercise })}
+            {t(currentSlot.isWarmup ? 'focus.warmup_of' : 'focus.set_of', { n: currentSlot.number, total: currentSlot.total })}
           </Typography>
 
           {(() => {
@@ -86,10 +90,10 @@ export default function WorkoutPhase({
                   <Typography variant="caption" sx={{ color: colors.textSecondary }}>
                     {t('focus.last_time')}
                   </Typography>
-                  {/* Una chip per serie, con la tecnica sotto; evidenziata quella pari alla serie in corso */}
+                  {/* Una chip per serie, con la tecnica sotto; evidenziata quella pari alla serie allenante in corso (nessuna in riscaldamento) */}
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 0.5 }}>
                     {lastSets.map((set, idx) => {
-                      const isCurrent = idx === currentSetIndex;
+                      const isCurrent = idx === currentSlot.workingIndex;
                       return (
                         <Box key={idx} sx={{
                           px: 1, py: 0.5, borderRadius: '6px', bgcolor: colors.bgCard,
@@ -118,36 +122,39 @@ export default function WorkoutPhase({
               sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.text }, '&.Mui-focused fieldset': { borderColor: colors.text } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.text } }} />
             {/* Vuoto a ogni serie: la scheda in grigio è solo un suggerimento, va scritta */}
             <TextField label={t('record.reps')} value={repsInput} onChange={(e) => onRepsChange(e.target.value)}
-              placeholder={planRepsForSet(currentExercise.reps, currentSetIndex)} InputLabelProps={{ shrink: true }}
+              placeholder={currentSlot.isWarmup ? '' : planRepsForSet(currentExercise.reps, currentSlot.workingIndex)} InputLabelProps={{ shrink: true }}
               onFocus={(e) => e.target.select()}
               fullWidth inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
               sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.text }, '&.Mui-focused fieldset': { borderColor: colors.text } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.text } }} />
           </Box>
 
-          <FormControl fullWidth sx={{
-            mb: 3,
-            '& .MuiOutlinedInput-root': {
-              color: colors.text,
-              '& fieldset': { borderColor: colors.border, borderWidth: 2 },
-              '&:hover fieldset': { borderColor: colors.text },
-              '&.Mui-focused fieldset': { borderColor: colors.text },
-            },
-            '& .MuiInputLabel-root': { color: colors.textSecondary },
-            '& .MuiInputLabel-root.Mui-focused': { color: colors.text },
-            '& .MuiSvgIcon-root': { color: colors.textSecondary },
-          }}>
-            <InputLabel>{t('focus.technique')}</InputLabel>
-            <Select
-              value={intensityTechniqueInput}
-              label={t('focus.technique')}
-              onChange={(e) => onIntensityChange(e.target.value)}
-            >
-              <MenuItem value=""><em>{t('record.no_technique')}</em></MenuItem>
-              {INTENSITY_TECHNIQUES.filter(tech => tech !== 'Nessuna (Normale)').map((tech) => (
-                <MenuItem key={tech} value={tech}>{techniqueLabel(tech)}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          {/* Il riscaldamento non ha tecnica di intensità */}
+          {!currentSlot.isWarmup && (
+            <FormControl fullWidth sx={{
+              mb: 3,
+              '& .MuiOutlinedInput-root': {
+                color: colors.text,
+                '& fieldset': { borderColor: colors.border, borderWidth: 2 },
+                '&:hover fieldset': { borderColor: colors.text },
+                '&.Mui-focused fieldset': { borderColor: colors.text },
+              },
+              '& .MuiInputLabel-root': { color: colors.textSecondary },
+              '& .MuiInputLabel-root.Mui-focused': { color: colors.text },
+              '& .MuiSvgIcon-root': { color: colors.textSecondary },
+            }}>
+              <InputLabel>{t('focus.technique')}</InputLabel>
+              <Select
+                value={intensityTechniqueInput}
+                label={t('focus.technique')}
+                onChange={(e) => onIntensityChange(e.target.value)}
+              >
+                <MenuItem value=""><em>{t('record.no_technique')}</em></MenuItem>
+                {INTENSITY_TECHNIQUES.filter(tech => tech !== 'Nessuna (Normale)').map((tech) => (
+                  <MenuItem key={tech} value={tech}>{techniqueLabel(tech)}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
 
           <Button variant="contained" fullWidth size="large" startIcon={<CheckIcon />} onClick={onConfirmSet} disabled={!isValidWeight(weightInput) || !isValidReps(repsInput)}
             sx={{ py: 2.5, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.success, color: '#fff', borderRadius: '14px',
@@ -157,8 +164,15 @@ export default function WorkoutPhase({
           </Button>
 
           <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-            {/* Dalla seconda serie: saltare la prima equivale a saltare l'esercizio */}
-            {currentSetIndex > 0 && (
+            {/* In riscaldamento si salta tutto il riscaldamento; dalla seconda serie allenante si salta la serie
+                (saltare la prima equivale a saltare l'esercizio) */}
+            {currentSlot.isWarmup && (
+              <Button variant="text" fullWidth startIcon={<SkipNextIcon />} onClick={onSkipWarmup}
+                sx={{ py: 1.5, color: colors.textSecondary, '&:hover': { color: colors.text, bgcolor: 'rgba(255,255,255,0.05)' } }}>
+                {t('focus.skip_warmup')}
+              </Button>
+            )}
+            {currentSlot.workingIndex > 0 && (
               <Button variant="text" fullWidth startIcon={<SkipNextIcon />} onClick={onSkipSet}
                 sx={{ py: 1.5, color: colors.textSecondary, '&:hover': { color: colors.text, bgcolor: 'rgba(255,255,255,0.05)' } }}>
                 {t('focus.skip_set')}
@@ -195,7 +209,9 @@ export default function WorkoutPhase({
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   px: 2, py: 1.25, borderTop: idx > 0 ? `1px solid ${colors.border}` : 'none',
                 }}>
-                  <Typography variant="body2" sx={{ color: colors.textSecondary }}>{t('focus.set_n', { n: set.setNumber })}</Typography>
+                  <Typography variant="body2" sx={{ color: colors.textSecondary }}>
+                    {set.is_warmup ? t('history.warmup_badge') : t('focus.set_n', { n: set.setNumber })}
+                  </Typography>
                   <Box sx={{ textAlign: 'right' }}>
                     <Typography variant="body2" sx={{ color: colors.text, fontWeight: 600 }}>{set.weight} kg × {set.reps}</Typography>
                     {set.intensity_technique && (

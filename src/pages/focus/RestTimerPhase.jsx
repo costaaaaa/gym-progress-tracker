@@ -11,7 +11,7 @@ const formatTime = (seconds) => {
 };
 
 export default function RestTimerPhase({
-  timerDuration, timerRemaining, currentExerciseName, nextSetNumber, totalSetsForCurrentExercise, onSkip
+  timerDuration, timerRemaining, currentExerciseName, nextSet, onSkip
 }) {
   const { t } = useTranslation();
   const { colors } = useFocusColors();
@@ -32,7 +32,7 @@ export default function RestTimerPhase({
         </Box>
       </Box>
       <Typography variant="body1" sx={{ color: colors.textSecondary, mb: 1 }}>{currentExerciseName}</Typography>
-      <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 4 }}>{t('focus.next_set', { n: nextSetNumber, total: totalSetsForCurrentExercise })}</Typography>
+      <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 4 }}>{nextSet && t(nextSet.isWarmup ? 'focus.next_warmup' : 'focus.next_set', { n: nextSet.number, total: nextSet.total })}</Typography>
       <Button variant="outlined" size="large" startIcon={<SkipNextIcon />} onClick={onSkip}
         sx={{ color: colors.text, borderColor: colors.border, borderRadius: '12px', px: 4, py: 1.5, fontSize: '1rem',
           '&:hover': { borderColor: colors.text, bgcolor: colors.bgElevated } }}>
