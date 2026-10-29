@@ -213,11 +213,8 @@ export default function WorkoutPhase({
                   px: 2, py: 1.25, borderTop: idx > 0 ? `1px solid ${colors.border}` : 'none',
                 }}>
                   <Typography variant="body2" sx={{ color: colors.textSecondary }}>
-                    {(() => {
-                      // setNumber è la posizione (da 1) della serie: si mostra il numero dentro il suo tipo
-                      const slot = setSlot(currentExercise, set.setNumber - 1);
-                      return slotLabel(t, slot, 'name');
-                    })()}
+                    {/* setNumber è la posizione (da 1) della serie: si mostra il numero dentro il suo tipo */}
+                    {slotLabel(t, setSlot(currentExercise, set.setNumber - 1), 'name')}
                   </Typography>
                   <Box sx={{ textAlign: 'right' }}>
                     <Typography variant="body2" sx={{ color: colors.text, fontWeight: 600 }}>{set.weight} kg × {set.reps}</Typography>

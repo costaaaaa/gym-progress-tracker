@@ -51,9 +51,12 @@ export const isBodyweight = (exercise) => exercise?.equipment === 'corpo_libero'
 // Serie di riscaldamento della scheda: si sommano alle `sets` allenanti (2 risc. + 3 serie = 5 posizioni)
 const warmupCount = (exercise) => Math.max(0, parseInt(exercise?.warmup_sets, 10) || 0);
 
+// Serie allenanti della scheda
+const workingCount = (exercise) => Number(exercise?.sets) || 0;
+
 // Posizioni di un esercizio nella sessione: prima il riscaldamento, poi le serie allenanti.
 // currentSetIndex, le serie saltate e i pallini ragionano su queste posizioni.
-export const totalSlots = (exercise) => warmupCount(exercise) + (Number(exercise?.sets) || 0);
+export const totalSlots = (exercise) => warmupCount(exercise) + workingCount(exercise);
 
 // Che serie è la posizione `slotIndex`: riscaldamento o allenante, il suo numero (da 1) e il totale
 // del suo tipo. workingIndex è l'indice fra le sole allenanti (-1 in riscaldamento): serve a
@@ -61,19 +64,8 @@ export const totalSlots = (exercise) => warmupCount(exercise) + (Number(exercise
 export const setSlot = (exercise, slotIndex) => {
   const warmups = warmupCount(exercise);
   if (slotIndex < warmups) return { isWarmup: true, number: slotIndex + 1, total: warmups, workingIndex: -1 };
-  return { isWarmup: false, number: slotIndex - warmups + 1, total: Number(exercise?.sets) || 0, workingIndex: slotIndex - warmups };
+  return { isWarmup: false, number: slotIndex - warmups + 1, total: workingCount(exercise), workingIndex: slotIndex - warmups };
 };
-
-// Chiave i18n del testo di una posizione, per tipo: name (nome del pallino e della serie fatta),
-// of (sottotitolo "N di M"), next (prossima serie nel recupero), dot (testo dentro il pallino).
-// Restituisce solo la chiave (null se il testo è il solo numero): la traduzione resta a chi la chiama.
-const SLOT_KEYS = {
-  name: { warmup: 'focus.warmup_n', working: 'focus.set_n' },
-  of: { warmup: 'focus.warmup_of', working: 'focus.set_of' },
-  next: { warmup: 'focus.next_warmup', working: 'focus.next_set' },
-  dot: { warmup: 'focus.warmup_dot', working: null },
-};
-export const slotKey = (slot, kind) => SLOT_KEYS[kind][slot.isWarmup ? 'warmup' : 'working'];
 
 // Peso con cui parte il campo: l'ultimo usato; per i corpo libero, senza storico, 0
 export const initialWeight = (exercise, suggested = '') =>

@@ -111,7 +111,7 @@ export default function SummaryPhase({
                       bgcolor: colors.bgElevated, borderRadius: '6px', px: 1.125, py: 0.625,
                       fontSize: 12, fontWeight: 600, color: colors.textSecondary,
                     }}>
-                      {set.is_warmup && <WarmupBadge color={colors.warning} sx={{ mr: 0.75 }} />}
+                      {set.is_warmup && <WarmupBadge sx={{ mr: 0.75 }} />}
                       {set.weight}kg×{set.reps}{set.intensity_technique ? ` · ${techniqueLabel(set.intensity_technique)}` : ''}
                     </Box>
                   ))}

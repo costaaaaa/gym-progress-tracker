@@ -1,6 +1,6 @@
 // Focus Mode visto dall'utente: pulsanti e campi della pagina, con fetch e localStorage come confini.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, act, cleanup, within } from '@testing-library/react';
 import FocusWorkout from './FocusWorkout';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { json } from '../test/dom';
@@ -901,7 +901,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     click('Salta timer');
     doSet('100', '4');
     expect(screen.getByText('Riepilogo')).toBeTruthy();
-    expect(screen.getByText('Serie').previousSibling.textContent).toBe('2');
+    expect(within(screen.getByText('Serie').parentElement).getByText('2')).toBeTruthy();
     expect(screen.queryByText('Risc.')).toBeNull();
   });
 
@@ -915,7 +915,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     doSet('100', '4');
     expect(screen.getByText('Risc.')).toBeTruthy();
     expect(screen.getByText('Risc.').parentElement.textContent).toContain('20kg×10');
-    expect(screen.getByText('Serie').previousSibling.textContent).toBe('2');
+    expect(within(screen.getByText('Serie').parentElement).getByText('2')).toBeTruthy();
   });
 
   it('nell\'elenco "Serie completate" la prima serie allenante è "Serie 1", i riscaldamenti "Riscaldamento 1" e "Riscaldamento 2"', async () => {
@@ -983,7 +983,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     click('Salta timer');
     doSet('30', '12');
     expect(screen.getByText('Riepilogo')).toBeTruthy();
-    expect(screen.getByText('Esercizi').previousSibling.textContent).toBe('1');
+    expect(within(screen.getByText('Esercizi').parentElement).getByText('1')).toBeTruthy();
   });
 
   it('ogni pallino ha un testo accessibile con numero e stato', async () => {

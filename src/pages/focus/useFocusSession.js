@@ -395,6 +395,14 @@ export default function useFocusSession() {
   // ================================================
   // CONFERMA SERIE
   // ================================================
+  // Porta la sessione alla posizione `index` dell'esercizio corrente: peso dato, ripetizioni vuote, tecnica della scheda
+  const goToSlot = (index, weight) => {
+    setCurrentSetIndex(index);
+    setWeightInput(weight);
+    setRepsInput('');
+    setIntensityTechniqueInput(currentExercise.intensity_technique || '');
+  };
+
   const handleConfirmSet = () => {
     if (!isValidWeight(weightInput) || !isValidReps(repsInput)) return;
     if (repsNeedConfirm(repsInput, currentExercise.reps)) {
@@ -432,10 +440,7 @@ export default function useFocusSession() {
       goToNextExercise();
     } else {
       // Prossima serie
-      setCurrentSetIndex(nextSetIndex);
-      setWeightInput(slotWeight(currentExercise, nextSetIndex, { suggested: getSuggestedWeight(currentExercise), current: weightInput }));
-      setRepsInput('');
-      setIntensityTechniqueInput(currentExercise.intensity_technique || '');
+      goToSlot(nextSetIndex, slotWeight(currentExercise, nextSetIndex, { suggested: getSuggestedWeight(currentExercise), current: weightInput }));
 
       // Avvia timer di recupero se abilitato
       if (timerEnabled && currentExercise.rest > 0) {
@@ -484,9 +489,7 @@ export default function useFocusSession() {
     if (nextSetIndex >= totalSlotsForCurrentExercise) {
       goToNextExercise();
     } else {
-      setCurrentSetIndex(nextSetIndex);
-      setRepsInput('');
-      setIntensityTechniqueInput(currentExercise.intensity_technique || '');
+      goToSlot(nextSetIndex, weightInput);
     }
   };
 
@@ -496,10 +499,7 @@ export default function useFocusSession() {
     hapticFeedback.light();
     const { skipped, nextIndex } = skipWarmup(currentExercise, currentSetIndex);
     setSkippedSets(prev => ({ ...prev, [currentExercise.id]: [...(prev[currentExercise.id] || []), ...skipped] }));
-    setCurrentSetIndex(nextIndex);
-    setWeightInput(slotWeight(currentExercise, nextIndex, { suggested: getSuggestedWeight(currentExercise) }));
-    setRepsInput('');
-    setIntensityTechniqueInput(currentExercise.intensity_technique || '');
+    goToSlot(nextIndex, slotWeight(currentExercise, nextIndex, { suggested: getSuggestedWeight(currentExercise) }));
   };
 
   // ================================================
@@ -513,7 +513,7 @@ export default function useFocusSession() {
       return;
     }
     if (pickerMode === 'swap' && !canSwap) {
-      setSnackbar({ open: true, message: t('focus.swap_only_first_set'), severity: 'info' });
+      setSnackbar({ open: true, message: t('focus.swap_only_before_sets'), severity: 'info' });
       return;
     }
     setPicker({ mode: pickerMode, from });

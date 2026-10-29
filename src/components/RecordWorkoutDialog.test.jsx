@@ -77,10 +77,11 @@ describe('ripetizioni suggerite dalla scheda', () => {
 describe('tecnica di una riga che smette di essere riscaldamento', () => {
   it('prende la tecnica della scheda, come le serie allenanti originali', () => {
     open();
-    const techniques = () => screen.getAllByRole('combobox').slice(1).map((s) => s.textContent.replace('\u200b', ''));
-    expect(techniques()).toEqual(['', '', 'Rest pause', 'Rest pause']);
+    // combobox: giorno, poi la tecnica di ogni riga; true se la riga mostra la tecnica della scheda
+    const hasTechnique = () => screen.getAllByRole('combobox').slice(1).map((s) => /Rest pause/.test(s.textContent));
+    expect(hasTechnique()).toEqual([false, false, true, true]);
     fireEvent.click(toggles()[0]);
-    expect(techniques()).toEqual(['Rest pause', '', 'Rest pause', 'Rest pause']);
+    expect(hasTechnique()).toEqual([true, false, true, true]);
   });
 });
 
