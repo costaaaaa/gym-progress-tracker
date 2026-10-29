@@ -53,7 +53,6 @@
   "home.weekly.missing_one": "{{count}} session to go to complete your plan.",
   "home.weekly.missing_other": "{{count}} sessions to go to complete your plan.",
   "home.weekly.volume": "Total volume",
-  "home.weekly.reps": "Total reps",
   "home.weekly.sets": "Training sets",
   "home.recovery_link": "Sets and recovery by muscle ›",
   "home.last.title": "Last workout",
