@@ -23,7 +23,7 @@ const XP_WITHHELD_KEYS = {
 };
 
 export default function SummaryPhase({
-  activePlan, selectedDay, completedSets, historyIndex, startTime, elapsedSeconds, elapsedTime, totalCompletedSets,
+  activePlan, selectedDay, completedSets, historyIndex, shareDate, elapsedSeconds, elapsedTime, totalCompletedSets,
   workoutNotes, onNotesChange, saving, savedResult, onSave, onQuit, onGoHistory, onGoHome,
   canEditSession, onAddExercise, shareStats, onOpenShare, onCloseShare,
   quitDialogOpen, onCloseQuitDialog, onConfirmQuit
@@ -164,7 +164,7 @@ export default function SummaryPhase({
               const handleShare = () => {
                 onOpenShare(buildShareStats({
                   exercises: cardExercises,
-                  date: startTime || new Date(),
+                  date: shareDate || new Date(),
                   durationSec: elapsedSeconds,
                   title: `${activePlan?.name || ''}${selectedDay?.name ? ' · ' + selectedDay.name : ''}`,
                   records: sessionRecords(cardExercises, historyIndex),

@@ -14,6 +14,13 @@ vi.mock('../utils/celebrate', () => ({
   celebrate: () => {}, celebratePR: () => {}, celebrateStreak: () => {}, celebrateLevelUp: () => {},
 }));
 vi.mock('../utils/analytics', () => ({ track: mockTrack }));
+vi.mock('../components/ShareCardDialog', () => ({
+  default: ({ stats }) => (stats ? (
+    <div data-testid="share-card">
+      {`${stats.date.getFullYear()}-${stats.date.getMonth() + 1}-${stats.date.getDate()} ${stats.date.getHours()}:${stats.date.getMinutes()}`}
+    </div>
+  ) : null),
+}));
 vi.mock('../utils/workoutTime', async (importOriginal) => ({ ...(await importOriginal()), currentTimeZone: vi.fn() }));
 
 const DRAFT_KEY = 'gym_focus_workout_draft';
@@ -298,6 +305,23 @@ describe('bozza di un altro fuso ripresa a Roma: il giorno è quello del luogo d
   it('l\'inizio mostrato è l\'orologio di New York', async () => {
     await openNyDraft();
     expect(screen.getByText(/Iniziato il .*22:30/)).toBeTruthy();
+  });
+
+  it('la card di condivisione dal riepilogo mostra l\'orologio di New York (17, 22:30), non quello di Roma', async () => {
+    await openNyDraft();
+    await finishAndSave();
+    click('Condividi');
+
+    expect(screen.getByTestId('share-card').textContent).toBe('2026-10-17 22:30');
+  });
+
+  it('con un altro giorno scelto la card mostra il giorno che si salva', async () => {
+    await openNyDraft();
+    fireEvent.change(screen.getByLabelText('Giorno dell\'allenamento'), { target: { value: '2026-10-18' } });
+    await finishAndSave();
+    click('Condividi');
+
+    expect(screen.getByTestId('share-card').textContent).toBe('2026-10-18 22:30');
   });
 
   it('una bozza senza fuso usa quello attuale del dispositivo, come prima', async () => {

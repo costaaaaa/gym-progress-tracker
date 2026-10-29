@@ -13,7 +13,7 @@ import {
 } from '../../utils/focusSession';
 import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../../utils/celebrate';
 import { track } from '../../utils/analytics';
-import { currentTimeZone, moveToZoneDay } from '../../utils/workoutTime';
+import { currentTimeZone, moveToZoneDay, zoneClock } from '../../utils/workoutTime';
 import i18n from '../../i18n';
 
 const DRAFT_STORAGE_KEY = 'gym_focus_workout_draft';
@@ -816,7 +816,7 @@ export default function useFocusSession() {
     selectedDay,
     completedSets,
     historyIndex,
-    startTime,
+    shareDate: startTime ? zoneClock(retroDate ? moveToZoneDay(startTime, retroDate, timeZone) : startTime, timeZone) : null,
     elapsedSeconds: getElapsedSeconds(),
     elapsedTime: getElapsedTime(),
     workoutNotes,
