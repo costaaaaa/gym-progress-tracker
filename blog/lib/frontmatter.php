@@ -109,9 +109,14 @@ function blog_list_articles($dir)
         }
 
         $meta = $parsed[0];
-        // Lo slug del file e' la fonte di verita' per l'URL: il campo "slug" del
+        // Il nome del file e' la fonte di verita' per l'URL: il campo "slug" del
         // front matter e' solo documentazione, non deve poter divergere.
-        $meta['slug'] = basename($file, '.md');
+        $meta['slug'] = blog_slug_from_file($file);
+
+        // Due file con lo stesso slug (es. 001-x.md e 002-x.md): nessuno dei due esce
+        if (blog_find_article_file($dir, $meta['slug']) !== $file) {
+            continue;
+        }
 
         if (!isset($meta['title']) || $meta['title'] === '') {
             continue; // file incompleto: non finisce nel listing
@@ -127,6 +132,53 @@ function blog_list_articles($dir)
     usort($articles, 'blog_compare_by_date_desc');
 
     return $articles;
+}
+
+/**
+ * Slug dell'URL dal nome del file. Il numero d'ordine iniziale ("001-") serve solo a tenere
+ * i file in ordine nella cartella e non entra nell'URL: 001-volume-allenamento.md e
+ * volume-allenamento.md vanno entrambi su /blog/volume-allenamento.
+ *
+ * @param string $file Percorso del file .md.
+ * @return string
+ */
+function blog_slug_from_file($file)
+{
+    return preg_replace('/^\d{3}-/', '', basename($file, '.md'));
+}
+
+/**
+ * File dell'articolo con quello slug, con o senza numero d'ordine.
+ * Null se non esiste o se piu' file danno lo stesso slug: e' un errore nei contenuti,
+ * e servirne uno a caso farebbe cambiare pagina a un URL gia' indicizzato.
+ *
+ * @param string $dir  Cartella dei contenuti.
+ * @param string $slug Gia' validato: solo [a-z0-9-], nessun carattere speciale per glob().
+ * @return string|null
+ */
+function blog_find_article_file($dir, $slug)
+{
+    $candidates = glob($dir . '/[0-9][0-9][0-9]-' . $slug . '.md');
+    if ($candidates === false) {
+        $candidates = array();
+    }
+    if (is_file($dir . '/' . $slug . '.md')) {
+        $candidates[] = $dir . '/' . $slug . '.md';
+    }
+
+    // /blog/001-x non deve servire 001-x.md: il suo URL e' /blog/x
+    $found = array();
+    foreach ($candidates as $file) {
+        if (blog_slug_from_file($file) === $slug) {
+            $found[] = $file;
+        }
+    }
+
+    if (count($found) > 1) {
+        error_log('blog: piu\' file per lo slug ' . $slug . ': ' . implode(', ', $found));
+    }
+
+    return count($found) === 1 ? $found[0] : null;
 }
 
 /**
