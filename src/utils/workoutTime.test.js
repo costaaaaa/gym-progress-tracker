@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatClockTime, workoutInstant, offsetLabel, zoneCity, workoutZoneBadge, isoClock } from './workoutTime';
+import { formatClockTime, differentZone, workoutInstant, offsetLabel, zoneCity, workoutZoneBadge, isoClock } from './workoutTime';
 
 describe('formatClockTime', () => {
   it('mostra l\'ora scritta, senza convertirla nel fuso del browser', () => {
@@ -46,6 +46,19 @@ describe('zoneCity', () => {
     expect(zoneCity('America/Argentina/Buenos_Aires')).toBe('Buenos Aires');
     expect(zoneCity('Europe/Rome')).toBe('Rome');
     expect(zoneCity('UTC')).toBe('UTC');
+  });
+});
+
+describe('differentZone', () => {
+  it('true solo con due fusi riconosciuti e diversi', () => {
+    expect(differentZone('America/New_York', 'Europe/Rome')).toBe(true);
+    expect(differentZone('Europe/Rome', 'Europe/Rome')).toBe(false);
+    expect(differentZone('Europe/Kiev', 'Europe/Kyiv')).toBe(false);
+  });
+  it('fuso mancante o sconosciuto: false', () => {
+    expect(differentZone(undefined, 'Europe/Rome')).toBe(false);
+    expect(differentZone('America/New_York', null)).toBe(false);
+    expect(differentZone('Mondo/Nuovo', 'Europe/Rome')).toBe(false);
   });
 });
 

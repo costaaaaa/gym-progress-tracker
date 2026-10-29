@@ -423,6 +423,7 @@
   "history.date.error": "Errore durante l'aggiornamento della data",
   "history.date.error_invalid": "Formato data non valido",
   "history.date.error_future": "La data dell'allenamento non può essere nel futuro",
+  "history.date.error_future_zone": "A {{city}} non è ancora il {{date}}: scegli un giorno precedente",
   "history.date.error_target_too_old": "Puoi spostare un allenamento al massimo a 30 giorni fa",
   "history.date.error_not_found": "Allenamento non trovato",
   "history.date.health_note": "Nell'app Salute del telefono la data si aggiorna alla prossima apertura di LiftIndex.",

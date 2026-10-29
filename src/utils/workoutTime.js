@@ -45,13 +45,17 @@ const canonicalZone = (zone) => {
   }
 };
 
-/** Testo del badge "New York · UTC−4", solo se l'allenamento è stato fatto in un fuso diverso da `browserZone`. */
-export const workoutZoneBadge = (workout, browserZone = currentTimeZone()) => {
-  const zone = workout.time_zone;
-  const offset = offsetLabel(workout.started_at);
-  if (!zone || !offset || !browserZone) return null;
+/** `zone` è un fuso diverso da quello del dispositivo; false se uno dei due manca o non si riconosce. */
+export const differentZone = (zone, browserZone = currentTimeZone()) => {
+  if (!zone || !browserZone) return false;
   const here = canonicalZone(browserZone);
   const there = canonicalZone(zone);
-  if (!here || !there || here === there) return null;
-  return `${zoneCity(zone)} · ${offset}`;
+  return Boolean(here && there && here !== there);
+};
+
+/** Testo del badge "New York · UTC−4", solo se l'allenamento è stato fatto in un fuso diverso da `browserZone`. */
+export const workoutZoneBadge = (workout, browserZone = currentTimeZone()) => {
+  const offset = offsetLabel(workout.started_at);
+  if (!offset || !differentZone(workout.time_zone, browserZone)) return null;
+  return `${zoneCity(workout.time_zone)} · ${offset}`;
 };

@@ -15,7 +15,7 @@ import { format, subDays } from 'date-fns';
 import { API_BASE_URL } from '../config';
 import { formatDate } from '../i18n/format';
 import { isClockString, clockDay } from '../utils/calendarDay';
-import { isoClock } from '../utils/workoutTime';
+import { isoClock, differentZone, zoneCity } from '../utils/workoutTime';
 import { achievementCatalog } from '../utils/gamificationLevels';
 
 const achievementLabel = (key) => achievementCatalog.find(a => a.key === key)?.label ?? key;
@@ -108,6 +108,12 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
+        // Il giorno scelto è già arrivato qui ma non nel luogo dell'allenamento: il server lo conta nel suo fuso
+        if (data.code === 'future_date' && differentZone(workout.time_zone)) {
+          throw new Error(t('history.date.error_future_zone', {
+            city: zoneCity(workout.time_zone), date: formatDate(newDate, { day: 'numeric', month: 'long' }),
+          }));
+        }
         throw new Error(t(ERROR_KEYS[data.code] ?? 'history.date.error'));
       }
 
