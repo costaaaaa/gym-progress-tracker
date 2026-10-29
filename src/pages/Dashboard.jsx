@@ -2,6 +2,9 @@ import { Suspense, lazy } from 'react';
 import { Box, Tabs, Tab, CircularProgress, Typography } from '@mui/material';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import StraightenIcon from '@mui/icons-material/Straighten';
+import StackedBarChartIcon from '@mui/icons-material/StackedBarChart';
+import PrototypeSwitcher, { useVariant } from '../components/PrototypeSwitcher';
+import VolumeView, { VARIANT_NAMES } from './prototypeVolume/VolumeVariants';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { useTabbedPage } from '../hooks/useTabbedPage';
 import { useTranslation } from 'react-i18next';
@@ -11,12 +14,13 @@ import { INK_TABS } from '../utils/inkTabs';
 const Progress = lazy(() => import('./Progress'));
 const BodyStats = lazy(() => import('./BodyStats'));
 
-const TABS = ['progress', 'body'];
+const TABS = ['progress', 'volume', 'body'];
 
 const Dashboard = () => {
   const { t } = useTranslation();
   usePageMeta(t('dashboard.meta.title'), t('dashboard.meta.description'));
   const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS);
+  const variant = useVariant(['A', 'B', 'C']);
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -33,6 +37,12 @@ const Dashboard = () => {
             iconPosition="start"
             label={t('dashboard.tab.progress')}
             id="dashboard-tab-0"
+          />
+          <Tab
+            icon={<StackedBarChartIcon fontSize="small" />}
+            iconPosition="start"
+            label="Volume"
+            id="dashboard-tab-volume"
           />
           <Tab
             icon={<StraightenIcon fontSize="small" />}
@@ -52,6 +62,12 @@ const Dashboard = () => {
           {visitedTabs.progress && (
             <Box sx={{ display: currentTab === 'progress' ? 'block' : 'none' }}>
               <Progress isEmbedded={true} />
+            </Box>
+          )}
+          {visitedTabs.volume && (
+            <Box sx={{ display: currentTab === 'volume' ? 'block' : 'none' }}>
+              <VolumeView variant={variant} />
+              <PrototypeSwitcher variants={['A', 'B', 'C']} names={VARIANT_NAMES} />
             </Box>
           )}
           {visitedTabs.body && (

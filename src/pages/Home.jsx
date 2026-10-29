@@ -15,6 +15,7 @@ import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
 import { API_BASE_URL } from '../config';
 import { useTranslation, Trans } from 'react-i18next';
 import { usePageMeta } from '../hooks/usePageMeta';
+import PrototypeSwitcher, { useVariant } from '../components/PrototypeSwitcher';
 import { formatDate as formatLocalDate, formatNumber } from '../i18n/format';
 
 // Landing per gli ospiti: carica GSAP solo per chi non ha fatto il login.
@@ -56,6 +57,8 @@ const Home = () => {
   const [lastWorkout, setLastWorkout] = useState(null);
   const [activePlan, setActivePlan] = useState(null);
   const [dashboardStats, setDashboardStats] = useState(null);
+  const homeVariant = useVariant(['A', 'B']);
+  const weeklySets = Object.values(dashboardStats?.weekly_sets?.week || {}).reduce((s, n) => s + n, 0);
   // weekly_goal è l'obiettivo effettivo; plan_days_total resta per i server più vecchi
   const weeklyGoal = dashboardStats?.weekly_goal ?? dashboardStats?.plan_days_total;
   const [loading, setLoading] = useState(false);
@@ -191,6 +194,7 @@ const Home = () => {
                     : t('home.weekly.missing', { count: Math.max(0, (weeklyGoal || 0) - (dashboardStats?.weekly_workouts || 0)) })}
                 </Typography>
 
+                {/* PROTOTIPO volume: A = kg + serie (apre la vista Volume), B = kg · serie · ripetizioni */}
                 <Box sx={{ display: 'flex', gap: 1.5 }}>
                   <Box sx={{ flex: 1 }}>
                     <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
@@ -199,13 +203,23 @@ const Home = () => {
                     </Typography>
                     <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.volume')}</Typography>
                   </Box>
-                  <Box sx={{ flex: 1 }}>
+                  <CardActionArea component={RouterLink} to="/dashboard?tab=volume" sx={{ flex: 1, borderRadius: 1, mx: -1, px: 1, width: 'auto' }}>
                     <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
-                      {formatNumber(dashboardStats?.weekly_volume?.total_reps)}
+                      {formatNumber(weeklySets)}
+                      <Box component="span" sx={{ fontSize: 15, fontWeight: 600, ml: 0.5, color: 'primary.main' }}>›</Box>
                     </Typography>
-                    <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.reps')}</Typography>
-                  </Box>
+                    <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Serie allenanti</Typography>
+                  </CardActionArea>
+                  {homeVariant === 'B' && (
+                    <Box sx={{ flex: 1 }}>
+                      <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
+                        {formatNumber(dashboardStats?.weekly_volume?.total_reps)}
+                      </Typography>
+                      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.reps')}</Typography>
+                    </Box>
+                  )}
                 </Box>
+                <PrototypeSwitcher variants={['A', 'B']} names={{ A: 'kg + serie', B: 'kg · serie · reps' }} />
               </Card>
             </Grid>
 
