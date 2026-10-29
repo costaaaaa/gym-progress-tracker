@@ -116,6 +116,8 @@ export default function useFocusSession() {
         idempotencyKey,
         lastActivityAt,
         pausedMs,
+        // Segno delle posizioni con riscaldamento: senza, currentSetIndex conta le sole serie allenanti
+        slots: true,
         // Fine mostrata nel riepilogo, o fissa se già finita: la ripresa riparte da qui
         summaryEndAt: phase === 'summary' || retroDate ? endTime : null,
         phase: phase === 'rest_timer' ? 'workout' : phase, // Se crasha durante il timer, riprendi dall'esercizio
@@ -265,8 +267,13 @@ export default function useFocusSession() {
   const handleResumeDraft = (finishedOn = null) => {
     if (!draftToResume) return;
 
+    // Una bozza senza il segno è nata senza posizioni di riscaldamento: prosegue così
+    const day = draftToResume.slots
+      ? draftToResume.selectedDay
+      : { ...draftToResume.selectedDay, exercises: draftToResume.selectedDay.exercises.map((e) => ({ ...e, warmup_sets: 0 })) };
+
     setActivePlan(draftToResume.activePlan);
-    setSelectedDay(draftToResume.selectedDay);
+    setSelectedDay(day);
     setSelectedDayId(draftToResume.selectedDayId);
     setCompletedSets(draftToResume.completedSets);
     setSkippedExercises(draftToResume.skippedExercises);
@@ -295,7 +302,7 @@ export default function useFocusSession() {
     setPausedMs(paused);
 
     // Ripristina input correnti
-    const currentEx = draftToResume.selectedDay.exercises[draftToResume.currentExerciseIndex];
+    const currentEx = day.exercises[draftToResume.currentExerciseIndex];
     setRepsInput('');
     setIntensityTechniqueInput(currentEx?.intensity_technique || '');
 
@@ -369,6 +376,8 @@ export default function useFocusSession() {
   // Posizioni dell'esercizio: prima il riscaldamento della scheda, poi le serie allenanti
   const totalSlotsForCurrentExercise = currentExercise ? totalSlots(currentExercise) : 0;
   const currentExerciseSets = completedSets[currentExercise?.id] || [];
+  // Il cambio esercizio vale finché non è stata fatta nessuna serie (riscaldamento compreso)
+  const canSwap = currentExerciseSets.length === 0;
   const currentSkippedSets = skippedSets[currentExercise?.id] || [];
   const canEditSession = features.includes(FEATURE_SESSION_EDIT);
 
@@ -502,7 +511,7 @@ export default function useFocusSession() {
       setPremiumDialog(true);
       return;
     }
-    if (pickerMode === 'swap' && currentExerciseSets.length > 0) {
+    if (pickerMode === 'swap' && !canSwap) {
       setSnackbar({ open: true, message: t('focus.swap_only_first_set'), severity: 'info' });
       return;
     }
@@ -800,6 +809,7 @@ export default function useFocusSession() {
     currentSetIndex,
     totalSlotsForCurrentExercise,
     currentExerciseSets,
+    canSwap,
     currentSkippedSets,
     lastSession: getLastSession(currentExercise),
     exerciseTransition,

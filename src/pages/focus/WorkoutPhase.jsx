@@ -12,12 +12,12 @@ import { TABULAR } from '../../utils/fonts';
 import ElapsedClock from './ElapsedClock';
 import QuitDialog from './QuitDialog';
 import { INTENSITY_TECHNIQUES } from '../../components/ExerciseDialog';
-import { MAX_WEIGHT, isValidWeight, isValidReps, planRepsForSet, lastSessionSets, setStatus, setSlot } from '../../utils/focusSession';
+import { MAX_WEIGHT, isValidWeight, isValidReps, planRepsForSet, lastSessionSets, setStatus, setSlot, slotKey } from '../../utils/focusSession';
 import { muscleLabel, techniqueLabel } from '../../i18n/labels';
 
 export default function WorkoutPhase({
   currentExercise, currentExerciseIndex, totalExercises, currentSetIndex, totalSlotsForCurrentExercise,
-  currentExerciseSets, currentSkippedSets, lastSession, exerciseTransition, clockStart, finishedClock,
+  currentExerciseSets, canSwap, currentSkippedSets, lastSession, exerciseTransition, clockStart, finishedClock,
   weightInput, onWeightChange, repsInput, onRepsChange, intensityTechniqueInput, onIntensityChange,
   onConfirmSet, onSkipSet, onSkipWarmup, onSkipExercise, canEditSession, onOpenPicker, onQuit,
   quitDialogOpen, onCloseQuitDialog, onConfirmQuit, totalCompletedSets,
@@ -60,7 +60,7 @@ export default function WorkoutPhase({
               const slot = setSlot(currentExercise, idx);
               // Il riscaldamento ha pallini più piccoli (R1, R2) davanti a quelli delle serie allenanti
               const size = slot.isWarmup ? 32 : 40;
-              const name = t(slot.isWarmup ? 'focus.warmup_n' : 'focus.set_n', { n: slot.number });
+              const name = t(slotKey(slot, 'name'), { n: slot.number });
               return (
                 <Box key={idx} role="img" aria-label={t('focus.dot_label', { name, status: t(`focus.dot_${status}`) })}
                   title={status === 'skipped' ? t('focus.set_skipped') : undefined} sx={{
@@ -70,14 +70,14 @@ export default function WorkoutPhase({
                   color: status === 'done' ? '#fff' : status === 'active' ? colors.text : colors.textSecondary,
                   fontWeight: 700, fontSize: slot.isWarmup ? '0.75rem' : '0.875rem', transition: 'all 0.3s ease'
                 }}>
-                  {status === 'done' ? <CheckIcon sx={{ fontSize: 18 }} /> : status === 'skipped' ? <RemoveIcon sx={{ fontSize: 18 }} /> : (slot.isWarmup ? t('focus.warmup_dot', { n: slot.number }) : slot.number)}
+                  {status === 'done' ? <CheckIcon sx={{ fontSize: 18 }} /> : status === 'skipped' ? <RemoveIcon sx={{ fontSize: 18 }} /> : t(slotKey(slot, 'dot'), { n: slot.number })}
                 </Box>
               );
             })}
           </Box>
 
           <Typography variant="subtitle2" sx={{ textAlign: 'center', color: colors.textSecondary, mb: 3 }}>
-            {t(currentSlot.isWarmup ? 'focus.warmup_of' : 'focus.set_of', { n: currentSlot.number, total: currentSlot.total })}
+            {t(slotKey(currentSlot, 'of'), { n: currentSlot.number, total: currentSlot.total })}
           </Typography>
 
           {(() => {
@@ -195,7 +195,7 @@ export default function WorkoutPhase({
               <Button key={pickerMode} variant="outlined" fullWidth startIcon={icon}
                 endIcon={canEditSession ? null : <LockIcon sx={{ fontSize: '16px !important' }} />}
                 onClick={() => onOpenPicker(pickerMode)}
-                sx={{ py: 1.25, opacity: pickerMode === 'swap' && currentExerciseSets.length > 0 ? 0.45 : 1, color: colors.textSecondary, borderColor: colors.border, borderRadius: '12px',
+                sx={{ py: 1.25, opacity: pickerMode === 'swap' && !canSwap ? 0.45 : 1, color: colors.textSecondary, borderColor: colors.border, borderRadius: '12px',
                   '&:hover': { borderColor: colors.text, color: colors.text } }}>
                 {label}
               </Button>
@@ -215,8 +215,8 @@ export default function WorkoutPhase({
                   <Typography variant="body2" sx={{ color: colors.textSecondary }}>
                     {(() => {
                       // setNumber è la posizione (da 1) della serie: si mostra il numero dentro il suo tipo
-                      const { isWarmup, number } = setSlot(currentExercise, set.setNumber - 1);
-                      return t(isWarmup ? 'focus.warmup_n' : 'focus.set_n', { n: number });
+                      const slot = setSlot(currentExercise, set.setNumber - 1);
+                      return t(slotKey(slot, 'name'), { n: slot.number });
                     })()}
                   </Typography>
                   <Box sx={{ textAlign: 'right' }}>

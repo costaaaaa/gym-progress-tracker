@@ -29,6 +29,8 @@ const BROWSER_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 const bench = { id: 9, exercise_id: 3, exercise_name: 'Panca piana', sets: 2, reps: '8-10', rest: 90, muscle_group: 'petto' };
 const fly = { id: 10, exercise_id: 4, exercise_name: 'Croci', sets: 2, reps: '12', rest: 60, muscle_group: 'petto' };
+// Catalogo del picker: una sola voce condivisa, perché l'elenco resta in cache fra i test del file
+const CATALOG = [{ id: 20, name: 'Croci ai cavi', muscle_group: 'petto', equipment: 'cavi' }];
 const pushDay = { id: 1, name: 'Push', exercises: [bench] };
 const fullDay = { id: 2, name: 'Push completo', exercises: [bench, fly] };
 
@@ -337,8 +339,6 @@ describe('bozza di un altro fuso ripresa a Roma: il giorno è quello del luogo d
 
 describe('ripresa dal riepilogo: il tempo a pagina chiusa è una pausa', () => {
   const at = (h, m, day = 20) => new Date(2026, 9, day, h, m);
-  const CATALOG = [{ id: 20, name: 'Croci ai cavi', muscle_group: 'petto', equipment: 'cavi' }];
-
   beforeEach(() => {
     responses['user/read.php'] = () => json({ rest_timer_enabled: true, features: ['focus_session_edit'] });
     responses['exercise/read_all.php'] = () => json({ records: CATALOG });
@@ -856,11 +856,29 @@ describe('serie di riscaldamento della scheda (#67)', () => {
       selectedDayId: 3,
       completedSets: { 11: [{ setNumber: 1, weight: 20, reps: '10', intensity_technique: '', is_warmup: true }] },
       currentSetIndex: 1,
+      slots: true,
     }));
     await mount();
     click('Riprendi allenamento');
     expect(screen.getByText('Riscaldamento 2 di 2')).toBeTruthy();
     expect(screen.queryByText('Tecnica di intensità')).toBeNull();
+  });
+
+  it('una bozza senza il segno delle posizioni riprende senza riscaldamento, anche se la scheda ora lo ha', async () => {
+    // Iniziata col solo passo 3: warmup_sets è già nella scheda ma currentSetIndex conta le sole serie
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      ...savedDraft,
+      activePlan: { id: 5, name: 'Gambe', days: [legDay] },
+      selectedDay: legDay,
+      selectedDayId: 3,
+      completedSets: { 11: [{ setNumber: 1, weight: 100, reps: '5', intensity_technique: '', is_warmup: false }] },
+      currentSetIndex: 1,
+    }));
+    await mount();
+    click('Riprendi allenamento');
+    expect(screen.getByText('Serie 2 di 2')).toBeTruthy();
+    expect(screen.queryByText('R1')).toBeNull();
+    expect(draft()).toMatchObject({ slots: true, selectedDay: { exercises: [{ warmup_sets: 0 }] } });
   });
 
   it('una bozza di prima del riscaldamento riprende come sempre', async () => {
@@ -894,6 +912,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     expect(screen.getByText('Risc.').parentElement.textContent).toContain('20kg×10');
     expect(screen.getByText('Serie').previousSibling.textContent).toBe('2');
   });
+
   it('nell\'elenco "Serie completate" la prima serie allenante è "Serie 1", i riscaldamenti "Riscaldamento 1" e "Riscaldamento 2"', async () => {
     await startDay('Gambe');
     doSet('20', '10');
@@ -911,7 +930,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
   describe('cambio esercizio', () => {
     beforeEach(() => {
       responses['user/read.php'] = () => json({ rest_timer_enabled: true, features: ['focus_session_edit'] });
-      responses['exercise/read_all.php'] = () => json({ records: [{ id: 20, name: 'Croci ai cavi', muscle_group: 'petto', equipment: 'cavi' }] });
+      responses['exercise/read_all.php'] = () => json({ records: CATALOG });
     });
     const swapToCroci = async () => {
       click('Cambia esercizio');

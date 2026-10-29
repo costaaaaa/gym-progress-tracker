@@ -74,6 +74,25 @@ describe('ripetizioni suggerite dalla scheda', () => {
   });
 });
 
+describe('ripetizioni precompilate dalla scheda', () => {
+  const values = () => screen.getAllByLabelText('Ripetizioni').map((i) => i.value);
+
+  it('scalano con le righe che non sono riscaldamento, salvo quelle già scritte', () => {
+    activePlan = { id: 5, name: 'Gambe', days: [{ id: 3, name: 'Gambe', exercises: [{ ...squat, warmup_sets: 1, sets: 3, reps: '8/6/4' }] }] };
+    open();
+    expect(values()).toEqual(['', '8', '6', '4']);
+    const warmup = screen.getByRole('checkbox', { name: 'Riscaldamento: serie 1' });
+    fireEvent.click(warmup);
+    // Quattro serie allenanti per una scheda da tre: l'ultima ripete l'ultimo valore
+    expect(values()).toEqual(['8', '6', '4', '4']);
+    fireEvent.click(warmup);
+    expect(values()).toEqual(['', '8', '6', '4']);
+    fireEvent.change(screen.getAllByLabelText('Ripetizioni')[2], { target: { value: '7' } });
+    fireEvent.click(warmup);
+    expect(values()).toEqual(['8', '6', '7', '4']);
+  });
+});
+
 describe('salvataggio con il riscaldamento', () => {
   it('invia is_warmup e set_number = posizione della riga; il riscaldamento senza tecnica; le righe vuote restano fuori', async () => {
     open();
@@ -90,7 +109,7 @@ describe('salvataggio con il riscaldamento', () => {
 
   it('una riga trasformata in riscaldamento si salva come tale e senza tecnica', async () => {
     open();
-    fill(2, '100', '5');
+    fill(2, '100', '6');
     fireEvent.click(toggles()[2]);
     const body = await save();
     expect(body.workout_records.map((r) => [r.set_number, r.is_warmup, r.intensity_technique])).toEqual([[3, true, '']]);

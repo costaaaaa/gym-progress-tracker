@@ -29,7 +29,7 @@ import { track } from '../utils/analytics';
 import { useTranslation } from 'react-i18next';
 import { techniqueLabel } from '../i18n/labels';
 import {
-  MAX_WEIGHT, isValidWeight, newIdempotencyKey, isValidReps, planRepsForSet, repsNeedConfirm, initialSetRows,
+  MAX_WEIGHT, isValidWeight, newIdempotencyKey, isValidReps, repsNeedConfirm, initialSetRows, toggleWarmupRow, rowPlanReps,
 } from '../utils/focusSession';
 
 const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
@@ -71,6 +71,14 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
       [exerciseId]: prev[exerciseId].map((set, idx) =>
         idx === setIndex ? { ...set, [field]: value } : set
       )
+    }));
+  };
+
+  // Attiva o disattiva il riscaldamento di una riga: le ripetizioni precompilate seguono la nuova posizione
+  const handleWarmupToggle = (exercise, setIndex) => {
+    setWorkoutData(prev => ({
+      ...prev,
+      [exercise.id]: toggleWarmupRow(prev[exercise.id], setIndex, exercise.reps)
     }));
   };
 
@@ -279,7 +287,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                           <Box sx={{ minWidth: 60, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                             <Typography variant="body2">{t('record.set', { n: setIndex + 1 })}</Typography>
                             <FormControlLabel
-                              label={t('record.warmup')}
+                              label={t('common.warmup_badge')}
                               slotProps={{ typography: { variant: 'caption' } }}
                               sx={{ m: 0 }}
                               control={
@@ -287,7 +295,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                                   size="small"
                                   sx={{ p: 0.25 }}
                                   checked={!!row.is_warmup}
-                                  onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'is_warmup', e.target.checked)}
+                                  onChange={() => handleWarmupToggle(exercise, setIndex)}
                                   inputProps={{ 'aria-label': t('record.warmup_aria', { n: setIndex + 1 }) }}
                                 />
                               }
@@ -314,7 +322,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                             label={t('record.reps')}
                             value={row.reps ?? ''}
                             // La scheda indica le ripetizioni per le sole righe che ora non sono riscaldamento
-                            placeholder={row.is_warmup ? '' : planRepsForSet(exercise.reps, rows.slice(0, setIndex).filter((r) => !r.is_warmup).length)}
+                            placeholder={rowPlanReps(rows, setIndex, exercise.reps)}
                             InputLabelProps={{ shrink: true }}
                             inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
                             onFocus={(e) => e.target.select()}

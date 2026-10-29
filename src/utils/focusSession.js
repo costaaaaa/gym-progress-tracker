@@ -48,12 +48,39 @@ export const repsNeedConfirm = (reps, planReps) => {
 
 export const isBodyweight = (exercise) => exercise?.equipment === 'corpo_libero';
 
+// Serie di riscaldamento della scheda: si sommano alle `sets` allenanti (2 risc. + 3 serie = 5 posizioni)
+const warmupCount = (exercise) => Math.max(0, parseInt(exercise?.warmup_sets, 10) || 0);
+
+// Posizioni di un esercizio nella sessione: prima il riscaldamento, poi le serie allenanti.
+// currentSetIndex, le serie saltate e i pallini ragionano su queste posizioni.
+export const totalSlots = (exercise) => warmupCount(exercise) + (Number(exercise?.sets) || 0);
+
+// Che serie è la posizione `slotIndex`: riscaldamento o allenante, il suo numero (da 1) e il totale
+// del suo tipo. workingIndex è l'indice fra le sole allenanti (-1 in riscaldamento): serve a
+// obiettivo ripetizioni e chip "Ultima volta", che parlano solo delle serie allenanti.
+export const setSlot = (exercise, slotIndex) => {
+  const warmups = warmupCount(exercise);
+  if (slotIndex < warmups) return { isWarmup: true, number: slotIndex + 1, total: warmups, workingIndex: -1 };
+  return { isWarmup: false, number: slotIndex - warmups + 1, total: Number(exercise?.sets) || 0, workingIndex: slotIndex - warmups };
+};
+
+// Chiave i18n del testo di una posizione, per tipo: name (nome del pallino e della serie fatta),
+// of (sottotitolo "N di M"), next (prossima serie nel recupero), dot (testo dentro il pallino).
+// Restituisce solo la chiave: la traduzione resta a chi la chiama (nessun import i18n qui).
+const SLOT_KEYS = {
+  name: { warmup: 'focus.warmup_n', working: 'focus.set_n' },
+  of: { warmup: 'focus.warmup_of', working: 'focus.set_of' },
+  next: { warmup: 'focus.next_warmup', working: 'focus.next_set' },
+  dot: { warmup: 'focus.warmup_dot', working: 'focus.set_dot' },
+};
+export const slotKey = (slot, kind) => SLOT_KEYS[kind][slot.isWarmup ? 'warmup' : 'working'];
+
 // Peso con cui parte il campo: l'ultimo usato; per i corpo libero, senza storico, 0
-export const initialWeight = (exercise, suggested = '') =>
+const initialWeight = (exercise, suggested = '') =>
   suggested !== '' ? suggested : (isBodyweight(exercise) ? '0' : '');
 
 // Peso della serie successiva: i corpo libero mantengono quello appena usato (0 o zavorra)
-export const nextSetWeight = (exercise, currentWeight) => (isBodyweight(exercise) ? currentWeight : '');
+const nextSetWeight = (exercise, currentWeight) => (isBodyweight(exercise) ? currentWeight : '');
 
 // Peso con cui parte la serie in posizione `slotIndex`: il riscaldamento parte vuoto (niente
 // suggerimento dell'ultima volta), la prima allenante prende il peso suggerito, le altre
@@ -79,6 +106,32 @@ export const initialSetRows = (exercise) => Array.from({ length: totalSlots(exer
     intensity_technique: exercise.intensity_technique || '',
   };
 });
+
+// Indice fra le sole righe allenanti della riga `index` (-1 se è un riscaldamento): quante
+// righe non-riscaldamento la precedono. Serve a obiettivo e ripetizioni precompilate.
+const rowWorkingIndex = (rows, index) =>
+  rows[index].is_warmup ? -1 : rows.slice(0, index).filter((r) => !r.is_warmup).length;
+
+// Ripetizioni suggerite dalla scheda per la riga `index` (vuoto in riscaldamento): il grigio nel campo
+export const rowPlanReps = (rows, index, planReps) =>
+  rows[index].is_warmup ? '' : planRepsForSet(planReps, rowWorkingIndex(rows, index));
+
+// Ripetizioni con cui la riga nasce: l'obiettivo della scheda se è un numero, altrimenti vuoto
+const prefillReps = (rows, index, planReps) => {
+  const target = rowPlanReps(rows, index, planReps);
+  return isValidReps(target) ? target : '';
+};
+
+// Attiva o disattiva il riscaldamento della riga `index`. Le ripetizioni ancora quelle
+// precompilate (uguali al vecchio obiettivo, o vuote) seguono la nuova posizione fra le allenanti;
+// quelle scritte dall'utente restano. Oltre la lista "8/6/4" l'ultima riga ripete l'ultimo valore.
+export const toggleWarmupRow = (rows, index, planReps) => {
+  const toggled = rows.map((r, i) => (i === index ? { ...r, is_warmup: !r.is_warmup } : r));
+  return toggled.map((row, i) => {
+    const untouched = row.reps === '' || row.reps === prefillReps(rows, i, planReps);
+    return untouched ? { ...row, reps: prefillReps(toggled, i, planReps) } : row;
+  });
+};
 
 // Serie dell'ultima sessione per le chip "Ultima volta": [{ label, technique }]
 export const lastSessionSets = (lastSession) => {
@@ -106,22 +159,6 @@ export const setStatus = (idx, currentSetIndex, skipped = []) => {
   if (skipped.includes(idx)) return 'skipped';
   if (idx < currentSetIndex) return 'done';
   return idx === currentSetIndex ? 'active' : 'pending';
-};
-
-// Serie di riscaldamento della scheda: si sommano alle `sets` allenanti (2 risc. + 3 serie = 5 posizioni)
-const warmupCount = (exercise) => Math.max(0, parseInt(exercise?.warmup_sets, 10) || 0);
-
-// Posizioni di un esercizio nella sessione: prima il riscaldamento, poi le serie allenanti.
-// currentSetIndex, le serie saltate e i pallini ragionano su queste posizioni.
-export const totalSlots = (exercise) => warmupCount(exercise) + (Number(exercise?.sets) || 0);
-
-// Che serie è la posizione `slotIndex`: riscaldamento o allenante, il suo numero (da 1) e il totale
-// del suo tipo. workingIndex è l'indice fra le sole allenanti (-1 in riscaldamento): serve a
-// obiettivo ripetizioni e chip "Ultima volta", che parlano solo delle serie allenanti.
-export const setSlot = (exercise, slotIndex) => {
-  const warmups = warmupCount(exercise);
-  if (slotIndex < warmups) return { isWarmup: true, number: slotIndex + 1, total: warmups, workingIndex: -1 };
-  return { isWarmup: false, number: slotIndex - warmups + 1, total: Number(exercise?.sets) || 0, workingIndex: slotIndex - warmups };
 };
 
 // "Salta riscaldamento" dalla posizione `slotIndex`: le serie di riscaldamento rimaste sono
