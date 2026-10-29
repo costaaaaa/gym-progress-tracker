@@ -5,6 +5,7 @@
 // (sempre peso 0) si usa il massimo di ripetizioni in una serie.
 // ============================================================================
 import { extractReps, estimateOneRepMax } from './workoutMetrics';
+import { clockDate, workoutInstant } from './workoutTime';
 
 export const RECENT_DAYS = 60;
 export const IMPROVING_PCT = 2;
@@ -14,11 +15,9 @@ const DAY_MS = 86400000;
 
 export const STATUS = { IMPROVING: 'improving', STALLED: 'stalled', DECLINING: 'declining', NEW: 'new', INACTIVE: 'inactive' };
 
-// read.php restituisce "YYYY-MM-DD HH:MM:SS": Safari non lo legge senza la "T"
-const toTime = (date) => new Date(String(date).replace(' ', 'T')).getTime();
-
-export const daysSince = (date, now = Date.now()) =>
-  Math.max(0, Math.floor((now - toTime(date)) / DAY_MS));
+// I giorni fra istanti si contano da started_at: `date` è l'orologio del luogo, in fusi diversi non è confrontabile con adesso
+export const daysSince = (workout, now = Date.now()) =>
+  Math.max(0, Math.floor((now - workoutInstant(workout)) / DAY_MS));
 
 /**
  * Da record di api/workout_history/read.php a mappa exercise_id -> serie.
@@ -50,6 +49,8 @@ export const buildExerciseSeries = (records) => {
       raw[key].sessions.push({
         id: workout.id || `workout-${workout.date}`,
         date: workout.date,
+        started_at: workout.started_at,
+        time_zone: workout.time_zone,
         oneRM: bestOneRM,
         reps: bestReps,
         bestSet: bestSet || bestRepSet,
@@ -61,7 +62,7 @@ export const buildExerciseSeries = (records) => {
 
   const series = {};
   Object.entries(raw).forEach(([id, { name, sessions }]) => {
-    const byDate = [...sessions].sort((a, b) => toTime(a.date) - toTime(b.date));
+    const byDate = [...sessions].sort((a, b) => clockDate(a.date) - clockDate(b.date));
     const mode = byDate[byDate.length - 1].oneRM > 0 ? 'oneRM' : 'reps';
     const sorted = byDate
       .map((s) => ({ ...s, value: mode === 'oneRM' ? s.oneRM : s.reps }))
@@ -89,8 +90,8 @@ export const buildExerciseSeries = (records) => {
 export const analyzeExercise = (serie, now = Date.now()) => {
   const { sessions } = serie;
   const last = sessions[sessions.length - 1];
-  const lastDays = daysSince(last.date, now);
-  const recent = sessions.filter((s) => daysSince(s.date, now) <= RECENT_DAYS);
+  const lastDays = daysSince(last, now);
+  const recent = sessions.filter((s) => daysSince(s, now) <= RECENT_DAYS);
   const best = Math.max(...sessions.map((s) => s.value));
 
   let deltaPct = null;
