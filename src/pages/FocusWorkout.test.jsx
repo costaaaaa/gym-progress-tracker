@@ -378,7 +378,7 @@ describe('ripresa dal riepilogo: il tempo a pagina chiusa è una pausa', () => {
     click('Aggiungi esercizio');
     await advance(0);
     fireEvent.click(screen.getByText('Croci ai cavi'));
-    fireEvent.change(screen.getByLabelText('Serie'), { target: { value: String(sets) } });
+    fireEvent.change(within(screen.getByRole('dialog')).getByLabelText('Serie'), { target: { value: String(sets) } });
     click('Aggiungi');
     await advance(0.5); // chiusura del dialog
   };
@@ -777,7 +777,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     expect(screen.getByLabelText('Ripetizioni').getAttribute('placeholder')).toBe('');
     expect(screen.queryByText('Tecnica di intensità')).toBeNull();
     // Le chip sono le sole serie allenanti dell'ultima volta e nessuna è quella in corso
-    expect(screen.getByText('100kg×5').closest('[aria-current]')).toBeNull();
+    expect(screen.queryAllByRole('listitem', { current: true })).toHaveLength(0);
     expect(screen.queryByText('40kg×8')).toBeNull();
   });
 
@@ -802,7 +802,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     expect(screen.getByLabelText('Peso (kg)').value).toBe('100');
     expect(screen.getByLabelText('Ripetizioni').getAttribute('placeholder')).toBe('5');
     expect(screen.getAllByText('Tecnica di intensità').length).toBeGreaterThan(0);
-    expect(screen.getByText('100kg×5').closest('[aria-current]')).not.toBeNull();
+    expect(screen.getByRole('listitem', { current: true }).textContent).toBe('100kg×5');
     // Saltare la prima serie allenante equivale a saltare l'esercizio; "Salta riscaldamento" non c'è più
     expect(screen.queryByRole('button', { name: 'Salta serie' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Salta riscaldamento' })).toBeNull();
@@ -901,7 +901,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     click('Salta timer');
     doSet('100', '4');
     expect(screen.getByText('Riepilogo')).toBeTruthy();
-    expect(within(screen.getByText('Serie').parentElement).getByText('2')).toBeTruthy();
+    expect(within(screen.getByRole('group', { name: 'Serie' })).getByText('2')).toBeTruthy();
     expect(screen.queryByText('Risc.')).toBeNull();
   });
 
@@ -913,9 +913,8 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     doSet('100', '5');
     click('Salta timer');
     doSet('100', '4');
-    expect(screen.getByText('Risc.')).toBeTruthy();
-    expect(screen.getByText('Risc.').parentElement.textContent).toContain('20kg×10');
-    expect(within(screen.getByText('Serie').parentElement).getByText('2')).toBeTruthy();
+    expect(within(screen.getByText('20kg×10')).getByText('Risc.')).toBeTruthy();
+    expect(within(screen.getByRole('group', { name: 'Serie' })).getByText('2')).toBeTruthy();
   });
 
   it('nell\'elenco "Serie completate" la prima serie allenante è "Serie 1", i riscaldamenti "Riscaldamento 1" e "Riscaldamento 2"', async () => {
@@ -983,7 +982,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     click('Salta timer');
     doSet('30', '12');
     expect(screen.getByText('Riepilogo')).toBeTruthy();
-    expect(within(screen.getByText('Esercizi').parentElement).getByText('1')).toBeTruthy();
+    expect(within(screen.getByRole('group', { name: 'Esercizi' })).getByText('1')).toBeTruthy();
   });
 
   it('ogni pallino ha un testo accessibile con numero e stato', async () => {

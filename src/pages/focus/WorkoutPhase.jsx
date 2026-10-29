@@ -94,11 +94,11 @@ export default function WorkoutPhase({
                     {t('focus.last_time')}
                   </Typography>
                   {/* Una chip per serie, con la tecnica sotto; evidenziata quella pari alla serie allenante in corso (nessuna in riscaldamento) */}
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 0.5 }}>
+                  <Box role="list" sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 0.5 }}>
                     {lastSets.map((set, idx) => {
                       const isCurrent = idx === currentSlot.workingIndex;
                       return (
-                        <Box key={idx} aria-current={isCurrent ? 'true' : undefined} sx={{
+                        <Box key={idx} role="listitem" aria-current={isCurrent ? 'true' : undefined} sx={{
                           px: 1, py: 0.5, borderRadius: '6px', bgcolor: colors.bgCard,
                           border: `1px solid ${isCurrent ? colors.text : colors.border}`,
                         }}>
