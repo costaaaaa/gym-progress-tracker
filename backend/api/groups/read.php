@@ -24,7 +24,7 @@ try {
         'my_role' => $membership['role'],
         'members_count' => (int)$info['members_count'],
         'max_members' => (int)$info['max_members'],
-        'created_at' => $info['created_at'],
+        'created_at' => server_time_iso($info['created_at']),
     );
     if ($can_manage) {
         $payload['invite_code'] = $info['invite_code'];
@@ -32,7 +32,7 @@ try {
         // Nome bloccato dopo una rinomina d'ufficio: fino a name_locked_until, o per sempre se è null
         $lock = Group::nameLock($info);
         $payload['name_locked'] = $lock !== null;
-        $payload['name_locked_until'] = $lock['until'] ?? null;
+        $payload['name_locked_until'] = server_time_iso($lock['until'] ?? null);
     }
 
     api_json_response(array(

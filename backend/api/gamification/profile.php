@@ -59,7 +59,7 @@ try {
             'category'    => $entry['category'],
             'threshold'   => $entry['threshold'],
             'locked'      => !isset($unlocked_map[$key]),
-            'unlocked_at' => $unlocked_map[$key] ?? null,
+            'unlocked_at' => server_time_iso($unlocked_map[$key] ?? null),
         ];
     }
 

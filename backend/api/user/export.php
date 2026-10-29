@@ -18,7 +18,15 @@ function export_rows($db, $sql, $params)
 {
     $stmt = $db->prepare($sql);
     $stmt->execute($params);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as &$row) {
+        foreach ($row as $column => &$value) {
+            if (substr($column, -3) === '_at') $value = server_time_iso($value);
+        }
+        unset($value);
+    }
+    unset($row);
+    return $rows;
 }
 
 try {
@@ -68,7 +76,7 @@ try {
             'name' => $plan['name'],
             'description' => $plan['description'],
             'active' => (bool)$plan['is_active'],
-            'created_at' => $plan['created_at'],
+            'created_at' => server_time_iso($plan['created_at']),
             'days' => isset($daysByPlan[$plan['id']]) ? $daysByPlan[$plan['id']] : array(),
         );
     }

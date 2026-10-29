@@ -203,6 +203,24 @@ R="$(call GET api/workout_stats/dashboard.php "$T")"
 check "dashboard con un altro fuso: stesso istante, offset di New York" "$R" '[.recovery[] | select(.ready_at != null) | .ready_at] | all(test("-0[45]:00$"))'
 
 echo
+echo "Date in uscita: ISO con offset (D12)"
+XTZ="Europe/Rome"
+OFF='T[0-9:]+(\\.[0-9]+)?[+-][0-9]{2}:[0-9]{2}$'
+R="$(call GET api/user/read.php "$T")"
+check "user/read: created_at ISO con offset" "$R" ".created_at | test(\"$OFF\")"
+check "user/read: password_changed_at null o ISO con offset" "$R" ".password_changed_at == null or (.password_changed_at | test(\"$OFF\"))"
+R="$(call GET api/gamification/profile.php "$T")"
+check "gamification/profile: unlocked_at ISO con offset" "$R" "[.achievements[] | select(.locked | not) | .unlocked_at] | length >= 1 and all(test(\"$OFF\"))"
+R="$(call GET "api/groups/read.php?group_id=$GID" "$TG")"
+check "groups/read: created_at ISO con offset" "$R" ".group.created_at | test(\"$OFF\")"
+R="$(call GET api/groups/list.php "$TG")"
+check "groups/list: joined_at ISO con offset" "$R" "[.groups[].joined_at] | length >= 1 and all(test(\"$OFF\"))"
+R="$(call GET "api/groups/read.php?group_id=$GID" "$TG")"
+check "groups/read: joined_at dei membri ISO con offset" "$R" "[.members[].joined_at] | length >= 1 and all(test(\"$OFF\"))"
+R="$(call GET api/user/export.php "$T")"
+check "export: i campi *_at sono ISO con offset" "$R" "[.profile.created_at, .profile.last_login_at, .plans[0].created_at, .gamification.achievements[0].unlocked_at, .devices[0].created_at, .consents[0].granted_at, .groups[0].joined_at] | all(. == null or test(\"$OFF\"))"
+
+echo
 if (( fails )); then
     echo "✗ $fails controlli su $checks falliti"
     exit 1
