@@ -18,6 +18,12 @@ export const workoutInstant = (workout) => {
   return Number.isNaN(c.getTime()) ? NaN : new Date(c.getUTCFullYear(), c.getUTCMonth(), c.getUTCDate(), c.getUTCHours(), c.getUTCMinutes(), c.getUTCSeconds()).getTime();
 };
 
+/** L'orologio di un ISO con offset ("2026-10-18T02:00:00-04:00" → "2026-10-18 02:00:00"), senza convertirlo nel fuso del browser. */
+export const isoClock = (iso) => {
+  const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})/.exec(String(iso ?? ''));
+  return m ? `${m[1]} ${m[2]}` : null;
+};
+
 export const currentTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 /** "UTC−4", "UTC+5:30", "UTC" dall'offset di un ISO (meno tipografico). */

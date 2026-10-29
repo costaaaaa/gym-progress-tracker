@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { format, subDays } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import {
   Typography,
@@ -47,6 +48,8 @@ import { track } from '../utils/analytics';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import { intlLocale } from '../i18n/format';
+import { clockDate, formatClockDate, formatClockTime } from '../utils/workoutTime';
+import TimeZoneBadge from '../components/TimeZoneBadge';
 import { muscleLabel, techniqueLabel } from '../i18n/labels';
 import { achievementCatalog } from '../utils/gamificationLevels';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
@@ -83,9 +86,10 @@ const organizeExercises = (exercises) => {
 const groupWorkoutsByMonth = (workouts) => {
   const grouped = {};
   workouts.forEach(workout => {
-    const date = new Date(workout.date);
+    // `date` è l'orologio del luogo: il mese è quello scritto, in qualunque fuso sia il browser
+    const date = clockDate(workout.date);
     if (!isNaN(date.getTime())) {
-      const monthYear = `${date.getMonth() + 1}/${date.getFullYear()}`;
+      const monthYear = `${date.getUTCMonth() + 1}/${date.getUTCFullYear()}`;
       if (!grouped[monthYear]) grouped[monthYear] = [];
       grouped[monthYear].push(workout);
     } else {
@@ -95,6 +99,8 @@ const groupWorkoutsByMonth = (workouts) => {
   });
   return grouped;
 };
+
+const newestFirst = (a, b) => clockDate(b.date) - clockDate(a.date);
 
 const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
   const { t } = useTranslation();
@@ -162,7 +168,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
         throw new Error(data.message || t('history.load_error'));
       }
       if (data.records && Array.isArray(data.records)) {
-        const sortedWorkouts = data.records.sort((a, b) => new Date(b.date) - new Date(a.date));
+        const sortedWorkouts = data.records.sort(newestFirst);
         setWorkouts(sortedWorkouts);
       } else {
         setWorkouts([]);
@@ -268,12 +274,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
   };
 
   // Il server sposta solo gli allenamenti degli ultimi 30 giorni
-  const oldestMovable = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() - 30);
-    return d;
-  }, []);
+  const oldestMovable = useMemo(() => format(subDays(new Date(), 30), 'yyyy-MM-dd'), []);
 
   const handleEditDateClick = (workout, event) => {
     event.stopPropagation();
@@ -286,7 +287,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
     { key: 'share', label: t('history.share_aria'), icon: <ShareIcon fontSize="small" />, run: () => handleShareClick(workout) },
     {
       key: 'edit-date', label: t('history.edit_date_aria'), icon: <EditCalendarIcon fontSize="small" />,
-      disabled: new Date(workout.date) < oldestMovable, disabledHint: t('history.date.too_old'),
+      disabled: String(workout.date).slice(0, 10) < oldestMovable, disabledHint: t('history.date.too_old'),
       run: (e) => handleEditDateClick(workout, e),
     },
     { key: 'delete', label: t('history.delete_aria'), icon: <DeleteIcon fontSize="small" />, run: (e) => handleDeleteClick(workout, e) },
@@ -297,8 +298,8 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
     setWorkoutToEdit(null);
   };
   
-  const handleUpdateDateSuccess = (workoutId, newDate) => {
-    setWorkouts(prev => prev.map(w => w.id === workoutId ? { ...w, date: newDate } : w).sort((a, b) => new Date(b.date) - new Date(a.date)));
+  const handleUpdateDateSuccess = (workoutId, moved) => {
+    setWorkouts(prev => prev.map(w => w.id === workoutId ? { ...w, ...moved } : w).sort(newestFirst));
     setSnackbar({ open: true, message: t('history.date.updated'), severity: 'success' });
   };
 
@@ -477,8 +478,14 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                               aria-controls={rowPanelId}
                             >
                               <ListItemText
-                                primary={<Typography sx={{ fontWeight: 600, fontSize: 16 }}>{new Date(workout.date).toLocaleDateString(intlLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</Typography>}
-                                secondary={<Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.25 }}>{`${new Date(workout.date).toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit' })} · ${t('focus.exercises_count', { count: workout.exercises?.length || 0 })}`}</Typography>}
+                                primary={<Typography sx={{ fontWeight: 600, fontSize: 16 }}>{formatClockDate(workout.date, { weekday: 'long', day: 'numeric', month: 'long' })}</Typography>}
+                                secondaryTypographyProps={{ component: 'div' }}
+                                secondary={(
+                                  <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, mt: 0.25 }}>
+                                    <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{`${formatClockTime(workout.date)} · ${t('focus.exercises_count', { count: workout.exercises?.length || 0 })}`}</Typography>
+                                    <TimeZoneBadge workout={workout} sx={{ fontSize: 16 }} />
+                                  </Box>
+                                )}
                               />
                             </ListItemButton>
                           </ListItem>

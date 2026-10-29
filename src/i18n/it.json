@@ -792,6 +792,7 @@
   "history.unknown_date": "Data sconosciuta",
   "history.share_aria": "Condividi allenamento",
   "history.edit_date_aria": "Modifica data",
+  "history.time_zone_aria": "Fuso orario: {{zone}}",
   "history.delete_aria": "Elimina allenamento",
   "history.more_actions_aria": "Altre azioni",
   "account.delete.password_required": "La password è obbligatoria",

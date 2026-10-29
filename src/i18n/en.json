@@ -792,6 +792,7 @@
   "history.unknown_date": "Unknown date",
   "history.share_aria": "Share workout",
   "history.edit_date_aria": "Edit date",
+  "history.time_zone_aria": "Time zone: {{zone}}",
   "history.delete_aria": "Delete workout",
   "history.more_actions_aria": "More actions",
   "account.delete.password_required": "The password is required",

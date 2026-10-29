@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clockDate, formatClockDate, formatClockTime, workoutInstant, offsetLabel, zoneCity, workoutZoneBadge } from './workoutTime';
+import { clockDate, formatClockDate, formatClockTime, workoutInstant, offsetLabel, zoneCity, workoutZoneBadge, isoClock } from './workoutTime';
 
 describe('clockDate: l\'ora locale del luogo letta come orologio', () => {
   it('i campi di calendario e orologio sono quelli della stringa, in qualunque fuso del browser', () => {
@@ -90,5 +90,16 @@ describe('workoutZoneBadge', () => {
   it('nome diverso dello stesso fuso (alias IANA): nessun badge', () => {
     const kyiv = { time_zone: 'Europe/Kiev', started_at: '2026-10-18T02:00:00+03:00' };
     expect(workoutZoneBadge(kyiv, 'Europe/Kyiv')).toBeNull();
+  });
+});
+
+describe('isoClock', () => {
+  it('l\'orologio scritto in un ISO con offset, senza convertirlo', () => {
+    expect(isoClock('2026-10-18T02:00:00-04:00')).toBe('2026-10-18 02:00:00');
+    expect(isoClock('2026-10-18T23:30:00+09:00')).toBe('2026-10-18 23:30:00');
+  });
+  it('valore illeggibile: null', () => {
+    expect(isoClock('boh')).toBeNull();
+    expect(isoClock(undefined)).toBeNull();
   });
 });
