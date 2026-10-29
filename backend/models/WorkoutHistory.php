@@ -35,9 +35,6 @@ class WorkoutHistory
             // salvano anche se l'immagine nuova arriva prima della migrazione 20.
             $key_clause = $this->idempotency_key === null ? "" : ",
                         idempotency_key = :idempotency_key";
-            // Senza fuso resta il default della colonna (Europe/Rome)
-            $zone_clause = $this->time_zone === null ? "" : ",
-                        time_zone = :time_zone";
 
             // Query to insert record
             $query = "INSERT INTO " . $this->table_name . "
@@ -46,7 +43,8 @@ class WorkoutHistory
                         exercises = :exercises,
                         date = :date,
                         duration_seconds = :duration_seconds,
-                        notes = :notes" . $zone_clause . $key_clause;
+                        notes = :notes,
+                        time_zone = :time_zone" . $key_clause;
 
             // Prepare query
             $stmt = $this->conn->prepare($query);
@@ -55,9 +53,7 @@ class WorkoutHistory
             $stmt->bindParam(":user_id", $this->user_id);
             $stmt->bindParam(":exercises", $this->exercises);
             $stmt->bindParam(":date", $this->date);
-            if ($this->time_zone !== null) {
-                $stmt->bindParam(":time_zone", $this->time_zone);
-            }
+            $stmt->bindParam(":time_zone", $this->time_zone);
             $stmt->bindValue(":duration_seconds", $this->duration_seconds, $this->duration_seconds === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
             $stmt->bindParam(":notes", $this->notes);
             if ($this->idempotency_key !== null) {

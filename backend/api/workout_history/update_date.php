@@ -24,7 +24,8 @@ if (
     !empty($data->id) &&
     !empty($data->new_date)
 ) {
-    // Log per debug
+    // Un solo «adesso» per tutta la richiesta, nel fuso del dispositivo
+    $now = user_now();
 
     // Verifica e formatta la data. La data di un allenamento è l'ora locale del suo luogo: cambiarla
     // ne conserva il fuso (l'ora legale si ricalcola dal nome IANA) e il "futuro" è quello di quel luogo.
@@ -48,7 +49,7 @@ if (
 
     // Verifica che sia una data valida
     try {
-        $new_local = moved_workout_instant($new_date, $row['time_of_day'] ?? '00:00:00', $time_zone, new DateTimeImmutable());
+        $new_local = moved_workout_instant($new_date, $row['time_of_day'] ?? '00:00:00', $time_zone, $now);
     } catch (Exception $e) {
         http_response_code(400);
         echo json_encode(array(
@@ -58,9 +59,7 @@ if (
         ));
         exit;
     }
-    $timestamp = $new_local->getTimestamp();
-
-    if ($timestamp > time()) {
+    if ($new_local > $now) {
         http_response_code(400);
         echo json_encode(array(
             "success" => false,
@@ -72,7 +71,7 @@ if (
 
     // Spostamenti solo dentro gli ultimi 30 giorni, sia la data di partenza sia quella nuova: i giorni
     // si contano nel fuso attuale del dispositivo, sul giorno locale dell'allenamento
-    $oldest_day = user_now()->modify('-30 days')->format('Y-m-d');
+    $oldest_day = DateTimeImmutable::createFromInterface($now)->modify('-30 days')->format('Y-m-d');
     if ($new_local->format('Y-m-d') < $oldest_day) {
         http_response_code(400);
         echo json_encode(array(
@@ -136,7 +135,6 @@ if (
         $old_dt = new DateTime($old_date);
 
         $before = ensure_streak_registry($db, $user_id, $gam_row);
-        $now = user_now();
         $streak_before = effectiveStreakWeeks($before['current'], $before['last_completed_week'], $now);
 
         if (!$workout->update()) {

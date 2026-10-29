@@ -184,7 +184,9 @@ function remember_request_time_zone($db, $user_id)
     }
 }
 
-// Colonna inesistente (SQLSTATE 42S22): il codice nuovo gira prima della migrazione.
+// Colonna inesistente (SQLSTATE 42S22). La tolleranza vale solo per request_time_zone() e
+// remember_request_time_zone(), che possono girare prima della migrazione 29; il resto del codice
+// nuovo la richiede, e deploy.sh la applica prima di avviare il codice.
 function is_missing_column_error(PDOException $e)
 {
     return ($e->errorInfo[0] ?? $e->getCode()) === '42S22';
@@ -352,13 +354,13 @@ function client_datetime($value, $time_zone = null)
 // vale la prima occorrenza (ora legale): sono le scelte di PHP. Exception se $new_date non è una data.
 function moved_workout_instant($new_date, $time_of_day, $time_zone, DateTimeInterface $now)
 {
+    $zone = new DateTimeZone(valid_time_zone($time_zone) ?? DEFAULT_TIME_ZONE);
     if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $new_date)) {
-        $original = workout_instant($new_date . ' ' . $time_of_day, $time_zone);
+        $original = new DateTimeImmutable($new_date . ' ' . $time_of_day, $zone);
         if ($original <= $now) return $original;
-        $new_date .= ' ' . DateTimeImmutable::createFromInterface($now)
-            ->setTimezone(new DateTimeZone(valid_time_zone($time_zone) ?? DEFAULT_TIME_ZONE))->format('H:i:s');
+        $new_date .= ' ' . DateTimeImmutable::createFromInterface($now)->setTimezone($zone)->format('H:i:s');
     }
-    return client_datetime($new_date, valid_time_zone($time_zone) ?? DEFAULT_TIME_ZONE);
+    return client_datetime($new_date, $zone->getName());
 }
 
 function workout_plan_belongs_to_user($db, $plan_id, $user_id)
