@@ -43,7 +43,7 @@ describe('shell di Dashboard', () => {
 
   it('la tab attiva è in inchiostro con indicatore da 2px e icona grigia, senza rosso', async () => {
     await mount();
-    const tab = screen.getByRole('tab', { name: 'Progressi workout' });
+    const tab = screen.getByRole('tab', { name: 'Esercizi' });
     expect(tab.getAttribute('aria-selected')).toBe('true');
     expect(getComputedStyle(tab).color).toBe(INK);
     expect(getComputedStyle(tab).fontWeight).toBe('600');
@@ -54,12 +54,12 @@ describe('shell di Dashboard', () => {
     expect(getComputedStyle(tab.querySelector('svg')).color).toBe(GREY);
   });
 
-  it('sul telefono le due tab si dividono la riga e le etichette si leggono intere, senza scroll', async () => {
+  it('sul telefono le tre tab si dividono la riga e le etichette si leggono intere, senza scroll', async () => {
     await mount();
     // jsdom non valuta le media query: lo stile letto qui è quello da telefono, il primo
     expect(document.querySelector('.MuiTabs-scrollableX')).toBeNull();
     const tabs = screen.getAllByRole('tab');
-    expect(tabs).toHaveLength(2);
+    expect(tabs).toHaveLength(3);
     tabs.forEach((tab) => {
       const style = getComputedStyle(tab);
       expect(style.flexGrow).toBe('1');
@@ -69,5 +69,37 @@ describe('shell di Dashboard', () => {
       expect(style.textOverflow).not.toBe('ellipsis');
       expect(getComputedStyle(tab.querySelector('.MuiTab-iconWrapper')).display).toBe('none');
     });
+  });
+
+  it('le tre tab hanno etichette corte, uguali su ogni larghezza: Esercizi · Muscoli · Misure', async () => {
+    await mount();
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Esercizi', 'Muscoli', 'Misure']);
+  });
+});
+
+describe('tab Muscoli', () => {
+  const dashboardStats = {
+    success: true,
+    weekly_sets: {
+      week: { petto: 3, schiena: 0, spalle: 0, bicipiti: 0, tricipiti: 0, addome: 0, quadricipiti: 0, femorali: 0, glutei: 0, adduttori: 0, abduttori: 0, polpacci: 0 },
+      previous_to_date: { petto: 1, schiena: 0, spalle: 0, bicipiti: 0, tricipiti: 0, addome: 0, quadricipiti: 0, femorali: 0, glutei: 0, adduttori: 0, abduttori: 0, polpacci: 0 },
+      previous_total: 2,
+    },
+    recovery: {},
+  };
+
+  it('?tab=muscles apre la scheda Muscoli, selezionata e con i suoi dati', async () => {
+    vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
+      json(String(url).includes('workout_stats/dashboard.php') ? dashboardStats : { records: [] }),
+    )));
+    render(
+      <ThemeModeProvider>
+        <MemoryRouter initialEntries={['/dashboard?tab=muscles']}><Dashboard /></MemoryRouter>
+      </ThemeModeProvider>,
+    );
+    const tab = await screen.findByRole('tab', { name: 'Muscoli' });
+    expect(tab.getAttribute('aria-selected')).toBe('true');
+    await screen.findByText(/serie allenanti/); // la scheda Muscoli ha caricato i suoi dati
+    expect(screen.getByText('Petto').closest('li').textContent).toContain('3');
   });
 });

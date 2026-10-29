@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { Box, Tabs, Tab, CircularProgress, Typography } from '@mui/material';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { useTabbedPage } from '../hooks/useTabbedPage';
@@ -9,9 +10,10 @@ import { INK_TABS } from '../utils/inkTabs';
 
 // Lazy loading dei componenti tab
 const Progress = lazy(() => import('./Progress'));
+const Muscles = lazy(() => import('./Muscles'));
 const BodyStats = lazy(() => import('./BodyStats'));
 
-const TABS = ['progress', 'body'];
+const TABS = ['progress', 'muscles', 'body'];
 
 const Dashboard = () => {
   const { t } = useTranslation();
@@ -35,10 +37,16 @@ const Dashboard = () => {
             id="dashboard-tab-0"
           />
           <Tab
+            icon={<AccessibilityNewIcon fontSize="small" />}
+            iconPosition="start"
+            label={t('dashboard.tab.muscles')}
+            id="dashboard-tab-1"
+          />
+          <Tab
             icon={<StraightenIcon fontSize="small" />}
             iconPosition="start"
             label={t('dashboard.tab.body')}
-            id="dashboard-tab-1"
+            id="dashboard-tab-2"
           />
         </Tabs>
       </Box>
@@ -52,6 +60,11 @@ const Dashboard = () => {
           {visitedTabs.progress && (
             <Box sx={{ display: currentTab === 'progress' ? 'block' : 'none' }}>
               <Progress isEmbedded={true} />
+            </Box>
+          )}
+          {visitedTabs.muscles && (
+            <Box sx={{ display: currentTab === 'muscles' ? 'block' : 'none' }}>
+              <Muscles />
             </Box>
           )}
           {visitedTabs.body && (
