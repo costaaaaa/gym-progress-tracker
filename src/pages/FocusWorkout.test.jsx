@@ -861,7 +861,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
       selectedDayId: 3,
       completedSets: { 11: [{ setNumber: 1, weight: 20, reps: '10', intensity_technique: '', is_warmup: true }] },
       currentSetIndex: 1,
-      warmupSlots: true,
+      slotsIncludeWarmup: true,
     }));
     await mount();
     click('Riprendi allenamento');
@@ -883,7 +883,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     click('Riprendi allenamento');
     expect(screen.getByText('Serie 2 di 2')).toBeTruthy();
     expect(screen.queryByText('R1')).toBeNull();
-    expect(draft()).toMatchObject({ warmupSlots: true, selectedDay: { exercises: [{ warmup_sets: 0 }] } });
+    expect(draft()).toMatchObject({ slotsIncludeWarmup: true, selectedDay: { exercises: [{ warmup_sets: 0 }] } });
   });
 
   it('una bozza di prima del riscaldamento riprende come sempre', async () => {
@@ -957,8 +957,10 @@ describe('serie di riscaldamento della scheda (#67)', () => {
       doSet('20', '10');
       click('Salta timer');
       click('Cambia esercizio');
+      await advance(0);
       expect(screen.getByText('Puoi cambiare l\'esercizio solo prima di aver fatto una serie')).toBeTruthy();
-      expect(fetchMock.mock.calls.some(([url]) => url.includes('exercise/read_all.php'))).toBe(false);
+      // Il picker non si è aperto (il catalogo può essere già in cache di modulo: non si guarda la rete)
+      expect(screen.queryByPlaceholderText(/^Cerca/)).toBeNull();
     });
   });
 

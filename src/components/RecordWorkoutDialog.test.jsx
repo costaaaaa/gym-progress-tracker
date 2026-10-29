@@ -11,21 +11,22 @@ const squat = {
   equipment: 'bilanciere', intensity_technique: 'Rest Pause',
 };
 const basePlan = { id: 5, name: 'Gambe', days: [{ id: 3, name: 'Gambe', exercises: [squat] }] };
-let activePlan = basePlan;
+// 1 riscaldamento + 3 serie con ripetizioni a lista
+const listRepsPlan = { id: 5, name: 'Gambe', days: [{ id: 3, name: 'Gambe', exercises: [{ ...squat, warmup_sets: 1, sets: 3, reps: '8/6/4' }] }] };
 
 let fetchMock;
 beforeEach(() => {
   fetchMock = vi.fn(() => Promise.resolve(json({ success: true })));
   vi.stubGlobal('fetch', fetchMock);
 });
-afterEach(() => { vi.unstubAllGlobals(); activePlan = basePlan; });
+afterEach(() => { vi.unstubAllGlobals(); });
 
-const open = () => {
+const open = (activePlan = basePlan) => {
   render(<RecordWorkoutDialog open onClose={() => {}} activePlan={activePlan} />);
   fireEvent.mouseDown(screen.getByRole('combobox'));
   fireEvent.click(screen.getByRole('option', { name: 'Gambe' }));
 };
-const toggles = () => [1, 2, 3, 4].map((n) => screen.getByRole('checkbox', { name: `Riscaldamento: serie ${n}` }));
+const toggles = () => [1, 2, 3, 4].map((n) => screen.getByRole('checkbox', { name: `Risc. (riscaldamento), serie ${n}` }));
 const fill = (row, weight, reps) => {
   fireEvent.change(screen.getAllByLabelText('Peso (kg)')[row], { target: { value: weight } });
   fireEvent.change(screen.getAllByLabelText('Ripetizioni')[row], { target: { value: reps } });
@@ -64,12 +65,11 @@ describe('ripetizioni suggerite dalla scheda', () => {
   const placeholders = () => screen.getAllByLabelText('Ripetizioni').map((i) => i.getAttribute('placeholder') ?? '');
 
   it('seguono le righe che in questo momento non sono riscaldamento, non la loro posizione', () => {
-    activePlan = { id: 5, name: 'Gambe', days: [{ id: 3, name: 'Gambe', exercises: [{ ...squat, warmup_sets: 1, sets: 3, reps: '8/6/4' }] }] };
-    open();
+    open(listRepsPlan);
     expect(placeholders()).toEqual(['', '8', '6', '4']);
     // Il riscaldamento passa in fondo: le tre serie allenanti ripartono da 8
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Riscaldamento: serie 1' }));
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Riscaldamento: serie 4' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Risc. (riscaldamento), serie 1' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Risc. (riscaldamento), serie 4' }));
     expect(placeholders()).toEqual(['8', '6', '4', '']);
   });
 });
@@ -89,10 +89,9 @@ describe('ripetizioni precompilate dalla scheda', () => {
   const values = () => screen.getAllByLabelText('Ripetizioni').map((i) => i.value);
 
   it('scalano con le righe che non sono riscaldamento, salvo quelle già scritte', () => {
-    activePlan = { id: 5, name: 'Gambe', days: [{ id: 3, name: 'Gambe', exercises: [{ ...squat, warmup_sets: 1, sets: 3, reps: '8/6/4' }] }] };
-    open();
+    open(listRepsPlan);
     expect(values()).toEqual(['', '8', '6', '4']);
-    const warmup = screen.getByRole('checkbox', { name: 'Riscaldamento: serie 1' });
+    const warmup = screen.getByRole('checkbox', { name: 'Risc. (riscaldamento), serie 1' });
     fireEvent.click(warmup);
     // Quattro serie allenanti per una scheda da tre: l'ultima ripete l'ultimo valore
     expect(values()).toEqual(['8', '6', '4', '4']);
