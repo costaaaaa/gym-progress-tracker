@@ -3,7 +3,7 @@ import { History as HistoryIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
 import { intlLocale } from '../../i18n/format';
-import { clockDate, clockDay } from '../../utils/calendarDay';
+import { clockDay, shiftDay } from '../../utils/calendarDay';
 import { currentTimeZone, zoneClock } from '../../utils/workoutTime';
 
 // Oltre questa età la bozza è una sessione dimenticata: il backend non usa più start_time da solo
@@ -11,8 +11,6 @@ const DRAFT_STALE_MS = 4 * 60 * 60 * 1000;
 const RETRO_MAX_DAYS = 7;
 
 const draftIsStale = (draft) => Date.now() - new Date(draft.startTime).getTime() > DRAFT_STALE_MS;
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Bozza trovata all'apertura: riprendi, scarta, oppure (se vecchia) chiudila come già finita su un giorno scelto
 export default function ResumePromptPhase({ draftToResume, retroDateInput, onRetroDateChange, onResume, onFinished, onDiscard }) {
@@ -22,10 +20,7 @@ export default function ResumePromptPhase({ draftToResume, retroDateInput, onRet
   // Il giorno è quello del luogo dell'allenamento (lo stesso che ricava il server), non quello del browser
   const zone = draftToResume.timeZone || currentTimeZone();
   const today = clockDay(zoneClock(Date.now(), zone));
-  const retroDateBounds = {
-    min: new Date(clockDate(today).getTime() - RETRO_MAX_DAYS * DAY_MS).toISOString().slice(0, 10),
-    max: today,
-  };
+  const retroDateBounds = { min: shiftDay(today, -RETRO_MAX_DAYS), max: today };
   const startDay = clockDay(zoneClock(draftToResume.startTime, zone));
   retroDateBounds.initial = startDay < retroDateBounds.min ? retroDateBounds.min : startDay;
   const chosenRetro = retroDateInput || retroDateBounds.initial;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clockDate, clockDay, localDate } from './calendarDay';
+import { clockDate, clockDay, localDate, shiftDay } from './calendarDay';
 import { setBrowserTimeZone } from '../test/timeZone';
 
 describe('clockDate: l\'ora locale del luogo letta come orologio', () => {
@@ -53,5 +53,18 @@ describe('localDate: l\'orologio scritto come Date nel fuso del browser', () => 
   });
   it('valore illeggibile: data non valida', () => {
     expect(Number.isNaN(localDate('boh').getTime())).toBe(true);
+  });
+});
+
+describe('shiftDay: giorno più o meno N giorni di calendario', () => {
+  it('avanti, indietro, a cavallo di mese e anno', () => {
+    expect(shiftDay('2026-10-20', -7)).toBe('2026-10-13');
+    expect(shiftDay('2026-10-30', 3)).toBe('2026-11-02');
+    expect(shiftDay('2026-01-02', -3)).toBe('2025-12-30');
+  });
+  it('il cambio dell\'ora legale non sposta nulla (e 0 non cambia il giorno)', () => {
+    setBrowserTimeZone('America/New_York');
+    expect(shiftDay('2026-11-03', -3)).toBe('2026-10-31');
+    expect(shiftDay('2026-11-01', 0)).toBe('2026-11-01');
   });
 });

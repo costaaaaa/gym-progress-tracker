@@ -610,7 +610,7 @@ export default function useFocusSession() {
   // Sessione salvata in ritardo: inizio e fine spostati sul giorno scelto, stesso orario e stessa durata
   const retroPayload = () => {
     const start = new Date(startTime);
-    const moved = new Date(moveToZoneDay(start, retroDate, timeZone || currentTimeZone()));
+    const moved = new Date(moveToZoneDay(start, retroDate, timeZone));
     const shift = moved.getTime() - start.getTime();
     const end = netEnd();
     return {

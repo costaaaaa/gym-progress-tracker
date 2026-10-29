@@ -277,6 +277,11 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
   // Il server sposta solo gli allenamenti degli ultimi 30 giorni
   const oldestMovable = useMemo(() => format(subDays(new Date(), 30), 'yyyy-MM-dd'), []);
 
+  const isTooOldToMove = (workout) => {
+    const day = clockDay(workout.date);
+    return day !== null && day < oldestMovable;
+  };
+
   const handleEditDateClick = (workout, event) => {
     event.stopPropagation();
     setWorkoutToEdit(workout);
@@ -288,7 +293,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
     { key: 'share', label: t('history.share_aria'), icon: <ShareIcon fontSize="small" />, run: () => handleShareClick(workout) },
     {
       key: 'edit-date', label: t('history.edit_date_aria'), icon: <EditCalendarIcon fontSize="small" />,
-      disabled: (clockDay(workout.date) ?? oldestMovable) < oldestMovable, disabledHint: t('history.date.too_old'),
+      disabled: isTooOldToMove(workout), disabledHint: t('history.date.too_old'),
       run: (e) => handleEditDateClick(workout, e),
     },
     { key: 'delete', label: t('history.delete_aria'), icon: <DeleteIcon fontSize="small" />, run: (e) => handleDeleteClick(workout, e) },
