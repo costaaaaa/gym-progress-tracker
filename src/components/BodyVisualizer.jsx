@@ -3,20 +3,7 @@ import { Box, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { muscleLabel } from '../i18n/labels';
 import { groupRecovery } from '../utils/recoveryGroups';
-
-// Stato grezzo dal backend → colore del tema (palette.recovery).
-const STATUS_COLOR = {
-  PRONTO: 'recovery.ready',
-  'IN RECUPERO': 'recovery.recovering',
-  AFFATICATO: 'recovery.fatigued',
-};
-
-// "pronto oggi" / "pronto domani" / "pronto tra N giorni": mai l'ora, il calcolo è una stima.
-const readyLabel = (t, days) => {
-  if (days === 0) return t('recovery.ready_today');
-  if (days === 1) return t('recovery.ready_tomorrow');
-  return t('recovery.ready_in_days', { count: days });
-};
+import { STATUS_COLOR, readyLabel } from '../utils/recoveryStatus';
 
 // Una riga: nome, barra di avanzamento del recupero, scritta a destra.
 // Larghezze fisse: 104 px per "Quadricipiti", 112 px per "pronto tra N giorni" / "ready in N days".

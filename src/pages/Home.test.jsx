@@ -23,6 +23,11 @@ const responses = {
     weekly_workouts: 2,
     weekly_goal: 3,
     weekly_volume: { total_weight: 4200, total_reps: 96 },
+    weekly_sets: {
+      week: { petto: 5, schiena: 3, spalle: 0, bicipiti: 0, tricipiti: 0, addome: 0, quadricipiti: 0, femorali: 0, glutei: 0, adduttori: 0, abduttori: 0, polpacci: 0 },
+      previous_to_date: { petto: 2, schiena: 1, spalle: 0, bicipiti: 0, tricipiti: 0, addome: 0, quadricipiti: 0, femorali: 0, glutei: 0, adduttori: 0, abduttori: 0, polpacci: 0 },
+      previous_total: 10,
+    },
     recovery: {},
   },
   'gamification/streak.php': {
@@ -96,6 +101,39 @@ describe('home dopo il login', () => {
       expect(await screen.findByRole('heading', { name })).toBeTruthy();
     },
   );
+});
+
+describe('home: serie allenanti', () => {
+  it('il riepilogo settimanale mostra il totale delle serie di questa settimana e porta alla scheda Muscoli', async () => {
+    renderHome();
+    const label = await screen.findByText('Serie allenanti');
+    const link = label.closest('a');
+    expect(link.getAttribute('href')).toBe('/dashboard?tab=muscles');
+    expect(link.textContent).toContain('8'); // 5 petto + 3 schiena
+  });
+
+  it('sotto Stato muscolare c\'è il link alla scheda Muscoli', async () => {
+    renderHome();
+    const link = await screen.findByRole('link', { name: 'Serie e recupero per muscolo ›' });
+    expect(link.getAttribute('href')).toBe('/dashboard?tab=muscles');
+  });
+
+  it('senza weekly_sets (server precedente) mostra 0 senza andare in errore', async () => {
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      const key = Object.keys(responses).find((k) => String(url).includes(k));
+      let body = key ? responses[key] : { success: false };
+      if (key === 'workout_stats/dashboard.php') {
+        body = { ...body };
+        delete body.weekly_sets;
+      }
+      return Promise.resolve({ ok: Boolean(key), status: key ? 200 : 404, json: async () => body, text: async () => JSON.stringify(body) });
+    }));
+    renderHome();
+    const label = await screen.findByText('Serie allenanti');
+    const link = label.closest('a');
+    expect(link.getAttribute('href')).toBe('/dashboard?tab=muscles');
+    expect(link.textContent).toContain('0');
+  });
 });
 
 // Il font dei titoli di card è un valore atteso scritto per esteso: non importato dal codice.
