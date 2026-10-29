@@ -15,6 +15,9 @@
   # I sorgenti Markdown e le librerie PHP non vanno mai serviti direttamente.
   RewriteRule ^(content|lib)/ - [F,L]
 
+  # Sitemap degli articoli, generata da sitemap.php
+  RewriteRule ^sitemap\.xml$ sitemap.php [L]
+
   # File e cartelle reali (asset futuri, index.php stesso) passano invariati.
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d

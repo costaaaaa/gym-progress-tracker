@@ -95,6 +95,7 @@ function blog_parse_markdown_file($path)
 function blog_list_articles($dir)
 {
     $articles = array();
+    $today = blog_today();
 
     $files = glob($dir . '/*.md');
     if ($files === false) {
@@ -116,12 +117,45 @@ function blog_list_articles($dir)
             continue; // file incompleto: non finisce nel listing
         }
 
+        if (!blog_is_published($meta, $today)) {
+            continue;
+        }
+
         $articles[] = $meta;
     }
 
     usort($articles, 'blog_compare_by_date_desc');
 
     return $articles;
+}
+
+/**
+ * Data di oggi (YYYY-MM-DD) in ora italiana: e' il giorno che conta per la data degli articoli.
+ */
+function blog_today()
+{
+    $now = new DateTime('now', new DateTimeZone('Europe/Rome'));
+
+    return $now->format('Y-m-d');
+}
+
+/**
+ * Un articolo con data futura resta nascosto (listing, pagina, sitemap) fino a quel giorno:
+ * cosi' piu' articoli entrano nell'immagine con una sola build e ognuno esce alla sua data.
+ * Una data assente o non nel formato YYYY-MM-DD non nasconde l'articolo.
+ *
+ * @param array<string,string> $meta
+ * @param string $today Risultato di blog_today().
+ * @return bool
+ */
+function blog_is_published($meta, $today)
+{
+    $date = isset($meta['date']) ? trim($meta['date']) : '';
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        return true;
+    }
+
+    return strcmp($date, $today) <= 0;
 }
 
 /**

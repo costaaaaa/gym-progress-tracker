@@ -11,11 +11,18 @@ articoli è contenuto editoriale di brand e resta fuori dal repo pubblico, anche
 per evitare che GitHub ne indicizzi una copia in concorrenza con la pagina
 pubblicata.
 
+**Dove stanno:** nel repo privato `gym-content`, cartella `blog/articoli/`
+(con piano editoriale, brief e regole di scrittura). La build delle immagini in
+`gym-infra` li copia qui dentro l'immagine: per pubblicare un articolo si fa il
+commit in `gym-content`, poi build e deploy.
+
 **Conseguenze pratiche:**
-- I `.md` vanno caricati sul server **a mano**, insieme al resto di `blog/`.
-- Vanno tenuti in **backup fuori dal repo** — se perdi la copia locale non c'è
-  storia git da cui recuperarli.
-- Un clone fresco del repo trova questa cartella vuota: il blog risponde
+- Un articolo con `date` futura resta nascosto (listing, pagina e sitemap) fino
+  a quel giorno, in ora italiana: più articoli possono entrare con una sola
+  build e ognuno esce alla sua data.
+- Gli articoli pubblicati finiscono in `/blog/sitemap.xml` (`sitemap.php`),
+  segnalata in `public/robots.txt`.
+- Un clone fresco di questo repo trova la cartella vuota: il blog risponde
   regolarmente ma mostra "Nessun articolo pubblicato al momento".
 
 ## Formato
@@ -47,7 +54,7 @@ Il campo `slug` non serve: **il nome del file è la fonte di verità** per l'URL
 
 ## Prima di pubblicare
 
-- Il testo di riferimento per ogni articolo sta in `docs/seo/content-briefs/`.
+- Il testo di riferimento per ogni articolo sta in `gym-content`, `blog/briefs/`.
 - Niente anno nel titolo (`(2026)`): la data sta nel campo `date`, così
   l'articolo non porta con sé un impegno implicito di aggiornamento annuale.
 - L'articolo pillar va pubblicato **prima** dei satelliti, e ogni articolo deve
@@ -55,11 +62,16 @@ Il campo `slug` non serve: **il nome del file è la fonte di verità** per l'URL
 
 ## Test in locale
 
+Con `gym-content` clonato accanto a questo repo:
+
 ```sh
+cp ../gym-content/blog/articoli/*.md blog/content/
 php -S localhost:8080 -t blog
 # poi: http://localhost:8080/index.php
 #      http://localhost:8080/article.php?slug=<nome-del-file-senza-estensione>
 ```
 
 Il server built-in di PHP ignora gli `.htaccess`, quindi in locale gli URL
-puliti `/blog/<slug>` non funzionano: si testano i due script direttamente.
+puliti `/blog/<slug>` non funzionano: si testano gli script direttamente
+(`sitemap.php` per la sitemap). Un articolo con data futura risponde 404 anche
+in locale: per rileggerlo prima dell'uscita, cambia per un attimo la `date`.

@@ -46,6 +46,9 @@ if ($parsed === null) {
 }
 
 list($meta, $markdown) = $parsed;
+if (!blog_is_published($meta, blog_today())) {
+    blog_not_found();
+}
 
 $title = isset($meta['title']) ? $meta['title'] : $slug;
 $description = isset($meta['description']) ? $meta['description'] : '';
