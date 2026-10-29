@@ -29,7 +29,7 @@ import { track } from '../utils/analytics';
 import { useTranslation } from 'react-i18next';
 import { techniqueLabel } from '../i18n/labels';
 import {
-  MAX_WEIGHT, isValidWeight, newIdempotencyKey, isValidReps, repsNeedConfirm,
+  MAX_WEIGHT, isValidWeight, newIdempotencyKey, isValidReps, repsNeedConfirm, withWarmupRule,
 } from '../utils/focusSession';
 import { initialSetRows, toggleWarmupRow, rowPlanReps } from '../utils/manualEntryRows';
 
@@ -111,17 +111,19 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
       // Modifica: filtriamo solo i set che sono stati compilati (hanno sia peso che ripetizioni)
       const workoutRecords = exercises.flatMap(exercise =>
         workoutData[exercise.id]
-          .map((set, setIndex) => ({
-            exercise_id: exercise.exercise_id,
-            exercise_name: exercise.exercise_name,
-            weight: parseFloat(set.weight),
-            reps: String(set.reps ?? '').trim(),
-            // Il riscaldamento non ha tecnica
-            intensity_technique: set.is_warmup ? '' : set.intensity_technique,
-            is_warmup: !!set.is_warmup,
-            day_id: selectedDay,
-            set_number: setIndex + 1
-          }))
+          .map((row, setIndex) => {
+            const { intensity_technique, is_warmup } = withWarmupRule(row);
+            return {
+              exercise_id: exercise.exercise_id,
+              exercise_name: exercise.exercise_name,
+              weight: parseFloat(row.weight),
+              reps: String(row.reps ?? '').trim(),
+              intensity_technique,
+              is_warmup,
+              day_id: selectedDay,
+              set_number: setIndex + 1
+            };
+          })
           // Filtriamo per includere solo le serie che hanno sia peso che ripetizioni
           .filter(set => isValidWeight(set.weight) && set.reps && set.reps.toString().trim() !== '')
       );

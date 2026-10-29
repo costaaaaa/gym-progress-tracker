@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  lastSessionSets, totalSlots, setSlot, skipWarmup, slotWeight, numberedSets, swapExercise, buildSessionEntry, suggestedWeight,
+  lastSessionSets, totalSlots, setSlot, skipWarmup, slotWeight, numberedSets, withWarmupRule, draftDay, swapExercise, buildSessionEntry, suggestedWeight,
 } from './focusSession';
 
 describe('suggestedWeight: il peso suggerito viene dalle serie allenanti dell\'ultima volta (#67)', () => {
@@ -99,6 +99,27 @@ describe('set da inviare con il riscaldamento (#67)', () => {
       { weight: 80, reps: '5' },
     ];
     expect(numberedSets(sets).map((x) => [x.set_number, x.is_warmup])).toEqual([[1, true], [2, false], [3, false]]);
+  });
+});
+
+describe('regola del riscaldamento sulla serie registrata (#67)', () => {
+  it('il riscaldamento perde la tecnica e is_warmup è sempre un booleano', () => {
+    expect(withWarmupRule({ weight: 20, intensity_technique: 'Drop set', is_warmup: true })).toMatchObject({ intensity_technique: '', is_warmup: true });
+    expect(withWarmupRule({ weight: 80, intensity_technique: 'Drop set' })).toMatchObject({ intensity_technique: 'Drop set', is_warmup: false });
+  });
+});
+
+describe('giorno di una bozza da riprendere (#67)', () => {
+  const selectedDay = { name: 'Gambe', exercises: [{ id: 1, sets: 3, warmup_sets: 2 }, { id: 2, sets: 2, warmup_sets: 1 }] };
+
+  it('con slotsIncludeWarmup il giorno resta com\'è', () => {
+    expect(draftDay({ slotsIncludeWarmup: true, selectedDay })).toEqual(selectedDay);
+  });
+
+  it('senza il segno la sessione prosegue senza riscaldamento, senza toccare il resto', () => {
+    const day = draftDay({ selectedDay });
+    expect(day.exercises.map((e) => [e.id, e.sets, e.warmup_sets])).toEqual([[1, 3, 0], [2, 2, 0]]);
+    expect(day.name).toBe('Gambe');
   });
 });
 

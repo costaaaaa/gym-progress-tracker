@@ -129,9 +129,24 @@ export const newIdempotencyKey = () =>
 // Chiave di una bozza ripresa: la sua, o una nuova per le bozze di prima della chiave
 export const draftIdempotencyKey = (draft) => draft?.idempotencyKey || newIdempotencyKey();
 
+// Regola di una serie registrata: is_warmup è sempre un booleano e il riscaldamento non ha tecnica.
+// Vale per Focus (serie fatta e invio) e per l'inserimento manuale.
+export const withWarmupRule = (set) => ({
+  ...set,
+  is_warmup: !!set.is_warmup,
+  intensity_technique: set.is_warmup ? '' : set.intensity_technique,
+});
+
 // Set da inviare a record_workout.php per un esercizio: set_number consecutivi
 // sulle serie fatte, così le serie saltate non lasciano buchi nel database.
-export const numberedSets = (sets = []) => sets.map((set, i) => ({ ...set, set_number: i + 1, is_warmup: !!set.is_warmup }));
+export const numberedSets = (sets = []) => sets.map((set, i) => ({ ...withWarmupRule(set), set_number: i + 1 }));
+
+// Giorno di una bozza da riprendere. currentSetIndex e skippedSets contano anche le posizioni di
+// riscaldamento solo se la bozza ha slotsIncludeWarmup; senza, la sessione è partita senza
+// riscaldamento e prosegue così (warmup_sets a 0).
+export const draftDay = (draft) => (draft.slotsIncludeWarmup
+  ? draft.selectedDay
+  : { ...draft.selectedDay, exercises: draft.selectedDay.exercises.map((e) => ({ ...e, warmup_sets: 0 })) });
 
 let entrySeq = 0;
 

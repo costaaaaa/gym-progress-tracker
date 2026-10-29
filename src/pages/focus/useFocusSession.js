@@ -8,7 +8,7 @@ import { buildExerciseHistoryIndex, detectPersonalRecords } from '../../utils/wo
 import {
   FEATURE_SESSION_EDIT, isValidWeight, suggestedWeight, slotWeight, totalSlots, setSlot, skipWarmup,
   isValidReps, repsNeedConfirm,
-  numberedSets, buildSessionEntry, swapExercise, insertExercise,
+  numberedSets, withWarmupRule, draftDay, buildSessionEntry, swapExercise, insertExercise,
   newIdempotencyKey, draftIdempotencyKey
 } from '../../utils/focusSession';
 import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../../utils/celebrate';
@@ -116,8 +116,8 @@ export default function useFocusSession() {
         idempotencyKey,
         lastActivityAt,
         pausedMs,
-        // Segno delle posizioni con riscaldamento: senza, currentSetIndex conta le sole serie allenanti
-        warmupSlots: true,
+        // currentSetIndex e skippedSets contano anche le posizioni di riscaldamento
+        slotsIncludeWarmup: true,
         // Fine mostrata nel riepilogo, o fissa se già finita: la ripresa riparte da qui
         summaryEndAt: phase === 'summary' || retroDate ? endTime : null,
         phase: phase === 'rest_timer' ? 'workout' : phase, // Se crasha durante il timer, riprendi dall'esercizio
@@ -267,10 +267,7 @@ export default function useFocusSession() {
   const handleResumeDraft = (finishedOn = null) => {
     if (!draftToResume) return;
 
-    // Una bozza senza il segno è nata senza posizioni di riscaldamento: prosegue così
-    const day = draftToResume.warmupSlots
-      ? draftToResume.selectedDay
-      : { ...draftToResume.selectedDay, exercises: draftToResume.selectedDay.exercises.map((e) => ({ ...e, warmup_sets: 0 })) };
+    const day = draftDay(draftToResume);
 
     setActivePlan(draftToResume.activePlan);
     setSelectedDay(day);
@@ -418,14 +415,13 @@ export default function useFocusSession() {
 
     const exerciseId = currentExercise.id;
     const { isWarmup } = currentSlot;
-    const newSet = {
+    const newSet = withWarmupRule({
       setNumber: currentSetIndex + 1,
       weight: parseFloat(weightInput),
       reps: String(parseInt(repsInput, 10)),
-      // Il riscaldamento non ha tecnica (il campo non c'è)
-      intensity_technique: isWarmup ? '' : intensityTechniqueInput,
+      intensity_technique: intensityTechniqueInput,
       is_warmup: isWarmup
-    };
+    });
 
     setCompletedSets(prev => ({
       ...prev,
@@ -477,14 +473,19 @@ export default function useFocusSession() {
     goToNextExercise();
   };
 
+  // Aggiunge posizioni alle serie saltate dell'esercizio corrente
+  const addSkippedSets = (indexes) => {
+    const exerciseId = currentExercise.id;
+    setSkippedSets(prev => ({ ...prev, [exerciseId]: [...(prev[exerciseId] || []), ...indexes] }));
+  };
+
   // Salta solo la serie corrente: non viene registrata e non parte il recupero.
   // Il peso già scritto resta, servirà per la serie dopo.
   const handleSkipSet = () => {
     // workingIndex è -1 in riscaldamento e 0 alla prima serie allenante (= salta esercizio)
     if (currentSlot.workingIndex < 1) return;
     hapticFeedback.light();
-    const exerciseId = currentExercise.id;
-    setSkippedSets(prev => ({ ...prev, [exerciseId]: [...(prev[exerciseId] || []), currentSetIndex] }));
+    addSkippedSets([currentSetIndex]);
     const nextSetIndex = currentSetIndex + 1;
     if (nextSetIndex >= totalSlotsForCurrentExercise) {
       goToNextExercise();
@@ -498,7 +499,7 @@ export default function useFocusSession() {
     if (!currentSlot.isWarmup) return;
     hapticFeedback.light();
     const { skipped, nextIndex } = skipWarmup(currentExercise, currentSetIndex);
-    setSkippedSets(prev => ({ ...prev, [currentExercise.id]: [...(prev[currentExercise.id] || []), ...skipped] }));
+    addSkippedSets(skipped);
     goToSlot(nextIndex, slotWeight(currentExercise, nextIndex, { suggested: getSuggestedWeight(currentExercise) }));
   };
 
