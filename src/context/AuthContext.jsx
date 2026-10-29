@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import { API_BASE_URL } from '../config';
 import i18n from '../i18n';
+import { currentTimeZone } from '../utils/workoutTime';
 
 // Crea il contesto di autenticazione
 const AuthContext = createContext(null);
@@ -88,6 +89,9 @@ export const AuthProvider = ({ children }) => {
         const [input, init] = args;
         const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
         if (!headers.has('X-Locale')) headers.set('X-Locale', i18n.language);
+        // Fuso del dispositivo: "oggi" e "questa settimana" si contano dove si trova l'utente
+        const timeZone = currentTimeZone();
+        if (timeZone && !headers.has('X-Timezone')) headers.set('X-Timezone', timeZone);
         // Un Request si ricostruisce (metodo e corpo si ereditano), non si può modificare
         args = input instanceof Request ? [new Request(input, { ...init, headers })] : [input, { ...init, headers }];
       }
