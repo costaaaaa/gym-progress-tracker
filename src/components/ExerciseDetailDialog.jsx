@@ -124,7 +124,7 @@ const ExerciseDetailDialog = ({ item, onClose }) => {
                       <TableRow key={row.id}>
                         <TableCell sx={cellSx}>
                           {row.dateLabel}
-                          <TimeZoneBadge workout={row} sx={{ display: 'flex', width: 'fit-content', height: 20, fontSize: 11, mt: 0.25 }} />
+                          <TimeZoneBadge workout={row} sx={{ display: 'flex', width: 'fit-content', height: 20, fontSize: 12, mt: 0.25 }} />
                         </TableCell>
                         <TableCell align="right" sx={cellSx}>
                           {row.bestSet

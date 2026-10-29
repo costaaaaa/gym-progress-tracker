@@ -19,6 +19,14 @@ describe('ExerciseDetailDialog: fuso nella cronologia', () => {
     const row = screen.getByText('18/10/2026', { selector: 'td' }).closest('tr');
     expect(within(row).getByText('New York · UTC−4')).toBeTruthy();
   });
+  it('il badge non è sotto i 12px del testo delle celle sul telefono', () => {
+    render(<ExerciseDetailDialog item={item([
+      session(1, '2026-10-18 02:00:00', { started_at: '2026-10-18T02:00:00-04:00', time_zone: 'America/New_York' }),
+    ])} onClose={() => {}} />);
+    const row = screen.getByText('18/10/2026', { selector: 'td' }).closest('tr');
+    const badge = within(row).getByText('New York · UTC−4').closest('.MuiChip-root');
+    expect(parseFloat(getComputedStyle(badge).fontSize)).toBeGreaterThanOrEqual(12);
+  });
   it('una sessione nel fuso del dispositivo non ha il badge', () => {
     render(<ExerciseDetailDialog item={item([
       session(1, '2026-10-18 02:00:00', { started_at: '2026-10-18T02:00:00+02:00', time_zone: 'Europe/Rome' }),
