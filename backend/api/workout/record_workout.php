@@ -138,8 +138,8 @@ try {
     // Bozza ripresa in ritardo: il client manda backdated=true, start_time sul giorno scelto e
     // ended_at (ultimo set registrato) spostato dello stesso scarto.
     $time_zone = valid_time_zone($data->time_zone ?? null) ?? request_time_zone();
-    $now = new DateTime('now', new DateTimeZone($time_zone));
-    $started = DateTimeImmutable::createFromMutable($now);
+    $now = new DateTimeImmutable('now', new DateTimeZone($time_zone));
+    $started = $now;
     $start_gap = null;
     $start = null;
 
@@ -148,7 +148,7 @@ try {
             $start = client_datetime($data->start_time, $time_zone);
             $gap_seconds = $now->getTimestamp() - $start->getTimestamp();
             if ($gap_seconds >= 0 && $gap_seconds <= 4 * 3600) {
-                $started = DateTimeImmutable::createFromMutable($start);
+                $started = $start;
                 $start_gap = $gap_seconds;
             }
         } catch (Exception $e) {
@@ -172,10 +172,10 @@ try {
         // Sessione ripresa in ritardo: start_time è già sul giorno scelto dall'utente. Il client
         // limita la scelta a 7 giorni fa, contati nel fuso attuale del dispositivo; qui 8 per assorbire
         // i fusi orari. Il resto (data locale, tetto al futuro, ended_at) resta nel fuso dell'allenamento.
-        if ($start < (new DateTime('today', new DateTimeZone(request_time_zone())))->modify('-8 days')) {
+        if ($start < user_now()->setTime(0, 0)->modify('-8 days')) {
             api_json_response(['success' => false, 'message' => t_server('workout.record_date_invalid')], 400);
         }
-        $started = DateTimeImmutable::createFromMutable($start > $now ? $now : $start);
+        $started = $start > $now ? $now : $start;
 
         if (!empty($data->ended_at)) {
             try {
