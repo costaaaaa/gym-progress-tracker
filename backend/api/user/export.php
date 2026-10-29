@@ -13,6 +13,14 @@ $db = $database->getConnection();
 
 $user_id = require_authenticated_user($db);
 
+// Colonne data+ora che il database tiene nel fuso del server: nell'export diventano ISO 8601 con
+// offset. Una colonna nuova di questo tipo va aggiunta qui. Le colonne DATE (date, birth_date, ...)
+// restano com'erano.
+const EXPORT_DATETIME_COLUMNS = array(
+    'created_at', 'password_changed_at', 'last_login_at', 'unlocked_at', 'expires_at', 'revoked_at',
+    'granted_at', 'share_consent_at', 'joined_at', 'decided_at',
+);
+
 // Esegue una query con parametri e ritorna tutte le righe
 function export_rows($db, $sql, $params)
 {
@@ -21,7 +29,7 @@ function export_rows($db, $sql, $params)
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     foreach ($rows as &$row) {
         foreach ($row as $column => &$value) {
-            if (substr($column, -3) === '_at') $value = server_time_iso($value);
+            if (in_array($column, EXPORT_DATETIME_COLUMNS, true)) $value = server_time_iso($value);
         }
         unset($value);
     }
@@ -76,7 +84,7 @@ try {
             'name' => $plan['name'],
             'description' => $plan['description'],
             'active' => (bool)$plan['is_active'],
-            'created_at' => server_time_iso($plan['created_at']),
+            'created_at' => $plan['created_at'],
             'days' => isset($daysByPlan[$plan['id']]) ? $daysByPlan[$plan['id']] : array(),
         );
     }
