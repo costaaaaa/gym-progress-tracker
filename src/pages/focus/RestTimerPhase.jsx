@@ -3,7 +3,7 @@ import { SkipNext as SkipNextIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
 import { TABULAR } from '../../utils/fonts';
-import { slotKey } from '../../utils/focusSession';
+import { slotLabel } from './slotLabel';
 
 const formatTime = (seconds) => {
   const mins = Math.floor(seconds / 60);
@@ -33,7 +33,7 @@ export default function RestTimerPhase({
         </Box>
       </Box>
       <Typography variant="body1" sx={{ color: colors.textSecondary, mb: 1 }}>{currentExerciseName}</Typography>
-      <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 4 }}>{nextSet && t(slotKey(nextSet, 'next'), { n: nextSet.number, total: nextSet.total })}</Typography>
+      <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 4 }}>{nextSet && slotLabel(t, nextSet, 'next')}</Typography>
       <Button variant="outlined" size="large" startIcon={<SkipNextIcon />} onClick={onSkip}
         sx={{ color: colors.text, borderColor: colors.border, borderRadius: '12px', px: 4, py: 1.5, fontSize: '1rem',
           '&:hover': { borderColor: colors.text, bgcolor: colors.bgElevated } }}>

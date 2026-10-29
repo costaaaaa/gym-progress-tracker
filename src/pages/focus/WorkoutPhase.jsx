@@ -12,12 +12,13 @@ import { TABULAR } from '../../utils/fonts';
 import ElapsedClock from './ElapsedClock';
 import QuitDialog from './QuitDialog';
 import { INTENSITY_TECHNIQUES } from '../../components/ExerciseDialog';
-import { MAX_WEIGHT, isValidWeight, isValidReps, planRepsForSet, lastSessionSets, setStatus, setSlot, slotKey } from '../../utils/focusSession';
+import { slotLabel } from './slotLabel';
+import { MAX_WEIGHT, isValidWeight, isValidReps, planRepsForSet, lastSessionSets, setStatus, setSlot } from '../../utils/focusSession';
 import { muscleLabel, techniqueLabel } from '../../i18n/labels';
 
 export default function WorkoutPhase({
   currentExercise, currentExerciseIndex, totalExercises, currentSetIndex, totalSlotsForCurrentExercise,
-  currentExerciseSets, canSwap, currentSkippedSets, lastSession, exerciseTransition, clockStart, finishedClock,
+  currentSlot, currentExerciseSets, canSwap, currentSkippedSets, lastSession, exerciseTransition, clockStart, finishedClock,
   weightInput, onWeightChange, repsInput, onRepsChange, intensityTechniqueInput, onIntensityChange,
   onConfirmSet, onSkipSet, onSkipWarmup, onSkipExercise, canEditSession, onOpenPicker, onQuit,
   quitDialogOpen, onCloseQuitDialog, onConfirmQuit, totalCompletedSets,
@@ -25,7 +26,6 @@ export default function WorkoutPhase({
 }) {
   const { t } = useTranslation();
   const { colors } = useFocusColors();
-  const currentSlot = setSlot(currentExercise, currentSetIndex);
   const skipButtonSx = { py: 1.5, color: colors.textSecondary, '&:hover': { color: colors.text, bgcolor: colors.bgElevated } };
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text, display: 'flex', flexDirection: 'column' }}>
@@ -60,7 +60,7 @@ export default function WorkoutPhase({
               const slot = setSlot(currentExercise, idx);
               // Il riscaldamento ha pallini più piccoli (R1, R2) davanti a quelli delle serie allenanti
               const size = slot.isWarmup ? 32 : 40;
-              const name = t(slotKey(slot, 'name'), { n: slot.number });
+              const name = slotLabel(t, slot, 'name');
               return (
                 <Box key={idx} role="img" aria-label={t('focus.dot_label', { name, status: t(`focus.dot_${status}`) })}
                   title={status === 'skipped' ? t('focus.set_skipped') : undefined} sx={{
@@ -70,14 +70,14 @@ export default function WorkoutPhase({
                   color: status === 'done' ? '#fff' : status === 'active' ? colors.text : colors.textSecondary,
                   fontWeight: 700, fontSize: slot.isWarmup ? '0.75rem' : '0.875rem', transition: 'all 0.3s ease'
                 }}>
-                  {status === 'done' ? <CheckIcon sx={{ fontSize: 18 }} /> : status === 'skipped' ? <RemoveIcon sx={{ fontSize: 18 }} /> : t(slotKey(slot, 'dot'), { n: slot.number })}
+                  {status === 'done' ? <CheckIcon sx={{ fontSize: 18 }} /> : status === 'skipped' ? <RemoveIcon sx={{ fontSize: 18 }} /> : slotLabel(t, slot, 'dot')}
                 </Box>
               );
             })}
           </Box>
 
           <Typography variant="subtitle2" sx={{ textAlign: 'center', color: colors.textSecondary, mb: 3 }}>
-            {t(slotKey(currentSlot, 'of'), { n: currentSlot.number, total: currentSlot.total })}
+            {slotLabel(t, currentSlot, 'of')}
           </Typography>
 
           {(() => {
@@ -98,7 +98,7 @@ export default function WorkoutPhase({
                     {lastSets.map((set, idx) => {
                       const isCurrent = idx === currentSlot.workingIndex;
                       return (
-                        <Box key={idx} sx={{
+                        <Box key={idx} aria-current={isCurrent ? 'true' : undefined} sx={{
                           px: 1, py: 0.5, borderRadius: '6px', bgcolor: colors.bgCard,
                           border: `1px solid ${isCurrent ? colors.text : colors.border}`,
                         }}>
@@ -216,7 +216,7 @@ export default function WorkoutPhase({
                     {(() => {
                       // setNumber è la posizione (da 1) della serie: si mostra il numero dentro il suo tipo
                       const slot = setSlot(currentExercise, set.setNumber - 1);
-                      return t(slotKey(slot, 'name'), { n: slot.number });
+                      return slotLabel(t, slot, 'name');
                     })()}
                   </Typography>
                   <Box sx={{ textAlign: 'right' }}>

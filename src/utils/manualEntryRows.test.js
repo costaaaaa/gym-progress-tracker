@@ -60,6 +60,6 @@ describe('righe del manuale: attivare o disattivare il riscaldamento (#67)', () 
   });
 
   it('accendendo il riscaldamento la tecnica nella riga non cambia (il salvataggio la lascia vuota)', () => {
-    expect(toggleWarmupRow(rows('', '8').map((r, i) => ({ ...r, is_warmup: false })), 1, plan)[1].intensity_technique).toBe('Drop set');
+    expect(toggleWarmupRow(rows('', '8').map((r) => ({ ...r, is_warmup: false })), 1, plan)[1].intensity_technique).toBe('Drop set');
   });
 });

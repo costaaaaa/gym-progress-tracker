@@ -29,7 +29,8 @@ const BROWSER_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 const bench = { id: 9, exercise_id: 3, exercise_name: 'Panca piana', sets: 2, reps: '8-10', rest: 90, muscle_group: 'petto' };
 const fly = { id: 10, exercise_id: 4, exercise_name: 'Croci', sets: 2, reps: '12', rest: 60, muscle_group: 'petto' };
-// Catalogo del picker: una sola voce condivisa, perché l'elenco resta in cache fra i test del file
+// Catalogo del picker. FocusExercisePicker lo tiene in una cache di modulo che sopravvive ai test del
+// file: il mock globale qui sotto è l'unico contenuto possibile, quindi cache o rete danno lo stesso risultato
 const CATALOG = [{ id: 20, name: 'Croci ai cavi', muscle_group: 'petto', equipment: 'cavi' }];
 const pushDay = { id: 1, name: 'Push', exercises: [bench] };
 const fullDay = { id: 2, name: 'Push completo', exercises: [bench, fly] };
@@ -91,6 +92,7 @@ beforeEach(() => {
     'user/read.php': () => json({ rest_timer_enabled: true, features: [] }),
     'workout_history/read.php': () => json({ records: [] }),
     'record_workout.php': () => json({ success: true, id: 77 }),
+    'exercise/read_all.php': () => json({ records: CATALOG }),
   };
 });
 afterEach(() => {
@@ -341,7 +343,6 @@ describe('ripresa dal riepilogo: il tempo a pagina chiusa è una pausa', () => {
   const at = (h, m, day = 20) => new Date(2026, 9, day, h, m);
   beforeEach(() => {
     responses['user/read.php'] = () => json({ rest_timer_enabled: true, features: ['focus_session_edit'] });
-    responses['exercise/read_all.php'] = () => json({ records: CATALOG });
   });
 
   // Allenamento Push dalle 18:00, riepilogo alle 19:00
@@ -757,11 +758,15 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     responses['workout_history/read.php'] = () => json({ records: lastTime });
   });
 
-  it('i pallini del riscaldamento (R1, R2) vengono prima di quelli delle serie, più piccoli', async () => {
+  it('i pallini del riscaldamento (R1, R2) vengono prima di quelli delle serie', async () => {
     await startDay('Gambe');
-    const dots = ['R1', 'R2', '1', '2'].map((label) => screen.getByText(label));
-    expect(dots[0].compareDocumentPosition(dots[3]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(parseInt(getComputedStyle(dots[0]).width, 10)).toBeLessThan(parseInt(getComputedStyle(dots[2]).width, 10));
+    const dots = screen.getAllByRole('img').filter((d) => d.getAttribute('aria-label')?.includes(', '));
+    expect(dots.map((d) => [d.textContent, d.getAttribute('aria-label')])).toEqual([
+      ['R1', 'Riscaldamento 1, in corso'],
+      ['R2', 'Riscaldamento 2, da fare'],
+      ['1', 'Serie 1, da fare'],
+      ['2', 'Serie 2, da fare'],
+    ]);
   });
 
   it('in riscaldamento: sottotitolo dedicato, peso vuoto, nessun obiettivo ripetizioni, niente tecnica né chip evidenziata', async () => {
@@ -772,7 +777,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     expect(screen.getByLabelText('Ripetizioni').getAttribute('placeholder')).toBe('');
     expect(screen.queryByText('Tecnica di intensità')).toBeNull();
     // Le chip sono le sole serie allenanti dell'ultima volta e nessuna è quella in corso
-    expect(getComputedStyle(screen.getByText('100kg×5').parentElement).borderColor).not.toBe(INK);
+    expect(screen.getByText('100kg×5').closest('[aria-current]')).toBeNull();
     expect(screen.queryByText('40kg×8')).toBeNull();
   });
 
@@ -797,7 +802,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     expect(screen.getByLabelText('Peso (kg)').value).toBe('100');
     expect(screen.getByLabelText('Ripetizioni').getAttribute('placeholder')).toBe('5');
     expect(screen.getAllByText('Tecnica di intensità').length).toBeGreaterThan(0);
-    expect(getComputedStyle(screen.getByText('100kg×5').parentElement).borderColor).toBe(INK);
+    expect(screen.getByText('100kg×5').closest('[aria-current]')).not.toBeNull();
     // Saltare la prima serie allenante equivale a saltare l'esercizio; "Salta riscaldamento" non c'è più
     expect(screen.queryByRole('button', { name: 'Salta serie' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Salta riscaldamento' })).toBeNull();
@@ -856,7 +861,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
       selectedDayId: 3,
       completedSets: { 11: [{ setNumber: 1, weight: 20, reps: '10', intensity_technique: '', is_warmup: true }] },
       currentSetIndex: 1,
-      slots: true,
+      warmupSlots: true,
     }));
     await mount();
     click('Riprendi allenamento');
@@ -878,7 +883,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     click('Riprendi allenamento');
     expect(screen.getByText('Serie 2 di 2')).toBeTruthy();
     expect(screen.queryByText('R1')).toBeNull();
-    expect(draft()).toMatchObject({ slots: true, selectedDay: { exercises: [{ warmup_sets: 0 }] } });
+    expect(draft()).toMatchObject({ warmupSlots: true, selectedDay: { exercises: [{ warmup_sets: 0 }] } });
   });
 
   it('una bozza di prima del riscaldamento riprende come sempre', async () => {
@@ -930,7 +935,6 @@ describe('serie di riscaldamento della scheda (#67)', () => {
   describe('cambio esercizio', () => {
     beforeEach(() => {
       responses['user/read.php'] = () => json({ rest_timer_enabled: true, features: ['focus_session_edit'] });
-      responses['exercise/read_all.php'] = () => json({ records: CATALOG });
     });
     const swapToCroci = async () => {
       click('Cambia esercizio');

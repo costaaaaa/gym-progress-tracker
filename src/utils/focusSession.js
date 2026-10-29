@@ -66,12 +66,12 @@ export const setSlot = (exercise, slotIndex) => {
 
 // Chiave i18n del testo di una posizione, per tipo: name (nome del pallino e della serie fatta),
 // of (sottotitolo "N di M"), next (prossima serie nel recupero), dot (testo dentro il pallino).
-// Restituisce solo la chiave: la traduzione resta a chi la chiama (nessun import i18n qui).
+// Restituisce solo la chiave (null se il testo è il solo numero): la traduzione resta a chi la chiama.
 const SLOT_KEYS = {
   name: { warmup: 'focus.warmup_n', working: 'focus.set_n' },
   of: { warmup: 'focus.warmup_of', working: 'focus.set_of' },
   next: { warmup: 'focus.next_warmup', working: 'focus.next_set' },
-  dot: { warmup: 'focus.warmup_dot', working: 'focus.set_dot' },
+  dot: { warmup: 'focus.warmup_dot', working: null },
 };
 export const slotKey = (slot, kind) => SLOT_KEYS[kind][slot.isWarmup ? 'warmup' : 'working'];
 

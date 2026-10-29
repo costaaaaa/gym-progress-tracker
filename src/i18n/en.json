@@ -746,7 +746,6 @@
   "focus.warmup_of": "Warm-up {{n}} of {{total}}",
   "focus.next_warmup": "Next: Warm-up {{n}} of {{total}}",
   "focus.skip_warmup": "Skip warm-up",
-  "focus.set_dot": "{{n}}",
   "focus.warmup_dot": "W{{n}}",
   "focus.warmup_n": "Warm-up {{n}}",
   "focus.dot_label": "{{name}}, {{status}}",

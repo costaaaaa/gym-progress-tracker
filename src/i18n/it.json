@@ -746,7 +746,6 @@
   "focus.warmup_of": "Riscaldamento {{n}} di {{total}}",
   "focus.next_warmup": "Prossima: Riscaldamento {{n}} di {{total}}",
   "focus.skip_warmup": "Salta riscaldamento",
-  "focus.set_dot": "{{n}}",
   "focus.warmup_dot": "R{{n}}",
   "focus.warmup_n": "Riscaldamento {{n}}",
   "focus.dot_label": "{{name}}, {{status}}",
