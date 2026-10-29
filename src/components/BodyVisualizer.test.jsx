@@ -6,13 +6,14 @@ import { render, screen, within } from '@testing-library/react';
 import BodyVisualizer from './BodyVisualizer';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { textBelow } from '../test/minText';
+import { setBrowserTimeZone } from '../test/timeZone';
 
 const GREEN = 'rgb(21, 128, 61)';
 const AMBER = 'rgb(180, 83, 9)';
 const BROWN = 'rgb(124, 45, 18)';
 const GREY = 'rgb(107, 102, 99)';
 
-// Oggi: mercoledì 21 ottobre 2026
+// Oggi: mercoledì 21 ottobre 2026. I ready_at sono istanti con offset di Roma: il giorno dipende dal fuso del browser.
 const data = {
   petto: { status: 'PRONTO', percent: 100, ready_at: null },
   glutei: { status: 'PRONTO', percent: 100, ready_at: null },
@@ -24,6 +25,7 @@ const data = {
 };
 
 beforeEach(() => {
+  setBrowserTimeZone('Europe/Rome');
   localStorage.setItem('themeMode', 'light');
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date(2026, 9, 21, 18, 30));

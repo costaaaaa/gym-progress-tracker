@@ -1,9 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { groupRecovery } from './recoveryGroups';
-
-const now = new Date(2026, 9, 21, 18, 30);
+import { setBrowserTimeZone } from '../test/timeZone';
 
 describe('groupRecovery', () => {
+  // ready_at è un istante: il giorno dipende dal fuso del browser, che qui è fissato
+  let now;
+  beforeEach(() => {
+    setBrowserTimeZone('Europe/Rome');
+    now = new Date(2026, 9, 21, 18, 30);
+  });
+
   it('divide i gruppi in "puoi allenare", "a riposo" e "nessun dato"', () => {
     const result = groupRecovery({
       petto: { status: 'PRONTO', percent: 100, ready_at: null },
