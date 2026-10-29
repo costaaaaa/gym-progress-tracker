@@ -6,6 +6,7 @@
 // Copia identica in gym-progress-tracker-mobile/src/domain/shareCard.js.
 // ============================================================================
 
+import { clockDate, isClockString } from './calendarDay';
 import { extractReps, estimateOneRepMax, summarizeSets, buildExerciseHistoryIndex, detectPersonalRecords } from './workoutMetrics';
 
 // Formato della card: dimensioni in px. Storia per le storie, Quadrato per feed e chat.
@@ -59,10 +60,13 @@ export const STRINGS_IT = {
 
 const fill = (template, values) => template.replace(/\{(\w+)\}/g, (_, key) => values[key]);
 
-// "2026-10-02 18:30:00" (MySQL) non è ISO: Safari e Hermes non lo leggono senza la "T".
+// "2026-10-02 18:30:00" (orologio del luogo, non ISO: Safari e Hermes non lo leggono) diventa una Date con quei campi nel fuso locale.
 export const toDate = (value) => {
   if (value instanceof Date) return value;
-  if (typeof value === 'string') return new Date(value.replace(' ', 'T'));
+  if (isClockString(value)) {
+    const c = clockDate(value);
+    return new Date(c.getUTCFullYear(), c.getUTCMonth(), c.getUTCDate(), c.getUTCHours(), c.getUTCMinutes(), c.getUTCSeconds());
+  }
   return new Date(value);
 };
 
