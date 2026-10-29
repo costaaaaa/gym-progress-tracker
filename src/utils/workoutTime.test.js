@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { formatClockTime, differentZone, workoutInstant, zoneCity, workoutZoneBadge, isoClock, zoneClock, moveToZoneDay } from './workoutTime';
+import { setBrowserTimeZone } from '../test/timeZone';
 
 describe('formatClockTime', () => {
   it('mostra l\'ora scritta, senza convertirla nel fuso del browser', () => {
@@ -15,8 +16,9 @@ describe('workoutInstant: l\'istante vero di un allenamento', () => {
 });
 
 describe('offset nel badge', () => {
+  beforeEach(() => setBrowserTimeZone('Europe/Rome'));
   // L'offset si legge dall'ISO di started_at; il fuso (New York) serve solo perché il badge compaia
-  const offset = (iso) => workoutZoneBadge({ time_zone: 'America/New_York', started_at: iso }, 'Europe/Rome')?.split(' · ')[1] ?? null;
+  const offset = (iso) => workoutZoneBadge({ time_zone: 'America/New_York', started_at: iso })?.split(' · ')[1] ?? null;
   it('UTC−4 con il meno tipografico', () => {
     expect(offset('2026-10-18T02:00:00-04:00')).toBe('UTC−4');
   });
@@ -49,36 +51,40 @@ describe('zoneCity', () => {
 });
 
 describe('differentZone', () => {
-  it('true solo con due fusi riconosciuti e diversi', () => {
-    expect(differentZone('America/New_York', 'Europe/Rome')).toBe(true);
-    expect(differentZone('Europe/Rome', 'Europe/Rome')).toBe(false);
-    expect(differentZone('Europe/Kiev', 'Europe/Kyiv')).toBe(false);
+  beforeEach(() => setBrowserTimeZone('Europe/Rome'));
+  it('true solo con un fuso riconosciuto e diverso da quello del browser', () => {
+    expect(differentZone('America/New_York')).toBe(true);
+    expect(differentZone('Europe/Rome')).toBe(false);
+    expect(differentZone('Europe/Kiev')).toBe(true);
+  });
+  it('nome diverso dello stesso fuso (alias IANA): false', () => {
+    setBrowserTimeZone('Europe/Kyiv');
+    expect(differentZone('Europe/Kiev')).toBe(false);
   });
   it('fuso mancante o sconosciuto: false', () => {
-    expect(differentZone(undefined, 'Europe/Rome')).toBe(false);
-    expect(differentZone('America/New_York', null)).toBe(false);
-    expect(differentZone('Mondo/Nuovo', 'Europe/Rome')).toBe(false);
+    expect(differentZone(undefined)).toBe(false);
+    expect(differentZone('Mondo/Nuovo')).toBe(false);
   });
 });
 
 describe('workoutZoneBadge', () => {
+  beforeEach(() => setBrowserTimeZone('Europe/Rome'));
   const ny = { time_zone: 'America/New_York', started_at: '2026-10-18T02:00:00-04:00' };
   it('fuso diverso da quello del browser: città e offset', () => {
-    expect(workoutZoneBadge(ny, 'Europe/Rome')).toBe('New York · UTC−4');
+    expect(workoutZoneBadge(ny)).toBe('New York · UTC−4');
   });
   it('stesso fuso: nessun badge', () => {
-    expect(workoutZoneBadge(ny, 'America/New_York')).toBeNull();
+    setBrowserTimeZone('America/New_York');
+    expect(workoutZoneBadge(ny)).toBeNull();
   });
-  it('allenamento senza fuso o senza started_at (backend vecchio): nessun badge', () => {
-    expect(workoutZoneBadge({ date: '2026-10-18 02:00:00' }, 'Europe/Rome')).toBeNull();
-    expect(workoutZoneBadge({ time_zone: 'America/New_York' }, 'Europe/Rome')).toBeNull();
-  });
-  it('fuso del browser sconosciuto: nessun badge (non si sa se è diverso)', () => {
-    expect(workoutZoneBadge(ny, null)).toBeNull();
+  it('allenamento senza fuso o senza started_at: nessun badge', () => {
+    expect(workoutZoneBadge({ date: '2026-10-18 02:00:00' })).toBeNull();
+    expect(workoutZoneBadge({ time_zone: 'America/New_York' })).toBeNull();
   });
   it('nome diverso dello stesso fuso (alias IANA): nessun badge', () => {
+    setBrowserTimeZone('Europe/Kyiv');
     const kyiv = { time_zone: 'Europe/Kiev', started_at: '2026-10-18T02:00:00+03:00' };
-    expect(workoutZoneBadge(kyiv, 'Europe/Kyiv')).toBeNull();
+    expect(workoutZoneBadge(kyiv)).toBeNull();
   });
 });
 
