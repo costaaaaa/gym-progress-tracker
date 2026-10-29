@@ -10,6 +10,9 @@
  * Gestisce formati come "10", "10-12" (prende il massimo), "10+2",
  * "1 rest pause a 20", "max". Ritorna 0 se non trova numeri.
  */
+// Serie allenante: il riscaldamento (#66) non conta in volume, record, progressi e conteggi.
+export const isWorkingSet = (set) => !set?.is_warmup;
+
 export const extractReps = (repsString) => {
   if (repsString === null || repsString === undefined) return 0;
 
@@ -63,7 +66,7 @@ export const summarizeSets = (sets) => {
 
   if (Array.isArray(sets)) {
     sets.forEach((set) => {
-      if (set.is_warmup) return; // riscaldamento: non allenante, escluso da record e volume (#66)
+      if (!isWorkingSet(set)) return;
       const weight = parseFloat(set.weight) || 0;
       const reps = extractReps(set.reps);
       if (reps <= 0) return;

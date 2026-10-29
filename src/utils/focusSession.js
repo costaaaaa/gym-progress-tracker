@@ -3,7 +3,7 @@
 // aggiunta valgono solo per questa sessione, la scheda non cambia).
 // Stessa logica di src/screens/Focus/focusHelpers.js nell'app mobile.
 
-import { extractReps } from './workoutMetrics';
+import { extractReps, isWorkingSet } from './workoutMetrics';
 
 // Funzione premium che sblocca cambio e aggiunta (vedi user_features() nel backend)
 export const FEATURE_SESSION_EDIT = 'focus_session_edit';
@@ -58,7 +58,7 @@ export const nextSetWeight = (exercise, currentWeight) => (isBodyweight(exercise
 // Serie dell'ultima sessione per le chip "Ultima volta": [{ label, technique }]
 export const lastSessionSets = (lastSession) => {
   if (!lastSession || !Array.isArray(lastSession.sets)) return [];
-  return lastSession.sets.filter((s) => !s.is_warmup).map((s) => {
+  return lastSession.sets.filter(isWorkingSet).map((s) => {
     const w = parseFloat(s.weight) || 0;
     return {
       label: w > 0 ? `${w}kg×${s.reps}` : `${s.reps} rip`,

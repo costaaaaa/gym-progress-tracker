@@ -11,7 +11,7 @@ $user_id = require_authenticated_user($db);
 
 // Query for total volume per workout in the last 3 months. Le serie di riscaldamento (#66)
 // non sono allenanti: escluse dal volume.
-$query = "SELECT
+$query = "SELECT 
             DATE(h.date) as workout_date,
             SUM(s.weight * s.reps) as total_volume
           FROM gym_workout_history h

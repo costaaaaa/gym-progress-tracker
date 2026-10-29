@@ -501,7 +501,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
     });
     setOpenEditExerciseDialog(true);
   };
-
+  
   // Chiusura dialog modifica esercizio
   const handleCloseEditExerciseDialog = () => {
     setOpenEditExerciseDialog(false);

@@ -53,6 +53,7 @@ import TimeZoneBadge from '../components/TimeZoneBadge';
 import { muscleLabel, techniqueLabel } from '../i18n/labels';
 import { achievementCatalog } from '../utils/gamificationLevels';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
+import { isWorkingSet } from '../utils/workoutMetrics';
 
 // Determina il formato dei dati e organizza gli esercizi di un allenamento in modo uniforme
 // (ex helper interno di WorkoutDetailDialog: il backend restituisce righe storiche in due forme
@@ -352,7 +353,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                   border: '1px solid', borderColor: 'divider', borderRadius: '8px',
                   px: 1.25, py: 0.4, fontSize: 12, fontWeight: 600, color: 'text.secondary', flexShrink: 0,
                 }}>
-                  {t('history.sets_count', { count: exercise.sets.filter((set) => !set.is_warmup).length })}
+                  {t('history.sets_count', { count: exercise.sets.filter(isWorkingSet).length })}
                 </Box>
               </Box>
               {exercise.sets.length > 0 ? (

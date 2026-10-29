@@ -107,7 +107,7 @@ echo
 echo "Dashboard: il riscaldamento non conta"
 D="200 $(call GET api/workout_stats/dashboard.php "$A" | cut -d' ' -f2-)"
 check "weekly_sets.week.glutei == 3 (solo le allenanti dello stacco)" "$D" '.weekly_sets.week.glutei == 3'
-check "weekly_volume.total_weight == 500 (100kg x 5 x 3, non le 20kg x 10 x 2 di riscaldamento)" "$D" '.weekly_volume.total_weight == 500'
+check "weekly_volume.total_weight == 1500 (100kg x 5 x 3, non le 20kg x 10 x 2 di riscaldamento)" "$D" '.weekly_volume.total_weight == 1500'
 
 echo
 echo "volume.php: solo le serie allenanti"

@@ -7,7 +7,7 @@
 // ============================================================================
 
 import { isClockString, localDate } from './calendarDay';
-import { extractReps, estimateOneRepMax, summarizeSets, buildExerciseHistoryIndex, detectPersonalRecords } from './workoutMetrics';
+import { extractReps, estimateOneRepMax, summarizeSets, buildExerciseHistoryIndex, detectPersonalRecords, isWorkingSet } from './workoutMetrics';
 
 // Formato della card: dimensioni in px. Storia per le storie, Quadrato per feed e chat.
 export const FORMAT_STORIA = { id: 'storia', label: 'Storia', width: 1080, height: 1920 };
@@ -61,7 +61,7 @@ export const STRINGS_IT = {
 const fill = (template, values) => template.replace(/\{(\w+)\}/g, (_, key) => values[key]);
 
 // Le serie di riscaldamento non sono allenanti: escluse da conteggi, volume e record (#66)
-const workingSets = (sets) => (sets || []).filter((set) => !set.is_warmup);
+const workingSets = (sets) => (sets || []).filter(isWorkingSet);
 
 // "2026-10-02 18:30:00" (orologio del luogo, non ISO: Safari e Hermes non lo leggono) diventa una Date con quei campi nel fuso locale.
 export const toDate = (value) => {
