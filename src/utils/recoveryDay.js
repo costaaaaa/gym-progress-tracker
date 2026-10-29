@@ -1,4 +1,3 @@
-
 import { dayNumber, clockDay, isClockString } from './calendarDay';
 
 // Giorni di calendario da oggi al momento in cui il muscolo torna pronto (0 = oggi, 1 = domani).
