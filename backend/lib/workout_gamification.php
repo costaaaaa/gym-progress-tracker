@@ -21,10 +21,12 @@ function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, Date
 
     // ── Gamification: XP + livelli + achievement ──────────────────────────
 
-    // Serie con ripetizioni, per esercizio (il peso può essere 0: corpo libero, macchinari)
+    // Serie con ripetizioni, per esercizio (il peso può essere 0: corpo libero, macchinari).
+    // Le serie di riscaldamento (#66) non sono allenanti: niente tonnellaggio, XP né record.
     $current_ex_sets = [];
     foreach ($workout_records as $rec) {
         if (!isset($rec->exercise_id) || empty($rec->exercise_id)) continue;
+        if (!empty($rec->is_warmup)) continue;
         $r = parseReps($rec->reps ?? '0');
         if ($r <= 0) continue;
         $current_ex_sets[(int) $rec->exercise_id][] = ['weight' => (float) ($rec->weight ?? 0), 'reps' => $r];
@@ -44,6 +46,7 @@ function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, Date
              WHERE wh.user_id = ?
                AND ws.exercise_id IN ($placeholders)
                AND ws.workout_history_id != ?
+               AND ws.is_warmup = 0
                AND (wh.date < ? OR (wh.date = ? AND wh.id < ?))"
         );
         $stmt_prev->execute(array_merge([$user_id], $eids_list, [$workout_id, $data_workout, $data_workout, $workout_id]));
@@ -68,6 +71,8 @@ function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, Date
     foreach ($workout_records as $rec) {
         if (!isset($rec->exercise_id) || empty($rec->exercise_id)) continue;
         if ($day_id === 0 && isset($rec->day_id) && is_numeric($rec->day_id)) $day_id = (int) $rec->day_id;
+        // planned_sets (sotto) conta solo le serie allenanti della scheda: niente riscaldamento qui
+        if (!empty($rec->is_warmup)) continue;
         if (parseReps($rec->reps ?? '0') > 0) $done_sets++;
     }
     $planned_sets = null;
@@ -156,7 +161,7 @@ function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, Date
         "SELECT COALESCE(MAX(ws.weight), 0)
          FROM gym_workout_sets ws
          JOIN gym_workout_history wh ON ws.workout_history_id = wh.id
-         WHERE wh.user_id = ?"
+         WHERE wh.user_id = ? AND ws.is_warmup = 0"
     );
     $stmt_mxw->execute([$user_id]);
     $max_weight_ever = (float) $stmt_mxw->fetchColumn();
@@ -250,8 +255,9 @@ function undo_workout_gamification(PDO $db, int $user_id, int $workout_id): arra
 
     $old_total_xp = (int) $gam_row['total_xp'];
     $new_total_xp = max(0, $old_total_xp - $xp_general);
-    // Volume: ricavato dalle serie, quindi vale anche per gli allenamenti senza registro
-    $stmt_sets = $db->prepare("SELECT weight, reps FROM gym_workout_sets WHERE workout_history_id = ?");
+    // Volume: ricavato dalle serie, quindi vale anche per gli allenamenti senza registro.
+    // Le serie di riscaldamento (#66) non hanno contribuito al volume: non vanno sottratte.
+    $stmt_sets = $db->prepare("SELECT weight, reps FROM gym_workout_sets WHERE workout_history_id = ? AND is_warmup = 0");
     $stmt_sets->execute([$workout_id]);
     $workout_volume = 0.0;
     foreach ($stmt_sets->fetchAll(PDO::FETCH_ASSOC) as $set) {
@@ -287,7 +293,7 @@ function undo_workout_gamification(PDO $db, int $user_id, int $workout_id): arra
         "SELECT COALESCE(MAX(ws.weight), 0)
          FROM gym_workout_sets ws
          JOIN gym_workout_history wh ON ws.workout_history_id = wh.id
-         WHERE wh.user_id = ? AND wh.id != ?"
+         WHERE wh.user_id = ? AND wh.id != ? AND ws.is_warmup = 0"
     );
     $stmt_max->execute([$user_id, $workout_id]);
     $still_earned = achievementsForTotals([

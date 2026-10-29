@@ -45,6 +45,7 @@ if (
             $workout_exercise->day_id = $data->day_id;
             $workout_exercise->exercise_id = $data->exercise_id;
             $workout_exercise->sets = $data->sets;
+            $workout_exercise->warmup_sets = $data->warmup_sets ?? 0;
             $workout_exercise->reps = $data->reps;
             $workout_exercise->rest = $data->rest;
             $workout_exercise->notes = isset($data->notes) ? $data->notes : null; // Aggiungiamo il campo notes
@@ -68,6 +69,7 @@ if (
                         "exercise_name" => exercise_display_name($exercise->name, $exercise->name_en),
                         "muscle_group" => $exercise->muscle_group,
                         "sets" => $workout_exercise->sets,
+                        "warmup_sets" => (int) $workout_exercise->warmup_sets,
                         "reps" => $workout_exercise->reps,
                         "rest" => $workout_exercise->rest,
                         "intensity_technique" => $workout_exercise->intensity_technique

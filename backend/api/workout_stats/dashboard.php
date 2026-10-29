@@ -58,11 +58,12 @@ try {
     $stmt_plan->execute([$user_id]);
     $plan_days_total = intval($stmt_plan->fetch(PDO::FETCH_ASSOC)['days_count'] ?? 0);
 
-    // Volume settimanale (Recupero grezzo per calcolo sicuro in PHP)
+    // Volume settimanale (Recupero grezzo per calcolo sicuro in PHP). Le serie di riscaldamento
+    // (#66) non sono allenanti: escluse dal volume.
     $query_volume_raw = "SELECT ws.weight, ws.reps
                         FROM gym_workout_sets ws
                         JOIN gym_workout_history wh ON ws.workout_history_id = wh.id
-                        WHERE wh.user_id = ? AND wh.date >= ?";
+                        WHERE wh.user_id = ? AND wh.date >= ? AND ws.is_warmup = 0";
     $stmt_vol_raw = $db->prepare($query_volume_raw);
     $stmt_vol_raw->execute([$user_id, $monday_str]);
 
@@ -91,13 +92,13 @@ try {
         'addome'       => ['amatoriale' => 36, 'intermedio' => 30, 'avanzato' => 24]
     ];
 
-    // Recupera tutte le serie degli ultimi 10 giorni
+    // Recupera tutte le serie degli ultimi 10 giorni (il riscaldamento, #66, non conta per il recupero)
     $since_str = (clone $now)->modify('-10 days')->format('Y-m-d H:i:s');
     $query_sets = "SELECT wh.date, wh.time_zone, e.primary_muscle, ws.reps, ws.weight
                    FROM gym_workout_sets ws
                    JOIN gym_workout_history wh ON ws.workout_history_id = wh.id
                    JOIN gym_exercises e ON ws.exercise_id = e.id
-                   WHERE wh.user_id = ? AND wh.date >= ?
+                   WHERE wh.user_id = ? AND wh.date >= ? AND ws.is_warmup = 0
                    ORDER BY wh.date ASC";
     $stmt_sets = $db->prepare($query_sets);
     $stmt_sets->execute([$user_id, $since_str]);
@@ -198,13 +199,14 @@ try {
     }
 
     // 4. Serie allenanti per muscolo: questa settimana vs la settimana scorsa allo stesso punto
-    // (bucketing puro in weeklySetsBuckets, testato a parte in tests/weekly_sets_test.php)
+    // (bucketing puro in weeklySetsBuckets, testato a parte in tests/weekly_sets_test.php). Il
+    // riscaldamento (#66) non e' allenante: escluso dal conteggio.
     $previous_monday_str = (clone $monday)->modify('-7 days')->format('Y-m-d H:i:s');
     $query_weekly_sets = "SELECT e.primary_muscle, wh.date
                         FROM gym_workout_sets ws
                         JOIN gym_workout_history wh ON ws.workout_history_id = wh.id
                         JOIN gym_exercises e ON ws.exercise_id = e.id
-                        WHERE wh.user_id = :user_id AND wh.date >= :previous_monday";
+                        WHERE wh.user_id = :user_id AND wh.date >= :previous_monday AND ws.is_warmup = 0";
     $stmt_weekly_sets = $db->prepare($query_weekly_sets);
     $stmt_weekly_sets->execute([
         'previous_monday' => $previous_monday_str,

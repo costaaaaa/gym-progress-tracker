@@ -36,6 +36,7 @@ if (
     $workoutExercise->id = (int) $data->exercise_id;
     $workoutExercise->day_id = (int) $data->day_id;
     $workoutExercise->sets = $data->sets;
+    $workoutExercise->warmup_sets = $data->warmup_sets ?? 0;
     $workoutExercise->reps = $data->reps;
     $workoutExercise->rest = $data->rest;
     $workoutExercise->notes = isset($data->notes) && $data->notes !== "" ? $data->notes : null;

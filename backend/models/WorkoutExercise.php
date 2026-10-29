@@ -10,6 +10,7 @@ class WorkoutExercise
     public $day_id;
     public $exercise_id;
     public $sets;
+    public $warmup_sets;
     public $reps;
     public $rest;
     public $notes;
@@ -34,6 +35,7 @@ class WorkoutExercise
         $this->day_id = htmlspecialchars(strip_tags($this->day_id));
         $this->exercise_id = htmlspecialchars(strip_tags($this->exercise_id));
         $this->sets = htmlspecialchars(strip_tags($this->sets));
+        $this->warmup_sets = htmlspecialchars(strip_tags($this->warmup_sets ?? 0));
         // Niente htmlspecialchars sul testo libero: l'escape lo fa chi lo mostra (vedi Exercise::create)
         $this->reps = trim((string)$this->reps);
         $this->rest = htmlspecialchars(strip_tags($this->rest));
@@ -46,6 +48,7 @@ class WorkoutExercise
                     day_id = :day_id,
                     exercise_id = :exercise_id,
                     sets = :sets,
+                    warmup_sets = :warmup_sets,
                     reps = :reps,
                     rest = :rest,
                     notes = :notes,
@@ -58,6 +61,7 @@ class WorkoutExercise
         $stmt->bindParam(":day_id", $this->day_id);
         $stmt->bindParam(":exercise_id", $this->exercise_id);
         $stmt->bindParam(":sets", $this->sets);
+        $stmt->bindParam(":warmup_sets", $this->warmup_sets);
         $stmt->bindParam(":reps", $this->reps);
         $stmt->bindParam(":rest", $this->rest);
         $stmt->bindParam(":notes", $this->notes);
@@ -76,7 +80,7 @@ class WorkoutExercise
     public function readByDay()
     {
         // Query to read all records with exercise details
-        $query = "SELECT we.id, we.day_id, we.exercise_id, we.sets, we.reps, we.rest, we.notes, we.intensity_technique, 
+        $query = "SELECT we.id, we.day_id, we.exercise_id, we.sets, we.warmup_sets, we.reps, we.rest, we.notes, we.intensity_technique,
                     we.created_at, we.updated_at, " . exercise_name_sql() . " as exercise_name, e.muscle_group
                 FROM " . $this->table_name . " we
                 LEFT JOIN gym_exercises e ON we.exercise_id = e.id
@@ -99,7 +103,7 @@ class WorkoutExercise
     public function readOne()
     {
         // Query to read single record with exercise details
-        $query = "SELECT we.id, we.day_id, we.exercise_id, we.sets, we.reps, we.rest, we.notes, we.intensity_technique, 
+        $query = "SELECT we.id, we.day_id, we.exercise_id, we.sets, we.warmup_sets, we.reps, we.rest, we.notes, we.intensity_technique,
                     we.created_at, we.updated_at, " . exercise_name_sql() . " as exercise_name, e.muscle_group
                 FROM " . $this->table_name . " we
                 LEFT JOIN gym_exercises e ON we.exercise_id = e.id
@@ -124,6 +128,7 @@ class WorkoutExercise
             $this->day_id = $row['day_id'];
             $this->exercise_id = $row['exercise_id'];
             $this->sets = $row['sets'];
+            $this->warmup_sets = $row['warmup_sets'];
             $this->reps = $row['reps'];
             $this->rest = $row['rest'];
             $this->notes = $row['notes'];
@@ -143,6 +148,7 @@ class WorkoutExercise
     {
         // Sanitize inputs
         $this->sets = htmlspecialchars(strip_tags($this->sets));
+        $this->warmup_sets = htmlspecialchars(strip_tags($this->warmup_sets ?? 0));
         $this->reps = trim((string)$this->reps);
         $this->rest = htmlspecialchars(strip_tags($this->rest));
         $this->notes = isset($this->notes) ? trim((string)$this->notes) : null;
@@ -153,6 +159,7 @@ class WorkoutExercise
         $query = "UPDATE " . $this->table_name . "
                 SET
                     sets = :sets,
+                    warmup_sets = :warmup_sets,
                     reps = :reps,
                     rest = :rest,
                     notes = :notes,
@@ -164,6 +171,7 @@ class WorkoutExercise
 
         // Bind values
         $stmt->bindParam(":sets", $this->sets);
+        $stmt->bindParam(":warmup_sets", $this->warmup_sets);
         $stmt->bindParam(":reps", $this->reps);
         $stmt->bindParam(":rest", $this->rest);
         $stmt->bindParam(":notes", $this->notes);
@@ -255,6 +263,7 @@ class WorkoutExercise
             $query = "UPDATE " . $this->table_name . " SET 
                       exercise_id = :exercise_id,
                       sets = :sets,
+                      warmup_sets = :warmup_sets,
                       reps = :reps,
                       rest = :rest,
                       notes = :notes,
@@ -265,6 +274,7 @@ class WorkoutExercise
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':exercise_id', $previous_exercise['exercise_id']);
             $stmt->bindParam(':sets', $previous_exercise['sets']);
+            $stmt->bindParam(':warmup_sets', $previous_exercise['warmup_sets']);
             $stmt->bindParam(':reps', $previous_exercise['reps']);
             $stmt->bindParam(':rest', $previous_exercise['rest']);
             $stmt->bindParam(':notes', $previous_exercise['notes']);
@@ -276,6 +286,7 @@ class WorkoutExercise
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':exercise_id', $current_exercise['exercise_id']);
             $stmt->bindParam(':sets', $current_exercise['sets']);
+            $stmt->bindParam(':warmup_sets', $current_exercise['warmup_sets']);
             $stmt->bindParam(':reps', $current_exercise['reps']);
             $stmt->bindParam(':rest', $current_exercise['rest']);
             $stmt->bindParam(':notes', $current_exercise['notes']);
@@ -350,6 +361,7 @@ class WorkoutExercise
             $query = "UPDATE " . $this->table_name . " SET 
                       exercise_id = :exercise_id,
                       sets = :sets,
+                      warmup_sets = :warmup_sets,
                       reps = :reps,
                       rest = :rest,
                       notes = :notes,
@@ -360,6 +372,7 @@ class WorkoutExercise
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':exercise_id', $next_exercise['exercise_id']);
             $stmt->bindParam(':sets', $next_exercise['sets']);
+            $stmt->bindParam(':warmup_sets', $next_exercise['warmup_sets']);
             $stmt->bindParam(':reps', $next_exercise['reps']);
             $stmt->bindParam(':rest', $next_exercise['rest']);
             $stmt->bindParam(':notes', $next_exercise['notes']);
@@ -371,6 +384,7 @@ class WorkoutExercise
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':exercise_id', $current_exercise['exercise_id']);
             $stmt->bindParam(':sets', $current_exercise['sets']);
+            $stmt->bindParam(':warmup_sets', $current_exercise['warmup_sets']);
             $stmt->bindParam(':reps', $current_exercise['reps']);
             $stmt->bindParam(':rest', $current_exercise['rest']);
             $stmt->bindParam(':notes', $current_exercise['notes']);

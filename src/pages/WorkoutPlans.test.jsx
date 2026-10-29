@@ -57,6 +57,60 @@ describe('giorno aperto', () => {
   });
 });
 
+describe('serie di riscaldamento (#66)', () => {
+  const planWithWarmup = {
+    ...plan,
+    days: [{
+      ...plan.days[0],
+      exercises: [
+        { ...plan.days[0].exercises[0], warmup_sets: 2 },
+        plan.days[0].exercises[1],
+      ],
+    }],
+  };
+
+  it('il riepilogo mostra "N risc. +" solo per l\'esercizio con warmup_sets > 0', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(json({ records: [planWithWarmup] }))));
+    render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
+    fireEvent.click(await screen.findByRole('button', { name: 'Mostra dettagli' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Dettagli' }));
+    await screen.findByText('Panca piana');
+
+    expect(screen.getByText('2 risc. + 4 serie x 6-8 - recupero: 120s')).toBeTruthy();
+  });
+
+  it('non mostra il prefisso per un esercizio senza riscaldamento', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(json({ records: [planWithWarmup] }))));
+    render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
+    fireEvent.click(await screen.findByRole('button', { name: 'Mostra dettagli' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Dettagli' }));
+    await screen.findByText('Croci ai cavi');
+
+    expect(screen.getByText('3 serie x 12 - recupero: 60s')).toBeTruthy();
+  });
+
+  it('modificare l\'esercizio invia warmup_sets a update_exercise.php', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve(json({ records: [planWithWarmup] })));
+    vi.stubGlobal('fetch', fetchMock);
+    render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
+    fireEvent.click(await screen.findByRole('button', { name: 'Mostra dettagli' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Dettagli' }));
+    await screen.findByText('Panca piana');
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Modifica esercizio' })[0]);
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByLabelText('Serie di riscaldamento').value).toBe('2');
+
+    fireEvent.change(within(dialog).getByLabelText('Serie di riscaldamento'), { target: { value: '3' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Salva modifiche' }));
+
+    await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => url.includes('update_exercise.php'))).toBe(true));
+    const call = fetchMock.mock.calls.find(([url]) => url.includes('update_exercise.php'));
+    const body = JSON.parse(call[1].body);
+    expect(body.warmup_sets).toBe(3);
+  });
+});
+
 describe('dialogo di eliminazione di un esercizio', () => {
   it('il rosso resta nel dialogo: il bottone di conferma è pieno rosso', async () => {
     await openDay();

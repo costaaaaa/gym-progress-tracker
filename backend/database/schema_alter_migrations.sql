@@ -617,3 +617,23 @@ UPDATE `gym_exercises` SET `primary_muscle` = 'glutei'
 
 UPDATE `gym_exercises` SET `primary_muscle` = 'adduttori'
   WHERE `created_by` IS NULL AND LOWER(`muscle_group`) = 'gambe' AND `name` = 'Adductor Machine';
+
+-- ------------------------------------------------------------------------------
+-- 31. Serie di riscaldamento (#66): non sono serie allenanti, si aggiungono a `sets` (una
+--     scheda con sets=3, warmup_sets=2 vale 2 serie di riscaldamento + 3 allenanti).
+--     gym_workout_exercises.warmup_sets è quante ne prevede la scheda per quell'esercizio;
+--     gym_workout_sets.is_warmup segna le singole serie dello storico. Restano visibili nello
+--     storico ma sono escluse da conteggio serie, recupero, tonnellaggio/volume (ovunque: volume
+--     settimanale, workout_stats/volume.php, classifica dei gruppi, volume e achievement a vita,
+--     XP) e record personali: vedi backend/lib/weekly_stats.php, workout_gamification.php,
+--     workout_stats/dashboard.php e volume.php. In questo passo nessuno le scrive dall'interfaccia
+--     (Focus e inserimento manuale sono il passo successivo, #67): is_warmup resta sempre 0 nei
+--     dati reali finché non arriva quell'interfaccia. Colonne nuove NOT NULL DEFAULT 0: il
+--     rollback del codice resta possibile.
+-- ------------------------------------------------------------------------------
+
+ALTER TABLE `gym_workout_exercises`
+  ADD COLUMN `warmup_sets` TINYINT(3) UNSIGNED NOT NULL DEFAULT 0 AFTER `sets`;
+
+ALTER TABLE `gym_workout_sets`
+  ADD COLUMN `is_warmup` TINYINT(1) NOT NULL DEFAULT 0 AFTER `intensity_technique`;

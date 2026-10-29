@@ -85,6 +85,7 @@ CREATE TABLE IF NOT EXISTS `gym_workout_exercises` (
   `day_id` int(11) NOT NULL,
   `exercise_id` int(11) NOT NULL,
   `sets` int(11) NOT NULL,
+  `warmup_sets` tinyint(3) unsigned NOT NULL DEFAULT 0, -- serie di riscaldamento, in aggiunta a `sets` (#66)
   `reps` varchar(20) NOT NULL,
   `rest` int(11) NOT NULL,
   `intensity_technique` varchar(100) DEFAULT NULL,
@@ -163,6 +164,7 @@ CREATE TABLE IF NOT EXISTS `gym_workout_sets` (
   `weight` decimal(5,2) NOT NULL,
   `reps` varchar(50) NOT NULL,
   `intensity_technique` varchar(100) DEFAULT NULL,
+  `is_warmup` tinyint(1) NOT NULL DEFAULT 0, -- serie di riscaldamento: non allenante, esclusa da volume/record (#66)
   PRIMARY KEY (`id`),
   KEY `workout_history_id` (`workout_history_id`),
   KEY `exercise_id` (`exercise_id`),

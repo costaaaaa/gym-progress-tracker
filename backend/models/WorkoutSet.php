@@ -13,6 +13,7 @@ class WorkoutSet
     public $weight;
     public $reps;
     public $intensity_technique;
+    public $is_warmup;
 
     // Extra properties for joins
     public $exercise_name;
@@ -35,7 +36,8 @@ class WorkoutSet
                         set_number = :set_number,
                         weight = :weight,
                         reps = :reps,
-                        intensity_technique = :intensity_technique";
+                        intensity_technique = :intensity_technique,
+                        is_warmup = :is_warmup";
 
             // Prepare query
             $stmt = $this->conn->prepare($query);
@@ -48,6 +50,7 @@ class WorkoutSet
             // Niente htmlspecialchars sul testo libero: l'escape lo fa chi lo mostra (vedi Exercise::create)
             $this->reps = trim((string)$this->reps);
             $this->intensity_technique = isset($this->intensity_technique) ? trim((string)$this->intensity_technique) : null;
+            $this->is_warmup = !empty($this->is_warmup) ? 1 : 0;
 
             // Bind values
             $stmt->bindParam(":workout_history_id", $this->workout_history_id);
@@ -56,6 +59,7 @@ class WorkoutSet
             $stmt->bindParam(":weight", $this->weight);
             $stmt->bindParam(":reps", $this->reps);
             $stmt->bindParam(":intensity_technique", $this->intensity_technique);
+            $stmt->bindParam(":is_warmup", $this->is_warmup, PDO::PARAM_INT);
 
             // Execute query
             if ($stmt->execute()) {
@@ -73,7 +77,7 @@ class WorkoutSet
     // Read all sets for a specific user to optimize N+1 queries
     public function readAllByUserId($user_id)
     {
-        $query = "SELECT ws.id, ws.workout_history_id, ws.exercise_id, ws.set_number, ws.weight, ws.reps, ws.intensity_technique,
+        $query = "SELECT ws.id, ws.workout_history_id, ws.exercise_id, ws.set_number, ws.weight, ws.reps, ws.intensity_technique, ws.is_warmup,
                        " . exercise_name_sql() . " as exercise_name, e.muscle_group
                 FROM " . $this->table_name . " ws
                 LEFT JOIN gym_exercises e ON ws.exercise_id = e.id
@@ -92,7 +96,7 @@ class WorkoutSet
     public function readByWorkoutId()
     {
         // Query to read sets with exercise info
-        $query = "SELECT ws.id, ws.workout_history_id, ws.exercise_id, ws.set_number, ws.weight, ws.reps, ws.intensity_technique,
+        $query = "SELECT ws.id, ws.workout_history_id, ws.exercise_id, ws.set_number, ws.weight, ws.reps, ws.intensity_technique, ws.is_warmup,
                        " . exercise_name_sql() . " as exercise_name, e.muscle_group
                 FROM " . $this->table_name . " ws
                 LEFT JOIN gym_exercises e ON ws.exercise_id = e.id
@@ -153,7 +157,8 @@ class WorkoutSet
                     'set_number' => $set['set_number'],
                     'weight' => $set['weight'],
                     'reps' => $set['reps'],
-                    'intensity_technique' => $set['intensity_technique']
+                    'intensity_technique' => $set['intensity_technique'],
+                    'is_warmup' => (bool) $set['is_warmup']
                 ];
             }
         }
