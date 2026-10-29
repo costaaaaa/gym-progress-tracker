@@ -564,3 +564,56 @@ ALTER TABLE `gym_workout_history`
 
 ALTER TABLE `gym_users`
   ADD COLUMN `time_zone` VARCHAR(64) NULL DEFAULT NULL AFTER `locale`;
+
+-- ------------------------------------------------------------------------------
+-- 30. gym_exercises.primary_muscle: il muscolo contato nelle serie settimanali e nel
+--     recupero, separato da muscle_group (che resta per cercare e raggruppare: filtri, schede,
+--     Progress, share card, AI Coach). Oggi "gambe" vale sempre quadricipiti nel recupero: stacco
+--     e adductor machine finiscono lì. Le regole (gruppi ammessi, default, normalizzazione) sono
+--     in backend/lib/muscle_rules.php. Un esercizio con primary_muscle NULL non conta (è il caso
+--     di una "gambe" personale creata prima di questa migrazione: la scelta è ambigua e solo chi
+--     l'ha creata può specificarla, da ora in poi, con l'admin o ricreando l'esercizio).
+--     Colonna nuova nullable: il rollback del codice resta possibile (vedi DB_UPGRADE_README.md).
+-- ------------------------------------------------------------------------------
+
+ALTER TABLE `gym_exercises`
+  ADD COLUMN `primary_muscle` VARCHAR(20) NULL DEFAULT NULL AFTER `muscle_group`;
+
+-- Ogni gruppo diverso da "gambe" si normalizza da solo (stessa mappa di muscleNormalizeGroup):
+-- vale per il catalogo e per gli esercizi personali, perché per questi gruppi la derivazione è
+-- automatica e senza ambiguità.
+UPDATE `gym_exercises`
+  SET `primary_muscle` = CASE LOWER(`muscle_group`)
+    WHEN 'dorsali' THEN 'schiena'
+    WHEN 'lat' THEN 'schiena'
+    WHEN 'tricipite' THEN 'tricipiti'
+    WHEN 'bicipite' THEN 'bicipiti'
+    WHEN 'quadricipite' THEN 'quadricipiti'
+    WHEN 'femorale' THEN 'femorali'
+    WHEN 'gluteo' THEN 'glutei'
+    WHEN 'polpaccio' THEN 'polpacci'
+    WHEN 'addominali' THEN 'addome'
+    ELSE LOWER(`muscle_group`)
+  END
+  WHERE LOWER(`muscle_group`) <> 'gambe';
+
+-- Abductor Machine è nel catalogo come gruppo "glutei" (per cercarla insieme a Hip Thrust e
+-- affini) ma conta per abduttori: corregge il valore di default che l'UPDATE sopra le ha dato.
+UPDATE `gym_exercises` SET `primary_muscle` = 'abduttori'
+  WHERE `created_by` IS NULL AND `name` = 'Abductor Machine';
+
+-- I 12 esercizi "gambe" del catalogo (created_by NULL), per nome: gli id cambiano da ambiente ad
+-- ambiente, il nome no. Le "gambe" personali restano NULL (non contano, vedi sopra).
+UPDATE `gym_exercises` SET `primary_muscle` = 'quadricipiti'
+  WHERE `created_by` IS NULL AND LOWER(`muscle_group`) = 'gambe' AND `name` IN (
+    'Squat (Bilanciere)', 'Box Squat', 'Goblet Squat', 'Hack Squat 45', 'Leg Press 45',
+    'Pendulum Squat', 'Bulgarian Split Squat', 'Affondi'
+  );
+
+UPDATE `gym_exercises` SET `primary_muscle` = 'glutei'
+  WHERE `created_by` IS NULL AND LOWER(`muscle_group`) = 'gambe' AND `name` IN (
+    'Sumo Squat', 'Stacco da Terra (Bilanciere)', 'Stacco da Terra (Manubri)'
+  );
+
+UPDATE `gym_exercises` SET `primary_muscle` = 'adduttori'
+  WHERE `created_by` IS NULL AND LOWER(`muscle_group`) = 'gambe' AND `name` = 'Adductor Machine';

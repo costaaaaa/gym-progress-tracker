@@ -23,6 +23,7 @@ class Exercise
     public $name;
     public $name_en;
     public $muscle_group;
+    public $primary_muscle;
     public $equipment;
     public $created_by;
     public $status;
@@ -245,17 +246,18 @@ class Exercise
         return is_string($equipment) && in_array($equipment, self::EQUIPMENT, true) ? $equipment : null;
     }
 
-    // Crea l'esercizio con name, muscle_group, created_by e status già validati.
+    // Crea l'esercizio con name, muscle_group, primary_muscle, created_by e status già validati
+    // (primary_muscle: backend/lib/muscle_rules.php, muscleResolvePrimary).
     // Niente htmlspecialchars: il nome è già passato da cleanName() e l'escape lo fa chi lo mostra
     // (con PHP 8.1+ "dell'atleta" diventerebbe "dell&#039;atleta").
     public function create()
     {
         $query = "INSERT INTO " . $this->table_name . "
-                (name, name_en, muscle_group, equipment, created_by, status)
-                VALUES (?, ?, ?, ?, ?, ?)";
+                (name, name_en, muscle_group, primary_muscle, equipment, created_by, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?)";
         $stmt = $this->conn->prepare($query);
 
-        if ($stmt->execute([$this->name, $this->name_en, $this->muscle_group, $this->equipment, $this->created_by, $this->status])) {
+        if ($stmt->execute([$this->name, $this->name_en, $this->muscle_group, $this->primary_muscle, $this->equipment, $this->created_by, $this->status])) {
             $this->id = (int)$this->conn->lastInsertId();
             return true;
         }
@@ -268,7 +270,7 @@ class Exercise
     // Esercizi con un certo stato, con il creatore e quante volte sono usati (schede, set, progressi)
     public function adminList($status)
     {
-        $stmt = $this->conn->prepare("SELECT e.id, e.name, e.name_en, e.muscle_group, e.equipment, e.status, e.created_at, e.reviewed_at,
+        $stmt = $this->conn->prepare("SELECT e.id, e.name, e.name_en, e.muscle_group, e.primary_muscle, e.equipment, e.status, e.created_at, e.reviewed_at,
                        e.merged_into, m.name AS merged_into_name,
                        u.username AS created_by_username,
                        (SELECT COUNT(*) FROM gym_workout_exercises we WHERE we.exercise_id = e.id)
@@ -297,7 +299,7 @@ class Exercise
     // Riga dell'esercizio (con status) o null
     public function find($id)
     {
-        $stmt = $this->conn->prepare("SELECT id, name, name_en, muscle_group, equipment, status, created_by, merged_into FROM " . $this->table_name . " WHERE id = ? LIMIT 1");
+        $stmt = $this->conn->prepare("SELECT id, name, name_en, muscle_group, primary_muscle, equipment, status, created_by, merged_into FROM " . $this->table_name . " WHERE id = ? LIMIT 1");
         $stmt->execute([(int)$id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
@@ -317,10 +319,10 @@ class Exercise
         $stmt->execute([$status, (int)$id]);
     }
 
-    public function updateDetails($id, $name, $name_en, $muscle_group, $equipment)
+    public function updateDetails($id, $name, $name_en, $muscle_group, $primary_muscle, $equipment)
     {
-        $stmt = $this->conn->prepare("UPDATE " . $this->table_name . " SET name = ?, name_en = ?, muscle_group = ?, equipment = ? WHERE id = ?");
-        $stmt->execute([$name, $name_en, $muscle_group, $equipment, (int)$id]);
+        $stmt = $this->conn->prepare("UPDATE " . $this->table_name . " SET name = ?, name_en = ?, muscle_group = ?, primary_muscle = ?, equipment = ? WHERE id = ?");
+        $stmt->execute([$name, $name_en, $muscle_group, $primary_muscle, $equipment, (int)$id]);
     }
 
     // Quante volte è usato in schede, set e progressi (qualsiasi utente)

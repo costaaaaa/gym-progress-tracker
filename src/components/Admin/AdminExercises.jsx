@@ -6,6 +6,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import { adminExerciseAction, errorMessage, listAdminExercises } from '../../api/exercises';
 import { equipmentLabel, exerciseMatches } from '../../utils/exerciseCatalog';
+import { primaryMuscleOptions } from '../../utils/muscleRules';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 
 const STATUS_LABELS = { pending: 'In attesa', approved: 'Approvati', rejected: 'Rifiutati' };
@@ -17,6 +18,7 @@ const ExerciseFormDialog = ({ open, exercise, muscleGroups, equipment, onClose, 
   const [name, setName] = useState('');
   const [nameEn, setNameEn] = useState('');
   const [muscleGroup, setMuscleGroup] = useState('');
+  const [primaryMuscle, setPrimaryMuscle] = useState('');
   const [equipmentValue, setEquipmentValue] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -26,15 +28,28 @@ const ExerciseFormDialog = ({ open, exercise, muscleGroups, equipment, onClose, 
       setName(exercise?.name || '');
       setNameEn(exercise?.name_en || '');
       setMuscleGroup(exercise?.muscle_group || '');
+      setPrimaryMuscle(exercise?.primary_muscle || '');
       setEquipmentValue(exercise?.equipment || '');
       setError('');
     }
   }, [open, exercise]);
 
+  const handleGroupChange = (value) => {
+    setMuscleGroup(value);
+    if (value === 'glutei') {
+      setPrimaryMuscle((prev) => (primaryMuscleOptions(value).includes(prev) ? prev : 'glutei'));
+    } else {
+      setPrimaryMuscle('');
+    }
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    const fields = { name: name.trim(), name_en: nameEn.trim(), muscle_group: muscleGroup, equipment: equipmentValue };
+    const fields = {
+      name: name.trim(), name_en: nameEn.trim(), muscle_group: muscleGroup, equipment: equipmentValue,
+      ...(primaryMuscle ? { primary_muscle: primaryMuscle } : {}),
+    };
     const res = exercise
       ? await adminExerciseAction('update', { id: exercise.id, ...fields })
       : await adminExerciseAction('create', fields);
@@ -45,6 +60,8 @@ const ExerciseFormDialog = ({ open, exercise, muscleGroups, equipment, onClose, 
     }
     onSaved();
   };
+
+  const primaryMuscleChoices = primaryMuscleOptions(muscleGroup);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
@@ -72,10 +89,16 @@ const ExerciseFormDialog = ({ open, exercise, muscleGroups, equipment, onClose, 
             fullWidth
             margin="dense"
           />
-          <TextField select label="Gruppo muscolare" value={muscleGroup} onChange={(e) => setMuscleGroup(e.target.value)}
+          <TextField select label="Gruppo muscolare" value={muscleGroup} onChange={(e) => handleGroupChange(e.target.value)}
             fullWidth required margin="dense">
             {muscleGroups.map((g) => <MenuItem key={g} value={g}>{capitalize(g)}</MenuItem>)}
           </TextField>
+          {primaryMuscleChoices && (
+            <TextField select label="Muscolo principale" value={primaryMuscle} onChange={(e) => setPrimaryMuscle(e.target.value)}
+              fullWidth required margin="dense">
+              {primaryMuscleChoices.map((m) => <MenuItem key={m} value={m}>{capitalize(m)}</MenuItem>)}
+            </TextField>
+          )}
           <TextField select label="Attrezzo" value={equipmentValue} onChange={(e) => setEquipmentValue(e.target.value)}
             fullWidth margin="dense">
             <MenuItem value="">Nessuno</MenuItem>
@@ -89,7 +112,8 @@ const ExerciseFormDialog = ({ open, exercise, muscleGroups, equipment, onClose, 
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={onClose} disabled={saving}>Annulla</Button>
-          <Button type="submit" variant="contained" disabled={saving || !name.trim() || !muscleGroup}>Salva</Button>
+          <Button type="submit" variant="contained"
+            disabled={saving || !name.trim() || !muscleGroup || (muscleGroup === 'gambe' && !primaryMuscle)}>Salva</Button>
         </DialogActions>
       </Box>
     </Dialog>

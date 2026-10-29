@@ -2,7 +2,8 @@ import { readyInDays } from './recoveryDay';
 
 // Gruppi muscolari tracciati, nell'ordine del corpo (stesse chiavi di dashboardStats.recovery).
 export const MUSCLE_GROUPS = [
-  'petto', 'schiena', 'spalle', 'bicipiti', 'tricipiti', 'addome', 'quadricipiti', 'femorali', 'glutei', 'polpacci',
+  'petto', 'schiena', 'spalle', 'bicipiti', 'tricipiti', 'addome', 'quadricipiti', 'femorali', 'glutei',
+  'adduttori', 'abduttori', 'polpacci',
 ];
 
 // Stati di chi sta ancora recuperando (PRONTO è l'altro stato valido).

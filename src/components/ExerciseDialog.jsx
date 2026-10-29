@@ -21,6 +21,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { API_BASE_URL } from '../config';
 import { createExercise, errorMessage, findSimilarExercises, personalLabel } from '../api/exercises';
 import { equipmentLabel, exerciseMatches } from '../utils/exerciseCatalog';
+import { primaryMuscleOptions } from '../utils/muscleRules';
 import { useTranslation } from 'react-i18next';
 import { muscleLabel, techniqueLabel } from '../i18n/labels';
 
@@ -60,6 +61,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
   const [loadingExercises, setLoadingExercises] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [newName, setNewName] = useState('');
+  const [newPrimaryMuscle, setNewPrimaryMuscle] = useState('');
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
   const [suggestions, setSuggestions] = useState([]);
@@ -146,6 +148,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
     setExercise(prev => ({ ...prev, muscleGroup: e.target.value, name: '', id: undefined }));
     setEquipmentFilter('');
     setNewName('');
+    setNewPrimaryMuscle('');
     setCreateError('');
   };
 
@@ -169,13 +172,15 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
   };
 
   // Esercizio personale nel gruppo scelto. Se esiste già (409 duplicate) si seleziona quello.
+  // "Gambe" non ha un default: il muscolo principale va scelto (backend/lib/muscle_rules.php).
   const typedName = newName.trim();
-  const canCreate = typedName.length >= 2 && !creating;
+  const requiresPrimaryMuscle = exercise.muscleGroup === 'Gambe';
+  const canCreate = typedName.length >= 2 && !creating && (!requiresPrimaryMuscle || newPrimaryMuscle);
 
   const handleCreate = async () => {
     setCreating(true);
     setCreateError('');
-    const res = await createExercise(typedName, exercise.muscleGroup);
+    const res = await createExercise(typedName, exercise.muscleGroup, requiresPrimaryMuscle ? newPrimaryMuscle : undefined);
     setCreating(false);
     const created = res.data?.exercise;
     // 409 duplicate: esiste già (anche con maiuscole diverse o in un altro gruppo), lo si seleziona
@@ -192,6 +197,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
     }));
     setInputValue(created.name);
     setNewName('');
+    setNewPrimaryMuscle('');
   };
 
   // Sceglie un esercizio proposto da "Forse cercavi", anche se è in un altro gruppo muscolare
@@ -207,6 +213,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
     }));
     setInputValue(chosen.name);
     setNewName('');
+    setNewPrimaryMuscle('');
     setCreateError('');
   };
 
@@ -223,6 +230,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
     });
     setInputValue('');
     setNewName('');
+    setNewPrimaryMuscle('');
     setCreateError('');
     onClose();
   };
@@ -340,6 +348,21 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
                   {t('common.create')}
                 </Button>
               </Box>
+              {requiresPrimaryMuscle && (
+                <FormControl fullWidth size="small" sx={{ mt: 1 }}>
+                  <InputLabel>{t('exercise_dialog.primary_muscle')}</InputLabel>
+                  <Select
+                    name="primaryMuscle"
+                    value={newPrimaryMuscle}
+                    label={t('exercise_dialog.primary_muscle')}
+                    onChange={(e) => { setNewPrimaryMuscle(e.target.value); setCreateError(''); }}
+                  >
+                    {primaryMuscleOptions(exercise.muscleGroup).map((m) => (
+                      <MenuItem key={m} value={m}>{muscleLabel(m)}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
               {suggestions.length > 0 && (
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap', mt: 1 }}>
                   <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{t('exercise_dialog.maybe')}</Typography>

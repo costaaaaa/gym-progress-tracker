@@ -11,6 +11,7 @@ include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/User.php';
 require_once '../../lib/weekly_stats.php';
+require_once '../../lib/muscle_rules.php';
 include_once '../../models/WorkoutHistory.php';
 include_once '../../models/WorkoutSet.php';
 include_once '../../models/WorkoutPlan.php';
@@ -83,27 +84,15 @@ try {
         'quadricipiti' => ['amatoriale' => 84, 'intermedio' => 72, 'avanzato' => 66],
         'femorali'     => ['amatoriale' => 84, 'intermedio' => 72, 'avanzato' => 66],
         'glutei'       => ['amatoriale' => 84, 'intermedio' => 72, 'avanzato' => 66],
+        'adduttori'    => ['amatoriale' => 54, 'intermedio' => 48, 'avanzato' => 42],
+        'abduttori'    => ['amatoriale' => 54, 'intermedio' => 48, 'avanzato' => 42],
         'polpacci'     => ['amatoriale' => 42, 'intermedio' => 36, 'avanzato' => 30],
         'addome'       => ['amatoriale' => 36, 'intermedio' => 30, 'avanzato' => 24]
     ];
 
-    // Mappatura gruppi muscolari (normalizzazione)
-    $muscle_map = [
-        'dorsali' => 'schiena',
-        'lat' => 'schiena',
-        'tricipite' => 'tricipiti',
-        'bicipite' => 'bicipiti',
-        'quadricipite' => 'quadricipiti',
-        'femorale' => 'femorali',
-        'gluteo' => 'glutei',
-        'polpaccio' => 'polpacci',
-        'addominali' => 'addome',
-        'gambe' => 'quadricipiti'
-    ];
-
     // Recupera tutte le serie degli ultimi 10 giorni
     $since_str = (clone $now)->modify('-10 days')->format('Y-m-d H:i:s');
-    $query_sets = "SELECT wh.date, wh.time_zone, e.muscle_group, ws.reps, ws.weight
+    $query_sets = "SELECT wh.date, wh.time_zone, e.primary_muscle, ws.reps, ws.weight
                    FROM gym_workout_sets ws
                    JOIN gym_workout_history wh ON ws.workout_history_id = wh.id
                    JOIN gym_exercises e ON ws.exercise_id = e.id
@@ -113,13 +102,13 @@ try {
     $stmt_sets->execute([$user_id, $since_str]);
     $all_sets = $stmt_sets->fetchAll(PDO::FETCH_ASSOC);
 
-    // Raggruppa per sessione e gruppo muscolare
+    // Raggruppa per sessione e muscolo principale (gli esercizi senza, es. "gambe" personali
+    // non ancora specificate, non contano: muscleCountedOf torna null)
     $sessions_by_muscle = [];
     foreach ($all_sets as $set) {
-        $mg = strtolower($set['muscle_group'] ?? '');
-        if (isset($muscle_map[$mg])) $mg = $muscle_map[$mg];
+        $mg = muscleCountedOf($set['primary_muscle']);
 
-        if (!isset($tempi_base[$mg])) continue;
+        if ($mg === null || !isset($tempi_base[$mg])) continue;
 
         $date = $set['date'];
 
@@ -211,7 +200,7 @@ try {
     $month_start = (clone $now)->modify('first day of this month')->setTime(0,0,0)->format('Y-m-d H:i:s');
 
     // Recupero grezzo per calcolo in PHP (più sicuro)
-    $query_sets_stats_raw = "SELECT e.muscle_group, wh.date
+    $query_sets_stats_raw = "SELECT e.primary_muscle, wh.date
                         FROM gym_workout_sets ws
                         JOIN gym_workout_history wh ON ws.workout_history_id = wh.id
                         JOIN gym_exercises e ON ws.exercise_id = e.id
@@ -224,8 +213,8 @@ try {
 
     $sets_stats = [];
     while($row = $stmt_sets_stats->fetch(PDO::FETCH_ASSOC)) {
-        $mg = strtolower($row['muscle_group'] ?? '');
-        if (isset($muscle_map[$mg])) $mg = $muscle_map[$mg];
+        $mg = muscleCountedOf($row['primary_muscle']);
+        if ($mg === null) continue;
 
         if (!isset($sets_stats[$mg])) {
             $sets_stats[$mg] = ['week' => 0, 'month' => 0];

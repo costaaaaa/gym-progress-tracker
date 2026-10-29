@@ -22,8 +22,10 @@ export const post = (path, body) => request(path, { method: 'POST', body: JSON.s
 
 // Esercizio personale: lo vede solo chi lo crea finché un admin non lo approva.
 // 409 con data.code === 'duplicate' → data.exercise è quello già esistente, da selezionare.
-export const createExercise = (name, muscleGroup) =>
-  post('exercise/create.php', { name, muscle_group: muscleGroup });
+// primaryMuscle è obbligatorio per il gruppo "gambe" (il server lo valida); gli altri gruppi
+// lo derivano da soli se non lo si manda.
+export const createExercise = (name, muscleGroup, primaryMuscle) =>
+  post('exercise/create.php', { name, muscle_group: muscleGroup, ...(primaryMuscle ? { primary_muscle: primaryMuscle } : {}) });
 
 // Fino a 3 esercizi visibili con un nome simile ("Forse cercavi"), per evitare doppioni
 export const findSimilarExercises = (name) =>
