@@ -122,6 +122,87 @@ function request_locale($refresh = false)
     return $cache[$key];
 }
 
+// ── Fuso orario ─────────────────────────────────────────────────────────────
+
+const DEFAULT_TIME_ZONE = 'Europe/Rome';
+
+// Nome IANA valido ("America/New_York") oppure null. Solo i nomi di timezone_identifiers_list():
+// offset e abbreviazioni ("+02:00", "EST") non seguono l'ora legale, quindi non servono.
+function valid_time_zone($value)
+{
+    static $names = null;
+    if (!is_string($value)) return null;
+    if ($names === null) $names = array_flip(timezone_identifiers_list());
+    $value = trim($value);
+    return isset($names[$value]) ? $value : null;
+}
+
+// Fuso del dispositivo per questa richiesta: header X-Timezone se valido, altrimenti l'ultimo fuso
+// visto sull'account (gym_users.time_zone), altrimenti Europe/Rome: i client che non lo mandano si
+// comportano come prima. Un header valido e diverso da quello salvato lo aggiorna. $refresh svuota
+// la cache (test).
+function request_time_zone($refresh = false)
+{
+    static $cache = array();
+    $context = request_user_context();
+    $key = $context['user_id'] ?? 0;
+    if ($refresh || !isset($cache[$key])) {
+        $header = valid_time_zone($_SERVER['HTTP_X_TIMEZONE'] ?? null);
+        $saved = null;
+        if ($context['user_id'] !== null) {
+            try {
+                $stmt = $context['db']->prepare("SELECT time_zone FROM gym_users WHERE id = ? LIMIT 1");
+                $stmt->execute(array($context['user_id']));
+                $saved = valid_time_zone($stmt->fetchColumn());
+                if ($header !== null && $header !== $saved) {
+                    $update = $context['db']->prepare("UPDATE gym_users SET time_zone = ? WHERE id = ?");
+                    $update->execute(array($header, $context['user_id']));
+                }
+            } catch (PDOException $e) {
+                // colonna non ancora migrata: vale l'header
+            }
+        }
+        $cache[$key] = $header ?? $saved ?? DEFAULT_TIME_ZONE;
+    }
+    return $cache[$key];
+}
+
+// "Adesso" per l'utente: stesso istante di new DateTime(), ma nel fuso del suo dispositivo. Da usare
+// dove giorno, settimana o limite significano quelli dell'utente.
+function user_now()
+{
+    return new DateTime('now', new DateTimeZone(request_time_zone()));
+}
+
+// Il giorno di oggi dell'utente come mezzanotte nel fuso del server: confrontabile con le date
+// "Y-m-d" create nel fuso del server (nascita, inizio allenamento) senza scarti di fuso.
+function user_today()
+{
+    return new DateTime(user_now()->format('Y-m-d'));
+}
+
+// Istante di un allenamento: la sua data è ora locale del luogo ($time_zone, nome IANA). Se il nome
+// manca o non è valido vale Europe/Rome. Un'ora che non esiste (salto in avanti) si sposta avanti;
+// una doppia (ritorno all'ora solare) vale una delle due occorrenze, scelta da PHP: ambiguità accettata.
+function workout_instant($date, $time_zone)
+{
+    return new DateTimeImmutable($date, new DateTimeZone(valid_time_zone($time_zone) ?? DEFAULT_TIME_ZONE));
+}
+
+// Come workout_instant(), in ISO 8601 con l'offset del luogo ("2026-10-25T21:00:00-04:00").
+function workout_started_at($date, $time_zone)
+{
+    return workout_instant($date, $time_zone)->format('c');
+}
+
+// Orario che il database tiene nel fuso del server (created_at, name_locked_until, ...) in ISO 8601
+// con offset, così il client lo legge senza supporre il fuso. null se manca.
+function server_time_iso($value)
+{
+    if ($value === null || $value === '' || strpos((string)$value, '0000-00-00') === 0) return null;
+    return (new DateTime($value))->format('c');
+}
+
 // Messaggio del server nella lingua della richiesta (o in $locale), da backend/lang/<lingua>.php.
 // I {segnaposto} si sostituiscono con $vars; una chiave mancante ricade sull'italiano.
 function t_server($key, $vars = array(), $locale = null)
@@ -216,12 +297,14 @@ function api_log_exception($context, $exception)
     error_log($context . ': ' . $exception->getMessage());
 }
 
-// Orario mandato dal client (di solito UTC, "...Z"): stesso istante, ma nel fuso del server, che è quello
-// con cui il database memorizza le date. Senza fuso nella stringa vale già il fuso del server.
-function client_datetime($value)
+// Orario mandato dal client (di solito UTC, "...Z"): stesso istante, ma nel fuso $time_zone (nome IANA)
+// o, senza, in quello del server, che è quello con cui il database memorizza le date. Senza fuso nella
+// stringa vale già il fuso scelto.
+function client_datetime($value, $time_zone = null)
 {
-    $dt = new DateTime($value);
-    return $dt->setTimezone(new DateTimeZone(date_default_timezone_get()));
+    $zone = new DateTimeZone($time_zone ?? date_default_timezone_get());
+    $dt = new DateTime($value, $zone);
+    return $dt->setTimezone($zone);
 }
 
 function workout_plan_belongs_to_user($db, $plan_id, $user_id)
@@ -279,10 +362,10 @@ function valid_gender($gender)
 function birth_date_error($birth_date)
 {
     $birth = is_string($birth_date) ? DateTime::createFromFormat('!Y-m-d', $birth_date) : false;
-    if (!$birth || $birth->format('Y-m-d') !== $birth_date || $birth > new DateTime('today')) {
+    if (!$birth || $birth->format('Y-m-d') !== $birth_date || $birth > user_today()) {
         return t_server('birth.invalid');
     }
-    if ($birth->diff(new DateTime('today'))->y < 14) {
+    if ($birth->diff(user_today())->y < 14) {
         return t_server('birth.too_young');
     }
     return null;
@@ -296,7 +379,7 @@ function training_start_date_error($value)
         return null;
     }
     $d = is_string($value) ? DateTime::createFromFormat('!Y-m-d', $value) : false;
-    if (!$d || $d->format('Y-m-d') !== $value || $d > new DateTime('today')) {
+    if (!$d || $d->format('Y-m-d') !== $value || $d > user_today()) {
         return t_server('training_start.invalid');
     }
     return null;
@@ -411,7 +494,7 @@ function require_group_age($db, $user_id)
     if (!$birth) {
         api_error(403, 'birth_date_required', t_server('groups.birth_required'));
     }
-    if ($birth->diff(new DateTime('today'))->y < GROUPS_MIN_AGE) {
+    if ($birth->diff(user_today())->y < GROUPS_MIN_AGE) {
         api_error(403, 'age_restricted', t_server('groups.min_age', array('age' => GROUPS_MIN_AGE)));
     }
 }

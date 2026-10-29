@@ -549,3 +549,18 @@ UPDATE `gym_workout_history`
     END
   ) HOUR
   WHERE `duration_seconds` IS NOT NULL;
+
+-- ------------------------------------------------------------------------------
+-- 29. Fuso orario degli allenamenti (#55). `date` resta l'ora locale del luogo dove ci si
+--     è allenati (DATETIME senza fuso, come prima); gym_workout_history.time_zone dice quale
+--     luogo (nome IANA), così si ricava l'istante e l'ora legale si ricalcola. Le righe
+--     esistenti valgono Europe/Rome, il fuso con cui sono state salvate. gym_users.time_zone
+--     è l'ultimo fuso visto dal dispositivo (header X-Timezone): NULL = mai visto, vale Roma.
+--     Solo colonne nuove: il rollback del codice resta possibile.
+-- ------------------------------------------------------------------------------
+
+ALTER TABLE `gym_workout_history`
+  ADD COLUMN `time_zone` VARCHAR(64) NOT NULL DEFAULT 'Europe/Rome' AFTER `health_written_at`;
+
+ALTER TABLE `gym_users`
+  ADD COLUMN `time_zone` VARCHAR(64) NULL DEFAULT NULL AFTER `locale`;

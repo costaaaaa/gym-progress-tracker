@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS `gym_users` (
   `rest_timer_enabled` tinyint(1) NOT NULL DEFAULT 1,
   `is_admin` tinyint(1) NOT NULL DEFAULT 0,
   `locale` varchar(5) NOT NULL DEFAULT 'it',
+  `time_zone` varchar(64) DEFAULT NULL, -- ultimo fuso IANA visto dal dispositivo (header X-Timezone)
   `password_changed_at` datetime DEFAULT NULL,
   `last_login_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -144,6 +145,7 @@ CREATE TABLE IF NOT EXISTS `gym_workout_history` (
   `notes` text DEFAULT NULL,
   `idempotency_key` varchar(64) DEFAULT NULL, -- chiave del client contro i doppi invii (NULL = app vecchie)
   `health_written_at` datetime DEFAULT NULL, -- quando il telefono l'ha scritto nell'app Salute (NULL = non è in Salute)
+  `time_zone` varchar(64) NOT NULL DEFAULT 'Europe/Rome', -- fuso IANA del luogo in cui si è allenato: `date` è l'ora locale lì
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   KEY `idx_user_date` (`user_id`, `date`),
