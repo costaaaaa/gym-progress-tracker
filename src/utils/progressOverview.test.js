@@ -6,14 +6,11 @@ const rec = (id, date, extra = {}) => ({
 });
 
 describe('daysSince: i giorni fra istanti, non fra orologi di fusi diversi', () => {
-  it('con started_at conta dall\'istante vero, qualunque sia il fuso del browser', () => {
+  it('conta dall\'istante vero di started_at, qualunque sia il fuso del browser', () => {
     // 02:00 a New York = 06:00 UTC; dopo 3 giorni esatti sono passati 3 giorni
     const workout = { date: '2026-10-18 02:00:00', started_at: '2026-10-18T02:00:00-04:00' };
     expect(daysSince(workout, Date.UTC(2026, 9, 21, 6, 0, 0))).toBe(3);
     expect(daysSince(workout, Date.UTC(2026, 9, 21, 5, 59, 0))).toBe(2);
-  });
-  it('senza started_at (backend vecchio) legge l\'orologio nel fuso del browser, come prima', () => {
-    expect(daysSince({ date: '2026-10-18 02:00:00' }, new Date(2026, 9, 21, 2, 0, 0).getTime())).toBe(3);
   });
 });
 

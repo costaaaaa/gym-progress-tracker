@@ -1,5 +1,5 @@
 import { intlLocale } from '../i18n/format';
-import { clockDate, localDate } from './calendarDay';
+import { clockDate } from './calendarDay';
 
 // La `date` di un allenamento è l'ora locale del luogo in cui è stato fatto ("YYYY-MM-DD HH:MM:SS"), non un
 // istante: si mostra come sta scritta, a prescindere dal fuso del browser. Per i conti fra istanti (giorni
@@ -7,11 +7,8 @@ import { clockDate, localDate } from './calendarDay';
 
 export const formatClockTime = (value) => clockDate(value).toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
 
-/** Istante dell'allenamento in ms. Senza `started_at` (risposta di un backend vecchio) l'orologio si legge nel fuso del browser, come prima. */
-export const workoutInstant = (workout) => {
-  if (workout.started_at) return Date.parse(workout.started_at);
-  return localDate(workout.date).getTime();
-};
+/** Istante dell'allenamento in ms: `started_at` lo manda sempre read.php, unica sorgente degli allenamenti che arrivano qui. */
+export const workoutInstant = (workout) => Date.parse(workout.started_at);
 
 /** L'orologio di un ISO con offset ("2026-10-18T02:00:00-04:00" → "2026-10-18 02:00:00"), senza convertirlo nel fuso del browser. */
 export const isoClock = (iso) => {

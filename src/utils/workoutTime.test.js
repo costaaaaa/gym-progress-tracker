@@ -9,11 +9,8 @@ describe('formatClockTime', () => {
 });
 
 describe('workoutInstant: l\'istante vero di un allenamento', () => {
-  it('con started_at vale quell\'istante, qualunque sia il fuso del browser', () => {
+  it('vale l\'istante di started_at, qualunque sia il fuso del browser', () => {
     expect(workoutInstant({ date: '2026-10-18 02:00:00', started_at: '2026-10-18T02:00:00-04:00' })).toBe(Date.UTC(2026, 9, 18, 6, 0, 0));
-  });
-  it('senza started_at (backend vecchio) l\'orologio si legge nel fuso del browser, come prima', () => {
-    expect(workoutInstant({ date: '2026-10-18 02:00:00' })).toBe(new Date(2026, 9, 18, 2, 0, 0).getTime());
   });
 });
 
