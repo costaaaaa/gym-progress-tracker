@@ -79,14 +79,17 @@ try {
 
     // 3. Recupero Muscolare (le regole stanno in lib/recovery_rules.php, testate a parte in
     // tests/recovery_rules_test.php). Le misure del corpo (peso, grasso) non entrano nel calcolo.
-    // Recupera tutte le serie degli ultimi 10 giorni (il riscaldamento, #66, non conta per il recupero)
-    $since_str = (clone $now)->modify('-10 days')->format('Y-m-d H:i:s');
-    $query_sets = "SELECT wh.date, wh.time_zone, e.primary_muscle, ws.reps, ws.weight
+    // Serie allenanti degli ultimi 40 giorni (il riscaldamento, #66, non conta): 10 per il recupero e
+    // 30 in più per i riferimenti del fattore di vicinanza al cedimento. La finestra dei 10 giorni la
+    // applica recoveryStatus.
+    $since_str = (clone $now)->modify('-40 days')->format('Y-m-d H:i:s');
+    $query_sets = "SELECT wh.id AS history_id, wh.date, wh.time_zone, ws.id AS set_id, ws.exercise_id,
+                          e.primary_muscle, ws.reps, ws.weight, ws.seconds_from_start
                    FROM gym_workout_sets ws
                    JOIN gym_workout_history wh ON ws.workout_history_id = wh.id
                    JOIN gym_exercises e ON ws.exercise_id = e.id
                    WHERE wh.user_id = ? AND wh.date >= ? AND ws.is_warmup = 0
-                   ORDER BY wh.date ASC";
+                   ORDER BY wh.date ASC, ws.id ASC";
     $stmt_sets = $db->prepare($query_sets);
     $stmt_sets->execute([$user_id, $since_str]);
     $all_sets = $stmt_sets->fetchAll(PDO::FETCH_ASSOC);
@@ -94,9 +97,15 @@ try {
     $recovery_rows = [];
     foreach ($all_sets as $set) {
         $recovery_rows[] = [
+            'history_id' => intval($set['history_id']),
             'date' => $set['date'],
             'started_at' => workout_instant($set['date'], $set['time_zone']),
-            'primary_muscle' => $set['primary_muscle']
+            'set_id' => intval($set['set_id']),
+            'exercise_id' => intval($set['exercise_id']),
+            'primary_muscle' => $set['primary_muscle'],
+            'weight' => $set['weight'],
+            'reps' => $set['reps'],
+            'seconds_from_start' => $set['seconds_from_start'] === null ? null : intval($set['seconds_from_start'])
         ];
     }
 

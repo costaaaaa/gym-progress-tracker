@@ -16,14 +16,31 @@ function check($desc, $cond)
 }
 
 // Una serie letta dal database: 'date' (come in gym_workout_history.date), l'istante di inizio
-// nel fuso dell'allenamento e il muscolo principale dell'esercizio.
-function setRow($date, $muscle = 'petto', $zone = 'Europe/Rome')
+// nel fuso dell'allenamento e il muscolo principale dell'esercizio. $extra sovrascrive gli altri
+// campi: history_id (default: uno per data e fuso), set_id (progressivo), exercise_id, weight, reps
+// e seconds_from_start.
+function setRow($date, $muscle = 'petto', $zone = 'Europe/Rome', $extra = [])
 {
-    return [
+    static $nextSetId = 0;
+    return $extra + [
         'date' => $date,
         'started_at' => new DateTimeImmutable($date, new DateTimeZone($zone)),
         'primary_muscle' => $muscle,
+        'history_id' => crc32($date . $zone),
+        'set_id' => ++$nextSetId,
+        'exercise_id' => 1,
+        'weight' => 0,
+        'reps' => '8',
+        'seconds_from_start' => null,
     ];
+}
+
+// Una sessione di $n serie uguali (peso, ripetizioni) dello stesso esercizio.
+function session($date, $n, $weight, $reps, $extra = [], $muscle = 'petto')
+{
+    $rows = [];
+    for ($i = 0; $i < $n; $i++) $rows[] = setRow($date, $muscle, 'Europe/Rome', ['weight' => $weight, 'reps' => (string) $reps] + $extra);
+    return $rows;
 }
 
 function profile($level = 'intermedio', $age = 25, $gender = 'M')
@@ -156,6 +173,171 @@ echo "\nEsercizi senza muscolo principale\n";
 $rows = array_fill(0, 3, setRow('2026-10-29 09:00:00', null));
 $r = recoveryStatus($rows, profile(), $now);
 check('non contano: i 12 muscoli restano PRONTO', count(array_filter($r, fn($m) => $m['status'] === 'PRONTO' && $m['last_trained'] === null)) === 12);
+
+echo "\nCedimento: riferimento di 2 sessioni nei 30 giorni, oggi una serie al cedimento\n";
+// Riferimento: 80 kg × 8 → 1RM stimato 80 × (1 + 8/30) = 101.3. Oggi 80 × 8: massimo da fresco
+// 30 × (101.3 / 80 − 1) = 7.99 ripetizioni, RIR = 7.99 − 8 → 0 (dura). Con la stanchezza tra le
+// serie (senza orario: −30% dopo ogni serie dura) anche le altre due sono dure: quota 100% → ×1.15.
+// 60 h × 1.15 = 69 h, arrotondate a 6 h: 72 h. Dal 29/10 09:00 a domenica 01/11 09:00.
+$rows = array_merge(session('2026-10-12 09:00:00', 3, 80, 8), session('2026-10-18 09:00:00', 3, 80, 8), session('2026-10-29 09:00:00', 3, 80, 8));
+$r = recoveryStatus($rows, profile('intermedio', 25, 'M'), $now);
+check('petto al cedimento: pronto 01/11 alle 09:00 (×1.15)', $r['petto']['ready_at'] === '2026-11-01T09:00:00+01:00');
+
+echo "\nCedimento: senza 2 sessioni precedenti il calcolo resta quello di prima\n";
+// Come l'esempio della sessione singola: 60 h, pronto sabato 31/10 alle 21:00. Una sola sessione
+// precedente non basta come riferimento, e la sessione corrente non fa da riferimento a se stessa.
+$r = recoveryStatus(session('2026-10-29 09:00:00', 3, 80, 8), profile('intermedio', 25, 'M'), $now);
+check('nessuna sessione precedente: pronto 31/10 alle 21:00', $r['petto']['ready_at'] === '2026-10-31T21:00:00+01:00');
+$rows = array_merge(session('2026-10-18 09:00:00', 3, 80, 8), session('2026-10-29 09:00:00', 3, 80, 8));
+$r = recoveryStatus($rows, profile('intermedio', 25, 'M'), $now);
+check('una sola sessione precedente: pronto 31/10 alle 21:00', $r['petto']['ready_at'] === '2026-10-31T21:00:00+01:00');
+
+echo "\nCedimento: quali sessioni fanno da riferimento\n";
+// Il riferimento sono le ultime 2 sessioni (80 × 8 → 1RM 101.3): oggi 80 × 8 è al cedimento, ×1.15 → 72 h,
+// pronto 01/11 alle 09:00. La terza, più vecchia (100 × 8 → 1RM 126.7), non conta: se contasse il massimo
+// da fresco sarebbe 30 × (126.7 / 80 − 1) = 17.5 ripetizioni, RIR 9.5, serie facili e nessun ×1.15.
+$rows = array_merge(session('2026-10-05 09:00:00', 3, 100, 8), session('2026-10-12 09:00:00', 3, 80, 8), session('2026-10-18 09:00:00', 3, 80, 8), session('2026-10-29 09:00:00', 3, 80, 8));
+$r = recoveryStatus($rows, profile('intermedio', 25, 'M'), $now);
+check('la terza sessione più vecchia è ignorata: ×1.15, pronto 01/11 alle 09:00', $r['petto']['ready_at'] === '2026-11-01T09:00:00+01:00');
+// Confine dei 30 giorni dalla sessione di oggi (29/10 09:00): il 29/09 alle 09:00 è ancora dentro,
+// alle 08:59 è fuori e resta una sola sessione precedente (nessun riferimento, 60 h).
+$rows = array_merge(session('2026-09-29 09:00:00', 3, 80, 8), session('2026-10-18 09:00:00', 3, 80, 8), session('2026-10-29 09:00:00', 3, 80, 8));
+$r = recoveryStatus($rows, profile('intermedio', 25, 'M'), $now);
+check('esattamente 30 giorni prima: conta come riferimento (×1.15)', $r['petto']['ready_at'] === '2026-11-01T09:00:00+01:00');
+$rows = array_merge(session('2026-09-29 08:59:00', 3, 80, 8), session('2026-10-18 09:00:00', 3, 80, 8), session('2026-10-29 09:00:00', 3, 80, 8));
+$r = recoveryStatus($rows, profile('intermedio', 25, 'M'), $now);
+check('un minuto oltre i 30 giorni: non conta (60 h)', $r['petto']['ready_at'] === '2026-10-31T21:00:00+01:00');
+// Record: il riferimento è 60 × 8 → 1RM 76.0. Oggi 80 × 5 supera il riferimento: massimo da fresco
+// 30 × (76 / 80 − 1) = −1.5, RIR 0 (non negativo), dura: ×1.15 → 72 h.
+$rows = array_merge(session('2026-10-12 09:00:00', 3, 60, 8), session('2026-10-18 09:00:00', 3, 60, 8), session('2026-10-29 09:00:00', 3, 80, 5));
+$r = recoveryStatus($rows, profile('intermedio', 25, 'M'), $now);
+check('record (peso oltre il riferimento): RIR 0, ×1.15, pronto 01/11 alle 09:00', $r['petto']['ready_at'] === '2026-11-01T09:00:00+01:00');
+
+echo "\nCedimento: corpo libero\n";
+// Riferimento a peso 0: il massimo di ripetizioni delle ultime 2 sessioni (12 e 10 → 12). Oggi 3 serie
+// da 12: massimo da fresco 12, RIR 0, dure → ×1.15 → 72 h, pronto 01/11 alle 09:00.
+$rows = array_merge(session('2026-10-12 09:00:00', 3, 0, 12), session('2026-10-18 09:00:00', 3, 0, 10), session('2026-10-29 09:00:00', 3, 0, 12));
+$r = recoveryStatus($rows, profile('intermedio', 25, 'M'), $now);
+check('corpo libero con riferimento: ×1.15, pronto 01/11 alle 09:00', $r['petto']['ready_at'] === '2026-11-01T09:00:00+01:00');
+// Senza 2 sessioni di riferimento il corpo libero non ha stima: 60 h.
+$rows = array_merge(session('2026-10-18 09:00:00', 3, 0, 12), session('2026-10-29 09:00:00', 3, 0, 12));
+$r = recoveryStatus($rows, profile('intermedio', 25, 'M'), $now);
+check('corpo libero senza riferimento: pronto 31/10 alle 21:00', $r['petto']['ready_at'] === '2026-10-31T21:00:00+01:00');
+
+echo "\nCedimento: stanchezza tra le serie (sessione senza orario)\n";
+// Riferimento 80 × 8 (1RM 101.3, massimo da fresco a 80 kg: 7.99). Oggi 80 × 8, 80 × 6, 80 × 5:
+// 1ª serie: 7.99 − 8 → RIR 0, dura: il massimo scende del 30% (moltiplicatore 0.70).
+// 2ª serie: 7.99 × 0.70 = 5.59 − 6 → RIR 0, dura: moltiplicatore 0.49.
+// 3ª serie: 7.99 × 0.49 = 3.91 − 5 → RIR 0, dura. Senza stanchezza la 2ª sarebbe RIR 1.99 e la 3ª 2.99
+// (1 serie dura su 3, ×1.0, 60 h); con la stanchezza 3 dure su 3: ×1.15 → 72 h, pronto 01/11 alle 09:00.
+$ref = array_merge(session('2026-10-12 09:00:00', 3, 80, 8), session('2026-10-18 09:00:00', 3, 80, 8));
+$today = [setRow('2026-10-29 09:00:00', 'petto', 'Europe/Rome', ['weight' => 80, 'reps' => '8']), setRow('2026-10-29 09:00:00', 'petto', 'Europe/Rome', ['weight' => 80, 'reps' => '6']), setRow('2026-10-29 09:00:00', 'petto', 'Europe/Rome', ['weight' => 80, 'reps' => '5'])];
+$r = recoveryStatus(array_merge($ref, $today), profile('intermedio', 25, 'M'), $now);
+check('80×8 / 80×6 / 80×5: tutte dure, ×1.15, pronto 01/11 alle 09:00', $r['petto']['ready_at'] === '2026-11-01T09:00:00+01:00');
+
+echo "\nCedimento: top set + back-off (senza orario)\n";
+// Riferimento 100 × 10 → 1RM 133.3: massimo da fresco 9.99 a 100 kg e 19.99 a 80 kg.
+// 100 × 9: RIR 0.99, dura (×0.70). 100 × 8: 9.99 × 0.70 = 6.99 − 8 → RIR 0, dura (×0.49).
+// 80 × 14: 19.99 × 0.49 = 9.80 − 14 → RIR 0, dura. Senza stanchezza solo la 1ª sarebbe dura
+// (RIR 1.99 e 5.99 per le altre): 1 su 3, ×1.0. Con la stanchezza 3 su 3: ×1.15 → 72 h, pronto 01/11 alle 09:00.
+$ref = array_merge(session('2026-10-12 09:00:00', 3, 100, 10), session('2026-10-18 09:00:00', 3, 100, 10));
+$today = [setRow('2026-10-29 09:00:00', 'petto', 'Europe/Rome', ['weight' => 100, 'reps' => '9']), setRow('2026-10-29 09:00:00', 'petto', 'Europe/Rome', ['weight' => 100, 'reps' => '8']), setRow('2026-10-29 09:00:00', 'petto', 'Europe/Rome', ['weight' => 80, 'reps' => '14'])];
+$r = recoveryStatus(array_merge($ref, $today), profile('intermedio', 25, 'M'), $now);
+check('100×9 / 100×8 / 80×14: tutte dure, ×1.15, pronto 01/11 alle 09:00', $r['petto']['ready_at'] === '2026-11-01T09:00:00+01:00');
+
+echo "\nCedimento: stesso esercizio due volte nella sessione, in ordine di set_id\n";
+// Esercizio 1 (80 × 8 di riferimento), serie 80 × 8 (set_id 1), un altro esercizio senza riferimento
+// (set_id 2), poi di nuovo l'esercizio 1 con 80 × 5 e 80 × 5 (set_id 3 e 4). Le righe arrivano in ordine
+// inverso, l'ordine che conta è quello di set_id e le due comparse sono un solo ambito:
+// 80 × 8: RIR 0, dura (×0.70). 80 × 5: 7.99 × 0.70 = 5.59 − 5 = 0.59, dura (×0.49). 80 × 5: 3.91 − 5 → RIR 0, dura.
+// 3 dure su 3: ×1.15. Con 4 serie anche il volume è ×1.15: 60 × 1.15 × 1.15 = 79.35 h, arrotondate a 78 h,
+// pronto 01/11 alle 15:00. In ordine d'arrivo o come due blocchi separati sarebbero 1 dura su 3 (×1.0):
+// 60 × 1.15 = 69 h → 72 h, pronto 01/11 alle 09:00.
+$ref = array_merge(session('2026-10-12 09:00:00', 3, 80, 8), session('2026-10-18 09:00:00', 3, 80, 8));
+$today = [
+    setRow('2026-10-29 09:00:00', 'petto', 'Europe/Rome', ['set_id' => 4, 'weight' => 80, 'reps' => '5']),
+    setRow('2026-10-29 09:00:00', 'petto', 'Europe/Rome', ['set_id' => 3, 'weight' => 80, 'reps' => '5']),
+    setRow('2026-10-29 09:00:00', 'petto', 'Europe/Rome', ['set_id' => 2, 'exercise_id' => 2, 'weight' => 0, 'reps' => '10']),
+    setRow('2026-10-29 09:00:00', 'petto', 'Europe/Rome', ['set_id' => 1, 'weight' => 80, 'reps' => '8']),
+];
+$r = recoveryStatus(array_merge($ref, $today), profile('intermedio', 25, 'M'), $now);
+check('esercizio ripetuto in scheda: un solo ambito in ordine di set_id (×1.15)', $r['petto']['ready_at'] === '2026-11-01T15:00:00+01:00');
+
+echo "\nCedimento: stanchezza con orario, confini del gap\n";
+// Riferimento 80 × 8 (1RM 101.3, massimo da fresco a 80 kg: 7.9875). Sessione di 4 serie con orario:
+// 80 × 8 a 0 s (RIR 0, dura), 80 × R al secondo $gap, poi due serie leggere 40 × 1 (massimo da fresco
+// oltre 10: RIR 10, facili, non cambiano il moltiplicatore). Il calo dopo la 1ª serie dura dipende dal gap
+// fino alla 2ª: sotto 90 s 40%, da 90 a 270 s 30%, oltre 270 s 15%. Con 4 serie il volume vale ×1.15.
+// La 2ª serie è dura se 7.9875 × (1 − calo) − R ≤ 1:
+//   calo 40%: 4.79 − 4 = 0.79 (dura)    calo 30%: 5.59 − 4 = 1.59 (media)
+//   calo 30%: 5.59 − 5 = 0.59 (dura)    calo 15%: 6.79 − 5 = 1.79 (media)
+// Con la 2ª dura: 2 serie dure su 4 = 50% → ×1.15 anche per il volume: 60 × 1.15 × 1.15 = 79.35 h →
+// 78 h, pronto 01/11 alle 15:00. Con la 2ª media: 1 su 4, ×1.0: 60 × 1.15 = 69 h → 72 h, 01/11 alle 09:00.
+function timedSession($gap, $reps2)
+{
+    $secs = [0, $gap, $gap + 1000, $gap + 2000];
+    $sets = [[80, 8], [80, $reps2], [40, 1], [40, 1]];
+    $rows = [];
+    foreach ($sets as $k => [$weight, $reps]) {
+        $rows[] = setRow('2026-10-29 09:00:00', 'petto', 'Europe/Rome', ['weight' => $weight, 'reps' => (string) $reps, 'seconds_from_start' => $secs[$k]]);
+    }
+    return array_merge(session('2026-10-12 09:00:00', 3, 80, 8), session('2026-10-18 09:00:00', 3, 80, 8), $rows);
+}
+$p = profile('intermedio', 25, 'M');
+$r = recoveryStatus(timedSession(89, 4), $p, $now);
+check('gap 89 s (calo 40%): la 2ª serie è dura, pronto 01/11 alle 15:00', $r['petto']['ready_at'] === '2026-11-01T15:00:00+01:00');
+
+$r = recoveryStatus(timedSession(90, 4), $p, $now);
+check('gap 90 s (calo 30%): la 2ª serie è media, pronto 01/11 alle 09:00', $r['petto']['ready_at'] === '2026-11-01T09:00:00+01:00');
+$r = recoveryStatus(timedSession(270, 5), $p, $now);
+check('gap 270 s (calo 30%): la 2ª serie è dura, pronto 01/11 alle 15:00', $r['petto']['ready_at'] === '2026-11-01T15:00:00+01:00');
+$r = recoveryStatus(timedSession(271, 5), $p, $now);
+check('gap 271 s (calo 15%): la 2ª serie è media, pronto 01/11 alle 09:00', $r['petto']['ready_at'] === '2026-11-01T09:00:00+01:00');
+
+echo "\nCedimento: ambito muscolo con l'orario, esercizio senza\n";
+// Panca (esercizio 1, riferimento 80 × 8) e croci (esercizio 3, riferimento 20 × 10 → 1RM 26.7, massimo
+// da fresco a 20 kg: 30 × (26.7 / 20 − 1) = 10.05). Con l'orario l'ambito è il muscolo: panca 80 × 8 a 0 s
+// (dura, gap 100 s fino alle croci: calo 30%, moltiplicatore 0.70), croci 20 × 7 a 100 s:
+// 10.05 × 0.70 = 7.04 − 7 = 0.04, dura. Poi due serie leggere di panca (40 × 1, facili).
+// 2 dure su 4 = 50% → ×1.15, e 4 serie ×1.15: 60 × 1.15 × 1.15 = 79.35 h → 78 h, pronto 01/11 alle 15:00.
+// Senza stanchezza tra gli esercizi le croci sarebbero 10.05 − 7 = 3.05, facili: 1 dura su 4, ×1.0 → 72 h.
+function benchThenFlyes($flyesSeconds)
+{
+    $rows = [
+        setRow('2026-10-29 09:00:00', 'petto', 'Europe/Rome', ['exercise_id' => 1, 'weight' => 80, 'reps' => '8', 'seconds_from_start' => 0]),
+        setRow('2026-10-29 09:00:00', 'petto', 'Europe/Rome', ['exercise_id' => 3, 'weight' => 20, 'reps' => '7', 'seconds_from_start' => $flyesSeconds]),
+        setRow('2026-10-29 09:00:00', 'petto', 'Europe/Rome', ['exercise_id' => 1, 'weight' => 40, 'reps' => '1', 'seconds_from_start' => 1000]),
+        setRow('2026-10-29 09:00:00', 'petto', 'Europe/Rome', ['exercise_id' => 1, 'weight' => 40, 'reps' => '1', 'seconds_from_start' => 1100]),
+    ];
+    return array_merge(
+        session('2026-10-12 09:00:00', 3, 80, 8), session('2026-10-18 09:00:00', 3, 80, 8),
+        session('2026-10-12 09:00:00', 3, 20, 10, ['exercise_id' => 3]), session('2026-10-18 09:00:00', 3, 20, 10, ['exercise_id' => 3]),
+        $rows
+    );
+}
+$r = recoveryStatus(benchThenFlyes(100), $p, $now);
+check('con l\'orario, panca e poi croci: le croci partono stanche (×1.15, 78 h)', $r['petto']['ready_at'] === '2026-11-01T15:00:00+01:00');
+$rows = benchThenFlyes(100);
+$rows[count($rows) - 1]['seconds_from_start'] = null;
+$r = recoveryStatus($rows, $p, $now);
+check('una sola serie senza orario: ambito l\'esercizio, le croci non partono stanche (72 h)', $r['petto']['ready_at'] === '2026-11-01T09:00:00+01:00');
+
+echo "\nCedimento: fasce del fattore\n";
+// Riferimento 80 × 8 (1RM 101.3). Oggi 3 × 60 kg × 5: massimo da fresco 30 × (101.3 / 60 − 1) = 20.65,
+// RIR 15.65 → 10 (tetto), tutte facili (RIR ≥ 4) e nessuna stanchezza: ×0.90 → 54 h, pronto 31/10 alle 15:00.
+$ref = array_merge(session('2026-10-12 09:00:00', 3, 80, 8), session('2026-10-18 09:00:00', 3, 80, 8));
+$r = recoveryStatus(array_merge($ref, session('2026-10-29 09:00:00', 3, 60, 5)), $p, $now);
+check('tutte le serie facili (RIR ≥ 4): ×0.90, pronto 31/10 alle 15:00', $r['petto']['ready_at'] === '2026-10-31T15:00:00+01:00');
+
+// Una serie facile (60 × 5, RIR 10) e una media (80 × 6: 7.99 − 6 = 1.99, nessuna dura): non sono né
+// metà dure né tutte facili → ×1.0. La terza serie, a corpo libero, non ha stima (il riferimento è con peso): 3 serie, volume ×1.0,
+// 60 h, pronto 31/10 alle 21:00.
+$today = [setRow('2026-10-29 09:00:00', 'petto', 'Europe/Rome', ['weight' => 60, 'reps' => '5']), setRow('2026-10-29 09:00:00', 'petto', 'Europe/Rome', ['weight' => 80, 'reps' => '6'])];
+$r = recoveryStatus(array_merge($ref, $today, session('2026-10-29 09:00:00', 1, 0, 8, [], 'petto')), $p, $now);
+check('serie facili e medie, nessuna dura: ×1.0, pronto 31/10 alle 21:00', $r['petto']['ready_at'] === '2026-10-31T21:00:00+01:00');
+// Le sessioni oltre i 10 giorni servono solo come riferimento: da sole non fanno recupero.
+$r = recoveryStatus($ref, $p, $now);
+check('solo sessioni oltre i 10 giorni: tutti i muscoli PRONTO senza last_trained', count(array_filter($r, fn($m) => $m['status'] === 'PRONTO' && $m['last_trained'] === null)) === 12);
 
 echo "\n$checks controlli, $fails falliti\n";
 exit($fails > 0 ? 1 : 0);
