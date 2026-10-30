@@ -102,6 +102,19 @@ check('petto: pronto 01/11 alle 03:00 (66 h dalla seconda sessione)', $r['petto'
 check('petto: last_trained è la seconda sessione', $r['petto']['last_trained'] === '2026-10-29 09:00:00');
 check('petto: 41%', $r['petto']['percent'] == 41);
 
+echo "\nResiduo dispari: si arrotonda a 6 h prima, poi si aggiunge il residuo\n";
+// La prima sessione (27/10 09:00, 60 h) finisce il 29/10 alle 21:00. La seconda, il 29/10 alle 16:00,
+// arriva 5 h prima: 60 (già arrotondate a 6 h) + 5 × 0.5 = 62.5 h, arrotondate a 63 h (round, metà verso
+// l'alto): pronto il 01/11 alle 07:00. Arrotondare a 6 h dopo il residuo darebbe 60 h (31/10 alle
+// 04:00), senza l'arrotondamento finale 62 h o 62.5 h. Alle 12:00 del 30/10 sono passate 20 h su 63: 31.7%.
+$rows = array_merge(
+    array_fill(0, 3, setRow('2026-10-27 09:00:00')),
+    array_fill(0, 3, setRow('2026-10-29 16:00:00'))
+);
+$r = recoveryStatus($rows, profile('intermedio', 25, 'M'), $now);
+check('petto: pronto 01/11 alle 07:00 (63 h dalla seconda sessione)', $r['petto']['ready_at'] === '2026-11-01T07:00:00+01:00');
+check('petto: 32%', $r['petto']['percent'] == 32);
+
 echo "\nResiduo: riallenato dopo essere pronto\n";
 // Il 25/10 09:00 la prima sessione (60 h) finisce il 27/10 alle 21:00: la seconda, il 29/10 alle
 // 09:00, non ha residuo e vale 60 h da sola.
