@@ -20,9 +20,21 @@ export const STATUS = { IMPROVING: 'improving', STALLED: 'stalled', DECLINING: '
 export const daysSince = (workout, now = Date.now()) =>
   Math.max(0, Math.floor((now - workoutInstant(workout)) / DAY_MS));
 
+// Posizione di ogni esercizio dell'allenamento (stesso ordine di workout.exercises): 1 + gli esercizi
+// iniziati prima, dove l'inizio è l'orario più basso fra tutte le sue serie (riscaldamento compreso).
+// Se una qualsiasi serie dell'allenamento non ha l'orario la seduta è senza posizione: tutti null.
+const exercisePositions = (workout) => {
+  const groups = workout.exercises || [];
+  const hasTime = (set) => Number.isFinite(set.seconds_from_start);
+  if (groups.some((ex) => (ex.sets || []).some((set) => !hasTime(set)))) return groups.map(() => null);
+  const starts = groups.map((ex) => ((ex.sets || []).length ? Math.min(...ex.sets.map((set) => set.seconds_from_start)) : null));
+  return starts.map((start) => (start === null ? null : 1 + starts.filter((other) => other !== null && other < start).length));
+};
+
 /**
  * Da record di api/workout_history/read.php a mappa exercise_id -> serie.
- * Ogni sessione: { id, date, value, bestSet:{weight,reps}, volume, totalReps, isPR }.
+ * Ogni sessione: { id, date, value, bestSet:{weight,reps}, volume, totalReps, isPR, position }.
+ * position: 1° esercizio della seduta, 2°, ...; null se la seduta non ha l'orario di tutte le serie.
  * Le sessioni sono in ordine cronologico crescente.
  * La metrica (mode) è quella dell'ultima sessione: con peso -> 1RM stimato, a corpo libero -> ripetizioni.
  * Le sessioni dell'altro tipo restano fuori dalla serie e sono contate in `skipped`.
@@ -30,7 +42,8 @@ export const daysSince = (workout, now = Date.now()) =>
 export const buildExerciseSeries = (records) => {
   const raw = {};
   (Array.isArray(records) ? records : []).forEach((workout) => {
-    (workout.exercises || []).forEach((ex) => {
+    const positions = exercisePositions(workout);
+    (workout.exercises || []).forEach((ex, exIndex) => {
       if (ex.exercise_id === undefined || ex.exercise_id === null) return;
       let bestOneRM = 0, bestReps = 0, volume = 0, totalReps = 0;
       let bestSet = null, bestRepSet = null;
@@ -58,6 +71,7 @@ export const buildExerciseSeries = (records) => {
         bestSet: bestSet || bestRepSet,
         volume: parseFloat(volume.toFixed(1)),
         totalReps,
+        position: positions[exIndex],
       });
     });
   });
@@ -88,6 +102,8 @@ export const buildExerciseSeries = (records) => {
  *   IMPROVING_PCT% o sceso di almeno DECLINING_PCT% rispetto al meglio della prima metà
  *   (si confrontano i migliori, non la prima e l'ultima sessione, per non dipendere da una giornata storta)
  * - stalled: tutto il resto (nessun progresso: un breve stallo non cambia lo stato)
+ * laterInSession: true solo in calo, se la sessione migliore recente e quella di riferimento hanno la
+ * posizione e la recente è più avanti nella seduta. Non cambia stato né variazione.
  */
 export const analyzeExercise = (serie, now = Date.now()) => {
   const { sessions } = serie;
@@ -96,12 +112,16 @@ export const analyzeExercise = (serie, now = Date.now()) => {
   const recent = sessions.filter((s) => daysSince(s, now) <= RECENT_DAYS);
   const best = Math.max(...sessions.map((s) => s.value));
 
+  // Sessione migliore di un gruppo: a parità vince la prima
+  const bestOf = (group) => group.reduce((top, s) => (s.value > top.value ? s : top));
   let deltaPct = null;
+  let baselineSession = null;
+  let currentSession = null;
   if (recent.length >= 2) {
     const half = Math.floor(recent.length / 2);
-    const baseline = Math.max(...recent.slice(0, half).map((s) => s.value));
-    const current = Math.max(...recent.slice(half).map((s) => s.value));
-    if (baseline > 0) deltaPct = ((current - baseline) / baseline) * 100;
+    baselineSession = bestOf(recent.slice(0, half));
+    currentSession = bestOf(recent.slice(half));
+    if (baselineSession.value > 0) deltaPct = ((currentSession.value - baselineSession.value) / baselineSession.value) * 100;
   }
 
   let status;
@@ -110,7 +130,11 @@ export const analyzeExercise = (serie, now = Date.now()) => {
   else if (deltaPct !== null && deltaPct >= IMPROVING_PCT) status = STATUS.IMPROVING;
   else if (deltaPct !== null && deltaPct <= -DECLINING_PCT) status = STATUS.DECLINING;
   else status = STATUS.STALLED;
-  return { ...serie, last, lastDays, deltaPct, status, best, recentPR: last.isPR && lastDays <= RECENT_DAYS };
+  // Calo che coincide con l'esercizio fatto più avanti nella seduta: serve entrambe le posizioni
+  const laterInSession = status === STATUS.DECLINING
+    && Number.isInteger(baselineSession?.position) && Number.isInteger(currentSession?.position)
+    && currentSession.position > baselineSession.position;
+  return { ...serie, last, lastDays, deltaPct, status, best, recentPR: last.isPR && lastDays <= RECENT_DAYS, laterInSession };
 };
 
 /** Come leggere ogni stato: i client traducono il tono nei propri colori. */
