@@ -59,9 +59,11 @@ describe('nota "più avanti nella seduta" (#26)', () => {
   });
   const renderRow = (it) => render(<ExerciseProgressRow item={it} favorite={false} onToggleFavorite={() => {}} onOpen={() => {}} />);
 
-  it('accanto al ▼ quando il calo coincide con l\'esercizio fatto più tardi', () => {
+  it('il calo coincide con l\'esercizio fatto più tardi: la nota è una riga a sé, il delta resta com\'era', () => {
     renderRow(declining(true));
-    expect(screen.getByText('▼ 10% · più avanti nella seduta')).toBeTruthy();
+    expect(screen.getByText('▼ 10%')).toBeTruthy();
+    const note = screen.getByText('più avanti nella seduta');
+    expect(note.closest('[data-row-badge]')).toBeNull();
   });
 
   it('senza il flag resta solo il ▼', () => {
