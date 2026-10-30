@@ -13,6 +13,7 @@ include_once '../../models/User.php';
 require_once '../../lib/weekly_stats.php';
 require_once '../../lib/muscle_rules.php';
 require_once '../../lib/weekly_sets.php';
+require_once '../../lib/recovery_rules.php';
 include_once '../../models/WorkoutHistory.php';
 include_once '../../models/WorkoutSet.php';
 include_once '../../models/WorkoutPlan.php';
@@ -76,22 +77,8 @@ try {
         $total_reps += $reps;
     }
 
-    // 3. Recupero Muscolare
-    $tempi_base = [
-        'bicipiti'     => ['amatoriale' => 54, 'intermedio' => 48, 'avanzato' => 42],
-        'tricipiti'    => ['amatoriale' => 54, 'intermedio' => 48, 'avanzato' => 42],
-        'petto'        => ['amatoriale' => 66, 'intermedio' => 60, 'avanzato' => 54],
-        'schiena'      => ['amatoriale' => 66, 'intermedio' => 60, 'avanzato' => 54],
-        'spalle'       => ['amatoriale' => 54, 'intermedio' => 48, 'avanzato' => 42],
-        'quadricipiti' => ['amatoriale' => 84, 'intermedio' => 72, 'avanzato' => 66],
-        'femorali'     => ['amatoriale' => 84, 'intermedio' => 72, 'avanzato' => 66],
-        'glutei'       => ['amatoriale' => 84, 'intermedio' => 72, 'avanzato' => 66],
-        'adduttori'    => ['amatoriale' => 54, 'intermedio' => 48, 'avanzato' => 42],
-        'abduttori'    => ['amatoriale' => 54, 'intermedio' => 48, 'avanzato' => 42],
-        'polpacci'     => ['amatoriale' => 42, 'intermedio' => 36, 'avanzato' => 30],
-        'addome'       => ['amatoriale' => 36, 'intermedio' => 30, 'avanzato' => 24]
-    ];
-
+    // 3. Recupero Muscolare (le regole stanno in lib/recovery_rules.php, testate a parte in
+    // tests/recovery_rules_test.php). Le misure del corpo (peso, grasso) non entrano nel calcolo.
     // Recupera tutte le serie degli ultimi 10 giorni (il riscaldamento, #66, non conta per il recupero)
     $since_str = (clone $now)->modify('-10 days')->format('Y-m-d H:i:s');
     $query_sets = "SELECT wh.date, wh.time_zone, e.primary_muscle, ws.reps, ws.weight
@@ -104,99 +91,20 @@ try {
     $stmt_sets->execute([$user_id, $since_str]);
     $all_sets = $stmt_sets->fetchAll(PDO::FETCH_ASSOC);
 
-    // Raggruppa per sessione e muscolo principale (gli esercizi senza, es. "gambe" personali
-    // non ancora specificate, non contano: muscleCountedOf torna null)
-    $sessions_by_muscle = [];
+    $recovery_rows = [];
     foreach ($all_sets as $set) {
-        $mg = muscleCountedOf($set['primary_muscle']);
-
-        if ($mg === null || !isset($tempi_base[$mg])) continue;
-
-        $date = $set['date'];
-
-        if (!isset($sessions_by_muscle[$mg])) $sessions_by_muscle[$mg] = [];
-        if (!isset($sessions_by_muscle[$mg][$date])) {
-            $sessions_by_muscle[$mg][$date] = [
-                'date' => $date,
-                'started_at' => workout_instant($date, $set['time_zone']),
-                'sets_count' => 0
-            ];
-        }
-        $sessions_by_muscle[$mg][$date]['sets_count']++;
-    }
-
-    $recovery_status = [];
-    foreach ($tempi_base as $mg => $times) {
-        if (!isset($sessions_by_muscle[$mg])) {
-            $recovery_status[$mg] = ['percent' => 100, 'status' => 'PRONTO', 'last_trained' => null];
-            continue;
-        }
-
-        $mg_sessions = $sessions_by_muscle[$mg];
-        ksort($mg_sessions);
-
-        $last_ready_at = null;
-        $last_trained = null;
-        $last_trained_at = null;
-
-        foreach ($mg_sessions as $date_str => $session) {
-            $session_date = $session['started_at'];
-            $last_trained = $date_str;
-            $last_trained_at = $session['started_at'];
-
-            $base_h = $times[$level];
-
-            // A) Volume
-            $f_volume = 1.0;
-            if ($session['sets_count'] >= 6) $f_volume = 1.30;
-            else if ($session['sets_count'] >= 4) $f_volume = 1.15;
-
-            // B) Cedimento
-            $f_cedimento = 1.0;
-
-            // C) Età
-            $age = isset($user_model->age) ? intval($user_model->age) : 25;
-            if ($age >= 50) $f_eta = 1.35;
-            else if ($age >= 40) $f_eta = 1.20;
-            else if ($age >= 30) $f_eta = 1.10;
-            else $f_eta = 1.0;
-
-            // D) Sesso
-            // M = 1.0, F = 0.90, altro/non indicato = valore intermedio
-            $gender_value = $user_model->gender ?? null;
-            $f_sesso = ($gender_value === 'F') ? 0.90 : (($gender_value === 'O') ? 0.95 : 1.0);
-
-            $recovery_h = $base_h * $f_volume * $f_cedimento * $f_eta * $f_sesso;
-            $recovery_h = round($recovery_h / 6) * 6;
-
-            if ($last_ready_at && $session_date < $last_ready_at) {
-                $diff = $last_ready_at->getTimestamp() - $session_date->getTimestamp();
-                $residuo_h = $diff / 3600;
-                $recovery_h += ($residuo_h * 0.50);
-            }
-
-            $last_ready_at = $session_date->modify('+' . round($recovery_h) . ' hours');
-        }
-
-        if ($now >= $last_ready_at) {
-            $percent = 100;
-            $status = 'PRONTO';
-        } else {
-            $total_h = ($last_ready_at->getTimestamp() - $last_trained_at->getTimestamp()) / 3600;
-            $passed_h = ($now->getTimestamp() - $last_trained_at->getTimestamp()) / 3600;
-            $percent = $total_h > 0 ? min(99, round(($passed_h / $total_h) * 100)) : 100;
-
-            if ($percent < 50) $status = 'AFFATICATO';
-            else $status = 'IN RECUPERO';
-        }
-
-        $recovery_status[$mg] = [
-            'percent' => $percent,
-            'status' => $status,
-            'last_trained' => $last_trained,
-            'ready_at' => $last_ready_at->setTimezone($now->getTimezone())->format('c')
+        $recovery_rows[] = [
+            'date' => $set['date'],
+            'started_at' => workout_instant($set['date'], $set['time_zone']),
+            'primary_muscle' => $set['primary_muscle']
         ];
     }
+
+    $recovery_status = recoveryStatus($recovery_rows, [
+        'level' => $level,
+        'age' => isset($user_model->age) ? intval($user_model->age) : null,
+        'gender' => $user_model->gender ?? null
+    ], $now);
 
     // 4. Serie allenanti per muscolo: questa settimana vs la settimana scorsa allo stesso punto
     // (bucketing puro in weeklySetsBuckets, testato a parte in tests/weekly_sets_test.php). Il
