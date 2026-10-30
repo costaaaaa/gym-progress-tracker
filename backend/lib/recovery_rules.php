@@ -41,10 +41,19 @@ function recoveryStatus(array $rows, array $profile, DateTimeInterface $now): ar
         $sessionsByMuscle[$muscle][$date]['sets_count']++;
     }
 
-    $status = [];
+    $age = $profile['age'] ?? 25;
+    if ($age >= 50) $fAge = 1.35;
+    else if ($age >= 40) $fAge = 1.20;
+    else if ($age >= 30) $fAge = 1.10;
+    else $fAge = 1.0;
+    // M = 1.0, F = 0.90, altro/non indicato = valore intermedio
+    $gender = $profile['gender'] ?? null;
+    $fGender = ($gender === 'F') ? 0.90 : (($gender === 'O') ? 0.95 : 1.0);
+
+    $result = [];
     foreach (RECOVERY_BASE_HOURS as $muscle => $baseHours) {
         if (!isset($sessionsByMuscle[$muscle])) {
-            $status[$muscle] = ['percent' => 100, 'status' => 'PRONTO', 'last_trained' => null];
+            $result[$muscle] = ['percent' => 100, 'status' => 'PRONTO', 'last_trained' => null];
             continue;
         }
 
@@ -60,15 +69,7 @@ function recoveryStatus(array $rows, array $profile, DateTimeInterface $now): ar
             $fVolume = 1.0;
             if ($session['sets_count'] >= 6) $fVolume = 1.30;
             else if ($session['sets_count'] >= 4) $fVolume = 1.15;
-            $age = $profile['age'] ?? 25;
-            if ($age >= 50) $fEta = 1.35;
-            else if ($age >= 40) $fEta = 1.20;
-            else if ($age >= 30) $fEta = 1.10;
-            else $fEta = 1.0;
-            // M = 1.0, F = 0.90, altro/non indicato = valore intermedio
-            $gender = $profile['gender'] ?? null;
-            $fSesso = ($gender === 'F') ? 0.90 : (($gender === 'O') ? 0.95 : 1.0);
-            $recoveryHours = $baseHours[$profile['level']] * $fVolume * $fEta * $fSesso;
+            $recoveryHours = $baseHours[$profile['level']] * $fVolume * $fAge * $fGender;
             $recoveryHours = round($recoveryHours / 6) * 6;
 
             // Riallenato prima di essere pronto: metà delle ore che mancavano si aggiunge
@@ -89,12 +90,12 @@ function recoveryStatus(array $rows, array $profile, DateTimeInterface $now): ar
             $label = $percent < 50 ? 'AFFATICATO' : 'IN RECUPERO';
         }
 
-        $status[$muscle] = [
+        $result[$muscle] = [
             'percent' => $percent,
             'status' => $label,
             'last_trained' => $lastTrained,
             'ready_at' => $readyAt->setTimezone($now->getTimezone())->format('c'),
         ];
     }
-    return $status;
+    return $result;
 }
