@@ -220,6 +220,10 @@ try {
             $workout_set->intensity_technique = isset($record->intensity_technique) && $record->intensity_technique !== "" ? $record->intensity_technique : null;
             // true/1/"1"/"true" = riscaldamento; false/0/"0"/"false"/assente = serie allenante
             $workout_set->is_warmup = filter_var($record->is_warmup ?? false, FILTER_VALIDATE_BOOLEAN);
+            // Orario della serie (#26): solo un intero JSON da 0 a 86400 (secondi dall'inizio della sessione);
+            // assente o altro (negativo, oltre un giorno, testo, decimale, stringa) diventa NULL, mai un errore
+            $seconds = $record->seconds_from_start ?? null;
+            $workout_set->seconds_from_start = is_int($seconds) && $seconds >= 0 && $seconds <= 86400 ? $seconds : null;
 
             if ($workout_set->create()) {
                 $sets_saved++;

@@ -31,7 +31,7 @@ const walk = (dir) => readdirSync(dir).flatMap((name) => {
   const path = join(dir, name);
   return statSync(path).isDirectory() ? walk(path) : /\.jsx?$/.test(name) ? [path] : [];
 });
-const known = (key) => key in ref || `${key}_one` in ref || `${key}_other` in ref;
+const known = (key) => key in ref || `${key}_one` in ref || `${key}_other` in ref || `${key}_ordinal_other` in ref;
 const keyPattern = /(?:\bt\(\s*|i18nKey=)['"]([a-z_]+\.[\w.]+)['"]|label: '([a-z_]+\.[\w.]+)'/g;
 for (const file of walk(srcDir)) {
   for (const m of readFileSync(file, 'utf8').matchAll(keyPattern)) {

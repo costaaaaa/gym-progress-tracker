@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   Box,
   Button,
+  Chip,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -36,12 +37,17 @@ const PRDot = ({ cx, cy, payload, color }) => {
     : <circle cx={cx} cy={cy} r={3} fill={color} />;
 };
 
-const ChartTooltip = ({ active, payload, mode, t }) => {
+// "1° esercizio": solo se la sessione ha la posizione; altrimenti non si mostra nulla
+const positionLabel = (t, position) => (Number.isInteger(position) ? t('progress.position', { count: position, ordinal: true }) : null);
+
+export const ChartTooltip = ({ active, payload, mode, t }) => {
   if (!active || !payload?.length) return null;
   const p = payload[0].payload;
+  const position = positionLabel(t, p.position);
   return (
     <Box sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: '10px', p: 1.5, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}>
       <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 0.5 }}>{p.dateLabel}</Typography>
+      {position && <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 0.5 }}>{position}</Typography>}
       <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
         {t(`progress.kind.${mode}`)}: <strong>{formatValue(t, mode, p.value)}</strong>
         {p.isPR && ` · ${t('progress.pr')}`}
@@ -119,12 +125,18 @@ const ExerciseDetailDialog = ({ item, onClose }) => {
                 </TableHead>
                 <TableBody>
                   {visibleRows.map((row, i) => {
+                    const position = positionLabel(t, row.position);
                     const cellSx = { fontSize: { xs: 12, sm: 13 }, px: { xs: 0.75, sm: 2 }, whiteSpace: 'nowrap', borderColor: 'divider', ...(i === visibleRows.length - 1 ? { border: 0 } : {}) };
                     return (
                       <TableRow key={row.id}>
                         <TableCell sx={cellSx}>
                           {row.dateLabel}
-                          <TimeZoneBadge workout={row} sx={{ display: 'flex', width: 'fit-content', height: 20, fontSize: 12, mt: 0.25 }} />
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, '&:not(:empty)': { mt: 0.25 } }}>
+                            <TimeZoneBadge workout={row} sx={{ height: 20, fontSize: 12 }} />
+                            {position && (
+                              <Chip size="small" variant="outlined" label={position} sx={{ height: 20, fontSize: 12, borderColor: 'divider', color: 'text.secondary', fontWeight: 600 }} />
+                            )}
+                          </Box>
                         </TableCell>
                         <TableCell align="right" sx={cellSx}>
                           {row.bestSet

@@ -123,8 +123,8 @@ describe('flusso completo e salvataggio', () => {
 
     expect(saveBody()).toEqual({
       workout_records: [
-        { exercise_id: 3, exercise_name: 'Panca piana', weight: 60, reps: '8', intensity_technique: '', is_warmup: false, day_id: 1, set_number: 1 },
-        { exercise_id: 3, exercise_name: 'Panca piana', weight: 62.5, reps: '7', intensity_technique: '', is_warmup: false, day_id: 1, set_number: 2 },
+        { exercise_id: 3, exercise_name: 'Panca piana', weight: 60, reps: '8', intensity_technique: '', is_warmup: false, day_id: 1, set_number: 1, seconds_from_start: 60 },
+        { exercise_id: 3, exercise_name: 'Panca piana', weight: 62.5, reps: '7', intensity_technique: '', is_warmup: false, day_id: 1, set_number: 2, seconds_from_start: 120 },
       ],
       notes: '',
       idempotency_key: expect.any(String),
@@ -171,6 +171,35 @@ describe('bozza e ripresa', () => {
     expect(screen.getByRole('button', { name: 'Salta serie' })).toBeTruthy();
   });
 
+  it('riprendendo, la serie già confermata tiene il suo orario e la prossima parte dal vecchio inizio', async () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      ...savedDraft,
+      completedSets: { 9: [{ setNumber: 1, weight: 60, reps: '8', intensity_technique: '', seconds_from_start: 300 }] },
+    }));
+    await mount();
+    click('Riprendi allenamento');
+    doSet('62.5', '7'); // 18:00, la sessione è iniziata alle 17:40
+    await advance(0.3);
+    click('Salta esercizio');
+    await act(async () => { click('Salva allenamento'); });
+    await advance(0);
+
+    expect(saveBody().workout_records.map((r) => [r.set_number, r.seconds_from_start])).toEqual([[1, 300], [2, 1200]]);
+  });
+
+  it('una bozza di prima dell\'orario riprende senza: le sue serie vanno con null, le nuove con i secondi', async () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(savedDraft));
+    await mount();
+    click('Riprendi allenamento');
+    doSet('62.5', '7');
+    await advance(0.3);
+    click('Salta esercizio');
+    await act(async () => { click('Salva allenamento'); });
+    await advance(0);
+
+    expect(saveBody().workout_records.map((r) => [r.set_number, r.seconds_from_start])).toEqual([[1, null], [2, 1200]]);
+  });
+
   it('scartare la bozza la cancella e torna alla scelta del giorno', async () => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(savedDraft));
     await mount();
@@ -195,7 +224,7 @@ describe('bozza e ripresa', () => {
 
     expect(saveBody()).toEqual({
       workout_records: [
-        { exercise_id: 3, exercise_name: 'Panca piana', weight: 60, reps: '8', intensity_technique: '', is_warmup: false, day_id: 2, set_number: 1 },
+        { exercise_id: 3, exercise_name: 'Panca piana', weight: 60, reps: '8', intensity_technique: '', is_warmup: false, day_id: 2, set_number: 1, seconds_from_start: null },
       ],
       notes: 'spalla ok',
       idempotency_key: 'chiave-bozza',
@@ -400,6 +429,17 @@ describe('ripresa dal riepilogo: il tempo a pagina chiusa è una pausa', () => {
     expect((await save()).duration_seconds).toBe(3900);
   });
 
+  it('la serie confermata dopo la ripresa conta i secondi al netto della pausa: 21:05 sono 1 h 05, non 3 h 05', async () => {
+    await reachSummaryAt19();
+    closeApp();
+    await reopen(at(21, 0));
+    await addExerciseFromSummary();
+    vi.setSystemTime(at(21, 5));
+    doSet('40', '12');
+
+    expect((await save()).workout_records.map((r) => r.seconds_from_start)).toEqual([3600, 3600, 3900]);
+  });
+
   it('il cronometro in allenamento riparte da 60:00 e cammina da lì', async () => {
     await reachSummaryAt19();
     closeApp();
@@ -513,6 +553,17 @@ describe('ripresa dal riepilogo: il tempo a pagina chiusa è una pausa', () => {
       });
     });
 
+    it('la serie confermata nel salvataggio "già finito" non ha orario; quelle già confermate lo tengono', async () => {
+      await reachSummaryAt19();
+      closeApp();
+      await reopenAsFinished(at(10, 0, 21));
+      await addExerciseFromSummary();
+      vi.setSystemTime(at(10, 5, 21));
+      doSet('40', '12');
+
+      expect((await save()).workout_records.map((r) => r.seconds_from_start)).toEqual([3600, 3600, null]);
+    });
+
     it('senza una fine nota (né fine del riepilogo né ultima serie) ended_at è null e la durata mostrata 0', async () => {
       storeDraft({ lastActivityAt: null });
       await reopenAsFinished(at(10, 0, 21));
@@ -587,7 +638,7 @@ describe('salti e uscita', () => {
     await act(async () => { click('Salva allenamento'); });
     await advance(0);
     expect(saveBody().workout_records).toEqual([
-      { exercise_id: 3, exercise_name: 'Panca piana', weight: 60, reps: '8', intensity_technique: '', is_warmup: false, day_id: 2, set_number: 1 },
+      { exercise_id: 3, exercise_name: 'Panca piana', weight: 60, reps: '8', intensity_technique: '', is_warmup: false, day_id: 2, set_number: 1, seconds_from_start: 0 },
     ]);
   });
 
@@ -998,5 +1049,77 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     click('Salta riscaldamento');
     expect(screen.getByLabelText('Riscaldamento 2, saltata')).toBeTruthy();
     expect(screen.getByLabelText('Serie 1, in corso')).toBeTruthy();
+  });
+});
+
+describe('ordine reale e orario delle serie (#26)', () => {
+  // Scheda riordinata: la riga con id 20 viene prima di quella con id 10
+  const benchFirst = { ...bench, id: 20, sets: 1 };
+  const flySecond = { ...fly, id: 10, sets: 1 };
+  const reorderedDay = { id: 3, name: 'Riordinata', exercises: [benchFirst, flySecond] };
+  const save = async () => {
+    await act(async () => { click('Salva allenamento'); });
+    await advance(0);
+    return saveBody();
+  };
+
+  beforeEach(() => {
+    responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [reorderedDay] }] });
+  });
+
+  it('le serie si salvano nell\'ordine in cui sono state fatte, non in quello degli id delle righe', async () => {
+    await startDay('Riordinata');
+    await advance(30);
+    doSet('60', '8');
+    await advance(0.3);
+    await advance(45);
+    doSet('20', '12');
+    expect(screen.getByText('Riepilogo')).toBeTruthy();
+
+    const { workout_records: records } = await save();
+    expect(records.map((r) => [r.exercise_id, r.seconds_from_start])).toEqual([[3, 30], [4, 75]]);
+  });
+
+  it('i gruppi senza orario (bozza vecchia) vanno in fondo, dopo quelli con l\'orario', async () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      ...savedDraft,
+      completedSets: {
+        9: [{ setNumber: 1, weight: 60, reps: '8', intensity_technique: '' }],
+        10: [{ setNumber: 1, weight: 20, reps: '12', intensity_technique: '', seconds_from_start: 400 }],
+      },
+      currentExerciseIndex: 1,
+      currentSetIndex: 1,
+    }));
+    await mount();
+    click('Riprendi allenamento');
+    click('Salta serie');
+    await advance(0.3);
+    await act(async () => { click('Salva allenamento'); });
+    await advance(0);
+
+    expect(saveBody().workout_records.map((r) => [r.exercise_id, r.seconds_from_start])).toEqual([[4, 400], [3, null]]);
+  });
+
+  it('un gruppo il cui inizio manca (prima serie senza orario) va in fondo anche se le sue serie dopo hanno l\'orario', async () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      ...savedDraft,
+      completedSets: {
+        9: [
+          { setNumber: 1, weight: 60, reps: '8', intensity_technique: '' },
+          { setNumber: 2, weight: 60, reps: '8', intensity_technique: '', seconds_from_start: 900 },
+        ],
+        10: [{ setNumber: 1, weight: 20, reps: '12', intensity_technique: '', seconds_from_start: 1200 }],
+      },
+      currentExerciseIndex: 1,
+      currentSetIndex: 1,
+    }));
+    await mount();
+    click('Riprendi allenamento');
+    click('Salta serie');
+    await advance(0.3);
+    await act(async () => { click('Salva allenamento'); });
+    await advance(0);
+
+    expect(saveBody().workout_records.map((r) => [r.exercise_id, r.seconds_from_start])).toEqual([[4, 1200], [3, null], [3, 900]]);
   });
 });

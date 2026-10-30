@@ -14,6 +14,7 @@ class WorkoutSet
     public $reps;
     public $intensity_technique;
     public $is_warmup;
+    public $seconds_from_start = null;
 
     // Extra properties for joins
     public $exercise_name;
@@ -29,6 +30,11 @@ class WorkoutSet
     public function create()
     {
         try {
+            // La colonna seconds_from_start è scritta solo se il client manda il valore (stesso schema di
+            // WorkoutHistory::create); le letture, invece, la selezionano sempre: serve la migrazione 32.
+            $seconds_clause = $this->seconds_from_start === null ? "" : ",
+                        seconds_from_start = :seconds_from_start";
+
             $query = "INSERT INTO " . $this->table_name . "
                     SET
                         workout_history_id = :workout_history_id,
@@ -37,7 +43,7 @@ class WorkoutSet
                         weight = :weight,
                         reps = :reps,
                         intensity_technique = :intensity_technique,
-                        is_warmup = :is_warmup";
+                        is_warmup = :is_warmup" . $seconds_clause;
 
             // Prepare query
             $stmt = $this->conn->prepare($query);
@@ -60,6 +66,9 @@ class WorkoutSet
             $stmt->bindParam(":reps", $this->reps);
             $stmt->bindParam(":intensity_technique", $this->intensity_technique);
             $stmt->bindParam(":is_warmup", $this->is_warmup, PDO::PARAM_INT);
+            if ($this->seconds_from_start !== null) {
+                $stmt->bindValue(":seconds_from_start", $this->seconds_from_start, PDO::PARAM_INT);
+            }
 
             // Execute query
             if ($stmt->execute()) {
@@ -77,7 +86,7 @@ class WorkoutSet
     // Read all sets for a specific user to optimize N+1 queries
     public function readAllByUserId($user_id)
     {
-        $query = "SELECT ws.id, ws.workout_history_id, ws.exercise_id, ws.set_number, ws.weight, ws.reps, ws.intensity_technique, ws.is_warmup,
+        $query = "SELECT ws.id, ws.workout_history_id, ws.exercise_id, ws.set_number, ws.weight, ws.reps, ws.intensity_technique, ws.is_warmup, ws.seconds_from_start,
                        " . exercise_name_sql() . " as exercise_name, e.muscle_group
                 FROM " . $this->table_name . " ws
                 LEFT JOIN gym_exercises e ON ws.exercise_id = e.id

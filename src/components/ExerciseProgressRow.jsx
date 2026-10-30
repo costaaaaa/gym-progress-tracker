@@ -43,14 +43,14 @@ const TONE_COLOR = { positive: 'success.main', negative: 'recovery.recovering', 
 // Una riga della panoramica: nome e ultima sessione, mini grafico, valore con variazione, stella dei preferiti
 const ExerciseProgressRow = ({ item, showMuscle = false, favorite, onToggleFavorite, onOpen }) => {
   const { t } = useTranslation();
-  const { name, muscle, status, deltaPct, last, mode, sessions, lastDays, recentPR } = item;
+  const { name, muscle, status, deltaPct, last, mode, sessions, lastDays, recentPR, laterInSession } = item;
   const tone = STATUS_TONE[status];
 
   return (
     <Box data-exercise-row sx={{ display: 'flex', alignItems: 'center', opacity: status === STATUS.INACTIVE ? 0.6 : 1 }}>
       <CardActionArea
         onClick={() => onOpen(item.id)}
-        sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: { xs: 1.5, md: 3 }, py: 1.25, px: 1, borderRadius: 1 }}
+        sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: { xs: 1.5, md: 3 }, py: 1.25, px: 1, borderRadius: 1, ...(laterInSession && { flexWrap: 'wrap', rowGap: 0 }) }}
       >
         <Box sx={{ flex: { xs: 1, md: '0 0 300px' }, minWidth: 0 }}>
           <Typography sx={{ fontWeight: 600, fontSize: 16, lineHeight: 1.3 }}>{name}</Typography>
@@ -72,6 +72,11 @@ const ExerciseProgressRow = ({ item, showMuscle = false, favorite, onToggleFavor
             </Typography>
           </Box>
         </Box>
+
+        {laterInSession && (
+          // Riga a sé a tutta larghezza: concatenata al delta allargherebbe la colonna del valore sul telefono
+          <Typography sx={{ flexBasis: '100%', textAlign: 'right', fontSize: 13, fontWeight: 600, color: TONE_COLOR[tone] }}>{t('progress.later_in_session')}</Typography>
+        )}
       </CardActionArea>
 
       <IconButton

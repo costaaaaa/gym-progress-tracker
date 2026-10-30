@@ -1,7 +1,8 @@
 // Dettaglio esercizio: la cronologia mostra il giorno scritto e il badge del fuso per le sessioni fatte altrove.
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
-import ExerciseDetailDialog from './ExerciseDetailDialog';
+import { render, screen, within, fireEvent } from '@testing-library/react';
+import i18n from '../i18n';
+import ExerciseDetailDialog, { ChartTooltip } from './ExerciseDetailDialog';
 import { setBrowserTimeZone } from '../test/timeZone';
 
 const session = (id, date, extra = {}) => ({ id, date, value: 100, volume: 800, bestSet: { weight: 100, reps: 8 }, isPR: false, ...extra });
@@ -32,5 +33,66 @@ describe('ExerciseDetailDialog: fuso nella cronologia', () => {
       session(1, '2026-10-18 02:00:00', { started_at: '2026-10-18T02:00:00+02:00', time_zone: 'Europe/Rome' }),
     ])} onClose={() => {}} />);
     expect(screen.queryByText(/UTC/)).toBeNull();
+  });
+});
+
+const fireShowAll = () => fireEvent.click(screen.getByRole('button', { name: /Show all|Mostra tutti/ }));
+
+describe('ExerciseDetailDialog: posizione dell\'esercizio nella seduta (#26)', () => {
+  const rowOf = (date) => screen.getByText(date, { selector: 'td' }).closest('tr');
+
+  it('le sessioni con la posizione mostrano "1° esercizio" sotto la data, le altre niente', () => {
+    render(<ExerciseDetailDialog item={item([
+      session(1, '2026-10-18 10:00:00', { position: null }),
+      session(2, '2026-10-20 10:00:00', { position: 1 }),
+      session(3, '2026-10-22 10:00:00', { position: 3 }),
+    ])} onClose={() => {}} />);
+    expect(within(rowOf('20/10/2026')).getByText('1° esercizio')).toBeTruthy();
+    expect(within(rowOf('22/10/2026')).getByText('3° esercizio')).toBeTruthy();
+    expect(within(rowOf('18/10/2026')).queryByText(/esercizio/)).toBeNull();
+  });
+
+  it('senza nessuna posizione non c\'è nessuna etichetta', () => {
+    render(<ExerciseDetailDialog item={item([
+      session(1, '2026-10-18 10:00:00', { position: null }),
+      session(2, '2026-10-20 10:00:00'),
+    ])} onClose={() => {}} />);
+    expect(screen.queryByText(/esercizio/i, { selector: 'td *, td' })).toBeNull();
+  });
+
+  it('sta accanto al badge del fuso, non al posto suo', () => {
+    render(<ExerciseDetailDialog item={item([
+      session(1, '2026-10-18 02:00:00', { position: 2, started_at: '2026-10-18T02:00:00-04:00', time_zone: 'America/New_York' }),
+    ])} onClose={() => {}} />);
+    const row = rowOf('18/10/2026');
+    expect(within(row).getByText('New York · UTC−4')).toBeTruthy();
+    expect(within(row).getByText('2° esercizio')).toBeTruthy();
+  });
+
+  // Recharts passa al tooltip { active, payload: [{ payload: punto del grafico }] }
+  const renderTooltip = (point) => render(<ChartTooltip active payload={[{ payload: point }]} mode="e1rm" t={i18n.t.bind(i18n)} />);
+
+  it('il tooltip del grafico mostra la posizione, se la sessione ce l\'ha', () => {
+    renderTooltip({ dateLabel: '18/10/2026', value: 100, isPR: false, position: 2 });
+    expect(screen.getByText('18/10/2026')).toBeTruthy();
+    expect(screen.getByText('2° esercizio')).toBeTruthy();
+  });
+
+  it('il tooltip non ha nulla per una sessione senza posizione', () => {
+    renderTooltip({ dateLabel: '18/10/2026', value: 100, isPR: false, position: null });
+    expect(screen.getByText('18/10/2026')).toBeTruthy();
+    expect(screen.queryByText(/esercizio/)).toBeNull();
+  });
+
+  it('in inglese gli ordinali sono 1st, 2nd, 3rd, 4th, 11th, 12th, 13th, 21st', async () => {
+    await i18n.changeLanguage('en');
+    const positions = [1, 2, 3, 4, 11, 12, 13, 21];
+    render(<ExerciseDetailDialog item={item(positions.map((position, i) => (
+      session(i + 1, `2026-10-${10 + i} 10:00:00`, { position })
+    )))} onClose={() => {}} />);
+    fireShowAll();
+    ['1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st'].forEach((label) => {
+      expect(screen.getAllByText(`${label} exercise`).length).toBeGreaterThan(0);
+    });
   });
 });

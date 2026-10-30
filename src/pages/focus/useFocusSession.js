@@ -8,7 +8,7 @@ import { buildExerciseHistoryIndex, detectPersonalRecords } from '../../utils/wo
 import {
   FEATURE_SESSION_EDIT, isValidWeight, suggestedWeight, slotWeight, totalSlots, setSlot, skipWarmup,
   isValidReps, repsNeedConfirm,
-  numberedSets, withWarmupRule, draftDay, buildSessionEntry, swapExercise, insertExercise,
+  numberedSets, groupsInExecutionOrder, withWarmupRule, draftDay, buildSessionEntry, swapExercise, insertExercise,
   newIdempotencyKey, draftIdempotencyKey
 } from '../../utils/focusSession';
 import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../../utils/celebrate';
@@ -420,7 +420,10 @@ export default function useFocusSession() {
       weight: parseFloat(weightInput),
       reps: String(parseInt(repsInput, 10)),
       intensity_technique: intensityTechniqueInput,
-      is_warmup: isWarmup
+      is_warmup: isWarmup,
+      // Secondi netti dall'inizio (stesso orologio della durata); in modalità "già finito" l'orario non è reale.
+      // Non passa da getElapsedSeconds()/netEnd: preferiscono endTime, congelato nel riepilogo e in retro, mentre qui serve "adesso"
+      seconds_from_start: retroDate || !startTime ? null : Math.max(0, Math.floor((Date.now() - startTime.getTime() - pausedMs) / 1000))
     });
 
     setCompletedSets(prev => ({
@@ -653,7 +656,7 @@ export default function useFocusSession() {
       // Costruisci workout_records nel formato atteso dal backend
       const workoutRecords = [];
 
-      Object.entries(completedSets).forEach(([exerciseId, sets]) => {
+      groupsInExecutionOrder(completedSets).forEach(([exerciseId, sets]) => {
         // Trova l'esercizio per ottenere l'exercise_id originale
         const exercise = selectedDay.exercises.find(e => e.id.toString() === exerciseId.toString());
         if (!exercise) return;
@@ -668,7 +671,8 @@ export default function useFocusSession() {
             intensity_technique: set.intensity_technique,
             is_warmup: set.is_warmup,
             day_id: selectedDayId,
-            set_number: set.set_number
+            set_number: set.set_number,
+            seconds_from_start: set.seconds_from_start ?? null
           });
         });
       });
