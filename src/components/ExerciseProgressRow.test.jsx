@@ -1,6 +1,6 @@
 // Card di un esercizio in Progressi: la sparkline segue le date delle sessioni.
 import { describe, it, expect } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import ExerciseProgressRow from './ExerciseProgressRow';
 import { STATUS } from '../utils/progressOverview';
 import { polylineX } from '../test/polyline';
@@ -47,5 +47,26 @@ describe('sparkline', () => {
       <ExerciseProgressRow item={item(sessions)} favorite={false} onToggleFavorite={() => {}} onOpen={() => {}} />,
     );
     expect(sparklineX(container)).toEqual([0, 40, 120]);
+  });
+});
+
+describe('nota "più avanti nella seduta" (#26)', () => {
+  const declining = (laterInSession) => ({
+    ...item([session('2026-10-01 18:00:00', 100), session('2026-10-08 18:00:00', 90)]),
+    status: STATUS.DECLINING,
+    deltaPct: -10,
+    laterInSession,
+  });
+  const renderRow = (it) => render(<ExerciseProgressRow item={it} favorite={false} onToggleFavorite={() => {}} onOpen={() => {}} />);
+
+  it('accanto al ▼ quando il calo coincide con l\'esercizio fatto più tardi', () => {
+    renderRow(declining(true));
+    expect(screen.getByText('▼ 10% · più avanti nella seduta')).toBeTruthy();
+  });
+
+  it('senza il flag resta solo il ▼', () => {
+    renderRow(declining(false));
+    expect(screen.getByText('▼ 10%')).toBeTruthy();
+    expect(screen.queryByText(/seduta/)).toBeNull();
   });
 });

@@ -43,7 +43,7 @@ const TONE_COLOR = { positive: 'success.main', negative: 'recovery.recovering', 
 // Una riga della panoramica: nome e ultima sessione, mini grafico, valore con variazione, stella dei preferiti
 const ExerciseProgressRow = ({ item, showMuscle = false, favorite, onToggleFavorite, onOpen }) => {
   const { t } = useTranslation();
-  const { name, muscle, status, deltaPct, last, mode, sessions, lastDays, recentPR } = item;
+  const { name, muscle, status, deltaPct, last, mode, sessions, lastDays, recentPR, laterInSession } = item;
   const tone = STATUS_TONE[status];
 
   return (
@@ -67,7 +67,7 @@ const ExerciseProgressRow = ({ item, showMuscle = false, favorite, onToggleFavor
             {recentPR && <Typography component="span" data-row-badge sx={{ fontSize: 13, fontWeight: 700 }}>{t('progress.pr')}</Typography>}
             <Typography component="span" data-row-badge sx={{ fontSize: 14, fontWeight: 600, color: TONE_COLOR[tone] }}>
               {showsDelta(item)
-                ? `${deltaPct >= 0 ? '▲' : '▼'} ${formatNumber(Math.abs(deltaPct), { maximumFractionDigits: 1 })}%`
+                ? `${deltaPct >= 0 ? '▲' : '▼'} ${formatNumber(Math.abs(deltaPct), { maximumFractionDigits: 1 })}%${laterInSession ? ` · ${t('progress.later_in_session')}` : ''}`
                 : t(`progress.status.${status}`)}
             </Typography>
           </Box>
