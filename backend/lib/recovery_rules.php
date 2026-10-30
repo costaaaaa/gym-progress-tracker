@@ -28,34 +28,46 @@ const RECOVERY_BASE_HOURS = [
 function freshMaxReps(array $rows, array $sessions): array
 {
     $fresh = [];
-    foreach ($sessions as $session) {
+    $references = [];
+    foreach ($sessions as $historyId => $session) {
         $oldest = $session['started_at']->modify('-30 days');
         foreach ($session['rows'] as $i) {
             $row = $rows[$i];
             $fresh[$i] = null;
-            $previous = [];
-            foreach ($sessions as $candidate) {
-                if (isset($candidate['exercises'][$row['exercise_id']]) && $candidate['started_at'] < $session['started_at'] && $candidate['started_at'] >= $oldest) {
-                    $previous[] = $candidate;
-                }
-            }
-            usort($previous, fn($a, $b) => $a['started_at'] <=> $b['started_at']);
-            $previous = array_slice($previous, -2);
-            if (count($previous) < 2) continue;
 
-            $ref1rm = 0.0;
-            $refBodyweightReps = 0;
-            foreach ($previous as $candidate) {
-                foreach ($candidate['rows'] as $j) {
-                    if ($rows[$j]['exercise_id'] != $row['exercise_id']) continue;
-                    $reps = parseReps($rows[$j]['reps']);
-                    if ((float) $rows[$j]['weight'] > 0) $ref1rm = max($ref1rm, estimateOneRepMax((float) $rows[$j]['weight'], $reps));
-                    else $refBodyweightReps = max($refBodyweightReps, $reps);
+            $key = $historyId . ':' . $row['exercise_id'];
+            if (!array_key_exists($key, $references)) {
+                $previous = [];
+                foreach ($sessions as $candidate) {
+                    if (isset($candidate['exercises'][$row['exercise_id']]) && $candidate['started_at'] < $session['started_at'] && $candidate['started_at'] >= $oldest) {
+                        $previous[] = $candidate;
+                    }
+                }
+                usort($previous, fn($a, $b) => $a['started_at'] <=> $b['started_at']);
+                $previous = array_slice($previous, -2);
+
+                $references[$key] = null;
+                if (count($previous) === 2) {
+                    $ref1rm = 0.0;
+                    $refBodyweightReps = 0;
+                    foreach ($previous as $candidate) {
+                        foreach ($candidate['rows'] as $j) {
+                            if ($rows[$j]['exercise_id'] != $row['exercise_id']) continue;
+                            $reps = parseReps($rows[$j]['reps']);
+                            if ((float) $rows[$j]['weight'] > 0) $ref1rm = max($ref1rm, estimateOneRepMax((float) $rows[$j]['weight'], $reps));
+                            else $refBodyweightReps = max($refBodyweightReps, $reps);
+                        }
+                    }
+                    $references[$key] = ['ref_1rm' => $ref1rm, 'ref_rip_cl' => $refBodyweightReps];
                 }
             }
+            if ($references[$key] === null) continue;
+
             $weight = (float) $row['weight'];
-            if ($weight > 0 && $ref1rm > 0) $fresh[$i] = 30 * ($ref1rm / $weight - 1);
-            else if ($weight == 0 && $refBodyweightReps > 0) $fresh[$i] = $refBodyweightReps;
+            // Epley invertito: estimateOneRepMax = peso × (1 + rip / 30), quindi le ripetizioni
+            // possibili con $weight sono 30 × (1RM / peso − 1); negative se il peso supera il riferimento
+            if ($weight > 0 && $references[$key]['ref_1rm'] > 0) $fresh[$i] = 30 * ($references[$key]['ref_1rm'] / $weight - 1);
+            else if ($weight == 0 && $references[$key]['ref_rip_cl'] > 0) $fresh[$i] = $references[$key]['ref_rip_cl'];
         }
     }
     return $fresh;
@@ -131,18 +143,20 @@ function failureFactor(array $rirs): float
     return 1.0;
 }
 
-// $rows: una riga per serie allenante, con 'date' (come in gym_workout_history.date, chiave della
-// sessione), 'started_at' (DateTimeImmutable: l'istante di inizio nel fuso dell'allenamento) e
-// 'primary_muscle'. $profile: 'level' (amatoriale, intermedio, avanzato), 'age' e 'gender'.
+// $rows: una riga per serie allenante, con 'history_id' (la sessione), 'date' (come in
+// gym_workout_history.date, chiave della sessione di recupero), 'started_at' (DateTimeImmutable:
+// l'istante di inizio nel fuso dell'allenamento), 'set_id', 'exercise_id', 'primary_muscle',
+// 'weight', 'reps' (stringa, come nel database) e 'seconds_from_start' (int|null). $profile: 'level' (amatoriale, intermedio, avanzato), 'age' e 'gender'.
 // Ritorna, per ogni muscolo, percent, status, last_trained e (se allenato) ready_at.
 function recoveryStatus(array $rows, array $profile, DateTimeInterface $now): array
 {
-    // Raggruppa per muscolo e sessione (gli esercizi senza muscolo principale non contano:
-    // muscleCountedOf torna null)
+    $rirs = estimatedRirs($rows);
+
     // Al recupero partecipano solo le serie degli ultimi 10 giorni; le più vecchie servono come
     // riferimento per il RIR.
     $since = (clone $now)->modify('-10 days')->format('Y-m-d H:i:s');
-    $rirs = estimatedRirs($rows);
+    // Raggruppa per muscolo e sessione (gli esercizi senza muscolo principale non contano:
+    // muscleCountedOf torna null)
     $sessionsByMuscle = [];
     foreach ($rows as $i => $row) {
         $muscle = muscleCountedOf($row['primary_muscle']);

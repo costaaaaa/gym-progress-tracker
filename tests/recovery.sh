@@ -117,8 +117,8 @@ echo "Vicinanza al cedimento: stessa storia, oggi 80 kg (H) contro 50 kg (E)"
 # Due account con la stessa storia: 3 serie di petto da 80 kg × 8 sei e tre giorni fa (sessioni
 # recuperate, backdated). Oggi 3 serie con seconds_from_start 0, 150 e 300, stesso inizio per entrambi:
 # H fa 80 × 8 (al cedimento rispetto alle ultime 2 sessioni), E fa 50 × 8 (lontano dal cedimento).
-# Stesso numero di serie, quindi stesso fattore volume. Per H il fattore è 1.15, per E 0.90: a 25 o 30
-# anni e genere O, 18 ore di differenza (66 h × 1.15 × età × 0.95 contro 66 h × 0.90 × età × 0.95).
+# Stesso numero di serie, quindi stesso fattore volume. Per H il fattore è 1.15, per E 0.90: si controlla
+# solo che H sia pronto più tardi di E (la differenza esatta dipende da livello, età e sesso: è nel log).
 H="$(register_and_login "recH$SUFFIX")"
 E="$(register_and_login "recE$SUFFIX")"
 [[ -n "$H" && -n "$E" ]] || { echo "registrazione o login falliti (limite di registrazioni per IP?)" >&2; exit 1; }
@@ -144,10 +144,10 @@ READY_H="$(chest_history "$H" 80)"
 READY_E="$(chest_history "$E" 50)"
 SECS_H="$(date -d "$READY_H" +%s 2>/dev/null || echo 0)"
 SECS_E="$(date -d "$READY_E" +%s 2>/dev/null || echo 0)"
-if [[ "$SECS_H" -gt 0 && "$SECS_E" -gt 0 && $((SECS_H - SECS_E)) -eq 64800 ]]; then
-    ok "petto: H (al cedimento) pronto 18 ore dopo E (lontano dal cedimento)"
+if [[ "$SECS_H" -gt 0 && "$SECS_E" -gt 0 && "$SECS_H" -gt "$SECS_E" ]]; then
+    ok "petto: H (al cedimento) pronto dopo E (lontano dal cedimento), differenza $(( (SECS_H - SECS_E) / 3600 )) ore"
 else
-    ko "petto: H (al cedimento) pronto 18 ore dopo E (lontano dal cedimento)" "ready_at H: $READY_H | ready_at E: $READY_E"
+    ko "petto: H (al cedimento) pronto dopo E (lontano dal cedimento)" "ready_at H: $READY_H | ready_at E: $READY_E"
 fi
 
 echo

@@ -89,7 +89,7 @@ try {
                    JOIN gym_workout_history wh ON ws.workout_history_id = wh.id
                    JOIN gym_exercises e ON ws.exercise_id = e.id
                    WHERE wh.user_id = ? AND wh.date >= ? AND ws.is_warmup = 0
-                   ORDER BY wh.date ASC, ws.id ASC";
+                   ORDER BY wh.date ASC";
     $stmt_sets = $db->prepare($query_sets);
     $stmt_sets->execute([$user_id, $since_str]);
     $all_sets = $stmt_sets->fetchAll(PDO::FETCH_ASSOC);
