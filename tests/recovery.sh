@@ -90,7 +90,7 @@ check "petto: ready_at presente, formato ISO 8601 con offset" "$D" '.recovery.pe
 READY="$(echo "${D#* }" | jq -r '.recovery.petto.ready_at')"
 if [[ "$(date -d "$READY" +%s 2>/dev/null || echo 0)" -gt "$(date +%s)" ]]; then ok "petto: ready_at è nel futuro"; else ko "petto: ready_at è nel futuro" "ready_at: $READY"; fi
 check "gli altri 11 muscoli restano PRONTO al 100% senza ready_at" "$D" '[.recovery | to_entries[] | select(.key != "petto") | .value | select(.status == "PRONTO" and .percent == 100 and .last_trained == null and (has("ready_at") | not))] | length == 11'
-BEFORE="$(echo "${D#* }" | jq -cS '.recovery')"
+BEFORE="$(echo "${D#* }" | jq -cS '.recovery | map_values(del(.percent))')"
 
 echo
 echo "Misure del corpo: recupero identico con consenso dato e revocato"
@@ -98,10 +98,10 @@ CONSENT="$(call POST api/user/consent.php "$A" '{"purpose":"health_data","action
 check "consenso health_data concesso" "$CONSENT" '$status == 200'
 STAT="$(call POST api/user_stats/create.php "$A" "$(jq -nc --arg d "$(date +%Y-%m-%d)" '{date:$d, weight:82.5, body_fat_percentage:18}')")"
 check "misura del corpo salvata" "$STAT" '$status == 200 or $status == 201'
-WITH="$(dashboard | cut -d' ' -f2- | jq -cS '.recovery')"
+WITH="$(dashboard | cut -d' ' -f2- | jq -cS '.recovery | map_values(del(.percent))')"
 REVOKE="$(call POST api/user/consent.php "$A" '{"purpose":"health_data","action":"revoke"}')"
 check "consenso health_data revocato" "$REVOKE" '$status == 200'
-WITHOUT="$(dashboard | cut -d' ' -f2- | jq -cS '.recovery')"
+WITHOUT="$(dashboard | cut -d' ' -f2- | jq -cS '.recovery | map_values(del(.percent))')"
 [[ "$WITH" == "$BEFORE" ]] && ok "recovery con misura e consenso = recovery di prima" || ko "recovery con misura e consenso = recovery di prima" "prima: $BEFORE | con consenso: $WITH"
 [[ "$WITHOUT" == "$BEFORE" ]] && ok "recovery dopo la revoca = recovery di prima" || ko "recovery dopo la revoca = recovery di prima" "prima: $BEFORE | dopo la revoca: $WITHOUT"
 

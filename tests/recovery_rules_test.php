@@ -50,13 +50,13 @@ check('petto: pronto sabato 31/10 alle 21:00', $r['petto']['ready_at'] === '2026
 check('schiena resta PRONTO senza ready_at', $r['schiena'] === ['percent' => 100, 'status' => 'PRONTO', 'last_trained' => null]);
 
 echo "\nVolume: 4 serie ×1.15\n";
-// 60 × 1.15 = 69 h, arrotondate a multipli di 6 h: 72 h. Dal 29/10 09:00 a sabato 01/11 09:00.
+// 60 × 1.15 = 69 h, arrotondate a multipli di 6 h: 72 h. Dal 29/10 09:00 a domenica 01/11 09:00.
 $rows = array_fill(0, 4, setRow('2026-10-29 09:00:00'));
 $r = recoveryStatus($rows, profile('intermedio', 25, 'M'), $now);
 check('petto con 4 serie: pronto 01/11 alle 09:00', $r['petto']['ready_at'] === '2026-11-01T09:00:00+01:00');
 
 echo "\nVolume: 6 serie ×1.30\n";
-// 60 × 1.30 = 78 h: dal 29/10 09:00 a sabato 01/11 15:00.
+// 60 × 1.30 = 78 h: dal 29/10 09:00 a domenica 01/11 15:00.
 $rows = array_fill(0, 6, setRow('2026-10-29 09:00:00'));
 $r = recoveryStatus($rows, profile('intermedio', 25, 'M'), $now);
 check('petto con 6 serie: pronto 01/11 alle 15:00', $r['petto']['ready_at'] === '2026-11-01T15:00:00+01:00');
@@ -157,10 +157,5 @@ $rows = array_fill(0, 3, setRow('2026-10-29 09:00:00', null));
 $r = recoveryStatus($rows, profile(), $now);
 check('non contano: i 12 muscoli restano PRONTO', count(array_filter($r, fn($m) => $m['status'] === 'PRONTO' && $m['last_trained'] === null)) === 12);
 
-echo "\n";
-if ($fails === 0) {
-    echo "$checks controlli, 0 falliti\n";
-    exit(0);
-}
-echo "$checks controlli, $fails falliti\n";
-exit(1);
+echo "\n$checks controlli, $fails falliti\n";
+exit($fails > 0 ? 1 : 0);
