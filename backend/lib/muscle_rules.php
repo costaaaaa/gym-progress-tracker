@@ -3,7 +3,7 @@
 // il conteggio delle serie e il recupero muscolare (muscle_group resta per cercare e raggruppare).
 // Zero dipendenze DB: usate da workout_stats/dashboard.php, exercise/create.php e admin/exercises.php.
 
-// Muscoli contati, nell'ordine del corpo (stesse chiavi di $tempi_base in dashboard.php e di
+// Muscoli contati, nell'ordine del corpo (stesse chiavi di RECOVERY_BASE_HOURS in recovery_rules.php e di
 // MUSCLE_GROUPS in src/utils/recoveryGroups.js).
 const COUNTED_MUSCLES = [
     'petto', 'schiena', 'spalle', 'bicipiti', 'tricipiti', 'addome',
