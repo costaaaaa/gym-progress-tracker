@@ -7,6 +7,9 @@
   RewriteCond %{REQUEST_URI} ^/backend/ [NC]
   RewriteRule .* - [L]
 
+  # Pagine inglesi del blog (calcolatore 1RM): /en/blog/<x> e' servito da blog/en/<x>
+  RewriteRule ^en/blog/(.*)$ blog/en/$1 [L]
+
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d

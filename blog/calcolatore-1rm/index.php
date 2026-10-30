@@ -8,63 +8,20 @@
  * esterno (assets/calcolatore-1rm.js, la CSP del blog vieta il JS inline)
  * aggiorna solo il risultato mentre si digita.
  *
- * Formula e arrotondamento sono gli stessi dell'app (estimateOneRepMax in
- * src/utils/workoutMetrics.js): se cambiano li', vanno cambiati qui e nello
- * script.
+ * I calcoli stanno in lib/calculator.php, condivisi con la pagina inglese.
  */
 
 require __DIR__ . '/../lib/config.php';
 require __DIR__ . '/../lib/frontmatter.php';
 require __DIR__ . '/../lib/render.php';
+require __DIR__ . '/../lib/calculator.php';
 
-const CALC_MAX_WEIGHT = 500;
-const CALC_MAX_REPS = 20;
-
-/** 1RM stimato con Epley, arrotondato a un decimale come nell'app. */
-function calc_one_rep_max($weight, $reps)
-{
-    return round($weight * (1 + $reps / 30), 1);
-}
-
-/** Carico arrotondato ai 2,5 kg: il salto minimo con i dischi da 1,25 kg per lato. */
-function calc_round_load($kg)
-{
-    return round($kg / 2.5) * 2.5;
-}
-
-/** Ripetizioni indicative a una data percentuale del massimale (Epley inversa). */
-function calc_reps_at($percent)
-{
-    if ($percent >= 100) {
-        return 1;
-    }
-    return max(1, (int) round(30 * (100 / $percent - 1)));
-}
-
-function calc_format_kg($kg)
-{
-    return str_replace('.', ',', rtrim(rtrim(number_format($kg, 1, '.', ''), '0'), '.'));
-}
-
-/** Legge un parametro numerico in GET (accetta la virgola decimale). */
-function calc_param($name, $default, $min, $max)
-{
-    if (!isset($_GET[$name]) || !is_string($_GET[$name])) {
-        return $default;
-    }
-    $value = str_replace(',', '.', trim($_GET[$name]));
-    if (!is_numeric($value)) {
-        return $default;
-    }
-    return min($max, max($min, (float) $value));
-}
-
-$weight = calc_param('peso', 100, 1, CALC_MAX_WEIGHT);
+$weight = calc_param('peso', 100, 1, CALC_UNITS['kg']['max']);
 $reps = (int) calc_param('ripetizioni', 5, 1, CALC_MAX_REPS);
 $oneRm = calc_one_rep_max($weight, $reps);
-$percents = array(100, 95, 90, 85, 80, 75, 70, 65, 60);
 
-$canonical = BLOG_BASE_URL . '/calcolatore-1rm/';
+$alternates = calc_alternates();
+$canonical = $alternates['it'];
 $title = 'Calcolatore 1RM: calcola il tuo massimale online';
 $description = 'Calcola il massimale (1RM) da peso e ripetizioni con la formula di Epley e ottieni i carichi dal 100% al 60%. Gratis, senza registrazione.';
 
@@ -83,21 +40,21 @@ ob_start();
 
         <section class="calc-card" aria-labelledby="calc-title">
             <h2 id="calc-title" class="visually-hidden">Calcola il tuo 1RM</h2>
-            <form class="calc-form" method="get" action="/blog/calcolatore-1rm/" data-calc-form>
+            <form class="calc-form" method="get" action="/blog/calcolatore-1rm/" data-calc-form data-calc-decimal=",">
                 <div class="calc-field">
                     <label for="calc-peso">Peso sollevato (kg)</label>
-                    <input id="calc-peso" name="peso" type="number" inputmode="decimal" min="1" max="<?php echo CALC_MAX_WEIGHT; ?>" step="any" value="<?php echo blog_e(number_format($weight, 1, '.', '') + 0); ?>" required>
+                    <input id="calc-peso" name="peso" data-calc-weight type="number" inputmode="decimal" min="1" max="<?php echo CALC_UNITS['kg']['max']; ?>" step="any" value="<?php echo blog_e(number_format($weight, 1, '.', '') + 0); ?>" required>
                 </div>
                 <div class="calc-field">
                     <label for="calc-ripetizioni">Ripetizioni</label>
-                    <input id="calc-ripetizioni" name="ripetizioni" type="number" inputmode="numeric" min="1" max="<?php echo CALC_MAX_REPS; ?>" step="1" value="<?php echo blog_e($reps); ?>" required>
+                    <input id="calc-ripetizioni" name="ripetizioni" data-calc-reps type="number" inputmode="numeric" min="1" max="<?php echo CALC_MAX_REPS; ?>" step="1" value="<?php echo blog_e($reps); ?>" required>
                 </div>
                 <button class="cta calc-submit" type="submit">Calcola</button>
             </form>
 
             <div class="calc-result" aria-live="polite">
                 <p class="calc-result-label">Il tuo 1RM stimato</p>
-                <p class="calc-result-value"><span data-calc-one-rm><?php echo blog_e(calc_format_kg($oneRm)); ?></span> kg</p>
+                <p class="calc-result-value"><span data-calc-one-rm><?php echo blog_e(calc_format($oneRm, ',')); ?></span> kg</p>
                 <p class="calc-warning muted" data-calc-warning<?php echo $reps > 10 ? '' : ' hidden'; ?>>Oltre le 10 ripetizioni la stima diventa meno precisa: per un valore affidabile usa una serie da 3 a 10 ripetizioni.</p>
             </div>
 
@@ -107,10 +64,10 @@ ob_start();
                     <tr><th scope="col">% 1RM</th><th scope="col">Carico</th><th scope="col">Ripetizioni circa</th></tr>
                 </thead>
                 <tbody>
-<?php foreach ($percents as $percent): ?>
+<?php foreach (CALC_PERCENTS as $percent): ?>
                     <tr data-calc-percent="<?php echo $percent; ?>">
                         <th scope="row"><?php echo $percent; ?>%</th>
-                        <td><span data-calc-load><?php echo blog_e(calc_format_kg(calc_round_load($oneRm * $percent / 100))); ?></span> kg</td>
+                        <td><span data-calc-load><?php echo blog_e(calc_format(calc_round_load($oneRm * $percent / 100, 'kg'), ',')); ?></span> kg</td>
                         <td><?php echo calc_reps_at($percent); ?></td>
                     </tr>
 <?php endforeach; ?>
@@ -151,6 +108,7 @@ blog_render_page(array(
     'title' => $title,
     'description' => $description,
     'canonical' => $canonical,
+    'alternates' => $alternates,
     'bodyHtml' => $bodyHtml,
     'jsonLd' => array(
         '@context' => 'https://schema.org',

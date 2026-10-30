@@ -31,6 +31,9 @@ function blog_e($value)
  *     @type string $bodyHtml    Contenuto <main> gia' in HTML.
  *     @type array|null $jsonLd  Payload JSON-LD, o null.
  *     @type bool   $noindex     true: la pagina non va indicizzata (i link si seguono comunque).
+ *     @type string $lang        'it' (default) o 'en': lingua della pagina, di header e footer.
+ *     @type array  $alternates  Versioni nelle varie lingue (hreflang => URL assoluto, con
+ *                               x-default), o vuoto se la pagina esiste in una sola lingua.
  * }
  * @return void
  */
@@ -42,6 +45,17 @@ function blog_render_page(array $opts)
     $bodyHtml = isset($opts['bodyHtml']) ? $opts['bodyHtml'] : '';
     $jsonLd = isset($opts['jsonLd']) ? $opts['jsonLd'] : null;
     $noindex = !empty($opts['noindex']);
+    $lang = isset($opts['lang']) && $opts['lang'] === 'en' ? 'en' : 'it';
+    $alternates = isset($opts['alternates']) ? $opts['alternates'] : array();
+
+    // In inglese il marchio porta alla landing /en/ (il blog e' solo in italiano),
+    // accesso e registrazione alle pagine /en/ dell'app.
+    $ui = array(
+        'it' => array('locale' => 'it_IT', 'home' => BLOG_BASE_URL . '/', 'app' => BLOG_APP_URL, 'login' => 'Accedi', 'register' => 'Registrati', 'terms' => "Termini d'uso"),
+        'en' => array('locale' => 'en_US', 'home' => BLOG_APP_URL . 'en/', 'app' => BLOG_APP_URL . 'en/', 'login' => 'Log in', 'register' => 'Sign up', 'terms' => 'Terms of use'),
+    );
+    $ui = $ui[$lang];
+    $languageNames = array('it' => 'Italiano', 'en' => 'English');
 
     // Suffisso brand solo se il <title> resta entro i ~60 caratteri che Google
     // mostra nella SERP: su un titolo d'articolo gia' lungo, aggiungerlo
@@ -55,7 +69,7 @@ function blog_render_page(array $opts)
     header('Content-Type: text/html; charset=utf-8');
     ?>
 <!DOCTYPE html>
-<html lang="it">
+<html lang="<?php echo $lang; ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -63,6 +77,9 @@ function blog_render_page(array $opts)
     <title><?php echo blog_e($fullTitle); ?></title>
     <meta name="description" content="<?php echo blog_e($description); ?>">
     <link rel="canonical" href="<?php echo blog_e($canonical); ?>">
+<?php foreach ($alternates as $hreflang => $href): ?>
+    <link rel="alternate" hreflang="<?php echo blog_e($hreflang); ?>" href="<?php echo blog_e($href); ?>">
+<?php endforeach; ?>
 <?php if ($noindex): ?>
     <meta name="robots" content="noindex">
 <?php endif; ?>
@@ -72,7 +89,7 @@ function blog_render_page(array $opts)
     <meta property="og:description" content="<?php echo blog_e($description); ?>">
     <meta property="og:url" content="<?php echo blog_e($canonical); ?>">
     <meta property="og:image" content="<?php echo blog_e(BLOG_LOGO_URL); ?>">
-    <meta property="og:locale" content="it_IT">
+    <meta property="og:locale" content="<?php echo $ui['locale']; ?>">
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="<?php echo blog_e($fullTitle); ?>">
     <meta name="twitter:description" content="<?php echo blog_e($description); ?>">
@@ -97,7 +114,7 @@ function blog_render_page(array $opts)
 <body>
     <header class="site-header">
         <div class="header-inner">
-            <a class="brand" href="<?php echo blog_e(BLOG_BASE_URL); ?>/">
+            <a class="brand" href="<?php echo blog_e($ui['home']); ?>">
                 <span class="brand-mark" aria-hidden="true">
                     <svg viewBox="0 0 160 122" width="20" height="15.25" fill="none" stroke="currentColor" stroke-width="22" stroke-linecap="round"><line x1="11" y1="37" x2="11" y2="85"/><line x1="45.5" y1="11" x2="45.5" y2="111"/><line x1="114.5" y1="11" x2="114.5" y2="111"/><line x1="149" y1="37" x2="149" y2="85"/></svg>
                 </span>
@@ -108,8 +125,8 @@ function blog_render_page(array $opts)
                     <svg class="icon-dark" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1"/></svg>
                     <svg class="icon-light" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5M2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1m18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1M11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1m0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1M5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41zm1.06-10.96c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0zM7.05 18.36c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0z"/></svg>
                 </button>
-                <a class="nav-link" href="<?php echo blog_e(BLOG_APP_URL); ?>login">Accedi</a>
-                <a class="cta" href="<?php echo blog_e(BLOG_REGISTER_URL); ?>">Registrati</a>
+                <a class="nav-link" href="<?php echo blog_e($ui['app']); ?>login"><?php echo blog_e($ui['login']); ?></a>
+                <a class="cta" href="<?php echo blog_e($ui['app']); ?>register"><?php echo blog_e($ui['register']); ?></a>
             </div>
         </div>
     </header>
@@ -119,9 +136,14 @@ function blog_render_page(array $opts)
     </main>
 
     <footer class="site-footer">
+<?php if ($lang === 'it'): ?>
         <a href="<?php echo blog_e(BLOG_BASE_URL); ?>/">Blog</a> &middot;
+<?php endif; ?>
         <a href="<?php echo blog_e(BLOG_APP_URL); ?>privacy.html">Privacy</a> &middot;
-        <a href="<?php echo blog_e(BLOG_APP_URL); ?>termini.html">Termini d'uso</a>
+        <a href="<?php echo blog_e(BLOG_APP_URL); ?>termini.html"><?php echo blog_e($ui['terms']); ?></a>
+<?php foreach ($alternates as $hreflang => $href): if (isset($languageNames[$hreflang]) && $hreflang !== $lang): ?>
+        &middot; <a href="<?php echo blog_e($href); ?>" hreflang="<?php echo $hreflang; ?>" lang="<?php echo $hreflang; ?>"><?php echo $languageNames[$hreflang]; ?></a>
+<?php endif; endforeach; ?>
     </footer>
 </body>
 </html>
@@ -342,7 +364,7 @@ thead th { color: var(--text-secondary); font-weight: 600; }
 .calc-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; }
 .calc-field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 140px; }
 .calc-field label { font-size: 0.9rem; font-weight: 600; }
-.calc-field input {
+.calc-field input, .calc-field select {
   font: inherit;
   color: inherit;
   background: var(--bg-default);
@@ -350,7 +372,10 @@ thead th { color: var(--text-secondary); font-weight: 600; }
   border-radius: 10px;
   padding: 9px 12px;
 }
-.calc-field input:focus { outline: 2px solid var(--primary-main); outline-offset: 1px; }
+.calc-field input:focus, .calc-field select:focus { outline: 2px solid var(--primary-main); outline-offset: 1px; }
+.calc-field-unit { flex: 0 0 auto; }
+/* Il select non segue line-height: stessa altezza degli input (riga, padding e bordo). */
+.calc-field select { height: calc(1.7em + 20px); }
 .calc-submit { border: 0; font-family: inherit; cursor: pointer; }
 .calc-result { margin: 1.6rem 0 1.2rem; }
 .calc-result p { margin: 0; }

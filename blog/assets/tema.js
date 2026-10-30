@@ -17,7 +17,9 @@
     if (!button) return;
 
     function syncLabel() {
-      var label = mode === 'light' ? 'Modalità scura' : 'Modalità chiara';
+      var label = root.lang === 'en'
+        ? (mode === 'light' ? 'Dark mode' : 'Light mode')
+        : (mode === 'light' ? 'Modalità scura' : 'Modalità chiara');
       button.setAttribute('aria-label', label);
       button.title = label;
     }
