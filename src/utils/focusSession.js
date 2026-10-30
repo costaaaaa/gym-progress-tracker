@@ -141,6 +141,16 @@ export const withWarmupRule = (set) => ({
 // sulle serie fatte, così le serie saltate non lasciano buchi nel database.
 export const numberedSets = (sets = []) => sets.map((set, i) => ({ ...withWarmupRule(set), set_number: i + 1 }));
 
+// Gruppi di serie (uno per riga di scheda, [id riga, serie]) nell'ordine in cui sono stati iniziati:
+// per orario della prima serie, serie del gruppo contigue. I gruppi senza orario (bozze vecchie,
+// serie confermate nel salvataggio "già finito") vanno in fondo, nell'ordine di prima.
+export const groupsInExecutionOrder = (completedSets) => {
+  const startOf = ([, sets]) => sets.find((set) => Number.isFinite(set.seconds_from_start))?.seconds_from_start;
+  const timed = Object.entries(completedSets).filter((group) => startOf(group) !== undefined);
+  const untimed = Object.entries(completedSets).filter((group) => startOf(group) === undefined);
+  return [...timed.sort((a, b) => startOf(a) - startOf(b)), ...untimed];
+};
+
 // Giorno di una bozza da riprendere. currentSetIndex e skippedSets contano anche le posizioni di
 // riscaldamento solo se la bozza ha slotsIncludeWarmup; senza, la sessione è partita senza
 // riscaldamento e prosegue così (warmup_sets a 0).
