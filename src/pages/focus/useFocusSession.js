@@ -6,9 +6,9 @@ import { API_BASE_URL } from '../../config';
 import { hapticFeedback } from '../../utils/vibration';
 import { buildExerciseHistoryIndex, detectPersonalRecords } from '../../utils/workoutMetrics';
 import {
-  FEATURE_SESSION_EDIT, isValidWeight, initialWeight, nextSetWeight,
+  FEATURE_SESSION_EDIT, isValidWeight, suggestedWeight, slotWeight, totalSlots, setSlot, skipWarmup,
   isValidReps, repsNeedConfirm,
-  numberedSets, buildSessionEntry, swapExercise, insertExercise,
+  numberedSets, withWarmupRule, draftDay, buildSessionEntry, swapExercise, insertExercise,
   newIdempotencyKey, draftIdempotencyKey
 } from '../../utils/focusSession';
 import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../../utils/celebrate';
@@ -116,6 +116,8 @@ export default function useFocusSession() {
         idempotencyKey,
         lastActivityAt,
         pausedMs,
+        // currentSetIndex e skippedSets contano anche le posizioni di riscaldamento
+        slotsIncludeWarmup: true,
         // Fine mostrata nel riepilogo, o fissa se già finita: la ripresa riparte da qui
         summaryEndAt: phase === 'summary' || retroDate ? endTime : null,
         phase: phase === 'rest_timer' ? 'workout' : phase, // Se crasha durante il timer, riprendi dall'esercizio
@@ -265,8 +267,10 @@ export default function useFocusSession() {
   const handleResumeDraft = (finishedOn = null) => {
     if (!draftToResume) return;
 
+    const day = draftDay(draftToResume);
+
     setActivePlan(draftToResume.activePlan);
-    setSelectedDay(draftToResume.selectedDay);
+    setSelectedDay(day);
     setSelectedDayId(draftToResume.selectedDayId);
     setCompletedSets(draftToResume.completedSets);
     setSkippedExercises(draftToResume.skippedExercises);
@@ -295,7 +299,7 @@ export default function useFocusSession() {
     setPausedMs(paused);
 
     // Ripristina input correnti
-    const currentEx = draftToResume.selectedDay.exercises[draftToResume.currentExerciseIndex];
+    const currentEx = day.exercises[draftToResume.currentExerciseIndex];
     setRepsInput('');
     setIntensityTechniqueInput(currentEx?.intensity_technique || '');
 
@@ -330,16 +334,8 @@ export default function useFocusSession() {
     return entry?.lastSession || null;
   }, [historyIndex]);
 
-  // Peso suggerito = top set (peso più alto) dell'ultima sessione, come stringa.
-  const getSuggestedWeight = useCallback((exercise) => {
-    const last = getLastSession(exercise);
-    if (!last || !Array.isArray(last.sets) || last.sets.length === 0) return '';
-    const maxWeight = last.sets.reduce((m, s) => {
-      const w = parseFloat(s.weight) || 0;
-      return w > m ? w : m;
-    }, 0);
-    return maxWeight > 0 ? maxWeight.toString() : '';
-  }, [getLastSession]);
+  // Peso suggerito = top set (peso più alto) delle serie allenanti dell'ultima sessione.
+  const getSuggestedWeight = useCallback((exercise) => suggestedWeight(getLastSession(exercise)), [getLastSession]);
 
   const handleStartWorkout = () => {
     if (!selectedDay || !selectedDay.exercises || selectedDay.exercises.length === 0) return;
@@ -363,7 +359,7 @@ export default function useFocusSession() {
     const firstExercise = selectedDay.exercises[0];
     setRepsInput('');
     setIntensityTechniqueInput(firstExercise.intensity_technique || '');
-    setWeightInput(initialWeight(firstExercise, getSuggestedWeight(firstExercise)));
+    setWeightInput(slotWeight(firstExercise, 0, { suggested: getSuggestedWeight(firstExercise) }));
 
     setPhase('workout');
     hapticFeedback.medium();
@@ -374,8 +370,12 @@ export default function useFocusSession() {
   // ================================================
   const currentExercise = selectedDay?.exercises?.[currentExerciseIndex];
   const totalExercises = selectedDay?.exercises?.length || 0;
-  const totalSetsForCurrentExercise = currentExercise?.sets || 0;
+  // Posizioni dell'esercizio: prima il riscaldamento della scheda, poi le serie allenanti
+  const totalSlotsForCurrentExercise = currentExercise ? totalSlots(currentExercise) : 0;
+  const currentSlot = currentExercise ? setSlot(currentExercise, currentSetIndex) : null;
   const currentExerciseSets = completedSets[currentExercise?.id] || [];
+  // Il cambio esercizio vale finché non è stata fatta nessuna serie (riscaldamento compreso)
+  const canSwap = currentExerciseSets.length === 0;
   const currentSkippedSets = skippedSets[currentExercise?.id] || [];
   const canEditSession = features.includes(FEATURE_SESSION_EDIT);
 
@@ -386,12 +386,20 @@ export default function useFocusSession() {
     setCurrentSetIndex(0);
     setRepsInput('');
     setIntensityTechniqueInput(exercise?.intensity_technique || '');
-    setWeightInput(initialWeight(exercise, getSuggestedWeight(exercise)));
+    setWeightInput(slotWeight(exercise, 0, { suggested: getSuggestedWeight(exercise) }));
   }, [getSuggestedWeight]);
 
   // ================================================
   // CONFERMA SERIE
   // ================================================
+  // Porta la sessione alla posizione `index` dell'esercizio corrente: peso dato, ripetizioni vuote, tecnica della scheda
+  const goToSlot = (index, weight) => {
+    setCurrentSetIndex(index);
+    setWeightInput(weight);
+    setRepsInput('');
+    setIntensityTechniqueInput(currentExercise.intensity_technique || '');
+  };
+
   const handleConfirmSet = () => {
     if (!isValidWeight(weightInput) || !isValidReps(repsInput)) return;
     if (repsNeedConfirm(repsInput, currentExercise.reps)) {
@@ -406,12 +414,14 @@ export default function useFocusSession() {
     hapticFeedback.success();
 
     const exerciseId = currentExercise.id;
-    const newSet = {
+    const { isWarmup } = currentSlot;
+    const newSet = withWarmupRule({
       setNumber: currentSetIndex + 1,
       weight: parseFloat(weightInput),
       reps: String(parseInt(repsInput, 10)),
-      intensity_technique: intensityTechniqueInput
-    };
+      intensity_technique: intensityTechniqueInput,
+      is_warmup: isWarmup
+    });
 
     setCompletedSets(prev => ({
       ...prev,
@@ -421,15 +431,12 @@ export default function useFocusSession() {
 
     const nextSetIndex = currentSetIndex + 1;
 
-    if (nextSetIndex >= totalSetsForCurrentExercise) {
+    if (nextSetIndex >= totalSlotsForCurrentExercise) {
       // Tutte le serie completate per questo esercizio
       goToNextExercise();
     } else {
       // Prossima serie
-      setCurrentSetIndex(nextSetIndex);
-      setWeightInput(nextSetWeight(currentExercise, weightInput));
-      setRepsInput('');
-      setIntensityTechniqueInput(currentExercise.intensity_technique || '');
+      goToSlot(nextSetIndex, slotWeight(currentExercise, nextSetIndex, { suggested: getSuggestedWeight(currentExercise), current: weightInput }));
 
       // Avvia timer di recupero se abilitato
       if (timerEnabled && currentExercise.rest > 0) {
@@ -466,21 +473,34 @@ export default function useFocusSession() {
     goToNextExercise();
   };
 
+  // Aggiunge posizioni alle serie saltate dell'esercizio corrente
+  const addSkippedSets = (indexes) => {
+    const exerciseId = currentExercise.id;
+    setSkippedSets(prev => ({ ...prev, [exerciseId]: [...(prev[exerciseId] || []), ...indexes] }));
+  };
+
   // Salta solo la serie corrente: non viene registrata e non parte il recupero.
   // Il peso già scritto resta, servirà per la serie dopo.
   const handleSkipSet = () => {
-    if (currentSetIndex === 0) return;
+    // workingIndex è -1 in riscaldamento e 0 alla prima serie allenante (= salta esercizio)
+    if (currentSlot.workingIndex < 1) return;
     hapticFeedback.light();
-    const exerciseId = currentExercise.id;
-    setSkippedSets(prev => ({ ...prev, [exerciseId]: [...(prev[exerciseId] || []), currentSetIndex] }));
+    addSkippedSets([currentSetIndex]);
     const nextSetIndex = currentSetIndex + 1;
-    if (nextSetIndex >= totalSetsForCurrentExercise) {
+    if (nextSetIndex >= totalSlotsForCurrentExercise) {
       goToNextExercise();
     } else {
-      setCurrentSetIndex(nextSetIndex);
-      setRepsInput('');
-      setIntensityTechniqueInput(currentExercise.intensity_technique || '');
+      goToSlot(nextSetIndex, weightInput);
     }
+  };
+
+  // Salta le serie di riscaldamento rimaste: niente recupero, si riparte dalla prima serie allenante
+  const handleSkipWarmup = () => {
+    if (!currentSlot.isWarmup) return;
+    hapticFeedback.light();
+    const { skipped, nextIndex } = skipWarmup(currentExercise, currentSetIndex);
+    addSkippedSets(skipped);
+    goToSlot(nextIndex, slotWeight(currentExercise, nextIndex, { suggested: getSuggestedWeight(currentExercise) }));
   };
 
   // ================================================
@@ -493,8 +513,8 @@ export default function useFocusSession() {
       setPremiumDialog(true);
       return;
     }
-    if (pickerMode === 'swap' && currentSetIndex > 0) {
-      setSnackbar({ open: true, message: t('focus.swap_only_first_set'), severity: 'info' });
+    if (pickerMode === 'swap' && !canSwap) {
+      setSnackbar({ open: true, message: t('focus.swap_only_before_sets'), severity: 'info' });
       return;
     }
     setPicker({ mode: pickerMode, from });
@@ -646,6 +666,7 @@ export default function useFocusSession() {
             weight: set.weight,
             reps: set.reps,
             intensity_technique: set.intensity_technique,
+            is_warmup: set.is_warmup,
             day_id: selectedDayId,
             set_number: set.set_number
           });
@@ -780,8 +801,7 @@ export default function useFocusSession() {
     timerDuration,
     timerRemaining,
     currentExerciseName: currentExercise?.exercise_name,
-    nextSetNumber: currentSetIndex + 1,
-    totalSetsForCurrentExercise,
+    nextSet: currentSlot,
     onSkip: handleSkipTimer,
   };
   const workout = {
@@ -789,8 +809,10 @@ export default function useFocusSession() {
     currentExerciseIndex,
     totalExercises,
     currentSetIndex,
-    totalSetsForCurrentExercise,
+    totalSlotsForCurrentExercise,
+    currentSlot,
     currentExerciseSets,
+    canSwap,
     currentSkippedSets,
     lastSession: getLastSession(currentExercise),
     exerciseTransition,
@@ -805,6 +827,7 @@ export default function useFocusSession() {
     onIntensityChange: setIntensityTechniqueInput,
     onConfirmSet: handleConfirmSet,
     onSkipSet: handleSkipSet,
+    onSkipWarmup: handleSkipWarmup,
     onSkipExercise: handleSkipExercise,
     canEditSession,
     onOpenPicker: openPicker,

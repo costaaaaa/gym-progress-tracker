@@ -18,7 +18,9 @@ import {
   Divider,
   Alert,
   IconButton,
-  Collapse
+  Collapse,
+  FormControlLabel,
+  Checkbox
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import { API_BASE_URL } from '../config';
@@ -27,8 +29,9 @@ import { track } from '../utils/analytics';
 import { useTranslation } from 'react-i18next';
 import { techniqueLabel } from '../i18n/labels';
 import {
-  MAX_WEIGHT, isValidWeight, initialWeight, newIdempotencyKey, isValidReps, planRepsForSet, repsNeedConfirm,
+  MAX_WEIGHT, isValidWeight, newIdempotencyKey, isValidReps, repsNeedConfirm, withWarmupRule,
 } from '../utils/focusSession';
+import { initialSetRows, toggleWarmupRow, rowPlanReps } from '../utils/manualEntryRows';
 
 const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
   const { t } = useTranslation();
@@ -53,13 +56,8 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
     const initialWorkoutData = {};
     if (selectedDayData && selectedDayData.exercises) {
       selectedDayData.exercises.forEach(exercise => {
-        // Ripetizioni precompilate solo se la scheda ha un numero per quella serie; "8-10" o "Max"
-        // restano in grigio e vanno scritte
-        initialWorkoutData[exercise.id] = Array(exercise.sets).fill().map((_, setIndex) => ({
-          weight: initialWeight(exercise),
-          reps: isValidReps(planRepsForSet(exercise.reps, setIndex)) ? planRepsForSet(exercise.reps, setIndex) : '',
-          intensity_technique: exercise.intensity_technique || '' // Default to planned intensity technique
-        }));
+        // Prima le righe del riscaldamento della scheda, poi le serie allenanti
+        initialWorkoutData[exercise.id] = initialSetRows(exercise);
       });
     }
     setWorkoutData(initialWorkoutData);
@@ -74,6 +72,14 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
       [exerciseId]: prev[exerciseId].map((set, idx) =>
         idx === setIndex ? { ...set, [field]: value } : set
       )
+    }));
+  };
+
+  // Attiva o disattiva il riscaldamento di una riga: le ripetizioni precompilate seguono la nuova posizione
+  const handleWarmupToggle = (exercise, setIndex) => {
+    setWorkoutData(prev => ({
+      ...prev,
+      [exercise.id]: toggleWarmupRow(prev[exercise.id], setIndex, exercise)
     }));
   };
 
@@ -105,15 +111,19 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
       // Modifica: filtriamo solo i set che sono stati compilati (hanno sia peso che ripetizioni)
       const workoutRecords = exercises.flatMap(exercise =>
         workoutData[exercise.id]
-          .map((set, setIndex) => ({
-            exercise_id: exercise.exercise_id,
-            exercise_name: exercise.exercise_name,
-            weight: parseFloat(set.weight),
-            reps: String(set.reps ?? '').trim(),
-            intensity_technique: set.intensity_technique,
-            day_id: selectedDay,
-            set_number: setIndex + 1
-          }))
+          .map((row, setIndex) => {
+            const { intensity_technique, is_warmup } = withWarmupRule(row);
+            return {
+              exercise_id: exercise.exercise_id,
+              exercise_name: exercise.exercise_name,
+              weight: parseFloat(row.weight),
+              reps: String(row.reps ?? '').trim(),
+              intensity_technique,
+              is_warmup,
+              day_id: selectedDay,
+              set_number: setIndex + 1
+            };
+          })
           // Filtriamo per includere solo le serie che hanno sia peso che ripetizioni
           .filter(set => isValidWeight(set.weight) && set.reps && set.reps.toString().trim() !== '')
       );
@@ -225,6 +235,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                       secondary={
                         <Box>
                           <Typography variant="body2" color="text.secondary">
+                            {exercise.warmup_sets > 0 && t('plans.warmup_prefix', { n: exercise.warmup_sets })}
                             {t('record.plan_line', { sets: exercise.sets, reps: exercise.reps, rest: exercise.rest })}
                           </Typography>
                           {exercise.notes && (
@@ -274,15 +285,29 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                       }
                     />
                     <Box sx={{ mt: 2 }}>
-                      {Array(exercise.sets).fill().map((_, setIndex) => (
+                      {(workoutData[exercise.id] || []).map((row, setIndex, rows) => (
                         <Box key={setIndex} sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                          <Typography variant="body2" sx={{ minWidth: 60, display: 'flex', alignItems: 'center' }}>
-                            {t('record.set', { n: setIndex + 1 })}
-                          </Typography>
+                          <Box sx={{ minWidth: 60, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                            <Typography variant="body2">{t('record.set', { n: setIndex + 1 })}</Typography>
+                            <FormControlLabel
+                              label={t('common.warmup_badge')}
+                              slotProps={{ typography: { variant: 'caption' } }}
+                              sx={{ m: 0 }}
+                              control={
+                                <Checkbox
+                                  size="small"
+                                  sx={{ p: 0.5 }}
+                                  checked={!!row.is_warmup}
+                                  onChange={() => handleWarmupToggle(exercise, setIndex)}
+                                  inputProps={{ 'aria-label': t('record.warmup_aria', { n: setIndex + 1 }) }}
+                                />
+                              }
+                            />
+                          </Box>
                           <TextField
                             label={t('record.weight')}
                             type="number"
-                            value={workoutData[exercise.id]?.[setIndex]?.weight || ''}
+                            value={row.weight || ''}
                             onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'weight', e.target.value)}
                             inputProps={{ min: 0, max: MAX_WEIGHT, step: 0.5 }}
                             fullWidth
@@ -298,8 +323,9 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                           />
                           <TextField
                             label={t('record.reps')}
-                            value={workoutData[exercise.id]?.[setIndex]?.reps ?? ''}
-                            placeholder={planRepsForSet(exercise.reps, setIndex)}
+                            value={row.reps ?? ''}
+                            // La scheda indica le ripetizioni per le sole righe che ora non sono riscaldamento
+                            placeholder={rowPlanReps(rows, setIndex, exercise.reps)}
                             InputLabelProps={{ shrink: true }}
                             inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
                             onFocus={(e) => e.target.select()}
@@ -310,7 +336,8 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                           <FormControl fullWidth size="small">
                             <InputLabel>{t('record.technique')}</InputLabel>
                             <Select
-                              value={workoutData[exercise.id]?.[setIndex]?.intensity_technique || ''}
+                              disabled={!!row.is_warmup}
+                              value={row.is_warmup ? '' : (row.intensity_technique || '')}
                               label={t('record.technique')}
                               onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'intensity_technique', e.target.value)}
                             >

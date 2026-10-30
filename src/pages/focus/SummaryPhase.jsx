@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import {
   Container, Box, Typography, Button, TextField, Paper, CircularProgress, IconButton, Chip
 } from '@mui/material';
@@ -9,9 +10,10 @@ import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
 import { TABULAR } from '../../utils/fonts';
 import QuitDialog from './QuitDialog';
-import { detectPersonalRecords } from '../../utils/workoutMetrics';
+import { detectPersonalRecords, isWorkingSet } from '../../utils/workoutMetrics';
 import { buildShareStats, sessionRecords } from '../../utils/shareCard';
 import ShareCardDialog from '../../components/ShareCardDialog';
+import WarmupBadge from '../../components/WarmupBadge';
 import { track } from '../../utils/analytics';
 import { techniqueLabel } from '../../i18n/labels';
 
@@ -21,6 +23,18 @@ const XP_WITHHELD_KEYS = {
   cooldown: 'focus.xp_cooldown',
   no_plan: 'focus.xp_no_plan'
 };
+
+// Numero grande con la sua etichetta: il gruppo prende il nome dall'etichetta già visibile
+function SummaryStat({ value, label, valueSx }) {
+  const { colors } = useFocusColors();
+  const labelId = useId();
+  return (
+    <Box role="group" aria-labelledby={labelId} sx={{ textAlign: 'center' }}>
+      <Typography variant="h4" sx={{ ...valueSx, fontWeight: 700, color: colors.text }}>{value}</Typography>
+      <Typography id={labelId} variant="caption" sx={{ color: colors.textSecondary }}>{label}</Typography>
+    </Box>
+  );
+}
 
 export default function SummaryPhase({
   activePlan, selectedDay, completedSets, historyIndex, shareDate, elapsedSeconds, elapsedTime, totalCompletedSets,
@@ -36,8 +50,10 @@ export default function SummaryPhase({
     const key = XP_WITHHELD_KEYS[result.xp_session_reason];
     return key ? t(key, { pct: result.completion_pct ?? 0 }) : '';
   };
-  const totalSets = totalCompletedSets;
-  const exercisesCompleted = Object.keys(completedSets).length;
+  // Il riscaldamento non conta fra le serie del riepilogo (totalCompletedSets le conta tutte: serve a salvare e a uscire)
+  const totalSets = Object.values(completedSets).flat().filter(isWorkingSet).length;
+  // Un esercizio con soli riscaldamenti fatti non è un esercizio completato
+  const exercisesCompleted = Object.values(completedSets).filter((sets) => sets.some(isWorkingSet)).length;
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text }}>
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1, borderBottom: `1px solid ${colors.border}` }}>
@@ -49,18 +65,9 @@ export default function SummaryPhase({
         <Box sx={{ textAlign: 'center', mb: 4 }}>
           <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>{t('focus.completed')}</Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mt: 2 }}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: colors.text }}>{exercisesCompleted}</Typography>
-              <Typography variant="caption" sx={{ color: colors.textSecondary }}>{t('focus.exercises')}</Typography>
-            </Box>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: colors.text }}>{totalSets}</Typography>
-              <Typography variant="caption" sx={{ color: colors.textSecondary }}>{t('focus.sets')}</Typography>
-            </Box>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" sx={{ ...TABULAR, fontWeight: 700, color: colors.text }}>{elapsedTime}</Typography>
-              <Typography variant="caption" sx={{ color: colors.textSecondary }}>{t('focus.duration')}</Typography>
-            </Box>
+            <SummaryStat value={exercisesCompleted} label={t('focus.exercises')} />
+            <SummaryStat value={totalSets} label={t('focus.sets')} />
+            <SummaryStat value={elapsedTime} label={t('focus.duration')} valueSx={TABULAR} />
           </Box>
         </Box>
 
@@ -102,12 +109,13 @@ export default function SummaryPhase({
                     />
                   )}
                 </Box>
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                <Box role="list" sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                   {sets.map((set) => (
-                    <Box key={set.setNumber} sx={{
+                    <Box key={set.setNumber} role="listitem" sx={{
                       bgcolor: colors.bgElevated, borderRadius: '6px', px: 1.125, py: 0.625,
                       fontSize: 12, fontWeight: 600, color: colors.textSecondary,
                     }}>
+                      {set.is_warmup && <WarmupBadge sx={{ mr: 0.75 }} />}
                       {set.weight}kg×{set.reps}{set.intensity_technique ? ` · ${techniqueLabel(set.intensity_technique)}` : ''}
                     </Box>
                   ))}

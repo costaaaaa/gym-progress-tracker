@@ -48,12 +48,41 @@ export const repsNeedConfirm = (reps, planReps) => {
 
 export const isBodyweight = (exercise) => exercise?.equipment === 'corpo_libero';
 
+// Serie di riscaldamento della scheda: si sommano alle `sets` allenanti (2 risc. + 3 serie = 5 posizioni)
+const warmupCount = (exercise) => Math.max(0, parseInt(exercise?.warmup_sets, 10) || 0);
+
+// Serie allenanti della scheda
+const workingCount = (exercise) => Number(exercise?.sets) || 0;
+
+// Posizioni di un esercizio nella sessione: prima il riscaldamento, poi le serie allenanti.
+// currentSetIndex, le serie saltate e i pallini ragionano su queste posizioni.
+export const totalSlots = (exercise) => warmupCount(exercise) + workingCount(exercise);
+
+// Che serie è la posizione `slotIndex`: riscaldamento o allenante, il suo numero (da 1) e il totale
+// del suo tipo. workingIndex è l'indice fra le sole allenanti (-1 in riscaldamento): serve a
+// obiettivo ripetizioni e chip "Ultima volta", che parlano solo delle serie allenanti.
+export const setSlot = (exercise, slotIndex) => {
+  const warmups = warmupCount(exercise);
+  if (slotIndex < warmups) return { isWarmup: true, number: slotIndex + 1, total: warmups, workingIndex: -1 };
+  return { isWarmup: false, number: slotIndex - warmups + 1, total: workingCount(exercise), workingIndex: slotIndex - warmups };
+};
+
 // Peso con cui parte il campo: l'ultimo usato; per i corpo libero, senza storico, 0
 export const initialWeight = (exercise, suggested = '') =>
   suggested !== '' ? suggested : (isBodyweight(exercise) ? '0' : '');
 
 // Peso della serie successiva: i corpo libero mantengono quello appena usato (0 o zavorra)
-export const nextSetWeight = (exercise, currentWeight) => (isBodyweight(exercise) ? currentWeight : '');
+const nextSetWeight = (exercise, currentWeight) => (isBodyweight(exercise) ? currentWeight : '');
+
+// Peso con cui parte la serie in posizione `slotIndex`: il riscaldamento parte vuoto (niente
+// suggerimento dell'ultima volta), la prima allenante prende il peso suggerito, le altre
+// seguono nextSetWeight. `current` è il peso appena usato nella serie precedente.
+export const slotWeight = (exercise, slotIndex, { suggested = '', current = '' } = {}) => {
+  const { isWarmup, workingIndex } = setSlot(exercise, slotIndex);
+  if (workingIndex === 0) return initialWeight(exercise, suggested);
+  if (isWarmup && slotIndex === 0) return initialWeight(exercise);
+  return nextSetWeight(exercise, current);
+};
 
 // Serie dell'ultima sessione per le chip "Ultima volta": [{ label, technique }]
 export const lastSessionSets = (lastSession) => {
@@ -67,12 +96,27 @@ export const lastSessionSets = (lastSession) => {
   });
 };
 
+// Peso suggerito = il più alto tra le serie allenanti dell'ultima sessione, come stringa
+// (sovraccarico progressivo); i riscaldamenti non contano. Vuoto se non c'è niente da suggerire.
+export const suggestedWeight = (lastSession) => {
+  if (!lastSession || !Array.isArray(lastSession.sets)) return '';
+  const max = lastSession.sets.filter(isWorkingSet).reduce((m, s) => Math.max(m, parseFloat(s.weight) || 0), 0);
+  return max > 0 ? String(max) : '';
+};
+
 // Stato del pallino di una serie: done | skipped | active | pending.
 // skipped = indici (0-based) delle serie saltate dell'esercizio corrente.
 export const setStatus = (idx, currentSetIndex, skipped = []) => {
   if (skipped.includes(idx)) return 'skipped';
   if (idx < currentSetIndex) return 'done';
   return idx === currentSetIndex ? 'active' : 'pending';
+};
+
+// "Salta riscaldamento" dalla posizione `slotIndex`: le serie di riscaldamento rimaste sono
+// saltate e si riparte dalla prima serie allenante.
+export const skipWarmup = (exercise, slotIndex) => {
+  const first = warmupCount(exercise);
+  return { skipped: Array.from({ length: first - slotIndex }, (_, i) => slotIndex + i), nextIndex: first };
 };
 
 // Chiave contro i doppi invii di record_workout.php: nasce con la sessione, resta nella bozza
@@ -85,16 +129,31 @@ export const newIdempotencyKey = () =>
 // Chiave di una bozza ripresa: la sua, o una nuova per le bozze di prima della chiave
 export const draftIdempotencyKey = (draft) => draft?.idempotencyKey || newIdempotencyKey();
 
+// Regola di una serie registrata: is_warmup è sempre un booleano e il riscaldamento non ha tecnica.
+// Vale per Focus (serie fatta e invio) e per l'inserimento manuale.
+export const withWarmupRule = (set) => ({
+  ...set,
+  is_warmup: !!set.is_warmup,
+  intensity_technique: set.is_warmup ? '' : set.intensity_technique,
+});
+
 // Set da inviare a record_workout.php per un esercizio: set_number consecutivi
 // sulle serie fatte, così le serie saltate non lasciano buchi nel database.
-export const numberedSets = (sets = []) => sets.map((set, i) => ({ ...set, set_number: i + 1 }));
+export const numberedSets = (sets = []) => sets.map((set, i) => ({ ...withWarmupRule(set), set_number: i + 1 }));
+
+// Giorno di una bozza da riprendere. currentSetIndex e skippedSets contano anche le posizioni di
+// riscaldamento solo se la bozza ha slotsIncludeWarmup; senza, la sessione è partita senza
+// riscaldamento e prosegue così (warmup_sets a 0).
+export const draftDay = (draft) => (draft.slotsIncludeWarmup
+  ? draft.selectedDay
+  : { ...draft.selectedDay, exercises: draft.selectedDay.exercises.map((e) => ({ ...e, warmup_sets: 0 })) });
 
 let entrySeq = 0;
 
 // Voce di sessione per un esercizio del catalogo (record di read_all.php).
 // L'id è una stringa che non si confonde con gli id numerici di
 // gym_workout_exercises: il salvataggio confronta già con String(e.id).
-export const buildSessionEntry = (catalogEx, { sets, reps, rest }, extra = {}) => {
+export const buildSessionEntry = (catalogEx, { sets, warmupSets = 0, reps, rest }, extra = {}) => {
   entrySeq += 1;
   return {
     id: `x-${Date.now()}-${entrySeq}`,
@@ -103,6 +162,7 @@ export const buildSessionEntry = (catalogEx, { sets, reps, rest }, extra = {}) =
     muscle_group: catalogEx.muscle_group,
     equipment: catalogEx.equipment || null,
     sets: Math.max(1, parseInt(sets, 10) || 1),
+    warmup_sets: Math.max(0, parseInt(warmupSets, 10) || 0),
     reps: reps === undefined || reps === null ? '' : String(reps),
     rest: Math.max(0, parseInt(rest, 10) || 0),
     intensity_technique: '',
@@ -119,7 +179,7 @@ export const swapExercise = (exercises, index, catalogEx) => {
   const current = exercises[index];
   const entry = buildSessionEntry(
     catalogEx,
-    { sets: current.sets, reps: current.reps, rest: current.rest },
+    { sets: current.sets, warmupSets: current.warmup_sets, reps: current.reps, rest: current.rest },
     { replaces: current.replaces || current.exercise_name }
   );
   const next = [...exercises];
