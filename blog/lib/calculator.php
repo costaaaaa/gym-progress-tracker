@@ -10,6 +10,9 @@
 
 const CALC_MAX_REPS = 20;
 
+/** Percentuali del massimale nella tabella dei carichi. */
+const CALC_PERCENTS = array(100, 95, 90, 85, 80, 75, 70, 65, 60);
+
 /**
  * Per unita': peso massimo accettato e salto a cui si arrotondano i carichi
  * (il minimo con due dischi da 1,25 kg o da 2,5 lb). Gli stessi valori sono

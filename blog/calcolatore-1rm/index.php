@@ -19,7 +19,6 @@ require __DIR__ . '/../lib/calculator.php';
 $weight = calc_param('peso', 100, 1, CALC_UNITS['kg']['max']);
 $reps = (int) calc_param('ripetizioni', 5, 1, CALC_MAX_REPS);
 $oneRm = calc_one_rep_max($weight, $reps);
-$percents = array(100, 95, 90, 85, 80, 75, 70, 65, 60);
 
 $alternates = calc_alternates();
 $canonical = $alternates['it'];
@@ -65,7 +64,7 @@ ob_start();
                     <tr><th scope="col">% 1RM</th><th scope="col">Carico</th><th scope="col">Ripetizioni circa</th></tr>
                 </thead>
                 <tbody>
-<?php foreach ($percents as $percent): ?>
+<?php foreach (CALC_PERCENTS as $percent): ?>
                     <tr data-calc-percent="<?php echo $percent; ?>">
                         <th scope="row"><?php echo $percent; ?>%</th>
                         <td><span data-calc-load><?php echo blog_e(calc_format(calc_round_load($oneRm * $percent / 100, 'kg'), ',')); ?></span> kg</td>
