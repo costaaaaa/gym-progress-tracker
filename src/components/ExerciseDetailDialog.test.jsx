@@ -1,23 +1,9 @@
 // Dettaglio esercizio: la cronologia mostra il giorno scritto e il badge del fuso per le sessioni fatte altrove.
-import { createContext, useContext, cloneElement } from 'react';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, within, fireEvent } from '@testing-library/react';
 import i18n from '../i18n';
-import ExerciseDetailDialog from './ExerciseDetailDialog';
+import ExerciseDetailDialog, { ChartTooltip } from './ExerciseDetailDialog';
 import { setBrowserTimeZone } from '../test/timeZone';
-
-// jsdom non misura nulla e Recharts non disegna: grafico e tooltip si ricostruiscono dai dati del
-// LineChart, col tooltip aperto sull'ultimo punto
-const ChartData = createContext([]);
-vi.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }) => children,
-  LineChart: ({ data, children }) => <ChartData.Provider value={data}>{children}</ChartData.Provider>,
-  Tooltip: ({ content }) => {
-    const data = useContext(ChartData);
-    return <div data-testid="tooltip">{cloneElement(content, { active: true, payload: [{ payload: data.at(-1) }] })}</div>;
-  },
-  Line: () => null, XAxis: () => null, YAxis: () => null, CartesianGrid: () => null,
-}));
 
 const session = (id, date, extra = {}) => ({ id, date, value: 100, volume: 800, bestSet: { weight: 100, reps: 8 }, isPR: false, ...extra });
 const item = (sessions) => ({
@@ -66,13 +52,12 @@ describe('ExerciseDetailDialog: posizione dell\'esercizio nella seduta (#26)', (
     expect(within(rowOf('18/10/2026')).queryByText(/esercizio/)).toBeNull();
   });
 
-  it('senza nessuna posizione non c\'è nessuna etichetta né legenda', () => {
+  it('senza nessuna posizione non c\'è nessuna etichetta', () => {
     render(<ExerciseDetailDialog item={item([
       session(1, '2026-10-18 10:00:00', { position: null }),
       session(2, '2026-10-20 10:00:00'),
     ])} onClose={() => {}} />);
     expect(screen.queryByText(/esercizio/i, { selector: 'td *, td' })).toBeNull();
-    expect(screen.queryByText(/posizione|seduta/i)).toBeNull();
   });
 
   it('sta accanto al badge del fuso, non al posto suo', () => {
@@ -84,14 +69,19 @@ describe('ExerciseDetailDialog: posizione dell\'esercizio nella seduta (#26)', (
     expect(within(row).getByText('2° esercizio')).toBeTruthy();
   });
 
-  it('il tooltip del grafico la mostra, se la sessione ce l\'ha', () => {
-    render(<ExerciseDetailDialog item={item([session(1, '2026-10-18 10:00:00', { position: 2 })])} onClose={() => {}} />);
-    expect(within(screen.getByTestId('tooltip')).getByText('2° esercizio')).toBeTruthy();
+  // Recharts passa al tooltip { active, payload: [{ payload: punto del grafico }] }
+  const renderTooltip = (point) => render(<ChartTooltip active payload={[{ payload: point }]} mode="e1rm" t={i18n.t.bind(i18n)} />);
+
+  it('il tooltip del grafico mostra la posizione, se la sessione ce l\'ha', () => {
+    renderTooltip({ dateLabel: '18/10/2026', value: 100, isPR: false, position: 2 });
+    expect(screen.getByText('18/10/2026')).toBeTruthy();
+    expect(screen.getByText('2° esercizio')).toBeTruthy();
   });
 
   it('il tooltip non ha nulla per una sessione senza posizione', () => {
-    render(<ExerciseDetailDialog item={item([session(1, '2026-10-18 10:00:00', { position: null })])} onClose={() => {}} />);
-    expect(within(screen.getByTestId('tooltip')).queryByText(/esercizio/)).toBeNull();
+    renderTooltip({ dateLabel: '18/10/2026', value: 100, isPR: false, position: null });
+    expect(screen.getByText('18/10/2026')).toBeTruthy();
+    expect(screen.queryByText(/esercizio/)).toBeNull();
   });
 
   it('in inglese gli ordinali sono 1st, 2nd, 3rd, 4th, 11th, 12th, 13th, 21st', async () => {

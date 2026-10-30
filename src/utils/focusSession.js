@@ -142,10 +142,12 @@ export const withWarmupRule = (set) => ({
 export const numberedSets = (sets = []) => sets.map((set, i) => ({ ...withWarmupRule(set), set_number: i + 1 }));
 
 // Gruppi di serie (uno per riga di scheda, [id riga, serie]) nell'ordine in cui sono stati iniziati:
-// per orario della prima serie, serie del gruppo contigue. I gruppi senza orario (bozze vecchie,
-// serie confermate nel salvataggio "già finito") vanno in fondo, nell'ordine di prima.
+// per orario della prima serie, serie del gruppo contigue. I gruppi la cui prima serie è senza orario
+// (bozze vecchie, serie confermate nel salvataggio "già finito") vanno in fondo, nell'ordine di prima.
+// Qui conta la prima serie perché è lì che l'esercizio è iniziato; la posizione nei Progressi
+// (progressOverview.js) usa invece il minimo di tutte le serie e rinuncia se una manca.
 export const groupsInExecutionOrder = (completedSets) => {
-  const startOf = ([, sets]) => sets.find((set) => Number.isFinite(set.seconds_from_start))?.seconds_from_start;
+  const startOf = ([, sets]) => (Number.isFinite(sets[0]?.seconds_from_start) ? sets[0].seconds_from_start : undefined);
   const timed = Object.entries(completedSets).filter((group) => startOf(group) !== undefined);
   const untimed = Object.entries(completedSets).filter((group) => startOf(group) === undefined);
   return [...timed.sort((a, b) => startOf(a) - startOf(b)), ...untimed];

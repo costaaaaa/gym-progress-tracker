@@ -1099,4 +1099,27 @@ describe('ordine reale e orario delle serie (#26)', () => {
 
     expect(saveBody().workout_records.map((r) => [r.exercise_id, r.seconds_from_start])).toEqual([[4, 400], [3, null]]);
   });
+
+  it('un gruppo il cui inizio manca (prima serie senza orario) va in fondo anche se le sue serie dopo hanno l\'orario', async () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      ...savedDraft,
+      completedSets: {
+        9: [
+          { setNumber: 1, weight: 60, reps: '8', intensity_technique: '' },
+          { setNumber: 2, weight: 60, reps: '8', intensity_technique: '', seconds_from_start: 900 },
+        ],
+        10: [{ setNumber: 1, weight: 20, reps: '12', intensity_technique: '', seconds_from_start: 1200 }],
+      },
+      currentExerciseIndex: 1,
+      currentSetIndex: 1,
+    }));
+    await mount();
+    click('Riprendi allenamento');
+    click('Salta serie');
+    await advance(0.3);
+    await act(async () => { click('Salva allenamento'); });
+    await advance(0);
+
+    expect(saveBody().workout_records.map((r) => [r.exercise_id, r.seconds_from_start])).toEqual([[4, 1200], [3, null], [3, 900]]);
+  });
 });

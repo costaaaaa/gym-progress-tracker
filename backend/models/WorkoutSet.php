@@ -30,8 +30,8 @@ class WorkoutSet
     public function create()
     {
         try {
-            // La colonna seconds_from_start entra nella query solo se c'è il valore: i client senza orario
-            // salvano anche se l'immagine nuova arriva prima della migrazione 32.
+            // La colonna seconds_from_start è scritta solo se il client manda il valore (stesso schema di
+            // WorkoutHistory::create); le letture, invece, la selezionano sempre: serve la migrazione 32.
             $seconds_clause = $this->seconds_from_start === null ? "" : ",
                         seconds_from_start = :seconds_from_start";
 

@@ -421,7 +421,8 @@ export default function useFocusSession() {
       reps: String(parseInt(repsInput, 10)),
       intensity_technique: intensityTechniqueInput,
       is_warmup: isWarmup,
-      // Secondi netti dall'inizio (stesso orologio della durata); in modalità "già finito" l'orario non è reale
+      // Secondi netti dall'inizio (stesso orologio della durata); in modalità "già finito" l'orario non è reale.
+      // Non passa da getElapsedSeconds()/netEnd: preferiscono endTime, congelato nel riepilogo e in retro, mentre qui serve "adesso"
       seconds_from_start: retroDate || !startTime ? null : Math.max(0, Math.floor((Date.now() - startTime.getTime() - pausedMs) / 1000))
     });
 
