@@ -94,7 +94,7 @@ try {
         "SELECT id, date, time_zone, duration_seconds, notes, exercises FROM gym_workout_history WHERE user_id = ? ORDER BY date, id",
         array($user_id));
     $sets = export_rows($db,
-        "SELECT s.workout_history_id, e.name AS exercise, s.set_number, s.weight, s.reps, s.intensity_technique, s.is_warmup
+        "SELECT s.workout_history_id, e.name AS exercise, s.set_number, s.weight, s.reps, s.intensity_technique, s.is_warmup, s.seconds_from_start
          FROM gym_workout_sets s
          JOIN gym_workout_history h ON h.id = s.workout_history_id
          JOIN gym_exercises e ON e.id = s.exercise_id

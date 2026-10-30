@@ -165,6 +165,7 @@ CREATE TABLE IF NOT EXISTS `gym_workout_sets` (
   `reps` varchar(50) NOT NULL,
   `intensity_technique` varchar(100) DEFAULT NULL,
   `is_warmup` tinyint(1) NOT NULL DEFAULT 0, -- serie di riscaldamento: non allenante, esclusa da volume/record (#66)
+  `seconds_from_start` int(10) unsigned DEFAULT NULL, -- secondi netti dall'inizio della sessione alla conferma nel Focus; NULL se ignoto (#26)
   PRIMARY KEY (`id`),
   KEY `workout_history_id` (`workout_history_id`),
   KEY `exercise_id` (`exercise_id`),

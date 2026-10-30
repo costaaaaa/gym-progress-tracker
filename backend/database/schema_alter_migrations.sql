@@ -637,3 +637,16 @@ ALTER TABLE `gym_workout_exercises`
 
 ALTER TABLE `gym_workout_sets`
   ADD COLUMN `is_warmup` TINYINT(1) NOT NULL DEFAULT 0 AFTER `intensity_technique`;
+
+-- ------------------------------------------------------------------------------
+-- 32. Orario delle serie (#26): gym_workout_sets.seconds_from_start sono i secondi netti dall'inizio
+--     della sessione (stesso orologio di duration_seconds, pause escluse) in cui la serie è stata
+--     confermata nel Focus. Serve a ricavare la posizione dell'esercizio nella seduta (Progressi) e
+--     l'ordine reale delle serie. NULL per le sessioni precedenti, l'inserimento manuale, le serie
+--     confermate in modalità "già finito" e le bozze di prima. record_workout.php accetta solo un
+--     intero 0-86400, altrimenti salva NULL senza errore. Colonna nuova nullable: il rollback del
+--     codice resta possibile.
+-- ------------------------------------------------------------------------------
+
+ALTER TABLE `gym_workout_sets`
+  ADD COLUMN `seconds_from_start` INT UNSIGNED NULL DEFAULT NULL AFTER `is_warmup`;
