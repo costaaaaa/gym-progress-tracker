@@ -34,15 +34,21 @@ const englishLanding = () => ({
     mkdirSync('build/en', { recursive: true });
     writeFileSync('build/en/index.html', html);
 
-    const alternates = ['it', 'en', 'x-default']
-      .map((lang) => `    <xhtml:link rel="alternate" hreflang="${lang}" href="${SITE}${lang === 'en' ? '/en/' : '/'}" />`)
-      .join('\n');
-    // Pagine PHP del blog con URL fisso (solo italiano, niente hreflang). Gli articoli e l'indice
-    // /blog/ no: li elenca blog/sitemap.php, che vede i .md (non sono nel repo) e mette l'indice
-    // solo quando c'e' almeno un articolo uscito.
-    const urls = ['/', '/en/']
-      .map((path) => `  <url>\n    <loc>${SITE}${path}</loc>\n${alternates}\n  </url>`)
-      .concat(['/blog/calcolatore-1rm/'].map((path) => `  <url>\n    <loc>${SITE}${path}</loc>\n  </url>`))
+    // Pagine in italiano e in inglese: ogni URL elenca entrambe le versioni, x-default e' l'italiana.
+    // Le coppie del calcolatore 1RM sono le stesse di calc_alternates() in blog/lib/calculator.php.
+    // Gli articoli e l'indice /blog/ no: li elenca blog/sitemap.php, che vede i .md (non sono nel
+    // repo) e mette l'indice solo quando c'e' almeno un articolo uscito.
+    const pairs = [
+      { it: '/', en: '/en/' },
+      { it: '/blog/calcolatore-1rm/', en: '/en/blog/1rm-calculator/' },
+    ];
+    const urls = pairs
+      .flatMap((pair) => {
+        const alternates = ['it', 'en', 'x-default']
+          .map((lang) => `    <xhtml:link rel="alternate" hreflang="${lang}" href="${SITE}${pair[lang === 'en' ? 'en' : 'it']}" />`)
+          .join('\n');
+        return [pair.it, pair.en].map((path) => `  <url>\n    <loc>${SITE}${path}</loc>\n${alternates}\n  </url>`);
+      })
       .join('\n');
     writeFileSync(
       'build/sitemap.xml',
