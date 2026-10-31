@@ -73,6 +73,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
     notes: ''
   });
   const [editedPlannedSets, setEditedPlannedSets] = useState(null);
+  const closeEditTimer = useRef();
   
   const [newPlan, setNewPlan] = useState({
     name: '',
@@ -483,6 +484,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
 
   // Nuova funzione per aprire il dialog di modifica esercizio
   const handleOpenEditExerciseDialog = (dayId, exercise) => {
+    clearTimeout(closeEditTimer.current);
     setExerciseToEdit(exercise);
     setDayIdToDeleteFrom(dayId); // Riuso lo stesso stato per identificare il giorno
     setEditedExerciseValues({
@@ -496,7 +498,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
   // Chiusura dialog modifica esercizio
   const handleCloseEditExerciseDialog = () => {
     setOpenEditExerciseDialog(false);
-    setTimeout(() => {
+    closeEditTimer.current = setTimeout(() => {
       setExerciseToEdit(null);
       setDayIdToDeleteFrom(null);
       setEditedExerciseValues({
@@ -1164,6 +1166,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
               <Typography variant="body2" color="text.secondary">{muscleLabel(exerciseToEdit.muscle_group)}</Typography>
               
               <PlannedSetsEditor
+                key={exerciseToEdit.id}
                 value={exerciseToEdit.planned_sets?.length ? exerciseToEdit.planned_sets : null}
                 onChange={setEditedPlannedSets}
               />

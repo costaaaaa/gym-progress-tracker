@@ -119,6 +119,22 @@ describe('serie pianificate (#77)', () => {
     expect(body).not.toHaveProperty('intensity_technique');
   });
 
+  it('chiudere la modifica di un esercizio e aprire subito quella di un altro mostra le serie del secondo e permette di salvare', async () => {
+    await apriConPiano([plan]);
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Modifica esercizio' })[0]);
+    const first = await screen.findByRole('dialog');
+    expect(within(first).getByLabelText('Ripetizioni').value).toBe('6-8');
+    fireEvent.click(within(first).getByRole('button', { name: 'Annulla' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Modifica esercizio', hidden: true })[1]);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    const dialog = await screen.findByRole('dialog');
+    await waitFor(() => expect(within(dialog).getByLabelText('Ripetizioni').value).toBe('12'));
+    expect(within(dialog).getByLabelText('Serie').value).toBe('3');
+    expect(within(dialog).getByRole('button', { name: 'Salva modifiche' }).disabled).toBe(false);
+  });
+
   it('con un valore non valido "Salva modifiche" è disabilitato', async () => {
     await apriConPiano([plan]);
 
