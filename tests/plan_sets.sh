@@ -123,6 +123,7 @@ status_is "set_number con un buco" "$(add "$EX_A" '[{"set_number":1,"kind":"work
 status_is "set_number che non parte da 1" "$(add "$EX_A" '[{"set_number":2,"kind":"working","reps_min":5,"reps_max":5}]')" 400
 status_is "kind sconosciuto" "$(add "$EX_A" '[{"set_number":1,"kind":"cooldown","reps_min":5,"reps_max":5}]')" 400
 status_is "riscaldamento dopo una allenante" "$(add "$EX_A" "[$W5,{\"set_number\":2,\"kind\":\"warmup\"}]")" 400
+status_is "riscaldamento con una tecnica" "$(add "$EX_A" "[{\"set_number\":1,\"kind\":\"warmup\",\"intensity_technique\":\"Drop Set\"},{\"set_number\":2,\"kind\":\"working\",\"reps_min\":5,\"reps_max\":5}]")" 400
 status_is "riscaldamento con un target" "$(add "$EX_A" '[{"set_number":1,"kind":"warmup","reps_min":10,"reps_max":10},{"set_number":2,"kind":"working","reps_min":5,"reps_max":5}]')" 400
 status_is "11 serie di riscaldamento" "$(add "$EX_A" "$(jq -nc '[range(1;12) | {set_number:., kind:"warmup"}] + [{set_number:12, kind:"working", reps_min:5, reps_max:5}]')")" 400
 status_is "21 serie allenanti" "$(add "$EX_A" "$(jq -nc '[range(1;22) | {set_number:., kind:"working", reps_min:5, reps_max:5}]')")" 400
@@ -163,6 +164,7 @@ status_is "update con più serie: 200" "$(update "$ID_A" "$SETS_4")" 200
 check "read_plans: le 4 serie nuove" "$(plan_exercises)" \
     '.records[0].days[0].exercises[0].planned_sets | map([.set_number, .kind, .reps_min, .reps_max, .to_failure, .intensity_technique]) == [[1,"warmup",null,null,false,null],[2,"working",10,12,false,null],[3,"working",10,12,false,"Rest-Pause"],[4,"working",null,null,true,null]]'
 status_is "update non valido (riscaldamento dopo una allenante): 400" "$(update "$ID_A" "[$W5,{\"set_number\":2,\"kind\":\"warmup\"}]")" 400
+status_is "update con un riscaldamento con tecnica: 400" "$(update "$ID_A" '[{"set_number":1,"kind":"warmup","intensity_technique":"Drop Set"},{"set_number":2,"kind":"working","reps_min":5,"reps_max":5}]')" 400
 status_is "update senza planned_sets: 400" "$(call POST api/workout/update_exercise.php "$A" "{\"day_id\":$DAY,\"exercise_id\":$ID_A,\"sets\":3,\"reps\":\"10\",\"rest\":60}")" 400
 check "dopo un update rifiutato le serie sono quelle di prima" "$(plan_exercises)" \
     '.records[0].days[0].exercises[0].planned_sets | map(.set_number) == [1,2,3,4]'

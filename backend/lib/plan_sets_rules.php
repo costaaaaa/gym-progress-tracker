@@ -24,7 +24,7 @@ function planned_set_reps_ok($value)
     return is_int($value) && $value >= 1 && $value <= PLAN_SET_REPS_MAX;
 }
 
-// Ritorna null se `planned_sets` (lista di serie dal JSON del client) e' valido, altrimenti il
+// Ritorna null se `planned_sets` (lista di serie dal JSON del client) è valido, altrimenti il
 // messaggio d'errore. I campi facoltativi assenti valgono null (to_failure: false).
 function planned_sets_error($planned_sets)
 {
