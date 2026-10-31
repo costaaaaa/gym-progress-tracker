@@ -74,8 +74,8 @@ make_day() { # token nome sets_E1 sets_E2(0 = solo E1) → id del giorno
     local t="$1" plan day
     plan="$(call POST api/workout/create_plan.php "$t" '{"name":"Scheda XP"}' | cut -d' ' -f2- | jq -r '.plan.id')"
     day="$(call POST api/workout/create_days.php "$t" "{\"plan_id\":$plan,\"days\":[{\"name\":\"$2\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
-    call POST api/workout/add_exercise.php "$t" "{\"day_id\":$day,\"exercise_id\":$E1,\"sets\":$3,\"reps\":\"10\",\"rest\":60}" >/dev/null
-    [[ "$4" -gt 0 ]] && call POST api/workout/add_exercise.php "$t" "{\"day_id\":$day,\"exercise_id\":$E2,\"sets\":$4,\"reps\":\"10\",\"rest\":60}" >/dev/null
+    call POST api/workout/add_exercise.php "$t" "{\"day_id\":$day,\"exercise_id\":$E1,\"planned_sets\":$(jq -nc --argjson n "$3" '[range(1;$n+1) | {set_number:., kind:"working", reps_min:10, reps_max:10}]'),\"rest\":60}" >/dev/null
+    [[ "$4" -gt 0 ]] && call POST api/workout/add_exercise.php "$t" "{\"day_id\":$day,\"exercise_id\":$E2,\"planned_sets\":$(jq -nc --argjson n "$4" '[range(1;$n+1) | {set_number:., kind:"working", reps_min:10, reps_max:10}]'),\"rest\":60}" >/dev/null
     echo "$day"
 }
 

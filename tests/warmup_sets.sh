@@ -65,32 +65,49 @@ plan="$(call POST api/workout/create_plan.php "$A" '{"name":"Scheda riscaldament
 call POST api/workout/activate_plan.php "$A" "{\"plan_id\":$plan}" >/dev/null
 DAY="$(call POST api/workout/create_days.php "$A" "{\"plan_id\":$plan,\"days\":[{\"name\":\"Giorno 1\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
 
-echo "Scheda: warmup_sets"
-check "warmup_sets fuori range (11): 400" \
-    "$(call POST api/workout/add_exercise.php "$A" "{\"day_id\":$DAY,\"exercise_id\":$DEADLIFT,\"sets\":3,\"warmup_sets\":11,\"reps\":\"8\",\"rest\":90}")" \
+ps() { # riscaldamento allenanti ripetizioni → planned_sets (riscaldamento senza target, allenanti reps x reps)
+    jq -nc --argjson w "$1" --argjson n "$2" --argjson r "$3" \
+        '[range(1; $w + 1) | {set_number:., kind:"warmup"}] + [range($w + 1; $w + $n + 1) | {set_number:., kind:"working", reps_min:$r, reps_max:$r}]'
+}
+add_body() { jq -nc --argjson d "$DAY" --argjson e "$DEADLIFT" --argjson p "$1" '{day_id:$d, exercise_id:$e, planned_sets:$p, rest:90}'; }
+upd_body() { jq -nc --argjson d "$DAY" --argjson w "$EX_ID" --argjson p "$1" '{day_id:$d, exercise_id:$w, planned_sets:$p, rest:90}'; }
+plan_ex() { echo "200 $(call GET api/workout/read_plans.php "$A" | cut -d' ' -f2-)"; }
+
+echo "Scheda: serie di riscaldamento in planned_sets"
+check "11 serie di riscaldamento: 400" \
+    "$(call POST api/workout/add_exercise.php "$A" "$(add_body "$(ps 11 3 8)")")" \
     '$status == 400'
-check "warmup_sets negativo: 400" \
-    "$(call POST api/workout/add_exercise.php "$A" "{\"day_id\":$DAY,\"exercise_id\":$DEADLIFT,\"sets\":3,\"warmup_sets\":-1,\"reps\":\"8\",\"rest\":90}")" \
+check "riscaldamento dopo una serie allenante: 400" \
+    "$(call POST api/workout/add_exercise.php "$A" "$(add_body '[{"set_number":1,"kind":"working","reps_min":8,"reps_max":8},{"set_number":2,"kind":"warmup"}]')")" \
+    '$status == 400'
+check "riscaldamento con un target di ripetizioni: 400" \
+    "$(call POST api/workout/add_exercise.php "$A" "$(add_body '[{"set_number":1,"kind":"warmup","reps_min":10,"reps_max":10},{"set_number":2,"kind":"working","reps_min":8,"reps_max":8}]')")" \
     '$status == 400'
 
-R="$(call POST api/workout/add_exercise.php "$A" "{\"day_id\":$DAY,\"exercise_id\":$DEADLIFT,\"sets\":3,\"warmup_sets\":2,\"reps\":\"8\",\"rest\":90}")"
-check "esercizio con warmup_sets=2: creato e restituito" "$R" '$status == 201 and .workout_exercise.warmup_sets == 2'
+R="$(call POST api/workout/add_exercise.php "$A" "$(add_body "$(ps 2 3 8)")")"
+check "esercizio con 2 serie di riscaldamento e 3 allenanti: creato e restituito" "$R" \
+    '$status == 201 and ([.workout_exercise.planned_sets[] | .kind] == ["warmup","warmup","working","working","working"])'
 EX_ID="$(echo "${R#* }" | jq -r '.workout_exercise.id')"
 
-check "read_plans: warmup_sets=2 nella scheda" "200 $(call GET api/workout/read_plans.php "$A" | cut -d' ' -f2-)" \
-    ".records[0].days[0].exercises[0].warmup_sets == 2"
+check "read_plans: 2 serie di riscaldamento senza target, poi 3 allenanti 8-8" "$(plan_ex)" \
+    '.records[0].days[0].exercises[0].planned_sets == [
+        {"set_number":1,"kind":"warmup","reps_min":null,"reps_max":null,"to_failure":false,"intensity_technique":null},
+        {"set_number":2,"kind":"warmup","reps_min":null,"reps_max":null,"to_failure":false,"intensity_technique":null},
+        {"set_number":3,"kind":"working","reps_min":8,"reps_max":8,"to_failure":false,"intensity_technique":null},
+        {"set_number":4,"kind":"working","reps_min":8,"reps_max":8,"to_failure":false,"intensity_technique":null},
+        {"set_number":5,"kind":"working","reps_min":8,"reps_max":8,"to_failure":false,"intensity_technique":null}]'
 
-check "update_exercise con warmup_sets fuori range: 400" \
-    "$(call POST api/workout/update_exercise.php "$A" "{\"day_id\":$DAY,\"exercise_id\":$EX_ID,\"sets\":3,\"warmup_sets\":20,\"reps\":\"8\",\"rest\":90}")" \
+check "update_exercise con 20 serie di riscaldamento: 400" \
+    "$(call POST api/workout/update_exercise.php "$A" "$(upd_body "$(ps 20 3 8)")")" \
     '$status == 400'
-check "update_exercise con warmup_sets=0: aggiornato" \
-    "$(call POST api/workout/update_exercise.php "$A" "{\"day_id\":$DAY,\"exercise_id\":$EX_ID,\"sets\":3,\"warmup_sets\":0,\"reps\":\"8\",\"rest\":90}")" \
+check "update_exercise senza riscaldamento: aggiornato" \
+    "$(call POST api/workout/update_exercise.php "$A" "$(upd_body "$(ps 0 3 8)")")" \
     '$status == 200'
-check "read_plans: warmup_sets torna a 0" "200 $(call GET api/workout/read_plans.php "$A" | cut -d' ' -f2-)" \
-    ".records[0].days[0].exercises[0].warmup_sets == 0"
+check "read_plans: nessuna serie di riscaldamento, 3 allenanti" "$(plan_ex)" \
+    '.records[0].days[0].exercises[0].planned_sets | map(.kind) == ["working","working","working"]'
 
-R2="$(call POST api/workout/add_exercise.php "$A" "{\"day_id\":$DAY,\"exercise_id\":$DEADLIFT,\"sets\":3,\"reps\":\"8\",\"rest\":90}")"
-check "warmup_sets assente: 0 (compatibilità client vecchi)" "$R2" '$status == 201 and .workout_exercise.warmup_sets == 0'
+R2="$(call POST api/workout/add_exercise.php "$A" "$(add_body "$(ps 0 3 8)")")"
+check "solo serie allenanti: nessun riscaldamento" "$R2" '$status == 201 and ([.workout_exercise.planned_sets[] | select(.kind == "warmup")] | length) == 0'
 
 echo
 echo "Allenamento: 2 serie di riscaldamento + 3 allenanti"

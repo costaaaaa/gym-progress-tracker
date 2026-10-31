@@ -80,7 +80,7 @@ plan="$(call POST api/workout/create_plan.php "$A" '{"name":"Scheda muscoli"}' |
 call POST api/workout/activate_plan.php "$A" "{\"plan_id\":$plan}" >/dev/null
 DAY="$(call POST api/workout/create_days.php "$A" "{\"plan_id\":$plan,\"days\":[{\"name\":\"Giorno 1\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
 for e in "$DEADLIFT" "$ADDUCTOR" "$CUSTOM"; do
-    call POST api/workout/add_exercise.php "$A" "{\"day_id\":$DAY,\"exercise_id\":$e,\"sets\":3,\"reps\":\"8\",\"rest\":90}" >/dev/null
+    call POST api/workout/add_exercise.php "$A" "{\"day_id\":$DAY,\"exercise_id\":$e,\"planned_sets\":[{\"set_number\":1,\"kind\":\"working\",\"reps_min\":8,\"reps_max\":8},{\"set_number\":2,\"kind\":\"working\",\"reps_min\":8,\"reps_max\":8},{\"set_number\":3,\"kind\":\"working\",\"reps_min\":8,\"reps_max\":8}],\"rest\":90}" >/dev/null
 done
 
 # 3 serie di stacco, 2 di adductor, 2 dell'esercizio personale femorali

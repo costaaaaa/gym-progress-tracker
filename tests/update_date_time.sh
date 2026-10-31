@@ -62,7 +62,7 @@ export TZ=Europe/Rome
 EX="$(call GET api/exercise/read_all.php "$A" | cut -d' ' -f2- | jq -r '.records[0].id')"
 PLAN="$(call POST api/workout/create_plan.php "$A" '{"name":"Scheda data"}' | cut -d' ' -f2- | jq -r '.plan.id')"
 DAY="$(call POST api/workout/create_days.php "$A" "{\"plan_id\":$PLAN,\"days\":[{\"name\":\"Giorno 1\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
-call POST api/workout/add_exercise.php "$A" "{\"day_id\":$DAY,\"exercise_id\":$EX,\"sets\":1,\"reps\":\"10\",\"rest\":60}" >/dev/null
+call POST api/workout/add_exercise.php "$A" "{\"day_id\":$DAY,\"exercise_id\":$EX,\"planned_sets\":[{\"set_number\":1,\"kind\":\"working\",\"reps_min\":10,\"reps_max\":10}],\"rest\":60}" >/dev/null
 
 # Allenamento a una data e ora scelte ("3 days ago 07:41"): ne stampa l'id
 make_workout() { # quando

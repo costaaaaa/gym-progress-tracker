@@ -49,7 +49,7 @@ trap cleanup EXIT
 E1="$(call GET api/exercise/read_all.php "$T" | cut -d' ' -f2- | jq -r '.records[0].id')"
 PLAN="$(call POST api/workout/create_plan.php "$T" '{"name":"Scheda app vecchia"}' | cut -d' ' -f2- | jq -r '.plan.id')"
 DAY="$(call POST api/workout/create_days.php "$T" "{\"plan_id\":$PLAN,\"days\":[{\"name\":\"Giorno 1\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
-call POST api/workout/add_exercise.php "$T" "{\"day_id\":$DAY,\"exercise_id\":$E1,\"sets\":3,\"reps\":\"10\",\"rest\":60}" >/dev/null
+call POST api/workout/add_exercise.php "$T" "{\"day_id\":$DAY,\"exercise_id\":$E1,\"planned_sets\":[{\"set_number\":1,\"kind\":\"working\",\"reps_min\":10,\"reps_max\":10},{\"set_number\":2,\"kind\":\"working\",\"reps_min\":10,\"reps_max\":10},{\"set_number\":3,\"kind\":\"working\",\"reps_min\":10,\"reps_max\":10}],\"rest\":60}" >/dev/null
 
 echo "App vecchia: salvataggio senza idempotency_key"
 BODY="$(jq -nc --argjson e "$E1" --argjson d "$DAY" '{workout_records: [range(1;4) | {exercise_id:$e, day_id:$d, set_number:., weight:20, reps:10}]}')"
