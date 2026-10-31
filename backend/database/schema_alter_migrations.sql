@@ -650,3 +650,29 @@ ALTER TABLE `gym_workout_sets`
 
 ALTER TABLE `gym_workout_sets`
   ADD COLUMN `seconds_from_start` INT UNSIGNED NULL DEFAULT NULL AFTER `is_warmup`;
+
+-- ------------------------------------------------------------------------------
+-- 33. Ordine degli esercizi (#77): gym_workout_exercises.position è l'ordine dell'esercizio dentro
+--     il giorno (1, 2, 3, ...; a parità si ordina per id). Prima l'ordine era l'id della riga e il
+--     riordino scambiava il contenuto di due righe vicine (exercise_id, serie, ripetizioni, ...):
+--     chi punta a gym_workout_exercises.id (le serie per esercizio dei passi successivi) si
+--     sarebbe trovato attaccato all'esercizio sbagliato. Ora il riordino cambia solo le position
+--     (rinumera il giorno 1..n e scrive solo le righe cambiate) e ogni riga resta legata al suo
+--     esercizio; eliminando un esercizio non si ricompatta, il buco si chiude al primo riordino
+--     del giorno. L'UPDATE numera le righe esistenti nell'ordine attuale (id) dentro ogni
+--     giorno. Colonna nuova NOT NULL DEFAULT 0: il rollback del codice resta possibile (il codice
+--     vecchio ignora la colonna e ordina ancora per id). Dopo un rollback e un nuovo deploy, le righe
+--     aggiunte dal codice vecchio hanno position 0 e salgono in cima al giorno: si sistemano
+--     rilanciando l'UPDATE con ROW_NUMBER di questa sezione, oppure da sole al primo riordino di
+--     quel giorno.
+-- ------------------------------------------------------------------------------
+
+ALTER TABLE `gym_workout_exercises`
+  ADD COLUMN `position` SMALLINT UNSIGNED NOT NULL DEFAULT 0 AFTER `exercise_id`;
+
+UPDATE `gym_workout_exercises` we
+  JOIN (
+    SELECT `id`, ROW_NUMBER() OVER (PARTITION BY `day_id` ORDER BY `id`) AS `n`
+    FROM `gym_workout_exercises`
+  ) numbered ON numbered.`id` = we.`id`
+  SET we.`position` = numbered.`n`;

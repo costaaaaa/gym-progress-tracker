@@ -42,23 +42,20 @@ class WorkoutExercise
         $this->notes = isset($this->notes) ? trim((string)$this->notes) : null;
         $this->intensity_technique = isset($this->intensity_technique) ? trim((string)$this->intensity_technique) : null;
 
-        // Query to insert record
+        // Inserimento: l'esercizio va in fondo al giorno (position = massimo + 1)
+        // :day_id e :position_day_id sono lo stesso valore: PDO non accetta lo stesso segnaposto due volte
         $query = "INSERT INTO " . $this->table_name . "
-                SET
-                    day_id = :day_id,
-                    exercise_id = :exercise_id,
-                    sets = :sets,
-                    warmup_sets = :warmup_sets,
-                    reps = :reps,
-                    rest = :rest,
-                    notes = :notes,
-                    intensity_technique = :intensity_technique";
+                    (day_id, exercise_id, position, sets, warmup_sets, reps, rest, notes, intensity_technique)
+                SELECT :day_id, :exercise_id, COALESCE(MAX(position), 0) + 1, :sets, :warmup_sets, :reps, :rest, :notes, :intensity_technique
+                FROM " . $this->table_name . "
+                WHERE day_id = :position_day_id";
 
         // Prepare query
         $stmt = $this->conn->prepare($query);
 
         // Bind values
         $stmt->bindParam(":day_id", $this->day_id);
+        $stmt->bindParam(":position_day_id", $this->day_id);
         $stmt->bindParam(":exercise_id", $this->exercise_id);
         $stmt->bindParam(":sets", $this->sets);
         $stmt->bindParam(":warmup_sets", $this->warmup_sets);
@@ -85,7 +82,7 @@ class WorkoutExercise
                 FROM " . $this->table_name . " we
                 LEFT JOIN gym_exercises e ON we.exercise_id = e.id
                 WHERE we.day_id = ?
-                ORDER BY we.id ASC";
+                ORDER BY we.position ASC, we.id ASC";
 
         // Prepare query statement
         $stmt = $this->conn->prepare($query);
@@ -209,198 +206,82 @@ class WorkoutExercise
         return false;
     }
 
-    /**
-     * Sposta un esercizio una posizione in alto (diminuire l'ordine)
-     * Note: Questo metodo presuppone che l'ordinamento sia basato sull'ID (record più vecchio = più in alto)
-     * Se si implementa una colonna "position", il metodo deve essere modificato
-     * 
-     * @return boolean true se l'operazione ha successo, false altrimenti
-     */
+    /** Sposta un esercizio una posizione in alto nel giorno. */
     public function moveUp()
     {
-        try {
-            // Sanitize inputs
-            $this->id = htmlspecialchars(strip_tags($this->id));
-            $this->day_id = htmlspecialchars(strip_tags($this->day_id));
+        return $this->moveWithinDay('up');
+    }
 
-            // Troviamo l'esercizio precedente nello stesso giorno
-            $query = "SELECT id FROM " . $this->table_name . "
-                      WHERE day_id = :day_id AND id < :current_id
-                      ORDER BY id DESC
-                      LIMIT 1";
-
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':day_id', $this->day_id);
-            $stmt->bindParam(':current_id', $this->id);
-            $stmt->execute();
-
-            if ($stmt->rowCount() === 0) {
-                // Non ci sono esercizi sopra questo, quindi è già in cima
-                return true;
-            }
-
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            $previous_id = $row['id'];
-
-            // Leggiamo i dati dei due esercizi da scambiare
-            // Primo esercizio (corrente)
-            $query = "SELECT * FROM " . $this->table_name . " WHERE id = :id";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':id', $this->id);
-            $stmt->execute();
-            $current_exercise = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            // Secondo esercizio (precedente)
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':id', $previous_id);
-            $stmt->execute();
-            $previous_exercise = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            // Inizia una transazione per garantire l'integrità dei dati
-            $this->conn->beginTransaction();
-
-            // Aggiorna il primo esercizio con i dati del secondo
-            $query = "UPDATE " . $this->table_name . " SET 
-                      exercise_id = :exercise_id,
-                      sets = :sets,
-                      warmup_sets = :warmup_sets,
-                      reps = :reps,
-                      rest = :rest,
-                      notes = :notes,
-                      intensity_technique = :intensity_technique
-                      WHERE id = :id";
-
-            // Update esercizio corrente
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':exercise_id', $previous_exercise['exercise_id']);
-            $stmt->bindParam(':sets', $previous_exercise['sets']);
-            $stmt->bindParam(':warmup_sets', $previous_exercise['warmup_sets']);
-            $stmt->bindParam(':reps', $previous_exercise['reps']);
-            $stmt->bindParam(':rest', $previous_exercise['rest']);
-            $stmt->bindParam(':notes', $previous_exercise['notes']);
-            $stmt->bindParam(':intensity_technique', $previous_exercise['intensity_technique']);
-            $stmt->bindParam(':id', $this->id);
-            $stmt->execute();
-
-            // Update esercizio precedente
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':exercise_id', $current_exercise['exercise_id']);
-            $stmt->bindParam(':sets', $current_exercise['sets']);
-            $stmt->bindParam(':warmup_sets', $current_exercise['warmup_sets']);
-            $stmt->bindParam(':reps', $current_exercise['reps']);
-            $stmt->bindParam(':rest', $current_exercise['rest']);
-            $stmt->bindParam(':notes', $current_exercise['notes']);
-            $stmt->bindParam(':intensity_technique', $current_exercise['intensity_technique']);
-            $stmt->bindParam(':id', $previous_id);
-            $stmt->execute();
-
-            // Commit della transazione
-            $this->conn->commit();
-            return true;
-        } catch (Exception $e) {
-            // Rollback in caso di errore
-            if ($this->conn->inTransaction()) {
-                $this->conn->rollback();
-            }
-            error_log("Errore in moveUp: " . $e->getMessage());
-            return false;
-        }
+    /** Sposta un esercizio una posizione in basso nel giorno. */
+    public function moveDown()
+    {
+        return $this->moveWithinDay('down');
     }
 
     /**
-     * Sposta un esercizio una posizione in basso (aumentare l'ordine)
-     * Note: Questo metodo presuppone che l'ordinamento sia basato sull'ID (record più recente = più in basso)
-     * Se si implementa una colonna "position", il metodo deve essere modificato
-     * 
+     * Scambia l'esercizio con il vicino nell'ordine (position, id) del giorno, rinumera il giorno
+     * 1..n e scrive solo le righe la cui position cambia. Cambiano solo le position: ogni riga
+     * resta legata al suo esercizio. Le righe del giorno sono bloccate con FOR UPDATE, così due
+     * riordini simultanei non si sovrappongono. Primo su / ultimo giù: niente da fare, true.
+     *
      * @return boolean true se l'operazione ha successo, false altrimenti
      */
-    public function moveDown()
+    private function moveWithinDay($direction)
     {
         try {
-            // Sanitize inputs
             $this->id = htmlspecialchars(strip_tags($this->id));
             $this->day_id = htmlspecialchars(strip_tags($this->day_id));
 
-            // Troviamo l'esercizio successivo nello stesso giorno
-            $query = "SELECT id FROM " . $this->table_name . "
-                      WHERE day_id = :day_id AND id > :current_id
-                      ORDER BY id ASC
-                      LIMIT 1";
+            $this->conn->beginTransaction();
 
-            $stmt = $this->conn->prepare($query);
+            $stmt = $this->conn->prepare(
+                "SELECT id, position FROM " . $this->table_name . "
+                 WHERE day_id = :day_id
+                 ORDER BY position ASC, id ASC
+                 FOR UPDATE"
+            );
             $stmt->bindParam(':day_id', $this->day_id);
-            $stmt->bindParam(':current_id', $this->id);
             $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            if ($stmt->rowCount() === 0) {
-                // Non ci sono esercizi sotto questo, quindi è già in fondo
+            $index = null;
+            foreach ($rows as $i => $row) {
+                if ((int) $row['id'] === (int) $this->id) {
+                    $index = $i;
+                    break;
+                }
+            }
+            if ($index === null) {
+                // Eliminato nel frattempo (l'appartenenza l'ha già verificata il controller)
+                $this->conn->rollback();
+                return false;
+            }
+            $neighbour_index = $direction === 'up' ? $index - 1 : $index + 1;
+            if (!isset($rows[$neighbour_index])) {
+                // Già in cima (o in fondo): niente da fare
+                $this->conn->rollback();
                 return true;
             }
 
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            $next_id = $row['id'];
+            // Con position già 1..n sono 2 UPDATE; con buchi o pareggi il giorno si rimette in ordine
+            $swapped = $rows[$index];
+            $rows[$index] = $rows[$neighbour_index];
+            $rows[$neighbour_index] = $swapped;
 
-            // Leggiamo i dati dei due esercizi da scambiare
-            // Primo esercizio (corrente)
-            $query = "SELECT * FROM " . $this->table_name . " WHERE id = :id";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':id', $this->id);
-            $stmt->execute();
-            $current_exercise = $stmt->fetch(PDO::FETCH_ASSOC);
+            $update = $this->conn->prepare("UPDATE " . $this->table_name . " SET position = :position WHERE id = :id");
+            foreach ($rows as $i => $row) {
+                if ((int) $row['position'] !== $i + 1) {
+                    $update->execute(array(':position' => $i + 1, ':id' => $row['id']));
+                }
+            }
 
-            // Secondo esercizio (successivo)
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':id', $next_id);
-            $stmt->execute();
-            $next_exercise = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            // Inizia una transazione per garantire l'integrità dei dati
-            $this->conn->beginTransaction();
-
-            // Aggiorna il primo esercizio con i dati del secondo
-            $query = "UPDATE " . $this->table_name . " SET 
-                      exercise_id = :exercise_id,
-                      sets = :sets,
-                      warmup_sets = :warmup_sets,
-                      reps = :reps,
-                      rest = :rest,
-                      notes = :notes,
-                      intensity_technique = :intensity_technique
-                      WHERE id = :id";
-
-            // Update esercizio corrente
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':exercise_id', $next_exercise['exercise_id']);
-            $stmt->bindParam(':sets', $next_exercise['sets']);
-            $stmt->bindParam(':warmup_sets', $next_exercise['warmup_sets']);
-            $stmt->bindParam(':reps', $next_exercise['reps']);
-            $stmt->bindParam(':rest', $next_exercise['rest']);
-            $stmt->bindParam(':notes', $next_exercise['notes']);
-            $stmt->bindParam(':intensity_technique', $next_exercise['intensity_technique']);
-            $stmt->bindParam(':id', $this->id);
-            $stmt->execute();
-
-            // Update esercizio successivo
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':exercise_id', $current_exercise['exercise_id']);
-            $stmt->bindParam(':sets', $current_exercise['sets']);
-            $stmt->bindParam(':warmup_sets', $current_exercise['warmup_sets']);
-            $stmt->bindParam(':reps', $current_exercise['reps']);
-            $stmt->bindParam(':rest', $current_exercise['rest']);
-            $stmt->bindParam(':notes', $current_exercise['notes']);
-            $stmt->bindParam(':intensity_technique', $current_exercise['intensity_technique']);
-            $stmt->bindParam(':id', $next_id);
-            $stmt->execute();
-
-            // Commit della transazione
             $this->conn->commit();
             return true;
         } catch (Exception $e) {
-            // Rollback in caso di errore
             if ($this->conn->inTransaction()) {
                 $this->conn->rollback();
             }
-            error_log("Errore in moveDown: " . $e->getMessage());
+            error_log("Errore nel riordino ($direction): " . $e->getMessage());
             return false;
         }
     }
