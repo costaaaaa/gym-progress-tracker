@@ -123,7 +123,7 @@ status_is "set_number con un buco" "$(add "$EX_A" '[{"set_number":1,"kind":"work
 status_is "set_number che non parte da 1" "$(add "$EX_A" '[{"set_number":2,"kind":"working","reps_min":5,"reps_max":5}]')" 400
 status_is "kind sconosciuto" "$(add "$EX_A" '[{"set_number":1,"kind":"cooldown","reps_min":5,"reps_max":5}]')" 400
 status_is "riscaldamento dopo una allenante" "$(add "$EX_A" "[$W5,{\"set_number\":2,\"kind\":\"warmup\"}]")" 400
-status_is "riscaldamento con una tecnica" "$(add "$EX_A" "[{\"set_number\":1,\"kind\":\"warmup\",\"intensity_technique\":\"Drop Set\"},{\"set_number\":2,\"kind\":\"working\",\"reps_min\":5,\"reps_max\":5}]")" 400
+status_is "riscaldamento con una tecnica" "$(add "$EX_A" '[{"set_number":1,"kind":"warmup","intensity_technique":"Drop Set"},{"set_number":2,"kind":"working","reps_min":5,"reps_max":5}]')" 400
 status_is "riscaldamento con un target" "$(add "$EX_A" '[{"set_number":1,"kind":"warmup","reps_min":10,"reps_max":10},{"set_number":2,"kind":"working","reps_min":5,"reps_max":5}]')" 400
 status_is "11 serie di riscaldamento" "$(add "$EX_A" "$(jq -nc '[range(1;12) | {set_number:., kind:"warmup"}] + [{set_number:12, kind:"working", reps_min:5, reps_max:5}]')")" 400
 status_is "21 serie allenanti" "$(add "$EX_A" "$(jq -nc '[range(1;22) | {set_number:., kind:"working", reps_min:5, reps_max:5}]')")" 400
