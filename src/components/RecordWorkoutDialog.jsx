@@ -32,6 +32,7 @@ import {
   MAX_WEIGHT, isValidWeight, newIdempotencyKey, isValidReps, repsNeedConfirm, withWarmupRule,
 } from '../utils/focusSession';
 import { initialSetRows, toggleWarmupRow, rowPlanReps } from '../utils/manualEntryRows';
+import { planSummary } from '../utils/plannedSets';
 
 const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
   const { t } = useTranslation();
@@ -235,8 +236,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                       secondary={
                         <Box>
                           <Typography variant="body2" color="text.secondary">
-                            {exercise.warmup_sets > 0 && t('plans.warmup_prefix', { n: exercise.warmup_sets })}
-                            {t('record.plan_line', { sets: exercise.sets, reps: exercise.reps, rest: exercise.rest })}
+                            {t('plans.plan_line', { summary: planSummary(exercise.planned_sets), rest: exercise.rest })}
                           </Typography>
                           {exercise.notes && (
                             <Box sx={{ mt: 1 }}>

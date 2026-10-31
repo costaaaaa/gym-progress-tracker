@@ -16,18 +16,26 @@ const isoDay = (offset) => new Date(NOW + offset * DAY).toISOString().slice(0, 1
 const stamp = (offset, time) => `${isoDay(offset)} ${time}`;
 const round = (n, d = 1) => Math.round(n * 10 ** d) / 10 ** d;
 
-const exercise = (id, exercise_id, exercise_name, reps, muscle_group) =>
-  ({ id, exercise_id, exercise_name, sets: 3, reps, rest: 90, muscle_group });
+// Serie pianificate: `warmups` di riscaldamento, poi una serie allenante per riga { min, max, failure, technique }
+const planned = (warmups, rows) => [
+  ...Array.from({ length: warmups }, () => ({ kind: 'warmup', reps_min: null, reps_max: null, to_failure: false, intensity_technique: null })),
+  ...rows.map(({ min = null, max = null, failure = false, technique = null }) => ({
+    kind: 'working', reps_min: min, reps_max: failure ? null : max, to_failure: failure, intensity_technique: technique,
+  })),
+].map((set, i) => ({ set_number: i + 1, ...set }));
+const times = (n, row) => Array.from({ length: n }, () => row);
+const exercise = (id, exercise_id, exercise_name, planned_sets, muscle_group) =>
+  ({ id, exercise_id, exercise_name, planned_sets, rest: 90, muscle_group });
 const plan = {
   id: 5, name: 'Push Pull', description: 'Spinta e trazione, tre allenamenti a settimana', is_active: true,
   days: [
-    { id: 1, name: 'Spinta', exercises: [exercise(9, 3, 'Panca piana', '8-10', 'petto'), exercise(10, 4, 'Croci', '12', 'petto')] },
-    { id: 2, name: 'Trazione', exercises: [exercise(11, 5, 'Trazioni', '6-8', 'schiena'), exercise(12, 6, 'Rematore con bilanciere', '8-10', 'schiena')] },
+    { id: 1, name: 'Spinta', exercises: [exercise(9, 3, 'Panca piana', planned(1, [...times(2, { min: 8, max: 10 }), { min: 8, max: 10, technique: 'Drop Set (Stripping)' }]), 'petto'), exercise(10, 4, 'Croci', planned(0, times(3, { min: 12, max: 12 })), 'petto')] },
+    { id: 2, name: 'Trazione', exercises: [exercise(11, 5, 'Trazioni', planned(0, [{ min: 12, max: 12 }, { min: 10, max: 10 }, { min: 6, failure: true }]), 'schiena'), exercise(12, 6, 'Rematore con bilanciere', planned(2, times(4, { min: 8, max: 10 })), 'schiena')] },
   ],
 };
 const planInactive = {
   id: 6, name: 'Gambe e core', description: 'Blocco di forza sulle gambe', is_active: false,
-  days: [{ id: 3, name: 'Gambe', exercises: [exercise(13, 7, 'Squat', '5', 'quadricipiti'), exercise(14, 8, 'Stacco da terra', '5', 'femorali')] }],
+  days: [{ id: 3, name: 'Gambe', exercises: [exercise(13, 7, 'Squat', planned(0, times(5, { min: 5, max: 5 })), 'quadricipiti'), exercise(14, 8, 'Stacco da terra', planned(0, [{ failure: true }]), 'femorali')] }],
 };
 
 const CATALOG = [

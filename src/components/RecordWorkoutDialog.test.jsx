@@ -6,9 +6,14 @@ import { json } from '../test/dom';
 
 vi.mock('../utils/analytics', () => ({ track: vi.fn() }));
 
+// Le righe dell'inserimento manuale leggono ancora sets/warmup_sets/reps (lavoro di 3b); la riga della scheda legge planned_sets
+const planned = [
+  ...[1, 2].map((n) => ({ set_number: n, kind: 'warmup', reps_min: null, reps_max: null, to_failure: false, intensity_technique: null })),
+  ...[3, 4].map((n) => ({ set_number: n, kind: 'working', reps_min: 5, reps_max: 5, to_failure: false, intensity_technique: n === 4 ? 'Rest Pause' : null })),
+];
 const squat = {
   id: 11, exercise_id: 5, exercise_name: 'Squat', sets: 2, warmup_sets: 2, reps: '5', rest: 60,
-  equipment: 'bilanciere', intensity_technique: 'Rest Pause',
+  equipment: 'bilanciere', intensity_technique: 'Rest Pause', planned_sets: planned,
 };
 const basePlan = { id: 5, name: 'Gambe', days: [{ id: 3, name: 'Gambe', exercises: [squat] }] };
 // 1 riscaldamento + 3 serie con ripetizioni a lista
@@ -41,7 +46,7 @@ describe('righe di un esercizio con riscaldamento', () => {
   it('prima le righe di riscaldamento (già attivate), poi le serie; la riga della scheda le conta a parte', () => {
     open();
     expect(toggles().map((c) => c.checked)).toEqual([true, true, false, false]);
-    expect(screen.getByText('2 risc. + 2 serie x 5 - recupero: 60s')).toBeTruthy();
+    expect(screen.getByText('2 risc. + 2 × 5 · Rest pause sull\'ultima · recupero: 60s')).toBeTruthy();
   });
 
   it('in una riga di riscaldamento la tecnica è disabilitata e le ripetizioni non sono precompilate', () => {

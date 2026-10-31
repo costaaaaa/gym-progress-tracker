@@ -106,10 +106,10 @@ const scegliEsercizioEsistente = async () => {
 };
 
 describe('ExerciseDialog · serie di riscaldamento (#66)', () => {
-  it('di base è vuoto (0) e non invalida il form', async () => {
+  it('di base è 0 e non invalida il form', async () => {
     await apri();
     await scegliEsercizioEsistente();
-    expect(screen.getByLabelText('Serie di riscaldamento').value).toBe('');
+    expect(screen.getByLabelText('Serie di riscaldamento').value).toBe('0');
     expect(screen.getByRole('button', { name: 'Aggiungi' }).disabled).toBe(false);
   });
 
@@ -120,7 +120,7 @@ describe('ExerciseDialog · serie di riscaldamento (#66)', () => {
     expect(screen.getByRole('button', { name: 'Aggiungi' }).disabled).toBe(true);
   });
 
-  it('passa warmupSets a onAdd', async () => {
+  it('passa a onAdd le serie pianificate: prima il riscaldamento, poi le allenanti', async () => {
     const onAdd = vi.fn();
     render(<ExerciseDialog open onClose={() => {}} onAdd={onAdd} dayIndex={0} />);
     await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
@@ -129,6 +129,11 @@ describe('ExerciseDialog · serie di riscaldamento (#66)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Aggiungi' }));
 
-    expect(onAdd).toHaveBeenCalledWith(0, expect.objectContaining({ warmupSets: '2', sets: '3' }));
+    const planned = onAdd.mock.calls[0][1].planned_sets;
+    expect(planned.map((set) => set.kind)).toEqual(['warmup', 'warmup', 'working', 'working', 'working']);
+    expect(planned.map((set) => set.set_number)).toEqual([1, 2, 3, 4, 5]);
+    expect(planned[4]).toEqual({
+      set_number: 5, kind: 'working', reps_min: 8, reps_max: 10, to_failure: false, intensity_technique: null,
+    });
   });
 });
