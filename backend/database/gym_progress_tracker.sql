@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS `gym_workout_exercises` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `day_id` int(11) NOT NULL,
   `exercise_id` int(11) NOT NULL,
+  `position` smallint(5) unsigned NOT NULL DEFAULT 0, -- ordine dentro il giorno, ORDER BY position, id (#77)
   `sets` int(11) NOT NULL,
   `warmup_sets` tinyint(3) unsigned NOT NULL DEFAULT 0, -- serie di riscaldamento, in aggiunta a `sets` (#66)
   `reps` varchar(20) NOT NULL,

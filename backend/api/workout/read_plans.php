@@ -96,7 +96,7 @@ try {
                                 FROM gym_workout_exercises we
                                 LEFT JOIN gym_exercises e ON we.exercise_id = e.id
                                 WHERE we.day_id IN ($day_placeholders)
-                                ORDER BY we.day_id ASC, we.id ASC";
+                                ORDER BY we.day_id ASC, we.position ASC, we.id ASC";
             $exercises_stmt = $db->prepare($exercises_query);
             foreach ($day_ids as $index => $day_id) {
                 $exercises_stmt->bindValue($index + 1, $day_id, PDO::PARAM_INT);

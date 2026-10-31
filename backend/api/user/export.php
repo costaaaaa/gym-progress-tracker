@@ -56,12 +56,12 @@ try {
         array($user_id));
     $planExercises = export_rows($db,
         "SELECT we.day_id, e.name AS exercise, e.muscle_group, we.sets, we.warmup_sets, we.reps, we.rest,
-                we.intensity_technique, we.notes
+                we.intensity_technique, we.notes, we.position
          FROM gym_workout_exercises we
          JOIN gym_workout_days d ON d.id = we.day_id
          JOIN gym_workout_plans p ON p.id = d.plan_id
          JOIN gym_exercises e ON e.id = we.exercise_id
-         WHERE p.user_id = ? ORDER BY we.day_id, we.id", array($user_id));
+         WHERE p.user_id = ? ORDER BY we.day_id, we.position, we.id", array($user_id));
     $exercisesByDay = array();
     foreach ($planExercises as $row) {
         $dayId = $row['day_id'];
