@@ -29,7 +29,7 @@ const exercise = (id, exercise_id, exercise_name, planned_sets, muscle_group) =>
 const plan = {
   id: 5, name: 'Push Pull', description: 'Spinta e trazione, tre allenamenti a settimana', is_active: true,
   days: [
-    { id: 1, name: 'Spinta', exercises: [exercise(9, 3, 'Panca piana', planned(0, [{ min: 12, max: 12 }, { min: 10, max: 10 }, { min: 6, failure: true, technique: 'Drop Set (Stripping)' }]), 'petto'), exercise(10, 4, 'Croci', planned(0, times(3, { min: 12, max: 12 })), 'petto')] },
+    { id: 1, name: 'Spinta', exercises: [exercise(9, 3, 'Panca piana', planned(1, [...times(2, { min: 8, max: 10 }), { min: 8, max: 10, technique: 'Drop Set (Stripping)' }]), 'petto'), exercise(10, 4, 'Croci', planned(0, times(3, { min: 12, max: 12 })), 'petto')] },
     { id: 2, name: 'Trazione', exercises: [exercise(11, 5, 'Trazioni', planned(0, [{ min: 12, max: 12 }, { min: 10, max: 10 }, { min: 6, failure: true, technique: 'Rest Pause' }]), 'schiena'), exercise(12, 6, 'Rematore con bilanciere', planned(2, times(4, { min: 8, max: 10 })), 'schiena')] },
   ],
 };
@@ -262,11 +262,11 @@ for (const vp of viewports) {
         await snap(page, 'focus-scelta-giorno', tag);
 
         await page.getByRole('combobox').click();
-        await page.getByRole('option', { name: 'Spinta', exact: true }).click();
+        await page.getByRole('option', { name: 'Trazione', exact: true }).click();
         await page.getByRole('button', { name: 'Inizia allenamento', exact: true }).click();
         await page.getByRole('button', { name: 'Conferma serie', exact: true }).waitFor();
 
-        // Panca: 12 / 10 / a cedimento (min. 6) con Drop set. Il recupero si fotografa dopo la prima serie;
+        // Trazioni: 12 / 10 / a cedimento (min. 6) con Rest Pause. Il recupero si fotografa dopo la prima serie;
         // la terza mostra l'obiettivo "a cedimento" in grigio e la tecnica già scelta
         const confirmSet = async (reps) => {
           await page.getByLabel('Peso (kg)').fill('60');
@@ -286,8 +286,10 @@ for (const vp of viewports) {
         await skipRest();
         await snap(page, 'focus-allenamento', tag);
 
-        // L'ultima serie dell'esercizio porta subito al successivo, senza recupero
+        // L'ultima serie dell'esercizio porta subito al successivo (Rematore, parte dal riscaldamento), senza recupero
         await confirmSet('8');
+        await page.getByRole('heading', { name: 'Rematore con bilanciere' }).waitFor();
+        await snap(page, 'focus-riscaldamento', tag);
         for (let i = 0; i < 10 && !(await page.getByText('Riepilogo', { exact: true }).isVisible()); i++) {
           await page.getByRole('button', { name: 'Salta esercizio', exact: true }).click();
           await page.waitForTimeout(300);

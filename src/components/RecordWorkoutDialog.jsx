@@ -30,7 +30,7 @@ import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, techniqueLabel } from '../i18n/labe
 import {
   MAX_WEIGHT, isValidWeight, newIdempotencyKey, isValidReps, repsNeedConfirm, withWarmupRule,
 } from '../utils/focusSession';
-import { initialSetRows, toggleWarmupRow, rowPlanReps, rowPlannedSet } from '../utils/manualEntryRows';
+import { initialSetRows, toggleWarmupRow, rowTarget, rowPlannedSet } from '../utils/manualEntryRows';
 import { planSummary } from '../utils/plannedSets';
 
 const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
@@ -327,7 +327,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                             label={t('record.reps')}
                             value={row.reps ?? ''}
                             // La scheda indica le ripetizioni per le sole righe che ora non sono riscaldamento
-                            placeholder={rowPlanReps(rows, setIndex, exercise)}
+                            placeholder={rowTarget(rows, setIndex, exercise)}
                             InputLabelProps={{ shrink: true }}
                             inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
                             onFocus={(e) => e.target.select()}

@@ -15,6 +15,9 @@ import { slotLabel } from './slotLabel';
 import { MAX_WEIGHT, isValidWeight, isValidReps, slotTarget, lastSessionSets, setStatus, setSlot } from '../../utils/focusSession';
 import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, muscleLabel, techniqueLabel } from '../../i18n/labels';
 
+// Gli obiettivi a parole ("a cedimento (min. 6)") non entrano nel campo a dimensione piena: placeholder più piccolo
+const LONG_TARGET_LENGTH = 10;
+
 export default function WorkoutPhase({
   currentExercise, currentExerciseIndex, totalExercises, currentSetIndex, totalSlotsForCurrentExercise,
   currentSlot, currentExerciseSets, canSwap, currentSkippedSets, lastSession, exerciseTransition, clockStart, finishedClock,
@@ -128,7 +131,7 @@ export default function WorkoutPhase({
               placeholder={target} InputLabelProps={{ shrink: true }}
               onFocus={(e) => e.target.select()}
               fullWidth inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
-              sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.text }, '&.Mui-focused fieldset': { borderColor: colors.text } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.text }, ...(target.length > 10 && { '& input::placeholder': { fontSize: '0.85rem', fontWeight: 500 } }) }} />
+              sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.text }, '&.Mui-focused fieldset': { borderColor: colors.text } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.text }, ...(target.length > LONG_TARGET_LENGTH && { '& input::placeholder': { fontSize: '0.85rem', fontWeight: 500 } }) }} />
           </Box>
 
           {/* Il riscaldamento non ha tecnica di intensità */}

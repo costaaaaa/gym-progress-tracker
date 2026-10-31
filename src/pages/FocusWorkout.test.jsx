@@ -78,7 +78,7 @@ const savedDraft = {
   startTime: new Date(2026, 9, 20, 17, 40).toISOString(),
   idempotencyKey: 'chiave-bozza',
   lastActivityAt: new Date(2026, 9, 20, 17, 45).toISOString(),
-  plannedSets: true,
+  plannedSetsFormat: true,
   phase: 'workout',
 };
 
@@ -971,7 +971,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
 
   it('una bozza di prima delle serie pianificate viene scartata: nessun invito a riprendere', async () => {
     const old = { ...savedDraft };
-    delete old.plannedSets;
+    delete old.plannedSetsFormat;
     localStorage.setItem(DRAFT_KEY, JSON.stringify({
       ...old,
       activePlan: { id: 5, name: 'Gambe', days: [{ ...legDay, exercises: [{ id: 11, exercise_id: 5, exercise_name: 'Squat', sets: 2, warmup_sets: 2, reps: '5' }] }] },

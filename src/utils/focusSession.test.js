@@ -1,10 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   lastSessionSets, totalSlots, setSlot, skipWarmup, slotWeight, numberedSets, withWarmupRule, isCurrentDraft, swapExercise, buildSessionEntry, suggestedWeight,
-  plannedSetAt, slotTarget, slotTechnique, repsNeedConfirm,
+  plannedSetAt, slotTarget, slotTechnique, repsNeedConfirm, addedPlannedSets,
 } from './focusSession';
-import { fromCompact, parseTarget } from './plannedSets';
-import { DROP, plannedSets, times } from '../test/plannedSets';
+import { DROP, plannedSets, times, work } from '../test/plannedSets';
 
 // Squat: 2 riscaldamenti + 3 serie allenanti (12 / 10 / a cedimento min. 6 con Drop set)
 const squatSets = plannedSets(2, [{ min: 12, max: 12 }, { min: 10, max: 10 }, { min: 6, failure: true, technique: DROP }]);
@@ -119,7 +118,7 @@ describe('regola del riscaldamento sulla serie registrata (#67)', () => {
 
 describe('bozza del Focus: solo quella del formato con le serie pianificate si riprende (#77)', () => {
   it('il segno plannedSets scritto dal salvataggio la rende riprendibile', () => {
-    expect(isCurrentDraft({ plannedSets: true, selectedDay: {}, startTime: 'x' })).toBe(true);
+    expect(isCurrentDraft({ plannedSetsFormat: true, selectedDay: {}, startTime: 'x' })).toBe(true);
   });
 
   it('una bozza vecchia, con o senza slotsIncludeWarmup, non lo è', () => {
@@ -159,7 +158,7 @@ describe('obiettivo e tecnica di ogni posizione (#77)', () => {
 });
 
 describe('ripetizioni insolite da confermare (#77)', () => {
-  const serie = (min, max, failure = false) => ({ kind: 'working', reps_min: min, reps_max: max, to_failure: failure });
+  const serie = (min, max, failure = false) => work(1, min, max, null, failure);
 
   it('sopra la soglia e oltre il massimo della scheda serve la conferma', () => {
     expect(repsNeedConfirm('31', serie(12, 12))).toBe(true);
@@ -181,6 +180,13 @@ describe('ripetizioni insolite da confermare (#77)', () => {
 });
 
 describe('cambio e aggiunta esercizio (#77)', () => {
+  it('addedPlannedSets: serie o obiettivo non validi non producono niente', () => {
+    expect(addedPlannedSets('0', '10')).toBeNull();
+    expect(addedPlannedSets('21', '10')).toBeNull();
+    expect(addedPlannedSets('3', 'abc')).toBeNull();
+    expect(addedPlannedSets('3', '')).toBeNull();
+  });
+
   it('il cambio eredita le serie pianificate dell\'esercizio sostituito, tecniche e riscaldamento compresi', () => {
     const exercises = [{ id: 1, exercise_name: 'Squat', planned_sets: squatSets, rest: 120 }];
     const swapped = swapExercise(exercises, 0, { id: 7, name: 'Leg press', muscle_group: 'gambe' });
@@ -190,7 +196,8 @@ describe('cambio e aggiunta esercizio (#77)', () => {
   });
 
   it('un esercizio aggiunto in sessione è nella forma compatta: N serie uguali, senza riscaldamento né tecnica', () => {
-    const planned = fromCompact({ warmups: 0, sets: 3, target: { ...parseTarget('8-10'), to_failure: false }, technique: null });
+    const planned = addedPlannedSets('3', '8-10');
+    expect(planned).toEqual(plannedSets(0, times(3, { min: 8, max: 10 })));
     const entry = buildSessionEntry({ id: 7, name: 'Leg press', muscle_group: 'gambe' }, { planned_sets: planned, rest: 60 });
     expect(totalSlots(entry)).toBe(3);
     expect([0, 1, 2].map((i) => slotTarget(entry, i))).toEqual(['8-10', '8-10', '8-10']);

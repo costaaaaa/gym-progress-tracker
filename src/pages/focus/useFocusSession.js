@@ -117,7 +117,7 @@ export default function useFocusSession() {
         lastActivityAt,
         pausedMs,
         // Segno del formato con le serie pianificate: una bozza senza viene scartata
-        plannedSets: true,
+        plannedSetsFormat: true,
         // Fine mostrata nel riepilogo, o fissa se già finita: la ripresa riparte da qui
         summaryEndAt: phase === 'summary' || retroDate ? endTime : null,
         phase: phase === 'rest_timer' ? 'workout' : phase, // Se crasha durante il timer, riprendi dall'esercizio

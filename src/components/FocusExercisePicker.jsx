@@ -23,7 +23,8 @@ import { API_BASE_URL } from '../config';
 import { personalLabel } from '../api/exercises';
 import { Trans, useTranslation } from 'react-i18next';
 import { muscleLabel } from '../i18n/labels';
-import { MAX_WORKING, compactForm, fromCompact, parseTarget, targetLabel, toInt } from '../utils/plannedSets';
+import { compactForm, targetLabel } from '../utils/plannedSets';
+import { addedPlannedSets } from '../utils/focusSession';
 
 const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '');
 const ALL = '__all__';
@@ -103,9 +104,8 @@ const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true
     setSelected(ex);
   };
 
-  const setCount = toInt(sets, 1, MAX_WORKING);
-  const target = parseTarget(reps);
-  const canAdd = selected && setCount !== null && target !== null;
+  const plannedSets = addedPlannedSets(sets, reps);
+  const canAdd = selected && plannedSets !== null;
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" PaperProps={{ sx: { borderRadius: '16px' } }}>
@@ -188,7 +188,7 @@ const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true
           <Button onClick={() => setSelected(null)}>{t('picker.back')}</Button>
           <Button variant="contained" disabled={!canAdd}
             onClick={() => onPick(selected, {
-              planned_sets: fromCompact({ warmups: 0, sets: setCount, target: { ...target, to_failure: false }, technique: null }),
+              planned_sets: plannedSets,
               rest,
               position,
             })}>

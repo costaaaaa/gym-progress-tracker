@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { initialSetRows, toggleWarmupRow, rowPlanReps, rowPlannedSet } from './manualEntryRows';
+import { initialSetRows, toggleWarmupRow, rowTarget, rowPlannedSet } from './manualEntryRows';
 import { DROP, plannedSets, times } from '../test/plannedSets';
 
 // 1 riscaldamento, poi 12 / 10 / a cedimento (min. 6) con Drop set sulla terza allenante
@@ -33,16 +33,16 @@ describe('righe iniziali dell\'inserimento manuale (#77)', () => {
 describe('obiettivo in grigio e serie pianificata di una riga (#77)', () => {
   const rows = initialSetRows(squat);
 
-  it('rowPlanReps: vuoto per il riscaldamento; per le altre la k-esima allenante, a parole', () => {
-    expect([0, 1, 2, 3].map((i) => rowPlanReps(rows, i, squat))).toEqual(['', '12', '10', 'a cedimento (min. 6)']);
+  it('rowTarget: vuoto per il riscaldamento; per le altre la k-esima allenante, a parole', () => {
+    expect([0, 1, 2, 3].map((i) => rowTarget(rows, i, squat))).toEqual(['', '12', '10', 'a cedimento (min. 6)']);
   });
 
   it('conta solo le righe che non sono riscaldamento, e oltre l\'ultima ripete l\'ultima', () => {
     const shifted = rows.map((r, i) => ({ ...r, is_warmup: i === 3 }));
-    expect([0, 1, 2, 3].map((i) => rowPlanReps(shifted, i, squat))).toEqual(['12', '10', 'a cedimento (min. 6)', '']);
+    expect([0, 1, 2, 3].map((i) => rowTarget(shifted, i, squat))).toEqual(['12', '10', 'a cedimento (min. 6)', '']);
     const allWorking = rows.map((r) => ({ ...r, is_warmup: false }));
-    expect(rowPlanReps(allWorking, 3, squat)).toBe('a cedimento (min. 6)');
-    expect(rowPlanReps(allWorking, 0, squat)).toBe('12');
+    expect(rowTarget(allWorking, 3, squat)).toBe('a cedimento (min. 6)');
+    expect(rowTarget(allWorking, 0, squat)).toBe('12');
   });
 
   it('rowPlannedSet è la serie allenante pianificata della riga, null in riscaldamento', () => {

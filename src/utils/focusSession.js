@@ -4,7 +4,7 @@
 // Stessa logica di src/screens/Focus/focusHelpers.js nell'app mobile.
 
 import { isWorkingSet } from './workoutMetrics';
-import { targetLabel } from './plannedSets';
+import { MAX_WORKING, fromCompact, parseRowTarget, plannedTarget, plannedTechnique, toInt, workingOf } from './plannedSets';
 
 // Funzione premium che sblocca cambio e aggiunta (vedi user_features() nel backend)
 export const FEATURE_SESSION_EDIT = 'focus_session_edit';
@@ -45,24 +45,26 @@ export const isBodyweight = (exercise) => exercise?.equipment === 'corpo_libero'
 const plannedOf = (exercise) => exercise?.planned_sets ?? [];
 
 // Serie di riscaldamento della scheda: si sommano alle allenanti (2 risc. + 3 serie = 5 posizioni)
-const warmupCount = (exercise) => plannedOf(exercise).filter((set) => set.kind === 'warmup').length;
+const warmupCount = (exercise) => plannedOf(exercise).length - workingCount(exercise);
 
 // Serie allenanti della scheda
-const workingCount = (exercise) => plannedOf(exercise).filter((set) => set.kind === 'working').length;
+const workingCount = (exercise) => workingOf(plannedOf(exercise)).length;
 
 // Serie pianificata della posizione `slotIndex`: i riscaldamenti vengono prima, come in planned_sets
 export const plannedSetAt = (exercise, slotIndex) => plannedOf(exercise)[slotIndex] ?? null;
 
 // Obiettivo in grigio nel campo ripetizioni della posizione: vuoto in riscaldamento
-export const slotTarget = (exercise, slotIndex) => {
-  const planned = plannedSetAt(exercise, slotIndex);
-  return planned?.kind === 'working' ? targetLabel(planned) : '';
-};
+export const slotTarget = (exercise, slotIndex) => plannedTarget(plannedSetAt(exercise, slotIndex));
 
 // Tecnica con cui parte la posizione: quella della sua serie in scheda, vuota in riscaldamento
-export const slotTechnique = (exercise, slotIndex) => {
-  const planned = plannedSetAt(exercise, slotIndex);
-  return planned?.kind === 'working' ? planned.intensity_technique || '' : '';
+export const slotTechnique = (exercise, slotIndex) => plannedTechnique(plannedSetAt(exercise, slotIndex));
+
+// Serie di un esercizio aggiunto in sessione: `sets` serie uguali con lo stesso obiettivo, senza
+// riscaldamento né tecnica. null se il numero di serie o l'obiettivo non sono validi.
+export const addedPlannedSets = (sets, repsText) => {
+  const count = toInt(sets, 1, MAX_WORKING);
+  const target = parseRowTarget(repsText, false);
+  return count === null || target === null ? null : fromCompact({ warmups: 0, sets: count, target, technique: null });
 };
 
 // Posizioni di un esercizio nella sessione: prima il riscaldamento, poi le serie allenanti.
@@ -166,7 +168,7 @@ export const groupsInExecutionOrder = (completedSets) => {
 
 // Una bozza si riprende solo nel formato con le serie pianificate (#77): il segno lo scrive
 // il salvataggio. Quelle di prima si scartano senza convertirle.
-export const isCurrentDraft = (draft) => draft?.plannedSets === true;
+export const isCurrentDraft = (draft) => draft?.plannedSetsFormat === true;
 
 let entrySeq = 0;
 
