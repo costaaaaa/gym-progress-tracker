@@ -21,6 +21,7 @@ class WorkoutExercise
     // Exercise details
     public $exercise_name;
     public $muscle_group;
+    public $equipment;
 
     // Constructor with database connection
     public function __construct($db)
@@ -86,7 +87,7 @@ class WorkoutExercise
         $stmt->execute();
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $sets_by_exercise = self::plannedSetsByDays($this->conn, array($this->day_id));
+        $sets_by_exercise = self::plannedSetsByExercises($this->conn, array_column($rows, 'id'));
         foreach ($rows as &$row) {
             $row['planned_sets'] = $sets_by_exercise[$row['id']] ?? array();
         }
@@ -100,7 +101,7 @@ class WorkoutExercise
     {
         // Query to read single record with exercise details
         $query = "SELECT we.id, we.day_id, we.exercise_id, we.rest, we.notes,
-                    we.created_at, we.updated_at, " . exercise_name_sql() . " as exercise_name, e.muscle_group
+                    we.created_at, we.updated_at, " . exercise_name_sql() . " as exercise_name, e.muscle_group, e.equipment
                 FROM " . $this->table_name . " we
                 LEFT JOIN gym_exercises e ON we.exercise_id = e.id
                 WHERE we.id = ?
@@ -129,7 +130,8 @@ class WorkoutExercise
             $this->updated_at = $row['updated_at'];
             $this->exercise_name = $row['exercise_name'];
             $this->muscle_group = $row['muscle_group'];
-            $this->planned_sets = self::plannedSetsByDays($this->conn, array($this->day_id))[$this->id] ?? array();
+            $this->equipment = $row['equipment'];
+            $this->planned_sets = self::plannedSetsByExercises($this->conn, array($this->id))[$this->id] ?? array();
             return true;
         }
 
@@ -202,31 +204,62 @@ class WorkoutExercise
     }
 
     /**
-     * Le serie pianificate di tutti gli esercizi dei giorni indicati, con una sola query:
-     * [id riga di gym_workout_exercises => lista di planned_set_from_row(), in ordine di set_number].
+     * Le serie pianificate degli esercizi indicati (id di gym_workout_exercises), con una sola query:
+     * [id => lista di planned_set_from_row(), in ordine di set_number]. Un esercizio senza serie manca.
      */
-    public static function plannedSetsByDays($db, array $day_ids)
+    public static function plannedSetsByExercises($db, array $workout_exercise_ids)
     {
         $sets_by_exercise = array();
-        if (count($day_ids) === 0) {
+        if (count($workout_exercise_ids) === 0) {
             return $sets_by_exercise;
         }
-        $placeholders = implode(',', array_fill(0, count($day_ids), '?'));
+        $placeholders = implode(',', array_fill(0, count($workout_exercise_ids), '?'));
         $stmt = $db->prepare(
-            "SELECT ps.workout_exercise_id, ps.set_number, ps.kind, ps.reps_min, ps.reps_max, ps.to_failure, ps.intensity_technique
-             FROM gym_workout_plan_sets ps
-             JOIN gym_workout_exercises we ON we.id = ps.workout_exercise_id
-             WHERE we.day_id IN ($placeholders)
-             ORDER BY ps.workout_exercise_id ASC, ps.set_number ASC"
+            "SELECT workout_exercise_id, set_number, kind, reps_min, reps_max, to_failure, intensity_technique
+             FROM gym_workout_plan_sets
+             WHERE workout_exercise_id IN ($placeholders)
+             ORDER BY workout_exercise_id ASC, set_number ASC"
         );
-        foreach (array_values($day_ids) as $index => $day_id) {
-            $stmt->bindValue($index + 1, $day_id, PDO::PARAM_INT);
+        foreach (array_values($workout_exercise_ids) as $index => $id) {
+            $stmt->bindValue($index + 1, $id, PDO::PARAM_INT);
         }
         $stmt->execute();
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $sets_by_exercise[$row['workout_exercise_id']][] = planned_set_from_row($row);
         }
         return $sets_by_exercise;
+    }
+
+    /**
+     * Un esercizio di scheda nella forma che restituiscono read_plans, add_exercise e update_exercise.
+     * $row ha id, exercise_id, exercise_name, muscle_group, equipment, rest, notes.
+     */
+    public static function toResponse(array $row, array $planned_sets)
+    {
+        return array(
+            "id" => $row["id"],
+            "exercise_id" => $row["exercise_id"],
+            "exercise_name" => $row["exercise_name"],
+            "muscle_group" => $row["muscle_group"],
+            "equipment" => $row["equipment"],
+            "rest" => $row["rest"],
+            "notes" => $row["notes"] ?? "",
+            "planned_sets" => $planned_sets
+        );
+    }
+
+    // Questo esercizio (dopo readOne()) nella forma di toResponse()
+    public function response()
+    {
+        return self::toResponse(array(
+            "id" => $this->id,
+            "exercise_id" => $this->exercise_id,
+            "exercise_name" => $this->exercise_name,
+            "muscle_group" => $this->muscle_group,
+            "equipment" => $this->equipment,
+            "rest" => $this->rest,
+            "notes" => $this->notes
+        ), $this->planned_sets);
     }
 
     // Delete workout exercise

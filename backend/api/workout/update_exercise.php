@@ -45,7 +45,7 @@ if (
             array(
                 'success' => true,
                 'message' => t_server('workout.exercise_updated'),
-                'planned_sets' => $workoutExercise->planned_sets
+                'workout_exercise' => $workoutExercise->response()
             )
         );
     } else {

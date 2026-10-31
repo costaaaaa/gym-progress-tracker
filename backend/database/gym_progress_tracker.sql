@@ -86,10 +86,10 @@ CREATE TABLE IF NOT EXISTS `gym_workout_exercises` (
   `exercise_id` int(11) NOT NULL,
   `position` smallint(5) unsigned NOT NULL DEFAULT 0, -- ordine dentro il giorno, ORDER BY position, id (#77)
   `sets` int(11) NOT NULL DEFAULT 0, -- congelata (#77): vedi gym_workout_plan_sets
-  `warmup_sets` tinyint(3) unsigned NOT NULL DEFAULT 0, -- serie di riscaldamento, in aggiunta a `sets` (#66)
+  `warmup_sets` tinyint(3) unsigned NOT NULL DEFAULT 0, -- congelata (#77): serie di riscaldamento (#66), vedi gym_workout_plan_sets
   `reps` varchar(20) NOT NULL DEFAULT '', -- congelata (#77)
   `rest` int(11) NOT NULL,
-  `intensity_technique` varchar(100) DEFAULT NULL,
+  `intensity_technique` varchar(100) DEFAULT NULL, -- congelata (#77)
   `notes` text DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -103,13 +103,13 @@ CREATE TABLE IF NOT EXISTS `gym_workout_exercises` (
 -- Serie pianificate di un esercizio in scheda, riscaldamento compreso (#77): una riga per serie, con il
 -- suo target di ripetizioni e la sua tecnica. Sostituiscono `sets`, `warmup_sets`, `reps` e
 -- `intensity_technique` di gym_workout_exercises, che restano nella tabella congelate (default
--- `sets` 0 e `reps` '') e che il codice non usa piu'.
+-- `sets` 0 e `reps` '') e che il codice non usa più.
 CREATE TABLE IF NOT EXISTS `gym_workout_plan_sets` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `workout_exercise_id` int(11) NOT NULL,
   `set_number` tinyint(3) unsigned NOT NULL, -- 1..n dentro l'esercizio: prima il riscaldamento, poi le allenanti
   `kind` enum('warmup','working') NOT NULL,
-  `reps_min` tinyint(3) unsigned DEFAULT NULL, -- 1..250; con reps_max e' il target (numero: min = max)
+  `reps_min` tinyint(3) unsigned DEFAULT NULL, -- 1..250; con reps_max è il target (numero: min = max)
   `reps_max` tinyint(3) unsigned DEFAULT NULL,
   `to_failure` tinyint(1) NOT NULL DEFAULT 0, -- a cedimento: reps_max vuoto, reps_min facoltativo
   `intensity_technique` varchar(100) DEFAULT NULL,
@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS `gym_workout_plan_sets` (
   UNIQUE KEY `exercise_set` (`workout_exercise_id`, `set_number`),
   CONSTRAINT `gym_workout_plan_sets_ibfk_1` FOREIGN KEY (`workout_exercise_id`) REFERENCES `gym_workout_exercises` (`id`) ON DELETE CASCADE,
   CONSTRAINT `gym_workout_plan_sets_reps_range` CHECK ((`reps_min` IS NULL OR `reps_min` BETWEEN 1 AND 250) AND (`reps_max` IS NULL OR `reps_max` BETWEEN 1 AND 250) AND (`reps_min` IS NULL OR `reps_max` IS NULL OR `reps_min` <= `reps_max`)),
-  CONSTRAINT `gym_workout_plan_sets_warmup_empty` CHECK (`kind` = 'working' OR (`reps_min` IS NULL AND `reps_max` IS NULL AND `to_failure` = 0)),
+  CONSTRAINT `gym_workout_plan_sets_warmup_empty` CHECK (`kind` = 'working' OR (`reps_min` IS NULL AND `reps_max` IS NULL AND `to_failure` = 0 AND `intensity_technique` IS NULL)),
   CONSTRAINT `gym_workout_plan_sets_working_target` CHECK (`kind` = 'warmup' OR (`to_failure` = 1 AND `reps_max` IS NULL) OR (`to_failure` = 0 AND `reps_min` IS NOT NULL AND `reps_max` IS NOT NULL))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

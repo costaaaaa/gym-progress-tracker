@@ -5,6 +5,8 @@ function t_server($key)
 {
     return $key;
 }
+// Come in config/api_helpers.php (qui non si carica, serve solo questo limite)
+const FREE_TEXT_MAX_LENGTH = array('notes' => 5000, 'intensity_technique' => 100);
 require __DIR__ . '/../backend/lib/plan_sets_rules.php';
 
 $fails = 0;

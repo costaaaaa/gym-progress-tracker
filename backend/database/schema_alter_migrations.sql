@@ -678,35 +678,45 @@ UPDATE `gym_workout_exercises` we
   SET we.`position` = numbered.`n`;
 
 -- ------------------------------------------------------------------------------
--- 34. Serie pianificate (#77)
+-- 34. Serie pianificate (#77): una riga per ogni serie pianificata di un esercizio di scheda
+--     (riscaldamento compreso), al posto dei campi `sets`, `warmup_sets`, `reps` e
+--     `intensity_technique` di gym_workout_exercises. Ogni serie ha il suo target di ripetizioni
+--     (numero, intervallo o "a cedimento") e la sua tecnica; il riscaldamento non ha né target né
+--     tecnica. Le colonne vecchie restano nella tabella, congelate: il codice non le legge né le
+--     scrive più e si tolgono in un rilascio successivo. Per questo `sets` e `reps` (NOT NULL senza
+--     default) ricevono un default, altrimenti l'INSERT del codice nuovo fallirebbe.
+--
+--     Conversione dei dati (tutte le schede, anche inattive): per ogni esercizio senza ancora serie
+--     prima `warmup_sets` righe di riscaldamento, poi `sets` righe allenanti con il target ricavato
+--     da `reps`:
+--       12            tutte 12-12                      8-10          tutte 8-10
+--       12/10/8       un valore per serie: più serie dei valori ripetono l'ultimo, meno serie li
+--                     scartano
+--       Max           tutte a cedimento, senza minimo (maiuscole e minuscole indifferenti)
+--       12/10/8+8+8   il numero (o intervallo) prima del primo "+" è il target e quella serie
+--                     riceve la tecnica "Drop Set (Stripping)" (le serie ripetute oltre i valori no)
+--       altro testo   tutte col numero più grande del testo, portato dentro 1..250; nessun numero:
+--                     a cedimento
+--     La tecnica dell'esercizio (non vuota e diversa da "Nessuna (Normale)") va sull'ultima serie
+--     allenante e prevale sul drop set di `+`.
+--
+--     Oltre a quanto sopra, la sezione fa quattro cose in più:
+--       1. limita `sets` a 1..20 (0 diventa 1, 25 diventa 20) e `warmup_sets` a 10;
+--       2. tratta come testo libero una parte di `reps` con un numero fuori da 1..250 (0, 300) o con
+--          un intervallo rovesciato (10-5);
+--       3. toglie gli spazi attorno a "/", "-" e "+" prima di leggere `reps` ("12 / 10 - 12");
+--       4. salta gli esercizi che hanno già serie (NOT EXISTS), quindi rilanciata non fa niente.
+--
+--     Le righe "interpretate" (lista con `+` o testo libero) hanno in `notes` il testo di `reps`
+--     com'era (tolti solo gli spazi ai bordi), con il prefisso `Ripetizioni nella scheda precedente: `
+--     e in coda se le note c'erano già, per rivederle:
+--       SELECT id, notes FROM gym_workout_exercises WHERE notes LIKE '%Ripetizioni nella scheda precedente: %';
+--
+--     La sezione usa START TRANSACTION e tabelle temporanee: `db-upgrade.sh` la esegue in una sola
+--     sessione mysql (apply_sql -> mysql_app), come serve. Rollback del solo codice possibile: la
+--     tabella è nuova e cambiano solo i default di `sets` e `reps`; le schede esistenti restano
+--     leggibili dal codice vecchio, quelle create dopo si vedrebbero come "0 × " (default congelati).
 -- ------------------------------------------------------------------------------
--- Una riga per ogni serie pianificata di un esercizio di scheda (riscaldamento compreso), al posto
--- dei campi `sets`, `warmup_sets`, `reps` e `intensity_technique` di gym_workout_exercises: ogni
--- serie ha il suo target di ripetizioni (numero, intervallo o "a cedimento") e la sua tecnica.
---
--- Le colonne vecchie restano nella tabella, congelate: il codice non le legge né le scrive più, e si
--- tolgono in un rilascio successivo. Per questo `sets` e `reps` (NOT NULL senza default) ricevono un
--- default, altrimenti l'INSERT del codice nuovo fallirebbe. Con un rollback del solo codice le
--- schede create dopo questa sezione si vedrebbero col codice vecchio come "0 × " (default
--- congelati); quelle esistenti restano leggibili perché le colonne vecchie non sono toccate.
---
--- Conversione dei dati (tutte le schede, anche inattive), per ogni esercizio senza ancora serie
--- (quindi rilanciata non fa niente): prima `warmup_sets` righe di riscaldamento (senza target),
--- poi `sets` righe allenanti, con il target ricavato da `reps`:
---   12            tutte 12-12                      8-10          tutte 8-10
---   12/10/8       un valore per serie: più serie dei valori ripetono l'ultimo, meno serie li scartano
---   Max           tutte a cedimento, senza minimo (senza distinzione tra maiuscole e minuscole)
---   12/10/8+8+8   il numero (o intervallo) prima del primo "+" è il target e quella serie riceve
---                 la tecnica "Drop Set (Stripping)" (le serie ripetute oltre i valori no)
---   altro testo   tutte col numero piu' grande del testo (nessun numero: a cedimento): vedi `free_n` sotto
--- La tecnica dell'esercizio (non vuota e diversa da "Nessuna (Normale)") va sull'ultima serie
--- allenante e prevale sul drop set di `+`. Limiti: `sets` fuori da 1..20 si porta dentro, `warmup_sets`
--- si ferma a 10; valori fuori da 1..250 o intervalli rovesciati (10-5) fanno trattare il testo come libero.
---
--- Le righe "interpretate" (lista con `+` o testo libero) hanno il testo originale in `notes`, con il
--- prefisso fisso `Ripetizioni nella scheda precedente: `, in coda se le note c'erano già:
---   SELECT id, notes FROM gym_workout_exercises WHERE notes LIKE '%Ripetizioni nella scheda precedente: %';
--- Rollback del solo codice possibile: la tabella è nuova e le colonne vecchie non sono toccate.
 
 CREATE TABLE IF NOT EXISTS `gym_workout_plan_sets` (
   `id` INT NOT NULL AUTO_INCREMENT,
@@ -721,7 +731,7 @@ CREATE TABLE IF NOT EXISTS `gym_workout_plan_sets` (
   UNIQUE KEY `exercise_set` (`workout_exercise_id`, `set_number`),
   CONSTRAINT `gym_workout_plan_sets_ibfk_1` FOREIGN KEY (`workout_exercise_id`) REFERENCES `gym_workout_exercises` (`id`) ON DELETE CASCADE,
   CONSTRAINT `gym_workout_plan_sets_reps_range` CHECK ((`reps_min` IS NULL OR `reps_min` BETWEEN 1 AND 250) AND (`reps_max` IS NULL OR `reps_max` BETWEEN 1 AND 250) AND (`reps_min` IS NULL OR `reps_max` IS NULL OR `reps_min` <= `reps_max`)),
-  CONSTRAINT `gym_workout_plan_sets_warmup_empty` CHECK (`kind` = 'working' OR (`reps_min` IS NULL AND `reps_max` IS NULL AND `to_failure` = 0)),
+  CONSTRAINT `gym_workout_plan_sets_warmup_empty` CHECK (`kind` = 'working' OR (`reps_min` IS NULL AND `reps_max` IS NULL AND `to_failure` = 0 AND `intensity_technique` IS NULL)),
   CONSTRAINT `gym_workout_plan_sets_working_target` CHECK (`kind` = 'warmup' OR (`to_failure` = 1 AND `reps_max` IS NULL) OR (`to_failure` = 0 AND `reps_min` IS NOT NULL AND `reps_max` IS NOT NULL))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -729,48 +739,53 @@ ALTER TABLE `gym_workout_exercises`
   ALTER COLUMN `sets` SET DEFAULT 0,
   ALTER COLUMN `reps` SET DEFAULT '';
 
-DROP TEMPORARY TABLE IF EXISTS `w77_seq`;
-DROP TEMPORARY TABLE IF EXISTS `w77_todo`;
-DROP TEMPORARY TABLE IF EXISTS `w77_parts`;
-DROP TEMPORARY TABLE IF EXISTS `w77_nums`;
+DROP TEMPORARY TABLE IF EXISTS `tmp_reps_numbers`;
+DROP TEMPORARY TABLE IF EXISTS `tmp_reps_parts`;
+DROP TEMPORARY TABLE IF EXISTS `tmp_exercises_to_convert`;
+DROP TEMPORARY TABLE IF EXISTS `tmp_set_numbers`;
 
-CREATE TEMPORARY TABLE `w77_seq` (`n` INT NOT NULL PRIMARY KEY);
-INSERT INTO `w77_seq` (`n`)
-WITH RECURSIVE `s` (`n`) AS (SELECT 1 UNION ALL SELECT `n` + 1 FROM `s` WHERE `n` < 20)
-SELECT `n` FROM `s`;
+CREATE TEMPORARY TABLE `tmp_set_numbers` (`set_number` INT NOT NULL PRIMARY KEY);
+INSERT INTO `tmp_set_numbers` (`set_number`)
+WITH RECURSIVE `numbers` (`n`) AS (SELECT 1 UNION ALL SELECT `n` + 1 FROM `numbers` WHERE `n` < 20)
+SELECT `n` FROM `numbers`;
 
-CREATE TEMPORARY TABLE `w77_todo` (
-  `we_id` INT NOT NULL PRIMARY KEY,
-  `working_n` INT NOT NULL,
-  `warmup_n` INT NOT NULL,
-  `r` VARCHAR(255) NOT NULL,
-  `tech` VARCHAR(100) NULL,
+CREATE TEMPORARY TABLE `tmp_exercises_to_convert` (
+  `workout_exercise_id` INT NOT NULL PRIMARY KEY,
+  `working_sets` INT NOT NULL,
+  `warmup_sets` INT NOT NULL,
+  `reps_original` VARCHAR(255) NOT NULL,
+  `reps_text` VARCHAR(255) NOT NULL,
+  `technique` VARCHAR(100) NULL,
   `part_count` INT NOT NULL DEFAULT 0,
   `has_plus` TINYINT NOT NULL DEFAULT 0,
-  `kind` ENUM('max','list','free') NULL,
-  `free_n` INT NULL
+  `reps_format` ENUM('max','list','free') NULL,
+  `free_text_reps` INT NULL
 );
 
-CREATE TEMPORARY TABLE `w77_parts` (
-  `we_id` INT NOT NULL,
-  `k` INT NOT NULL,
-  `p` VARCHAR(255) NOT NULL,
-  `ok` TINYINT NOT NULL DEFAULT 0,
-  `plus` TINYINT NOT NULL DEFAULT 0,
-  `lo` DECIMAL(20,0) NULL,
-  `hi` DECIMAL(20,0) NULL,
-  PRIMARY KEY (`we_id`, `k`)
+CREATE TEMPORARY TABLE `tmp_reps_parts` (
+  `workout_exercise_id` INT NOT NULL,
+  `part_number` INT NOT NULL,
+  `part_text` VARCHAR(255) NOT NULL,
+  `is_valid` TINYINT NOT NULL DEFAULT 0,
+  `has_plus` TINYINT NOT NULL DEFAULT 0,
+  `reps_min` DECIMAL(20,0) NULL,
+  `reps_max` DECIMAL(20,0) NULL,
+  PRIMARY KEY (`workout_exercise_id`, `part_number`)
 );
 
-CREATE TEMPORARY TABLE `w77_nums` (
-  `we_id` INT NOT NULL,
-  `n` DOUBLE NOT NULL
+CREATE TEMPORARY TABLE `tmp_reps_numbers` (
+  `workout_exercise_id` INT NOT NULL,
+  `found_number` DOUBLE NOT NULL
 );
 
 START TRANSACTION;
 
-INSERT INTO `w77_todo` (`we_id`, `working_n`, `warmup_n`, `r`, `tech`)
+-- `reps_original` è il testo com'era (per `notes`), `reps_text` quello con i caratteri di controllo
+-- trasformati in spazi (per ricavare i target)
+INSERT INTO `tmp_exercises_to_convert`
+  (`workout_exercise_id`, `working_sets`, `warmup_sets`, `reps_original`, `reps_text`, `technique`)
 SELECT we.`id`, GREATEST(LEAST(we.`sets`, 20), 1), LEAST(we.`warmup_sets`, 10),
+       TRIM(we.`reps`),
        TRIM(REGEXP_REPLACE(we.`reps`, '[[:cntrl:]]', ' ')),
        CASE WHEN NULLIF(TRIM(we.`intensity_technique`), '') = 'Nessuna (Normale)' THEN NULL
             ELSE NULLIF(TRIM(we.`intensity_technique`), '') END
@@ -778,81 +793,82 @@ FROM `gym_workout_exercises` we
 WHERE NOT EXISTS (SELECT 1 FROM `gym_workout_plan_sets` ps WHERE ps.`workout_exercise_id` = we.`id`);
 
 -- Le parti di `reps` separate da "/", una per riga, con spazi attorno a "-" e "+" tolti
-INSERT INTO `w77_parts` (`we_id`, `k`, `p`)
-SELECT t.`we_id`, jp.`k`, REGEXP_REPLACE(TRIM(jp.`p`), '[[:space:]]*([-+])[[:space:]]*', '$1')
-FROM `w77_todo` t,
+INSERT INTO `tmp_reps_parts` (`workout_exercise_id`, `part_number`, `part_text`)
+SELECT t.`workout_exercise_id`, jp.`part_number`, REGEXP_REPLACE(TRIM(jp.`part_text`), '[[:space:]]*([-+])[[:space:]]*', '$1')
+FROM `tmp_exercises_to_convert` t,
      JSON_TABLE(
-       CONCAT('["', REPLACE(REPLACE(REPLACE(t.`r`, '\\', '\\\\'), '"', '\\"'), '/', '","'), '"]'),
-       '$[*]' COLUMNS (`k` FOR ORDINALITY, `p` VARCHAR(255) PATH '$')
+       CONCAT('["', REPLACE(REPLACE(REPLACE(t.`reps_text`, '\\', '\\\\'), '"', '\\"'), '/', '","'), '"]'),
+       '$[*]' COLUMNS (`part_number` FOR ORDINALITY, `part_text` VARCHAR(255) PATH '$')
      ) AS jp;
 
 -- Una parte è usabile se è un numero o un intervallo, seguito da zero o più "+numero": il target è
 -- quello davanti al primo "+"
-UPDATE `w77_parts`
-SET `ok` = `p` REGEXP '^[0-9]+(-[0-9]+)?(\\+[0-9]+(-[0-9]+)?)*$',
-    `plus` = `p` LIKE '%+%';
+UPDATE `tmp_reps_parts`
+SET `is_valid` = `part_text` REGEXP '^[0-9]+(-[0-9]+)?(\\+[0-9]+(-[0-9]+)?)*$',
+    `has_plus` = `part_text` LIKE '%+%';
 
-UPDATE `w77_parts`
-SET `lo` = CAST(REGEXP_SUBSTR(`p`, '^[0-9]+') AS DECIMAL(20,0)),
-    `hi` = CAST(REGEXP_SUBSTR(REGEXP_SUBSTR(`p`, '^[0-9]+(-[0-9]+)?'), '[0-9]+$') AS DECIMAL(20,0))
-WHERE `ok` = 1;
+UPDATE `tmp_reps_parts`
+SET `reps_min` = CAST(REGEXP_SUBSTR(`part_text`, '^[0-9]+') AS DECIMAL(20,0)),
+    `reps_max` = CAST(REGEXP_SUBSTR(REGEXP_SUBSTR(`part_text`, '^[0-9]+(-[0-9]+)?'), '[0-9]+$') AS DECIMAL(20,0))
+WHERE `is_valid` = 1;
 
-UPDATE `w77_parts` SET `ok` = 0
-WHERE `ok` = 1 AND NOT (`lo` BETWEEN 1 AND 250 AND `hi` BETWEEN `lo` AND 250);
+UPDATE `tmp_reps_parts` SET `is_valid` = 0
+WHERE `is_valid` = 1 AND NOT (`reps_min` BETWEEN 1 AND 250 AND `reps_max` BETWEEN `reps_min` AND 250);
 
-UPDATE `w77_todo` t
-LEFT JOIN (SELECT `we_id`, COUNT(*) AS `c`, SUM(`ok` = 0) AS `bad`, SUM(`plus`) AS `pl`
-           FROM `w77_parts` GROUP BY `we_id`) a ON a.`we_id` = t.`we_id`
-SET t.`part_count` = COALESCE(a.`c`, 0),
-    t.`kind` = CASE WHEN LOWER(t.`r`) = 'max' THEN 'max'
-                    WHEN a.`c` IS NOT NULL AND a.`bad` = 0 THEN 'list'
-                    ELSE 'free' END,
-    t.`has_plus` = IF(a.`c` IS NOT NULL AND a.`bad` = 0 AND a.`pl` > 0, 1, 0);
+UPDATE `tmp_exercises_to_convert` t
+LEFT JOIN (SELECT `workout_exercise_id`, COUNT(*) AS `parts`, SUM(`is_valid` = 0) AS `invalid_parts`, SUM(`has_plus`) AS `plus_parts`
+           FROM `tmp_reps_parts` GROUP BY `workout_exercise_id`) a ON a.`workout_exercise_id` = t.`workout_exercise_id`
+SET t.`part_count` = COALESCE(a.`parts`, 0),
+    t.`reps_format` = CASE WHEN LOWER(t.`reps_text`) = 'max' THEN 'max'
+                           WHEN a.`parts` IS NOT NULL AND a.`invalid_parts` = 0 THEN 'list'
+                           ELSE 'free' END,
+    t.`has_plus` = IF(a.`parts` IS NOT NULL AND a.`invalid_parts` = 0 AND a.`plus_parts` > 0, 1, 0);
 
--- Regola per il testo libero (l'unico punto): il numero piu' grande del testo, portato dentro 1..250;
--- nessun numero: a cedimento (free_n resta NULL). I non-cifre diventano virgole e gli zeri iniziali
--- si tolgono ("08" non e' JSON valido), poi JSON_TABLE elenca i numeri (DOUBLE: con DECIMAL i valori
--- oltre 2^64 vanno in overflow e diventano negativi).
-INSERT INTO `w77_nums` (`we_id`, `n`)
-SELECT t.`we_id`, j.`n`
-FROM `w77_todo` t,
+-- Regola per il testo libero (l'unico punto): il numero più grande del testo, portato dentro 1..250;
+-- nessun numero: a cedimento (free_text_reps resta NULL). I non-cifre diventano virgole e gli zeri
+-- iniziali si tolgono ("08" non è JSON valido), poi JSON_TABLE elenca i numeri (DOUBLE: con DECIMAL i
+-- valori oltre 2^64 vanno in overflow e diventano negativi).
+INSERT INTO `tmp_reps_numbers` (`workout_exercise_id`, `found_number`)
+SELECT t.`workout_exercise_id`, j.`found_number`
+FROM `tmp_exercises_to_convert` t,
      JSON_TABLE(
-         CONCAT('[', TRIM(BOTH ',' FROM REGEXP_REPLACE(REGEXP_REPLACE(t.`r`, '[^0-9]+', ','), '(^|,)0+([0-9])', '$1$2')), ']'),
-         '$[*]' COLUMNS (`n` DOUBLE PATH '$')
+         CONCAT('[', TRIM(BOTH ',' FROM REGEXP_REPLACE(REGEXP_REPLACE(t.`reps_text`, '[^0-9]+', ','), '(^|,)0+([0-9])', '$1$2')), ']'),
+         '$[*]' COLUMNS (`found_number` DOUBLE PATH '$')
      ) AS j
-WHERE t.`kind` = 'free';
+WHERE t.`reps_format` = 'free';
 
-UPDATE `w77_todo` t
-JOIN (SELECT `we_id`, MAX(`n`) AS `m` FROM `w77_nums` GROUP BY `we_id`) x ON x.`we_id` = t.`we_id`
-SET t.`free_n` = LEAST(GREATEST(x.`m`, 1), 250);
+UPDATE `tmp_exercises_to_convert` t
+JOIN (SELECT `workout_exercise_id`, MAX(`found_number`) AS `largest` FROM `tmp_reps_numbers` GROUP BY `workout_exercise_id`) x
+  ON x.`workout_exercise_id` = t.`workout_exercise_id`
+SET t.`free_text_reps` = LEAST(GREATEST(x.`largest`, 1), 250);
 
 INSERT INTO `gym_workout_plan_sets` (`workout_exercise_id`, `set_number`, `kind`)
-SELECT t.`we_id`, s.`n`, 'warmup'
-FROM `w77_todo` t JOIN `w77_seq` s ON s.`n` <= t.`warmup_n`;
+SELECT t.`workout_exercise_id`, s.`set_number`, 'warmup'
+FROM `tmp_exercises_to_convert` t JOIN `tmp_set_numbers` s ON s.`set_number` <= t.`warmup_sets`;
 
 INSERT INTO `gym_workout_plan_sets`
   (`workout_exercise_id`, `set_number`, `kind`, `reps_min`, `reps_max`, `to_failure`, `intensity_technique`)
-SELECT t.`we_id`, t.`warmup_n` + s.`n`, 'working',
-       CASE t.`kind` WHEN 'list' THEN p.`lo` WHEN 'free' THEN t.`free_n` END,
-       CASE t.`kind` WHEN 'list' THEN p.`hi` WHEN 'free' THEN t.`free_n` END,
-       IF(t.`kind` = 'max' OR (t.`kind` = 'free' AND t.`free_n` IS NULL), 1, 0),
-       CASE WHEN s.`n` = t.`working_n` AND t.`tech` IS NOT NULL THEN t.`tech`
-            WHEN t.`kind` = 'list' AND s.`n` <= t.`part_count` AND p.`plus` = 1 THEN 'Drop Set (Stripping)'
+SELECT t.`workout_exercise_id`, t.`warmup_sets` + s.`set_number`, 'working',
+       CASE t.`reps_format` WHEN 'list' THEN p.`reps_min` WHEN 'free' THEN t.`free_text_reps` END,
+       CASE t.`reps_format` WHEN 'list' THEN p.`reps_max` WHEN 'free' THEN t.`free_text_reps` END,
+       IF(t.`reps_format` = 'max' OR (t.`reps_format` = 'free' AND t.`free_text_reps` IS NULL), 1, 0),
+       CASE WHEN s.`set_number` = t.`working_sets` AND t.`technique` IS NOT NULL THEN t.`technique`
+            WHEN t.`reps_format` = 'list' AND s.`set_number` <= t.`part_count` AND p.`has_plus` = 1 THEN 'Drop Set (Stripping)'
             END
-FROM `w77_todo` t
-JOIN `w77_seq` s ON s.`n` <= t.`working_n`
-LEFT JOIN `w77_parts` p ON p.`we_id` = t.`we_id` AND p.`k` = LEAST(s.`n`, t.`part_count`);
+FROM `tmp_exercises_to_convert` t
+JOIN `tmp_set_numbers` s ON s.`set_number` <= t.`working_sets`
+LEFT JOIN `tmp_reps_parts` p ON p.`workout_exercise_id` = t.`workout_exercise_id` AND p.`part_number` = LEAST(s.`set_number`, t.`part_count`);
 
 UPDATE `gym_workout_exercises` we
-JOIN `w77_todo` t ON t.`we_id` = we.`id`
+JOIN `tmp_exercises_to_convert` t ON t.`workout_exercise_id` = we.`id`
 SET we.`updated_at` = we.`updated_at`,
     we.`notes` = CONCAT(IF(we.`notes` IS NULL OR we.`notes` = '', '', CONCAT(we.`notes`, CHAR(10))),
-                        'Ripetizioni nella scheda precedente: ', t.`r`)
-WHERE t.`kind` = 'free' OR t.`has_plus` = 1;
+                        'Ripetizioni nella scheda precedente: ', t.`reps_original`)
+WHERE t.`reps_format` = 'free' OR t.`has_plus` = 1;
 
 COMMIT;
 
-DROP TEMPORARY TABLE IF EXISTS `w77_nums`;
-DROP TEMPORARY TABLE IF EXISTS `w77_parts`;
-DROP TEMPORARY TABLE IF EXISTS `w77_todo`;
-DROP TEMPORARY TABLE IF EXISTS `w77_seq`;
+DROP TEMPORARY TABLE IF EXISTS `tmp_reps_numbers`;
+DROP TEMPORARY TABLE IF EXISTS `tmp_reps_parts`;
+DROP TEMPORARY TABLE IF EXISTS `tmp_exercises_to_convert`;
+DROP TEMPORARY TABLE IF EXISTS `tmp_set_numbers`;

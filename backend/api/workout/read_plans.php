@@ -101,20 +101,15 @@ try {
                 $exercises_stmt->bindValue($index + 1, $day_id, PDO::PARAM_INT);
             }
             $exercises_stmt->execute();
+            $exercise_rows = $exercises_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            $planned_sets_by_exercise = WorkoutExercise::plannedSetsByDays($db, $day_ids);
+            $planned_sets_by_exercise = WorkoutExercise::plannedSetsByExercises($db, array_column($exercise_rows, "id"));
 
-            while ($exercise_row = $exercises_stmt->fetch(PDO::FETCH_ASSOC)) {
+            foreach ($exercise_rows as $exercise_row) {
                 list($plan_index, $day_index) = $day_index_by_id[$exercise_row["day_id"]];
-                $plans_arr["records"][$plan_index]["days"][$day_index]["exercises"][] = array(
-                    "id" => $exercise_row["id"],
-                    "exercise_id" => $exercise_row["exercise_id"],
-                    "exercise_name" => $exercise_row["exercise_name"],
-                    "muscle_group" => $exercise_row["muscle_group"],
-                    "equipment" => $exercise_row["equipment"],
-                    "rest" => $exercise_row["rest"],
-                    "notes" => $exercise_row["notes"] ?? "",
-                    "planned_sets" => $planned_sets_by_exercise[$exercise_row["id"]] ?? array()
+                $plans_arr["records"][$plan_index]["days"][$day_index]["exercises"][] = WorkoutExercise::toResponse(
+                    $exercise_row,
+                    $planned_sets_by_exercise[$exercise_row["id"]] ?? array()
                 );
             }
         }

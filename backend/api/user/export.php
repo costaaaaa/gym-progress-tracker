@@ -6,6 +6,7 @@
 include_once '../../config/cors_headers.php';
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
+include_once '../../models/WorkoutExercise.php';
 require_once '../../lib/gamification_rules.php';
 
 $database = new Database();
@@ -61,17 +62,7 @@ try {
          JOIN gym_workout_plans p ON p.id = d.plan_id
          JOIN gym_exercises e ON e.id = we.exercise_id
          WHERE p.user_id = ? ORDER BY we.day_id, we.position, we.id", array($user_id));
-    $plannedSets = export_rows($db,
-        "SELECT ps.workout_exercise_id, ps.set_number, ps.kind, ps.reps_min, ps.reps_max, ps.to_failure, ps.intensity_technique
-         FROM gym_workout_plan_sets ps
-         JOIN gym_workout_exercises we ON we.id = ps.workout_exercise_id
-         JOIN gym_workout_days d ON d.id = we.day_id
-         JOIN gym_workout_plans p ON p.id = d.plan_id
-         WHERE p.user_id = ? ORDER BY ps.workout_exercise_id, ps.set_number", array($user_id));
-    $setsByExercise = array();
-    foreach ($plannedSets as $row) {
-        $setsByExercise[$row['workout_exercise_id']][] = planned_set_from_row($row);
-    }
+    $setsByExercise = WorkoutExercise::plannedSetsByExercises($db, array_column($planExercises, 'id'));
     $exercisesByDay = array();
     foreach ($planExercises as $row) {
         $dayId = $row['day_id'];

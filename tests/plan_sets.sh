@@ -97,6 +97,10 @@ check "add_exercise: 201 e planned_sets in forma canonica" "$R" "\$status == 201
 ID_A="$(echo "${R#* }" | jq -r '.workout_exercise.id')"
 check "la risposta ha id, esercizio, recupero e nessuna colonna vecchia" "$R" \
     ".workout_exercise | .id == $ID_A and .exercise_id == $EX_A and .rest == 90 and (keys | index(\"sets\") == null and index(\"warmup_sets\") == null and index(\"reps\") == null and index(\"intensity_technique\") == null)"
+check "la risposta di add_exercise ha la forma di un esercizio di read_plans" "$R" \
+    "(.workout_exercise | keys) == [\"equipment\",\"exercise_id\",\"exercise_name\",\"id\",\"muscle_group\",\"notes\",\"planned_sets\",\"rest\"]"
+check "...e coincide con l'esercizio che legge read_plans" "$(plan_exercises)" \
+    ".records[0].days[0].exercises[0] == $(echo "${R#* }" | jq -c '.workout_exercise')"
 check "read_plans: stesse serie, stesso ordine" "$(plan_exercises)" \
     ".records[0].days[0].exercises[0] | .id == $ID_A and .rest == 90 and .notes == \"nota\" and .planned_sets == $CANON_A"
 check "read_plans: sets, warmup_sets, reps e intensity_technique non escono più" "$(plan_exercises)" \
@@ -148,8 +152,10 @@ echo
 echo "Modifica: sostituisce tutte le serie"
 SETS_2='[{"set_number":1,"kind":"working","reps_min":5,"reps_max":5},{"set_number":2,"kind":"working","reps_min":3,"reps_max":3}]'
 R="$(update "$ID_A" "$SETS_2")"
-check "update con meno serie: 200 e planned_sets restituite" "$R" \
-    '$status == 200 and .success == true and .planned_sets == [{"set_number":1,"kind":"working","reps_min":5,"reps_max":5,"to_failure":false,"intensity_technique":null},{"set_number":2,"kind":"working","reps_min":3,"reps_max":3,"to_failure":false,"intensity_technique":null}]'
+check "update con meno serie: 200 e workout_exercise con le planned_sets" "$R" \
+    '$status == 200 and .success == true and (.workout_exercise | keys) == ["equipment","exercise_id","exercise_name","id","muscle_group","notes","planned_sets","rest"] and .workout_exercise.planned_sets == [{"set_number":1,"kind":"working","reps_min":5,"reps_max":5,"to_failure":false,"intensity_technique":null},{"set_number":2,"kind":"working","reps_min":3,"reps_max":3,"to_failure":false,"intensity_technique":null}]'
+check "...e coincide con l'esercizio che legge read_plans" "$(plan_exercises)" \
+    ".records[0].days[0].exercises[0] == $(echo "${R#* }" | jq -c '.workout_exercise')"
 check "read_plans: solo le 2 serie nuove, recupero e note aggiornati" "$(plan_exercises)" \
     '.records[0].days[0].exercises[0] | .rest == 45 and .notes == "nota 2" and (.planned_sets | map([.set_number, .kind, .reps_min, .reps_max]) == [[1,"working",5,5],[2,"working",3,3]])'
 SETS_4='[{"set_number":1,"kind":"warmup"},{"set_number":2,"kind":"working","reps_min":10,"reps_max":12},{"set_number":3,"kind":"working","reps_min":10,"reps_max":12,"intensity_technique":"Rest-Pause"},{"set_number":4,"kind":"working","to_failure":true}]'

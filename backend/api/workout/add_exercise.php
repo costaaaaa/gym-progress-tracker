@@ -50,25 +50,13 @@ if (
 
             // Create the workout exercise
             if ($workout_exercise->create()) {
-                // Get exercise details
-                $exercise = new Exercise($db);
-                $exercise->id = $data->exercise_id;
-                $exercise->readOne();
                 $workout_exercise->readOne();
 
                 http_response_code(201);
 
                 echo json_encode(array(
                     "message" => t_server('workout.exercise_added'),
-                    "workout_exercise" => array(
-                        "id" => $workout_exercise->id,
-                        "day_id" => $workout_exercise->day_id,
-                        "exercise_id" => $workout_exercise->exercise_id,
-                        "exercise_name" => exercise_display_name($exercise->name, $exercise->name_en),
-                        "muscle_group" => $exercise->muscle_group,
-                        "rest" => $workout_exercise->rest,
-                        "planned_sets" => $workout_exercise->planned_sets
-                    )
+                    "workout_exercise" => $workout_exercise->response()
                 ));
             } else {
                 http_response_code(503);

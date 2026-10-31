@@ -118,7 +118,8 @@ INSERT INTO gym_workout_exercises (id, day_id, exercise_id, sets, warmup_sets, r
   (41, 10, 1, 3, 0, '12/10+10/8', 60, 'Negative', NULL),
   (42, 10, 2, 2, 0, '2x8 + 1x10+10', 60, NULL, NULL),
   (43, 10, 3, 2, 0, '08 e 012 volte', 60, NULL, NULL),
-  (44, 10, 4, 2, 0, 'x9999999999999999999', 60, NULL, NULL);
+  (44, 10, 4, 2, 0, 'x9999999999999999999', 60, NULL, NULL),
+  (45, 11, 1, 2, 0, CONCAT(' 1 rest  pause', CHAR(9), 'a 20 '), 60, NULL, NULL);
 SQL
 
 echo "Sezione 34"
@@ -180,6 +181,7 @@ check "virgolette e backslash nel testo (12 e 10: vale 12)"    "12-12 12-12"    
 check "2x8 + 1x10+10: vale 10"                                "10-10 10-10"                                 "$(sets_of 42)"
 check "zeri iniziali (08 e 012): vale 12"                     "12-12 12-12"                                 "$(sets_of 43)"
 check "numero a 19 cifre → portato a 250"                     "250-250 250-250"                             "$(sets_of 44)"
+check "spazi doppi e tabulazione nel testo"                   "20-20 20-20"                                 "$(sets_of 45)"
 
 echo
 echo "Valori fuori limite: il testo diventa libero"
@@ -215,6 +217,8 @@ check "numero semplice: note intatte"                         "abc"             
 check "senza note e senza testo strano: restano NULL"         "NULL"                                        "$(notes_of 1)"
 check "lista senza +: note intatte"                           "NULL"                                        "$(notes_of 4)"
 check "Max: note intatte"                                     "NULL"                                        "$(notes_of 8)"
+check "testo originale: solo i bordi tolti, spazi interni e tabulazione intatti" "1" \
+    "$(echo "SELECT notes = CONCAT('$PREFIX', '1 rest  pause', CHAR(9), 'a 20') FROM gym_workout_exercises WHERE id = 45" | sql)"
 
 echo
 echo "Rilancio della sezione"
@@ -237,6 +241,7 @@ check "allenante senza target rifiutata"            "sì"  "$(ins "'working', NU
 check "allenante con solo il minimo rifiutata"      "sì"  "$(ins "'working', 8, NULL, 0")"
 check "riscaldamento con target rifiutato"          "sì"  "$(ins "'warmup', 8, 8, 0")"
 check "riscaldamento a cedimento rifiutato"         "sì"  "$(ins "'warmup', NULL, NULL, 1")"
+check "riscaldamento con tecnica rifiutato"         "sì"  "$(echo "INSERT INTO gym_workout_plan_sets (workout_exercise_id, set_number, kind, intensity_technique) VALUES (1, 99, 'warmup', 'Rest Pause')" | sql_fails)"
 check "ripetizioni 0 rifiutate"                     "sì"  "$(ins "'working', 0, 5, 0")"
 check "ripetizioni 251 rifiutate"                   "sì"  "$(ins "'working', 5, 251, 0")"
 check "minimo maggiore del massimo rifiutato"       "sì"  "$(ins "'working', 10, 8, 0")"

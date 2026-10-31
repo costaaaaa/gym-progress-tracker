@@ -1,13 +1,13 @@
 <?php
 // Serie pianificate di un esercizio in scheda (#77): validazione e forma canonica di `planned_sets`.
 // Zero dipendenze DB: usata da add_exercise.php e update_exercise.php tramite exercise_params_error().
+// Il limite della tecnica è FREE_TEXT_MAX_LENGTH['intensity_technique'] di config/api_helpers.php.
 
 const PLAN_SET_FIELDS = array('set_number', 'kind', 'reps_min', 'reps_max', 'to_failure', 'intensity_technique');
 const PLAN_SET_NO_TECHNIQUE = 'Nessuna (Normale)';
 const PLAN_SET_MAX_WARMUP = 10;
 const PLAN_SET_MAX_WORKING = 20;
 const PLAN_SET_REPS_MAX = 250;
-const PLAN_SET_TECHNIQUE_MAX_LENGTH = 100; // colonna intensity_technique varchar(100)
 
 // Tecnica come si salva: senza spazi ai bordi; vuota o "Nessuna (Normale)" vale null.
 function planned_set_technique($value)
@@ -63,7 +63,7 @@ function planned_sets_error($planned_sets)
         if ($technique !== null && !is_string($technique)) {
             return t_server('exercise.planned_sets_technique');
         }
-        if ($technique !== null && mb_strlen(trim($technique)) > PLAN_SET_TECHNIQUE_MAX_LENGTH) {
+        if ($technique !== null && mb_strlen(trim($technique)) > FREE_TEXT_MAX_LENGTH['intensity_technique']) {
             return t_server('exercise.planned_sets_technique');
         }
     }
