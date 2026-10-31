@@ -117,7 +117,7 @@ describe('regola del riscaldamento sulla serie registrata (#67)', () => {
 });
 
 describe('bozza del Focus: solo quella del formato con le serie pianificate si riprende (#77)', () => {
-  it('il segno plannedSets scritto dal salvataggio la rende riprendibile', () => {
+  it('il segno plannedSetsFormat scritto dal salvataggio la rende riprendibile', () => {
     expect(isCurrentDraft({ plannedSetsFormat: true, selectedDay: {}, startTime: 'x' })).toBe(true);
   });
 
@@ -158,22 +158,21 @@ describe('obiettivo e tecnica di ogni posizione (#77)', () => {
 });
 
 describe('ripetizioni insolite da confermare (#77)', () => {
-  const serie = (min, max, failure = false) => work(1, min, max, null, failure);
 
   it('sopra la soglia e oltre il massimo della scheda serve la conferma', () => {
-    expect(repsNeedConfirm('31', serie(12, 12))).toBe(true);
-    expect(repsNeedConfirm('35', serie(8, 40))).toBe(false);
-    expect(repsNeedConfirm('41', serie(8, 40))).toBe(true);
+    expect(repsNeedConfirm('31', work(1, 12, 12))).toBe(true);
+    expect(repsNeedConfirm('35', work(1, 8, 40))).toBe(false);
+    expect(repsNeedConfirm('41', work(1, 8, 40))).toBe(true);
   });
 
   it('a cedimento si confronta con il minimo; senza minimo vale 0', () => {
-    expect(repsNeedConfirm('40', serie(45, null, true))).toBe(false);
-    expect(repsNeedConfirm('31', serie(30, null, true))).toBe(true);
-    expect(repsNeedConfirm('31', serie(null, null, true))).toBe(true);
+    expect(repsNeedConfirm('40', work(1, 45, null, null, true))).toBe(false);
+    expect(repsNeedConfirm('31', work(1, 30, null, null, true))).toBe(true);
+    expect(repsNeedConfirm('31', work(1, null, null, null, true))).toBe(true);
   });
 
   it('fino alla soglia non si chiede mai; senza serie pianificata conta solo la soglia', () => {
-    expect(repsNeedConfirm('30', serie(null, null, true))).toBe(false);
+    expect(repsNeedConfirm('30', work(1, null, null, null, true))).toBe(false);
     expect(repsNeedConfirm('31', null)).toBe(true);
     expect(repsNeedConfirm('12', null)).toBe(false);
   });

@@ -2,7 +2,7 @@
 // riscaldamento attivabile riga per riga. Nessun React né window, solo import relativi.
 
 import { initialWeight, plannedSetAt, slotTechnique, totalSlots } from './focusSession';
-import { plannedTarget, plannedTechnique, workingOf } from './plannedSets';
+import { plannedTarget, plannedTechnique, workingOf, plannedOf } from './plannedSets';
 
 // Ripetizioni con cui nasce una riga: il target della serie se è un numero singolo, altrimenti vuoto
 const prefilledReps = (planned) => (
@@ -28,7 +28,7 @@ export const initialSetRows = (exercise) => Array.from({ length: totalSlots(exer
 // riscaldamento; oltre l'ultima vale l'ultima. null in una riga di riscaldamento.
 export const rowPlannedSet = (rows, index, exercise) => {
   if (rows[index].is_warmup) return null;
-  const working = workingOf(exercise.planned_sets ?? []);
+  const working = workingOf(plannedOf(exercise));
   const k = rows.slice(0, index).filter((r) => !r.is_warmup).length;
   return working[Math.min(k, working.length - 1)] ?? null;
 };

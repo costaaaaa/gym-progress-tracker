@@ -62,6 +62,8 @@ const normalizeTechnique = (value) => {
 
 const targetOf = (set) => ({ reps_min: set.reps_min, reps_max: set.reps_max, to_failure: set.to_failure });
 const sameTarget = (a, b) => a.reps_min === b.reps_min && a.reps_max === b.reps_max && a.to_failure === b.to_failure;
+// Serie pianificate di un esercizio, vuote se mancano
+export const plannedOf = (exercise) => exercise?.planned_sets ?? [];
 export const workingOf = (plannedSets) => plannedSets.filter((set) => set.kind === 'working');
 
 // Serie nella forma compatta { warmups, sets, target, technique }, o null se non si possono

@@ -4,7 +4,7 @@
 // Stessa logica di src/screens/Focus/focusHelpers.js nell'app mobile.
 
 import { isWorkingSet } from './workoutMetrics';
-import { MAX_WORKING, fromCompact, parseRowTarget, plannedTarget, plannedTechnique, toInt, workingOf } from './plannedSets';
+import { MAX_WORKING, fromCompact, parseRowTarget, plannedTarget, plannedTechnique, toInt, workingOf, plannedOf } from './plannedSets';
 
 // Funzione premium che sblocca cambio e aggiunta (vedi user_features() nel backend)
 export const FEATURE_SESSION_EDIT = 'focus_session_edit';
@@ -41,8 +41,6 @@ export const repsNeedConfirm = (reps, plannedSet) => {
 };
 
 export const isBodyweight = (exercise) => exercise?.equipment === 'corpo_libero';
-
-const plannedOf = (exercise) => exercise?.planned_sets ?? [];
 
 // Serie di riscaldamento della scheda: si sommano alle allenanti (2 risc. + 3 serie = 5 posizioni)
 const warmupCount = (exercise) => plannedOf(exercise).length - workingCount(exercise);
@@ -191,8 +189,8 @@ export const buildSessionEntry = (catalogEx, { planned_sets, rest }, extra = {})
 };
 
 // Cambia l'esercizio in posizione `index` con `catalogEx`: la voce viene sostituita
-// (stesse serie pianificate, con tecniche e riscaldamento, e stesso recupero). Il cambio è consentito solo prima di iniziare
-// l'esercizio, quindi nessuna serie fatta va persa o attribuita all'esercizio sbagliato.
+// (stesse serie pianificate, con tecniche e riscaldamento, e stesso recupero). Il cambio è consentito
+// solo prima di iniziare l'esercizio, quindi nessuna serie fatta va persa o attribuita a quello sbagliato.
 // In `replaces` resta il nome dell'esercizio di scheda, anche dopo più cambi.
 export const swapExercise = (exercises, index, catalogEx) => {
   const current = exercises[index];
