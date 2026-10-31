@@ -3,14 +3,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import RecordWorkoutDialog from './RecordWorkoutDialog';
 import { json } from '../test/dom';
+import { plannedSets } from '../test/plannedSets';
 
 vi.mock('../utils/analytics', () => ({ track: vi.fn() }));
 
 // Le righe dell'inserimento manuale leggono ancora sets/warmup_sets/reps (lavoro di 3b); la riga della scheda legge planned_sets
-const planned = [
-  ...[1, 2].map((n) => ({ set_number: n, kind: 'warmup', reps_min: null, reps_max: null, to_failure: false, intensity_technique: null })),
-  ...[3, 4].map((n) => ({ set_number: n, kind: 'working', reps_min: 5, reps_max: 5, to_failure: false, intensity_technique: n === 4 ? 'Rest Pause' : null })),
-];
+const planned = plannedSets(2, [{ min: 5, max: 5 }, { min: 5, max: 5, technique: 'Rest Pause' }]);
 const squat = {
   id: 11, exercise_id: 5, exercise_name: 'Squat', sets: 2, warmup_sets: 2, reps: '5', rest: 60,
   equipment: 'bilanciere', intensity_technique: 'Rest Pause', planned_sets: planned,

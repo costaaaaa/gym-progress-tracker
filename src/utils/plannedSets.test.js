@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import i18n from '../i18n';
-import { parseTarget, parseRowTarget, targetLabel, compactForm, fromCompact, buildPlannedSets, planSummary, plannedSetsError, samePlannedSets } from './plannedSets';
+import { parseTarget, parseRowTarget, targetLabel, compactForm, fromCompact, buildPlannedSets, planSummary, plannedSetsValid, samePlannedSets } from './plannedSets';
+import { DROP, warm, work } from '../test/plannedSets';
 
 describe('parseTarget: da testo a { reps_min, reps_max }', () => {
   it('un numero vale min = max', () => {
@@ -84,12 +85,6 @@ describe('targetLabel: il target di una serie a parole', () => {
     expect(targetLabel(set(8, 10))).toBe('8-10');
   });
 });
-
-const warm = (n) => ({ set_number: n, kind: 'warmup', reps_min: null, reps_max: null, to_failure: false, intensity_technique: null });
-const work = (n, min, max, technique = null, to_failure = false) => ({
-  set_number: n, kind: 'working', reps_min: min, reps_max: max, to_failure, intensity_technique: technique,
-});
-const DROP = 'Drop Set (Stripping)';
 
 describe('compactForm: le serie nella forma compatta, o null', () => {
   it('serie tutte uguali, riscaldamento e tecnica sull\'ultima', () => {
@@ -208,21 +203,21 @@ describe('planSummary: la riga riassuntiva della scheda', () => {
 
   it('tecnica, forma per serie: il numero conta solo le allenanti, da 1', () => {
     expect(planSummary([warm(1), work(2, 8, 10), work(3, 8, 10), work(4, 12, 15, DROP)]))
-      .toBe('1 risc. + 2 × 8-10 + 1 × 12-15 · Drop set (stripping) (serie 3)');
+      .toBe('1 risc. + 2 × 8-10 + 1 × 12-15 · Drop set (stripping) sulla serie 3');
   });
 
   it('tecnica, forma per serie: più serie con la stessa tecnica', () => {
     expect(planSummary([work(1, 8, 8), work(2, 8, 8, DROP), work(3, 10, 10, DROP)]))
-      .toBe('2 × 8 + 1 × 10 · Drop set (stripping) (serie 2, 3)');
+      .toBe('2 × 8 + 1 × 10 · Drop set (stripping) sulle serie 2, 3');
   });
 
-  it('tecnica non sull\'ultima: (serie N) anche se i target sono uguali', () => {
-    expect(planSummary([work(1, 8, 8, DROP), work(2, 8, 8)])).toBe('2 × 8 · Drop set (stripping) (serie 1)');
+  it('tecnica non sull\'ultima: "sulla serie N" anche se i target sono uguali', () => {
+    expect(planSummary([work(1, 8, 8, DROP), work(2, 8, 8)])).toBe('2 × 8 · Drop set (stripping) sulla serie 1');
   });
 
   it('più tecniche, nell\'ordine di prima comparsa', () => {
     expect(planSummary([work(1, 8, 8, 'Rest Pause'), work(2, 8, 8, DROP), work(3, 10, 10, 'Rest Pause')]))
-      .toBe('2 × 8 + 1 × 10 · Rest pause (serie 1, 3) · Drop set (stripping) (serie 2)');
+      .toBe('2 × 8 + 1 × 10 · Rest pause sulle serie 1, 3 · Drop set (stripping) sulla serie 2');
   });
 
   it('in inglese', async () => {
@@ -230,7 +225,7 @@ describe('planSummary: la riga riassuntiva della scheda', () => {
     expect(planSummary([warm(1), warm(2), work(3, 8, 10), work(4, 8, 10, DROP)]))
       .toBe('2 warm-up + 2 × 8-10 · Drop set (stripping) on the last set');
     expect(planSummary([work(1, 8, 10), work(2, null, null, DROP, true), work(3, 8, 10, DROP)]))
-      .toBe('1 × 8-10 + 1 × to failure + 1 × 8-10 · Drop set (stripping) (sets 2, 3)');
+      .toBe('1 × 8-10 + 1 × to failure + 1 × 8-10 · Drop set (stripping) on sets 2, 3');
   });
 
   it('senza serie: stringa vuota', () => {
@@ -239,64 +234,64 @@ describe('planSummary: la riga riassuntiva della scheda', () => {
   });
 });
 
-describe('plannedSetsError: le stesse regole di planned_sets_error() del backend', () => {
+describe('plannedSetsValid: le stesse regole di planned_sets_error() del backend', () => {
   const numbered = (sets) => sets.map((set, i) => ({ ...set, set_number: i + 1 }));
   const many = (warmups, workings) => numbered([
     ...Array.from({ length: warmups }, () => warm(1)),
     ...Array.from({ length: workings }, () => work(1, 8, 10)),
   ]);
 
-  it('serie valide: null', () => {
-    expect(plannedSetsError([warm(1), work(2, 8, 10), work(3, null, null, DROP, true)])).toBeNull();
-    expect(plannedSetsError([work(1, 6, null, null, true)])).toBeNull();
+  it('serie valide', () => {
+    expect(plannedSetsValid([warm(1), work(2, 8, 10), work(3, null, null, DROP, true)])).toBe(true);
+    expect(plannedSetsValid([work(1, 6, null, null, true)])).toBe(true);
   });
 
   it('limiti: da 1 a 20 allenanti, da 0 a 10 riscaldamenti', () => {
-    expect(plannedSetsError(many(0, 20))).toBeNull();
-    expect(plannedSetsError(many(10, 1))).toBeNull();
-    expect(plannedSetsError(many(0, 21))).toBe('plan_editor.error_count');
-    expect(plannedSetsError(many(11, 1))).toBe('plan_editor.error_count');
-    expect(plannedSetsError(many(2, 0))).toBe('plan_editor.error_count');
-    expect(plannedSetsError([])).toBe('plan_editor.error_count');
+    expect(plannedSetsValid(many(0, 20))).toBe(true);
+    expect(plannedSetsValid(many(10, 1))).toBe(true);
+    expect(plannedSetsValid(many(0, 21))).toBe(false);
+    expect(plannedSetsValid(many(11, 1))).toBe(false);
+    expect(plannedSetsValid(many(2, 0))).toBe(false);
+    expect(plannedSetsValid([])).toBe(false);
   });
 
   it('i riscaldamenti vengono prima delle allenanti', () => {
-    expect(plannedSetsError([work(1, 8, 10), warm(2), work(3, 8, 10)])).toBe('plan_editor.error_order');
+    expect(plannedSetsValid([work(1, 8, 10), warm(2), work(3, 8, 10)])).toBe(false);
   });
 
   it('set_number consecutivi da 1', () => {
-    expect(plannedSetsError([work(2, 8, 10)])).toBe('plan_editor.error_invalid');
-    expect(plannedSetsError([work(1, 8, 10), work(3, 8, 10)])).toBe('plan_editor.error_invalid');
+    expect(plannedSetsValid([work(2, 8, 10)])).toBe(false);
+    expect(plannedSetsValid([work(1, 8, 10), work(3, 8, 10)])).toBe(false);
   });
 
   it('il riscaldamento ha target vuoto e nessuna tecnica', () => {
-    expect(plannedSetsError([{ ...warm(1), reps_min: 8, reps_max: 8 }, work(2, 8, 10)])).toBe('plan_editor.error_target');
-    expect(plannedSetsError([{ ...warm(1), to_failure: true }, work(2, 8, 10)])).toBe('plan_editor.error_target');
-    expect(plannedSetsError([{ ...warm(1), intensity_technique: DROP }, work(2, 8, 10)])).toBe('plan_editor.error_target');
-    expect(plannedSetsError([{ ...warm(1), intensity_technique: 'Nessuna (Normale)' }, work(2, 8, 10)])).toBeNull();
+    expect(plannedSetsValid([{ ...warm(1), reps_min: 8, reps_max: 8 }, work(2, 8, 10)])).toBe(false);
+    expect(plannedSetsValid([{ ...warm(1), to_failure: true }, work(2, 8, 10)])).toBe(false);
+    expect(plannedSetsValid([{ ...warm(1), intensity_technique: DROP }, work(2, 8, 10)])).toBe(false);
+    expect(plannedSetsValid([{ ...warm(1), intensity_technique: 'Nessuna (Normale)' }, work(2, 8, 10)])).toBe(true);
   });
 
   it('allenante normale: interi 1-250 con min <= max', () => {
-    expect(plannedSetsError([work(1, 1, 250)])).toBeNull();
-    expect(plannedSetsError([work(1, 0, 8)])).toBe('plan_editor.error_target');
-    expect(plannedSetsError([work(1, 8, 251)])).toBe('plan_editor.error_target');
-    expect(plannedSetsError([work(1, 10, 8)])).toBe('plan_editor.error_target');
-    expect(plannedSetsError([work(1, null, null)])).toBe('plan_editor.error_target');
-    expect(plannedSetsError([work(1, 8, null)])).toBe('plan_editor.error_target');
-    expect(plannedSetsError([work(1, 8.5, 9)])).toBe('plan_editor.error_target');
+    expect(plannedSetsValid([work(1, 1, 250)])).toBe(true);
+    expect(plannedSetsValid([work(1, 0, 8)])).toBe(false);
+    expect(plannedSetsValid([work(1, 8, 251)])).toBe(false);
+    expect(plannedSetsValid([work(1, 10, 8)])).toBe(false);
+    expect(plannedSetsValid([work(1, null, null)])).toBe(false);
+    expect(plannedSetsValid([work(1, 8, null)])).toBe(false);
+    expect(plannedSetsValid([work(1, 8.5, 9)])).toBe(false);
   });
 
   it('a cedimento: reps_max null, minimo facoltativo 1-250', () => {
-    expect(plannedSetsError([work(1, 250, null, null, true)])).toBeNull();
-    expect(plannedSetsError([work(1, null, 10, null, true)])).toBe('plan_editor.error_target');
-    expect(plannedSetsError([work(1, 251, null, null, true)])).toBe('plan_editor.error_target');
-    expect(plannedSetsError([work(1, 0, null, null, true)])).toBe('plan_editor.error_target');
+    expect(plannedSetsValid([work(1, 250, null, null, true)])).toBe(true);
+    expect(plannedSetsValid([work(1, null, 10, null, true)])).toBe(false);
+    expect(plannedSetsValid([work(1, 251, null, null, true)])).toBe(false);
+    expect(plannedSetsValid([work(1, 0, null, null, true)])).toBe(false);
   });
 
   it('tecnica: testo di al massimo 100 caratteri', () => {
-    expect(plannedSetsError([work(1, 8, 8, 'x'.repeat(100))])).toBeNull();
-    expect(plannedSetsError([work(1, 8, 8, 'x'.repeat(101))])).toBe('plan_editor.error_technique');
-    expect(plannedSetsError([work(1, 8, 8, 5)])).toBe('plan_editor.error_technique');
+    expect(plannedSetsValid([work(1, 8, 8, 'x'.repeat(100))])).toBe(true);
+    expect(plannedSetsValid([work(1, 8, 8, 'x'.repeat(101))])).toBe(false);
+    expect(plannedSetsValid([work(1, 8, 8, 5)])).toBe(false);
   });
 });
 

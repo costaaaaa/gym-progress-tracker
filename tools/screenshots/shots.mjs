@@ -30,7 +30,7 @@ const plan = {
   id: 5, name: 'Push Pull', description: 'Spinta e trazione, tre allenamenti a settimana', is_active: true,
   days: [
     { id: 1, name: 'Spinta', exercises: [exercise(9, 3, 'Panca piana', planned(1, [...times(2, { min: 8, max: 10 }), { min: 8, max: 10, technique: 'Drop Set (Stripping)' }]), 'petto'), exercise(10, 4, 'Croci', planned(0, times(3, { min: 12, max: 12 })), 'petto')] },
-    { id: 2, name: 'Trazione', exercises: [exercise(11, 5, 'Trazioni', planned(0, [{ min: 12, max: 12 }, { min: 10, max: 10 }, { min: 6, failure: true }]), 'schiena'), exercise(12, 6, 'Rematore con bilanciere', planned(2, times(4, { min: 8, max: 10 })), 'schiena')] },
+    { id: 2, name: 'Trazione', exercises: [exercise(11, 5, 'Trazioni', planned(0, [{ min: 12, max: 12 }, { min: 10, max: 10 }, { min: 6, failure: true, technique: 'Rest Pause' }]), 'schiena'), exercise(12, 6, 'Rematore con bilanciere', planned(2, times(4, { min: 8, max: 10 })), 'schiena')] },
   ],
 };
 const planInactive = {
@@ -278,6 +278,56 @@ for (const vp of viewports) {
         }
         await page.getByText('Riepilogo', { exact: true }).waitFor();
         await snap(page, 'focus-riepilogo', tag);
+      } finally {
+        await ctx.close();
+      }
+    });
+
+    await attempt(tag, 'piani-editor', async () => {
+      const { ctx, page } = await openPage(vp, theme, { loggedIn: true }, tag);
+      try {
+        await page.goto(`${base}/workouts?tab=plans`, { waitUntil: 'domcontentloaded' });
+        await page.getByRole('button', { name: 'Mostra dettagli' }).first().click();
+        await page.getByRole('button', { name: 'Dettagli', exact: true }).first().click();
+        await page.getByRole('button', { name: 'Dettagli', exact: true }).first().click();
+        await page.getByText('Trazioni').first().waitFor();
+        await snap(page, 'allenamenti-piani-giorni', tag);
+
+        // I dialog sono più alti dello schermo: si allarga la finestra e si ritaglia il solo dialog
+        await page.setViewportSize({ width: vp.w, height: 1600 });
+        const snapDialog = async (name) => {
+          await freeze(page);
+          await page.getByRole('dialog').screenshot({ path: path.join(outDir, `${name}_${tag}.png`), animations: 'disabled', caret: 'hide' });
+          shots++;
+        };
+
+        await page.getByRole('button', { name: 'Aggiungi esercizio' }).first().click();
+        await page.locator('#mui-component-select-muscleGroup').click();
+        await page.getByRole('option', { name: 'Petto' }).click();
+        await page.getByLabel('Nome esercizio').fill('Croci');
+        await page.getByRole('option', { name: 'Croci' }).click();
+        await page.getByLabel('Serie', { exact: true }).fill('3');
+        await page.getByLabel('Riscaldamento', { exact: true }).fill('2');
+        await page.getByLabel('Ripetizioni').fill('8-10');
+        await page.getByRole('combobox', { name: /Tecnica/ }).click();
+        await page.getByRole('option', { name: 'Drop set (stripping)' }).click();
+        await page.getByLabel('Recupero (s)').fill('90');
+        await snapDialog('piani-aggiungi-compatto');
+
+        await page.getByLabel('Serie diverse').check();
+        await page.getByRole('group', { name: 'Serie 1' }).getByRole('textbox').fill('12');
+        await page.getByRole('group', { name: 'Serie 2' }).getByRole('textbox').fill('10');
+        const last = page.getByRole('group', { name: 'Serie 3' });
+        await last.getByRole('checkbox', { name: 'A cedimento' }).check();
+        await last.getByRole('textbox').fill('6');
+        await snapDialog('piani-aggiungi-lista');
+        await page.getByRole('button', { name: 'Annulla' }).click();
+        await page.getByRole('dialog').waitFor({ state: 'detached' });
+
+        // Trazioni ha serie diverse: la modifica si apre già per serie
+        await page.getByRole('button', { name: 'Modifica esercizio' }).nth(2).click();
+        await page.getByRole('group', { name: 'Serie 3' }).waitFor();
+        await snapDialog('piani-modifica-lista');
       } finally {
         await ctx.close();
       }

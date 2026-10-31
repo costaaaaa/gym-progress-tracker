@@ -3,10 +3,8 @@ import { buildPlannedSets, fromCompact } from './plannedSets';
 import {
   draftFromPlannedSets, draftErrors, plannedSetsFromDraft, draftToList, draftToCompact, addRow, removeRow,
 } from './plannedSetsDraft';
+import { DROP, normal, failure } from '../test/plannedSets';
 
-const DROP = 'Drop Set (Stripping)';
-const normal = (min, max, technique = null) => ({ reps_min: min, reps_max: max, to_failure: false, technique });
-const failure = (min = null, technique = null) => ({ reps_min: min, reps_max: null, to_failure: true, technique });
 const row = (target = '', to_failure = false, technique = '') => ({ target, to_failure, technique });
 const compactDraft = (over = {}) => ({ warmups: '0', list: false, sets: '3', row: row('8-10'), rows: [], ...over });
 const listDraft = (rows, warmups = '0') => ({ warmups, list: true, sets: '', row: row(), rows });

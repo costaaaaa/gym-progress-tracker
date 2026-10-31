@@ -15,6 +15,11 @@ const TECHNIQUE_KEYS = {
   'Myo-Reps': 'myo_reps',
 };
 
+export const NO_TECHNIQUE = 'Nessuna (Normale)';
+
+// Le tecniche nell'ordine dei menu
+export const INTENSITY_TECHNIQUES = Object.keys(TECHNIQUE_KEYS);
+
 export const techniqueLabel = (value) => {
   const key = TECHNIQUE_KEYS[value];
   return key ? i18n.t(`technique.${key}`) : value || '';

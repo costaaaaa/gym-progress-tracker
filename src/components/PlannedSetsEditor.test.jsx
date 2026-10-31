@@ -4,10 +4,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import PlannedSetsEditor from './PlannedSetsEditor';
 import { buildPlannedSets, fromCompact } from '../utils/plannedSets';
-
-const DROP = 'Drop Set (Stripping)';
-const normal = (min, max, technique = null) => ({ reps_min: min, reps_max: max, to_failure: false, technique });
-const failure = (min = null, technique = null) => ({ reps_min: min, reps_max: null, to_failure: true, technique });
+import { DROP, normal, failure } from '../test/plannedSets';
 
 const setup = (value = null) => {
   const onChange = vi.fn();
@@ -34,7 +31,7 @@ describe('PlannedSetsEditor · forma compatta', () => {
   it('serie, riscaldamento, ripetizioni e tecnica danno le planned_sets, con la tecnica sull\'ultima', () => {
     const { last } = setup();
     type('Serie', '3');
-    type('Serie di riscaldamento', '2');
+    type('Riscaldamento', '2');
     type('Ripetizioni', '8-10');
     choose(/Tecnica/, 'Drop set (stripping)');
 
@@ -53,7 +50,7 @@ describe('PlannedSetsEditor · forma compatta', () => {
     expect(last()).toBeNull();
   });
 
-  it('"A cedimento": il campo diventa "Minimo (facoltativo)" e il minimo si può lasciare vuoto', () => {
+  it('"A cedimento": il campo diventa "Minimo" e il minimo si può lasciare vuoto', () => {
     const { last } = setup();
     type('Serie', '2');
     type('Ripetizioni', '8');
@@ -61,14 +58,14 @@ describe('PlannedSetsEditor · forma compatta', () => {
 
     expect(screen.queryByLabelText('Ripetizioni')).toBeNull();
     expect(last()).toEqual(buildPlannedSets(0, [failure(), failure()]));
-    type('Minimo (facoltativo)', '6');
+    type('Minimo', '6');
     expect(last()).toEqual(buildPlannedSets(0, [failure(6), failure(6)]));
   });
 
   it('si apre sui valori di un esercizio esistente compattabile', () => {
     setup(buildPlannedSets(1, [normal(8, 10), normal(8, 10), normal(8, 10, DROP)]));
     expect(screen.getByLabelText('Serie').value).toBe('3');
-    expect(screen.getByLabelText('Serie di riscaldamento').value).toBe('1');
+    expect(screen.getByLabelText('Riscaldamento').value).toBe('1');
     expect(screen.getByLabelText('Ripetizioni').value).toBe('8-10');
     expect(screen.queryByRole('group', { name: 'Serie 1' })).toBeNull();
   });
@@ -89,13 +86,13 @@ describe('PlannedSetsEditor · errori', () => {
     const { last } = setup();
     type('Ripetizioni', '8');
     type('Serie', '21');
-    type('Serie di riscaldamento', '11');
+    type('Riscaldamento', '11');
 
     expect(screen.getByLabelText('Serie').getAttribute('aria-invalid')).toBe('true');
-    expect(screen.getByLabelText('Serie di riscaldamento').getAttribute('aria-invalid')).toBe('true');
+    expect(screen.getByLabelText('Riscaldamento').getAttribute('aria-invalid')).toBe('true');
     expect(last()).toBeNull();
     type('Serie', '20');
-    type('Serie di riscaldamento', '10');
+    type('Riscaldamento', '10');
     expect(last()).toHaveLength(30);
   });
 
@@ -116,7 +113,7 @@ describe('PlannedSetsEditor · serie diverse', () => {
     fireEvent.click(switchDiverse());
 
     expect([1, 2, 3].map(rowValue)).toEqual(['8-10', '8-10', '8-10']);
-    expect(screen.getByLabelText('Serie di riscaldamento').value).toBe('1');
+    expect(screen.getByLabelText('Riscaldamento').value).toBe('1');
     expect(last()).toEqual(fromCompact({ warmups: 1, sets: 3, target: { reps_min: 8, reps_max: 10, to_failure: false }, technique: DROP }));
   });
 

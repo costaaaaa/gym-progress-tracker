@@ -11,10 +11,9 @@ import { useFocusColors } from './useFocusColors';
 import { TABULAR } from '../../utils/fonts';
 import ElapsedClock from './ElapsedClock';
 import QuitDialog from './QuitDialog';
-import { INTENSITY_TECHNIQUES } from '../../components/ExerciseDialog';
 import { slotLabel } from './slotLabel';
 import { MAX_WEIGHT, isValidWeight, isValidReps, planRepsForSet, lastSessionSets, setStatus, setSlot } from '../../utils/focusSession';
-import { muscleLabel, techniqueLabel } from '../../i18n/labels';
+import { INTENSITY_TECHNIQUES, muscleLabel, techniqueLabel } from '../../i18n/labels';
 
 export default function WorkoutPhase({
   currentExercise, currentExerciseIndex, totalExercises, currentSetIndex, totalSlotsForCurrentExercise,

@@ -8,13 +8,12 @@ import {
   MenuItem, Select, Stack, Switch, TextField, Typography,
 } from '@mui/material';
 import { Add as AddIcon, RemoveCircleOutline as RemoveIcon } from '@mui/icons-material';
-import { INTENSITY_TECHNIQUES } from './ExerciseDialog';
-import { techniqueLabel } from '../i18n/labels';
+import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, techniqueLabel } from '../i18n/labels';
+import { MAX_WORKING } from '../utils/plannedSets';
 import {
   addRow, draftErrors, draftFromPlannedSets, draftToCompact, draftToList, plannedSetsFromDraft, removeRow,
 } from '../utils/plannedSetsDraft';
 
-const MAX_WORKING = 20;
 const numeric = { inputMode: 'numeric' };
 
 const TechniqueSelect = ({ id, label, value, onChange, helperText, size }) => (
@@ -22,7 +21,7 @@ const TechniqueSelect = ({ id, label, value, onChange, helperText, size }) => (
     <InputLabel id={`${id}-label`}>{label}</InputLabel>
     <Select labelId={`${id}-label`} id={id} value={value} label={label} onChange={(e) => onChange(e.target.value)}>
       {INTENSITY_TECHNIQUES.map((tech) => (
-        <MenuItem key={tech} value={tech === 'Nessuna (Normale)' ? '' : tech}>{techniqueLabel(tech)}</MenuItem>
+        <MenuItem key={tech} value={tech === NO_TECHNIQUE ? '' : tech}>{techniqueLabel(tech)}</MenuItem>
       ))}
     </Select>
     {helperText && <FormHelperText>{helperText}</FormHelperText>}
@@ -131,20 +130,23 @@ const PlannedSetsEditor = ({ value, onChange }) => {
                 </IconButton>
               </Stack>
               <Stack spacing={1.5}>
-                <TextField
-                  size="small"
-                  label={t(row.to_failure ? 'plan_editor.min' : 'plan_editor.target')}
-                  value={row.target}
-                  onChange={(e) => patchRows(index, { target: e.target.value })}
-                  error={Boolean(errors.rows[index])}
-                  helperText={shown(row.target, errors.rows[index])}
-                  inputProps={numeric}
-                  fullWidth
-                />
-                <FormControlLabel
-                  control={<Checkbox size="small" checked={row.to_failure} onChange={(e) => patchRows(index, { to_failure: e.target.checked, target: '' })} />}
-                  label={t('plan_editor.to_failure')}
-                />
+                <Stack direction="row" spacing={1} alignItems="flex-start">
+                  <TextField
+                    size="small"
+                    label={t(row.to_failure ? 'plan_editor.min' : 'plan_editor.target')}
+                    value={row.target}
+                    onChange={(e) => patchRows(index, { target: e.target.value })}
+                    error={Boolean(errors.rows[index])}
+                    helperText={shown(row.target, errors.rows[index])}
+                    inputProps={numeric}
+                    sx={{ flex: 1, minWidth: 0 }}
+                  />
+                  <FormControlLabel
+                    control={<Checkbox size="small" checked={row.to_failure} onChange={(e) => patchRows(index, { to_failure: e.target.checked, target: '' })} />}
+                    label={t('plan_editor.to_failure')}
+                    sx={{ flexShrink: 0, mr: 0, height: 40, whiteSpace: 'nowrap' }}
+                  />
+                </Stack>
                 <TechniqueSelect
                   id={`planned-sets-technique-${index}`}
                   size="small"

@@ -29,19 +29,6 @@ import PlannedSetsEditor from './PlannedSetsEditor';
 // Helper per rendere maiuscola la prima lettera
 const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
 
-export const INTENSITY_TECHNIQUES = [
-  'Nessuna (Normale)',
-  'Drop Set (Stripping)',
-  'Rest Pause',
-  'Super Set',
-  'Jump Set',
-  'Negative',
-  'Ripetizioni Forzate',
-  'Isometria',
-  'Peak Contraction',
-  'Myo-Reps'
-];
-
 const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
   const { t } = useTranslation();
   const [exercise, setExercise] = useState({

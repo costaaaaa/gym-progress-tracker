@@ -24,10 +24,9 @@ import {
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import { API_BASE_URL } from '../config';
-import { INTENSITY_TECHNIQUES } from './ExerciseDialog';
 import { track } from '../utils/analytics';
 import { useTranslation } from 'react-i18next';
-import { techniqueLabel } from '../i18n/labels';
+import { INTENSITY_TECHNIQUES, techniqueLabel } from '../i18n/labels';
 import {
   MAX_WEIGHT, isValidWeight, newIdempotencyKey, isValidReps, repsNeedConfirm, withWarmupRule,
 } from '../utils/focusSession';

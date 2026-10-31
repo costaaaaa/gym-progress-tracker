@@ -5,31 +5,23 @@
 // riga  = { target: '8-10', to_failure: false, technique: '' }
 // Forma compatta (list false): usa `sets` e `row`. Forma lista (list true): usa `rows`.
 import {
-  buildPlannedSets, compactForm, parseRowTarget, plannedSetsError,
+  MAX_WARMUP, MAX_WORKING, buildPlannedSets, compactForm, fromCompact, parseRowTarget, plannedSetsValid, targetLabel, toInt,
 } from './plannedSets';
-
-const MAX_WORKING = 20;
-const MAX_WARMUP = 10;
 
 const emptyRow = () => ({ target: '', to_failure: false, technique: '' });
 
-const targetText = ({ reps_min: min, reps_max: max, to_failure: toFailure }) => {
-  if (toFailure) return min === null ? '' : String(min);
-  return min === max ? String(min) : `${min}-${max}`;
+// A cedimento il testo è il solo minimo (facoltativo).
+const targetText = (set) => {
+  if (!set.to_failure) return targetLabel(set);
+  return set.reps_min === null ? '' : String(set.reps_min);
 };
 
-const asInt = (text, min, max) => {
-  if (!/^\d+$/.test(String(text).trim())) return null;
-  const n = Number(text);
-  return n >= min && n <= max ? n : null;
-};
-
-const warmupCount = (draft) => (String(draft.warmups).trim() === '' ? 0 : asInt(draft.warmups, 0, MAX_WARMUP));
+const warmupCount = (draft) => (String(draft.warmups).trim() === '' ? 0 : toInt(draft.warmups, 0, MAX_WARMUP));
 
 const rowFromSet = (set) => ({
   target: targetText(set),
   to_failure: set.to_failure,
-  technique: set.technique ?? set.intensity_technique ?? '',
+  technique: set.intensity_technique ?? '',
 });
 
 export const draftFromPlannedSets = (plannedSets) => {
@@ -40,7 +32,7 @@ export const draftFromPlannedSets = (plannedSets) => {
       warmups: String(compact.warmups),
       list: false,
       sets: String(compact.sets),
-      row: rowFromSet({ ...compact.target, technique: compact.technique }),
+      row: rowFromSet({ ...compact.target, intensity_technique: compact.technique }),
       rows: [],
     };
   }
@@ -61,7 +53,7 @@ const rowError = (row) => {
 
 // Una chiave i18n (o null) per campo: warmups, sets, target (compatta), rows (lista, una per riga).
 export const draftErrors = (draft) => {
-  const count = draft.list ? draft.rows.length : asInt(draft.sets, 1, MAX_WORKING);
+  const count = draft.list ? draft.rows.length : toInt(draft.sets, 1, MAX_WORKING);
   const setsOk = draft.list ? count >= 1 && count <= MAX_WORKING : count !== null;
   return {
     warmups: warmupCount(draft) === null ? 'plan_editor.error_warmups' : null,
@@ -76,17 +68,24 @@ const hasErrors = (errors) => Object.values(errors).flat().some(Boolean);
 // planned_sets della bozza, o null se un campo non è valido.
 export const plannedSetsFromDraft = (draft) => {
   if (hasErrors(draftErrors(draft))) return null;
-  const rows = draft.list ? draft.rows : draftToList(draft).rows;
-  const plannedSets = buildPlannedSets(warmupCount(draft), rows.map((row) => ({
-    ...parseRowTarget(row.target, row.to_failure),
-    technique: row.technique,
-  })));
-  return plannedSetsError(plannedSets) === null ? plannedSets : null;
+  const warmups = warmupCount(draft);
+  const plannedSets = draft.list
+    ? buildPlannedSets(warmups, draft.rows.map((row) => ({
+      ...parseRowTarget(row.target, row.to_failure),
+      technique: row.technique,
+    })))
+    : fromCompact({
+      warmups,
+      sets: toInt(draft.sets, 1, MAX_WORKING),
+      target: parseRowTarget(draft.row.target, draft.row.to_failure),
+      technique: draft.row.technique,
+    });
+  return plannedSetsValid(plannedSets) ? plannedSets : null;
 };
 
 // Dalla forma compatta alla lista: una riga per serie, la tecnica sull'ultima.
 export const draftToList = (draft) => {
-  const count = asInt(draft.sets, 1, MAX_WORKING) ?? 1;
+  const count = toInt(draft.sets, 1, MAX_WORKING) ?? 1;
   return {
     ...draft,
     list: true,

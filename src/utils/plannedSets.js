@@ -1,15 +1,21 @@
 // Serie pianificate di un esercizio in scheda (#77): funzioni pure. Le regole rispecchiano
 // planned_sets_error() di backend/lib/plan_sets_rules.php.
 import i18n from '../i18n';
-import { techniqueLabel } from '../i18n/labels';
+import { NO_TECHNIQUE, techniqueLabel } from '../i18n/labels';
 
 const REPS_MAX = 250;
+export const MAX_WARMUP = 10;
+export const MAX_WORKING = 20;
 
-const toReps = (text) => {
-  if (!/^\d+$/.test(text)) return null;
-  const n = Number(text);
-  return n >= 1 && n <= REPS_MAX ? n : null;
+// Intero tra min e max scritto in cifre (spazi attorno ammessi), altrimenti null.
+export const toInt = (text, min, max) => {
+  const trimmed = String(text).trim();
+  if (!/^\d+$/.test(trimmed)) return null;
+  const n = Number(trimmed);
+  return n >= min && n <= max ? n : null;
 };
+
+const toReps = (text) => toInt(text, 1, REPS_MAX);
 
 // "8" o "8-10" -> { reps_min, reps_max }; null se il testo non è un target valido.
 export const parseTarget = (text) => {
@@ -43,8 +49,6 @@ export const targetLabel = (set) => {
   }
   return set.reps_min === set.reps_max ? String(set.reps_min) : `${set.reps_min}-${set.reps_max}`;
 };
-
-const NO_TECHNIQUE = 'Nessuna (Normale)';
 
 // Tecnica come si salva: vuota o "Nessuna (Normale)" vale null.
 const normalizeTechnique = (value) => {
@@ -118,7 +122,7 @@ const techniqueParts = (plannedSets, working) => {
   });
 };
 
-// Riga riassuntiva: "2 risc. + 2 × 8-10 + 1 × 12-15 · Drop set (stripping) (serie 3)".
+// Riga riassuntiva: "2 risc. + 2 × 8-10 + 1 × 12-15 · Drop set (stripping) sulla serie 3".
 export const planSummary = (plannedSets) => {
   if (!plannedSets || plannedSets.length === 0) return '';
   const working = workingOf(plannedSets);
@@ -128,8 +132,6 @@ export const planSummary = (plannedSets) => {
   return [prefix + groups, ...techniqueParts(plannedSets, working)].join(' · ');
 };
 
-const MAX_WARMUP = 10;
-const MAX_WORKING = 20;
 const TECHNIQUE_MAX_LENGTH = 100;
 const isRepsOk = (n) => Number.isInteger(n) && n >= 1 && n <= REPS_MAX;
 
@@ -142,21 +144,18 @@ const targetIsValid = (set) => {
   return isRepsOk(min) && isRepsOk(max) && min <= max;
 };
 
-// Chiave i18n del primo errore di `planned_sets` (stesse regole e ordine di planned_sets_error()
-// in backend/lib/plan_sets_rules.php), o null se sono valide.
-export const plannedSetsError = (plannedSets) => {
-  if (!plannedSets.every((set, i) => set.set_number === i + 1 && ['warmup', 'working'].includes(set.kind))) {
-    return 'plan_editor.error_invalid';
-  }
+// Le serie rispettano le regole di planned_sets_error() in backend/lib/plan_sets_rules.php?
+export const plannedSetsValid = (plannedSets) => {
+  if (!plannedSets.every((set, i) => set.set_number === i + 1 && ['warmup', 'working'].includes(set.kind))) return false;
   const techniques = plannedSets.map((set) => set.intensity_technique ?? null);
   if (techniques.some((value) => value !== null && (typeof value !== 'string' || value.trim().length > TECHNIQUE_MAX_LENGTH))) {
-    return 'plan_editor.error_technique';
+    return false;
   }
   const working = workingOf(plannedSets).length;
   const warmups = plannedSets.length - working;
-  if (warmups > MAX_WARMUP || working < 1 || working > MAX_WORKING) return 'plan_editor.error_count';
-  if (plannedSets.some((set, i) => (i < warmups) !== (set.kind === 'warmup'))) return 'plan_editor.error_order';
-  return plannedSets.every(targetIsValid) ? null : 'plan_editor.error_target';
+  if (warmups > MAX_WARMUP || working < 1 || working > MAX_WORKING) return false;
+  if (plannedSets.some((set, i) => (i < warmups) !== (set.kind === 'warmup'))) return false;
+  return plannedSets.every(targetIsValid);
 };
 
 const comparable = (set) => JSON.stringify([

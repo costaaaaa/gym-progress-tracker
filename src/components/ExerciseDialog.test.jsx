@@ -109,14 +109,14 @@ describe('ExerciseDialog · serie di riscaldamento (#66)', () => {
   it('di base è 0 e non invalida il form', async () => {
     await apri();
     await scegliEsercizioEsistente();
-    expect(screen.getByLabelText('Serie di riscaldamento').value).toBe('0');
+    expect(screen.getByLabelText('Riscaldamento').value).toBe('0');
     expect(screen.getByRole('button', { name: 'Aggiungi' }).disabled).toBe(false);
   });
 
   it('fuori range (0-10) disabilita "Aggiungi"', async () => {
     await apri();
     await scegliEsercizioEsistente();
-    fireEvent.change(screen.getByLabelText('Serie di riscaldamento'), { target: { value: '11' } });
+    fireEvent.change(screen.getByLabelText('Riscaldamento'), { target: { value: '11' } });
     expect(screen.getByRole('button', { name: 'Aggiungi' }).disabled).toBe(true);
   });
 
@@ -125,7 +125,7 @@ describe('ExerciseDialog · serie di riscaldamento (#66)', () => {
     render(<ExerciseDialog open onClose={() => {}} onAdd={onAdd} dayIndex={0} />);
     await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
     await scegliEsercizioEsistente();
-    fireEvent.change(screen.getByLabelText('Serie di riscaldamento'), { target: { value: '2' } });
+    fireEvent.change(screen.getByLabelText('Riscaldamento'), { target: { value: '2' } });
 
     fireEvent.click(screen.getByRole('button', { name: 'Aggiungi' }));
 

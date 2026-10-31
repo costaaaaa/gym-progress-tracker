@@ -7,19 +7,11 @@ import { MemoryRouter } from 'react-router-dom';
 import WorkoutPlans from './WorkoutPlans';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { json, colorOf } from '../test/dom';
+import { plannedSets, times } from '../test/plannedSets';
 
 const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
 const RED = 'rgb(213, 0, 0)';
-
-// Serie pianificate come le restituisce il server: `warmups` di riscaldamento, poi le allenanti { min, max, failure, technique }
-const plannedSets = (warmups, rows) => [
-  ...Array.from({ length: warmups }, () => ({ kind: 'warmup', reps_min: null, reps_max: null, to_failure: false, intensity_technique: null })),
-  ...rows.map(({ min = null, max = null, failure = false, technique = null }) => ({
-    kind: 'working', reps_min: min, reps_max: failure ? null : max, to_failure: failure, intensity_technique: technique,
-  })),
-].map((set, i) => ({ set_number: i + 1, ...set }));
-const times = (n, row) => Array.from({ length: n }, () => row);
 
 const plan = {
   id: 1, name: 'Forza A', description: '', is_active: 1,
@@ -87,13 +79,13 @@ describe('serie pianificate (#77)', () => {
     expect(screen.getByText('3 × 12 · recupero: 60s')).toBeTruthy();
   });
 
-  it('serie diverse e tecnica stanno nella stessa riga, senza il chip della tecnica', async () => {
+  it('serie diverse e tecnica stanno nella stessa riga, la tecnica compare una volta sola', async () => {
     await apriConPiano([planWith({
       planned_sets: plannedSets(0, [{ min: 12, max: 12 }, { min: 10, max: 10 }, { min: 6, failure: true, technique: 'Rest Pause' }]),
     })]);
 
-    expect(screen.getByText('1 × 12 + 1 × 10 + 1 × a cedimento (min. 6) · Rest pause (serie 3) · recupero: 120s')).toBeTruthy();
-    expect(document.querySelector('.MuiChip-root')).toBeNull();
+    expect(screen.getByText('1 × 12 + 1 × 10 + 1 × a cedimento (min. 6) · Rest pause sulla serie 3 · recupero: 120s')).toBeTruthy();
+    expect(screen.getAllByText(/Rest pause/)).toHaveLength(1);
   });
 
   it('modificare l\'esercizio invia planned_sets (e non più sets/reps) a update_exercise.php', async () => {
@@ -102,11 +94,11 @@ describe('serie pianificate (#77)', () => {
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Modifica esercizio' })[0]);
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByLabelText('Serie di riscaldamento').value).toBe('2');
+    expect(within(dialog).getByLabelText('Riscaldamento').value).toBe('2');
     expect(within(dialog).getByLabelText('Serie').value).toBe('4');
     expect(within(dialog).getByLabelText('Ripetizioni').value).toBe('6-8');
 
-    fireEvent.change(within(dialog).getByLabelText('Serie di riscaldamento'), { target: { value: '3' } });
+    fireEvent.change(within(dialog).getByLabelText('Riscaldamento'), { target: { value: '3' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Salva modifiche' }));
 
     await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => url.includes('update_exercise.php'))).toBe(true));
