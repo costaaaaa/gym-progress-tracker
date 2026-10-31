@@ -171,12 +171,14 @@ async function freeze(page) {
   await page.evaluate(() => document.activeElement?.blur());
 }
 
-async function snap(page, name, tag) {
+// `clip`: un locator da ritagliare al posto della pagina intera (i dialog)
+async function snap(page, name, tag, clip) {
   await freeze(page);
-  const text = await page.innerText('body');
+  const text = await (clip ?? page.locator('body')).innerText();
   const suspicious = text.match(/pagina non trovata|impossibile caricare|errore nel caricamento|Errore/i);
   if (suspicious) problems.push(`[${tag}] ${name}: testo sospetto "${suspicious[0]}"`);
-  await page.screenshot({ path: path.join(outDir, `${name}_${tag}.png`), fullPage: true, animations: 'disabled', caret: 'hide' });
+  const file = { path: path.join(outDir, `${name}_${tag}.png`), animations: 'disabled', caret: 'hide' };
+  await (clip ? clip.screenshot(file) : page.screenshot({ ...file, fullPage: true }));
   shots++;
 }
 
@@ -295,11 +297,7 @@ for (const vp of viewports) {
 
         // I dialog sono più alti dello schermo: si allarga la finestra e si ritaglia il solo dialog
         await page.setViewportSize({ width: vp.w, height: 1600 });
-        const snapDialog = async (name) => {
-          await freeze(page);
-          await page.getByRole('dialog').screenshot({ path: path.join(outDir, `${name}_${tag}.png`), animations: 'disabled', caret: 'hide' });
-          shots++;
-        };
+        const snapDialog = (name) => snap(page, name, tag, page.getByRole('dialog'));
 
         await page.getByRole('button', { name: 'Aggiungi esercizio' }).first().click();
         await page.locator('#mui-component-select-muscleGroup').click();
@@ -312,7 +310,7 @@ for (const vp of viewports) {
         await page.getByRole('combobox', { name: /Tecnica/ }).click();
         await page.getByRole('option', { name: 'Drop set (stripping)' }).click();
         await page.getByLabel('Recupero (s)').fill('90');
-        await snapDialog('piani-aggiungi-compatto');
+        await snapDialog('allenamenti-piani-aggiungi-compatto');
 
         await page.getByLabel('Serie diverse').check();
         await page.getByRole('group', { name: 'Serie 1' }).getByRole('textbox').fill('12');
@@ -320,14 +318,14 @@ for (const vp of viewports) {
         const last = page.getByRole('group', { name: 'Serie 3' });
         await last.getByRole('checkbox', { name: 'A cedimento' }).check();
         await last.getByRole('textbox').fill('6');
-        await snapDialog('piani-aggiungi-lista');
+        await snapDialog('allenamenti-piani-aggiungi-lista');
         await page.getByRole('button', { name: 'Annulla' }).click();
         await page.getByRole('dialog').waitFor({ state: 'detached' });
 
         // Trazioni ha serie diverse: la modifica si apre già per serie
         await page.getByRole('button', { name: 'Modifica esercizio' }).nth(2).click();
         await page.getByRole('group', { name: 'Serie 3' }).waitFor();
-        await snapDialog('piani-modifica-lista');
+        await snapDialog('allenamenti-piani-modifica-lista');
       } finally {
         await ctx.close();
       }

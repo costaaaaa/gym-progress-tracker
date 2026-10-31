@@ -26,7 +26,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import { API_BASE_URL } from '../config';
 import { track } from '../utils/analytics';
 import { useTranslation } from 'react-i18next';
-import { INTENSITY_TECHNIQUES, techniqueLabel } from '../i18n/labels';
+import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, techniqueLabel } from '../i18n/labels';
 import {
   MAX_WEIGHT, isValidWeight, newIdempotencyKey, isValidReps, repsNeedConfirm, withWarmupRule,
 } from '../utils/focusSession';
@@ -341,7 +341,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                               onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'intensity_technique', e.target.value)}
                             >
                               <MenuItem value=""><em>{t('record.no_technique')}</em></MenuItem>
-                              {INTENSITY_TECHNIQUES.filter(tech => tech !== 'Nessuna (Normale)').map(tech => (
+                              {INTENSITY_TECHNIQUES.filter(tech => tech !== NO_TECHNIQUE).map(tech => (
                                 <MenuItem key={tech} value={tech}>{techniqueLabel(tech)}</MenuItem>
                               ))}
                             </Select>

@@ -117,9 +117,14 @@ describe('serie pianificate (#77)', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Modifica esercizio' })[0]);
     const first = await screen.findByRole('dialog');
     expect(within(first).getByLabelText('Ripetizioni').value).toBe('6-8');
-    fireEvent.click(within(first).getByRole('button', { name: 'Annulla' }));
-    fireEvent.click(screen.getAllByRole('button', { name: 'Modifica esercizio', hidden: true })[1]);
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(within(first).getByRole('button', { name: 'Annulla' }));
+      fireEvent.click(screen.getAllByRole('button', { name: 'Modifica esercizio', hidden: true })[1]);
+      act(() => { vi.advanceTimersByTime(300); });
+    } finally {
+      vi.useRealTimers();
+    }
 
     const dialog = await screen.findByRole('dialog');
     await waitFor(() => expect(within(dialog).getByLabelText('Ripetizioni').value).toBe('12'));
