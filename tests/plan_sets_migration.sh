@@ -163,8 +163,8 @@ count_sets() { echo "SELECT COUNT(*) FROM gym_workout_plan_sets WHERE workout_ex
 
 echo
 echo "Drop set con +"
-check "12/10/8+8+8: drop set sulla terza"                    "12-12 10-10 8-8[$DROP]"                      "$(sets_of 12)"
-check "15/12/10+10: l'ultimo ripetuto non ha tecnica"        "15-15 12-12 10-10[$DROP] 10-10"              "$(sets_of 13)"
+check "12/10/8+8+8: drop set sulla terza"                     "12-12 10-10 8-8[$DROP]"                      "$(sets_of 12)"
+check "15/12/10+10: l'ultimo ripetuto non ha tecnica"         "15-15 12-12 10-10[$DROP] 10-10"              "$(sets_of 13)"
 check "10+10"                                                 "10-10[$DROP] 10-10"                          "$(sets_of 14)"
 check "12/10/8/6+6"                                           "12-12 10-10 8-8 6-6[$DROP]"                  "$(sets_of 15)"
 check "+ su una serie non ultima"                             "12-12 10-10[$DROP] 8-8"                      "$(sets_of 23)"
@@ -172,12 +172,12 @@ check "spazi attorno al +"                                    "10-10[$DROP] 10-1
 
 echo
 echo "Testo libero"
-check "1 rest pause a 20: il numero più grande"                "20-20 20-20"                                 "$(sets_of 16)"
-check "5D+5S fino a 15: il numero più grande"                  "15-15 15-15"                                 "$(sets_of 17)"
+check "1 rest pause a 20: il numero più grande"               "20-20 20-20"                                 "$(sets_of 16)"
+check "5D+5S fino a 15: il numero più grande"                 "15-15 15-15"                                 "$(sets_of 17)"
 check "8 (pesanti)"                                           "8-8"                                         "$(sets_of 18)"
 check "nessun numero: a cedimento"                            "F F"                                         "$(sets_of 19)"
 check "testo vuoto: a cedimento"                              "F F"                                         "$(sets_of 37)"
-check "virgolette e backslash nel testo (12 e 10: vale 12)"    "12-12 12-12"                                 "$(sets_of 35)"
+check "virgolette e backslash nel testo (12 e 10: vale 12)"   "12-12 12-12"                                 "$(sets_of 35)"
 check "2x8 + 1x10+10: vale 10"                                "10-10 10-10"                                 "$(sets_of 42)"
 check "zeri iniziali (08 e 012): vale 12"                     "12-12 12-12"                                 "$(sets_of 43)"
 check "numero a 19 cifre → portato a 250"                     "250-250 250-250"                             "$(sets_of 44)"
