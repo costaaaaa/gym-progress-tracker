@@ -65,7 +65,7 @@ DEADLIFT="$(id_of 'Stacco da Terra (Bilanciere)')"
 plan="$(call POST api/workout/create_plan.php "$A" '{"name":"Scheda orario"}' | cut -d' ' -f2- | jq -r '.plan.id')"
 call POST api/workout/activate_plan.php "$A" "{\"plan_id\":$plan}" >/dev/null
 DAY="$(call POST api/workout/create_days.php "$A" "{\"plan_id\":$plan,\"days\":[{\"name\":\"Giorno 1\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
-call POST api/workout/add_exercise.php "$A" "{\"day_id\":$DAY,\"exercise_id\":$DEADLIFT,\"sets\":9,\"reps\":\"5\",\"rest\":90}" >/dev/null
+call POST api/workout/add_exercise.php "$A" "{\"day_id\":$DAY,\"exercise_id\":$DEADLIFT,\"planned_sets\":$(jq -nc '[range(1;10) | {set_number:., kind:"working", reps_min:5, reps_max:5}]'),\"rest\":90}" >/dev/null
 
 echo "Salvataggio: una serie per caso"
 # Serie 1-3 valide (0, 5400, 86400 = estremi compresi); 4 senza campo; 5-9 non valide

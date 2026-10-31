@@ -65,7 +65,7 @@ make_workout() { # token
     ex="$(call GET api/exercise/read_all.php "$t" | cut -d' ' -f2- | jq -r '.records[0].id')"
     plan="$(call POST api/workout/create_plan.php "$t" '{"name":"Scheda salute"}' | cut -d' ' -f2- | jq -r '.plan.id')"
     day="$(call POST api/workout/create_days.php "$t" "{\"plan_id\":$plan,\"days\":[{\"name\":\"Giorno 1\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
-    call POST api/workout/add_exercise.php "$t" "{\"day_id\":$day,\"exercise_id\":$ex,\"sets\":1,\"reps\":\"10\",\"rest\":60}" >/dev/null
+    call POST api/workout/add_exercise.php "$t" "{\"day_id\":$day,\"exercise_id\":$ex,\"planned_sets\":[{\"set_number\":1,\"kind\":\"working\",\"reps_min\":10,\"reps_max\":10}],\"rest\":60}" >/dev/null
     call POST api/workout/record_workout.php "$t" \
         "{\"workout_records\":[{\"exercise_id\":$ex,\"day_id\":$day,\"set_number\":1,\"weight\":20,\"reps\":10}]}" \
         | cut -d' ' -f2- | jq -r '.id'

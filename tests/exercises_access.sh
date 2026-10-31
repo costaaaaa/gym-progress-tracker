@@ -111,7 +111,7 @@ PLAN_A="$(call POST api/workout/create_plan.php "$A" '{"name":"Scheda A"}' | cut
 DAY_A="$(call POST api/workout/create_days.php "$A" "{\"plan_id\":$PLAN_A,\"days\":[{\"name\":\"Giorno 1\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
 PLAN_B="$(call POST api/workout/create_plan.php "$B" '{"name":"Scheda B"}' | cut -d' ' -f2- | jq -r '.plan.id')"
 DAY_B="$(call POST api/workout/create_days.php "$B" "{\"plan_id\":$PLAN_B,\"days\":[{\"name\":\"Giorno 1\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
-add_body() { echo "{\"day_id\":$1,\"exercise_id\":$EID,\"sets\":3,\"reps\":\"10\",\"rest\":60}"; }
+add_body() { echo "{\"day_id\":$1,\"exercise_id\":$EID,\"planned_sets\":[{\"set_number\":1,\"kind\":\"working\",\"reps_min\":10,\"reps_max\":10},{\"set_number\":2,\"kind\":\"working\",\"reps_min\":10,\"reps_max\":10},{\"set_number\":3,\"kind\":\"working\",\"reps_min\":10,\"reps_max\":10}],\"rest\":60}"; }
 expect "A lo aggiunge alla sua scheda" 201 "$(call POST api/workout/add_exercise.php "$A" "$(add_body "$DAY_A")")"
 expect "B non può aggiungerlo indovinando l'id" 404 "$(call POST api/workout/add_exercise.php "$B" "$(add_body "$DAY_B")")"
 set_body() { echo "{\"workout_records\":[{\"exercise_id\":$EID,\"day_id\":$1,\"set_number\":1,\"weight\":20,\"reps\":10}]}"; }

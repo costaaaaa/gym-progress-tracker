@@ -66,7 +66,7 @@ trap cleanup EXIT
 E1="$(call GET api/exercise/read_all.php "$T" | cut -d' ' -f2- | jq -r '.records[0].id')"
 PLAN="$(call POST api/workout/create_plan.php "$T" '{"name":"Scheda peso 0"}' | cut -d' ' -f2- | jq -r '.plan.id')"
 DAY="$(call POST api/workout/create_days.php "$T" "{\"plan_id\":$PLAN,\"days\":[{\"name\":\"Giorno 1\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
-call POST api/workout/add_exercise.php "$T" "{\"day_id\":$DAY,\"exercise_id\":$E1,\"sets\":2,\"reps\":\"10\",\"rest\":60}" >/dev/null
+call POST api/workout/add_exercise.php "$T" "{\"day_id\":$DAY,\"exercise_id\":$E1,\"planned_sets\":[{\"set_number\":1,\"kind\":\"working\",\"reps_min\":10,\"reps_max\":10},{\"set_number\":2,\"kind\":\"working\",\"reps_min\":10,\"reps_max\":10}],\"rest\":60}" >/dev/null
 
 body() { # peso ripetizioni  (due serie, sessione iniziata 25 minuti fa)
     jq -nc --argjson e "$E1" --argjson d "$DAY" --argjson w "$1" --arg r "$2" --arg s "$(date -u -d '-25 min' +%Y-%m-%dT%H:%M:%SZ)" \
@@ -113,18 +113,19 @@ check "sbloccati tutti e solo i livelli sotto il volume a vita" "$PROFILE" \
     '(.lifetime_volume_kg | tonumber) as $v | all(.achievements[] | select(.category == "tonnage"); .locked == ($v < .threshold))'
 
 echo "Parametri dell'esercizio e data di inizio"
-ex() { # serie ripetizioni recupero → corpo per add_exercise
-    jq -nc --argjson d "$DAY" --argjson e "$E1" --argjson s "$1" --arg r "$2" --argjson t "$3" \
-        '{day_id:$d, exercise_id:$e, sets:$s, reps:$r, rest:$t}'
+ex() { # serie allenanti ripetizioni recupero → corpo per add_exercise
+    jq -nc --argjson d "$DAY" --argjson e "$E1" --argjson s "$1" --argjson r "$2" --argjson t "$3" \
+        '{day_id:$d, exercise_id:$e, planned_sets:[range(1; $s + 1) | {set_number:., kind:"working", reps_min:$r, reps_max:$r}], rest:$t}'
 }
 status_is "recupero 0 accettato" "$(call POST api/workout/add_exercise.php "$T" "$(ex 3 10 0)")" 201
 WE="$(call POST api/workout/add_exercise.php "$T" "$(ex 3 10 60)" | cut -d' ' -f2- | jq -r '.workout_exercise.id')"
-status_is "serie 0: 400" "$(call POST api/workout/add_exercise.php "$T" "$(ex 0 10 60)")" 400
+status_is "serie 0 (nessuna allenante): 400" "$(call POST api/workout/add_exercise.php "$T" "$(ex 0 10 60)")" 400
 status_is "serie 21: 400" "$(call POST api/workout/add_exercise.php "$T" "$(ex 21 10 60)")" 400
 status_is "recupero negativo: 400" "$(call POST api/workout/add_exercise.php "$T" "$(ex 3 10 -1)")" 400
-status_is "ripetizioni oltre 20 caratteri: 400" "$(call POST api/workout/add_exercise.php "$T" "$(ex 3 123456789012345678901 60)")" 400
-status_is "update con recupero 0 accettato" "$(call POST api/workout/update_exercise.php "$T" "$(jq -nc --argjson d "$DAY" --argjson w "$WE" '{day_id:$d, exercise_id:$w, sets:4, reps:"8-10", rest:0}')")" 200
-status_is "update con serie 0: 400" "$(call POST api/workout/update_exercise.php "$T" "$(jq -nc --argjson d "$DAY" --argjson w "$WE" '{day_id:$d, exercise_id:$w, sets:0, reps:"8", rest:60}')")" 400
+status_is "ripetizioni 251: 400" "$(call POST api/workout/add_exercise.php "$T" "$(ex 3 251 60)")" 400
+status_is "ripetizioni 0: 400" "$(call POST api/workout/add_exercise.php "$T" "$(ex 3 0 60)")" 400
+status_is "update con recupero 0 accettato" "$(call POST api/workout/update_exercise.php "$T" "$(jq -nc --argjson d "$DAY" --argjson w "$WE" '{day_id:$d, exercise_id:$w, planned_sets:[range(1;5) | {set_number:., kind:"working", reps_min:8, reps_max:10}], rest:0}')")" 200
+status_is "update con serie 0: 400" "$(call POST api/workout/update_exercise.php "$T" "$(jq -nc --argjson d "$DAY" --argjson w "$WE" '{day_id:$d, exercise_id:$w, planned_sets:[], rest:60}')")" 400
 reg() { # data di inizio → "status corpo" della registrazione; l'account creato viene cancellato subito
     local u="wz${SUFFIX}r$RANDOM" r
     r="$(call POST api/user/register.php "" "$(jq -nc --arg u "$u" --arg e "$u@example.com" --arg p "$PASS" --arg b "$(date -d '-30 years' +%Y-%m-%d)" --arg t "$1" \
@@ -151,12 +152,12 @@ status_is "tecnica da 101 caratteri: 400" "$(call POST api/workout/record_workou
 status_is "tecnica numero: 400" "$(call POST api/workout/record_workout.php "$T" "$(rec '{intensity_technique:5}' '{}')")" 400
 status_is "note da 5001 caratteri: 400" "$(call POST api/workout/record_workout.php "$T" "$(rec '{}' '{notes:$l5001}')")" 400
 status_is "note oggetto: 400" "$(call POST api/workout/record_workout.php "$T" "$(rec '{}' '{notes:{}}')")" 400
-exn() { # campi jq aggiunti → corpo per add_exercise
-    jq -nc --argjson d "$DAY" --argjson e "$E1" --arg l100 "$(long 100)" --arg l101 "$(long 101)" --arg l5001 "$(long 5001)" \
-        "{day_id:\$d, exercise_id:\$e, sets:3, reps:\"10\", rest:60} + $1"
+exn() { # campi jq aggiunti all'esercizio, tecnica facoltativa dell'ultima serie → corpo per add_exercise
+    jq -nc --argjson d "$DAY" --argjson e "$E1" --arg tech "${2:-}" --arg l5001 "$(long 5001)" \
+        "{day_id:\$d, exercise_id:\$e, planned_sets:([range(1;4) | {set_number:., kind:\"working\", reps_min:10, reps_max:10}] | if \$tech == \"\" then . else .[2].intensity_technique = \$tech end), rest:60} + $1"
 }
-status_is "esercizio con note e tecnica da 100 caratteri accettato" "$(call POST api/workout/add_exercise.php "$T" "$(exn '{notes:"ok", intensity_technique:$l100}')")" 201
-status_is "esercizio con tecnica da 101 caratteri: 400" "$(call POST api/workout/add_exercise.php "$T" "$(exn '{intensity_technique:$l101}')")" 400
+status_is "esercizio con note e tecnica da 100 caratteri accettato" "$(call POST api/workout/add_exercise.php "$T" "$(exn '{notes:"ok"}' "$(long 100)")")" 201
+status_is "esercizio con tecnica da 101 caratteri: 400" "$(call POST api/workout/add_exercise.php "$T" "$(exn '{}' "$(long 101)")")" 400
 status_is "esercizio con note da 5001 caratteri: 400" "$(call POST api/workout/add_exercise.php "$T" "$(exn '{notes:$l5001}')")" 400
 status_is "esercizio con note array: 400" "$(call POST api/workout/add_exercise.php "$T" "$(exn '{notes:[1]}')")" 400
 

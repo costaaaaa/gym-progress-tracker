@@ -59,7 +59,7 @@ make_user() { # nome → imposta T e DAY (account nuovo, con una scheda), lo ric
     E1="$(call GET api/exercise/read_all.php "$T" | cut -d' ' -f2- | jq -r '.records[0].id')"
     plan="$(call POST api/workout/create_plan.php "$T" '{"name":"Scheda fuso"}' | cut -d' ' -f2- | jq -r '.plan.id')"
     DAY="$(call POST api/workout/create_days.php "$T" "{\"plan_id\":$plan,\"days\":[{\"name\":\"Giorno 1\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
-    call POST api/workout/add_exercise.php "$T" "{\"day_id\":$DAY,\"exercise_id\":$E1,\"sets\":3,\"reps\":\"10\",\"rest\":60}" >/dev/null
+    call POST api/workout/add_exercise.php "$T" "{\"day_id\":$DAY,\"exercise_id\":$E1,\"planned_sets\":[{\"set_number\":1,\"kind\":\"working\",\"reps_min\":10,\"reps_max\":10},{\"set_number\":2,\"kind\":\"working\",\"reps_min\":10,\"reps_max\":10},{\"set_number\":3,\"kind\":\"working\",\"reps_min\":10,\"reps_max\":10}],\"rest\":60}" >/dev/null
     USER_T[$1]="$T"; USER_DAY[$1]="$DAY"; USER_E1[$1]="$E1"
 }
 

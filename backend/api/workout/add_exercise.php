@@ -44,36 +44,19 @@ if (
 
             $workout_exercise->day_id = $data->day_id;
             $workout_exercise->exercise_id = $data->exercise_id;
-            $workout_exercise->sets = $data->sets;
-            $workout_exercise->warmup_sets = $data->warmup_sets ?? 0;
-            $workout_exercise->reps = $data->reps;
             $workout_exercise->rest = $data->rest;
             $workout_exercise->notes = isset($data->notes) ? $data->notes : null; // Aggiungiamo il campo notes
-            $workout_exercise->intensity_technique = isset($data->intensity_technique) ? $data->intensity_technique : null; // Aggiungiamo tecnica di intensità
+            $workout_exercise->planned_sets = planned_sets_normalize($data->planned_sets);
 
             // Create the workout exercise
             if ($workout_exercise->create()) {
-                // Get exercise details
-                $exercise = new Exercise($db);
-                $exercise->id = $data->exercise_id;
-                $exercise->readOne();
+                $workout_exercise->readOne();
 
                 http_response_code(201);
 
                 echo json_encode(array(
                     "message" => t_server('workout.exercise_added'),
-                    "workout_exercise" => array(
-                        "id" => $workout_exercise->id,
-                        "day_id" => $workout_exercise->day_id,
-                        "exercise_id" => $workout_exercise->exercise_id,
-                        "exercise_name" => exercise_display_name($exercise->name, $exercise->name_en),
-                        "muscle_group" => $exercise->muscle_group,
-                        "sets" => $workout_exercise->sets,
-                        "warmup_sets" => (int) $workout_exercise->warmup_sets,
-                        "reps" => $workout_exercise->reps,
-                        "rest" => $workout_exercise->rest,
-                        "intensity_technique" => $workout_exercise->intensity_technique
-                    )
+                    "workout_exercise" => $workout_exercise->response()
                 ));
             } else {
                 http_response_code(503);

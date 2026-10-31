@@ -69,7 +69,7 @@ make_day() { # token → id di un giorno con 3 serie di E1 (scheda attiva di un 
     plan="$(call POST api/workout/create_plan.php "$t" '{"name":"Scheda streak"}' | cut -d' ' -f2- | jq -r '.plan.id')"
     call POST api/workout/activate_plan.php "$t" "{\"plan_id\":$plan}" >/dev/null
     day="$(call POST api/workout/create_days.php "$t" "{\"plan_id\":$plan,\"days\":[{\"name\":\"Giorno 1\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
-    call POST api/workout/add_exercise.php "$t" "{\"day_id\":$day,\"exercise_id\":$E1,\"sets\":3,\"reps\":\"10\",\"rest\":60}" >/dev/null
+    call POST api/workout/add_exercise.php "$t" "{\"day_id\":$day,\"exercise_id\":$E1,\"planned_sets\":[{\"set_number\":1,\"kind\":\"working\",\"reps_min\":10,\"reps_max\":10},{\"set_number\":2,\"kind\":\"working\",\"reps_min\":10,\"reps_max\":10},{\"set_number\":3,\"kind\":\"working\",\"reps_min\":10,\"reps_max\":10}],\"rest\":60}" >/dev/null
     echo "$day"
 }
 

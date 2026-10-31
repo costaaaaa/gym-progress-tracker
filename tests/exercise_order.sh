@@ -71,16 +71,16 @@ DAY="$(call POST api/workout/create_days.php "$A" "{\"plan_id\":$plan,\"days\":[
 
 add() { # exercise_id sets reps rest notes → id della riga della scheda
     call POST api/workout/add_exercise.php "$A" \
-        "$(jq -nc --argjson d "$DAY" --argjson e "$1" --argjson s "$2" --arg r "$3" --argjson t "$4" --arg n "$5" \
-            '{day_id:$d, exercise_id:$e, sets:$s, reps:$r, rest:$t, notes:$n}')" | cut -d' ' -f2- | jq -r '.workout_exercise.id'
+        "$(jq -nc --argjson d "$DAY" --argjson e "$1" --argjson s "$2" --argjson r "$3" --argjson t "$4" --arg n "$5" \
+            '{day_id:$d, exercise_id:$e, planned_sets:[range(1; $s + 1) | {set_number:., kind:"working", reps_min:$r, reps_max:$r}], rest:$t, notes:$n}')" | cut -d' ' -f2- | jq -r '.workout_exercise.id'
 }
 move() { call POST api/workout/reorder_exercise.php "$A" "{\"day_id\":$DAY,\"exercise_id\":$1,\"direction\":\"$2\"}"; }
 plan_exercises() { echo "200 $(call GET api/workout/read_plans.php "$A" | cut -d' ' -f2-)"; }
 
 echo "Inserimento: A, B, C escono in quest'ordine"
-ID_A="$(add "$EX_A" 3 "8" 90 "nota A")"
-ID_B="$(add "$EX_B" 4 "10" 120 "nota B")"
-ID_C="$(add "$EX_C" 5 "12" 60 "nota C")"
+ID_A="$(add "$EX_A" 3 8 90 "nota A")"
+ID_B="$(add "$EX_B" 4 10 120 "nota B")"
+ID_C="$(add "$EX_C" 5 12 60 "nota C")"
 check "ordine A, B, C" "$(plan_exercises)" ".records[0].days[0].exercises | map(.id) == [$ID_A, $ID_B, $ID_C]"
 
 echo
@@ -88,16 +88,16 @@ echo "Riordino: C su → A, C, B; ogni riga resta col suo id e i suoi dati"
 check "C su: 200" "$(move "$ID_C" up)" '$status == 200 and .success == true'
 check "ordine A, C, B" "$(plan_exercises)" ".records[0].days[0].exercises | map(.id) == [$ID_A, $ID_C, $ID_B]"
 check "C ha ancora il suo id e i suoi dati (5 serie, 12 reps, 60s, nota C)" "$(plan_exercises)" \
-    ".records[0].days[0].exercises[1] | .id == $ID_C and .exercise_id == $EX_C and .sets == 5 and .reps == \"12\" and .rest == 60 and .notes == \"nota C\""
+    ".records[0].days[0].exercises[1] | .id == $ID_C and .exercise_id == $EX_C and (.planned_sets | length) == 5 and (.planned_sets | all(.reps_min == 12 and .reps_max == 12)) and .rest == 60 and .notes == \"nota C\""
 check "B ha ancora il suo id e i suoi dati (4 serie, 10 reps, 120s, nota B)" "$(plan_exercises)" \
-    ".records[0].days[0].exercises[2] | .id == $ID_B and .exercise_id == $EX_B and .sets == 4 and .reps == \"10\" and .rest == 120 and .notes == \"nota B\""
+    ".records[0].days[0].exercises[2] | .id == $ID_B and .exercise_id == $EX_B and (.planned_sets | length) == 4 and (.planned_sets | all(.reps_min == 10 and .reps_max == 10)) and .rest == 120 and .notes == \"nota B\""
 
 echo
 echo "Riordino: A giù e limiti (primo su, ultimo giù)"
 check "A giù: 200" "$(move "$ID_A" down)" '$status == 200 and .success == true'
 check "ordine C, A, B" "$(plan_exercises)" ".records[0].days[0].exercises | map(.id) == [$ID_C, $ID_A, $ID_B]"
 check "A ha ancora il suo id e i suoi dati (3 serie, 8 reps, 90s, nota A)" "$(plan_exercises)" \
-    ".records[0].days[0].exercises[1] | .id == $ID_A and .exercise_id == $EX_A and .sets == 3 and .reps == \"8\" and .rest == 90 and .notes == \"nota A\""
+    ".records[0].days[0].exercises[1] | .id == $ID_A and .exercise_id == $EX_A and (.planned_sets | length) == 3 and (.planned_sets | all(.reps_min == 8 and .reps_max == 8)) and .rest == 90 and .notes == \"nota A\""
 check "primo su (C): 200, success, ordine invariato" "$(move "$ID_C" up)" '$status == 200 and .success == true'
 check "ordine ancora C, A, B" "$(plan_exercises)" ".records[0].days[0].exercises | map(.id) == [$ID_C, $ID_A, $ID_B]"
 check "ultimo giù (B): 200, success, ordine invariato" "$(move "$ID_B" down)" '$status == 200 and .success == true'
@@ -107,7 +107,7 @@ check "direzione non valida: 400" "$(move "$ID_A" sideways)" '$status == 400'
 echo
 echo "Eliminazione: i buchi sono ammessi, il nuovo esercizio va in fondo"
 check "elimina B: 200" "$(call POST api/workout/delete_exercise.php "$A" "{\"day_id\":$DAY,\"exercise_id\":$ID_B}")" '$status == 200'
-ID_D="$(add "$EX_D" 2 "15" 45 "nota D")"
+ID_D="$(add "$EX_D" 2 15 45 "nota D")"
 check "ordine C, A, D" "$(plan_exercises)" ".records[0].days[0].exercises | map(.id) == [$ID_C, $ID_A, $ID_D]"
 check "D su: ordine C, D, A" "$(move "$ID_D" up)" '$status == 200'
 check "ordine C, D, A" "$(plan_exercises)" ".records[0].days[0].exercises | map(.id) == [$ID_C, $ID_D, $ID_A]"
@@ -123,10 +123,10 @@ check "export: position crescente" "$EXPORT" \
 echo
 echo "Buco: elimina un esercizio in mezzo, poi un riordino richiude il giorno"
 DAY="$(call POST api/workout/create_days.php "$A" "{\"plan_id\":$plan,\"days\":[{\"name\":\"Giorno 2\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
-ID_W="$(add "$EX_A" 3 "8" 90 "nota W")"
-ID_X="$(add "$EX_B" 3 "8" 90 "nota X")"
-ID_Y="$(add "$EX_C" 3 "8" 90 "nota Y")"
-ID_Z="$(add "$EX_D" 3 "8" 90 "nota Z")"
+ID_W="$(add "$EX_A" 3 8 90 "nota W")"
+ID_X="$(add "$EX_B" 3 8 90 "nota X")"
+ID_Y="$(add "$EX_C" 3 8 90 "nota Y")"
+ID_Z="$(add "$EX_D" 3 8 90 "nota Z")"
 call POST api/workout/delete_exercise.php "$A" "{\"day_id\":$DAY,\"exercise_id\":$ID_X}" >/dev/null
 check "W giù (prima del buco): 200" "$(move "$ID_W" down)" '$status == 200 and .success == true'
 check "ordine Y, W, Z" "$(plan_exercises)" \

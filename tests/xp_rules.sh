@@ -7,7 +7,7 @@
 # Regole: gli XP di sessione si danno solo con una scheda, almeno il 60% delle serie, 20 minuti
 # di durata e 10 ore dall'ultima sessione con XP. Il PR generale vale 15, una volta per sessione,
 # e non dipende da queste regole. Il livello per esercizio usa 25x(L-1)^2.
-# Registra due account usa e getta (token Bearer come l'app mobile) e li cancella alla fine.
+# Registra quattro account usa e getta (token Bearer come l'app mobile) e li cancella alla fine.
 # Non va lanciato in produzione: crea account veri.
 #
 # Richiede curl e jq. Esce con 1 se un controllo fallisce.
@@ -55,10 +55,11 @@ register_and_login() {
 A="$(register_and_login "xpA$SUFFIX")"
 B="$(register_and_login "xpB$SUFFIX")"
 C="$(register_and_login "xpC$SUFFIX")"
-[[ -n "$A" && -n "$B" && -n "$C" ]] || { echo "registrazione o login falliti (limite di registrazioni per IP?)" >&2; exit 1; }
+D="$(register_and_login "xpD$SUFFIX")"
+[[ -n "$A" && -n "$B" && -n "$C" && -n "$D" ]] || { echo "registrazione o login falliti (limite di registrazioni per IP?)" >&2; exit 1; }
 
 cleanup() {
-    for t in "$A" "$B" "$C"; do
+    for t in "$A" "$B" "$C" "$D"; do
         call POST api/user/delete.php "$t" "$(jq -nc --arg p "$PASS" '{password:$p}')" >/dev/null
     done
     echo "Account di prova cancellati."
@@ -74,8 +75,8 @@ make_day() { # token nome sets_E1 sets_E2(0 = solo E1) → id del giorno
     local t="$1" plan day
     plan="$(call POST api/workout/create_plan.php "$t" '{"name":"Scheda XP"}' | cut -d' ' -f2- | jq -r '.plan.id')"
     day="$(call POST api/workout/create_days.php "$t" "{\"plan_id\":$plan,\"days\":[{\"name\":\"$2\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
-    call POST api/workout/add_exercise.php "$t" "{\"day_id\":$day,\"exercise_id\":$E1,\"sets\":$3,\"reps\":\"10\",\"rest\":60}" >/dev/null
-    [[ "$4" -gt 0 ]] && call POST api/workout/add_exercise.php "$t" "{\"day_id\":$day,\"exercise_id\":$E2,\"sets\":$4,\"reps\":\"10\",\"rest\":60}" >/dev/null
+    call POST api/workout/add_exercise.php "$t" "{\"day_id\":$day,\"exercise_id\":$E1,\"planned_sets\":$(jq -nc --argjson n "$3" '[range(1;$n+1) | {set_number:., kind:"working", reps_min:10, reps_max:10}]'),\"rest\":60}" >/dev/null
+    [[ "$4" -gt 0 ]] && call POST api/workout/add_exercise.php "$t" "{\"day_id\":$day,\"exercise_id\":$E2,\"planned_sets\":$(jq -nc --argjson n "$4" '[range(1;$n+1) | {set_number:., kind:"working", reps_min:10, reps_max:10}]'),\"rest\":60}" >/dev/null
     echo "$day"
 }
 
@@ -113,6 +114,13 @@ check "2ª sessione (30 kg su due esercizi): in cooldown, un solo PR da 15" "$(c
     '.xp_session_awarded == false and .xp_session_reason == "cooldown" and xpg == 15'
 check "3ª sessione (40 kg, stesso giorno): i PR di oggi sono già stati pagati, 0 XP" "$(call POST api/workout/record_workout.php "$B" "$(body "$DAY_B" 25 3 40 2 40)")" \
     'xpg == 0'
+
+echo "Il riscaldamento non conta tra le serie del giorno (utente D)"
+PLAN_D="$(call POST api/workout/create_plan.php "$D" '{"name":"Scheda riscaldamento"}' | cut -d' ' -f2- | jq -r '.plan.id')"
+DAY_D="$(call POST api/workout/create_days.php "$D" "{\"plan_id\":$PLAN_D,\"days\":[{\"name\":\"Giorno 1\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
+call POST api/workout/add_exercise.php "$D" "{\"day_id\":$DAY_D,\"exercise_id\":$E1,\"rest\":60,\"planned_sets\":[{\"set_number\":1,\"kind\":\"warmup\"},{\"set_number\":2,\"kind\":\"warmup\"},{\"set_number\":3,\"kind\":\"working\",\"reps_min\":10,\"reps_max\":10},{\"set_number\":4,\"kind\":\"working\",\"reps_min\":10,\"reps_max\":10},{\"set_number\":5,\"kind\":\"working\",\"reps_min\":10,\"reps_max\":10}]}" >/dev/null
+check "2 di riscaldamento + 3 allenanti, 3 serie registrate: giorno completo (100%), 20 XP" "$(call POST api/workout/record_workout.php "$D" "$(body "$DAY_D" 25 3 20 0 0)")" \
+    '.xp_session_awarded == true and .xp_session_reason == "ok" and .completion_pct == 100 and xpg == 20'
 
 echo "Livello per esercizio (curva 25)"
 PROFILE="$(call GET api/gamification/profile.php "$B")"

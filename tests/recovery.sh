@@ -82,7 +82,7 @@ CHEST="$(call GET api/exercise/read_all.php "$A" | cut -d' ' -f2- | jq -r '[.rec
 plan="$(call POST api/workout/create_plan.php "$A" '{"name":"Scheda recupero"}' | cut -d' ' -f2- | jq -r '.plan.id')"
 call POST api/workout/activate_plan.php "$A" "{\"plan_id\":$plan}" >/dev/null
 DAY="$(call POST api/workout/create_days.php "$A" "{\"plan_id\":$plan,\"days\":[{\"name\":\"Giorno 1\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
-call POST api/workout/add_exercise.php "$A" "{\"day_id\":$DAY,\"exercise_id\":$CHEST,\"sets\":4,\"reps\":\"8\",\"rest\":90}" >/dev/null
+call POST api/workout/add_exercise.php "$A" "{\"day_id\":$DAY,\"exercise_id\":$CHEST,\"planned_sets\":$(jq -nc '[range(1;5) | {set_number:., kind:"working", reps_min:8, reps_max:8}]'),\"rest\":90}" >/dev/null
 
 RECS="$(jq -nc --argjson d "$DAY" --argjson e "$CHEST" '[range(1;5)] | map({exercise_id:$e, day_id:$d, set_number:., weight:60, reps:8})')"
 START="$(date -u -d '-30 min' +%Y-%m-%dT%H:%M:%SZ)"
@@ -129,7 +129,7 @@ chest_history() { # token peso_di_oggi → ready_at del petto
     plan="$(call POST api/workout/create_plan.php "$token" '{"name":"Scheda cedimento"}' | cut -d' ' -f2- | jq -r '.plan.id')"
     call POST api/workout/activate_plan.php "$token" "{\"plan_id\":$plan}" >/dev/null
     day="$(call POST api/workout/create_days.php "$token" "{\"plan_id\":$plan,\"days\":[{\"name\":\"Giorno 1\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
-    call POST api/workout/add_exercise.php "$token" "{\"day_id\":$day,\"exercise_id\":$CHEST,\"sets\":3,\"reps\":\"8\",\"rest\":90}" >/dev/null
+    call POST api/workout/add_exercise.php "$token" "{\"day_id\":$day,\"exercise_id\":$CHEST,\"planned_sets\":[{\"set_number\":1,\"kind\":\"working\",\"reps_min\":8,\"reps_max\":8},{\"set_number\":2,\"kind\":\"working\",\"reps_min\":8,\"reps_max\":8},{\"set_number\":3,\"kind\":\"working\",\"reps_min\":8,\"reps_max\":8}],\"rest\":90}" >/dev/null
     local when
     for when in '6 days ago' '3 days ago'; do
         recs="$(jq -nc --argjson d "$day" --argjson e "$CHEST" '[range(1;4)] | map({exercise_id:$e, day_id:$d, set_number:., weight:80, reps:8})')"

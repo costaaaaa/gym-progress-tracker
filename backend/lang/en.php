@@ -27,7 +27,12 @@ return array(
     'birth.invalid' => 'Date of birth is missing or invalid.',
     'birth.too_young' => 'You must be at least 14 years old to use LiftIndex.',
     'training_start.invalid' => 'Training start date is not valid.',
-    'exercise.params_invalid' => 'Sets (1-20), warm-up sets (0-10), reps (max 20 characters) and rest (0-3600 seconds) are not valid.',
+    'exercise.params_invalid' => 'Rest (0-3600 seconds) or notes are not valid.',
+    'exercise.planned_sets_invalid' => 'The sets are not valid: a list numbered from 1, with no extra fields, is required.',
+    'exercise.planned_sets_count' => 'From 1 to 20 working sets and at most 10 warm-up sets are required.',
+    'exercise.planned_sets_order' => 'Warm-up sets must come before working sets.',
+    'exercise.planned_sets_target' => 'Warm-up sets have no reps or technique; each working set has a number or a range (1-250, minimum not above maximum) or is to failure.',
+    'exercise.planned_sets_technique' => 'The intensity technique must be text of at most 100 characters.',
 
     'register.too_many' => 'Too many sign-ups from this address. Try again in {seconds} seconds.',
     'register.username_invalid' => 'Username can only contain letters and numbers (3 to 50 characters).',

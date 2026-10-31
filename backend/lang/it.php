@@ -27,7 +27,12 @@ return array(
     'birth.invalid' => 'Data di nascita obbligatoria o non valida.',
     'birth.too_young' => 'Devi avere almeno 14 anni per usare LiftIndex.',
     'training_start.invalid' => 'Data di inizio allenamento non valida.',
-    'exercise.params_invalid' => 'Serie (1-20), serie di riscaldamento (0-10), ripetizioni (max 20 caratteri) e recupero (0-3600 secondi) non validi.',
+    'exercise.params_invalid' => 'Recupero (0-3600 secondi) o note non validi.',
+    'exercise.planned_sets_invalid' => 'Le serie non sono valide: serve una lista numerata da 1, senza campi in più.',
+    'exercise.planned_sets_count' => 'Servono da 1 a 20 serie allenanti e al massimo 10 di riscaldamento.',
+    'exercise.planned_sets_order' => 'Le serie di riscaldamento devono venire prima delle serie allenanti.',
+    'exercise.planned_sets_target' => 'Il riscaldamento non ha ripetizioni né tecnica; ogni serie allenante ha un numero o un intervallo (1-250, minimo non oltre il massimo) oppure è a cedimento.',
+    'exercise.planned_sets_technique' => 'La tecnica di intensità deve essere un testo di al massimo 100 caratteri.',
 
     'register.too_many' => 'Troppe registrazioni da questo indirizzo. Riprova tra {seconds} secondi.',
     'register.username_invalid' => 'Il nome utente può contenere solo lettere e numeri (da 3 a 50 caratteri).',
