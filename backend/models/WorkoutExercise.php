@@ -206,30 +206,27 @@ class WorkoutExercise
         return false;
     }
 
-    /**
-     * Sposta un esercizio una posizione in alto (diminuisce la position).
-     * Cambia solo le position: ogni riga resta legata al suo esercizio. Il giorno viene
-     * rinumerato 1..n e si scrivono solo le righe la cui position cambia.
-     *
-     * @return boolean true se l'operazione ha successo, false altrimenti
-     */
+    /** Sposta un esercizio una posizione in alto nel giorno. */
     public function moveUp()
     {
-        return $this->swapPositionWithNeighbour('up');
+        return $this->moveWithinDay('up');
+    }
+
+    /** Sposta un esercizio una posizione in basso nel giorno. */
+    public function moveDown()
+    {
+        return $this->moveWithinDay('down');
     }
 
     /**
-     * Sposta un esercizio una posizione in basso (aumenta la position).
+     * Scambia l'esercizio con il vicino nell'ordine (position, id) del giorno, rinumera il giorno
+     * 1..n e scrive solo le righe la cui position cambia. Cambiano solo le position: ogni riga
+     * resta legata al suo esercizio. Le righe del giorno sono bloccate con FOR UPDATE, così due
+     * riordini simultanei non si sovrappongono. Primo su / ultimo giù: niente da fare, true.
      *
      * @return boolean true se l'operazione ha successo, false altrimenti
      */
-    public function moveDown()
-    {
-        return $this->swapPositionWithNeighbour('down');
-    }
-
-    // Il vicino è il precedente/successivo nell'ordine (position, id) del giorno
-    private function swapPositionWithNeighbour($direction)
+    private function moveWithinDay($direction)
     {
         try {
             $this->id = htmlspecialchars(strip_tags($this->id));
@@ -237,7 +234,6 @@ class WorkoutExercise
 
             $this->conn->beginTransaction();
 
-            // Blocca le righe del giorno: due riordini simultanei non si sovrappongono
             $stmt = $this->conn->prepare(
                 "SELECT id, position FROM " . $this->table_name . "
                  WHERE day_id = :day_id
@@ -267,8 +263,7 @@ class WorkoutExercise
                 return true;
             }
 
-            // Scambia i due nell'ordine, rinumera il giorno 1..n e scrive solo le righe cambiate:
-            // con position già 1..n sono 2 UPDATE, con buchi o pareggi il giorno si rimette in ordine
+            // Con position già 1..n sono 2 UPDATE; con buchi o pareggi il giorno si rimette in ordine
             $swapped = $rows[$index];
             $rows[$index] = $rows[$neighbour_index];
             $rows[$neighbour_index] = $swapped;

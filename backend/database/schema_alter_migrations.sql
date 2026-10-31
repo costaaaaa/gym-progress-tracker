@@ -656,14 +656,15 @@ ALTER TABLE `gym_workout_sets`
 --     il giorno (1, 2, 3, ...; a parità si ordina per id). Prima l'ordine era l'id della riga e il
 --     riordino scambiava il contenuto di due righe vicine (exercise_id, serie, ripetizioni, ...):
 --     chi punta a gym_workout_exercises.id (le serie per esercizio dei passi successivi) si
---     sarebbe trovato attaccato all'esercizio sbagliato. Ora il riordino scambia solo le position
---     e ogni riga resta legata al suo esercizio. I buchi sono ammessi (eliminando un esercizio
---     non si ricompatta). L'UPDATE numera le righe esistenti nell'ordine attuale (id) dentro ogni
+--     sarebbe trovato attaccato all'esercizio sbagliato. Ora il riordino cambia solo le position
+--     (rinumera il giorno 1..n e scrive solo le righe cambiate) e ogni riga resta legata al suo
+--     esercizio; eliminando un esercizio non si ricompatta, il buco si chiude al primo riordino
+--     del giorno. L'UPDATE numera le righe esistenti nell'ordine attuale (id) dentro ogni
 --     giorno. Colonna nuova NOT NULL DEFAULT 0: il rollback del codice resta possibile (il codice
 --     vecchio ignora la colonna e ordina ancora per id). Dopo un rollback e un nuovo deploy, le righe
 --     aggiunte dal codice vecchio hanno position 0 e salgono in cima al giorno: si sistemano
 --     rilanciando l'UPDATE con ROW_NUMBER di questa sezione, oppure da sole al primo riordino di
---     quel giorno (che rinumera 1..n).
+--     quel giorno.
 -- ------------------------------------------------------------------------------
 
 ALTER TABLE `gym_workout_exercises`

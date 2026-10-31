@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 #
 # exercise_order.sh — controlla l'ordine degli esercizi di un giorno della scheda (#77):
-# l'ordine è la colonna position, il riordino scambia solo le position dei due vicini (ogni
-# riga, col suo id e i suoi dati, resta legata al suo esercizio), un esercizio nuovo va in
-# fondo anche dopo un'eliminazione, e l'export ha lo stesso ordine e la stessa position.
+# l'ordine è la colonna position, il riordino cambia solo le position (ogni riga, col suo id e
+# i suoi dati, resta legata al suo esercizio; il giorno viene rinumerato 1..n, quindi il buco
+# lasciato da un'eliminazione si chiude), un esercizio nuovo va in fondo anche dopo un'eliminazione,
+# e l'export ha lo stesso ordine e la stessa position.
 #
 #   tests/exercise_order.sh http://localhost:8080/backend/
 #
@@ -118,6 +119,24 @@ check "export: C, D, A in quest'ordine" "$EXPORT" \
     '[.. | objects | select(has("exercises") and has("name") and .name == "Giorno 1") | .exercises[].notes] == ["nota C", "nota D", "nota A"]'
 check "export: position crescente" "$EXPORT" \
     '[.. | objects | select(has("exercises") and has("name") and .name == "Giorno 1") | .exercises[].position] as $p | ($p | length) == 3 and $p == ($p | sort) and ($p | unique | length) == 3'
+
+echo
+echo "Buco: elimina un esercizio in mezzo, poi un riordino richiude il giorno"
+DAY1="$DAY"
+DAY="$(call POST api/workout/create_days.php "$A" "{\"plan_id\":$plan,\"days\":[{\"name\":\"Giorno 2\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
+ID_W="$(add "$EX_A" 3 "8" 90 "nota W")"
+ID_X="$(add "$EX_B" 3 "8" 90 "nota X")"
+ID_Y="$(add "$EX_C" 3 "8" 90 "nota Y")"
+ID_Z="$(add "$EX_D" 3 "8" 90 "nota Z")"
+call POST api/workout/delete_exercise.php "$A" "{\"day_id\":$DAY,\"exercise_id\":$ID_X}" >/dev/null
+check "W giù (prima del buco): 200" "$(move "$ID_W" down)" '$status == 200 and .success == true'
+check "ordine Y, W, Z" "$(plan_exercises)" \
+    ".records[0].days[] | select(.id == $DAY) | .exercises | map(.id) == [$ID_Y, $ID_W, $ID_Z]"
+check "W ha ancora il suo id e i suoi dati (nota W)" "$(plan_exercises)" \
+    ".records[0].days[] | select(.id == $DAY) | .exercises[1] | .id == $ID_W and .exercise_id == $EX_A and .notes == \"nota W\""
+check "export: position del giorno consecutive 1, 2, 3" "$(call GET api/user/export.php "$A")" \
+    '[.. | objects | select(has("exercises") and has("name") and .name == "Giorno 2") | .exercises[].position] == [1, 2, 3]'
+DAY="$DAY1"
 
 echo
 if [[ $fails -eq 0 ]]; then echo "$checks controlli, 0 falliti"; else echo "$checks controlli, $fails falliti"; exit 1; fi
