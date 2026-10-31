@@ -90,8 +90,7 @@ try {
 
         if (count($day_ids) > 0) {
             $day_placeholders = implode(',', array_fill(0, count($day_ids), '?'));
-            $exercises_query = "SELECT we.id, we.day_id, we.exercise_id, we.sets, we.warmup_sets, we.reps, we.rest,
-                                       we.notes, we.intensity_technique,
+            $exercises_query = "SELECT we.id, we.day_id, we.exercise_id, we.rest, we.notes,
                                        " . exercise_name_sql() . " AS exercise_name, e.muscle_group, e.equipment
                                 FROM gym_workout_exercises we
                                 LEFT JOIN gym_exercises e ON we.exercise_id = e.id
@@ -103,6 +102,8 @@ try {
             }
             $exercises_stmt->execute();
 
+            $planned_sets_by_exercise = WorkoutExercise::plannedSetsByDays($db, $day_ids);
+
             while ($exercise_row = $exercises_stmt->fetch(PDO::FETCH_ASSOC)) {
                 list($plan_index, $day_index) = $day_index_by_id[$exercise_row["day_id"]];
                 $plans_arr["records"][$plan_index]["days"][$day_index]["exercises"][] = array(
@@ -111,12 +112,9 @@ try {
                     "exercise_name" => $exercise_row["exercise_name"],
                     "muscle_group" => $exercise_row["muscle_group"],
                     "equipment" => $exercise_row["equipment"],
-                    "sets" => $exercise_row["sets"],
-                    "warmup_sets" => (int) $exercise_row["warmup_sets"],
-                    "reps" => $exercise_row["reps"],
                     "rest" => $exercise_row["rest"],
                     "notes" => $exercise_row["notes"] ?? "",
-                    "intensity_technique" => $exercise_row["intensity_technique"] ?? ""
+                    "planned_sets" => $planned_sets_by_exercise[$exercise_row["id"]] ?? array()
                 );
             }
         }

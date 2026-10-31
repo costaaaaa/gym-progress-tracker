@@ -78,11 +78,12 @@ function apply_workout_gamification(PDO $db, int $user_id, int $workout_id, Date
     $planned_sets = null;
     if ($day_id > 0) {
         $stmt_plan = $db->prepare(
-            "SELECT COALESCE(SUM(CAST(we.sets AS UNSIGNED)), 0)
-             FROM gym_workout_exercises we
+            "SELECT COUNT(*)
+             FROM gym_workout_plan_sets ps
+             JOIN gym_workout_exercises we ON we.id = ps.workout_exercise_id
              JOIN gym_workout_days d ON d.id = we.day_id
              JOIN gym_workout_plans p ON p.id = d.plan_id
-             WHERE we.day_id = ? AND p.user_id = ?"
+             WHERE ps.kind = 'working' AND we.day_id = ? AND p.user_id = ?"
         );
         $stmt_plan->execute([$day_id, $user_id]);
         $planned_sets = (int) $stmt_plan->fetchColumn();

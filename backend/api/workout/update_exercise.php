@@ -35,18 +35,17 @@ if (
     // in gym_workout_exercises (non l'id dell'esercizio del catalogo)
     $workoutExercise->id = (int) $data->exercise_id;
     $workoutExercise->day_id = (int) $data->day_id;
-    $workoutExercise->sets = $data->sets;
-    $workoutExercise->warmup_sets = $data->warmup_sets ?? 0;
-    $workoutExercise->reps = $data->reps;
     $workoutExercise->rest = $data->rest;
     $workoutExercise->notes = isset($data->notes) && $data->notes !== "" ? $data->notes : null;
-    $workoutExercise->intensity_technique = isset($data->intensity_technique) && $data->intensity_technique !== "" ? $data->intensity_technique : null;
+    $workoutExercise->planned_sets = planned_sets_normalize($data->planned_sets);
 
     if ($workoutExercise->update()) {
+        $workoutExercise->readOne();
         echo json_encode(
             array(
                 'success' => true,
-                'message' => t_server('workout.exercise_updated')
+                'message' => t_server('workout.exercise_updated'),
+                'planned_sets' => $workoutExercise->planned_sets
             )
         );
     } else {
