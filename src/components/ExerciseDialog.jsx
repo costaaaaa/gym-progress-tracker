@@ -23,36 +23,21 @@ import { createExercise, errorMessage, findSimilarExercises, personalLabel } fro
 import { equipmentLabel, exerciseMatches } from '../utils/exerciseCatalog';
 import { primaryMuscleOptions } from '../utils/muscleRules';
 import { useTranslation } from 'react-i18next';
-import { muscleLabel, techniqueLabel } from '../i18n/labels';
+import { muscleLabel } from '../i18n/labels';
+import PlannedSetsEditor from './PlannedSetsEditor';
 
 // Helper per rendere maiuscola la prima lettera
 const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
-
-export const INTENSITY_TECHNIQUES = [
-  'Nessuna (Normale)',
-  'Drop Set (Stripping)',
-  'Rest Pause',
-  'Super Set',
-  'Jump Set',
-  'Negative',
-  'Ripetizioni Forzate',
-  'Isometria',
-  'Peak Contraction',
-  'Myo-Reps'
-];
 
 const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
   const { t } = useTranslation();
   const [exercise, setExercise] = useState({
     name: '',
-    sets: '',
-    warmupSets: '',
-    reps: '',
     rest: '',
     notes: '',
-    muscleGroup: '',
-    intensity_technique: ''
+    muscleGroup: ''
   });
+  const [plannedSets, setPlannedSets] = useState(null);
 
   // Stato per gli esercizi caricati dal database
   const [allExercises, setAllExercises] = useState([]);
@@ -137,14 +122,6 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setExercise(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
   const handleMuscleGroupChange = (e) => {
     setExercise(prev => ({ ...prev, muscleGroup: e.target.value, name: '', id: undefined }));
     setEquipmentFilter('');
@@ -219,17 +196,14 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
   };
 
   const handleSubmit = () => {
-    onAdd(dayIndex, exercise);
+    onAdd(dayIndex, { ...exercise, planned_sets: plannedSets });
     setExercise({
       name: '',
-      sets: '',
-      warmupSets: '',
-      reps: '',
       rest: '',
       notes: '',
-      muscleGroup: '',
-      intensity_technique: ''
+      muscleGroup: ''
     });
+    setPlannedSets(null);
     setInputValue('');
     setNewName('');
     setNewPrimaryMuscle('');
@@ -241,10 +215,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
   const isValid = Boolean(
     exercise.name &&
     exercise.muscleGroup &&
-    intInRange(exercise.sets, 1, 20) &&
-    (exercise.warmupSets === '' || intInRange(exercise.warmupSets, 0, 10)) &&
-    String(exercise.reps).trim() &&
-    exercise.reps.length <= 20 &&
+    plannedSets &&
     intInRange(exercise.rest, 0, 3600)
   );
 
@@ -388,50 +359,9 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
           )}
           {createError && <Alert severity="error">{createError}</Alert>}
           
+          <PlannedSetsEditor onChange={setPlannedSets} />
+
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <TextField
-              name="sets"
-              label={t('exercise_dialog.sets')}
-              type="number"
-              inputProps={{ min: 1, max: 20, step: 1 }}
-              value={exercise.sets}
-              onChange={handleChange}
-              fullWidth
-              sx={{
-                '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
-                  display: 'none',
-                },
-                '& input[type=number]': {
-                  MozAppearance: 'textfield',
-                },
-              }}
-            />
-            <TextField
-              name="warmupSets"
-              label={t('exercise_dialog.warmup_sets')}
-              type="number"
-              inputProps={{ min: 0, max: 10, step: 1 }}
-              value={exercise.warmupSets}
-              onChange={handleChange}
-              fullWidth
-              sx={{
-                '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
-                  display: 'none',
-                },
-                '& input[type=number]': {
-                  MozAppearance: 'textfield',
-                },
-              }}
-            />
-            <TextField
-              name="reps"
-              label={t('exercise_dialog.reps')}
-              type="text"
-              fullWidth
-              value={exercise.reps}
-              inputProps={{ maxLength: 20 }}
-              onChange={(e) => setExercise({ ...exercise, reps: e.target.value })}
-            />
             <TextField
               name="rest"
               label={t('exercise_dialog.rest')}
@@ -451,22 +381,6 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
             />
           </Box>
           
-          <FormControl fullWidth>
-            <InputLabel>{t('exercise_dialog.technique')}</InputLabel>
-            <Select
-              name="intensity_technique"
-              value={exercise.intensity_technique}
-              label={t('exercise_dialog.technique')}
-              onChange={handleChange}
-            >
-              {INTENSITY_TECHNIQUES.map((tech) => (
-                <MenuItem key={tech} value={tech === 'Nessuna (Normale)' ? '' : tech}>
-                  {techniqueLabel(tech)}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-            
           <TextField
             margin="dense"
             label={t('exercise_dialog.notes')}

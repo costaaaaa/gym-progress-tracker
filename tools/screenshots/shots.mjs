@@ -16,18 +16,26 @@ const isoDay = (offset) => new Date(NOW + offset * DAY).toISOString().slice(0, 1
 const stamp = (offset, time) => `${isoDay(offset)} ${time}`;
 const round = (n, d = 1) => Math.round(n * 10 ** d) / 10 ** d;
 
-const exercise = (id, exercise_id, exercise_name, reps, muscle_group) =>
-  ({ id, exercise_id, exercise_name, sets: 3, reps, rest: 90, muscle_group });
+// Serie pianificate: `warmups` di riscaldamento, poi una serie allenante per riga { min, max, failure, technique }
+const planned = (warmups, rows) => [
+  ...Array.from({ length: warmups }, () => ({ kind: 'warmup', reps_min: null, reps_max: null, to_failure: false, intensity_technique: null })),
+  ...rows.map(({ min = null, max = null, failure = false, technique = null }) => ({
+    kind: 'working', reps_min: min, reps_max: failure ? null : max, to_failure: failure, intensity_technique: technique,
+  })),
+].map((set, i) => ({ set_number: i + 1, ...set }));
+const times = (n, row) => Array.from({ length: n }, () => row);
+const exercise = (id, exercise_id, exercise_name, planned_sets, muscle_group) =>
+  ({ id, exercise_id, exercise_name, planned_sets, rest: 90, muscle_group });
 const plan = {
   id: 5, name: 'Push Pull', description: 'Spinta e trazione, tre allenamenti a settimana', is_active: true,
   days: [
-    { id: 1, name: 'Spinta', exercises: [exercise(9, 3, 'Panca piana', '8-10', 'petto'), exercise(10, 4, 'Croci', '12', 'petto')] },
-    { id: 2, name: 'Trazione', exercises: [exercise(11, 5, 'Trazioni', '6-8', 'schiena'), exercise(12, 6, 'Rematore con bilanciere', '8-10', 'schiena')] },
+    { id: 1, name: 'Spinta', exercises: [exercise(9, 3, 'Panca piana', planned(1, [...times(2, { min: 8, max: 10 }), { min: 8, max: 10, technique: 'Drop Set (Stripping)' }]), 'petto'), exercise(10, 4, 'Croci', planned(0, times(3, { min: 12, max: 12 })), 'petto')] },
+    { id: 2, name: 'Trazione', exercises: [exercise(11, 5, 'Trazioni', planned(0, [{ min: 12, max: 12 }, { min: 10, max: 10 }, { min: 6, failure: true, technique: 'Rest Pause' }]), 'schiena'), exercise(12, 6, 'Rematore con bilanciere', planned(2, times(4, { min: 8, max: 10 })), 'schiena')] },
   ],
 };
 const planInactive = {
   id: 6, name: 'Gambe e core', description: 'Blocco di forza sulle gambe', is_active: false,
-  days: [{ id: 3, name: 'Gambe', exercises: [exercise(13, 7, 'Squat', '5', 'quadricipiti'), exercise(14, 8, 'Stacco da terra', '5', 'femorali')] }],
+  days: [{ id: 3, name: 'Gambe', exercises: [exercise(13, 7, 'Squat', planned(0, times(5, { min: 5, max: 5 })), 'quadricipiti'), exercise(14, 8, 'Stacco da terra', planned(0, [{ failure: true }]), 'femorali')] }],
 };
 
 const CATALOG = [
@@ -163,12 +171,14 @@ async function freeze(page) {
   await page.evaluate(() => document.activeElement?.blur());
 }
 
-async function snap(page, name, tag) {
+// `clip`: un locator da ritagliare al posto della pagina intera (i dialog)
+async function snap(page, name, tag, clip) {
   await freeze(page);
-  const text = await page.innerText('body');
+  const text = await (clip ?? page.locator('body')).innerText();
   const suspicious = text.match(/pagina non trovata|impossibile caricare|errore nel caricamento|Errore/i);
   if (suspicious) problems.push(`[${tag}] ${name}: testo sospetto "${suspicious[0]}"`);
-  await page.screenshot({ path: path.join(outDir, `${name}_${tag}.png`), fullPage: true, animations: 'disabled', caret: 'hide' });
+  const file = { path: path.join(outDir, `${name}_${tag}.png`), animations: 'disabled', caret: 'hide' };
+  await (clip ? clip.screenshot(file) : page.screenshot({ ...file, fullPage: true }));
   shots++;
 }
 
@@ -270,6 +280,52 @@ for (const vp of viewports) {
         }
         await page.getByText('Riepilogo', { exact: true }).waitFor();
         await snap(page, 'focus-riepilogo', tag);
+      } finally {
+        await ctx.close();
+      }
+    });
+
+    await attempt(tag, 'piani-editor', async () => {
+      const { ctx, page } = await openPage(vp, theme, { loggedIn: true }, tag);
+      try {
+        await page.goto(`${base}/workouts?tab=plans`, { waitUntil: 'domcontentloaded' });
+        await page.getByRole('button', { name: 'Mostra dettagli' }).first().click();
+        await page.getByRole('button', { name: 'Dettagli', exact: true }).first().click();
+        await page.getByRole('button', { name: 'Dettagli', exact: true }).first().click();
+        await page.getByText('Trazioni').first().waitFor();
+        await snap(page, 'allenamenti-piani-giorni', tag);
+
+        // I dialog sono più alti dello schermo: si allarga la finestra e si ritaglia il solo dialog
+        await page.setViewportSize({ width: vp.w, height: 1600 });
+        const snapDialog = (name) => snap(page, name, tag, page.getByRole('dialog'));
+
+        await page.getByRole('button', { name: 'Aggiungi esercizio' }).first().click();
+        await page.locator('#mui-component-select-muscleGroup').click();
+        await page.getByRole('option', { name: 'Petto' }).click();
+        await page.getByLabel('Nome esercizio').fill('Croci');
+        await page.getByRole('option', { name: 'Croci' }).click();
+        await page.getByLabel('Serie', { exact: true }).fill('3');
+        await page.getByLabel('Riscaldamento', { exact: true }).fill('2');
+        await page.getByLabel('Ripetizioni').fill('8-10');
+        await page.getByRole('combobox', { name: /Tecnica/ }).click();
+        await page.getByRole('option', { name: 'Drop set (stripping)' }).click();
+        await page.getByLabel('Recupero (s)').fill('90');
+        await snapDialog('allenamenti-piani-aggiungi-compatto');
+
+        await page.getByLabel('Serie diverse').check();
+        await page.getByRole('group', { name: 'Serie 1' }).getByRole('textbox').fill('12');
+        await page.getByRole('group', { name: 'Serie 2' }).getByRole('textbox').fill('10');
+        const last = page.getByRole('group', { name: 'Serie 3' });
+        await last.getByRole('checkbox', { name: 'A cedimento' }).check();
+        await last.getByRole('textbox').fill('6');
+        await snapDialog('allenamenti-piani-aggiungi-lista');
+        await page.getByRole('button', { name: 'Annulla' }).click();
+        await page.getByRole('dialog').waitFor({ state: 'detached' });
+
+        // Trazioni ha serie diverse: la modifica si apre già per serie
+        await page.getByRole('button', { name: 'Modifica esercizio' }).nth(2).click();
+        await page.getByRole('group', { name: 'Serie 3' }).waitFor();
+        await snapDialog('allenamenti-piani-modifica-lista');
       } finally {
         await ctx.close();
       }

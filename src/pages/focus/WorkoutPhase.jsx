@@ -11,10 +11,9 @@ import { useFocusColors } from './useFocusColors';
 import { TABULAR } from '../../utils/fonts';
 import ElapsedClock from './ElapsedClock';
 import QuitDialog from './QuitDialog';
-import { INTENSITY_TECHNIQUES } from '../../components/ExerciseDialog';
 import { slotLabel } from './slotLabel';
 import { MAX_WEIGHT, isValidWeight, isValidReps, planRepsForSet, lastSessionSets, setStatus, setSlot } from '../../utils/focusSession';
-import { muscleLabel, techniqueLabel } from '../../i18n/labels';
+import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, muscleLabel, techniqueLabel } from '../../i18n/labels';
 
 export default function WorkoutPhase({
   currentExercise, currentExerciseIndex, totalExercises, currentSetIndex, totalSlotsForCurrentExercise,
@@ -152,7 +151,7 @@ export default function WorkoutPhase({
                 onChange={(e) => onIntensityChange(e.target.value)}
               >
                 <MenuItem value=""><em>{t('record.no_technique')}</em></MenuItem>
-                {INTENSITY_TECHNIQUES.filter(tech => tech !== 'Nessuna (Normale)').map((tech) => (
+                {INTENSITY_TECHNIQUES.filter(tech => tech !== NO_TECHNIQUE).map((tech) => (
                   <MenuItem key={tech} value={tech}>{techniqueLabel(tech)}</MenuItem>
                 ))}
               </Select>

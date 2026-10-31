@@ -18,7 +18,6 @@ import {
   Alert,
   Snackbar,
   CircularProgress,
-  Chip,
   ButtonGroup,
   Collapse,
   FormControl,
@@ -32,11 +31,12 @@ import EditIcon from '@mui/icons-material/Edit';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import WhatshotIcon from '@mui/icons-material/Whatshot';
-import ExerciseDialog, { INTENSITY_TECHNIQUES } from '../components/ExerciseDialog';
+import ExerciseDialog from '../components/ExerciseDialog';
+import PlannedSetsEditor from '../components/PlannedSetsEditor';
 import { API_BASE_URL } from '../config';
 import { useTranslation } from 'react-i18next';
-import { muscleLabel, techniqueLabel } from '../i18n/labels';
+import { muscleLabel } from '../i18n/labels';
+import { planSummary, samePlannedSets } from '../utils/plannedSets';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
 const WorkoutPlans = ({ isEmbedded = false }) => {
@@ -69,13 +69,11 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
   const [openEditExerciseDialog, setOpenEditExerciseDialog] = useState(false);
   const [exerciseToEdit, setExerciseToEdit] = useState(null);
   const [editedExerciseValues, setEditedExerciseValues] = useState({
-    sets: '',
-    warmupSets: '',
-    reps: '',
     rest: '',
-    notes: '',
-    intensity_technique: ''
+    notes: ''
   });
+  const [editedPlannedSets, setEditedPlannedSets] = useState(null);
+  const closeEditTimer = useRef();
   
   const [newPlan, setNewPlan] = useState({
     name: '',
@@ -304,12 +302,9 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
         body: JSON.stringify({
           day_id: workoutPlans[selectedPlanIndex].days[dayIndex].id,
           exercise_id: selectedExerciseId, // Questo è l'ID dell'esercizio dalla tabella gym_exercises
-          sets: parseInt(exercise.sets),
-          warmup_sets: exercise.warmupSets ? parseInt(exercise.warmupSets) : 0,
-          reps: exercise.reps,
+          planned_sets: exercise.planned_sets,
           rest: parseInt(exercise.rest),
-          notes: exercise.notes,
-          intensity_technique: exercise.intensity_technique
+          notes: exercise.notes
         })
       });
 
@@ -489,33 +484,28 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
 
   // Nuova funzione per aprire il dialog di modifica esercizio
   const handleOpenEditExerciseDialog = (dayId, exercise) => {
+    clearTimeout(closeEditTimer.current);
     setExerciseToEdit(exercise);
     setDayIdToDeleteFrom(dayId); // Riuso lo stesso stato per identificare il giorno
     setEditedExerciseValues({
-      sets: exercise.sets,
-      warmupSets: exercise.warmup_sets || 0,
-      reps: exercise.reps,
       rest: exercise.rest,
-      notes: exercise.notes || '',
-      intensity_technique: exercise.intensity_technique || ''
+      notes: exercise.notes || ''
     });
+    setEditedPlannedSets(null);
     setOpenEditExerciseDialog(true);
   };
   
   // Chiusura dialog modifica esercizio
   const handleCloseEditExerciseDialog = () => {
     setOpenEditExerciseDialog(false);
-    setTimeout(() => {
+    closeEditTimer.current = setTimeout(() => {
       setExerciseToEdit(null);
       setDayIdToDeleteFrom(null);
       setEditedExerciseValues({
-        sets: '',
-        warmupSets: '',
-        reps: '',
         rest: '',
-        notes: '',
-        intensity_technique: ''
+        notes: ''
       });
+      setEditedPlannedSets(null);
     }, 200);
   };
   
@@ -537,12 +527,9 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       const exerciseData = {
         day_id: dayIdToDeleteFrom,
         exercise_id: exerciseToEdit.id,
-        sets: parseInt(editedExerciseValues.sets) || 0,
-        warmup_sets: parseInt(editedExerciseValues.warmupSets) || 0,
-        reps: editedExerciseValues.reps || '',
+        planned_sets: editedPlannedSets,
         rest: parseInt(editedExerciseValues.rest) || 0,
-        notes: editedExerciseValues.notes || '',
-        intensity_technique: editedExerciseValues.intensity_technique || ''
+        notes: editedExerciseValues.notes || ''
       };
       
       // Notifica l'utente che stiamo salvando le modifiche
@@ -587,8 +574,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                   day.exercises.forEach(ex => {
                     if (ex.id === exerciseToEdit.id) {
                       // Verifica se i valori sono stati aggiornati correttamente
-                      if (ex.sets === exerciseData.sets &&
-                          ex.reps === exerciseData.reps &&
+                      if (samePlannedSets(exerciseData.planned_sets, ex.planned_sets) &&
                           ex.rest === exerciseData.rest &&
                           (ex.notes || '') === (exerciseData.notes || '')) {
                         modificaVerificata = true;
@@ -889,18 +875,8 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                                   {exercise.exercise_name}
                                                 </Typography>
                                                 <Typography variant="body2" color="text.secondary">
-                                                  {exercise.warmup_sets > 0 && t('plans.warmup_prefix', { n: exercise.warmup_sets })}
-                                                  {t('plans.sets_line', { sets: exercise.sets, reps: exercise.reps, rest: exercise.rest })}
+                                                  {t('plans.plan_line', { summary: planSummary(exercise.planned_sets), rest: exercise.rest })}
                                                 </Typography>
-                                                {exercise.intensity_technique && (
-                                                  <Chip
-                                                    icon={<WhatshotIcon />}
-                                                    label={techniqueLabel(exercise.intensity_technique)}
-                                                    size="small"
-                                                    color="secondary"
-                                                    sx={{ mt: 1, mb: 0.5 }}
-                                                  />
-                                                )}
                                                 {exercise.notes && (
                                                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
                                                     {t('plans.notes', { notes: exercise.notes })}
@@ -1189,33 +1165,11 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
               <Typography variant="h6">{exerciseToEdit.exercise_name}</Typography>
               <Typography variant="body2" color="text.secondary">{muscleLabel(exerciseToEdit.muscle_group)}</Typography>
               
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <TextField
-                  name="sets"
-                  label={t('plans.edit_exercise.sets')}
-                  type="number"
-                  value={editedExerciseValues.sets}
-                  onChange={handleEditExerciseChange}
-                  fullWidth
-                  InputProps={{ inputProps: { min: 1 } }}
-                />
-                <TextField
-                  name="warmupSets"
-                  label={t('plans.edit_exercise.warmup_sets')}
-                  type="number"
-                  value={editedExerciseValues.warmupSets}
-                  onChange={handleEditExerciseChange}
-                  fullWidth
-                  InputProps={{ inputProps: { min: 0, max: 10 } }}
-                />
-                <TextField
-                  name="reps"
-                  label={t('plans.edit_exercise.reps')}
-                  value={editedExerciseValues.reps}
-                  onChange={handleEditExerciseChange}
-                  fullWidth
-                />
-              </Box>
+              <PlannedSetsEditor
+                key={exerciseToEdit.id}
+                value={exerciseToEdit.planned_sets?.length ? exerciseToEdit.planned_sets : null}
+                onChange={setEditedPlannedSets}
+              />
               <TextField
                 name="rest"
                 label={t('plans.edit_exercise.rest')}
@@ -1226,22 +1180,6 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                 InputProps={{ inputProps: { min: 0 } }}
               />
               
-              <FormControl fullWidth>
-                <InputLabel>{t('plans.edit_exercise.technique')}</InputLabel>
-                <Select
-                  name="intensity_technique"
-                  value={editedExerciseValues.intensity_technique}
-                  label={t('plans.edit_exercise.technique')}
-                  onChange={handleEditExerciseChange}
-                >
-                  {INTENSITY_TECHNIQUES.map((tech) => (
-                    <MenuItem key={tech} value={tech === 'Nessuna (Normale)' ? '' : tech}>
-                      {techniqueLabel(tech)}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
               <TextField
                 name="notes"
                 label={t('plans.edit_exercise.notes')}
@@ -1260,7 +1198,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
           <Button 
             onClick={handleConfirmEditExercise} 
             variant="contained"
-            disabled={!editedExerciseValues.sets || !editedExerciseValues.reps || !editedExerciseValues.rest}
+            disabled={!editedPlannedSets || !editedExerciseValues.rest}
           >
             {t('plans.edit_exercise.save')}
           </Button>

@@ -7,7 +7,8 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
-import { muscleLabel, techniqueLabel } from '../../i18n/labels';
+import { muscleLabel } from '../../i18n/labels';
+import { planSummary } from '../../utils/plannedSets';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 import LogoMark from '../../components/LogoMark';
 
@@ -106,8 +107,7 @@ export default function SelectDayPhase({
                           {ex.exercise_name}
                         </Typography>
                         <Typography variant="caption" sx={{ color: colors.textSecondary }}>
-                          {t('focus.plan_line', { sets: ex.sets, reps: ex.reps, rest: ex.rest })}
-                          {ex.intensity_technique && ` — ${techniqueLabel(ex.intensity_technique)}`}
+                          {t('plans.plan_line', { summary: planSummary(ex.planned_sets), rest: ex.rest })}
                         </Typography>
                       </Box>
                       <Chip

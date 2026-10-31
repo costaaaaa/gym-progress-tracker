@@ -8,17 +8,21 @@ Il kit è separato dall'app: ha un suo `package.json` e non tocca quello di `gym
 
 ## Script
 
-- `shots.mjs <cartella> [porta]`: 11 pagine più le 4 fasi del Focus, con 390 e 1440 px di larghezza
-  e tema chiaro/scuro (60 immagini). Ogni schermata usa un contesto browser nuovo con orologio fisso
-  (2026-10-23 10:00, Europe/Rome), `reducedMotion: reduce`, animazioni CSS azzerate, font pronti e rete ferma.
+- `shots.mjs <cartella> [porta]`: 11 pagine, i giorni delle schede aperti con i dialog dell'editor
+  delle serie (4 immagini) e le 4 fasi del Focus, con 390 e 1440 px di larghezza e tema
+  chiaro/scuro (76 immagini). Ogni schermata usa un contesto browser nuovo con orologio fisso
+  (2026-10-23 10:00, Europe/Rome), `reducedMotion: reduce`, animazioni CSS azzerate, font pronti
+  e rete ferma.
   Le API sono finte: ogni risposta del backend è in `fixtures` dentro `shots.mjs`, con dati inventati
   (dominio `example.com`, nomi `atleta_*`).
 - `compare.mjs [A=before] [B=after]`: confronto con pixelmatch (soglia 0). Le differenze finiscono in `diff/`.
   Esce con 1 se c'è almeno una differenza o un file mancante.
 
 Pagine (file `<nome>_<390|1440>_<light|dark>.png`): `landing` (ospite), `home`, `progressi`, `misure`,
-`account`, `profilo`, `gruppi`, `gruppo-dettaglio`, `allenamenti-piani`, `allenamenti-cronologia`,
-`admin` (utente con `is_admin`), `focus-scelta-giorno`, `focus-allenamento`, `focus-recupero`, `focus-riepilogo`.
+`account`, `profilo`, `gruppi`, `gruppo-dettaglio`, `allenamenti-piani`, `allenamenti-piani-giorni`,
+`allenamenti-piani-aggiungi-compatto`, `allenamenti-piani-aggiungi-lista`,
+`allenamenti-piani-modifica-lista`, `allenamenti-cronologia`, `admin` (utente con `is_admin`),
+`focus-scelta-giorno`, `focus-allenamento`, `focus-recupero`, `focus-riepilogo`.
 
 ## Prerequisiti
 

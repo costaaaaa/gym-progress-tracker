@@ -1,9 +1,11 @@
 import i18n from './index';
 
+export const NO_TECHNIQUE = 'Nessuna (Normale)';
+
 // muscle_group è una chiave del catalogo (es. 'petto'); se manca la traduzione resta il valore.
 // intensity_technique è salvato in italiano (valore dei dati): qui si traduce solo l'etichetta.
 const TECHNIQUE_KEYS = {
-  'Nessuna (Normale)': 'none',
+  [NO_TECHNIQUE]: 'none',
   'Drop Set (Stripping)': 'drop_set',
   'Rest Pause': 'rest_pause',
   'Super Set': 'super_set',
@@ -14,6 +16,9 @@ const TECHNIQUE_KEYS = {
   'Peak Contraction': 'peak_contraction',
   'Myo-Reps': 'myo_reps',
 };
+
+// Le tecniche nell'ordine dei menu
+export const INTENSITY_TECHNIQUES = Object.keys(TECHNIQUE_KEYS);
 
 export const techniqueLabel = (value) => {
   const key = TECHNIQUE_KEYS[value];

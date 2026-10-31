@@ -24,14 +24,14 @@ import {
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import { API_BASE_URL } from '../config';
-import { INTENSITY_TECHNIQUES } from './ExerciseDialog';
 import { track } from '../utils/analytics';
 import { useTranslation } from 'react-i18next';
-import { techniqueLabel } from '../i18n/labels';
+import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, techniqueLabel } from '../i18n/labels';
 import {
   MAX_WEIGHT, isValidWeight, newIdempotencyKey, isValidReps, repsNeedConfirm, withWarmupRule,
 } from '../utils/focusSession';
 import { initialSetRows, toggleWarmupRow, rowPlanReps } from '../utils/manualEntryRows';
+import { planSummary } from '../utils/plannedSets';
 
 const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
   const { t } = useTranslation();
@@ -235,8 +235,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                       secondary={
                         <Box>
                           <Typography variant="body2" color="text.secondary">
-                            {exercise.warmup_sets > 0 && t('plans.warmup_prefix', { n: exercise.warmup_sets })}
-                            {t('record.plan_line', { sets: exercise.sets, reps: exercise.reps, rest: exercise.rest })}
+                            {t('plans.plan_line', { summary: planSummary(exercise.planned_sets), rest: exercise.rest })}
                           </Typography>
                           {exercise.notes && (
                             <Box sx={{ mt: 1 }}>
@@ -342,7 +341,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                               onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'intensity_technique', e.target.value)}
                             >
                               <MenuItem value=""><em>{t('record.no_technique')}</em></MenuItem>
-                              {INTENSITY_TECHNIQUES.filter(tech => tech !== 'Nessuna (Normale)').map(tech => (
+                              {INTENSITY_TECHNIQUES.filter(tech => tech !== NO_TECHNIQUE).map(tech => (
                                 <MenuItem key={tech} value={tech}>{techniqueLabel(tech)}</MenuItem>
                               ))}
                             </Select>

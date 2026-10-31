@@ -3,12 +3,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import RecordWorkoutDialog from './RecordWorkoutDialog';
 import { json } from '../test/dom';
+import { plannedSets } from '../test/plannedSets';
 
 vi.mock('../utils/analytics', () => ({ track: vi.fn() }));
 
+// Le righe dell'inserimento manuale leggono ancora sets/warmup_sets/reps (lavoro di 3b); la riga della scheda legge planned_sets
+const planned = plannedSets(2, [{ min: 5, max: 5 }, { min: 5, max: 5, technique: 'Rest Pause' }]);
 const squat = {
   id: 11, exercise_id: 5, exercise_name: 'Squat', sets: 2, warmup_sets: 2, reps: '5', rest: 60,
-  equipment: 'bilanciere', intensity_technique: 'Rest Pause',
+  equipment: 'bilanciere', intensity_technique: 'Rest Pause', planned_sets: planned,
 };
 const basePlan = { id: 5, name: 'Gambe', days: [{ id: 3, name: 'Gambe', exercises: [squat] }] };
 // 1 riscaldamento + 3 serie con ripetizioni a lista
@@ -41,7 +44,7 @@ describe('righe di un esercizio con riscaldamento', () => {
   it('prima le righe di riscaldamento (già attivate), poi le serie; la riga della scheda le conta a parte', () => {
     open();
     expect(toggles().map((c) => c.checked)).toEqual([true, true, false, false]);
-    expect(screen.getByText('2 risc. + 2 serie x 5 - recupero: 60s')).toBeTruthy();
+    expect(screen.getByText('2 risc. + 2 × 5 · Rest pause sull\'ultima · recupero: 60s')).toBeTruthy();
   });
 
   it('in una riga di riscaldamento la tecnica è disabilitata e le ripetizioni non sono precompilate', () => {

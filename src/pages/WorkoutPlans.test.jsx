@@ -7,6 +7,7 @@ import { MemoryRouter } from 'react-router-dom';
 import WorkoutPlans from './WorkoutPlans';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { json, colorOf } from '../test/dom';
+import { plannedSets, times } from '../test/plannedSets';
 
 const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
@@ -17,8 +18,8 @@ const plan = {
   days: [{
     id: 11, name: 'Giorno 1',
     exercises: [
-      { id: 101, exercise_name: 'Panca piana', muscle_group: 'petto', sets: 4, reps: '6-8', rest: 120, intensity_technique: '', notes: '' },
-      { id: 102, exercise_name: 'Croci ai cavi', muscle_group: 'petto', sets: 3, reps: '12', rest: 60, intensity_technique: '', notes: '' },
+      { id: 101, exercise_name: 'Panca piana', muscle_group: 'petto', planned_sets: plannedSets(0, times(4, { min: 6, max: 8 })), rest: 120, notes: '' },
+      { id: 102, exercise_name: 'Croci ai cavi', muscle_group: 'petto', planned_sets: plannedSets(0, times(3, { min: 12, max: 12 })), rest: 60, notes: '' },
     ],
   }],
 };
@@ -57,57 +58,88 @@ describe('giorno aperto', () => {
   });
 });
 
-describe('serie di riscaldamento (#66)', () => {
-  const planWithWarmup = {
+describe('serie pianificate (#77)', () => {
+  const planWith = (first) => ({
     ...plan,
-    days: [{
-      ...plan.days[0],
-      exercises: [
-        { ...plan.days[0].exercises[0], warmup_sets: 2 },
-        plan.days[0].exercises[1],
-      ],
-    }],
-  };
-
-  it('il riepilogo mostra "N risc. +" solo per l\'esercizio con warmup_sets > 0', async () => {
-    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(json({ records: [planWithWarmup] }))));
-    render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
-    fireEvent.click(await screen.findByRole('button', { name: 'Mostra dettagli' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Dettagli' }));
-    await screen.findByText('Panca piana');
-
-    expect(screen.getByText('2 risc. + 4 serie x 6-8 - recupero: 120s')).toBeTruthy();
+    days: [{ ...plan.days[0], exercises: [{ ...plan.days[0].exercises[0], ...first }, plan.days[0].exercises[1]] }],
   });
-
-  it('non mostra il prefisso per un esercizio senza riscaldamento', async () => {
-    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(json({ records: [planWithWarmup] }))));
-    render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
-    fireEvent.click(await screen.findByRole('button', { name: 'Mostra dettagli' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Dettagli' }));
-    await screen.findByText('Croci ai cavi');
-
-    expect(screen.getByText('3 serie x 12 - recupero: 60s')).toBeTruthy();
-  });
-
-  it('modificare l\'esercizio invia warmup_sets a update_exercise.php', async () => {
-    const fetchMock = vi.fn(() => Promise.resolve(json({ records: [planWithWarmup] })));
+  const apriConPiano = async (records, fetchMock = vi.fn(() => Promise.resolve(json({ records })))) => {
     vi.stubGlobal('fetch', fetchMock);
     render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
     fireEvent.click(await screen.findByRole('button', { name: 'Mostra dettagli' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Dettagli' }));
     await screen.findByText('Panca piana');
+    return fetchMock;
+  };
+
+  it('il riepilogo mostra "N risc. +" solo per l\'esercizio con riscaldamento', async () => {
+    await apriConPiano([planWith({ planned_sets: plannedSets(2, times(4, { min: 6, max: 8 })) })]);
+
+    expect(screen.getByText('2 risc. + 4 × 6-8 · recupero: 120s')).toBeTruthy();
+    expect(screen.getByText('3 × 12 · recupero: 60s')).toBeTruthy();
+  });
+
+  it('serie diverse e tecnica stanno nella stessa riga, la tecnica compare una volta sola', async () => {
+    await apriConPiano([planWith({
+      planned_sets: plannedSets(0, [{ min: 12, max: 12 }, { min: 10, max: 10 }, { min: 6, failure: true, technique: 'Rest Pause' }]),
+    })]);
+
+    expect(screen.getByText('1 × 12 + 1 × 10 + 1 × a cedimento (min. 6) · Rest pause sulla serie 3 · recupero: 120s')).toBeTruthy();
+    expect(screen.getAllByText(/Rest pause/)).toHaveLength(1);
+  });
+
+  it('modificare l\'esercizio invia planned_sets (e non più sets/reps) a update_exercise.php', async () => {
+    const records = [planWith({ planned_sets: plannedSets(2, times(4, { min: 6, max: 8 })) })];
+    const fetchMock = await apriConPiano(records);
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Modifica esercizio' })[0]);
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByLabelText('Serie di riscaldamento').value).toBe('2');
+    expect(within(dialog).getByLabelText('Riscaldamento').value).toBe('2');
+    expect(within(dialog).getByLabelText('Serie').value).toBe('4');
+    expect(within(dialog).getByLabelText('Ripetizioni').value).toBe('6-8');
 
-    fireEvent.change(within(dialog).getByLabelText('Serie di riscaldamento'), { target: { value: '3' } });
+    fireEvent.change(within(dialog).getByLabelText('Riscaldamento'), { target: { value: '3' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Salva modifiche' }));
 
     await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => url.includes('update_exercise.php'))).toBe(true));
-    const call = fetchMock.mock.calls.find(([url]) => url.includes('update_exercise.php'));
-    const body = JSON.parse(call[1].body);
-    expect(body.warmup_sets).toBe(3);
+    const body = JSON.parse(fetchMock.mock.calls.find(([url]) => url.includes('update_exercise.php'))[1].body);
+    expect(body.planned_sets.filter((set) => set.kind === 'warmup')).toHaveLength(3);
+    expect(body.planned_sets.filter((set) => set.kind === 'working')).toHaveLength(4);
+    expect(body).not.toHaveProperty('sets');
+    expect(body).not.toHaveProperty('warmup_sets');
+    expect(body).not.toHaveProperty('reps');
+    expect(body).not.toHaveProperty('intensity_technique');
+  });
+
+  it('chiudere la modifica di un esercizio e aprire subito quella di un altro mostra le serie del secondo e permette di salvare', async () => {
+    await apriConPiano([plan]);
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Modifica esercizio' })[0]);
+    const first = await screen.findByRole('dialog');
+    expect(within(first).getByLabelText('Ripetizioni').value).toBe('6-8');
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(within(first).getByRole('button', { name: 'Annulla' }));
+      fireEvent.click(screen.getAllByRole('button', { name: 'Modifica esercizio', hidden: true })[1]);
+      act(() => { vi.advanceTimersByTime(300); });
+    } finally {
+      vi.useRealTimers();
+    }
+
+    const dialog = await screen.findByRole('dialog');
+    await waitFor(() => expect(within(dialog).getByLabelText('Ripetizioni').value).toBe('12'));
+    expect(within(dialog).getByLabelText('Serie').value).toBe('3');
+    expect(within(dialog).getByRole('button', { name: 'Salva modifiche' }).disabled).toBe(false);
+  });
+
+  it('con un valore non valido "Salva modifiche" è disabilitato', async () => {
+    await apriConPiano([plan]);
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Modifica esercizio' })[0]);
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText('Ripetizioni'), { target: { value: '10-8' } });
+
+    expect(within(dialog).getByRole('button', { name: 'Salva modifiche' }).disabled).toBe(true);
   });
 });
 
