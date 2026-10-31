@@ -23,9 +23,18 @@ import { API_BASE_URL } from '../config';
 import { personalLabel } from '../api/exercises';
 import { Trans, useTranslation } from 'react-i18next';
 import { muscleLabel } from '../i18n/labels';
+import { compactForm, plannedOf, targetLabel } from '../utils/plannedSets';
+import { addedPlannedSets } from '../utils/focusSession';
 
 const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '');
 const ALL = '__all__';
+
+// Valori di partenza dell'aggiunta: la forma compatta dell'esercizio corrente, se ha un target fisso (non a cedimento)
+const startValues = (exercise) => {
+  const form = compactForm(plannedOf(exercise));
+  if (!form || form.target.to_failure) return { sets: '3', reps: '10' };
+  return { sets: String(form.sets), reps: targetLabel(form.target) };
+};
 
 // Catalogo caricato una volta per pagina: il picker si riapre spesso durante l'allenamento
 let catalogCache = null;
@@ -34,7 +43,7 @@ let catalogCache = null;
 // mode 'swap': cambia l'esercizio corrente (es. cavi occupati → manubri), parte
 // dal suo gruppo muscolare. mode 'add': aggiunge un esercizio alla sessione, con
 // serie/ripetizioni/recupero e, se allowPosition, "subito dopo" o "alla fine".
-// onPick(catalogEx, { sets, reps, rest, position: 'next' | 'end' })
+// onPick(catalogEx, { planned_sets, rest, position: 'next' | 'end' })
 const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true, onClose, onPick }) => {
   const { t } = useTranslation();
   const [catalog, setCatalog] = useState(catalogCache || []);
@@ -54,8 +63,9 @@ const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true
     setSelected(null);
     setError('');
     setGroup(mode === 'swap' && currentExercise?.muscle_group ? capitalize(currentExercise.muscle_group) : ALL);
-    setSets(String(currentExercise?.sets || 3));
-    setReps(String(currentExercise?.reps || '10'));
+    const start = startValues(currentExercise);
+    setSets(start.sets);
+    setReps(start.reps);
     setRest(String(currentExercise?.rest ?? 90));
     setPosition(allowPosition ? 'next' : 'end');
 
@@ -94,7 +104,8 @@ const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true
     setSelected(ex);
   };
 
-  const canAdd = selected && parseInt(sets, 10) > 0 && reps.trim();
+  const plannedSets = addedPlannedSets(sets, reps);
+  const canAdd = selected && plannedSets !== null;
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" PaperProps={{ sx: { borderRadius: '16px' } }}>
@@ -176,7 +187,11 @@ const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true
         <DialogActions>
           <Button onClick={() => setSelected(null)}>{t('picker.back')}</Button>
           <Button variant="contained" disabled={!canAdd}
-            onClick={() => onPick(selected, { sets, reps: reps.trim(), rest, position })}>
+            onClick={() => onPick(selected, {
+              planned_sets: plannedSets,
+              rest,
+              position,
+            })}>
             {t('picker.add')}
           </Button>
         </DialogActions>

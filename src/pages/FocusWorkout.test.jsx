@@ -6,6 +6,7 @@ import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { json } from '../test/dom';
 import { currentTimeZone } from '../utils/workoutTime';
 import { setBrowserTimeZone } from '../test/timeZone';
+import { DROP, plannedSets, times } from '../test/plannedSets';
 
 const { mockNavigate, mockTrack } = vi.hoisted(() => ({ mockNavigate: vi.fn(), mockTrack: vi.fn() }));
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => mockNavigate }));
@@ -27,8 +28,8 @@ const DRAFT_KEY = 'gym_focus_workout_draft';
 const NOW = new Date(2026, 9, 20, 18, 0);
 const BROWSER_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-const bench = { id: 9, exercise_id: 3, exercise_name: 'Panca piana', sets: 2, reps: '8-10', rest: 90, muscle_group: 'petto' };
-const fly = { id: 10, exercise_id: 4, exercise_name: 'Croci', sets: 2, reps: '12', rest: 60, muscle_group: 'petto' };
+const bench = { id: 9, exercise_id: 3, exercise_name: 'Panca piana', planned_sets: plannedSets(0, times(2, { min: 8, max: 10 })), rest: 90, muscle_group: 'petto' };
+const fly = { id: 10, exercise_id: 4, exercise_name: 'Croci', planned_sets: plannedSets(0, times(2, { min: 12, max: 12 })), rest: 60, muscle_group: 'petto' };
 // Catalogo del picker. FocusExercisePicker lo tiene in una cache di modulo che sopravvive ai test del
 // file: il mock globale qui sotto è l'unico contenuto possibile, quindi cache o rete danno lo stesso risultato
 const CATALOG = [{ id: 20, name: 'Croci ai cavi', muscle_group: 'petto', equipment: 'cavi' }];
@@ -77,6 +78,7 @@ const savedDraft = {
   startTime: new Date(2026, 9, 20, 17, 40).toISOString(),
   idempotencyKey: 'chiave-bozza',
   lastActivityAt: new Date(2026, 9, 20, 17, 45).toISOString(),
+  plannedSetsFormat: true,
   phase: 'workout',
 };
 
@@ -464,6 +466,49 @@ describe('ripresa dal riepilogo: il tempo a pagina chiusa è una pausa', () => {
     expect((await save()).duration_seconds).toBe(3900);
   });
 
+  it('il picker in aggiunta accetta "8" e "8-10" e rifiuta Ripetizioni o Serie non valide', async () => {
+    await reachSummaryAt19();
+    click('Aggiungi esercizio');
+    await advance(0);
+    fireEvent.click(screen.getByText('Croci ai cavi'));
+    const dialog = within(screen.getByRole('dialog'));
+    const addButton = () => dialog.getByRole('button', { name: 'Aggiungi' });
+    const setField = (label, value) => fireEvent.change(dialog.getByLabelText(label), { target: { value } });
+
+    // Parte dalla forma dell'esercizio corrente (Panca: 2 × 8-10)
+    expect(dialog.getByLabelText('Serie').value).toBe('2');
+    expect(dialog.getByLabelText('Ripetizioni').value).toBe('8-10');
+    expect(addButton().disabled).toBe(false);
+
+    ['abc', '', '10-8', '8-10-12', '0'].forEach((reps) => {
+      setField('Ripetizioni', reps);
+      expect(addButton().disabled, `Ripetizioni "${reps}"`).toBe(true);
+    });
+    setField('Ripetizioni', '8-10');
+    expect(addButton().disabled).toBe(false);
+    ['0', '', '99'].forEach((sets) => {
+      setField('Serie', sets);
+      expect(addButton().disabled, `Serie "${sets}"`).toBe(true);
+    });
+    setField('Serie', '2');
+    expect(addButton().disabled).toBe(false);
+  });
+
+  it('l\'esercizio aggiunto ha l\'obiettivo scritto nel picker su ogni serie', async () => {
+    await reachSummaryAt19();
+    click('Aggiungi esercizio');
+    await advance(0);
+    fireEvent.click(screen.getByText('Croci ai cavi'));
+    const dialog = within(screen.getByRole('dialog'));
+    fireEvent.change(dialog.getByLabelText('Ripetizioni'), { target: { value: '8-10' } });
+    fireEvent.change(dialog.getByLabelText('Serie'), { target: { value: '2' } });
+    click('Aggiungi');
+    await advance(0.5);
+
+    expect(screen.getByText('Serie 1 di 2')).toBeTruthy();
+    expect(screen.getByLabelText('Ripetizioni').getAttribute('placeholder')).toBe('8-10');
+  });
+
   it('ripresa nel riepilogo senza aggiungere niente: la durata resta 1 h', async () => {
     await reachSummaryAt19();
     closeApp();
@@ -794,10 +839,13 @@ describe('riepilogo', () => {
   });
 });
 
+const shownTechnique = () => screen.getByRole('combobox').textContent;
+
 describe('serie di riscaldamento della scheda (#67)', () => {
+  // 2 riscaldamenti + 2 serie da 5, la seconda con Rest pause
   const squat = {
-    id: 11, exercise_id: 5, exercise_name: 'Squat', sets: 2, warmup_sets: 2, reps: '5', rest: 60,
-    muscle_group: 'gambe', equipment: 'bilanciere', intensity_technique: 'Rest Pause',
+    id: 11, exercise_id: 5, exercise_name: 'Squat', rest: 60, muscle_group: 'gambe', equipment: 'bilanciere',
+    planned_sets: plannedSets(2, [{ min: 5, max: 5 }, { min: 5, max: 5, technique: 'Rest Pause' }]),
   };
   const legDay = { id: 3, name: 'Gambe', exercises: [squat] };
   const lastTime = [{ id: 1, date: '2026-10-13', exercises: [{ exercise_id: 5, name: 'Squat', sets: [
@@ -853,6 +901,8 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     expect(screen.getByLabelText('Peso (kg)').value).toBe('100');
     expect(screen.getByLabelText('Ripetizioni').getAttribute('placeholder')).toBe('5');
     expect(screen.getAllByText('Tecnica di intensità').length).toBeGreaterThan(0);
+    // La tecnica è della seconda serie allenante, non della prima
+    expect(shownTechnique()).not.toContain('Rest Pause');
     expect(screen.getByRole('listitem', { current: true }).textContent).toBe('100kg×5');
     // Saltare la prima serie allenante equivale a saltare l'esercizio; "Salta riscaldamento" non c'è più
     expect(screen.queryByRole('button', { name: 'Salta serie' })).toBeNull();
@@ -885,7 +935,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     expect(saveBody().workout_records.map((r) => [r.set_number, r.weight, r.reps, r.is_warmup, r.intensity_technique])).toEqual([
       [1, 20, '10', true, ''],
       [2, 60, '5', true, ''],
-      [3, 100, '5', false, 'Rest Pause'],
+      [3, 100, '5', false, ''],
       [4, 100, '4', false, 'Rest Pause'],
     ]);
   });
@@ -912,7 +962,6 @@ describe('serie di riscaldamento della scheda (#67)', () => {
       selectedDayId: 3,
       completedSets: { 11: [{ setNumber: 1, weight: 20, reps: '10', intensity_technique: '', is_warmup: true }] },
       currentSetIndex: 1,
-      slotsIncludeWarmup: true,
     }));
     await mount();
     click('Riprendi allenamento');
@@ -920,29 +969,45 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     expect(screen.queryByText('Tecnica di intensità')).toBeNull();
   });
 
-  it('una bozza senza il segno delle posizioni riprende senza riscaldamento, anche se la scheda ora lo ha', async () => {
-    // Iniziata col solo passo 3: warmup_sets è già nella scheda ma currentSetIndex conta le sole serie
+  it('una bozza di prima delle serie pianificate viene scartata: nessun invito a riprendere', async () => {
+    const old = { ...savedDraft };
+    delete old.plannedSetsFormat;
     localStorage.setItem(DRAFT_KEY, JSON.stringify({
-      ...savedDraft,
-      activePlan: { id: 5, name: 'Gambe', days: [legDay] },
+      ...old,
+      activePlan: { id: 5, name: 'Gambe', days: [{ ...legDay, exercises: [{ id: 11, exercise_id: 5, exercise_name: 'Squat', sets: 2, warmup_sets: 2, reps: '5' }] }] },
       selectedDay: legDay,
       selectedDayId: 3,
-      completedSets: { 11: [{ setNumber: 1, weight: 100, reps: '5', intensity_technique: '', is_warmup: false }] },
       currentSetIndex: 1,
     }));
     await mount();
-    click('Riprendi allenamento');
-    expect(screen.getByText('Serie 2 di 2')).toBeTruthy();
-    expect(screen.queryByText('R1')).toBeNull();
-    expect(draft()).toMatchObject({ slotsIncludeWarmup: true, selectedDay: { exercises: [{ warmup_sets: 0 }] } });
+    expect(screen.queryByText('Riprendi allenamento')).toBeNull();
+    expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+    expect(screen.getByText('Gambe')).toBeTruthy();
   });
 
-  it('una bozza di prima del riscaldamento riprende come sempre', async () => {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(savedDraft));
-    await mount();
-    click('Riprendi allenamento');
-    expect(screen.getByText('Serie 2 di 2')).toBeTruthy();
-    expect(screen.queryByText(/^Riscaldamento/)).toBeNull();
+  it('serie per serie: obiettivo in grigio della serie in corso e tecnica solo sulla serie che la prevede (12 / 10 / a cedimento min. 6 + Drop set)', async () => {
+    const press = {
+      id: 12, exercise_id: 6, exercise_name: 'Pressa', rest: 60, muscle_group: 'gambe',
+      planned_sets: plannedSets(0, [{ min: 12, max: 12 }, { min: 10, max: 10 }, { min: 6, failure: true, technique: DROP }]),
+    };
+    const day = { id: 4, name: 'Pressa', exercises: [press] };
+    responses['read_plans.php'] = () => json({ records: [{ id: 6, name: 'Pressa', is_active: true, days: [day] }] });
+    await startDay('Pressa');
+
+    expect(screen.getByText('Serie 1 di 3')).toBeTruthy();
+    expect(screen.getByLabelText('Ripetizioni').getAttribute('placeholder')).toBe('12');
+    expect(shownTechnique()).not.toContain('Drop');
+    doSet('50', '12');
+    click('Salta timer');
+
+    expect(screen.getByLabelText('Ripetizioni').getAttribute('placeholder')).toBe('10');
+    expect(shownTechnique()).not.toContain('Drop');
+    doSet('50', '10');
+    click('Salta timer');
+
+    expect(screen.getByText('Serie 3 di 3')).toBeTruthy();
+    expect(screen.getByLabelText('Ripetizioni').getAttribute('placeholder')).toBe('a cedimento (min. 6)');
+    expect(shownTechnique()).toContain('Drop');
   });
 
   it('riepilogo: il riscaldamento ha il badge "Risc." e non entra nel conteggio delle serie', async () => {
@@ -1054,8 +1119,8 @@ describe('serie di riscaldamento della scheda (#67)', () => {
 
 describe('ordine reale e orario delle serie (#26)', () => {
   // Scheda riordinata: la riga con id 20 viene prima di quella con id 10
-  const benchFirst = { ...bench, id: 20, sets: 1 };
-  const flySecond = { ...fly, id: 10, sets: 1 };
+  const benchFirst = { ...bench, id: 20, planned_sets: plannedSets(0, [{ min: 8, max: 10 }]) };
+  const flySecond = { ...fly, id: 10, planned_sets: plannedSets(0, [{ min: 12, max: 12 }]) };
   const reorderedDay = { id: 3, name: 'Riordinata', exercises: [benchFirst, flySecond] };
   const save = async () => {
     await act(async () => { click('Salva allenamento'); });

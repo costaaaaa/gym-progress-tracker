@@ -262,18 +262,34 @@ for (const vp of viewports) {
         await snap(page, 'focus-scelta-giorno', tag);
 
         await page.getByRole('combobox').click();
-        await page.getByRole('option', { name: 'Spinta', exact: true }).click();
+        await page.getByRole('option', { name: 'Trazione', exact: true }).click();
         await page.getByRole('button', { name: 'Inizia allenamento', exact: true }).click();
         await page.getByRole('button', { name: 'Conferma serie', exact: true }).waitFor();
-        await snap(page, 'focus-allenamento', tag);
 
-        await page.getByLabel('Peso (kg)').fill('60');
-        await page.getByLabel('Ripetizioni').fill('8');
-        await page.getByRole('button', { name: 'Conferma serie', exact: true }).click();
+        // Trazioni: 12 / 10 / a cedimento (min. 6) con Rest Pause. Il recupero si fotografa dopo la prima serie;
+        // la terza mostra l'obiettivo "a cedimento" in grigio e la tecnica già scelta
+        const confirmSet = async (reps) => {
+          await page.getByLabel('Peso (kg)').fill('60');
+          await page.getByLabel('Ripetizioni').fill(reps);
+          await page.getByRole('button', { name: 'Conferma serie', exact: true }).click();
+        };
+        const skipRest = async () => {
+          await page.getByText('Recupero', { exact: true }).waitFor();
+          await page.getByRole('button', { name: 'Salta timer', exact: true }).click();
+          await page.getByRole('button', { name: 'Conferma serie', exact: true }).waitFor();
+        };
+        await confirmSet('12');
         await page.getByText('Recupero', { exact: true }).waitFor();
         await snap(page, 'focus-recupero', tag);
+        await skipRest();
+        await confirmSet('10');
+        await skipRest();
+        await snap(page, 'focus-allenamento', tag);
 
-        await page.getByRole('button', { name: 'Salta timer', exact: true }).click();
+        // L'ultima serie dell'esercizio porta subito al successivo (Rematore, parte dal riscaldamento), senza recupero
+        await confirmSet('8');
+        await page.getByRole('heading', { name: 'Rematore con bilanciere' }).waitFor();
+        await snap(page, 'focus-riscaldamento', tag);
         for (let i = 0; i < 10 && !(await page.getByText('Riepilogo', { exact: true }).isVisible()); i++) {
           await page.getByRole('button', { name: 'Salta esercizio', exact: true }).click();
           await page.waitForTimeout(300);

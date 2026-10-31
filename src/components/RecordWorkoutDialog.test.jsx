@@ -7,15 +7,14 @@ import { plannedSets } from '../test/plannedSets';
 
 vi.mock('../utils/analytics', () => ({ track: vi.fn() }));
 
-// Le righe dell'inserimento manuale leggono ancora sets/warmup_sets/reps (lavoro di 3b); la riga della scheda legge planned_sets
-const planned = plannedSets(2, [{ min: 5, max: 5 }, { min: 5, max: 5, technique: 'Rest Pause' }]);
+// 2 riscaldamenti + 2 serie da 5, Rest pause sulla seconda
 const squat = {
-  id: 11, exercise_id: 5, exercise_name: 'Squat', sets: 2, warmup_sets: 2, reps: '5', rest: 60,
-  equipment: 'bilanciere', intensity_technique: 'Rest Pause', planned_sets: planned,
+  id: 11, exercise_id: 5, exercise_name: 'Squat', rest: 60, equipment: 'bilanciere',
+  planned_sets: plannedSets(2, [{ min: 5, max: 5 }, { min: 5, max: 5, technique: 'Rest Pause' }]),
 };
 const basePlan = { id: 5, name: 'Gambe', days: [{ id: 3, name: 'Gambe', exercises: [squat] }] };
 // 1 riscaldamento + 3 serie con ripetizioni a lista
-const listRepsPlan = { id: 5, name: 'Gambe', days: [{ id: 3, name: 'Gambe', exercises: [{ ...squat, warmup_sets: 1, sets: 3, reps: '8/6/4' }] }] };
+const listRepsPlan = { id: 5, name: 'Gambe', days: [{ id: 3, name: 'Gambe', exercises: [{ ...squat, planned_sets: plannedSets(1, [{ min: 8, max: 8 }, { min: 6, max: 6 }, { min: 4, max: 4 }]) }] }] };
 
 let fetchMock;
 beforeEach(() => {
@@ -78,13 +77,21 @@ describe('ripetizioni suggerite dalla scheda', () => {
 });
 
 describe('tecnica di una riga che smette di essere riscaldamento', () => {
-  it('prende la tecnica della scheda, come le serie allenanti originali', () => {
+  // combobox: giorno, poi la tecnica di ogni riga; true se la riga mostra la tecnica della scheda
+  const hasTechnique = () => screen.getAllByRole('combobox').slice(1).map((s) => /Rest pause/.test(s.textContent));
+
+  it('le righe partono con la tecnica della propria serie: Rest pause solo sull\'ultima', () => {
     open();
-    // combobox: giorno, poi la tecnica di ogni riga; true se la riga mostra la tecnica della scheda
-    const hasTechnique = () => screen.getAllByRole('combobox').slice(1).map((s) => /Rest pause/.test(s.textContent));
-    expect(hasTechnique()).toEqual([false, false, true, true]);
-    fireEvent.click(toggles()[0]);
-    expect(hasTechnique()).toEqual([true, false, true, true]);
+    expect(hasTechnique()).toEqual([false, false, false, true]);
+  });
+
+  it('una riga che torna allenante prende la tecnica della serie che le tocca', () => {
+    open();
+    fireEvent.click(toggles()[3]);
+    expect(hasTechnique()).toEqual([false, false, false, false]);
+    // Tornando allenante è di nuovo la seconda serie allenante
+    fireEvent.click(toggles()[3]);
+    expect(hasTechnique()).toEqual([false, false, false, true]);
   });
 });
 
@@ -115,7 +122,7 @@ describe('salvataggio con il riscaldamento', () => {
     const body = await save();
     expect(body.workout_records.map((r) => [r.set_number, r.weight, r.reps, r.is_warmup, r.intensity_technique])).toEqual([
       [1, 20, '10', true, ''],
-      [3, 100, '5', false, 'Rest Pause'],
+      [3, 100, '5', false, ''],
       [4, 100, '4', false, 'Rest Pause'],
     ]);
   });
@@ -126,5 +133,26 @@ describe('salvataggio con il riscaldamento', () => {
     fireEvent.click(toggles()[2]);
     const body = await save();
     expect(body.workout_records.map((r) => [r.set_number, r.is_warmup, r.intensity_technique])).toEqual([[3, true, '']]);
+  });
+});
+
+describe('ripetizioni insolite', () => {
+  const trySave = async () => { await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Salva' })); }); };
+  const saved = () => fetchMock.mock.calls.some(([url]) => url.includes('record_workout.php'));
+
+  it('oltre la soglia e oltre la serie pianificata della riga chiede conferma prima di salvare', async () => {
+    open();
+    fill(2, '100', '40');
+    await trySave();
+    expect(screen.getByText('Confermi 40 ripetizioni?')).toBeTruthy();
+    expect(saved()).toBe(false);
+  });
+
+  it('una serie pianificata a cedimento con minimo alto non chiede conferma sotto il minimo', async () => {
+    const plan = { id: 5, name: 'Gambe', days: [{ id: 3, name: 'Gambe', exercises: [{ ...squat, planned_sets: plannedSets(0, [{ min: 5, max: 5 }, { min: 50, failure: true }]) }] }] };
+    open(plan);
+    fill(1, '100', '45');
+    await trySave();
+    expect(saved()).toBe(true);
   });
 });

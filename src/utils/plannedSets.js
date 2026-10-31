@@ -50,6 +50,10 @@ export const targetLabel = (set) => {
   return set.reps_min === set.reps_max ? String(set.reps_min) : `${set.reps_min}-${set.reps_max}`;
 };
 
+// Obiettivo e tecnica di una serie allenante; vuoti in riscaldamento o senza serie
+export const plannedTarget = (set) => (set?.kind === 'working' ? targetLabel(set) : '');
+export const plannedTechnique = (set) => (set?.kind === 'working' ? set.intensity_technique || '' : '');
+
 // Tecnica come si salva: vuota o "Nessuna (Normale)" vale null.
 const normalizeTechnique = (value) => {
   const trimmed = String(value ?? '').trim();
@@ -58,7 +62,9 @@ const normalizeTechnique = (value) => {
 
 const targetOf = (set) => ({ reps_min: set.reps_min, reps_max: set.reps_max, to_failure: set.to_failure });
 const sameTarget = (a, b) => a.reps_min === b.reps_min && a.reps_max === b.reps_max && a.to_failure === b.to_failure;
-const workingOf = (plannedSets) => plannedSets.filter((set) => set.kind === 'working');
+// Serie pianificate di un esercizio, vuote se mancano
+export const plannedOf = (exercise) => exercise?.planned_sets ?? [];
+export const workingOf = (plannedSets) => plannedSets.filter((set) => set.kind === 'working');
 
 // Serie nella forma compatta { warmups, sets, target, technique }, o null se non si possono
 // scrivere così: servono target tutti uguali e al massimo l'ultima allenante con una tecnica.

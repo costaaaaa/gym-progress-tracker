@@ -6,13 +6,14 @@ import { MemoryRouter } from 'react-router-dom';
 import Workouts from './Workouts';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { json } from '../test/dom';
+import { plannedSets, times } from '../test/plannedSets';
 
 vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ isLoggedIn: true, loading: false }) }));
 
 const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
 
-const day = { id: 1, name: 'Push', exercises: [{ id: 11, exercise_name: 'Panca piana', sets: 3, reps: '8', rest: 90, muscle_group: 'petto' }] };
+const day = { id: 1, name: 'Push', exercises: [{ id: 11, exercise_name: 'Panca piana', planned_sets: plannedSets(0, times(3, { min: 8, max: 8 })), rest: 90, muscle_group: 'petto' }] };
 const plan = { id: 5, name: 'Push Pull', description: 'Spinta e tirata', is_active: true, days: [day] };
 const otherPlan = { id: 6, name: 'Full body', description: 'Tre giorni a settimana', is_active: false, days: [day] };
 
