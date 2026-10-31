@@ -42,7 +42,8 @@ class WorkoutExercise
         $this->notes = isset($this->notes) ? trim((string)$this->notes) : null;
         $this->intensity_technique = isset($this->intensity_technique) ? trim((string)$this->intensity_technique) : null;
 
-        // Query to insert record: l'esercizio va in fondo al giorno (position = massimo + 1)
+        // Inserimento: l'esercizio va in fondo al giorno (position = massimo + 1)
+        // :day_id e :position_day_id sono lo stesso valore: PDO non accetta lo stesso segnaposto due volte
         $query = "INSERT INTO " . $this->table_name . "
                     (day_id, exercise_id, position, sets, warmup_sets, reps, rest, notes, intensity_technique)
                 SELECT :day_id, :exercise_id, COALESCE(MAX(position), 0) + 1, :sets, :warmup_sets, :reps, :rest, :notes, :intensity_technique
@@ -207,7 +208,8 @@ class WorkoutExercise
 
     /**
      * Sposta un esercizio una posizione in alto (diminuisce la position).
-     * Scambia solo la position con il vicino: ogni riga resta legata al suo esercizio.
+     * Cambia solo le position: ogni riga resta legata al suo esercizio. Il giorno viene
+     * rinumerato 1..n e si scrivono solo le righe la cui position cambia.
      *
      * @return boolean true se l'operazione ha successo, false altrimenti
      */
@@ -254,8 +256,9 @@ class WorkoutExercise
                 }
             }
             if ($index === null) {
+                // Eliminato nel frattempo (l'appartenenza l'ha già verificata il controller)
                 $this->conn->rollback();
-                return true;
+                return false;
             }
             $neighbour_index = $direction === 'up' ? $index - 1 : $index + 1;
             if (!isset($rows[$neighbour_index])) {
@@ -264,21 +267,16 @@ class WorkoutExercise
                 return true;
             }
 
+            // Scambia i due nell'ordine, rinumera il giorno 1..n e scrive solo le righe cambiate:
+            // con position già 1..n sono 2 UPDATE, con buchi o pareggi il giorno si rimette in ordine
+            $swapped = $rows[$index];
+            $rows[$index] = $rows[$neighbour_index];
+            $rows[$neighbour_index] = $swapped;
+
             $update = $this->conn->prepare("UPDATE " . $this->table_name . " SET position = :position WHERE id = :id");
-            $current = $rows[$index];
-            $neighbour = $rows[$neighbour_index];
-            if ((int) $current['position'] !== (int) $neighbour['position']) {
-                $update->execute(array(':position' => $neighbour['position'], ':id' => $current['id']));
-                $update->execute(array(':position' => $current['position'], ':id' => $neighbour['id']));
-            } else {
-                // Position uguali (righe scritte dal codice precedente): l'ordine per id non si può
-                // invertire scambiando due numeri uguali, quindi si rinumera il giorno 1..n
-                $rows[$index] = $neighbour;
-                $rows[$neighbour_index] = $current;
-                foreach ($rows as $i => $row) {
-                    if ((int) $row['position'] !== $i + 1) {
-                        $update->execute(array(':position' => $i + 1, ':id' => $row['id']));
-                    }
+            foreach ($rows as $i => $row) {
+                if ((int) $row['position'] !== $i + 1) {
+                    $update->execute(array(':position' => $i + 1, ':id' => $row['id']));
                 }
             }
 
@@ -288,7 +286,7 @@ class WorkoutExercise
             if ($this->conn->inTransaction()) {
                 $this->conn->rollback();
             }
-            error_log("Errore in swapPositionWithNeighbour: " . $e->getMessage());
+            error_log("Errore nel riordino ($direction): " . $e->getMessage());
             return false;
         }
     }

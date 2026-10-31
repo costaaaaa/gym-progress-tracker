@@ -660,7 +660,10 @@ ALTER TABLE `gym_workout_sets`
 --     e ogni riga resta legata al suo esercizio. I buchi sono ammessi (eliminando un esercizio
 --     non si ricompatta). L'UPDATE numera le righe esistenti nell'ordine attuale (id) dentro ogni
 --     giorno. Colonna nuova NOT NULL DEFAULT 0: il rollback del codice resta possibile (il codice
---     vecchio ignora la colonna e ordina ancora per id).
+--     vecchio ignora la colonna e ordina ancora per id). Dopo un rollback e un nuovo deploy, le righe
+--     aggiunte dal codice vecchio hanno position 0 e salgono in cima al giorno: si sistemano
+--     rilanciando l'UPDATE con ROW_NUMBER di questa sezione, oppure da sole al primo riordino di
+--     quel giorno (che rinumera 1..n).
 -- ------------------------------------------------------------------------------
 
 ALTER TABLE `gym_workout_exercises`

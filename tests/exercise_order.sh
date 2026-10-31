@@ -75,7 +75,6 @@ add() { # exercise_id sets reps rest notes → id della riga della scheda
 }
 move() { call POST api/workout/reorder_exercise.php "$A" "{\"day_id\":$DAY,\"exercise_id\":$1,\"direction\":\"$2\"}"; }
 plan_exercises() { echo "200 $(call GET api/workout/read_plans.php "$A" | cut -d' ' -f2-)"; }
-order() { plan_exercises | cut -d' ' -f2- | jq -c '[.records[0].days[0].exercises[].id]'; }
 
 echo "Inserimento: A, B, C escono in quest'ordine"
 ID_A="$(add "$EX_A" 3 "8" 90 "nota A")"
