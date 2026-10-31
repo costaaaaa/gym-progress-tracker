@@ -122,7 +122,6 @@ check "export: position crescente" "$EXPORT" \
 
 echo
 echo "Buco: elimina un esercizio in mezzo, poi un riordino richiude il giorno"
-DAY1="$DAY"
 DAY="$(call POST api/workout/create_days.php "$A" "{\"plan_id\":$plan,\"days\":[{\"name\":\"Giorno 2\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
 ID_W="$(add "$EX_A" 3 "8" 90 "nota W")"
 ID_X="$(add "$EX_B" 3 "8" 90 "nota X")"
@@ -136,7 +135,6 @@ check "W ha ancora il suo id e i suoi dati (nota W)" "$(plan_exercises)" \
     ".records[0].days[] | select(.id == $DAY) | .exercises[1] | .id == $ID_W and .exercise_id == $EX_A and .notes == \"nota W\""
 check "export: position del giorno consecutive 1, 2, 3" "$(call GET api/user/export.php "$A")" \
     '[.. | objects | select(has("exercises") and has("name") and .name == "Giorno 2") | .exercises[].position] == [1, 2, 3]'
-DAY="$DAY1"
 
 echo
 if [[ $fails -eq 0 ]]; then echo "$checks controlli, 0 falliti"; else echo "$checks controlli, $fails falliti"; exit 1; fi
