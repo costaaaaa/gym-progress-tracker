@@ -23,7 +23,7 @@ import { API_BASE_URL } from '../config';
 import { personalLabel } from '../api/exercises';
 import { Trans, useTranslation } from 'react-i18next';
 import { muscleLabel } from '../i18n/labels';
-import { compactForm, targetLabel } from '../utils/plannedSets';
+import { compactForm, plannedOf, targetLabel } from '../utils/plannedSets';
 import { addedPlannedSets } from '../utils/focusSession';
 
 const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '');
@@ -31,7 +31,7 @@ const ALL = '__all__';
 
 // Valori di partenza dell'aggiunta: la forma compatta dell'esercizio corrente, se ha un target fisso (non a cedimento)
 const startValues = (exercise) => {
-  const form = compactForm(exercise?.planned_sets);
+  const form = compactForm(plannedOf(exercise));
   if (!form || form.target.to_failure) return { sets: '3', reps: '10' };
   return { sets: String(form.sets), reps: targetLabel(form.target) };
 };

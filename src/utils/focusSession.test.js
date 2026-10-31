@@ -158,7 +158,6 @@ describe('obiettivo e tecnica di ogni posizione (#77)', () => {
 });
 
 describe('ripetizioni insolite da confermare (#77)', () => {
-
   it('sopra la soglia e oltre il massimo della scheda serve la conferma', () => {
     expect(repsNeedConfirm('31', work(1, 12, 12))).toBe(true);
     expect(repsNeedConfirm('35', work(1, 8, 40))).toBe(false);

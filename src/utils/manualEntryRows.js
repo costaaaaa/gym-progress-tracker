@@ -2,7 +2,7 @@
 // riscaldamento attivabile riga per riga. Nessun React né window, solo import relativi.
 
 import { initialWeight, plannedSetAt, slotTechnique, totalSlots } from './focusSession';
-import { plannedTarget, plannedTechnique, workingOf, plannedOf } from './plannedSets';
+import { plannedOf, plannedTarget, plannedTechnique, workingOf } from './plannedSets';
 
 // Ripetizioni con cui nasce una riga: il target della serie se è un numero singolo, altrimenti vuoto
 const prefilledReps = (planned) => (

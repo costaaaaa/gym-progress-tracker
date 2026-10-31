@@ -4,7 +4,7 @@
 // Stessa logica di src/screens/Focus/focusHelpers.js nell'app mobile.
 
 import { isWorkingSet } from './workoutMetrics';
-import { MAX_WORKING, fromCompact, parseRowTarget, plannedTarget, plannedTechnique, toInt, workingOf, plannedOf } from './plannedSets';
+import { MAX_WORKING, fromCompact, parseRowTarget, plannedOf, plannedTarget, plannedTechnique, toInt, workingOf } from './plannedSets';
 
 // Funzione premium che sblocca cambio e aggiunta (vedi user_features() nel backend)
 export const FEATURE_SESSION_EDIT = 'focus_session_edit';
