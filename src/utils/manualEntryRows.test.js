@@ -1,19 +1,28 @@
 import { describe, it, expect } from 'vitest';
-import { initialSetRows, toggleWarmupRow, rowPlanReps } from './manualEntryRows';
+import { initialSetRows, toggleWarmupRow, rowPlanReps, rowPlannedSet } from './manualEntryRows';
+import { DROP, plannedSets, times } from '../test/plannedSets';
 
-describe('righe iniziali dell\'inserimento manuale (#67)', () => {
-  it('prima le righe di riscaldamento (senza peso, ripetizioni né tecnica), poi le allenanti dalla scheda', () => {
-    const rows = initialSetRows({ sets: 2, warmup_sets: 2, reps: '10/8', equipment: 'bilanciere', intensity_technique: 'Drop set' });
-    expect(rows).toEqual([
+// 1 riscaldamento, poi 12 / 10 / a cedimento (min. 6) con Drop set sulla terza allenante
+const squat = {
+  equipment: 'bilanciere',
+  planned_sets: plannedSets(1, [{ min: 12, max: 12 }, { min: 10, max: 10 }, { min: 6, failure: true, technique: DROP }]),
+};
+
+describe('righe iniziali dell\'inserimento manuale (#77)', () => {
+  it('una riga per serie pianificata: riscaldamento vuoto, target numerico precompilato, tecnica sulla sua serie', () => {
+    expect(initialSetRows(squat)).toEqual([
       { is_warmup: true, weight: '', reps: '', intensity_technique: '' },
-      { is_warmup: true, weight: '', reps: '', intensity_technique: '' },
-      { is_warmup: false, weight: '', reps: '10', intensity_technique: 'Drop set' },
-      { is_warmup: false, weight: '', reps: '8', intensity_technique: 'Drop set' },
+      { is_warmup: false, weight: '', reps: '12', intensity_technique: '' },
+      { is_warmup: false, weight: '', reps: '10', intensity_technique: '' },
+      { is_warmup: false, weight: '', reps: '', intensity_technique: DROP },
     ]);
   });
 
-  it('senza riscaldamento restano le righe di prima; i corpo libero hanno peso 0', () => {
-    const rows = initialSetRows({ sets: 2, reps: 'Max', equipment: 'corpo_libero' });
+  it('un intervallo o un cedimento restano vuoti, con l\'obiettivo in grigio; i corpo libero hanno peso 0', () => {
+    const rows = initialSetRows({
+      equipment: 'corpo_libero',
+      planned_sets: plannedSets(0, [{ min: 8, max: 10 }, { failure: true }]),
+    });
     expect(rows).toEqual([
       { is_warmup: false, weight: '0', reps: '', intensity_technique: '' },
       { is_warmup: false, weight: '0', reps: '', intensity_technique: '' },
@@ -21,17 +30,34 @@ describe('righe iniziali dell\'inserimento manuale (#67)', () => {
   });
 });
 
-describe('righe del manuale: attivare o disattivare il riscaldamento (#67)', () => {
-  const plan = { reps: '8/6/4', intensity_technique: 'Drop set' };
-  const rows = (...reps) => reps.map((r, i) => ({ is_warmup: i === 0, weight: '', reps: r, intensity_technique: 'Drop set' }));
+describe('obiettivo in grigio e serie pianificata di una riga (#77)', () => {
+  const rows = initialSetRows(squat);
 
-  it('rowPlanReps: vuoto per il riscaldamento, per le altre conta solo chi non è riscaldamento prima', () => {
-    const r = rows('', '8', '6', '4');
-    expect([0, 1, 2, 3].map((i) => rowPlanReps(r, i, '8/6/4'))).toEqual(['', '8', '6', '4']);
-    expect(rowPlanReps(r, 1, '8-10')).toBe('8-10');
+  it('rowPlanReps: vuoto per il riscaldamento; per le altre la k-esima allenante, a parole', () => {
+    expect([0, 1, 2, 3].map((i) => rowPlanReps(rows, i, squat))).toEqual(['', '12', '10', 'a cedimento (min. 6)']);
   });
 
-  it('spegnendo il riscaldamento le ripetizioni precompilate scalano; oltre la lista vale l\'ultimo valore', () => {
+  it('conta solo le righe che non sono riscaldamento, e oltre l\'ultima ripete l\'ultima', () => {
+    const shifted = rows.map((r, i) => ({ ...r, is_warmup: i === 3 }));
+    expect([0, 1, 2, 3].map((i) => rowPlanReps(shifted, i, squat))).toEqual(['12', '10', 'a cedimento (min. 6)', '']);
+    const allWorking = rows.map((r) => ({ ...r, is_warmup: false }));
+    expect(rowPlanReps(allWorking, 3, squat)).toBe('a cedimento (min. 6)');
+    expect(rowPlanReps(allWorking, 0, squat)).toBe('12');
+  });
+
+  it('rowPlannedSet è la serie allenante pianificata della riga, null in riscaldamento', () => {
+    expect(rowPlannedSet(rows, 0, squat)).toBeNull();
+    expect(rowPlannedSet(rows, 3, squat)).toMatchObject({ set_number: 4, to_failure: true, reps_min: 6 });
+  });
+});
+
+describe('righe del manuale: attivare o disattivare il riscaldamento (#77)', () => {
+  const plan = {
+    planned_sets: plannedSets(1, [{ min: 8, max: 8 }, { min: 6, max: 6 }, { min: 4, max: 4, technique: DROP }]),
+  };
+  const rows = (...reps) => reps.map((r, i) => ({ is_warmup: i === 0, weight: '', reps: r, intensity_technique: i === 0 ? '' : 'X' }));
+
+  it('spegnendo il riscaldamento target e ripetizioni precompilate scalano; oltre l\'ultima vale l\'ultimo', () => {
     expect(toggleWarmupRow(rows('', '8', '6', '4'), 0, plan).map((r) => [r.is_warmup, r.reps])).toEqual([
       [false, '8'], [false, '6'], [false, '4'], [false, '4'],
     ]);
@@ -40,26 +66,31 @@ describe('righe del manuale: attivare o disattivare il riscaldamento (#67)', () 
   it('riaccendendolo tornano com\'erano; le righe già scritte dall\'utente non si toccano', () => {
     const off = toggleWarmupRow(rows('', '8', '6', '4'), 0, plan);
     expect(toggleWarmupRow(off, 0, plan).map((r) => r.reps)).toEqual(['', '8', '6', '4']);
-    const edited = rows('', '8', '7', '4');
-    expect(toggleWarmupRow(edited, 0, plan).map((r) => r.reps)).toEqual(['8', '6', '7', '4']);
+    expect(toggleWarmupRow(rows('', '8', '7', '4'), 0, plan).map((r) => r.reps)).toEqual(['8', '6', '7', '4']);
   });
 
-  it('se la scheda non ha numeri per serie le righe restano vuote e il resto della riga non cambia', () => {
+  it('se il target non è un numero singolo le righe restano vuote e il resto della riga non cambia', () => {
+    const range = { planned_sets: plannedSets(1, times(3, { min: 8, max: 10 })) };
     const r = rows('', '', '', '');
-    const out = toggleWarmupRow(r, 0, { reps: 'Max' });
+    const out = toggleWarmupRow(r, 0, range);
     expect(out.map((x) => x.reps)).toEqual(['', '', '', '']);
     expect(out[1]).toEqual(r[1]);
     expect(out[0]).toEqual({ ...r[0], is_warmup: false });
   });
 
-  it('spegnendo una riga le dà la tecnica della scheda se è vuota; una scelta dell\'utente resta', () => {
-    const empty = rows('', '8').map((r) => ({ ...r, intensity_technique: '' }));
-    expect(toggleWarmupRow(empty, 0, plan)[0].intensity_technique).toBe('Drop set');
-    const chosen = empty.map((r) => ({ ...r, intensity_technique: 'Rest Pause' }));
-    expect(toggleWarmupRow(chosen, 0, plan)[0].intensity_technique).toBe('Rest Pause');
+  it('spegnendo una riga le dà la tecnica della sua serie in scheda se è vuota; una scelta dell\'utente resta', () => {
+    const noTechnique = (list) => list.map((r) => ({ ...r, intensity_technique: '' }));
+    // Il riscaldamento in testa diventa la 1ª allenante (8, senza tecnica)
+    expect(toggleWarmupRow(noTechnique(rows('', '8', '6', '4')), 0, plan)[0].intensity_technique).toBe('');
+    // Quello in coda diventa la 4ª allenante: oltre la lista vale l'ultima serie, col Drop set
+    const last = noTechnique(rows('8', '6', '4', '')).map((r, i) => ({ ...r, is_warmup: i === 3 }));
+    expect(toggleWarmupRow(last, 3, plan)[3].intensity_technique).toBe(DROP);
+    const chosen = last.map((r) => ({ ...r, intensity_technique: 'Rest Pause' }));
+    expect(toggleWarmupRow(chosen, 3, plan)[3].intensity_technique).toBe('Rest Pause');
   });
 
   it('accendendo il riscaldamento la tecnica nella riga non cambia (il salvataggio la lascia vuota)', () => {
-    expect(toggleWarmupRow(rows('', '8').map((r) => ({ ...r, is_warmup: false })), 1, plan)[1].intensity_technique).toBe('Drop set');
+    const r = rows('8', '6', '4', '4').map((x) => ({ ...x, is_warmup: false }));
+    expect(toggleWarmupRow(r, 1, plan)[1].intensity_technique).toBe('X');
   });
 });

@@ -12,7 +12,7 @@ import { TABULAR } from '../../utils/fonts';
 import ElapsedClock from './ElapsedClock';
 import QuitDialog from './QuitDialog';
 import { slotLabel } from './slotLabel';
-import { MAX_WEIGHT, isValidWeight, isValidReps, planRepsForSet, lastSessionSets, setStatus, setSlot } from '../../utils/focusSession';
+import { MAX_WEIGHT, isValidWeight, isValidReps, slotTarget, lastSessionSets, setStatus, setSlot } from '../../utils/focusSession';
 import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, muscleLabel, techniqueLabel } from '../../i18n/labels';
 
 export default function WorkoutPhase({
@@ -25,6 +25,7 @@ export default function WorkoutPhase({
 }) {
   const { t } = useTranslation();
   const { colors } = useFocusColors();
+  const target = slotTarget(currentExercise, currentSetIndex);
   const skipButtonSx = { py: 1.5, color: colors.textSecondary, '&:hover': { color: colors.text, bgcolor: colors.bgElevated } };
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text, display: 'flex', flexDirection: 'column' }}>
@@ -124,10 +125,10 @@ export default function WorkoutPhase({
               sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.text }, '&.Mui-focused fieldset': { borderColor: colors.text } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.text } }} />
             {/* Vuoto a ogni serie: la scheda in grigio è solo un suggerimento, va scritta */}
             <TextField label={t('record.reps')} value={repsInput} onChange={(e) => onRepsChange(e.target.value)}
-              placeholder={currentSlot.isWarmup ? '' : planRepsForSet(currentExercise.reps, currentSlot.workingIndex)} InputLabelProps={{ shrink: true }}
+              placeholder={target} InputLabelProps={{ shrink: true }}
               onFocus={(e) => e.target.select()}
               fullWidth inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
-              sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.text }, '&.Mui-focused fieldset': { borderColor: colors.text } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.text } }} />
+              sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.text }, '&.Mui-focused fieldset': { borderColor: colors.text } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.text }, ...(target.length > 10 && { '& input::placeholder': { fontSize: '0.85rem', fontWeight: 500 } }) }} />
           </Box>
 
           {/* Il riscaldamento non ha tecnica di intensità */}

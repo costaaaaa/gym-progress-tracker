@@ -30,7 +30,7 @@ import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, techniqueLabel } from '../i18n/labe
 import {
   MAX_WEIGHT, isValidWeight, newIdempotencyKey, isValidReps, repsNeedConfirm, withWarmupRule,
 } from '../utils/focusSession';
-import { initialSetRows, toggleWarmupRow, rowPlanReps } from '../utils/manualEntryRows';
+import { initialSetRows, toggleWarmupRow, rowPlanReps, rowPlannedSet } from '../utils/manualEntryRows';
 import { planSummary } from '../utils/plannedSets';
 
 const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
@@ -86,7 +86,10 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
   // Serie scritte (peso valido e ripetizioni presenti): quelle senza ripetizioni non sono state fatte
   const writtenSets = () => exercises.flatMap(exercise =>
     (workoutData[exercise.id] || [])
-      .map((set, setIndex) => ({ exercise, setIndex, reps: String(set.reps ?? '').trim(), weight: set.weight }))
+      .map((set, setIndex) => ({
+        exercise, setIndex, reps: String(set.reps ?? '').trim(), weight: set.weight,
+        planned: rowPlannedSet(workoutData[exercise.id], setIndex, exercise),
+      }))
       .filter(set => isValidWeight(set.weight) && set.reps !== ''));
 
   const handleSave = () => {
@@ -97,7 +100,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
       return;
     }
     setRepsError('');
-    const unusual = written.find(set => repsNeedConfirm(set.reps, set.exercise.reps));
+    const unusual = written.find(set => repsNeedConfirm(set.reps, set.planned));
     if (unusual) {
       setUnusualSet({ reps: parseInt(unusual.reps, 10) });
       return;
@@ -324,7 +327,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                             label={t('record.reps')}
                             value={row.reps ?? ''}
                             // La scheda indica le ripetizioni per le sole righe che ora non sono riscaldamento
-                            placeholder={rowPlanReps(rows, setIndex, exercise.reps)}
+                            placeholder={rowPlanReps(rows, setIndex, exercise)}
                             InputLabelProps={{ shrink: true }}
                             inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
                             onFocus={(e) => e.target.select()}

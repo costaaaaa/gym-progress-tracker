@@ -3,7 +3,8 @@
 // aggiunta valgono solo per questa sessione, la scheda non cambia).
 // Stessa logica di src/screens/Focus/focusHelpers.js nell'app mobile.
 
-import { extractReps, isWorkingSet } from './workoutMetrics';
+import { isWorkingSet } from './workoutMetrics';
+import { targetLabel } from './plannedSets';
 
 // Funzione premium che sblocca cambio e aggiunta (vedi user_features() nel backend)
 export const FEATURE_SESSION_EDIT = 'focus_session_edit';
@@ -28,39 +29,49 @@ export const isValidReps = (value) => {
   return n >= 1 && n <= MAX_REPS;
 };
 
-// Obiettivo della serie dalla scheda, mostrato in grigio nel campo (mai salvato da solo).
-// Lista "12/10/8": il valore della serie (oltre la lista l'ultimo); altrimenti il testo intero.
-export const planRepsForSet = (planReps, setIndex) => {
-  const s = String(planReps ?? '').trim();
-  if (!s.includes('/')) return s;
-  const parts = s.split('/').map((p) => p.trim());
-  return parts[Math.min(setIndex, parts.length - 1)];
-};
-
 // Oltre questa soglia si chiede conferma, salvo che la scheda preveda di più
 export const REPS_CONFIRM_MIN = 30;
 
-// Conferma per ripetizioni insolite: contro i numeri scritti accanto a un altro (9 + 10 = 910)
-export const repsNeedConfirm = (reps, planReps) => {
+// Conferma per ripetizioni insolite: contro i numeri scritti accanto a un altro (9 + 10 = 910).
+// Il massimo della scheda è reps_max; a cedimento il minimo; senza numeri 0.
+export const repsNeedConfirm = (reps, plannedSet) => {
   const n = parseInt(reps, 10);
-  return n > REPS_CONFIRM_MIN && n > extractReps(planReps);
+  const planned = plannedSet?.to_failure ? plannedSet.reps_min : plannedSet?.reps_max;
+  return n > REPS_CONFIRM_MIN && n > (planned ?? 0);
 };
 
 export const isBodyweight = (exercise) => exercise?.equipment === 'corpo_libero';
 
-// Serie di riscaldamento della scheda: si sommano alle `sets` allenanti (2 risc. + 3 serie = 5 posizioni)
-const warmupCount = (exercise) => Math.max(0, parseInt(exercise?.warmup_sets, 10) || 0);
+const plannedOf = (exercise) => exercise?.planned_sets ?? [];
+
+// Serie di riscaldamento della scheda: si sommano alle allenanti (2 risc. + 3 serie = 5 posizioni)
+const warmupCount = (exercise) => plannedOf(exercise).filter((set) => set.kind === 'warmup').length;
 
 // Serie allenanti della scheda
-const workingCount = (exercise) => Number(exercise?.sets) || 0;
+const workingCount = (exercise) => plannedOf(exercise).filter((set) => set.kind === 'working').length;
+
+// Serie pianificata della posizione `slotIndex`: i riscaldamenti vengono prima, come in planned_sets
+export const plannedSetAt = (exercise, slotIndex) => plannedOf(exercise)[slotIndex] ?? null;
+
+// Obiettivo in grigio nel campo ripetizioni della posizione: vuoto in riscaldamento
+export const slotTarget = (exercise, slotIndex) => {
+  const planned = plannedSetAt(exercise, slotIndex);
+  return planned?.kind === 'working' ? targetLabel(planned) : '';
+};
+
+// Tecnica con cui parte la posizione: quella della sua serie in scheda, vuota in riscaldamento
+export const slotTechnique = (exercise, slotIndex) => {
+  const planned = plannedSetAt(exercise, slotIndex);
+  return planned?.kind === 'working' ? planned.intensity_technique || '' : '';
+};
 
 // Posizioni di un esercizio nella sessione: prima il riscaldamento, poi le serie allenanti.
 // currentSetIndex, le serie saltate e i pallini ragionano su queste posizioni.
 export const totalSlots = (exercise) => warmupCount(exercise) + workingCount(exercise);
 
 // Che serie è la posizione `slotIndex`: riscaldamento o allenante, il suo numero (da 1) e il totale
-// del suo tipo. workingIndex è l'indice fra le sole allenanti (-1 in riscaldamento): serve a
-// obiettivo ripetizioni e chip "Ultima volta", che parlano solo delle serie allenanti.
+// del suo tipo. workingIndex è l'indice fra le sole allenanti (-1 in riscaldamento): serve alle
+// chip "Ultima volta" e al peso iniziale, che parlano solo delle serie allenanti.
 export const setSlot = (exercise, slotIndex) => {
   const warmups = warmupCount(exercise);
   if (slotIndex < warmups) return { isWarmup: true, number: slotIndex + 1, total: warmups, workingIndex: -1 };
@@ -153,19 +164,16 @@ export const groupsInExecutionOrder = (completedSets) => {
   return [...timed.sort((a, b) => startOf(a) - startOf(b)), ...untimed];
 };
 
-// Giorno di una bozza da riprendere. currentSetIndex e skippedSets contano anche le posizioni di
-// riscaldamento solo se la bozza ha slotsIncludeWarmup; senza, la sessione è partita senza
-// riscaldamento e prosegue così (warmup_sets a 0).
-export const draftDay = (draft) => (draft.slotsIncludeWarmup
-  ? draft.selectedDay
-  : { ...draft.selectedDay, exercises: draft.selectedDay.exercises.map((e) => ({ ...e, warmup_sets: 0 })) });
+// Una bozza si riprende solo nel formato con le serie pianificate (#77): il segno lo scrive
+// il salvataggio. Quelle di prima si scartano senza convertirle.
+export const isCurrentDraft = (draft) => draft?.plannedSets === true;
 
 let entrySeq = 0;
 
 // Voce di sessione per un esercizio del catalogo (record di read_all.php).
 // L'id è una stringa che non si confonde con gli id numerici di
 // gym_workout_exercises: il salvataggio confronta già con String(e.id).
-export const buildSessionEntry = (catalogEx, { sets, warmupSets = 0, reps, rest }, extra = {}) => {
+export const buildSessionEntry = (catalogEx, { planned_sets, rest }, extra = {}) => {
   entrySeq += 1;
   return {
     id: `x-${Date.now()}-${entrySeq}`,
@@ -173,25 +181,22 @@ export const buildSessionEntry = (catalogEx, { sets, warmupSets = 0, reps, rest 
     exercise_name: catalogEx.name,
     muscle_group: catalogEx.muscle_group,
     equipment: catalogEx.equipment || null,
-    sets: Math.max(1, parseInt(sets, 10) || 1),
-    warmup_sets: Math.max(0, parseInt(warmupSets, 10) || 0),
-    reps: reps === undefined || reps === null ? '' : String(reps),
+    planned_sets,
     rest: Math.max(0, parseInt(rest, 10) || 0),
-    intensity_technique: '',
     notes: '',
     ...extra,
   };
 };
 
 // Cambia l'esercizio in posizione `index` con `catalogEx`: la voce viene sostituita
-// (stessi serie/reps/recupero). Il cambio è consentito solo prima di iniziare
+// (stesse serie pianificate, con tecniche e riscaldamento, e stesso recupero). Il cambio è consentito solo prima di iniziare
 // l'esercizio, quindi nessuna serie fatta va persa o attribuita all'esercizio sbagliato.
 // In `replaces` resta il nome dell'esercizio di scheda, anche dopo più cambi.
 export const swapExercise = (exercises, index, catalogEx) => {
   const current = exercises[index];
   const entry = buildSessionEntry(
     catalogEx,
-    { sets: current.sets, warmupSets: current.warmup_sets, reps: current.reps, rest: current.rest },
+    { planned_sets: current.planned_sets, rest: current.rest },
     { replaces: current.replaces || current.exercise_name }
   );
   const next = [...exercises];

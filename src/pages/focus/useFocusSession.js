@@ -7,8 +7,8 @@ import { hapticFeedback } from '../../utils/vibration';
 import { buildExerciseHistoryIndex, detectPersonalRecords } from '../../utils/workoutMetrics';
 import {
   FEATURE_SESSION_EDIT, isValidWeight, suggestedWeight, slotWeight, totalSlots, setSlot, skipWarmup,
-  isValidReps, repsNeedConfirm,
-  numberedSets, groupsInExecutionOrder, withWarmupRule, draftDay, buildSessionEntry, swapExercise, insertExercise,
+  isValidReps, repsNeedConfirm, plannedSetAt, slotTechnique, isCurrentDraft,
+  numberedSets, groupsInExecutionOrder, withWarmupRule, buildSessionEntry, swapExercise, insertExercise,
   newIdempotencyKey, draftIdempotencyKey
 } from '../../utils/focusSession';
 import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../../utils/celebrate';
@@ -116,8 +116,8 @@ export default function useFocusSession() {
         idempotencyKey,
         lastActivityAt,
         pausedMs,
-        // currentSetIndex e skippedSets contano anche le posizioni di riscaldamento
-        slotsIncludeWarmup: true,
+        // Segno del formato con le serie pianificate: una bozza senza viene scartata
+        plannedSets: true,
         // Fine mostrata nel riepilogo, o fissa se già finita: la ripresa riparte da qui
         summaryEndAt: phase === 'summary' || retroDate ? endTime : null,
         phase: phase === 'rest_timer' ? 'workout' : phase, // Se crasha durante il timer, riprendi dall'esercizio
@@ -158,8 +158,10 @@ export default function useFocusSession() {
       if (savedDraft) {
         try {
           const parsed = JSON.parse(savedDraft);
-          // La bozza è valida solo se ha i dati minimi e appartiene allo stesso giorno (opzionale, ma qui la teniamo valida per UX)
-          if (parsed.selectedDay && parsed.startTime) {
+          if (!isCurrentDraft(parsed)) {
+            // Bozza di prima delle serie pianificate: gli esercizi hanno un'altra forma, non si riprende
+            clearDraft();
+          } else if (parsed.selectedDay && parsed.startTime) {
             setDraftToResume(parsed);
             setPhase('resume_prompt');
             resuming = true;
@@ -267,7 +269,7 @@ export default function useFocusSession() {
   const handleResumeDraft = (finishedOn = null) => {
     if (!draftToResume) return;
 
-    const day = draftDay(draftToResume);
+    const day = draftToResume.selectedDay;
 
     setActivePlan(draftToResume.activePlan);
     setSelectedDay(day);
@@ -301,7 +303,7 @@ export default function useFocusSession() {
     // Ripristina input correnti
     const currentEx = day.exercises[draftToResume.currentExerciseIndex];
     setRepsInput('');
-    setIntensityTechniqueInput(currentEx?.intensity_technique || '');
+    setIntensityTechniqueInput(slotTechnique(currentEx, draftToResume.currentSetIndex));
 
     setPhase(finishedOn ? 'summary' : (draftToResume.phase || 'workout'));
     setDraftToResume(null);
@@ -358,7 +360,7 @@ export default function useFocusSession() {
     // Peso dall'ultima sessione (sovraccarico progressivo); ripetizioni vuote, la scheda è in grigio
     const firstExercise = selectedDay.exercises[0];
     setRepsInput('');
-    setIntensityTechniqueInput(firstExercise.intensity_technique || '');
+    setIntensityTechniqueInput(slotTechnique(firstExercise, 0));
     setWeightInput(slotWeight(firstExercise, 0, { suggested: getSuggestedWeight(firstExercise) }));
 
     setPhase('workout');
@@ -385,24 +387,24 @@ export default function useFocusSession() {
     setCurrentExerciseIndex(index);
     setCurrentSetIndex(0);
     setRepsInput('');
-    setIntensityTechniqueInput(exercise?.intensity_technique || '');
+    setIntensityTechniqueInput(slotTechnique(exercise, 0));
     setWeightInput(slotWeight(exercise, 0, { suggested: getSuggestedWeight(exercise) }));
   }, [getSuggestedWeight]);
 
   // ================================================
   // CONFERMA SERIE
   // ================================================
-  // Porta la sessione alla posizione `index` dell'esercizio corrente: peso dato, ripetizioni vuote, tecnica della scheda
+  // Porta la sessione alla posizione `index` dell'esercizio corrente: peso dato, ripetizioni vuote, tecnica della serie
   const goToSlot = (index, weight) => {
     setCurrentSetIndex(index);
     setWeightInput(weight);
     setRepsInput('');
-    setIntensityTechniqueInput(currentExercise.intensity_technique || '');
+    setIntensityTechniqueInput(slotTechnique(currentExercise, index));
   };
 
   const handleConfirmSet = () => {
     if (!isValidWeight(weightInput) || !isValidReps(repsInput)) return;
-    if (repsNeedConfirm(repsInput, currentExercise.reps)) {
+    if (repsNeedConfirm(repsInput, plannedSetAt(currentExercise, currentSetIndex))) {
       setRepsConfirmDialog(true);
       return;
     }
