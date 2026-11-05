@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import BodyVisualizer from '../BodyVisualizer';
 import AuthBars from './AuthBars';
 import { buildRecovery } from '../../utils/recoveryDemo';
+import PrototypeSwitcher, { ShapeVariant } from '../PrototypeSwitcher';
 
 const SAMPLE = buildRecovery('push');
 
@@ -34,7 +35,7 @@ const AuthLayout = ({ title, side, children }) => {
       <Typography variant="h1" sx={{ fontSize: { xs: '1.75rem', md: '2rem' }, lineHeight: 1.15, mb: 2 }}>
         {title}
       </Typography>
-      {children}
+      <ShapeVariant>{children}</ShapeVariant>
     </Paper>
   );
 
@@ -53,6 +54,7 @@ const AuthLayout = ({ title, side, children }) => {
       >
         <AuthBars />
         {form}
+        <PrototypeSwitcher />
       </Box>
     );
   }
@@ -82,6 +84,7 @@ const AuthLayout = ({ title, side, children }) => {
           {t('home.showcase.subtitle')}
         </Typography>
         {form}
+        <PrototypeSwitcher />
       </Box>
     </Box>
   );
