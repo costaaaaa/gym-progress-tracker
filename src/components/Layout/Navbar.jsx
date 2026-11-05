@@ -102,7 +102,7 @@ const Navbar = () => {
               flexShrink: 0,
             }}
           >
-            <LogoMark width={20} color="#fff" />
+            <LogoMark width={20} color={theme.palette.common.white} />
           </Box>
           <Typography
             sx={{
@@ -155,8 +155,8 @@ const Navbar = () => {
               size="small"
               sx={{
                 color: 'text.secondary',
-                bgcolor: mode === 'light' ? '#f7f6f5' : 'rgba(255,255,255,0.06)',
-                '&:hover': { bgcolor: mode === 'light' ? '#ececea' : 'rgba(255,255,255,0.12)' },
+                bgcolor: 'navToggle.bg',
+                '&:hover': { bgcolor: 'navToggle.hover' },
               }}
             >
               {mode === 'light' ? <DarkModeIcon fontSize="small" /> : <LightModeIcon fontSize="small" />}
@@ -170,15 +170,15 @@ const Navbar = () => {
                 to="/profilo"
                 sx={{
                   p: 0,
-                  boxShadow: onProfilePage ? '0 0 0 2px #fff, 0 0 0 4px #d50000' : 'none',
+                  boxShadow: onProfilePage ? `0 0 0 2px ${theme.palette.common.white}, 0 0 0 4px ${theme.palette.primary.main}` : 'none',
                 }}
               >
                 <Avatar
                   sx={{
                     width: 34,
                     height: 34,
-                    bgcolor: '#1a1816',
-                    color: '#fff',
+                    bgcolor: 'ink',
+                    color: 'onInk',
                     fontSize: 14,
                     fontWeight: 700,
                     fontFamily: TITLE_FONT_FAMILY,

@@ -3,6 +3,7 @@
 // anche in scuro; disabilitato resta grigio (scuro: fondo bianco al 12%, testo bianco al 30%).
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { useTheme } from '@mui/material/styles';
 import { Button, Chip, Typography } from '@mui/material';
 import { ThemeModeProvider } from './ThemeModeContext';
 
@@ -79,5 +80,56 @@ describe('tema: bottone pieno di errore', () => {
     const { backgroundColor, color } = style('dark', true);
     expect(backgroundColor).toBe(DISABLED_BG_DARK);
     expect(color).toBe(DISABLED_TEXT_DARK);
+  });
+});
+
+// Token nuovi del tema (issue #15): stessi valori letterali, fonte indipendente dal codice che li
+// produce. I valori di partenza sono quelli già in WorkoutHistory, WorkoutPlans, Navbar, Account,
+// LeaderboardTable, BodyStats/HealthAppHint e la chip "nuovo record" di SummaryPhase.
+describe('tema: token nuovi', () => {
+  afterEach(() => localStorage.clear());
+
+  const palette = (mode) => {
+    localStorage.setItem('themeMode', mode);
+    let captured;
+    const Probe = () => {
+      captured = useTheme().palette;
+      return null;
+    };
+    render(<ThemeModeProvider><Probe /></ThemeModeProvider>);
+    return captured;
+  };
+
+  it('in chiaro ha i valori attesi', () => {
+    const p = palette('light');
+    expect(p.background.subtle).toBe('#faf9f8');
+    expect(p.success.muted).toBe('#e8f3ec');
+    expect(p.success.title).toBe('#166534');
+    expect(p.navToggle.bg).toBe('#f7f6f5');
+    expect(p.navToggle.hover).toBe('#ececea');
+    expect(p.ink).toBe('#1a1816');
+    expect(p.onInk).toBe('#ffffff');
+  });
+
+  it('in scuro ha i valori attesi, ink e onInk compresi', () => {
+    const p = palette('dark');
+    expect(p.background.subtle).toBe('rgba(255, 255, 255, 0.08)');
+    expect(p.success.muted).toBe('rgba(34, 197, 94, 0.15)');
+    expect(p.success.title).toBe('#86efac');
+    expect(p.navToggle.bg).toBe('rgba(255, 255, 255, 0.06)');
+    expect(p.navToggle.hover).toBe('rgba(255, 255, 255, 0.12)');
+    // Decisione utente: in scuro l'avatar si inverte (fondo bianco, iniziale scura)
+    expect(p.ink).toBe('#ffffff');
+    expect(p.onInk).toBe('#0a0a0b');
+  });
+
+  it('medaglie, Salute e chip "nuovo record" sono uguali in chiaro e in scuro', () => {
+    const light = palette('light');
+    const dark = palette('dark');
+    for (const p of [light, dark]) {
+      expect(p.medal).toEqual({ gold: '#d4a017', silver: '#9e9e9e', bronze: '#b87333' });
+      expect(p.health).toBe('#ff2d55');
+      expect(p.warning.muted).toBe('rgba(255, 167, 38, 0.15)');
+    }
   });
 });

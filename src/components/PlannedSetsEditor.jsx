@@ -10,6 +10,7 @@ import {
 import { Add as AddIcon, RemoveCircleOutline as RemoveIcon } from '@mui/icons-material';
 import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, techniqueLabel } from '../i18n/labels';
 import { MAX_WORKING } from '../utils/plannedSets';
+import { radius } from '../theme/radius';
 import {
   addRow, draftErrors, draftFromPlannedSets, draftToCompact, draftToList, plannedSetsFromDraft, removeRow,
 } from '../utils/plannedSetsDraft';
@@ -116,7 +117,7 @@ const PlannedSetsEditor = ({ value, onChange }) => {
               key={index}
               role="group"
               aria-label={t('plan_editor.set_n', { n: index + 1 })}
-              sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 1.5 }}
+              sx={{ border: 1, borderColor: 'divider', borderRadius: radius.xxl, p: 1.5 }}
             >
               <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
                 <Typography variant="subtitle2">{t('plan_editor.set_n', { n: index + 1 })}</Typography>

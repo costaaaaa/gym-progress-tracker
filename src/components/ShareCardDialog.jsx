@@ -24,6 +24,7 @@ import { loadCardFonts, renderCardToCanvas, canvasToPngFile, loadPhoto } from '.
 import { track } from '../utils/analytics';
 import { shareCardStrings } from '../i18n/shareCardStrings';
 import { CHIP_FONT } from '../utils/fonts';
+import { radius } from '../theme/radius';
 
 const SWIPE_MIN_PX = 50;
 const PREFS_KEY = 'lx_share_card';
@@ -295,7 +296,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
 
   return (
     <Dialog open={open} onClose={onClose} fullScreen={fullScreen} maxWidth="xs" fullWidth
-      PaperProps={{ sx: { borderRadius: fullScreen ? 0 : '16px' } }}>
+      PaperProps={{ sx: { borderRadius: fullScreen ? 0 : radius.xxl } }}>
       <Box sx={{ display: 'flex', alignItems: 'center', px: 2, pt: 1.5 }}>
         <Typography variant="h6" sx={{ flex: 1, fontWeight: 700 }}>{t('share.title')}</Typography>
         <IconButton onClick={onClose} aria-label={t('share.close')}><CloseIcon /></IconButton>
@@ -330,7 +331,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
             onPointerDown={handlePointerDown} onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp}
             style={{
-              width: '100%', height: '100%', borderRadius: 12, display: 'block', ...(template === 'trasparente' ? CHECKERBOARD : { background: '#0a0a0b' }),
+              width: '100%', height: '100%', borderRadius: radius.lg, display: 'block', ...(template === 'trasparente' ? CHECKERBOARD : { background: '#0a0a0b' }),
               touchAction: editable ? 'none' : 'pan-y', cursor: editable ? 'grab' : 'default',
             }} />
           {!fontsReady && (

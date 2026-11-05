@@ -5,6 +5,7 @@ import { GlobalStyles } from '@mui/material';
 import { itIT, enUS } from '@mui/material/locale';
 import { useTranslation } from 'react-i18next';
 import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
+import { radius } from '../theme/radius';
 
 const BRAND = '#d50000';
 const BRAND_DARK = '#9b0000';
@@ -49,6 +50,9 @@ export const ThemeModeProvider = ({ children }) => {
           background: {
             default: mode === 'light' ? '#f7f6f5' : '#0a0a0b',
             paper: mode === 'light' ? '#ffffff' : '#141416',
+            // Fondo neutro di una riga/card secondaria (storico, giorni di una scheda): in scuro è
+            // lo stesso valore di action.hover di MUI (qui letterale per non dipendere da quello).
+            subtle: mode === 'light' ? '#faf9f8' : 'rgba(255, 255, 255, 0.08)',
           },
           text: {
             primary: mode === 'light' ? '#1a1816' : '#ffffff',
@@ -57,9 +61,14 @@ export const ThemeModeProvider = ({ children }) => {
           divider: mode === 'light' ? '#ececea' : 'rgba(255, 255, 255, 0.08)',
           success: {
             main: mode === 'light' ? '#15803d' : '#22c55e',
+            // Pillola "scheda attiva" in WorkoutPlans
+            muted: mode === 'light' ? '#e8f3ec' : 'rgba(34, 197, 94, 0.15)',
+            title: mode === 'light' ? '#166534' : '#86efac',
           },
           warning: {
             main: mode === 'light' ? '#d97706' : '#f59e0b',
+            // Chip "nuovo record" in Focus: arancio proprio, non legato a warning.main
+            muted: 'rgba(255, 167, 38, 0.15)',
           },
           // muted/border/title: la card "Zona pericolosa" (rosa, bordo rosa, titolo rosso scuro come nell'app).
           // In scuro: fondo e bordo sono il rosso di error.main trasparente, che sostituisce il fondo della card e
@@ -93,6 +102,22 @@ export const ThemeModeProvider = ({ children }) => {
             dark: mode === 'light' ? '#5b21b6' : '#7c3aed',
             contrastText: '#ffffff',
           },
+          // Medaglie della classifica di gruppo: uguali in chiaro e in scuro
+          medal: {
+            gold: '#d4a017',
+            silver: '#9e9e9e',
+            bronze: '#b87333',
+          },
+          // Integrazione con l'app Salute (BodyStats, promemoria di collegamento): uguale in chiaro e in scuro
+          health: '#ff2d55',
+          // Bottone del tema in Navbar: fondo neutro discreto, più marcato al passaggio del mouse
+          navToggle: {
+            bg: mode === 'light' ? '#f7f6f5' : 'rgba(255, 255, 255, 0.06)',
+            hover: mode === 'light' ? '#ececea' : 'rgba(255, 255, 255, 0.12)',
+          },
+          // Avatar di navbar e account: inchiostro e testo sopra, come nell'app.
+          ink: mode === 'light' ? '#1a1816' : '#ffffff',
+          onInk: mode === 'light' ? '#ffffff' : '#0a0a0b',
         },
         shape: {
           borderRadius: 16,
@@ -161,7 +186,7 @@ export const ThemeModeProvider = ({ children }) => {
           MuiButton: {
             styleOverrides: {
               root: {
-                borderRadius: 10,
+                borderRadius: radius.md,
                 padding: '10px 18px',
                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
               },
@@ -206,7 +231,7 @@ export const ThemeModeProvider = ({ children }) => {
           MuiPaper: {
             styleOverrides: {
               root: {
-                borderRadius: 16,
+                borderRadius: radius.xxl,
                 backgroundImage: 'none',
                 boxShadow: 'none',
                 border: mode === 'light' ? '1px solid #ececea' : '1px solid rgba(255, 255, 255, 0.08)',
@@ -216,7 +241,7 @@ export const ThemeModeProvider = ({ children }) => {
           MuiCard: {
             styleOverrides: {
               root: {
-                borderRadius: 16,
+                borderRadius: radius.xxl,
                 backgroundImage: 'none',
                 boxShadow: 'none',
                 border: mode === 'light' ? '1px solid #ececea' : '1px solid rgba(255, 255, 255, 0.08)',

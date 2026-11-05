@@ -1,4 +1,5 @@
 import { Box } from '@mui/material';
+import { radius } from '../../theme/radius';
 
 // Decoro delle pagine di accesso: il modulo prende il posto del centro del marchio, con due barre per
 // lato (a sinistra corta e lunga, a destra lunga e corta) nelle proporzioni di LogoMark. L è il tratto
@@ -17,7 +18,7 @@ const Bar = ({ line }) => (
       flex: 'none',
       width: `calc(var(--L) * ${THICK})`,
       height: `calc(var(--L) * ${line + THICK})`,
-      borderRadius: 999,
+      borderRadius: radius.pill,
       bgcolor: 'text.primary',
     }}
   />

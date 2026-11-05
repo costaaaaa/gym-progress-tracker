@@ -38,6 +38,7 @@ import { useTranslation } from 'react-i18next';
 import { muscleLabel } from '../i18n/labels';
 import { planSummary, samePlannedSets } from '../utils/plannedSets';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
+import { radius } from '../theme/radius';
 
 const WorkoutPlans = ({ isEmbedded = false }) => {
   const { t } = useTranslation();
@@ -766,13 +767,13 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                           <Box
                             component="span"
                             sx={{
-                              bgcolor: (theme) => theme.palette.mode === 'light' ? '#e8f3ec' : 'rgba(34, 197, 94, 0.15)',
-                              color: (theme) => theme.palette.mode === 'light' ? '#166534' : '#86efac',
+                              bgcolor: 'success.muted',
+                              color: 'success.title',
                               fontSize: 13,
                               fontWeight: 700,
                               px: 1.25,
                               py: 0.5,
-                              borderRadius: '999px',
+                              borderRadius: radius.pill,
                             }}
                           >
                             {t('plans.active_badge')}
@@ -835,7 +836,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                       sx={{
                                         border: '1px solid',
                                         borderColor: 'divider',
-                                        borderRadius: '8px',
+                                        borderRadius: radius.sm,
                                         px: 1.5,
                                         py: 0.75,
                                         fontSize: 12,
@@ -855,8 +856,8 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
 
                             <Collapse in={dayExpanded} id={dayPanelId} timeout="auto">
                               <Box sx={{
-                                mt: 1.25, mb: 1.5, borderRadius: '10px', p: '12px 14px',
-                                bgcolor: (theme) => theme.palette.mode === 'light' ? '#faf9f8' : 'action.hover',
+                                mt: 1.25, mb: 1.5, borderRadius: radius.md, p: '12px 14px',
+                                bgcolor: 'background.subtle',
                               }}>
                                 {day.exercises && day.exercises.length > 0 ? (
                                   groupExercisesByMuscleGroup(day.exercises).map((group, groupIdx) => (
@@ -967,7 +968,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                       onClick={() => handleActivatePlan(plan.id)}
                       sx={{
                         color: 'text.primary', borderColor: 'text.secondary',
-                        borderRadius: '8px', px: 2, py: 1, fontSize: 16, fontWeight: 600, textTransform: 'none',
+                        borderRadius: radius.sm, px: 2, py: 1, fontSize: 16, fontWeight: 600, textTransform: 'none',
                         '&:hover': { borderColor: 'text.primary', bgcolor: 'action.hover' },
                       }}
                     >

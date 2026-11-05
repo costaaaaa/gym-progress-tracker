@@ -11,6 +11,7 @@ import { muscleLabel } from '../../i18n/labels';
 import { planSummary } from '../../utils/plannedSets';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 import LogoMark from '../../components/LogoMark';
+import { radius } from '../../theme/radius';
 
 export default function SelectDayPhase({
   activePlan, selectedDayId, selectedDay, timerEnabled, onDayChange, onStart, onBack, onGoToPlans
@@ -135,7 +136,7 @@ export default function SelectDayPhase({
               onClick={onStart}
               sx={{
                 py: 2, fontSize: '1.2rem', fontWeight: 700,
-                bgcolor: colors.primary, color: colors.primaryContrast, borderRadius: '12px',
+                bgcolor: colors.primary, color: colors.primaryContrast, borderRadius: radius.lg,
                 '&:hover': { bgcolor: colors.primaryDark },
                 '&:disabled': { bgcolor: colors.bgElevated, color: colors.textSecondary },
               }}

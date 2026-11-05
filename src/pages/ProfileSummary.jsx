@@ -7,6 +7,7 @@ import { API_BASE_URL } from '../config';
 import { xpIntoLevel, xpForNextLevel } from '../utils/gamificationLevels';
 import { formatDate, formatNumber } from '../i18n/format';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
+import { radius } from '../theme/radius';
 
 // Solo queste tre categorie hanno una griglia dedicata: "strength" è esclusa perché il suo
 // ruolo è coperto dalla sezione "Livelli per esercizio" (il catalogo backend resta invariato).
@@ -41,7 +42,7 @@ const AchievementCard = ({ achievement, isNext, progress }) => {
   const { label, locked, unlocked_at } = achievement;
   return (
     <Card sx={{
-      ...BORDERED, borderRadius: '12px', p: '16px 12px', textAlign: 'center', height: '100%',
+      ...BORDERED, borderRadius: radius.lg, p: '16px 12px', textAlign: 'center', height: '100%',
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       ...(isNext && { borderColor: 'text.primary' }),
     }}>
@@ -157,7 +158,7 @@ const ProfileSummary = () => {
           <Grid container spacing={2}>
             {exercises.map(ex => (
               <Grid item xs={12} sm={6} key={ex.exercise_id}>
-                <Card sx={{ ...BORDERED, borderRadius: '14px', p: '18px' }}>
+                <Card sx={{ ...BORDERED, borderRadius: radius.xl, p: '18px' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.25 }}>
                     <Typography sx={{ fontSize: 16, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {ex.name}
@@ -167,7 +168,7 @@ const ProfileSummary = () => {
                       color: 'text.primary',
                       fontSize: 13,
                       fontWeight: 700,
-                      borderRadius: '999px',
+                      borderRadius: radius.pill,
                       px: 1.25,
                       py: 0.25,
                       ml: 1,

@@ -25,6 +25,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { muscleLabel } from '../i18n/labels';
 import { compactForm, plannedOf, targetLabel } from '../utils/plannedSets';
 import { addedPlannedSets } from '../utils/focusSession';
+import { radius } from '../theme/radius';
 
 const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '');
 const ALL = '__all__';
@@ -108,7 +109,7 @@ const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true
   const canAdd = selected && plannedSets !== null;
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" PaperProps={{ sx: { borderRadius: '16px' } }}>
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" PaperProps={{ sx: { borderRadius: radius.xxl } }}>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1 }}>
         {mode === 'swap' ? t('picker.swap_title') : t('picker.add_title')}
         <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
@@ -166,7 +167,7 @@ const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true
             ) : (
               <List dense sx={{ maxHeight: 360, overflowY: 'auto' }}>
                 {results.map((ex) => (
-                  <ListItemButton key={ex.id} onClick={() => handleSelect(ex)} sx={{ borderRadius: '8px' }}>
+                  <ListItemButton key={ex.id} onClick={() => handleSelect(ex)} sx={{ borderRadius: radius.sm }}>
                     <ListItemText
                       primary={ex.name}
                       secondary={[muscleLabel(ex.muscle_group), ex.equipment, personalLabel(ex)].filter(Boolean).join(' · ')}

@@ -1,4 +1,5 @@
 import { Box, ButtonBase, useMediaQuery, useTheme } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
@@ -94,12 +95,12 @@ const BottomNav = () => {
             alignItems: 'center',
             justifyContent: 'center',
             transform: 'translateY(-14px)',
-            boxShadow: '0 8px 18px rgba(213,0,0,0.4)',
+            boxShadow: `0 8px 18px ${alpha(theme.palette.primary.main, 0.4)}`,
             border: '4px solid',
             borderColor: 'background.default',
           }}
         >
-          <PlayArrowIcon sx={{ color: '#fff', fontSize: 22 }} />
+          <PlayArrowIcon sx={{ color: 'common.white', fontSize: 22 }} />
         </Box>
         <Box component="span" sx={{ fontSize: '10.5px', fontWeight: 700, color: 'primary.main', transform: 'translateY(-10px)' }}>
           Focus
@@ -121,7 +122,7 @@ const BottomNav = () => {
             height: 20,
             borderRadius: '50%',
             bgcolor: profileActive ? 'primary.main' : 'text.primary',
-            color: '#fff',
+            color: 'common.white',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

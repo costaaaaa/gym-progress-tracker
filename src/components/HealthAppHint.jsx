@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Paper, Box, Typography, Button, IconButton } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import CloseIcon from '@mui/icons-material/Close';
 import { STORE_LINKS } from '../config';
 import { track } from '../utils/analytics';
 import { useTranslation } from 'react-i18next';
+import { radius } from '../theme/radius';
 
 const DISMISSED_KEY = 'healthAppHintDismissed';
 
@@ -54,15 +56,15 @@ const HealthAppHint = ({ alreadySyncing = false }) => {
   return (
     <Paper
       variant="outlined"
-      sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pl: 1.5, pr: 1, py: 1, mb: 3, borderRadius: '14px' }}
+      sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pl: 1.5, pr: 1, py: 1, mb: 3, borderRadius: radius.xl }}
     >
       <Box
         sx={{
           flexShrink: 0, width: 32, height: 32, borderRadius: '50%', display: 'grid', placeItems: 'center',
-          bgcolor: 'rgba(255, 45, 85, 0.1)',
+          bgcolor: (theme) => alpha(theme.palette.health, 0.1),
         }}
       >
-        <FavoriteIcon sx={{ fontSize: 16, color: '#ff2d55' }} />
+        <FavoriteIcon sx={{ fontSize: 16, color: 'health' }} />
       </Box>
       <Typography sx={{ flex: 1, fontSize: 13, color: 'text.secondary', lineHeight: 1.35 }}>
         {t('health_hint.text', { source: t(source) })}

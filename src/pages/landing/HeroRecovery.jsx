@@ -8,6 +8,7 @@ import { CHIP_FONT, TITLE_FONT_FAMILY } from '../../utils/fonts';
 import { track } from '../../utils/analytics';
 import { useLocalizedPath } from '../../i18n/paths';
 import { buildRecovery } from '../../utils/recoveryDemo';
+import { radius } from '../../theme/radius';
 
 const OPTIONS = ['none', 'push', 'pull', 'legs'];
 const DEFAULT_OPTION = 'push';
@@ -67,7 +68,7 @@ const HeroRecovery = () => {
             component={RouterLink}
             to={localizedPath('/register')}
             onClick={() => track('landing_cta_click', { position: 'hero' })}
-            sx={{ px: 4, py: 1.5, fontSize: 17, fontWeight: 700, borderRadius: '12px' }}
+            sx={{ px: 4, py: 1.5, fontSize: 17, fontWeight: 700, borderRadius: radius.lg }}
           >
             {t('home.hero.cta')}
           </Button>

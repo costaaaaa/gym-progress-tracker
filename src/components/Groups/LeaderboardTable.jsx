@@ -3,10 +3,11 @@ import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import { useTranslation } from 'react-i18next';
 import { intlLocale } from '../../i18n/format';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
+import { radius } from '../../theme/radius';
 
 // Classifica del gruppo. Le righe arrivano già ordinate e con la posizione dal server
 // (api/groups/read.php); qui cambia solo cosa si mostra per ogni scheda.
-const MEDALS = { 1: '#d4a017', 2: '#9e9e9e', 3: '#b87333' };
+const MEDALS = { 1: 'medal.gold', 2: 'medal.silver', 3: 'medal.bronze' };
 
 const Metric = ({ row, board }) => {
   const { t } = useTranslation();
@@ -68,7 +69,7 @@ const LeaderboardTable = ({ rows, board }) => {
             px: 1.5,
             borderBottom: '1px solid',
             borderColor: 'divider',
-            borderRadius: row.is_me ? '10px' : 0,
+            borderRadius: row.is_me ? radius.md : 0,
             bgcolor: row.is_me ? 'action.selected' : 'transparent',
           }}
         >
