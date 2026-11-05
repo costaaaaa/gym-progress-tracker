@@ -3,9 +3,7 @@
 // boxShadow (sono ombre, non palette: un'ombra nera scritta altrove, es. bgcolor, o tenuta in una
 // variabile invece che scritta dentro boxShadow, resta una violazione).
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { relative } from 'node:path';
-import { srcDir, walk, THEME_FILE } from '../test/sourceFiles';
+import { sourceOffenders, THEME_FILE } from '../test/sourceFiles';
 import { parseSource, walkAst, keyNameOf, staticTextOf } from '../test/sourceAst';
 
 // File interi fuori dalla guardia: disegnano su canvas con template propri (vedi issue #15)
@@ -24,22 +22,26 @@ const FILE_EXCEPTIONS = {
 const HEX_RE = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})\b/g;
 const FUNC_RE = /\b(?:rgba?|hsla?)\([^)]*\)/g;
 
-// Un'ombra nera rgba/rgb(0,0,0,…)
+// Un nero rgba/rgb(0,0,0,…), il colore delle ombre
 const isBlackShadow = (value) => /^rgba?\(\s*0\s*,\s*0\s*,\s*0\s*[,)]/.test(value);
 
 const BREAKPOINTS = ['xs', 'sm', 'md', 'lg', 'xl'];
 
 // true se la proprietà più vicina che contiene il valore è "boxShadow". In mezzo possono esserci un
-// ternario, una map, un join o le chiavi di un oggetto responsivo ({ xs: ..., md: ... }), non un'altra
-// proprietà: in boxShadow: fn({ bgcolor: ... }) il valore è di bgcolor. Una Property dentro una
-// destrutturazione ({ boxShadow = ... } = props) è una variabile, non uno stile.
+// ternario, una map, un join o le chiavi di un oggetto responsivo ({ xs: ..., md: ... }) che è il
+// valore diretto della proprietà, non un'altra proprietà: in boxShadow: fn({ bgcolor: ... }) il valore
+// è di bgcolor, e in fn({ md: ... }) md non è un breakpoint. Una Property dentro una destrutturazione
+// ({ boxShadow = ... } = props) è una variabile, non uno stile.
 function isInsideBoxShadow(ancestors) {
   for (const [i, a] of ancestors.entries()) {
     if (a.type !== 'Property' && a.type !== 'JSXAttribute') continue;
-    if (ancestors[i + 1]?.type === 'ObjectPattern') return false;
-    const key = keyNameOf(a);
-    if (BREAKPOINTS.includes(key)) continue;
-    return key === 'boxShadow';
+    const object = ancestors[i + 1];
+    if (object?.type === 'ObjectPattern') return false;
+    const holder = ancestors[i + 2];
+    const isBreakpoint = BREAKPOINTS.includes(keyNameOf(a))
+      && (holder?.value === object || holder?.expression === object);
+    if (isBreakpoint) continue;
+    return keyNameOf(a) === 'boxShadow';
   }
   return false;
 }
@@ -52,9 +54,9 @@ function colorsIn(value) {
   return found;
 }
 
-// Ogni stringa letterale e ogni pezzo statico di un template
+// Colori scritti a mano nelle stringhe e nei pezzi statici dei template, tolte le eccezioni del file
+// e le ombre nere dentro boxShadow
 function violationsIn(relPath, text) {
-  if (SKIPPED_FILES.includes(relPath)) return [];
   const allowed = FILE_EXCEPTIONS[relPath] || [];
   const found = [];
   walkAst(parseSource(text, relPath), (node, ancestors) => {
@@ -178,6 +180,8 @@ describe('guardia colori: le ombre nere', () => {
   it('un\'ombra nera in un boxShadow responsivo è ammessa', () => {
     const text = "const o = { boxShadow: { xs: 'none', md: '0 8px 24px rgba(0,0,0,0.08)' } };";
     expect(violationsIn('x.jsx', text)).toEqual([]);
+    expect(violationsIn('x.jsx', "<Box sx={{ boxShadow: { md: '0 8px 24px rgba(0,0,0,0.08)' } }} />;")).toEqual([]);
+    expect(violationsIn('x.jsx', "<Box boxShadow={{ md: '0 8px 24px rgba(0,0,0,0.08)' }} />;")).toEqual([]);
   });
 
   it('un selettore annidato accanto a un boxShadow non eredita l\'eccezione', () => {
@@ -190,6 +194,7 @@ describe('guardia colori: le ombre nere', () => {
       .toEqual(['rgba(0,0,0,.5)']);
     expect(violationsIn('x.jsx', "const o = { boxShadow: (t) => ({ a: { b: () => 'rgba(0,0,0,.5)' } }) };"))
       .toEqual(['rgba(0,0,0,.5)']);
+    expect(violationsIn('x.jsx', "const o = { boxShadow: fn({ md: 'rgba(0,0,0,.5)' }) };")).toEqual(['rgba(0,0,0,.5)']);
   });
 
   it('una chiave calcolata o una destrutturazione con boxShadow non sono uno stile boxShadow', () => {
@@ -198,7 +203,7 @@ describe('guardia colori: le ombre nere', () => {
   });
 });
 
-describe('guardia colori: file che non si legge', () => {
+describe('guardia colori: file con un errore di sintassi', () => {
   it('ferma la guardia con il nome del file', () => {
     expect(() => violationsIn('components/Rotto.jsx', 'const o = {;')).toThrow(/^components\/Rotto\.jsx: /);
   });
@@ -206,12 +211,6 @@ describe('guardia colori: file che non si legge', () => {
 
 describe('guardia colori: i sorgenti', () => {
   it('nessun file sotto src/ (fuori dal tema e dalle eccezioni) usa hex o rgb/rgba/hsl a mano', () => {
-    const offenders = [];
-    for (const file of walk(srcDir)) {
-      const rel = relative(srcDir, file);
-      const violations = violationsIn(rel, readFileSync(file, 'utf8'));
-      if (violations.length) offenders.push(`${rel}: ${violations.join(', ')}`);
-    }
-    expect(offenders).toEqual([]);
+    expect(sourceOffenders((text, rel) => violationsIn(rel, text), SKIPPED_FILES)).toEqual([]);
   });
 });

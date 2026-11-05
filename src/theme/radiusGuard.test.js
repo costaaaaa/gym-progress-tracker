@@ -2,9 +2,7 @@
 // 0, '50%', i raggi sottili e i calcolati: non sono valori della scala, non li riguarda questa guardia.
 // I file .css restano fuori (walk elenca solo .js/.jsx): App.css ha border-radius scritti a mano.
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { relative } from 'node:path';
-import { srcDir, walk, THEME_FILE } from '../test/sourceFiles';
+import { sourceOffenders, THEME_FILE } from '../test/sourceFiles';
 import { parseSource, walkAst, keyNameOf, staticTextOf } from '../test/sourceAst';
 import { radius } from './radius';
 
@@ -31,9 +29,9 @@ const RADIUS_KEY_RE = /^border\w*Radius$/;
 
 // Scende dentro il valore di un borderRadius a caccia dei nodi letterali da controllare: un
 // JSXExpressionContainer ({...} in JSX), entrambi i rami di un ternario o di un "??"/"||", i valori di
-// un oggetto responsivo ({ xs: ..., md: ... }) e gli elementi di un array. Il resto (una chiamata come
-// theme.spacing(1), un calcolo come 10 + x, un token del tema come radius.lg) non si controlla: non è
-// un valore scritto a mano.
+// un oggetto (con qualunque chiave: per un raggio è l'oggetto responsivo { xs: ..., md: ... }) e gli
+// elementi di un array. Il resto (una chiamata come theme.spacing(1), un calcolo come 10 + x, un token
+// del tema come radius.lg) non si controlla: non è un valore scritto a mano.
 function* radiusLiterals(node) {
   if (!node) return;
   switch (node.type) {
@@ -136,7 +134,7 @@ describe('guardia raggi: varianti di scrittura', () => {
   });
 });
 
-describe('guardia raggi: frazioni, stringhe composte, chiavi tra virgolette, espressioni', () => {
+describe('guardia raggi: valori annidati e chiavi insolite', () => {
   it('trova le frazioni sx che cadono nella scala (0.5, 0.625, 0.75, 0.875)', () => {
     expect(scaleViolations('const o = { borderRadius: 0.5 };')).toEqual(['0.5']);
     expect(scaleViolations('const o = { borderRadius: 0.625 };')).toEqual(['0.625']);
@@ -186,7 +184,7 @@ describe('guardia raggi: frazioni, stringhe composte, chiavi tra virgolette, esp
   });
 });
 
-describe('guardia raggi: file che non si legge', () => {
+describe('guardia raggi: file con un errore di sintassi', () => {
   it('ferma la guardia con il nome del file', () => {
     expect(() => scaleViolations('const o = {;', 'components/Rotto.jsx')).toThrow(/^components\/Rotto\.jsx: /);
   });
@@ -200,13 +198,6 @@ describe('guardia raggi: la scala', () => {
 
 describe('guardia raggi: i sorgenti', () => {
   it('nessun file sotto src/ (fuori dal tema) scrive a mano un borderRadius della scala', () => {
-    const offenders = [];
-    for (const file of walk(srcDir)) {
-      const rel = relative(srcDir, file);
-      if (SKIPPED_FILES.includes(rel)) continue;
-      const violations = scaleViolations(readFileSync(file, 'utf8'), rel);
-      if (violations.length) offenders.push(`${rel}: ${violations.join(', ')}`);
-    }
-    expect(offenders).toEqual([]);
+    expect(sourceOffenders(scaleViolations, SKIPPED_FILES)).toEqual([]);
   });
 });

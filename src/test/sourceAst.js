@@ -4,7 +4,7 @@
 import { parse } from 'espree';
 import { KEYS } from 'eslint-visitor-keys';
 
-// fileName serve solo al messaggio d'errore: un file che non si legge ferma la guardia e dice quale
+// fileName serve solo al messaggio d'errore: un file con un errore di sintassi ferma la guardia e dice quale
 export function parseSource(code, fileName = 'frammento') {
   try {
     return parse(code, { ecmaVersion: 'latest', sourceType: 'module', ecmaFeatures: { jsx: true } });
@@ -29,8 +29,8 @@ export function walkAst(node, visit, ancestors = []) {
   }
 }
 
-// Chiave di una Property o di un JSXAttribute, identificatore o stringa; null per una chiave calcolata
-// da una variabile ([key]) e per ogni altro nodo
+// Chiave di una Property o di un JSXAttribute: nome, stringa o numero; null per una chiave calcolata da
+// un'espressione ([key], [a.b]) e per ogni altro nodo
 export function keyNameOf(node) {
   if (node.type === 'JSXAttribute') return node.name.name;
   if (node.type !== 'Property') return null;
