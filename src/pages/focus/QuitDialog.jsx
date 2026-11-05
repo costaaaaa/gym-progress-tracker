@@ -1,12 +1,13 @@
 import { Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import { useFocusColors } from './useFocusColors';
+import { radius } from '../../theme/radius';
 
 // Conferma d'uscita, uguale in Workout e Summary: cambiano solo i testi
 export default function QuitDialog({ open, onClose, onConfirm, title, text, stayLabel, exitLabel, destructive = false }) {
   const { colors } = useFocusColors();
   return (
     <Dialog open={open} onClose={onClose}
-      PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: '16px' } }}>
+      PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: radius.xxl } }}>
       <DialogTitle sx={{ color: colors.text }}>{title}</DialogTitle>
       <DialogContent>
         <DialogContentText sx={{ color: colors.textSecondary }}>{text}</DialogContentText>

@@ -5,6 +5,7 @@ import { GlobalStyles } from '@mui/material';
 import { itIT, enUS } from '@mui/material/locale';
 import { useTranslation } from 'react-i18next';
 import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
+import { radius } from '../theme/radius';
 
 const BRAND = '#d50000';
 const BRAND_DARK = '#9b0000';
@@ -186,7 +187,7 @@ export const ThemeModeProvider = ({ children }) => {
           MuiButton: {
             styleOverrides: {
               root: {
-                borderRadius: 10,
+                borderRadius: radius.md,
                 padding: '10px 18px',
                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
               },
@@ -231,7 +232,7 @@ export const ThemeModeProvider = ({ children }) => {
           MuiPaper: {
             styleOverrides: {
               root: {
-                borderRadius: 16,
+                borderRadius: radius.xxl,
                 backgroundImage: 'none',
                 boxShadow: 'none',
                 border: mode === 'light' ? '1px solid #ececea' : '1px solid rgba(255, 255, 255, 0.08)',
@@ -241,7 +242,7 @@ export const ThemeModeProvider = ({ children }) => {
           MuiCard: {
             styleOverrides: {
               root: {
-                borderRadius: 16,
+                borderRadius: radius.xxl,
                 backgroundImage: 'none',
                 boxShadow: 'none',
                 border: mode === 'light' ? '1px solid #ececea' : '1px solid rgba(255, 255, 255, 0.08)',

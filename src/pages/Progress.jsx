@@ -33,6 +33,7 @@ import {
 import { useFavoriteExercises } from '../hooks/useFavoriteExercises';
 import ExerciseProgressRow, { formatDaysAgo } from '../components/ExerciseProgressRow';
 import ExerciseDetailDialog from '../components/ExerciseDetailDialog';
+import { radius } from '../theme/radius';
 
 const OPEN_SECTIONS_DEFAULT = 2;
 
@@ -215,7 +216,7 @@ const Progress = ({ isEmbedded = false }) => {
                   disableGutters
                   expanded={isOpen}
                   onChange={(_, value) => setExpanded((prev) => ({ ...prev, [section.muscle]: value }))}
-                  sx={{ ...BORDERED, boxShadow: 'none', borderRadius: '12px !important', '&:before': { display: 'none' } }}
+                  sx={{ ...BORDERED, boxShadow: 'none', borderRadius: `${radius.lg} !important`, '&:before': { display: 'none' } }}
                 >
                   <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 2.5 }}>
                     <Box sx={{ minWidth: 0 }}>

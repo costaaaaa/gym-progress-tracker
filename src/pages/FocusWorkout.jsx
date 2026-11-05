@@ -22,6 +22,7 @@ import SelectDayPhase from './focus/SelectDayPhase';
 import RestTimerPhase from './focus/RestTimerPhase';
 import WorkoutPhase from './focus/WorkoutPhase';
 import SummaryPhase from './focus/SummaryPhase';
+import { radius } from '../theme/radius';
 
 // Focus Mode: switch tra le fasi; stato e transizioni stanno in useFocusSession, la UI di ogni fase in src/pages/focus
 const FocusWorkout = () => {
@@ -95,7 +96,7 @@ const FocusWorkout = () => {
     {renderContent()}
       <FocusExercisePicker {...picker} />
       <Dialog open={premiumDialog.open} onClose={premiumDialog.onClose}
-        PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: '16px' } }}>
+        PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: radius.xxl } }}>
         <DialogTitle sx={{ color: colors.text, display: 'flex', alignItems: 'center', gap: 1 }}>
           <LockIcon sx={{ color: colors.warning }} /> {t('focus.premium_title')}
         </DialogTitle>

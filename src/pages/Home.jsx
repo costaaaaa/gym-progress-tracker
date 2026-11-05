@@ -17,6 +17,7 @@ import { useTranslation, Trans } from 'react-i18next';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { formatDate as formatLocalDate, formatNumber } from '../i18n/format';
 import { totalSets } from '../utils/weeklySets';
+import { radius } from '../theme/radius';
 
 // Landing per gli ospiti: carica GSAP solo per chi non ha fatto il login.
 const Landing = lazy(() => import('./landing/Landing'));
@@ -32,7 +33,7 @@ const QuickActionPill = ({ to, icon, label }) => (
       gap: 1,
       px: '20px',
       py: '11px',
-      borderRadius: '999px',
+      borderRadius: radius.pill,
       bgcolor: 'background.paper',
       border: '1px solid',
       borderColor: 'divider',
@@ -144,7 +145,7 @@ const Home = () => {
           component={RouterLink}
           to="/focus"
           startIcon={<PlayArrowIcon />}
-          sx={{ borderRadius: '12px', px: 3, py: 1.25, fontWeight: 700 }}
+          sx={{ borderRadius: radius.lg, px: 3, py: 1.25, fontWeight: 700 }}
         >
           {t('home.hero.start_workout')}
         </Button>
@@ -204,7 +205,7 @@ const Home = () => {
                   <CardActionArea
                     component={RouterLink}
                     to="/dashboard?tab=muscles"
-                    sx={{ flex: 1, borderRadius: 1, mx: -1, px: 1, width: 'auto' }}
+                    sx={{ flex: 1, borderRadius: radius.xxl, mx: -1, px: 1, width: 'auto' }}
                   >
                     <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
                       {formatNumber(weeklySets)}
@@ -248,7 +249,7 @@ const Home = () => {
                         {lastWorkout.exercises?.slice(0, 3).map((ex, i) => (
                           <Box
                             key={i}
-                            sx={{ px: 1.5, py: 0.6, borderRadius: '8px', border: '1px solid', borderColor: 'divider', fontSize: 12, fontWeight: 600 }}
+                            sx={{ px: 1.5, py: 0.6, borderRadius: radius.sm, border: '1px solid', borderColor: 'divider', fontSize: 12, fontWeight: 600 }}
                           >
                             {ex.name}
                           </Box>

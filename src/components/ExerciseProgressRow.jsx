@@ -8,6 +8,7 @@ import { muscleLabel } from '../i18n/labels';
 import { buildPoints } from './ChartCard';
 import { dayTime } from '../utils/calendarDay';
 import { STATUS, STATUS_TONE, showsDelta } from '../utils/progressOverview';
+import { radius } from '../theme/radius';
 
 export const formatDaysAgo = (t, days) => {
   if (days === 0) return t('progress.today');
@@ -50,7 +51,7 @@ const ExerciseProgressRow = ({ item, showMuscle = false, favorite, onToggleFavor
     <Box data-exercise-row sx={{ display: 'flex', alignItems: 'center', opacity: status === STATUS.INACTIVE ? 0.6 : 1 }}>
       <CardActionArea
         onClick={() => onOpen(item.id)}
-        sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: { xs: 1.5, md: 3 }, py: 1.25, px: 1, borderRadius: 1, ...(laterInSession && { flexWrap: 'wrap', rowGap: 0 }) }}
+        sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: { xs: 1.5, md: 3 }, py: 1.25, px: 1, borderRadius: radius.xxl, ...(laterInSession && { flexWrap: 'wrap', rowGap: 0 }) }}
       >
         <Box sx={{ flex: { xs: 1, md: '0 0 300px' }, minWidth: 0 }}>
           <Typography sx={{ fontWeight: 600, fontSize: 16, lineHeight: 1.3 }}>{name}</Typography>

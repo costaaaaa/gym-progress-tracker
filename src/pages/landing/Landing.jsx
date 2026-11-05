@@ -8,6 +8,7 @@ import HeroRecovery from './HeroRecovery';
 import SceneFocus from './SceneFocus';
 import SceneProgress from './SceneProgress';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
+import { radius } from '../../theme/radius';
 
 const FEATURES = ['plans', 'measures', 'charts'];
 const PLAN_ROWS = [['ex1', '4 × 8'], ['ex2', '3 × 10'], ['ex3', '3 × 12']];
@@ -20,7 +21,7 @@ const PlanFragment = ({ t }) => (
     {PLAN_ROWS.map(([key, sets], i) => (
       <Box key={key} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1.5 }}>
         <Typography sx={{ flex: 1, fontSize: 17, fontWeight: 600 }}>{t(`home.landing.inside.plan.${key}`)}</Typography>
-        {i === 2 && <Chip label={t('home.landing.inside.plan.tech')} size="small" sx={{ fontSize: 16, height: 32, borderRadius: '16px' }} />}
+        {i === 2 && <Chip label={t('home.landing.inside.plan.tech')} size="small" sx={{ fontSize: 16, height: 32, borderRadius: radius.xxl }} />}
         <Typography sx={{ fontSize: 17, fontVariantNumeric: 'tabular-nums', fontFamily: 'Inter, sans-serif', color: 'text.secondary' }}>{sets}</Typography>
       </Box>
     ))}
@@ -104,7 +105,7 @@ const Closing = () => {
         component={RouterLink}
         to={localizedPath('/register')}
         onClick={() => track('landing_cta_click', { position: 'footer' })}
-        sx={{ px: 4, py: 1.5, fontSize: 17, fontWeight: 700, borderRadius: '12px' }}
+        sx={{ px: 4, py: 1.5, fontSize: 17, fontWeight: 700, borderRadius: radius.lg }}
       >
         {t('home.footer.cta')}
       </Button>
