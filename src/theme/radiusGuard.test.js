@@ -1,11 +1,10 @@
 // Guardia: nessun borderRadius della scala scritto a mano fuori dal tema (issue #15). Restano scritti
-// 0, '50%', i raggi sottili, i calcolati e i numeri sx che non cadono nella scala: non sono di questa
-// guardia (vedi report). I file .css restano fuori (regex solo su .js/.jsx): App.css ha ancora alcuni
-// border-radius a mano, vedi report.
+// 0, '50%', i raggi sottili e i calcolati: non sono valori della scala, non li riguarda questa guardia.
+// I file .css restano fuori (regex solo su .js/.jsx): App.css ha border-radius scritti a mano.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { relative } from 'node:path';
-import { srcDir, walk, THEME_FILE } from './sourceFiles';
+import { srcDir, walk, THEME_FILE } from '../test/sourceFiles';
 import { radius } from './radius';
 
 // File fuori dalla guardia: qui vive la scala stessa
@@ -13,16 +12,24 @@ const SKIPPED_FILES = ['theme/radius.js', THEME_FILE];
 
 const SCALE_PX = Object.values(radius);
 const SCALE_NUM = SCALE_PX.map((px) => px.replace('px', ''));
-// In sx un numero si moltiplica per theme.shape.borderRadius (16): 1 vale quindi 16px, come radius.xxl.
-// Fuori da sx (es. in uno style={{}} letterale) 1 varrebbe invece 1px: oggi non c'è nessun caso così nei
-// sorgenti (vedi report), quindi aggiungerlo ai numeri cercati non crea falsi positivi.
-const SX_ONE_IS_XXL = '1';
+// Numeri sx che cadono nella scala: in sx un numero si moltiplica per theme.shape.borderRadius (16),
+// quindi vale px × 16. Le frazioni sono gli stessi raggi scritti come frazione di 16 invece che in px.
+const SX_SCALE_NUMBERS = [
+  '0.5',   // 0.5 × 16 = 8px, radius.sm
+  '0.625', // 0.625 × 16 = 10px, radius.md
+  '0.75',  // 0.75 × 16 = 12px, radius.lg
+  '0.875', // 0.875 × 16 = 14px, radius.xl
+  '1',     // 1 × 16 = 16px, radius.xxl
+];
+const SCALE_NUMBERS = [...SCALE_NUM, ...SX_SCALE_NUMBERS];
 
-// Isola il valore che segue un "borderXxxRadius:" (anche nelle varianti come borderTopLeftRadius),
-// carattere per carattere, fino alla virgola o alla chiusura di parentesi/graffa allo stesso livello:
-// gestisce così anche il ramo di un ternario o un oggetto responsivo ({ xs: '8px', md: '12px' }), dove
-// fermarsi alla prima "," o "}" del testo (senza contare la profondità) tronca il valore troppo presto.
-function captureObjectValue(text, start) {
+// Cattura il testo grezzo di un valore (stringa compresa, non interpretata) a partire da "start",
+// carattere per carattere: salta per intero le stringhe tra virgolette (gestendo l'escape), conta la
+// profondità di parentesi/graffe annidate e si ferma quando "stop" dice che il carattere corrente, a
+// profondità zero e fuori da una stringa, segna il confine del valore. Gestisce così anche il ramo di
+// un ternario o un oggetto responsivo ({ xs: '8px', md: '12px' }), dove fermarsi alla prima "," o "}"
+// del testo (senza contare la profondità) tronca il valore troppo presto.
+function captureValue(text, start, stop) {
   let i = start;
   let depth = 0;
   let quote = null;
@@ -38,7 +45,7 @@ function captureObjectValue(text, start) {
     } else if (c === '}' || c === ')' || c === ']') {
       if (depth === 0) break;
       depth--;
-    } else if (c === ',' && depth === 0) {
+    } else if (depth === 0 && stop(c)) {
       break;
     }
     i++;
@@ -46,8 +53,12 @@ function captureObjectValue(text, start) {
   return text.slice(start, i);
 }
 
+const captureObjectValue = (text, start) => captureValue(text, start, (c) => c === ',');
+
 // Stessa idea per il prop JSX borderRadius="12px" / borderRadius={...}: gli attributi JSX sono separati
-// da spazi, non da virgole, quindi si cattura solo la stringa o l'espressione graffata che segue.
+// da spazi, non da virgole. Una stringa tra virgolette si prende per intero (si ferma da sola
+// all'escape o alla virgoletta di chiusura); un'espressione tra graffe usa lo scanner comune, fermato
+// solo dalla graffa di chiusura (il parametro "stop" non serve, ci pensa il bilanciamento delle graffe).
 function captureJsxValue(text, start) {
   let i = start;
   while (text[i] === ' ') i++;
@@ -58,48 +69,64 @@ function captureJsxValue(text, start) {
     return text.slice(i, j + 1);
   }
   if (text[i] === '{') {
-    let depth = 0;
-    let quote = null;
-    let j = i;
-    while (j < text.length) {
-      const c = text[j];
-      if (quote) {
-        if (c === '\\') { j += 2; continue; }
-        if (c === quote) quote = null;
-      } else if (c === '\'' || c === '"' || c === '`') {
-        quote = c;
-      } else if (c === '{') {
-        depth++;
-      } else if (c === '}') {
-        depth--;
-        if (depth === 0) { j++; break; }
-      }
-      j++;
-    }
-    return text.slice(i, j);
+    return captureValue(text, i + 1, () => false);
   }
   return '';
 }
 
-// Ogni occorrenza di border*Radius (sia come prop di un oggetto/sx, ":" , sia come attributo JSX, "="),
-// con il testo del suo valore ancora grezzo (stringa compresa, non interpretato).
+// Ogni occorrenza di border*Radius (sia come prop di un oggetto/sx, ":", sia come attributo JSX, "=",
+// anche con la chiave tra virgolette, es. 'borderRadius': …), con il testo del suo valore ancora grezzo
+// (stringa compresa, non interpretato).
 function radiusExpressions(text) {
   const out = [];
-  for (const m of text.matchAll(/border\w*Radius\s*([:=])/g)) {
+  for (const m of text.matchAll(/['"]?border\w*Radius['"]?\s*([:=])/g)) {
     const start = m.index + m[0].length;
     out.push(m[1] === '=' ? captureJsxValue(text, start) : captureObjectValue(text, start));
   }
   return out;
 }
 
+// Tutte le stringhe tra virgolette dentro "expr" (anche più di una, es. nei due rami di un ternario),
+// senza le virgolette: serve a trovare un valore della scala anche quando non è l'unico token della
+// stringa, es. '0 0 12px 12px' o `${x} 12px`.
+function quotedStrings(expr) {
+  const out = [];
+  for (let i = 0; i < expr.length; i++) {
+    const c = expr[i];
+    if (c === '\'' || c === '"' || c === '`') {
+      let j = i + 1;
+      while (j < expr.length && expr[j] !== c) { if (expr[j] === '\\') j++; j++; }
+      out.push(expr.slice(i + 1, j));
+      i = j;
+    }
+  }
+  return out;
+}
+
+// I rami di valore di "expr": con un ternario "cond ? a : b" sono i valori dei due rami (il "?" e il
+// primo ":" allo stesso livello la separano dalla condizione); senza ternario è l'espressione stessa.
+// Ternari annidati non sono gestiti: nei sorgenti attuali non ce ne sono. Serve a non segnalare un
+// numero della scala che è solo un pezzo di un'espressione più ampia (theme.spacing(1), 10 + x): il
+// numero conta solo se è l'intero valore di un ramo, non una sua sottostringa.
+function valueBranches(expr) {
+  const q = expr.indexOf('?');
+  if (q === -1) return [expr];
+  const rest = expr.slice(q + 1);
+  const c = rest.indexOf(':');
+  return c === -1 ? [rest] : [rest.slice(0, c), rest.slice(c + 1)];
+}
+
 function scaleViolations(text) {
   const found = [];
   for (const expr of radiusExpressions(text)) {
-    for (const px of SCALE_PX) {
-      if (new RegExp(`['"\`]${px}(?:[^'"\`]*)?['"\`]`).test(expr)) found.push(px);
+    for (const str of quotedStrings(expr)) {
+      for (const token of str.match(/\d+(?:\.\d+)?px/g) || []) {
+        if (SCALE_PX.includes(token)) found.push(token);
+      }
     }
-    for (const n of [...SCALE_NUM, SX_ONE_IS_XXL]) {
-      if (new RegExp(`(?<![\\w.'"])${n}(?![\\w.])`).test(expr)) found.push(n);
+    const branches = valueBranches(expr).map((b) => b.trim());
+    for (const n of SCALE_NUMBERS) {
+      if (branches.includes(n)) found.push(n);
     }
   }
   return found;
@@ -123,7 +150,7 @@ describe('guardia raggi: la regex', () => {
   });
 });
 
-describe('guardia raggi: forme che oggi sfuggono (giro di correzioni 1)', () => {
+describe('guardia raggi: varianti di scrittura', () => {
   it('trova anche le varianti border*Radius, non solo borderRadius', () => {
     expect(scaleViolations("borderTopLeftRadius: '12px',")).toEqual(['12px']);
   });
@@ -137,12 +164,43 @@ describe('guardia raggi: forme che oggi sfuggono (giro di correzioni 1)', () => 
     expect(scaleViolations('<Box borderRadius="12px" />')).toEqual(['12px']);
   });
 
+  it('trova il prop JSX borderRadius={12} e borderRadius={\'12px\'}, tra graffe', () => {
+    expect(scaleViolations('<Box borderRadius={12} />')).toEqual(['12']);
+    expect(scaleViolations("<Box borderRadius={'12px'} />")).toEqual(['12px']);
+  });
+
   it('trova un valore della scala dentro un oggetto responsivo', () => {
     expect(scaleViolations("borderRadius: { xs: '8px', md: '12px' },")).toEqual(['8px', '12px']);
   });
 
   it('in sx il numero 1 vale 16px, come radius.xxl: va segnalato', () => {
     expect(scaleViolations('borderRadius: 1,')).toEqual(['1']);
+  });
+});
+
+describe('guardia raggi: forme che sfuggono', () => {
+  it('trova le frazioni sx che cadono nella scala (0.5, 0.625, 0.75, 0.875)', () => {
+    expect(scaleViolations('borderRadius: 0.5,')).toEqual(['0.5']);
+    expect(scaleViolations('borderRadius: 0.625,')).toEqual(['0.625']);
+    expect(scaleViolations('borderRadius: 0.75,')).toEqual(['0.75']);
+    expect(scaleViolations('borderRadius: 0.875,')).toEqual(['0.875']);
+  });
+
+  it('trova un valore della scala anche quando non è l\'unico token della stringa', () => {
+    expect(scaleViolations("borderRadius: '0 0 12px 12px',")).toEqual(['12px', '12px']);
+    expect(scaleViolations('borderRadius: `${x} 12px`,')).toEqual(['12px']);
+  });
+
+  it('trova border*Radius anche con la chiave tra virgolette', () => {
+    expect(scaleViolations("'borderRadius': '12px',")).toEqual(['12px']);
+    expect(scaleViolations('"borderTopLeftRadius": 8,')).toEqual(['8']);
+  });
+
+  it('non segnala un numero della scala che è solo un pezzo di un\'espressione', () => {
+    // theme.spacing(1) non è "il numero 1": è una chiamata che produce un'altra unità, non va
+    // segnalata per caso solo perché contiene la cifra "1".
+    expect(scaleViolations('borderRadius: theme.spacing(1),')).toEqual([]);
+    expect(scaleViolations('borderRadius: 10 + x,')).toEqual([]);
   });
 });
 

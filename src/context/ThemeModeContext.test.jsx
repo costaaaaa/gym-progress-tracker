@@ -83,9 +83,9 @@ describe('tema: bottone pieno di errore', () => {
   });
 });
 
-// Token nuovi del tema (issue #15): stessi valori letterali di oggi, fonte indipendente dal codice
-// che li produce. I valori di partenza sono quelli già in WorkoutHistory, WorkoutPlans, Navbar,
-// Account, LeaderboardTable, BodyStats/HealthAppHint e la chip "nuovo record" di SummaryPhase.
+// Token nuovi del tema (issue #15): stessi valori letterali, fonte indipendente dal codice che li
+// produce. I valori di partenza sono quelli già in WorkoutHistory, WorkoutPlans, Navbar, Account,
+// LeaderboardTable, BodyStats/HealthAppHint e la chip "nuovo record" di SummaryPhase.
 describe('tema: token nuovi', () => {
   afterEach(() => localStorage.clear());
 
@@ -100,7 +100,7 @@ describe('tema: token nuovi', () => {
     return captured;
   };
 
-  it('in chiaro ha i valori di oggi', () => {
+  it('in chiaro ha i valori attesi', () => {
     const p = palette('light');
     expect(p.background.subtle).toBe('#faf9f8');
     expect(p.success.muted).toBe('#e8f3ec');
@@ -111,7 +111,7 @@ describe('tema: token nuovi', () => {
     expect(p.onInk).toBe('#ffffff');
   });
 
-  it('in scuro i valori coincidono con quelli scuri già in uso; ink/onInk si invertono', () => {
+  it('in scuro ha i valori attesi, ink e onInk compresi', () => {
     const p = palette('dark');
     expect(p.background.subtle).toBe('rgba(255, 255, 255, 0.08)');
     expect(p.success.muted).toBe('rgba(34, 197, 94, 0.15)');
