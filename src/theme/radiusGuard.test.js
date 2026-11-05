@@ -1,11 +1,11 @@
 // Guardia: nessun borderRadius della scala scritto a mano fuori dal tema (issue #15). Restano scritti
 // 0, '50%', i raggi sottili e i calcolati: non sono valori della scala, non li riguarda questa guardia.
-// I file .css restano fuori (regex solo su .js/.jsx): App.css ha border-radius scritti a mano.
+// I file .css restano fuori (walk elenca solo .js/.jsx): App.css ha border-radius scritti a mano.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { relative } from 'node:path';
 import { srcDir, walk, THEME_FILE } from '../test/sourceFiles';
-import { parseSource, walkAst } from '../test/sourceAst';
+import { parseSource, walkAst, keyNameOf, staticTextOf } from '../test/sourceAst';
 import { radius } from './radius';
 
 // File fuori dalla guardia: qui vive la scala stessa
@@ -15,8 +15,8 @@ const SCALE_PX = Object.values(radius);
 const SCALE_NUM = SCALE_PX.map((px) => px.replace('px', ''));
 // Numeri sx che cadono nella scala: in sx un numero si moltiplica per theme.shape.borderRadius (16),
 // quindi vale px × 16. Le frazioni sono gli stessi raggi scritti come frazione di 16 invece che in px.
-// Sono segnalati anche fuori da sx (es. in uno style={{}} letterale, dove 1 varrebbe 1px e 0.5 varrebbe
-// 0.5px): nei sorgenti non c'è nessun caso così, quindi non crea falsi positivi.
+// Sono segnalati anche fuori da sx (in uno style={{}} 1 vale 1px e 0.5 vale 0.5px): lì un raggio così
+// si scrive come stringa ('1px'), che la guardia non tocca.
 const SX_SCALE_NUMBERS = [
   '0.5',   // 0.5 × 16 = 8px, radius.sm
   '0.625', // 0.625 × 16 = 10px, radius.md
@@ -28,13 +28,6 @@ const SCALE_NUMBERS = [...SCALE_NUM, ...SX_SCALE_NUMBERS];
 
 const PX_RE = /\d+(?:\.\d+)?px/g;
 const RADIUS_KEY_RE = /^border\w*Radius$/;
-
-// Chiave di una Property o di un JSXAttribute, identificatore o stringa
-function keyNameOf(node) {
-  if (node.type === 'Property') return node.key.type === 'Identifier' ? node.key.name : String(node.key.value);
-  if (node.type === 'JSXAttribute') return node.name.name;
-  return null;
-}
 
 // Scende dentro il valore di un borderRadius a caccia dei nodi letterali da controllare: un
 // JSXExpressionContainer ({...} in JSX), entrambi i rami di un ternario o di un "??"/"||", i valori di
@@ -75,26 +68,21 @@ function* radiusLiterals(node) {
 function scaleViolationsOf(valueNode) {
   const found = [];
   for (const node of radiusLiterals(valueNode)) {
-    if (node.type === 'TemplateElement') {
-      for (const token of (node.value.cooked ?? '').match(PX_RE) || []) {
-        if (SCALE_PX.includes(token)) found.push(token);
-      }
-    } else if (typeof node.value === 'number') {
+    if (typeof node.value === 'number') {
       if (SCALE_NUMBERS.includes(String(node.value))) found.push(String(node.value));
-    } else if (typeof node.value === 'string') {
-      for (const token of node.value.match(PX_RE) || []) {
-        if (SCALE_PX.includes(token)) found.push(token);
-      }
+      continue;
+    }
+    for (const token of staticTextOf(node)?.match(PX_RE) || []) {
+      if (SCALE_PX.includes(token)) found.push(token);
     }
   }
   return found;
 }
 
 // Ogni Property e ogni JSXAttribute con chiave border*Radius (identificatore o stringa)
-function scaleViolations(text) {
+function scaleViolations(text, fileName) {
   const found = [];
-  walkAst(parseSource(text), (node) => {
-    if (node.type !== 'Property' && node.type !== 'JSXAttribute') return;
+  walkAst(parseSource(text, fileName), (node) => {
     const key = keyNameOf(node);
     if (!key || !RADIUS_KEY_RE.test(key)) return;
     found.push(...scaleViolationsOf(node.value));
@@ -102,7 +90,7 @@ function scaleViolations(text) {
   return found;
 }
 
-describe('guardia raggi: la regex', () => {
+describe('guardia raggi: cosa trova', () => {
   it('trova un valore della scala, anche nel ramo di un ternario', () => {
     expect(scaleViolations("const o = { borderRadius: '12px' };")).toEqual(['12px']);
     expect(scaleViolations('const o = { borderRadius: 999 };')).toEqual(['999']);
@@ -148,7 +136,7 @@ describe('guardia raggi: varianti di scrittura', () => {
   });
 });
 
-describe('guardia raggi: forme che sfuggono', () => {
+describe('guardia raggi: frazioni, stringhe composte, chiavi tra virgolette, espressioni', () => {
   it('trova le frazioni sx che cadono nella scala (0.5, 0.625, 0.75, 0.875)', () => {
     expect(scaleViolations('const o = { borderRadius: 0.5 };')).toEqual(['0.5']);
     expect(scaleViolations('const o = { borderRadius: 0.625 };')).toEqual(['0.625']);
@@ -164,6 +152,11 @@ describe('guardia raggi: forme che sfuggono', () => {
   it('trova border*Radius anche con la chiave tra virgolette', () => {
     expect(scaleViolations("const o = { 'borderRadius': '12px' };")).toEqual(['12px']);
     expect(scaleViolations('const o = { "borderTopLeftRadius": 8 };')).toEqual(['8']);
+    expect(scaleViolations("const o = { ['borderRadius']: 12 };")).toEqual(['12']);
+  });
+
+  it('non legge una chiave calcolata da una variabile, anche se si chiama borderRadius', () => {
+    expect(scaleViolations('const o = { [borderRadius]: 12 };')).toEqual([]);
   });
 
   it('non segnala un numero della scala che è solo un pezzo di un\'espressione', () => {
@@ -193,6 +186,12 @@ describe('guardia raggi: forme che sfuggono', () => {
   });
 });
 
+describe('guardia raggi: file che non si legge', () => {
+  it('ferma la guardia con il nome del file', () => {
+    expect(() => scaleViolations('const o = {;', 'components/Rotto.jsx')).toThrow(/^components\/Rotto\.jsx: /);
+  });
+});
+
 describe('guardia raggi: la scala', () => {
   it('è l\'oggetto deciso con l\'utente, come nell\'app', () => {
     expect(radius).toEqual({ sm: '8px', md: '10px', lg: '12px', xl: '14px', xxl: '16px', pill: '999px' });
@@ -205,7 +204,7 @@ describe('guardia raggi: i sorgenti', () => {
     for (const file of walk(srcDir)) {
       const rel = relative(srcDir, file);
       if (SKIPPED_FILES.includes(rel)) continue;
-      const violations = scaleViolations(readFileSync(file, 'utf8'));
+      const violations = scaleViolations(readFileSync(file, 'utf8'), rel);
       if (violations.length) offenders.push(`${rel}: ${violations.join(', ')}`);
     }
     expect(offenders).toEqual([]);

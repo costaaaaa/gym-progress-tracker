@@ -4,11 +4,14 @@
 import { parse } from 'espree';
 import { KEYS } from 'eslint-visitor-keys';
 
-export const parseSource = (code) => parse(code, {
-  ecmaVersion: 'latest',
-  sourceType: 'module',
-  ecmaFeatures: { jsx: true },
-});
+// fileName serve solo al messaggio d'errore: un file che non si legge ferma la guardia e dice quale
+export function parseSource(code, fileName = 'frammento') {
+  try {
+    return parse(code, { ecmaVersion: 'latest', sourceType: 'module', ecmaFeatures: { jsx: true } });
+  } catch (error) {
+    throw new Error(`${fileName}: ${error.message}`, { cause: error });
+  }
+}
 
 // Visita ogni nodo dell'albero (compreso quello di partenza): a "visit" arrivano il nodo e la pila dei
 // suoi antenati, dal più vicino al più lontano, senza il nodo stesso.
@@ -24,4 +27,20 @@ export function walkAst(node, visit, ancestors = []) {
       walkAst(child, visit, deeper);
     }
   }
+}
+
+// Chiave di una Property o di un JSXAttribute, identificatore o stringa; null per una chiave calcolata
+// da una variabile ([key]) e per ogni altro nodo
+export function keyNameOf(node) {
+  if (node.type === 'JSXAttribute') return node.name.name;
+  if (node.type !== 'Property') return null;
+  if (node.key.type === 'Literal') return String(node.key.value);
+  return node.computed ? null : node.key.name;
+}
+
+// Testo scritto a mano: una stringa letterale o il pezzo fisso di un template; null per il resto
+export function staticTextOf(node) {
+  if (node.type === 'Literal' && typeof node.value === 'string') return node.value;
+  if (node.type === 'TemplateElement') return node.value.cooked ?? '';
+  return null;
 }
