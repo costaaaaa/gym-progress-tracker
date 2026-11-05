@@ -1,6 +1,6 @@
 // Guardia: nessun borderRadius della scala scritto a mano fuori dal tema (issue #15). Restano scritti
 // 0, '50%', i raggi sottili e i calcolati: non sono valori della scala, non li riguarda questa guardia.
-// I file .css restano fuori (walk elenca solo .js/.jsx): App.css ha border-radius scritti a mano.
+// I file .css restano fuori (sourceOffenders legge solo .js/.jsx): App.css ha border-radius scritti a mano.
 import { describe, it, expect } from 'vitest';
 import { sourceOffenders, THEME_FILE } from '../test/sourceFiles';
 import { parseSource, walkAst, keyNameOf, staticTextOf } from '../test/sourceAst';
@@ -134,7 +134,7 @@ describe('guardia raggi: varianti di scrittura', () => {
   });
 });
 
-describe('guardia raggi: valori annidati e chiavi insolite', () => {
+describe('guardia raggi: altre forme di scrittura', () => {
   it('trova le frazioni sx che cadono nella scala (0.5, 0.625, 0.75, 0.875)', () => {
     expect(scaleViolations('const o = { borderRadius: 0.5 };')).toEqual(['0.5']);
     expect(scaleViolations('const o = { borderRadius: 0.625 };')).toEqual(['0.625']);
@@ -199,5 +199,11 @@ describe('guardia raggi: la scala', () => {
 describe('guardia raggi: i sorgenti', () => {
   it('nessun file sotto src/ (fuori dal tema) scrive a mano un borderRadius della scala', () => {
     expect(sourceOffenders(scaleViolations, SKIPPED_FILES)).toEqual([]);
+  });
+
+  it('la scansione arriva nei file delle sottocartelle e salta quelli esclusi', () => {
+    const everyFile = (text, rel) => [rel];
+    expect(sourceOffenders(everyFile, [])).toContain('theme/radius.js: theme/radius.js');
+    expect(sourceOffenders(everyFile, ['theme/radius.js'])).not.toContain('theme/radius.js: theme/radius.js');
   });
 });
