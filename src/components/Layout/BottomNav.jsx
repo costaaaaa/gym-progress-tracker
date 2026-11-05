@@ -95,7 +95,7 @@ const BottomNav = () => {
             alignItems: 'center',
             justifyContent: 'center',
             transform: 'translateY(-14px)',
-            boxShadow: (theme) => `0 8px 18px ${alpha(theme.palette.primary.main, 0.4)}`,
+            boxShadow: `0 8px 18px ${alpha(theme.palette.primary.main, 0.4)}`,
             border: '4px solid',
             borderColor: 'background.default',
           }}

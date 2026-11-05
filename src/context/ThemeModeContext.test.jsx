@@ -108,10 +108,10 @@ describe('tema: token nuovi', () => {
     expect(p.navToggle.bg).toBe('#f7f6f5');
     expect(p.navToggle.hover).toBe('#ececea');
     expect(p.ink).toBe('#1a1816');
-    expect(p.onInk).toBe('#fff');
+    expect(p.onInk).toBe('#ffffff');
   });
 
-  it('in scuro cambia solo l\'avatar (ink/onInk): il resto segue i valori scuri già in uso', () => {
+  it('in scuro i valori coincidono con quelli scuri già in uso; ink/onInk si invertono', () => {
     const p = palette('dark');
     expect(p.background.subtle).toBe('rgba(255, 255, 255, 0.08)');
     expect(p.success.muted).toBe('rgba(34, 197, 94, 0.15)');

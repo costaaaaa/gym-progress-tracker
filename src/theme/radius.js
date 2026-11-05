@@ -1,4 +1,4 @@
-// Scala unica dei raggi dei bordi, uguale ai nomi e ai valori dell'app mobile. Stringhe px: valgono
+// Scala unica dei raggi dei bordi, come nell'app. Stringhe px: valgono
 // uguale in sx (dove un numero si moltiplicherebbe per theme.shape.borderRadius), in style e negli
 // styleOverrides del tema.
 export const radius = {

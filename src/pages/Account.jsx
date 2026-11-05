@@ -574,6 +574,7 @@ const Account = ({ isEmbedded = false }) => {
           <Avatar sx={{
             width: 64, height: 64,
             bgcolor: 'ink',
+            color: 'onInk',
             fontFamily: TITLE_FONT_FAMILY,
             fontWeight: 700,
             fontSize: 20,

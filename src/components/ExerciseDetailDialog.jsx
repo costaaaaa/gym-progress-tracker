@@ -31,10 +31,10 @@ import { radius } from '../theme/radius';
 const HEAD_SX = { fontSize: 11, textTransform: 'uppercase', color: 'text.secondary', fontWeight: 700, border: 0, px: { xs: 0.75, sm: 2 }, lineHeight: 1.2, verticalAlign: 'bottom' };
 const ROWS_COLLAPSED = 5;
 
-const PRDot = ({ cx, cy, payload, color, ring }) => {
+const PRDot = ({ cx, cy, payload, color, dotOutline }) => {
   if (cx === undefined || cy === undefined) return null;
   return payload.isPR
-    ? <circle cx={cx} cy={cy} r={6} fill={color} stroke={ring} strokeWidth={2} />
+    ? <circle cx={cx} cy={cy} r={6} fill={color} stroke={dotOutline} strokeWidth={2} />
     : <circle cx={cx} cy={cy} r={3} fill={color} />;
 };
 
@@ -108,7 +108,7 @@ const ExerciseDetailDialog = ({ item, onClose }) => {
                   <XAxis dataKey="x" type="number" domain={['dataMin', 'dataMax']} ticks={[...labelByX.keys()]} tickFormatter={(x) => labelByX.get(x)} fontSize={11} stroke={theme.palette.text.secondary} tickLine={false} axisLine={false} minTickGap={24} />
                   <YAxis fontSize={11} stroke={theme.palette.text.secondary} tickLine={false} axisLine={false} tickCount={4} width={40} domain={[(min) => Math.floor(min - 2), (max) => Math.ceil(max + 2)]} allowDecimals={false} />
                   <Tooltip content={<ChartTooltip mode={item.mode} t={t} />} />
-                  <Line type="monotone" dataKey="value" stroke={theme.palette.primary.main} strokeWidth={2.5} dot={<PRDot color={theme.palette.primary.main} ring={theme.palette.common.white} />} activeDot={{ r: 5 }} isAnimationActive={false} />
+                  <Line type="monotone" dataKey="value" stroke={theme.palette.primary.main} strokeWidth={2.5} dot={<PRDot color={theme.palette.primary.main} dotOutline={theme.palette.common.white} />} activeDot={{ r: 5 }} isAnimationActive={false} />
                 </LineChart>
               </ResponsiveContainer>
             </Box>

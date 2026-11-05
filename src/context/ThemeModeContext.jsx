@@ -115,10 +115,9 @@ export const ThemeModeProvider = ({ children }) => {
             bg: mode === 'light' ? '#f7f6f5' : 'rgba(255, 255, 255, 0.06)',
             hover: mode === 'light' ? '#ececea' : 'rgba(255, 255, 255, 0.12)',
           },
-          // Avatar della navbar e dell'account: in scuro si inverte (fondo bianco, iniziale scura),
-          // perché il fondo scuro di oggi (#1a1816) si confondeva con lo sfondo pagina (#0a0a0b)
+          // Avatar di navbar e account: inchiostro e testo sopra, come nell'app.
           ink: mode === 'light' ? '#1a1816' : '#ffffff',
-          onInk: mode === 'light' ? '#fff' : '#0a0a0b',
+          onInk: mode === 'light' ? '#ffffff' : '#0a0a0b',
         },
         shape: {
           borderRadius: 16,
