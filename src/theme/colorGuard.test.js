@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { relative } from 'node:path';
 import { srcDir, walk, THEME_FILE } from '../test/sourceFiles';
+import { parseSource, walkAst } from '../test/sourceAst';
 
 // File interi fuori dalla guardia: disegnano su canvas con template propri (vedi issue #15)
 const SKIPPED_FILES = [
@@ -24,73 +25,48 @@ const HEX_RE = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})
 const FUNC_RE = /\b(?:rgba?|hsla?)\([^)]*\)/g;
 
 // Un'ombra nera rgba/rgb(0,0,0,…): non è un colore di palette, ma solo dentro boxShadow (altrove,
-// es. bgcolor o color, resta una violazione).
+// es. bgcolor o color, o tenuta in una variabile invece che scritta dentro boxShadow, resta una
+// violazione).
 const isBlackShadow = (value) => /^rgba?\(\s*0\s*,\s*0\s*,\s*0\s*[,)]/.test(value);
 
-// Nome della proprietà (es. "boxShadow", "bgcolor") che contiene il valore alla posizione data: risale
-// il testo tenendo il conto della profondità di parentesi/graffe/quadre e dei "?" ternari in sospeso.
-// Una "{" apre un nuovo oggetto (si riparte senza una proprietà corrente); una "(" o una "[" restano
-// nello stesso valore (es. gli elementi di un array o gli argomenti di una funzione: erediteranno la
-// proprietà del livello che le contiene). Una "," chiude la proprietà corrente solo dentro una "{"
-// (dentro "(" o "[" fa parte dello stesso valore). Un "=" conta come i due punti di un oggetto: serve
-// per un attributo JSX (bgcolor="...") o un'assegnazione (const c = '...'). Un ":" che chiude un
-// ternario in sospeso (isDark ? shadowVar : '...') non viene scambiato per una nuova proprietà.
-function nearestPropBefore(text, index) {
-  let depth = 0;
-  const propAtDepth = [null];
-  const isBraceDepth = [true];
-  const ternaryPending = [0];
-  let quote = null;
-  for (let i = 0; i < index; i++) {
-    const c = text[i];
-    if (quote) {
-      if (c === '\\') { i++; continue; }
-      if (c === quote) quote = null;
-      continue;
-    }
-    if (c === '\'' || c === '"' || c === '`') { quote = c; continue; }
-    if (c === '{') {
-      depth++; propAtDepth[depth] = null; isBraceDepth[depth] = true; ternaryPending[depth] = 0;
-      continue;
-    }
-    if (c === '(' || c === '[') {
-      depth++; propAtDepth[depth] = propAtDepth[depth - 1]; isBraceDepth[depth] = false; ternaryPending[depth] = 0;
-      continue;
-    }
-    if (c === '}' || c === ')' || c === ']') {
-      propAtDepth.length = depth; isBraceDepth.length = depth; ternaryPending.length = depth;
-      depth = Math.max(0, depth - 1);
-      continue;
-    }
-    if (c === ',' && isBraceDepth[depth]) { propAtDepth[depth] = null; continue; }
-    if (c === '?' && text[i + 1] !== '.' && text[i + 1] !== '?') { ternaryPending[depth]++; continue; }
-    if (c === ':') {
-      if (ternaryPending[depth] > 0) { ternaryPending[depth]--; continue; }
-      const m = /(['"]?)([a-zA-Z_$][\w$]*)\1\s*$/.exec(text.slice(0, i));
-      if (m) propAtDepth[depth] = m[2];
-      continue;
-    }
-    if (c === '=' && text[i + 1] !== '=' && text[i - 1] !== '!' && text[i - 1] !== '<' && text[i - 1] !== '>') {
-      const m = /([a-zA-Z_$][\w$]*)\s*$/.exec(text.slice(0, i));
-      if (m) propAtDepth[depth] = m[1];
-      continue;
-    }
-  }
-  return propAtDepth[depth];
+// Chiave di una Property o di un JSXAttribute, identificatore o stringa
+function keyNameOf(node) {
+  if (node.type === 'Property') return node.key.type === 'Identifier' ? node.key.name : String(node.key.value);
+  if (node.type === 'JSXAttribute') return node.name.name;
+  return null;
 }
 
+// true se tra gli antenati (a qualunque profondità: un ternario, una map, un join...) c'è una
+// Property o un JSXAttribute con chiave "boxShadow"
+const hasBoxShadowAncestor = (ancestors) => ancestors.some(
+  (a) => (a.type === 'Property' || a.type === 'JSXAttribute') && keyNameOf(a) === 'boxShadow',
+);
+
+function colorsIn(value) {
+  const found = [];
+  for (const re of [HEX_RE, FUNC_RE]) {
+    for (const m of value.matchAll(re)) found.push(m[0]);
+  }
+  return found;
+}
+
+// Ogni Literal stringa e ogni pezzo statico (quasi) di un TemplateLiteral: i commenti non sono nodi
+// dell'albero, quindi un hex o un apostrofo in un commento non arriva mai qui.
 function violationsIn(relPath, text) {
   if (SKIPPED_FILES.includes(relPath)) return [];
   const allowed = FILE_EXCEPTIONS[relPath] || [];
   const found = [];
-  for (const re of [HEX_RE, FUNC_RE]) {
-    for (const match of text.matchAll(re)) {
-      const value = match[0];
-      if (allowed.includes(value)) continue;
-      if (isBlackShadow(value) && nearestPropBefore(text, match.index) === 'boxShadow') continue;
-      found.push(value);
+  walkAst(parseSource(text), (node, ancestors) => {
+    let value;
+    if (node.type === 'Literal' && typeof node.value === 'string') value = node.value;
+    else if (node.type === 'TemplateElement') value = node.value.cooked ?? '';
+    else return;
+    for (const color of colorsIn(value)) {
+      if (allowed.includes(color)) continue;
+      if (isBlackShadow(color) && hasBoxShadowAncestor(ancestors)) continue;
+      found.push(color);
     }
-  }
+  });
   return found;
 }
 
@@ -121,44 +97,82 @@ describe('guardia colori: la regex', () => {
 
 describe('guardia colori: le ombre nere', () => {
   it('un\'ombra nera dentro boxShadow è ammessa', () => {
-    expect(violationsIn('x.jsx', "sx={{ p: 1, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}")).toEqual([]);
+    const text = "const o = { p: 1, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' };";
+    expect(violationsIn('x.jsx', text)).toEqual([]);
   });
 
   it('la stessa ombra nera fuori da boxShadow (es. bgcolor) non è ammessa', () => {
-    expect(violationsIn('x.jsx', "sx={{ bgcolor: 'rgba(0,0,0,0.5)' }}")).toEqual(['rgba(0,0,0,0.5)']);
+    const text = "const o = { bgcolor: 'rgba(0,0,0,0.5)' };";
+    expect(violationsIn('x.jsx', text)).toEqual(['rgba(0,0,0,0.5)']);
   });
 
   it('un\'ombra nera nel ramo di un ternario dentro boxShadow è ammessa in entrambi i rami', () => {
-    const text = "boxShadow: isDark ? '0 10px 40px rgba(0,0,0,0.5)' : '0 10px 40px rgba(0,0,0,0.15)',";
+    const text = "const o = { boxShadow: isDark ? '0 10px 40px rgba(0,0,0,0.5)' : '0 10px 40px rgba(0,0,0,0.15)' };";
     expect(violationsIn('x.jsx', text)).toEqual([]);
   });
 
   it('un ternario con una variabile in un ramo e un\'ombra nell\'altro resta dentro boxShadow', () => {
-    const text = "boxShadow: isDark ? shadowVar : '0 0 4px rgba(0,0,0,.2)',";
+    const text = "const o = { boxShadow: isDark ? shadowVar : '0 0 4px rgba(0,0,0,.2)' };";
     expect(violationsIn('x.jsx', text)).toEqual([]);
   });
 
-  it('un attributo JSX dopo un boxShadow non è dentro boxShadow', () => {
-    const text = 'sx={{ boxShadow: 1 }} />\n<Box bgcolor="rgba(0,0,0,0.5)">';
+  it('un attributo JSX dopo un boxShadow, su un altro elemento, non è dentro boxShadow', () => {
+    const text = '<Foo sx={{ boxShadow: 1 }} />;\n<Box bgcolor="rgba(0,0,0,0.5)" />;';
     expect(violationsIn('x.jsx', text)).toEqual(['rgba(0,0,0,0.5)']);
   });
 
   it('un\'ombra assegnata a una variabile dopo un boxShadow non è dentro boxShadow: va scritta lì', () => {
-    const text = "sx={{ boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}\nconst c = 'rgba(0,0,0,.5)';";
+    const text = "const o = { boxShadow: '0 8px 24px rgba(0,0,0,0.08)' };\nconst c = 'rgba(0,0,0,.5)';";
     expect(violationsIn('x.jsx', text)).toEqual(['rgba(0,0,0,.5)']);
   });
 
-  it('bgcolor sulla riga dopo un boxShadow, nello stesso oggetto, non è ammesso', () => {
-    const text = "sx={{ boxShadow: '0 8px 24px rgba(0,0,0,0.08)',\n  bgcolor: 'rgba(0,0,0,0.5)' }}";
+  it('bgcolor nello stesso oggetto di un boxShadow non è ammesso', () => {
+    const text = "const o = { boxShadow: '0 8px 24px rgba(0,0,0,0.08)', bgcolor: 'rgba(0,0,0,0.5)' };";
     expect(violationsIn('x.jsx', text)).toEqual(['rgba(0,0,0,0.5)']);
   });
 
   it('un template literal dentro boxShadow resta ammesso', () => {
-    expect(violationsIn('x.jsx', 'boxShadow: `0 10px 40px rgba(0,0,0,0.5)`,')).toEqual([]);
+    const text = 'const o = { boxShadow: `0 10px 40px rgba(0,0,0,0.5)` };';
+    expect(violationsIn('x.jsx', text)).toEqual([]);
+  });
+
+  it('un colore scritto nel pezzo statico di un template literal fuori da boxShadow non è ammesso', () => {
+    const text = 'const o = { bgcolor: `${x} rgba(0,0,0,0.5)` };';
+    expect(violationsIn('x.jsx', text)).toEqual(['rgba(0,0,0,0.5)']);
   });
 
   it('un array su più righe dentro boxShadow resta ammesso', () => {
-    const text = "boxShadow: [\n  '0 1px 2px rgba(0,0,0,.1)',\n  '0 2px 4px rgba(0,0,0,.1)',\n].join(', '),";
+    const text = "const o = { boxShadow: [\n  '0 1px 2px rgba(0,0,0,.1)',\n  '0 2px 4px rgba(0,0,0,.1)',\n].join(', ') };";
+    expect(violationsIn('x.jsx', text)).toEqual([]);
+  });
+
+  it('un "??" prima del boxShadow, nello stesso oggetto, non confonde la sua ombra', () => {
+    const text = "const o = { label: a ?? 'x', boxShadow: '0 8px 24px rgba(0,0,0,0.08)' };";
+    expect(violationsIn('x.jsx', text)).toEqual([]);
+  });
+
+  it('un\'ombra restituita da una map dentro boxShadow resta ammessa', () => {
+    const text = "const o = { boxShadow: list.map((s) => '0 0 4px rgba(0,0,0,.2)').join(', ') };";
+    expect(violationsIn('x.jsx', text)).toEqual([]);
+  });
+
+  it('un commento con apostrofo prima di un boxShadow non confonde la guardia', () => {
+    const text = "// L'ombra sotto la card\nconst o = { boxShadow: '0 8px 24px rgba(0,0,0,0.08)' };";
+    expect(violationsIn('x.jsx', text)).toEqual([]);
+  });
+
+  it('un hex scritto in un commento non viene segnalato', () => {
+    const text = "// colore vecchio #ff0000\nconst o = { boxShadow: '0 8px 24px rgba(0,0,0,0.08)' };";
+    expect(violationsIn('x.jsx', text)).toEqual([]);
+  });
+
+  it('un\'ombra nera in un attributo JSX boxShadow (non dentro un oggetto) è ammessa', () => {
+    const text = '<Box boxShadow="0 8px 24px rgba(0,0,0,0.08)" />;';
+    expect(violationsIn('x.jsx', text)).toEqual([]);
+  });
+
+  it('un\'ombra nera dentro un boxShadow con la chiave tra virgolette è ammessa', () => {
+    const text = "const o = { 'boxShadow': '0 8px 24px rgba(0,0,0,0.08)' };";
     expect(violationsIn('x.jsx', text)).toEqual([]);
   });
 });
