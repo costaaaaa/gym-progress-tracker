@@ -16,6 +16,7 @@ import ShareCardDialog from '../../components/ShareCardDialog';
 import WarmupBadge from '../../components/WarmupBadge';
 import { track } from '../../utils/analytics';
 import { techniqueLabel } from '../../i18n/labels';
+import { radius } from '../../theme/radius';
 
 const XP_WITHHELD_KEYS = {
   incomplete: 'focus.xp_incomplete',
@@ -96,7 +97,7 @@ export default function SummaryPhase({
                       icon={<TrophyIcon sx={{ fontSize: 16, color: `${colors.warning} !important` }} />}
                       label={prParts.length ? t('focus.new_record_parts', { parts: prParts.join(', ') }) : t('focus.new_record')}
                       size="small"
-                      sx={{ bgcolor: 'rgba(255, 167, 38, 0.15)', color: colors.warning, fontWeight: 700, fontSize: '0.7rem' }}
+                      sx={{ bgcolor: 'warning.muted', color: colors.warning, fontWeight: 700, fontSize: '0.7rem' }}
                     />
                   )}
                   {!!pr.volume && (
@@ -222,7 +223,7 @@ export default function SummaryPhase({
             <Button
               variant="contained" fullWidth size="large"
               onClick={onGoHistory}
-              sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, bgcolor: colors.primary, color: colors.primaryContrast, borderRadius: '12px', mb: 2 }}
+              sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, bgcolor: colors.primary, color: colors.primaryContrast, borderRadius: radius.lg, mb: 2 }}
             >
               {t('focus.go_history')}
             </Button>
@@ -239,7 +240,7 @@ export default function SummaryPhase({
             <Button variant="outlined" fullWidth startIcon={<AddIcon />}
               endIcon={canEditSession ? null : <LockIcon sx={{ fontSize: '16px !important' }} />}
               onClick={onAddExercise}
-              sx={{ py: 1.25, mb: 3, color: colors.textSecondary, borderColor: colors.border, borderRadius: '12px',
+              sx={{ py: 1.25, mb: 3, color: colors.textSecondary, borderColor: colors.border, borderRadius: radius.lg,
                 '&:hover': { borderColor: colors.text, color: colors.text } }}>
               {t('focus.add_exercise')}
             </Button>
@@ -251,7 +252,7 @@ export default function SummaryPhase({
             <Button variant="contained" fullWidth size="large"
               startIcon={saving ? <CircularProgress size={20} sx={{ color: colors.primaryContrast }} /> : <SaveIcon />}
               onClick={onSave} disabled={saving || totalCompletedSets === 0}
-              sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, bgcolor: colors.primary, color: colors.primaryContrast, borderRadius: '12px',
+              sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, bgcolor: colors.primary, color: colors.primaryContrast, borderRadius: radius.lg,
                 '&:hover': { bgcolor: colors.primaryDark },
                 '&:disabled': { bgcolor: colors.bgElevated, color: colors.textSecondary }, mb: 2 }}>
               {saving ? t('focus.saving') : t('focus.save')}

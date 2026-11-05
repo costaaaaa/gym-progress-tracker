@@ -47,6 +47,7 @@ import { buildShareStats, historyRecords, muscleGroupsTitle } from '../utils/sha
 import { track } from '../utils/analytics';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
+import { radius } from '../theme/radius';
 import { intlLocale, formatDate, formatClockTime } from '../i18n/format';
 import { clockDate, clockDay } from '../utils/calendarDay';
 import TimeZoneBadge from '../components/TimeZoneBadge';
@@ -335,8 +336,8 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
               {t('history.notes_caps')}
             </Typography>
             <Box sx={{
-              bgcolor: (theme) => theme.palette.mode === 'light' ? '#faf9f8' : 'action.hover',
-              borderRadius: '10px', p: 1.5,
+              bgcolor: 'background.subtle',
+              borderRadius: radius.md, p: 1.5,
             }}>
               <Typography variant="body2">{workout.notes}</Typography>
             </Box>
@@ -351,7 +352,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, mb: 1 }}>
                 <Typography sx={{ fontWeight: 700, fontSize: 14 }}>{exercise.name}</Typography>
                 <Box sx={{
-                  border: '1px solid', borderColor: 'divider', borderRadius: '8px',
+                  border: '1px solid', borderColor: 'divider', borderRadius: radius.sm,
                   px: 1.25, py: 0.4, fontSize: 12, fontWeight: 600, color: 'text.secondary', flexShrink: 0,
                 }}>
                   {t('history.sets_count', { count: exercise.sets.filter(isWorkingSet).length })}
@@ -364,8 +365,8 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                       key={idx}
                       sx={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1.5,
-                        bgcolor: (theme) => theme.palette.mode === 'light' ? '#faf9f8' : 'action.hover',
-                        borderRadius: '8px', px: 1.75, py: 1,
+                        bgcolor: 'background.subtle',
+                        borderRadius: radius.sm, px: 1.75, py: 1,
                       }}
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
@@ -445,7 +446,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                 onClick={() => toggleMonthExpansion(monthYear)}
                 aria-expanded={isExpanded}
                 aria-controls={monthPanelId}
-                sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.75, py: 0.5, borderRadius: 1, textAlign: 'left' }}
+                sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.75, py: 0.5, borderRadius: radius.xxl, textAlign: 'left' }}
               >
                 <Typography component="span" variant="cardTitle">
                   {isUnknownDate ? t('history.unknown_date') : `${getMonthName(parseInt(month))} ${year}`}

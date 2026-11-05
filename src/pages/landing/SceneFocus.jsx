@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../../i18n/format';
 import { TABULAR, TITLE_FONT_FAMILY } from '../../utils/fonts';
 import { sceneSx, stageSx, useScrollScene } from './useScrollScene';
+import { radius } from '../../theme/radius';
 
 const TOTAL_SETS = 4;
 const REST_SECONDS = 90;
@@ -59,7 +60,7 @@ const Dot = ({ index, filled }) => (
 );
 
 const Value = ({ label, value }) => (
-  <Box sx={{ flex: 1, textAlign: 'center', py: 1.5, borderRadius: '12px', bgcolor: 'action.hover' }}>
+  <Box sx={{ flex: 1, textAlign: 'center', py: 1.5, borderRadius: radius.lg, bgcolor: 'action.hover' }}>
     <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{label}</Typography>
     <Typography sx={{ ...TABULAR, fontWeight: 800, fontSize: 32, lineHeight: 1.2 }}>{value}</Typography>
   </Box>
@@ -121,8 +122,8 @@ const WorkScreen = ({ t }) => (
       data-confirm
       sx={{
         bgcolor: 'primary.main',
-        color: '#fff',
-        borderRadius: '12px',
+        color: 'common.white',
+        borderRadius: radius.lg,
         py: 1.75,
         textAlign: 'center',
         fontWeight: 700,
@@ -196,7 +197,7 @@ const RestScreen = ({ t, live }) => {
           alignSelf: 'stretch',
           border: '2px solid',
           borderColor: 'text.primary',
-          borderRadius: '12px',
+          borderRadius: radius.lg,
           py: 1.5,
           textAlign: 'center',
           fontWeight: 700,

@@ -18,6 +18,7 @@ export function useFocusColors() {
     success: theme.palette.success.main,
     warning: theme.palette.warning.main,
     border: theme.palette.divider,
+    white: theme.palette.common.white,
   };
   return { colors, isDarkMode };
 }

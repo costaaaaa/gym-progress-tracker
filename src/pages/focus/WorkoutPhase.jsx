@@ -14,6 +14,7 @@ import QuitDialog from './QuitDialog';
 import { slotLabel } from './slotLabel';
 import { MAX_WEIGHT, isValidWeight, isValidReps, plannedSetAt, slotTarget, lastSessionSets, setStatus, setSlot } from '../../utils/focusSession';
 import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, muscleLabel, techniqueLabel } from '../../i18n/labels';
+import { radius } from '../../theme/radius';
 
 export default function WorkoutPhase({
   currentExercise, currentExerciseIndex, totalExercises, currentSetIndex, totalSlotsForCurrentExercise,
@@ -50,7 +51,7 @@ export default function WorkoutPhase({
             <Typography variant="h4" sx={{ fontWeight: 700, color: colors.text, lineHeight: 1.2 }}>{currentExercise.exercise_name}</Typography>
             {currentExercise.notes && (
               <Alert severity="info" icon={<InfoIcon />}
-                sx={{ mt: 2, bgcolor: colors.bgElevated, color: colors.textSecondary, '& .MuiAlert-icon': { color: colors.textSecondary }, border: `1px solid ${colors.border}`, borderRadius: '8px' }}>
+                sx={{ mt: 2, bgcolor: colors.bgElevated, color: colors.textSecondary, '& .MuiAlert-icon': { color: colors.textSecondary }, border: `1px solid ${colors.border}`, borderRadius: radius.sm }}>
                 {currentExercise.notes}
               </Alert>
             )}
@@ -69,7 +70,7 @@ export default function WorkoutPhase({
                   width: size, height: size, alignSelf: 'center', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   border: `2px ${status === 'skipped' ? 'dashed' : 'solid'} ${status === 'done' ? colors.success : status === 'active' ? colors.text : colors.border}`,
                   bgcolor: status === 'done' ? colors.success : status === 'skipped' ? colors.bgElevated : 'transparent',
-                  color: status === 'done' ? '#fff' : status === 'active' ? colors.text : colors.textSecondary,
+                  color: status === 'done' ? colors.white : status === 'active' ? colors.text : colors.textSecondary,
                   fontWeight: 700, fontSize: slot.isWarmup ? '0.75rem' : '0.875rem', transition: 'all 0.3s ease'
                 }}>
                   {status === 'done' ? <CheckIcon sx={{ fontSize: 18 }} /> : status === 'skipped' ? <RemoveIcon sx={{ fontSize: 18 }} /> : slotLabel(t, slot, 'dot')}
@@ -88,7 +89,7 @@ export default function WorkoutPhase({
             return (
               <Box sx={{
                 display: 'flex', alignItems: 'flex-start', gap: 1, mb: 2, px: 1.5, py: 1,
-                borderRadius: '10px', bgcolor: colors.bgElevated, border: `1px solid ${colors.border}`
+                borderRadius: radius.md, bgcolor: colors.bgElevated, border: `1px solid ${colors.border}`
               }}>
                 <HistoryIcon sx={{ fontSize: 18, color: colors.textSecondary, mt: 0.25 }} />
                 <Box sx={{ minWidth: 0 }}>
@@ -162,7 +163,7 @@ export default function WorkoutPhase({
           )}
 
           <Button variant="contained" fullWidth size="large" startIcon={<CheckIcon />} onClick={onConfirmSet} disabled={!isValidWeight(weightInput) || !isValidReps(repsInput)}
-            sx={{ py: 2.5, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.success, color: '#fff', borderRadius: '14px',
+            sx={{ py: 2.5, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.success, color: colors.white, borderRadius: radius.xl,
               boxShadow: 'none', '&:hover': { bgcolor: 'success.dark', boxShadow: 'none' },
               '&:disabled': { bgcolor: colors.bgElevated, color: colors.textSecondary }, mb: 2, transition: 'all 0.3s ease' }}>
             {t('focus.confirm_set')}
@@ -197,7 +198,7 @@ export default function WorkoutPhase({
               <Button key={pickerMode} variant="outlined" fullWidth startIcon={icon}
                 endIcon={canEditSession ? null : <LockIcon sx={{ fontSize: '16px !important' }} />}
                 onClick={() => onOpenPicker(pickerMode)}
-                sx={{ py: 1.25, opacity: pickerMode === 'swap' && !canSwap ? 0.45 : 1, color: colors.textSecondary, borderColor: colors.border, borderRadius: '12px',
+                sx={{ py: 1.25, opacity: pickerMode === 'swap' && !canSwap ? 0.45 : 1, color: colors.textSecondary, borderColor: colors.border, borderRadius: radius.lg,
                   '&:hover': { borderColor: colors.text, color: colors.text } }}>
                 {label}
               </Button>
@@ -236,7 +237,7 @@ export default function WorkoutPhase({
         stayLabel={t('focus.quit_continue')} exitLabel={t('focus.quit_exit')} destructive />
 
       <Dialog open={repsConfirmOpen} onClose={onCloseRepsConfirm}
-        PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: '16px' } }}>
+        PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: radius.xxl } }}>
         <DialogTitle sx={{ color: colors.text }}>{t('record.confirm_reps', { reps: parseInt(repsInput, 10) })}</DialogTitle>
         <DialogActions>
           <Button onClick={onCloseRepsConfirm} sx={{ color: colors.textSecondary }}>{t('record.fix')}</Button>

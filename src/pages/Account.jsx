@@ -573,7 +573,7 @@ const Account = ({ isEmbedded = false }) => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Avatar sx={{
             width: 64, height: 64,
-            bgcolor: '#1a1816',
+            bgcolor: 'ink',
             fontFamily: TITLE_FONT_FAMILY,
             fontWeight: 700,
             fontSize: 20,

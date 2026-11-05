@@ -49,6 +49,9 @@ export const ThemeModeProvider = ({ children }) => {
           background: {
             default: mode === 'light' ? '#f7f6f5' : '#0a0a0b',
             paper: mode === 'light' ? '#ffffff' : '#141416',
+            // Fondo neutro di una riga/card secondaria (storico, giorni di una scheda): in scuro è
+            // lo stesso valore di action.hover di MUI (qui letterale per non dipendere da quello).
+            subtle: mode === 'light' ? '#faf9f8' : 'rgba(255, 255, 255, 0.08)',
           },
           text: {
             primary: mode === 'light' ? '#1a1816' : '#ffffff',
@@ -57,9 +60,14 @@ export const ThemeModeProvider = ({ children }) => {
           divider: mode === 'light' ? '#ececea' : 'rgba(255, 255, 255, 0.08)',
           success: {
             main: mode === 'light' ? '#15803d' : '#22c55e',
+            // Pillola "scheda attiva" in WorkoutPlans
+            muted: mode === 'light' ? '#e8f3ec' : 'rgba(34, 197, 94, 0.15)',
+            title: mode === 'light' ? '#166534' : '#86efac',
           },
           warning: {
             main: mode === 'light' ? '#d97706' : '#f59e0b',
+            // Chip "nuovo record" in Focus: arancio proprio, non legato a warning.main
+            muted: 'rgba(255, 167, 38, 0.15)',
           },
           // muted/border/title: la card "Zona pericolosa" (rosa, bordo rosa, titolo rosso scuro come nell'app).
           // In scuro: fondo e bordo sono il rosso di error.main trasparente, che sostituisce il fondo della card e
@@ -93,6 +101,23 @@ export const ThemeModeProvider = ({ children }) => {
             dark: mode === 'light' ? '#5b21b6' : '#7c3aed',
             contrastText: '#ffffff',
           },
+          // Medaglie della classifica di gruppo: uguali in chiaro e in scuro
+          medal: {
+            gold: '#d4a017',
+            silver: '#9e9e9e',
+            bronze: '#b87333',
+          },
+          // Integrazione con l'app Salute (BodyStats, promemoria di collegamento): uguale in chiaro e in scuro
+          health: '#ff2d55',
+          // Bottone del tema in Navbar: fondo neutro discreto, più marcato al passaggio del mouse
+          navToggle: {
+            bg: mode === 'light' ? '#f7f6f5' : 'rgba(255, 255, 255, 0.06)',
+            hover: mode === 'light' ? '#ececea' : 'rgba(255, 255, 255, 0.12)',
+          },
+          // Avatar della navbar e dell'account: in scuro si inverte (fondo bianco, iniziale scura),
+          // perché il fondo scuro di oggi (#1a1816) si confondeva con lo sfondo pagina (#0a0a0b)
+          ink: mode === 'light' ? '#1a1816' : '#ffffff',
+          onInk: mode === 'light' ? '#fff' : '#0a0a0b',
         },
         shape: {
           borderRadius: 16,

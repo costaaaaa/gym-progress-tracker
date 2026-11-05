@@ -45,6 +45,7 @@ import { dayNumber } from '../utils/calendarDay';
 import HealthConsentCard from '../components/HealthConsentCard';
 import HealthAppHint from '../components/HealthAppHint';
 import { DEFAULT_PERIOD, PERIODS, PERIOD_UI, filterByPeriod, periodStart, periodWeightDelta, weightTrend, sortByDate, paginate } from '../utils/bodyStatsPeriod';
+import { radius } from '../theme/radius';
 
 // Cuore accanto a un valore arrivato da Apple Salute / Health Connect
 // (health_fields è l'elenco dei campi importati, separati da virgola).
@@ -54,7 +55,7 @@ const HealthMark = () => {
   const { t } = useTranslation();
   return (
     <Box component="span" title={t('body.from_health')} sx={{ ml: 0.5, verticalAlign: 'middle' }}>
-      <FavoriteIcon sx={{ fontSize: 11, color: '#ff2d55' }} />
+      <FavoriteIcon sx={{ fontSize: 11, color: 'health' }} />
     </Box>
   );
 };
@@ -140,7 +141,7 @@ const PeriodChips = ({ value, onChange }) => {
             onClick={() => onChange(period)}
             aria-pressed={selected}
             sx={{
-              fontSize: 13, height: 32, borderRadius: 999, px: 0.5,
+              fontSize: 13, height: 32, borderRadius: radius.pill, px: 0.5,
               ...(selected
                 ? { bgcolor: 'text.primary', color: 'background.paper', '&:hover, &.Mui-focusVisible': { bgcolor: 'text.primary' } }
                 : { borderColor: 'divider', color: 'text.primary' }),
