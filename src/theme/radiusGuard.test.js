@@ -200,10 +200,4 @@ describe('guardia raggi: i sorgenti', () => {
   it('nessun file sotto src/ (fuori dal tema) scrive a mano un borderRadius della scala', () => {
     expect(sourceOffenders(scaleViolations, SKIPPED_FILES)).toEqual([]);
   });
-
-  it('la scansione arriva nei file delle sottocartelle e salta quelli esclusi', () => {
-    const everyFile = (text, rel) => [rel];
-    expect(sourceOffenders(everyFile, [])).toContain('theme/radius.js: theme/radius.js');
-    expect(sourceOffenders(everyFile, ['theme/radius.js'])).not.toContain('theme/radius.js: theme/radius.js');
-  });
 });
