@@ -30,6 +30,7 @@ import { useTranslation, Trans } from 'react-i18next';
 import DateLocalization from '../i18n/DateLocalization';
 import { useLocalizedPath } from '../i18n/paths';
 import AuthLayout from '../components/Auth/AuthLayout';
+import { SocialSlot, PrototypeSwitcher } from '../components/Auth/SocialPrototype';
 
 // Username: stessa regola di register.php. Email: solo un primo filtro, il server usa FILTER_VALIDATE_EMAIL
 const USERNAME_RE = /^[a-zA-Z0-9]{3,50}$/;
@@ -248,7 +249,10 @@ const Register = () => {
 
       <Box component="form" onSubmit={onSubmit} noValidate>
         {step === 1 ? (
-          <>
+          <SocialSlot
+            emailLabel="Registrati con email"
+            form={(
+              <>
             <TextField
               margin="normal"
               required
@@ -311,7 +315,9 @@ const Register = () => {
             <Button type="submit" fullWidth variant="contained" size="large" sx={{ mt: 3, mb: 2 }} disabled={loading}>
               {loading ? t('register.checking') : t('register.next')}
             </Button>
-          </>
+              </>
+            )}
+          />
         ) : (
           <>
             <Typography variant="h2" sx={{ fontSize: '1.25rem', mt: 1, mb: 1 }}>{t('register.profile_title')}</Typography>
@@ -408,6 +414,7 @@ const Register = () => {
           </Typography>
         </Box>
       </Box>
+      <PrototypeSwitcher />
     </AuthLayout>
   );
 };

@@ -10,6 +10,7 @@ import { safeNext } from '../utils/safeNext';
 import { useTranslation } from 'react-i18next';
 import { useLocalizedPath } from '../i18n/paths';
 import AuthLayout from '../components/Auth/AuthLayout';
+import { SocialSlot, PrototypeSwitcher } from '../components/Auth/SocialPrototype';
 
 const Login = () => {
   const { t } = useTranslation();
@@ -75,7 +76,10 @@ const Login = () => {
         </Alert>
       )}
       
-      <Box component="form" onSubmit={handleSubmit} noValidate>
+      <SocialSlot
+        emailLabel="Accedi con email"
+        form={(
+          <Box component="form" onSubmit={handleSubmit} noValidate>
         <TextField
           margin="normal"
           required
@@ -122,6 +126,10 @@ const Login = () => {
         >
           {loading ? t('login.submitting') : t('login.submit')}
         </Button>
+          </Box>
+        )}
+        footer={(
+          <>
         <Box sx={{ textAlign: 'center' }}>
           <Link component={RouterLink} to={localizedPath('/forgot-password')}>
             {t('login.forgot')}
@@ -135,7 +143,10 @@ const Login = () => {
             </Link>
           </Typography>
         </Box>
-      </Box>
+          </>
+        )}
+      />
+      <PrototypeSwitcher />
     </AuthLayout>
   );
 };
