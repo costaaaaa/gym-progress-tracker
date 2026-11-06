@@ -83,6 +83,13 @@ describe('Campi nel tema: padding verticale dell\'input', () => {
     expect(style.paddingTop).toBe(padding);
     expect(style.paddingBottom).toBe(padding);
   });
+
+  it('Autocomplete: la radice non aggiunge padding verticale', () => {
+    renderField(<Autocomplete id="p5" options={['Squat']} renderInput={(params) => <TextField {...params} label="Campo" />} />);
+    const root = getComputedStyle(screen.getByLabelText('Campo').closest('.MuiOutlinedInput-root'));
+    expect(root.paddingTop).toBe('0px');
+    expect(root.paddingBottom).toBe('0px');
+  });
 });
 
 describe('Select vuoto con voce vuota', () => {
