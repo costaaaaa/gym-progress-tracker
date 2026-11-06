@@ -5,6 +5,7 @@ import BodyVisualizer from '../BodyVisualizer';
 import AuthBars from './AuthBars';
 import { buildRecovery } from '../../utils/recoveryDemo';
 import { authControlsOverrides } from '../../theme/authControls';
+import { radius } from '../../theme/radius';
 
 const SAMPLE = buildRecovery('push');
 
@@ -31,6 +32,10 @@ const AuthLayout = ({ title, side, children }) => {
         gridRow: { md: '2 / span 2' },
         // Aiuti ed errori sotto i campi: 14px invece dei 12 di MUI, si leggono e i loro link si toccano
         '& .MuiFormHelperText-root': { fontSize: '0.875rem', lineHeight: 1.45, mt: 0.75 },
+        // Bottoni del modulo a pillola e alti come i campi, qualunque size. Stanno qui e non nel
+        // tema annidato: il tema arriva anche ai dialog in portale (il calendario dei DatePicker sul
+        // telefono), che restano con i bottoni dell'app.
+        '& .MuiButton-root': { borderRadius: radius.pill, height: '44px' },
       }}
     >
       <Typography variant="h1" sx={{ fontSize: { xs: '1.75rem', md: '2rem' }, lineHeight: 1.15, mb: 2 }}>

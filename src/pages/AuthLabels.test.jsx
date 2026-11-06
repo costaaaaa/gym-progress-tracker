@@ -1,15 +1,10 @@
 // Forma B+ delle schermate di accesso: l'etichetta sta sopra il campo, in flusso normale (non
-// absolute/transform come il default MUI), è sempre "ridotta" (anche a campo vuoto e senza focus) e
-// il bordo del campo non ha più la tacca per l'etichetta. Su main (prima di authControls.js) questi
-// controlli falliscono: l'etichetta MUI di default è absolute, sale nel bordo solo al focus/valore, e
-// il fieldset ha la tacca.
+// absolute né con la transform che la porta nel bordo), è sempre ridotta (anche a campo vuoto e senza
+// focus) e il bordo del campo non ha la tacca per l'etichetta.
 //
-// Il controllo "niente tacca" non usa il textContent della legend: MUI ci scrive sempre il testo
-// dell'etichetta (per il calcolo storico della larghezza del notch), a prescindere da `notched`; quel
-// testo è comunque aria-hidden e non intercetta mai l'utente. Verifichiamo invece che la regola CSS
-// che nasconde la legend (quella aggiunta in authControls.js) sia davvero applicata, leggendo le
-// regole del foglio di stile con lo stesso approccio di `mediaStyle.js` (jsdom non calcola sempre
-// `getComputedStyle` per i selettori annidati come `& legend`).
+// "Niente tacca" non si legge dal testo della legend: MUI ci scrive sempre il testo dell'etichetta,
+// nascosto, e la tacca è la larghezza di quella legend. Senza tacca resta larga 0.01px; con la tacca
+// diventa larga quanto il testo, e MUI la apre da sola quando l'etichetta è ridotta.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -28,20 +23,8 @@ const renderPage = (Page, initialEntries = ['/']) => render(
   <MemoryRouter initialEntries={initialEntries}><ThemeModeProvider><Page /></ThemeModeProvider></MemoryRouter>,
 );
 
-// true se, per una qualunque classe del fieldset, il foglio di stile ha una regola
-// ".<classe> legend { display: none }" (la regola aggiunta in authControls.js)
-const legendIsHidden = (fieldset) => {
-  const classes = [...fieldset.classList];
-  for (const sheet of document.styleSheets) {
-    for (const rule of sheet.cssRules) {
-      if (rule.media) continue;
-      if (classes.some((c) => rule.selectorText === `.${c} legend`) && rule.style.getPropertyValue('display') === 'none') {
-        return true;
-      }
-    }
-  }
-  return false;
-};
+// La legend del fieldset è la tacca del bordo: 0.01px vuol dire chiusa
+const outlineIsNotched = (fieldset) => getComputedStyle(fieldset.querySelector('legend')).maxWidth !== '0.01px';
 
 // Un campo (TextField, Select o DatePicker outlined): trova il controllo con l'id dato e la sua
 // etichetta (per tutti e tre i tipi, MUI usa la stessa convenzione "<id>-label"), poi controlla le tre
@@ -53,14 +36,13 @@ const expectFieldAboveLabel = (id, labelText) => {
   const label = document.getElementById(`${id}-label`);
   expect(label).toBeTruthy();
   expect(label.getAttribute('data-shrink')).toBe('true');
-  // In flusso normale: non più absolute (il default MUI), niente transform che la fa salire nel bordo
   const labelStyle = getComputedStyle(label);
   expect(labelStyle.position).not.toBe('absolute');
   expect(labelStyle.transform === 'none' || labelStyle.transform === '').toBe(true);
 
   const fieldset = control.closest('.MuiOutlinedInput-root')?.querySelector('fieldset');
   expect(fieldset).toBeTruthy();
-  expect(legendIsHidden(fieldset)).toBe(true);
+  expect(outlineIsNotched(fieldset)).toBe(false);
 };
 
 describe('Etichette web: login', () => {
