@@ -27,8 +27,8 @@ const renderPage = (Page, initialEntries = ['/']) => render(
 const outlineIsNotched = (fieldset) => getComputedStyle(fieldset.querySelector('legend')).maxWidth !== '0.01px';
 
 // Un campo (TextField, Select o DatePicker outlined): trova il controllo con l'id dato e la sua
-// etichetta (per tutti e tre i tipi, MUI usa la stessa convenzione "<id>-label"), poi controlla le tre
-// regole della forma B+.
+// etichetta (per tutti e tre i tipi, MUI usa la stessa convenzione "<id>-label"), poi controlla le
+// regole della forma B+. La tacca si controlla con il campo a fuoco, perché MUI la apre al focus.
 const expectFieldAboveLabel = (id, labelText) => {
   const control = screen.getByLabelText(labelText);
   expect(control).toBeTruthy();
@@ -39,7 +39,9 @@ const expectFieldAboveLabel = (id, labelText) => {
   const labelStyle = getComputedStyle(label);
   expect(labelStyle.position).not.toBe('absolute');
   expect(labelStyle.transform === 'none' || labelStyle.transform === '').toBe(true);
+  expect(labelStyle.maxWidth).toBe('100%');
 
+  fireEvent.focus(control);
   const fieldset = control.closest('.MuiOutlinedInput-root')?.querySelector('fieldset');
   expect(fieldset).toBeTruthy();
   expect(outlineIsNotched(fieldset)).toBe(false);
@@ -50,6 +52,25 @@ describe('Etichette web: login', () => {
     renderPage(Login);
     expectFieldAboveLabel('username', /^Username/);
     expectFieldAboveLabel('password', /^Password/);
+  });
+});
+
+// Un bottone del modulo: a pillola e alto come i campi
+const expectPill = (name) => {
+  const style = getComputedStyle(screen.getByRole('button', { name }));
+  expect(style.borderRadius).toBe('999px');
+  expect(style.height).toBe('44px');
+};
+
+describe('Bottoni del modulo', () => {
+  it('Accedi è a pillola e alto 44', () => {
+    renderPage(Login);
+    expectPill('Accedi');
+  });
+
+  it('Avanti (size="large") è a pillola e alto 44', () => {
+    renderPage(Register);
+    expectPill('Avanti');
   });
 });
 
@@ -96,6 +117,12 @@ describe('Etichette web: registrazione, passo 2 (Select e DatePicker)', () => {
   it('Sesso (Select) ha l\'etichetta sopra, sempre ridotta, senza tacca nel bordo', async () => {
     await goToStep2();
     expectFieldAboveLabel('gender', /^Sesso/);
+  });
+
+  it('Indietro e Registrati, affiancati, sono a pillola e alti 44', async () => {
+    await goToStep2();
+    expectPill('Indietro');
+    expectPill('Registrati');
   });
 });
 

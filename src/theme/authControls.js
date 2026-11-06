@@ -1,7 +1,6 @@
-// Regole della forma B+ per i campi delle schermate di accesso (login, registrazione, password
-// dimenticata, reset password). AuthLayout le applica con un ThemeProvider annidato, così le pagine
-// non cambiano campo per campo. Sono regole generali dei campi, non legate all'accesso: valgono
-// per qualunque form outlined.
+// Regole dei campi outlined nella forma B+: etichetta fissa sopra, raggio 10, alti 44, bordo senza tacca.
+// AuthLayout le applica alle schermate di accesso (login, registrazione, password dimenticata, reset
+// password) con un ThemeProvider annidato, così le pagine non cambiano campo per campo.
 //
 // I DatePicker di Register (@mui/x-date-pickers) non impostano `enableAccessibleFieldDOMStructure`:
 // usano il TextField/OutlinedInput classico, quindi li coprono gli stessi override, senza chiavi
