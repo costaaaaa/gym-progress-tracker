@@ -6,7 +6,6 @@ Disallow: /dashboard
 Disallow: /profilo
 Disallow: /gruppi
 Disallow: /entra
-Disallow: /admin
 Disallow: /focus
 Disallow: /reset-password
 Disallow: /en/reset-password
