@@ -77,6 +77,7 @@ export default function SelectDayPhase({
                   '&:hover fieldset': { borderColor: colors.primary },
                   '&.Mui-focused fieldset': { borderColor: colors.primary },
                 },
+                '& .MuiOutlinedInput-input': { paddingTop: '16.5px', paddingBottom: '16.5px' },
                 '& .MuiInputLabel-root': { color: colors.textSecondary },
                 '& .MuiInputLabel-root.Mui-focused': { color: colors.primary },
                 '& .MuiSvgIcon-root': { color: colors.textSecondary },

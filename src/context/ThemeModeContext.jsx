@@ -157,6 +157,69 @@ export const ThemeModeProvider = ({ children }) => {
           },
         },
         components: {
+          // Etichetta fissa sopra il campo, in flusso normale: niente posizione assoluta né la transform
+          // che la porta dentro il bordo. Lo shrink è sempre true (etichetta mai dentro il campo). Il
+          // colore (testo secondario, focus, errore) resta quello di MuiFormLabel: ridefinirlo qui
+          // vincerebbe sulle regole di focus ed errore.
+          MuiInputLabel: {
+            defaultProps: {
+              shrink: true,
+            },
+            styleOverrides: {
+              root: {
+                position: 'static',
+                transform: 'none',
+                // Senza la scala 0.75 l'etichetta è larga quanto il suo testo: non oltre il campo
+                maxWidth: '100%',
+                marginBottom: '6px',
+                fontSize: '14px',
+                fontWeight: 600,
+              },
+            },
+          },
+          // Bordo senza tacca per l'etichetta (sta sopra, non dentro il bordo) e campo alto 44: il testo
+          // dell'input in MUI è alto 23px, il padding verticale lo porta a 44. Il multiline mette il
+          // padding sulla radice (non toccata qui) e azzera quello della textarea: l'override di `input`
+          // si applicherebbe anche lì (stessa classe), quindi lo si annulla con `inputMultiline`.
+          MuiOutlinedInput: {
+            defaultProps: {
+              notched: false,
+            },
+            styleOverrides: {
+              root: {
+                borderRadius: radius.md,
+              },
+              input: {
+                paddingTop: '10.5px',
+                paddingBottom: '10.5px',
+              },
+              inputMultiline: {
+                paddingTop: 0,
+                paddingBottom: 0,
+              },
+              // Il Select con displayEmpty (sotto) chiede a MUI la tacca per il valore vuoto: qui resta
+              // chiusa comunque, come per ogni altro campo.
+              notchedOutline: {
+                '& legend': { maxWidth: '0.01px' },
+              },
+            },
+          },
+          // Con l'etichetta sopra un Select senza valore mostrerebbe un riquadro vuoto: displayEmpty lo
+          // evita quando il menu ha già una voce vuota (value ''), che allora si vede. Quella voce è
+          // sempre scritta in <em> (è così che la segnano WorkoutPhase, RecordWorkoutDialog e
+          // AdminExercises): qui la coloriamo come un placeholder, non come un valore scelto.
+          MuiSelect: {
+            defaultProps: {
+              displayEmpty: true,
+            },
+            styleOverrides: {
+              select: {
+                '& em': {
+                  color: mode === 'light' ? '#6b6663' : '#a0a0a2', // text.secondary
+                },
+              },
+            },
+          },
           // Una variante sconosciuta uscirebbe <span> (in linea, senza margini verticali): cardTitle è un <p>.
           MuiTypography: {
             defaultProps: {

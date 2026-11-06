@@ -153,9 +153,6 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
             value={newDate}
             onChange={handleDateChange}
             fullWidth
-            InputLabelProps={{
-              shrink: true,
-            }}
             inputProps={{ min: minDate, max: maxDate }}
           />
           {preview?.xp_delta > 0 && (

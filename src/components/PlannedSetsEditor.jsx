@@ -142,11 +142,16 @@ const PlannedSetsEditor = ({ value, onChange }) => {
                     inputProps={numeric}
                     sx={{ flex: 1, minWidth: 0 }}
                   />
-                  <FormControlLabel
-                    control={<Checkbox size="small" checked={row.to_failure} onChange={(e) => patchRows(index, { to_failure: e.target.checked, target: '' })} />}
-                    label={t('plan_editor.to_failure')}
-                    sx={{ flexShrink: 0, mr: 0, height: 40, whiteSpace: 'nowrap' }}
-                  />
+                  <Box sx={{ display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+                    {/* Etichetta invisibile, della stessa altezza di quella del campo accanto: allinea
+                        la casella al campo (sotto la sua etichetta), non all'etichetta stessa */}
+                    <InputLabel sx={{ visibility: 'hidden' }}>&nbsp;</InputLabel>
+                    <FormControlLabel
+                      control={<Checkbox size="small" checked={row.to_failure} onChange={(e) => patchRows(index, { to_failure: e.target.checked, target: '' })} />}
+                      label={t('plan_editor.to_failure')}
+                      sx={{ mr: 0, height: 44, whiteSpace: 'nowrap' }}
+                    />
+                  </Box>
                 </Stack>
                 <TechniqueSelect
                   id={`planned-sets-technique-${index}`}

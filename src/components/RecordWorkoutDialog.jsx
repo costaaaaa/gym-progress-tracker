@@ -328,7 +328,6 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                             value={row.reps ?? ''}
                             // La scheda indica le ripetizioni per le sole righe che ora non sono riscaldamento
                             placeholder={rowTarget(rows, setIndex, exercise)}
-                            InputLabelProps={{ shrink: true }}
                             inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
                             onFocus={(e) => e.target.select()}
                             onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'reps', e.target.value)}

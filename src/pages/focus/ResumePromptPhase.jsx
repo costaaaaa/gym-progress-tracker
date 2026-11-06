@@ -58,10 +58,9 @@ export default function ResumePromptPhase({ draftToResume, timeZone, retroDateIn
               label={t('focus.draft_retro_day')}
               value={chosenRetro}
               onChange={(e) => onRetroDateChange(e.target.value)}
-              InputLabelProps={{ shrink: true }}
               inputProps={{ min: retroDateBounds.min, max: retroDateBounds.max }}
               fullWidth
-              sx={{ mb: 1.5 }}
+              sx={{ mb: 1.5, '& .MuiOutlinedInput-input': { paddingTop: '16.5px', paddingBottom: '16.5px' } }}
             />
             <Button
               variant="outlined"
