@@ -69,6 +69,22 @@ describe('Campi nel tema: Autocomplete', () => {
   });
 });
 
+// L'altezza non si misura in jsdom: si controlla il padding verticale dell'input che la dà (44 col
+// testo di 23px). Il multiline lo tiene a 0, come in MUI: il padding sta sulla radice.
+describe('Campi nel tema: padding verticale dell\'input', () => {
+  it.each([
+    ['TextField', <TextField id="p1" label="Campo" />, '10.5px'],
+    ['TextField size="small"', <TextField id="p2" label="Campo" size="small" />, '10.5px'],
+    ['Autocomplete', <Autocomplete id="p3" options={['Squat']} renderInput={(params) => <TextField {...params} label="Campo" />} />, '10.5px'],
+    ['TextField multiline', <TextField id="p4" label="Campo" multiline rows={3} />, '0px'],
+  ])('%s', (_, field, padding) => {
+    renderField(field);
+    const style = getComputedStyle(screen.getByLabelText('Campo'));
+    expect(style.paddingTop).toBe(padding);
+    expect(style.paddingBottom).toBe(padding);
+  });
+});
+
 describe('Select vuoto con voce vuota', () => {
   it.each([
     ['chiaro', 'light', 'rgb(107, 102, 99)'],

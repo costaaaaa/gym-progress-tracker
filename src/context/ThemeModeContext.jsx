@@ -179,9 +179,9 @@ export const ThemeModeProvider = ({ children }) => {
             },
           },
           // Bordo senza tacca per l'etichetta (sta sopra, non dentro il bordo) e campo alto FIELD_HEIGHT
-          // (44) con il padding verticale dell'input. Il multiline mette il
-          // padding sulla radice (non toccata qui) e azzera quello della textarea: l'override di `input`
-          // si applicherebbe anche lì (stessa classe), quindi lo si annulla con `inputMultiline`.
+          // con il padding verticale dell'input. Il multiline mette il padding sulla radice (non toccata
+          // qui) e azzera quello della textarea: l'override di `input` si applicherebbe anche lì (stessa
+          // classe), quindi lo si annulla con `inputMultiline`.
           MuiOutlinedInput: {
             defaultProps: {
               notched: false,
