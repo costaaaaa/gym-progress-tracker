@@ -289,8 +289,8 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                     <Box sx={{ mt: 2 }}>
                       {(workoutData[exercise.id] || []).map((row, setIndex, rows) => (
                         <Box key={setIndex} sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                          {/* "Serie N" fa da etichetta (riga coi label dei campi accanto), il checkbox da controllo
-                              (riga con gli input): space-between, non center, allinea ai campi col raggio B+ */}
+                          {/* "Serie N" in alto, all'altezza delle etichette dei campi accanto; la casella del
+                              riscaldamento in basso, all'altezza dei campi */}
                           <Box sx={{ minWidth: 60, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                             <Typography variant="body2">{t('record.set', { n: setIndex + 1 })}</Typography>
                             <FormControlLabel
