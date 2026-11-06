@@ -1,7 +1,5 @@
-// Forma B+ dei campi nel tema principale: l'etichetta sta sopra il campo, in flusso normale (non
-// absolute né con la transform che la porta nel bordo), è sempre ridotta (anche a campo vuoto e senza
-// focus), il bordo non ha la tacca per l'etichetta e il raggio è 10px. Vale per ogni campo outlined
-// dell'app (non solo per l'accesso): TextField, size="small", multiline, Select, DatePicker, Autocomplete.
+// Forma B+ dei campi nel tema principale (regole in test/fieldStyle), per ogni tipo di campo outlined
+// dell'app, e la voce vuota di un Select vuoto mostrata in grigio come un placeholder.
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { TextField, FormControl, InputLabel, Select, MenuItem, Autocomplete } from '@mui/material';
@@ -72,35 +70,20 @@ describe('Campi nel tema: Autocomplete', () => {
 });
 
 describe('Select vuoto con voce vuota', () => {
-  it('mostra il testo della voce vuota, in grigio', () => {
+  it.each([
+    ['chiaro', 'light', 'rgb(107, 102, 99)'],
+    ['scuro', 'dark', 'rgb(160, 160, 162)'],
+  ])('tema %s: mostra il testo della voce vuota, in grigio', (_, mode, grey) => {
+    localStorage.setItem('themeMode', mode);
     renderField(
       <FormControl fullWidth>
-        <InputLabel id="tecnica2-label">Tecnica</InputLabel>
-        <Select labelId="tecnica2-label" id="tecnica2" label="Tecnica" value="" onChange={() => {}}>
+        <InputLabel id="tecnica-vuota-label">Tecnica</InputLabel>
+        <Select labelId="tecnica-vuota-label" id="tecnica-vuota" label="Tecnica" value="" onChange={() => {}}>
           <MenuItem value=""><em>Nessuna tecnica</em></MenuItem>
           <MenuItem value="dropset">Dropset</MenuItem>
         </Select>
       </FormControl>,
     );
-    const display = screen.getByText('Nessuna tecnica');
-    expect(display).toBeTruthy();
-    expect(getComputedStyle(display.closest('em')).color).toBe('rgb(107, 102, 99)');
-  });
-});
-
-describe('Select vuoto con voce vuota, tema scuro', () => {
-  it('mostra il testo della voce vuota, in grigio chiaro', () => {
-    localStorage.setItem('themeMode', 'dark');
-    renderField(
-      <FormControl fullWidth>
-        <InputLabel id="tecnica3-label">Tecnica</InputLabel>
-        <Select labelId="tecnica3-label" id="tecnica3" label="Tecnica" value="" onChange={() => {}}>
-          <MenuItem value=""><em>Nessuna tecnica</em></MenuItem>
-          <MenuItem value="dropset">Dropset</MenuItem>
-        </Select>
-      </FormControl>,
-    );
-    const display = screen.getByText('Nessuna tecnica');
-    expect(getComputedStyle(display.closest('em')).color).toBe('rgb(160, 160, 162)');
+    expect(getComputedStyle(screen.getByText('Nessuna tecnica')).color).toBe(grey);
   });
 });

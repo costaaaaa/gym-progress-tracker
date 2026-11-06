@@ -22,11 +22,11 @@ const TechniqueSelect = ({ id, label, value, onChange, helperText, size }) => (
   <FormControl fullWidth size={size}>
     <InputLabel id={`${id}-label`}>{label}</InputLabel>
     <Select labelId={`${id}-label`} id={id} value={value} label={label} onChange={(e) => onChange(e.target.value)}>
-      {INTENSITY_TECHNIQUES.map((tech) => {
-        const value = tech === NO_TECHNIQUE ? '' : tech;
-        const label = techniqueLabel(tech);
-        return <MenuItem key={tech} value={value}>{value === '' ? <em>{label}</em> : label}</MenuItem>;
-      })}
+      {INTENSITY_TECHNIQUES.map((tech) => (
+        tech === NO_TECHNIQUE
+          ? <MenuItem key={tech} value=""><em>{techniqueLabel(tech)}</em></MenuItem>
+          : <MenuItem key={tech} value={tech}>{techniqueLabel(tech)}</MenuItem>
+      ))}
     </Select>
     {helperText && <FormHelperText>{helperText}</FormHelperText>}
   </FormControl>

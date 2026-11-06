@@ -1,7 +1,8 @@
 import { Box, Typography, Button, TextField, Paper } from '@mui/material';
 import { History as HistoryIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { useFocusColors, FOCUS_FIELD_PADDING } from './useFocusColors';
+import { useFocusColors } from './useFocusColors';
+import { FOCUS_FIELD_PADDING } from './focusField';
 import { intlLocale } from '../../i18n/format';
 import { clockDay, shiftDay } from '../../utils/calendarDay';
 import { zoneClock } from '../../utils/workoutTime';

@@ -6,7 +6,8 @@ import {
   ArrowBack as ArrowBackIcon
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { useFocusColors, FOCUS_FIELD_PADDING } from './useFocusColors';
+import { useFocusColors } from './useFocusColors';
+import { FOCUS_FIELD_PADDING } from './focusField';
 import { muscleLabel } from '../../i18n/labels';
 import { planSummary } from '../../utils/plannedSets';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';

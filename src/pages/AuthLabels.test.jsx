@@ -1,6 +1,5 @@
-// Forma B+ delle schermate di accesso: l'etichetta sta sopra il campo, in flusso normale (non
-// absolute né con la transform che la porta nel bordo), è sempre ridotta (anche a campo vuoto e senza
-// focus) e il bordo del campo non ha la tacca per l'etichetta.
+// Forma B+ delle schermate di accesso (login, registrazione, password dimenticata, reset): i campi
+// (regole in test/fieldStyle) e i bottoni del modulo a pillola, alti come i campi.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';

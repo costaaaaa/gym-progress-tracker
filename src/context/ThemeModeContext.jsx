@@ -6,6 +6,7 @@ import { itIT, enUS } from '@mui/material/locale';
 import { useTranslation } from 'react-i18next';
 import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
 import { radius } from '../theme/radius';
+import { FIELD_INPUT_PADDING_Y } from '../theme/fieldHeight';
 
 const BRAND = '#d50000';
 const BRAND_DARK = '#9b0000';
@@ -177,8 +178,8 @@ export const ThemeModeProvider = ({ children }) => {
               },
             },
           },
-          // Bordo senza tacca per l'etichetta (sta sopra, non dentro il bordo) e campo alto 44: il testo
-          // dell'input in MUI è alto 23px, il padding verticale lo porta a 44. Il multiline mette il
+          // Bordo senza tacca per l'etichetta (sta sopra, non dentro il bordo) e campo alto FIELD_HEIGHT
+          // (44) con il padding verticale dell'input. Il multiline mette il
           // padding sulla radice (non toccata qui) e azzera quello della textarea: l'override di `input`
           // si applicherebbe anche lì (stessa classe), quindi lo si annulla con `inputMultiline`.
           MuiOutlinedInput: {
@@ -190,8 +191,8 @@ export const ThemeModeProvider = ({ children }) => {
                 borderRadius: radius.md,
               },
               input: {
-                paddingTop: '10.5px',
-                paddingBottom: '10.5px',
+                paddingTop: FIELD_INPUT_PADDING_Y,
+                paddingBottom: FIELD_INPUT_PADDING_Y,
               },
               inputMultiline: {
                 paddingTop: 0,
@@ -219,10 +220,10 @@ export const ThemeModeProvider = ({ children }) => {
               }),
             },
           },
-          // L'Autocomplete applica il proprio padding all'OutlinedInput (radice e input), con selettori
-          // a 2 e 3 classi: più specifici dell'override `input` di MuiOutlinedInput qui sopra, che quindi
-          // perde. Lo si riporta a 44 qui, con selettori della stessa specificità (root nested, non la
-          // sola classe `input`).
+          // L'Autocomplete dà il proprio padding all'OutlinedInput (radice e input) con selettori a 2 e 3
+          // classi, più specifici dell'override `input` di MuiOutlinedInput: per l'altezza dei campi
+          // servono gli stessi selettori annidati in `root`. La size="small" ha una regola sua, qui non
+          // coperta.
           MuiAutocomplete: {
             styleOverrides: {
               root: {
@@ -231,8 +232,8 @@ export const ThemeModeProvider = ({ children }) => {
                   paddingBottom: 0,
                 },
                 '& .MuiOutlinedInput-root .MuiAutocomplete-input': {
-                  paddingTop: '10.5px',
-                  paddingBottom: '10.5px',
+                  paddingTop: FIELD_INPUT_PADDING_Y,
+                  paddingBottom: FIELD_INPUT_PADDING_Y,
                 },
               },
             },

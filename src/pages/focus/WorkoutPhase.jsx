@@ -7,7 +7,8 @@ import {
   History as HistoryIcon, SwapHoriz as SwapIcon, Add as AddIcon, Lock as LockIcon, Remove as RemoveIcon
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { useFocusColors, FOCUS_FIELD_PADDING } from './useFocusColors';
+import { useFocusColors } from './useFocusColors';
+import { FOCUS_FIELD_PADDING } from './focusField';
 import { TABULAR } from '../../utils/fonts';
 import ElapsedClock from './ElapsedClock';
 import QuitDialog from './QuitDialog';
