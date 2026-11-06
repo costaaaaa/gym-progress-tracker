@@ -1,0 +1,6 @@
+# Hai trovato una vulnerabilità in LiftIndex? Scrivimi: rispondo il prima possibile.
+# Found a security issue in LiftIndex? Email me and I will get back to you as soon as I can.
+Contact: mailto:costamagna551@gmail.com
+Expires: 2027-11-01T00:00:00.000Z
+Preferred-Languages: it, en
+Canonical: https://liftindex.app/.well-known/security.txt
