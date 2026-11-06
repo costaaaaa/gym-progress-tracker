@@ -1,8 +1,10 @@
 import { Box, Card, Paper, Typography } from '@mui/material';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { useTranslation } from 'react-i18next';
 import BodyVisualizer from '../BodyVisualizer';
 import AuthBars from './AuthBars';
 import { buildRecovery } from '../../utils/recoveryDemo';
+import { authControlsOverrides } from '../../theme/authControls';
 
 const SAMPLE = buildRecovery('push');
 
@@ -34,7 +36,9 @@ const AuthLayout = ({ title, side, children }) => {
       <Typography variant="h1" sx={{ fontSize: { xs: '1.75rem', md: '2rem' }, lineHeight: 1.15, mb: 2 }}>
         {title}
       </Typography>
-      {children}
+      <ThemeProvider theme={(outer) => createTheme(outer, { components: authControlsOverrides })}>
+        {children}
+      </ThemeProvider>
     </Paper>
   );
 
