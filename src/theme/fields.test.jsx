@@ -1,42 +1,18 @@
 // Forma B+ dei campi nel tema principale: l'etichetta sta sopra il campo, in flusso normale (non
 // absolute né con la transform che la porta nel bordo), è sempre ridotta (anche a campo vuoto e senza
 // focus), il bordo non ha la tacca per l'etichetta e il raggio è 10px. Vale per ogni campo outlined
-// dell'app (non solo per l'accesso): TextField, size="small", multiline, Select, DatePicker.
-//
-// "Niente tacca" non si legge dal testo della legend: MUI ci scrive sempre il testo dell'etichetta,
-// nascosto, e la tacca è la larghezza di quella legend. Senza tacca resta larga 0.01px; con la tacca
-// diventa larga quanto il testo, e MUI la apre quando il campo ha il focus o un valore.
+// dell'app (non solo per l'accesso): TextField, size="small", multiline, Select, DatePicker, Autocomplete.
 import { describe, it, expect } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { render, screen } from '@testing-library/react';
+import { TextField, FormControl, InputLabel, Select, MenuItem, Autocomplete } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import DateLocalization from '../i18n/DateLocalization';
+import { expectFieldAboveLabel } from '../test/fieldStyle';
 
 const renderField = (field) => render(
   <ThemeModeProvider><DateLocalization>{field}</DateLocalization></ThemeModeProvider>,
 );
-
-// La legend del fieldset è la tacca del bordo: 0.01px vuol dire chiusa
-const outlineIsNotched = (fieldset) => getComputedStyle(fieldset.querySelector('legend')).maxWidth !== '0.01px';
-
-const expectFieldAboveLabel = (id, labelText) => {
-  const control = screen.getByLabelText(labelText);
-  expect(control).toBeTruthy();
-
-  const label = document.getElementById(`${id}-label`);
-  expect(label).toBeTruthy();
-  expect(label.getAttribute('data-shrink')).toBe('true');
-  const labelStyle = getComputedStyle(label);
-  expect(labelStyle.position).not.toBe('absolute');
-  expect(labelStyle.transform === 'none' || labelStyle.transform === '').toBe(true);
-
-  fireEvent.focus(control);
-  const fieldset = control.closest('.MuiOutlinedInput-root')?.querySelector('fieldset');
-  expect(fieldset).toBeTruthy();
-  expect(outlineIsNotched(fieldset)).toBe(false);
-  expect(getComputedStyle(fieldset).borderRadius).toBe('10px');
-};
 
 describe('Campi nel tema: TextField outlined', () => {
   it('etichetta sopra, senza tacca, raggio 10', () => {
@@ -82,6 +58,19 @@ describe('Campi nel tema: DatePicker', () => {
   });
 });
 
+describe('Campi nel tema: Autocomplete', () => {
+  it('etichetta sopra, senza tacca, raggio 10', () => {
+    renderField(
+      <Autocomplete
+        id="esercizio"
+        options={['Panca piana', 'Squat']}
+        renderInput={(params) => <TextField {...params} label="Esercizio" />}
+      />,
+    );
+    expectFieldAboveLabel('esercizio', 'Esercizio');
+  });
+});
+
 describe('Select vuoto con voce vuota', () => {
   it('mostra il testo della voce vuota, in grigio', () => {
     renderField(
@@ -95,6 +84,23 @@ describe('Select vuoto con voce vuota', () => {
     );
     const display = screen.getByText('Nessuna tecnica');
     expect(display).toBeTruthy();
-    expect(getComputedStyle(display.closest('em') || display).color).toBe('rgb(107, 102, 99)');
+    expect(getComputedStyle(display.closest('em')).color).toBe('rgb(107, 102, 99)');
+  });
+});
+
+describe('Select vuoto con voce vuota, tema scuro', () => {
+  it('mostra il testo della voce vuota, in grigio chiaro', () => {
+    localStorage.setItem('themeMode', 'dark');
+    renderField(
+      <FormControl fullWidth>
+        <InputLabel id="tecnica3-label">Tecnica</InputLabel>
+        <Select labelId="tecnica3-label" id="tecnica3" label="Tecnica" value="" onChange={() => {}}>
+          <MenuItem value=""><em>Nessuna tecnica</em></MenuItem>
+          <MenuItem value="dropset">Dropset</MenuItem>
+        </Select>
+      </FormControl>,
+    );
+    const display = screen.getByText('Nessuna tecnica');
+    expect(getComputedStyle(display.closest('em')).color).toBe('rgb(160, 160, 162)');
   });
 });

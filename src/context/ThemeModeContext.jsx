@@ -197,25 +197,42 @@ export const ThemeModeProvider = ({ children }) => {
                 paddingTop: 0,
                 paddingBottom: 0,
               },
-              // Il Select con displayEmpty (sotto) chiede a MUI la tacca per il valore vuoto: qui resta
-              // chiusa comunque, come per ogni altro campo.
+              // Con displayEmpty (sotto) il Select outlined impone notched=true qualunque sia il valore:
+              // solo il CSS può chiudere la tacca, qui, come per ogni altro campo.
               notchedOutline: {
                 '& legend': { maxWidth: '0.01px' },
               },
             },
           },
           // Con l'etichetta sopra un Select senza valore mostrerebbe un riquadro vuoto: displayEmpty lo
-          // evita quando il menu ha già una voce vuota (value ''), che allora si vede. Quella voce è
-          // sempre scritta in <em> (è così che la segnano WorkoutPhase, RecordWorkoutDialog e
-          // AdminExercises): qui la coloriamo come un placeholder, non come un valore scelto.
+          // evita quando il menu ha già una voce vuota (value ''), che allora si vede. La voce vuota va
+          // scritta in <em>: è quella che il tema colora come un placeholder, non come un valore scelto.
           MuiSelect: {
             defaultProps: {
               displayEmpty: true,
             },
             styleOverrides: {
-              select: {
+              select: ({ theme }) => ({
                 '& em': {
-                  color: mode === 'light' ? '#6b6663' : '#a0a0a2', // text.secondary
+                  color: theme.palette.text.secondary,
+                },
+              }),
+            },
+          },
+          // L'Autocomplete applica il proprio padding all'OutlinedInput (radice e input), con selettori
+          // a 2 e 3 classi: più specifici dell'override `input` di MuiOutlinedInput qui sopra, che quindi
+          // perde. Lo si riporta a 44 qui, con selettori della stessa specificità (root nested, non la
+          // sola classe `input`).
+          MuiAutocomplete: {
+            styleOverrides: {
+              root: {
+                '& .MuiOutlinedInput-root': {
+                  paddingTop: 0,
+                  paddingBottom: 0,
+                },
+                '& .MuiOutlinedInput-root .MuiAutocomplete-input': {
+                  paddingTop: '10.5px',
+                  paddingBottom: '10.5px',
                 },
               },
             },

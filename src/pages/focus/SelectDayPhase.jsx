@@ -6,7 +6,7 @@ import {
   ArrowBack as ArrowBackIcon
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { useFocusColors } from './useFocusColors';
+import { useFocusColors, FOCUS_FIELD_PADDING } from './useFocusColors';
 import { muscleLabel } from '../../i18n/labels';
 import { planSummary } from '../../utils/plannedSets';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
@@ -77,7 +77,7 @@ export default function SelectDayPhase({
                   '&:hover fieldset': { borderColor: colors.primary },
                   '&.Mui-focused fieldset': { borderColor: colors.primary },
                 },
-                '& .MuiOutlinedInput-input': { paddingTop: '16.5px', paddingBottom: '16.5px' },
+                '& .MuiOutlinedInput-input': FOCUS_FIELD_PADDING,
                 '& .MuiInputLabel-root': { color: colors.textSecondary },
                 '& .MuiInputLabel-root.Mui-focused': { color: colors.primary },
                 '& .MuiSvgIcon-root': { color: colors.textSecondary },

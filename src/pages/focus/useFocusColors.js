@@ -1,6 +1,9 @@
 import { useTheme } from '@mui/material/styles';
 import { useThemeMode } from '../../context/ThemeModeContext';
 
+// Campi alti come nel resto di MUI (56, non i 44 del tema): in palestra bersagli grandi
+export const FOCUS_FIELD_PADDING = { paddingTop: '16.5px', paddingBottom: '16.5px' };
+
 // Colori di Focus Mode dal tema MUI, condivisi da pagina e fasi
 export function useFocusColors() {
   const theme = useTheme();

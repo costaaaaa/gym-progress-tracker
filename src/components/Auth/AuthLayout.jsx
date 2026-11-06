@@ -4,6 +4,7 @@ import BodyVisualizer from '../BodyVisualizer';
 import AuthBars from './AuthBars';
 import { buildRecovery } from '../../utils/recoveryDemo';
 import { radius } from '../../theme/radius';
+import { FIELD_HEIGHT } from '../../theme/fieldHeight';
 
 const SAMPLE = buildRecovery('push');
 
@@ -32,7 +33,7 @@ const AuthLayout = ({ title, side, children }) => {
         '& .MuiFormHelperText-root': { fontSize: '0.875rem', lineHeight: 1.45, mt: 0.75 },
         // Bottoni del modulo a pillola e alti come i campi, qualunque size: solo qui, il resto
         // dell'app tiene i suoi bottoni.
-        '& .MuiButton-root': { borderRadius: radius.pill, height: '44px' },
+        '& .MuiButton-root': { borderRadius: radius.pill, height: `${FIELD_HEIGHT}px` },
       }}
     >
       <Typography variant="h1" sx={{ fontSize: { xs: '1.75rem', md: '2rem' }, lineHeight: 1.15, mb: 2 }}>

@@ -3,6 +3,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import PlannedSetsEditor from './PlannedSetsEditor';
+import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { buildPlannedSets, fromCompact } from '../utils/plannedSets';
 import { DROP, normal, failure } from '../test/plannedSets';
 
@@ -175,6 +176,13 @@ describe('PlannedSetsEditor · serie diverse', () => {
   it('una tecnica non sull\'ultima impedisce di tornare alla forma compatta', () => {
     setup(buildPlannedSets(0, [normal(8, 8, DROP), normal(8, 8)]));
     expect(switchDiverse().disabled).toBe(true);
+  });
+
+  it('la tecnica vuota si vede in grigio, come le altre voci vuote del tema', () => {
+    render(<ThemeModeProvider><PlannedSetsEditor value={null} onChange={() => {}} /></ThemeModeProvider>);
+    fireEvent.click(switchDiverse());
+    const display = rowOf(1).getByText('Nessuna (normale)');
+    expect(getComputedStyle(display.closest('em')).color).toBe('rgb(107, 102, 99)');
   });
 
   it('con serie di nuovo uguali l\'interruttore si spegne e torna la forma compatta', () => {
