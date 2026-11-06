@@ -11,6 +11,7 @@ import { Add as AddIcon, RemoveCircleOutline as RemoveIcon } from '@mui/icons-ma
 import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, techniqueLabel } from '../i18n/labels';
 import { MAX_WORKING } from '../utils/plannedSets';
 import { radius } from '../theme/radius';
+import { FIELD_HEIGHT } from '../theme/fieldHeight';
 import {
   addRow, draftErrors, draftFromPlannedSets, draftToCompact, draftToList, plannedSetsFromDraft, removeRow,
 } from '../utils/plannedSetsDraft';
@@ -22,7 +23,9 @@ const TechniqueSelect = ({ id, label, value, onChange, helperText, size }) => (
     <InputLabel id={`${id}-label`}>{label}</InputLabel>
     <Select labelId={`${id}-label`} id={id} value={value} label={label} onChange={(e) => onChange(e.target.value)}>
       {INTENSITY_TECHNIQUES.map((tech) => (
-        <MenuItem key={tech} value={tech === NO_TECHNIQUE ? '' : tech}>{techniqueLabel(tech)}</MenuItem>
+        tech === NO_TECHNIQUE
+          ? <MenuItem key={tech} value=""><em>{techniqueLabel(tech)}</em></MenuItem>
+          : <MenuItem key={tech} value={tech}>{techniqueLabel(tech)}</MenuItem>
       ))}
     </Select>
     {helperText && <FormHelperText>{helperText}</FormHelperText>}
@@ -142,11 +145,17 @@ const PlannedSetsEditor = ({ value, onChange }) => {
                     inputProps={numeric}
                     sx={{ flex: 1, minWidth: 0 }}
                   />
-                  <FormControlLabel
-                    control={<Checkbox size="small" checked={row.to_failure} onChange={(e) => patchRows(index, { to_failure: e.target.checked, target: '' })} />}
-                    label={t('plan_editor.to_failure')}
-                    sx={{ flexShrink: 0, mr: 0, height: 40, whiteSpace: 'nowrap' }}
-                  />
+                  <Box sx={{ display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+                    {/* Etichetta invisibile, della stessa altezza di quella del campo accanto: allinea
+                        la casella al campo (sotto la sua etichetta), non all'etichetta stessa. component="span"
+                        e aria-hidden: non è l'etichetta di nessun controllo, solo uno spaziatore */}
+                    <InputLabel component="span" aria-hidden sx={{ visibility: 'hidden' }}>&nbsp;</InputLabel>
+                    <FormControlLabel
+                      control={<Checkbox size="small" checked={row.to_failure} onChange={(e) => patchRows(index, { to_failure: e.target.checked, target: '' })} />}
+                      label={t('plan_editor.to_failure')}
+                      sx={{ mr: 0, height: FIELD_HEIGHT, whiteSpace: 'nowrap' }}
+                    />
+                  </Box>
                 </Stack>
                 <TechniqueSelect
                   id={`planned-sets-technique-${index}`}

@@ -1,10 +1,5 @@
-// Forma B+ delle schermate di accesso: l'etichetta sta sopra il campo, in flusso normale (non
-// absolute né con la transform che la porta nel bordo), è sempre ridotta (anche a campo vuoto e senza
-// focus) e il bordo del campo non ha la tacca per l'etichetta.
-//
-// "Niente tacca" non si legge dal testo della legend: MUI ci scrive sempre il testo dell'etichetta,
-// nascosto, e la tacca è la larghezza di quella legend. Senza tacca resta larga 0.01px; con la tacca
-// diventa larga quanto il testo, e MUI la apre quando il campo ha il focus o un valore.
+// Forma B+ delle schermate di accesso (login, registrazione, password dimenticata, reset): i campi
+// (regole in test/fieldStyle) e i bottoni del modulo a pillola, alti come i campi.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -13,6 +8,7 @@ import Register from './Register';
 import ForgotPassword from './ForgotPassword';
 import ResetPassword from './ResetPassword';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
+import { expectFieldAboveLabel } from '../test/fieldStyle';
 
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
 vi.mock('../context/AuthContext', () => ({
@@ -22,30 +18,6 @@ vi.mock('../context/AuthContext', () => ({
 const renderPage = (Page, initialEntries = ['/']) => render(
   <MemoryRouter initialEntries={initialEntries}><ThemeModeProvider><Page /></ThemeModeProvider></MemoryRouter>,
 );
-
-// La legend del fieldset è la tacca del bordo: 0.01px vuol dire chiusa
-const outlineIsNotched = (fieldset) => getComputedStyle(fieldset.querySelector('legend')).maxWidth !== '0.01px';
-
-// Un campo (TextField, Select o DatePicker outlined): trova il controllo con l'id dato e la sua
-// etichetta (per tutti e tre i tipi, MUI usa la stessa convenzione "<id>-label"), poi controlla le
-// regole della forma B+. La tacca si controlla con il campo a fuoco, perché MUI la apre al focus.
-const expectFieldAboveLabel = (id, labelText) => {
-  const control = screen.getByLabelText(labelText);
-  expect(control).toBeTruthy();
-
-  const label = document.getElementById(`${id}-label`);
-  expect(label).toBeTruthy();
-  expect(label.getAttribute('data-shrink')).toBe('true');
-  const labelStyle = getComputedStyle(label);
-  expect(labelStyle.position).not.toBe('absolute');
-  expect(labelStyle.transform === 'none' || labelStyle.transform === '').toBe(true);
-  expect(labelStyle.maxWidth).toBe('100%');
-
-  fireEvent.focus(control);
-  const fieldset = control.closest('.MuiOutlinedInput-root')?.querySelector('fieldset');
-  expect(fieldset).toBeTruthy();
-  expect(outlineIsNotched(fieldset)).toBe(false);
-};
 
 // Un bottone del modulo: a pillola e alto come i campi
 const expectPill = (name) => {

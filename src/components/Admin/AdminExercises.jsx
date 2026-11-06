@@ -101,7 +101,7 @@ const ExerciseFormDialog = ({ open, exercise, muscleGroups, equipment, onClose, 
           )}
           <TextField select label="Attrezzo" value={equipmentValue} onChange={(e) => setEquipmentValue(e.target.value)}
             fullWidth margin="dense">
-            <MenuItem value="">Nessuno</MenuItem>
+            <MenuItem value=""><em>Nessuno</em></MenuItem>
             {equipment.map((q) => <MenuItem key={q} value={q}>{equipmentLabel(q) || q}</MenuItem>)}
           </TextField>
           {!exercise && (

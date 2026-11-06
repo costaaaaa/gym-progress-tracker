@@ -6,6 +6,7 @@ import { itIT, enUS } from '@mui/material/locale';
 import { useTranslation } from 'react-i18next';
 import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
 import { radius } from '../theme/radius';
+import { FIELD_INPUT_PADDING_Y } from '../theme/fieldHeight';
 
 const BRAND = '#d50000';
 const BRAND_DARK = '#9b0000';
@@ -157,6 +158,86 @@ export const ThemeModeProvider = ({ children }) => {
           },
         },
         components: {
+          // Etichetta fissa sopra il campo, in flusso normale: niente posizione assoluta né la transform
+          // che la porta dentro il bordo. Lo shrink è sempre true (etichetta mai dentro il campo). Il
+          // colore (testo secondario, focus, errore) resta quello di MuiFormLabel: ridefinirlo qui
+          // vincerebbe sulle regole di focus ed errore.
+          MuiInputLabel: {
+            defaultProps: {
+              shrink: true,
+            },
+            styleOverrides: {
+              root: {
+                position: 'static',
+                transform: 'none',
+                // Senza la scala 0.75 l'etichetta è larga quanto il suo testo: non oltre il campo
+                maxWidth: '100%',
+                marginBottom: '6px',
+                fontSize: '14px',
+                fontWeight: 600,
+              },
+            },
+          },
+          // Bordo senza tacca per l'etichetta (sta sopra, non dentro il bordo) e campo alto FIELD_HEIGHT
+          // con il padding verticale dell'input. Il multiline mette il padding sulla radice (non toccata
+          // qui) e azzera quello della textarea: l'override di `input` si applicherebbe anche lì (stessa
+          // classe), quindi lo si annulla con `inputMultiline`.
+          MuiOutlinedInput: {
+            defaultProps: {
+              notched: false,
+            },
+            styleOverrides: {
+              root: {
+                borderRadius: radius.md,
+              },
+              input: {
+                paddingTop: FIELD_INPUT_PADDING_Y,
+                paddingBottom: FIELD_INPUT_PADDING_Y,
+              },
+              inputMultiline: {
+                paddingTop: 0,
+                paddingBottom: 0,
+              },
+              // Con displayEmpty (sotto) il Select outlined impone notched=true qualunque sia il valore:
+              // solo il CSS può chiudere la tacca, qui, come per ogni altro campo.
+              notchedOutline: {
+                '& legend': { maxWidth: '0.01px' },
+              },
+            },
+          },
+          // Con l'etichetta sopra un Select senza valore mostrerebbe un riquadro vuoto: displayEmpty lo
+          // evita quando il menu ha già una voce vuota (value ''), che allora si vede. La voce vuota va
+          // scritta in <em>: è quella che il tema colora come un placeholder, non come un valore scelto.
+          MuiSelect: {
+            defaultProps: {
+              displayEmpty: true,
+            },
+            styleOverrides: {
+              select: ({ theme }) => ({
+                '& em': {
+                  color: theme.palette.text.secondary,
+                },
+              }),
+            },
+          },
+          // L'Autocomplete dà il proprio padding all'OutlinedInput (radice e input) con selettori a 2 e 3
+          // classi, più specifici dell'override `input` di MuiOutlinedInput: per l'altezza dei campi
+          // servono gli stessi selettori annidati in `root`. La size="small" ha una regola sua, qui non
+          // coperta.
+          MuiAutocomplete: {
+            styleOverrides: {
+              root: {
+                '& .MuiOutlinedInput-root': {
+                  paddingTop: 0,
+                  paddingBottom: 0,
+                },
+                '& .MuiOutlinedInput-root .MuiAutocomplete-input': {
+                  paddingTop: FIELD_INPUT_PADDING_Y,
+                  paddingBottom: FIELD_INPUT_PADDING_Y,
+                },
+              },
+            },
+          },
           // Una variante sconosciuta uscirebbe <span> (in linea, senza margini verticali): cardTitle è un <p>.
           MuiTypography: {
             defaultProps: {

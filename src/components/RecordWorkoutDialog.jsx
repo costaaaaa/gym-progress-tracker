@@ -24,6 +24,7 @@ import {
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import { API_BASE_URL } from '../config';
+import { FIELD_HEIGHT } from '../theme/fieldHeight';
 import { track } from '../utils/analytics';
 import { useTranslation } from 'react-i18next';
 import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, techniqueLabel } from '../i18n/labels';
@@ -289,12 +290,14 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                     <Box sx={{ mt: 2 }}>
                       {(workoutData[exercise.id] || []).map((row, setIndex, rows) => (
                         <Box key={setIndex} sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                          <Box sx={{ minWidth: 60, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                          {/* "Serie N" in alto, all'altezza delle etichette dei campi accanto; la casella del
+                              riscaldamento in basso, alta quanto i campi e quindi centrata su di loro */}
+                          <Box sx={{ minWidth: 60, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                             <Typography variant="body2">{t('record.set', { n: setIndex + 1 })}</Typography>
                             <FormControlLabel
                               label={t('common.warmup_badge')}
                               slotProps={{ typography: { variant: 'caption' } }}
-                              sx={{ m: 0 }}
+                              sx={{ m: 0, height: FIELD_HEIGHT }}
                               control={
                                 <Checkbox
                                   size="small"
@@ -328,7 +331,6 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                             value={row.reps ?? ''}
                             // La scheda indica le ripetizioni per le sole righe che ora non sono riscaldamento
                             placeholder={rowTarget(rows, setIndex, exercise)}
-                            InputLabelProps={{ shrink: true }}
                             inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
                             onFocus={(e) => e.target.select()}
                             onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'reps', e.target.value)}

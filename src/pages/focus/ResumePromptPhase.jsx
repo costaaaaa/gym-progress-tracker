@@ -2,6 +2,7 @@ import { Box, Typography, Button, TextField, Paper } from '@mui/material';
 import { History as HistoryIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
+import { FOCUS_FIELD_PADDING } from './focusField';
 import { intlLocale } from '../../i18n/format';
 import { clockDay, shiftDay } from '../../utils/calendarDay';
 import { zoneClock } from '../../utils/workoutTime';
@@ -58,10 +59,9 @@ export default function ResumePromptPhase({ draftToResume, timeZone, retroDateIn
               label={t('focus.draft_retro_day')}
               value={chosenRetro}
               onChange={(e) => onRetroDateChange(e.target.value)}
-              InputLabelProps={{ shrink: true }}
               inputProps={{ min: retroDateBounds.min, max: retroDateBounds.max }}
               fullWidth
-              sx={{ mb: 1.5 }}
+              sx={{ mb: 1.5, '& .MuiOutlinedInput-input': FOCUS_FIELD_PADDING }}
             />
             <Button
               variant="outlined"
