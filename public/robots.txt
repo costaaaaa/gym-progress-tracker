@@ -1,6 +1,14 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+# Pagine dell'app dietro login: a un crawler mostrano solo il login.
+Disallow: /workouts
+Disallow: /dashboard
+Disallow: /profilo
+Disallow: /gruppi
+Disallow: /entra
+Disallow: /focus
+Disallow: /reset-password
+Disallow: /en/reset-password
 
 Sitemap: https://liftindex.app/sitemap.xml
 Sitemap: https://liftindex.app/blog/sitemap.xml
