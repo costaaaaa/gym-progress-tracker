@@ -4,7 +4,7 @@
 //
 // "Niente tacca" non si legge dal testo della legend: MUI ci scrive sempre il testo dell'etichetta,
 // nascosto, e la tacca è la larghezza di quella legend. Senza tacca resta larga 0.01px; con la tacca
-// diventa larga quanto il testo, e MUI la apre da sola quando l'etichetta è ridotta.
+// diventa larga quanto il testo, e MUI la apre quando il campo ha il focus o un valore.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -47,14 +47,6 @@ const expectFieldAboveLabel = (id, labelText) => {
   expect(outlineIsNotched(fieldset)).toBe(false);
 };
 
-describe('Etichette web: login', () => {
-  it('Username e Password hanno l\'etichetta sopra, sempre ridotta, senza tacca nel bordo', () => {
-    renderPage(Login);
-    expectFieldAboveLabel('username', /^Username/);
-    expectFieldAboveLabel('password', /^Password/);
-  });
-});
-
 // Un bottone del modulo: a pillola e alto come i campi
 const expectPill = (name) => {
   const style = getComputedStyle(screen.getByRole('button', { name }));
@@ -62,15 +54,11 @@ const expectPill = (name) => {
   expect(style.height).toBe('44px');
 };
 
-describe('Bottoni del modulo', () => {
-  it('Accedi è a pillola e alto 44', () => {
+describe('Etichette web: login', () => {
+  it('Username e Password hanno l\'etichetta sopra, sempre ridotta, senza tacca nel bordo', () => {
     renderPage(Login);
-    expectPill('Accedi');
-  });
-
-  it('Avanti (size="large") è a pillola e alto 44', () => {
-    renderPage(Register);
-    expectPill('Avanti');
+    expectFieldAboveLabel('username', /^Username/);
+    expectFieldAboveLabel('password', /^Password/);
   });
 });
 
@@ -119,9 +107,13 @@ describe('Etichette web: registrazione, passo 2 (Select e DatePicker)', () => {
     expectFieldAboveLabel('gender', /^Sesso/);
   });
 
-  it('Indietro e Registrati, affiancati, sono a pillola e alti 44', async () => {
+  it('Indietro, affiancato a Registrati, è a pillola e alto 44', async () => {
     await goToStep2();
     expectPill('Indietro');
+  });
+
+  it('Registrati è a pillola e alto 44', async () => {
+    await goToStep2();
     expectPill('Registrati');
   });
 });
@@ -142,5 +134,17 @@ describe('Etichette web: reset password', () => {
     renderPage(ResetPassword, ['/reset-password?token=abc123']);
     expectFieldAboveLabel('password', /^Nuova password/);
     expectFieldAboveLabel('confirm', /^Ripeti la password/);
+  });
+});
+
+describe('Bottoni del modulo', () => {
+  it('Accedi è a pillola e alto 44', () => {
+    renderPage(Login);
+    expectPill('Accedi');
+  });
+
+  it('Avanti, il bottone grande della registrazione, è a pillola e alto 44', () => {
+    renderPage(Register);
+    expectPill('Avanti');
   });
 });
