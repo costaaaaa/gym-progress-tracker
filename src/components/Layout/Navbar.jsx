@@ -7,7 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useThemeMode } from '../../context/ThemeModeContext';
 import { safeNext } from '../../utils/safeNext';
 import { useTranslation } from 'react-i18next';
-import { stripLangPrefix, useLocalizedPath } from '../../i18n/paths';
+import { isAuthPath, stripLangPrefix, useLocalizedPath } from '../../i18n/paths';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 import LogoMark from '../LogoMark';
 
@@ -36,7 +36,7 @@ const Navbar = () => {
   // Accedi e Registrati conservano la pagina a cui tornare: il ?next= già presente
   // su login e registrazione, oppure il link di invito che si sta guardando.
   const barePath = stripLangPrefix(location.pathname);
-  const onAuthPage = barePath === '/login' || barePath === '/register';
+  const onAuthPage = isAuthPath(location.pathname);
   // Pagine di accesso: il bottone rosso è quello del modulo, la Navbar resta in testo
   const onAccessPage = onAuthPage || barePath === '/forgot-password' || barePath === '/reset-password';
   const authNext = onAuthPage

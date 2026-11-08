@@ -40,7 +40,7 @@ import {
   Edit as EditIcon,
   Logout as LogoutIcon,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { format, parseISO, subYears, startOfToday, formatDistanceToNow } from 'date-fns';
 import { useTranslation, Trans } from 'react-i18next';
@@ -52,19 +52,21 @@ import { validatePassword } from '../utils/passwordPolicy';
 import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
 import { NEUTRAL_OUTLINED } from '../utils/buttonStyles';
 import { getConsents, setConsent } from '../utils/consent';
+import { loginWithNext } from '../utils/safeNext';
 import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
 
 const Account = ({ isEmbedded = false }) => {
   const { user, logout, isLoggedIn, updateUser, loading: authLoading } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Reindirizza alla pagina di login se l'utente non è autenticato e l'autenticazione è stata verificata
+  // Reindirizza al login se l'utente non è autenticato e l'autenticazione è stata verificata; dopo il login torna qui
   useEffect(() => {
     if (!authLoading && !isLoggedIn) {
-      navigate('/login');
+      navigate(loginWithNext(location), { replace: true });
     }
-  }, [isLoggedIn, authLoading, navigate]);
+  }, [isLoggedIn, authLoading, navigate, location]);
 
   // Stati per i dati dell'utente
   const [userData, setUserData] = useState(null);
