@@ -3,17 +3,14 @@ import { API_BASE_URL } from '../config';
 import i18n from '../i18n';
 import { currentTimeZone } from '../utils/workoutTime';
 import { loginWithNext } from '../utils/safeNext';
-import { stripLangPrefix } from '../i18n/paths';
+import { isAuthPath } from '../i18n/paths';
 
 // Crea il contesto di autenticazione
 const AuthContext = createContext(null);
 
 // Login dopo una sessione scaduta: poi si torna alla pagina in cui si era
 // (non a login o registrazione, da cui il login riporterebbe al login)
-const loginAfterExpiry = () => {
-  const page = stripLangPrefix(window.location.pathname);
-  return page === '/login' || page === '/register' ? '/login' : loginWithNext(window.location);
-};
+const loginAfterExpiry = () => (isAuthPath(window.location.pathname) ? '/login' : loginWithNext(window.location));
 
 // Provider che avvolgerà l'applicazione
 export const AuthProvider = ({ children }) => {

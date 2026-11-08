@@ -10,6 +10,9 @@ export const isPublicPath = (pathname) => PUBLIC_PATHS.includes(pathname);
 
 export const stripLangPrefix = (pathname) => (isEnPath(pathname) ? pathname.slice(3) || '/' : pathname);
 
+// Login e registrazione, in tutte e due le lingue: dopo l'accesso portano al ?next=.
+export const isAuthPath = (pathname) => ['/login', '/register'].includes(stripLangPrefix(pathname));
+
 export const withLangPrefix = (pathname, lang) =>
   lang === 'en' ? `/en${pathname === '/' ? '/' : pathname}` : pathname;
 

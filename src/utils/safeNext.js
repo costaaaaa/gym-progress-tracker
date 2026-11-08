@@ -1,10 +1,12 @@
 // Percorso interno a cui tornare dopo login o registrazione (?next=/entra?codice=...).
-// Solo percorsi dello stesso sito, anche come li legge il browser: ignora TAB e a capo
-// e tratta "\" come "/", quindi "/<TAB>/dominio" diventerebbe "//dominio".
+// Restituisce il percorso come lo legge il browser, che ignora TAB e a capo, tratta "\"
+// come "/" e risolve "." e "..": "/./<TAB>/dominio" diventa "//dominio", cioè un altro sito.
 export const safeNext = (search) => {
   const next = new URLSearchParams(search).get('next');
   if (!next?.startsWith('/')) return '/';
-  return new URL(next, window.location.origin).origin === window.location.origin ? next : '/';
+  const url = new URL(next, window.location.origin);
+  const path = url.pathname + url.search + url.hash;
+  return url.origin === window.location.origin && !path.startsWith('//') ? path : '/';
 };
 
 // Login che poi torna alla pagina attuale, compresi parametri e ancora.
