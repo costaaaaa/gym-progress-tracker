@@ -23,7 +23,7 @@ describe('Account senza accesso', () => {
   it('va al login con next = pagina, parametri e ancora', async () => {
     vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
     render(
-      <MemoryRouter initialEntries={['/profilo?tab=settings#assistenti-ai']}>
+      <MemoryRouter initialEntries={['/profilo?tab=settings#sezione']}>
         <ThemeModeProvider>
           <Routes>
             <Route path="/profilo" element={<Account isEmbedded />} />
@@ -33,7 +33,7 @@ describe('Account senza accesso', () => {
       </MemoryRouter>,
     );
     const search = (await screen.findByTestId('login')).textContent;
-    expect(search).toBe('?next=%2Fprofilo%3Ftab%3Dsettings%23assistenti-ai');
-    expect(safeNext(search)).toBe('/profilo?tab=settings#assistenti-ai');
+    expect(search).toBe('?next=%2Fprofilo%3Ftab%3Dsettings%23sezione');
+    expect(safeNext(search)).toBe('/profilo?tab=settings#sezione');
   });
 });

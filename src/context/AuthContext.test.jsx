@@ -1,7 +1,7 @@
 // L'intercettore di fetch controlla l'indirizzo anche quando fetch riceve un Request o un URL, non solo una stringa.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, waitFor } from '@testing-library/react';
-import { AuthProvider } from './AuthContext';
+import { render, screen, waitFor } from '@testing-library/react';
+import { AuthProvider, useAuth } from './AuthContext';
 
 const original = window.fetch;
 let backend;
@@ -86,5 +86,61 @@ describe('AuthProvider: intercettore di fetch', () => {
     await window.fetch(new Request('https://altro.example/backend/api/x.php'));
 
     expect(backend.mock.calls[0][0].headers.get('X-Locale')).toBeNull();
+  });
+});
+
+// Il logout porta via la pagina con window.location: qui la si sostituisce con un oggetto che registra dove si va
+const atPage = (path) => {
+  const url = new URL(path, window.location.origin);
+  const real = window.location;
+  const fake = { origin: url.origin, pathname: url.pathname, search: url.search, hash: url.hash, href: url.href };
+  Object.defineProperty(window, 'location', { configurable: true, value: fake });
+  return () => Object.defineProperty(window, 'location', { configurable: true, value: real });
+};
+
+describe('AuthProvider: fine della sessione', () => {
+  let restore;
+  afterEach(() => restore?.());
+
+  it('sessione scaduta durante una chiamata: login con next = pagina, parametri e ancora', async () => {
+    backend.mockImplementation(() => Promise.resolve(new Response('{}', { status: 200 })));
+    restore = atPage('/profilo?tab=settings#sezione');
+    render(<AuthProvider><div /></AuthProvider>);
+    await waitFor(() => expect(window.fetch).not.toBe(backend));
+    localStorage.setItem('isLoggedIn', 'true');
+    backend.mockImplementation(() => Promise.resolve(new Response('{}', { status: 401 })));
+
+    await window.fetch('/backend/api/workout/read.php');
+
+    await waitFor(() => expect(window.location.href).toBe('/login?next=%2Fprofilo%3Ftab%3Dsettings%23sezione'));
+  });
+
+  it('sessione non più valida all\'apertura: login con next = pagina, parametri e ancora', async () => {
+    localStorage.setItem('isLoggedIn', 'true');
+    restore = atPage('/profilo?tab=settings#sezione');
+
+    render(<AuthProvider><div /></AuthProvider>);
+
+    await waitFor(() => expect(window.location.href).toBe('/login?next=%2Fprofilo%3Ftab%3Dsettings%23sezione'));
+  });
+
+  it.each(['/login?next=%2Fgruppi', '/en/register'])('sessione scaduta su %s: login senza next', async (path) => {
+    localStorage.setItem('isLoggedIn', 'true');
+    restore = atPage(path);
+
+    render(<AuthProvider><div /></AuthProvider>);
+
+    await waitFor(() => expect(window.location.href).toBe('/login'));
+  });
+
+  it('logout scelto dall\'utente: login senza next', async () => {
+    backend.mockImplementation(() => Promise.resolve(new Response('{}', { status: 200 })));
+    restore = atPage('/profilo?tab=settings#sezione');
+    const LogoutButton = () => <button onClick={useAuth().logout}>esci</button>;
+    render(<AuthProvider><LogoutButton /></AuthProvider>);
+
+    screen.getByText('esci').click();
+
+    await waitFor(() => expect(window.location.href).toBe('/login'));
   });
 });

@@ -2,9 +2,18 @@ import { createContext, useState, useEffect, useContext } from 'react';
 import { API_BASE_URL } from '../config';
 import i18n from '../i18n';
 import { currentTimeZone } from '../utils/workoutTime';
+import { loginWithNext } from '../utils/safeNext';
+import { stripLangPrefix } from '../i18n/paths';
 
 // Crea il contesto di autenticazione
 const AuthContext = createContext(null);
+
+// Login dopo una sessione scaduta: poi si torna alla pagina in cui si era
+// (non a login o registrazione, da cui il login riporterebbe al login)
+const loginAfterExpiry = () => {
+  const page = stripLangPrefix(window.location.pathname);
+  return page === '/login' || page === '/register' ? '/login' : loginWithNext(window.location);
+};
 
 // Provider che avvolgerà l'applicazione
 export const AuthProvider = ({ children }) => {
@@ -39,7 +48,7 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (error) {
         console.error('Errore verifica sessione:', error);
-        logout();
+        endSession(loginAfterExpiry());
       } finally {
         setLoading(false);
       }
@@ -55,8 +64,8 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
   };
 
-  // Funzione di logout
-  const logout = async () => {
+  // Chiude la sessione e porta al login
+  const endSession = async (loginUrl) => {
     try {
       // Chiamata al backend per distruggere la sessione
       await fetch(`${API_BASE_URL}api/user/logout.php`, {
@@ -72,9 +81,12 @@ export const AuthProvider = ({ children }) => {
       setIsLoggedIn(false);
       setUser(null);
       // Reindirizzamento alla pagina di login
-      window.location.href = '/login';
+      window.location.href = loginUrl;
     }
   };
+
+  // Logout scelto dall'utente
+  const logout = () => endSession('/login');
 
   // Intercetta le chiamate fetch per gestire sessioni scadute
   useEffect(() => {
@@ -101,7 +113,7 @@ export const AuthProvider = ({ children }) => {
           localStorage.getItem('isLoggedIn') === 'true' && 
           !requestUrl.includes('login.php') && 
           !requestUrl.includes('api/user/read.php')) {
-        logout();
+        endSession(loginAfterExpiry());
       }
       return response;
     };
