@@ -27,7 +27,6 @@ const renderAt = (path) =>
 describe('LocaleSync da loggati', () => {
   beforeEach(() => {
     auth.user = { locale: 'en' };
-    localStorage.clear();
   });
 
   it('porta una pagina /en/ a quella senza prefisso', async () => {
@@ -46,6 +45,9 @@ describe('LocaleSync da loggati', () => {
 
   it('account in italiano su /en/login: pagina del next con l\'ancora, lingua e scelta italiane', async () => {
     auth.user = { locale: 'it' };
+    // Come al primo caricamento di una pagina /en/: lingua e scelta salvata in inglese
+    await i18n.changeLanguage('en');
+    localStorage.setItem('lx_lang_choice', 'en');
     renderAt('/en/login?next=%2Fprofilo%3Ftab%3Dsettings%23sezione');
     expect(await screen.findByText('/profilo?tab=settings#sezione')).toBeTruthy();
     expect(getLanguageChoice()).toBe('it');
