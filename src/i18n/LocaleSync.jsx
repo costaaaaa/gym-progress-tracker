@@ -3,9 +3,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import i18n, { normalizeLocale, getLanguageChoice, setLanguageChoice } from './index';
 import { isAuthPath, isEnPath, isPublicPath, stripLangPrefix, withLangPrefix } from './paths';
+import { safeNext } from '../utils/safeNext';
 
-// Da loggati decide sempre l'account, e le pagine /en/ portano a quelle senza prefisso,
-// tranne login e registrazione: lì il login appena fatto porta già alla pagina del ?next=.
+// Da loggati decide sempre l'account, e le pagine /en/ portano a quelle senza prefisso;
+// login e registrazione portano alla pagina del ?next=, la stessa a cui va il login appena fatto.
 // Da sloggati decide l'URL; chi ha scelto l'inglese su questo dispositivo, se arriva su una
 // pagina pubblica italiana (logout, sessione scaduta, link a /login), passa alla versione /en/.
 // Google non ha memoria tra le visite: per lui / resta italiano e /en/ inglese.
@@ -20,7 +21,7 @@ const LocaleSync = () => {
     if (user) {
       target = normalizeLocale(user.locale) || 'it';
       setLanguageChoice(target);
-      if (onEn && !isAuthPath(pathname)) navigate(stripLangPrefix(pathname) + search, { replace: true });
+      if (onEn) navigate(isAuthPath(pathname) ? safeNext(search) : stripLangPrefix(pathname) + search, { replace: true });
     } else if (onEn) {
       target = 'en';
       setLanguageChoice('en');

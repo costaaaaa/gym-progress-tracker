@@ -1,5 +1,5 @@
-// Da loggati le pagine /en/ portano a quelle senza prefisso, tranne login e registrazione:
-// lì il login appena fatto porta già alla pagina del ?next=.
+// Da loggati le pagine /en/ portano a quelle senza prefisso; login e registrazione portano
+// alla pagina del ?next=, la stessa a cui va il login appena fatto.
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
@@ -31,9 +31,12 @@ describe('LocaleSync da loggati', () => {
     expect(await screen.findByText('/forgot-password?x=1')).toBeTruthy();
   });
 
-  it.each(['/en/login?next=%2Fprofilo', '/en/register?next=%2Fgruppi'])('resta su %s', async (path) => {
+  it.each([
+    ['/en/login?next=%2Fprofilo%3Ftab%3Dsettings', '/profilo?tab=settings'],
+    ['/en/register?next=%2Fgruppi', '/gruppi'],
+    ['/en/login', '/'],
+  ])('da %s porta alla pagina del next', async (path, target) => {
     renderAt(path);
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(screen.getByTestId('where').textContent).toBe(path);
+    expect(await screen.findByText(target)).toBeTruthy();
   });
 });

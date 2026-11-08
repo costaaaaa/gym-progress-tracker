@@ -4,7 +4,12 @@
 export const safeNext = (search) => {
   const next = new URLSearchParams(search).get('next');
   if (!next?.startsWith('/')) return '/';
-  const url = new URL(next, window.location.origin);
+  let url;
+  try {
+    url = new URL(next, window.location.origin);
+  } catch {
+    return '/'; // per il browser non è un indirizzo (es. "/\a:b" diventa "//a:b", porta non valida)
+  }
   const path = url.pathname + url.search + url.hash;
   return url.origin === window.location.origin && !path.startsWith('//') ? path : '/';
 };

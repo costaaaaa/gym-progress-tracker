@@ -27,6 +27,9 @@ describe('safeNext', () => {
     ['punti, a capo e barra rovesciata', '/x/../\n\\example.com/'],
     ['punto e doppia barra', '/.//example.com/'],
     ['due punti e doppia barra', '/..//example.com/'],
+    ['indirizzo non valido', '/\\a:b'],
+    ['barra rovesciata e javascript:', '/\\javascript:alert(1)'],
+    ['quattro barre', '////%2fexample.com/'],
   ])('rifiuta %s e torna alla home', (_name, value) => {
     expect(value === null ? safeNext('') : nextOf(value)).toBe('/');
   });
