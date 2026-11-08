@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { Box, CircularProgress } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
+import { loginWithNext } from '../../utils/safeNext';
 
 // Pagine dei gruppi solo per utenti autenticati: gli altri vanno al login e poi tornano qui
 const RequireLogin = ({ children }) => {
@@ -15,8 +16,7 @@ const RequireLogin = ({ children }) => {
     );
   }
   if (!isLoggedIn) {
-    const next = encodeURIComponent(location.pathname + location.search);
-    return <Navigate to={`/login?next=${next}`} replace />;
+    return <Navigate to={loginWithNext(location)} replace />;
   }
   return children;
 };

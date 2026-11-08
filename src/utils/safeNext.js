@@ -5,3 +5,7 @@ export const safeNext = (search) => {
   if (!next || !next.startsWith('/') || next.startsWith('//') || next.startsWith('/\\')) return '/';
   return next;
 };
+
+// Login che poi torna alla pagina attuale, compresi parametri e ancora.
+export const loginWithNext = ({ pathname, search, hash }) =>
+  `/login?next=${encodeURIComponent(pathname + search + hash)}`;
