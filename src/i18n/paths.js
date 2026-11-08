@@ -13,7 +13,7 @@ export const isPublicPath = (pathname) => PUBLIC_PATHS.includes(pathname);
 
 export const stripLangPrefix = (pathname) => (isEnPath(pathname) ? pathname.slice(3) || '/' : pathname);
 
-// Login e registrazione, in tutte e due le lingue
+// Login e registrazione, in tutte e due le lingue.
 export const isAuthPath = (pathname) => AUTH_PATHS.includes(stripLangPrefix(pathname));
 
 export const withLangPrefix = (pathname, lang) =>

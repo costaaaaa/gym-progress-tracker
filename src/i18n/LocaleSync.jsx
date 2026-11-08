@@ -21,7 +21,10 @@ const LocaleSync = () => {
     if (user) {
       target = normalizeLocale(user.locale) || 'it';
       setLanguageChoice(target);
-      if (onEn) navigate(isAuthPath(pathname) ? safeNext(search) : stripLangPrefix(pathname) + search, { replace: true });
+      if (onEn) {
+        const to = isAuthPath(pathname) ? safeNext(search) : stripLangPrefix(pathname) + search;
+        navigate(to, { replace: true });
+      }
     } else if (onEn) {
       target = 'en';
       setLanguageChoice('en');
