@@ -9,7 +9,8 @@ class Consent
     // Finalita' gestite da questo backend e versione corrente del testo che l'utente accetta.
     // Cambiare la versione di una finalita' significa chiedere di nuovo il consenso.
     const VERSIONS = array(
-        'terms' => '2026-11',        // termini d'uso e informativa privacy. 2026-11: assistenti AI collegati
+        // termini d'uso e informativa privacy. 2026-11: assistenti AI collegati
+        'terms' => '2026-11',
         // misure corporee: dati sulla salute (art. 9 GDPR). 2026-10: anche da e verso Apple Salute
         // e Health Connect, se l'utente li collega
         'health_data' => '2026-10',
