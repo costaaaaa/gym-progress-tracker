@@ -11,7 +11,7 @@ import { radius } from '../theme/radius';
 const DISMISSED_KEY = 'healthAppHintDismissed';
 
 // iPhone/iPad o Android, solo per scegliere il link giusto. Lo user agent si legge qui nel
-// browser e non esce dal dispositivo (privacy.html, sezione 11).
+// browser e non esce dal dispositivo (privacy.html, sezione 12).
 // iPadOS si presenta come un Mac: lo riconosce lo schermo touch.
 export const detectPlatform = (nav = window.navigator) => {
   const ua = nav.userAgent || '';
