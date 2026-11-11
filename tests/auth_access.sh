@@ -9,7 +9,10 @@
 # mobile; per la sessione web usa un cookie jar. Controlla: schede, giorni ed esercizi in scheda,
 # storico allenamenti e misure corporee di A non si leggono, modificano o cancellano da B; il
 # cambio password chiude la sessione web e gli altri token di A ma non quello in uso; logout web
-# e mobile chiudono davvero; token di reset falsi rifiutati. Alla fine cancella gli account.
+# e mobile chiudono davvero; il cookie di sessione nasce solo al login (nessun Set-Cookie per chi non
+# ha fatto l'accesso), dura 30 giorni solo con `remember: true`, viene cancellato al logout e
+# conserva la sua scadenza al cambio password; il login da un'origine estranea è rifiutato senza
+# cookie; token di reset falsi rifiutati. Alla fine cancella gli account.
 # Non va lanciato in produzione: crea account veri.
 #
 # OWN_ORIGIN è un'origine in CORS_ALLOWED_ORIGINS (default: quella dell'URL del backend, come con
@@ -88,7 +91,7 @@ cleanup() {
     t="$(login "$A_USER" "$A_PASS")"
     call POST api/user/delete.php "$t" "$(jq -nc --arg p "$A_PASS" '{password:$p}')" >/dev/null
     call POST api/user/delete.php "$B" "$(jq -nc --arg p "$PASS" '{password:$p}')" >/dev/null
-    rm -f "$JAR"
+    rm -f "$JAR" "${JAR2:-}" "${HEADERS:-}"
     echo "Account di prova cancellati."
 }
 trap cleanup EXIT
@@ -175,6 +178,71 @@ expect "logout web" 200 "$(call POST api/user/logout.php web)"
 expect "dopo il logout la sessione non vale" 401 "$(call GET api/user/read.php web)"
 expect "logout mobile" 200 "$(call POST api/user/mobile_logout.php "$A")"
 expect "dopo il logout il token non vale" 401 "$(call GET api/user/read.php "$A")"
+
+echo "Cookie di sessione"
+# web_post_headers path json [origine] [jar] → stampa "status" e lascia gli header in $HEADERS
+HEADERS="/tmp/auth_access.headers.$$"
+web_post_headers() {
+    local jar="${4:-$JAR2}"
+    local args=(-s -o /dev/null -D "$HEADERS" -w '%{http_code}' -X POST -H 'Content-Type: application/json' -b "$jar" -c "$jar" --data "$2")
+    [[ -n "${3:-}" ]] && args+=(-H "Origin: $3")
+    curl "${args[@]}" "$BASE$1"
+}
+session_cookie_lines() { tr -d '\r' <"$HEADERS" | grep -i '^set-cookie: *PHPSESSID=' || true; }
+cookie_login_body() { # [remember] → corpo del login di A (remember: true se c'è un argomento)
+    jq -nc --arg u "$A_USER" --arg p "$A_PASS" --argjson r "$([[ -n "${1:-}" ]] && echo true || echo false)" '{username:$u, password:$p} + (if $r then {remember:true} else {} end)'
+}
+JAR2="/tmp/auth_access.jar2.$$"
+
+curl -s -o /dev/null -D "$HEADERS" "$BASE"api/user/read.php
+if [[ -z "$(session_cookie_lines)" ]]; then ok "richiesta anonima: nessun Set-Cookie di sessione"; else ko "richiesta anonima: nessun Set-Cookie di sessione" "$(session_cookie_lines)"; fi
+
+status="$(web_post_headers api/user/login.php "$(cookie_login_body)")"
+line="$(session_cookie_lines)"
+if [[ "$status" == 200 && -n "$line" ]]; then ok "login senza remember: 200 e cookie"; else ko "login senza remember: 200 e cookie" "status $status, cookie: $line"; fi
+if [[ "$(printf '%s\n' "$line" | grep -c .)" == 1 ]]; then ok "un solo Set-Cookie di sessione"; else ko "un solo Set-Cookie di sessione" "$line"; fi
+if grep -qiE 'expires=|max-age=' <<<"$line"; then ko "login senza remember: cookie senza scadenza" "$line"; else ok "login senza remember: cookie senza scadenza"; fi
+if grep -qi 'httponly' <<<"$line" && grep -qi 'samesite=lax' <<<"$line"; then ok "cookie HttpOnly e SameSite=Lax"; else ko "cookie HttpOnly e SameSite=Lax" "$line"; fi
+
+# scadenza del cookie in secondi da adesso (vuota se manca)
+cookie_ttl() {
+    local expires
+    expires="$(grep -oiE 'expires=[^;]+' <<<"$1" | head -n 1 | cut -d= -f2-)"
+    [[ -n "$expires" ]] && echo $(( $(date -d "$expires" +%s) - $(date +%s) ))
+}
+
+rm -f "$JAR2"
+status="$(web_post_headers api/user/login.php "$(cookie_login_body remember)")"
+line="$(session_cookie_lines)"
+ttl="$(cookie_ttl "$line")"
+if [[ "$status" == 200 && -n "$ttl" && "$ttl" -gt $((30 * 86400 - 120)) && "$ttl" -le $((30 * 86400 + 120)) ]]; then
+    ok "login con remember: cookie con scadenza a circa 30 giorni"
+else
+    ko "login con remember: cookie con scadenza a circa 30 giorni" "status $status, scadenza fra ${ttl:-?} s: $line"
+fi
+
+sleep 1  # password_changed_at e l'ora del login si confrontano al secondo
+res="$(web_post_headers api/user/change_password.php "$(jq -nc --arg c "$A_PASS" --arg n "$PASS" '{current_password:$c, new_password:$n}')")"
+A_PASS="$PASS"
+line="$(session_cookie_lines)"
+ttl="$(cookie_ttl "$line")"
+if [[ "$res" == 200 && -n "$ttl" && "$ttl" -gt $((30 * 86400 - 120)) && "$ttl" -le $((30 * 86400 + 120)) ]]; then
+    ok "cambio password con remember: il cookie nuovo ha ancora la scadenza di 30 giorni"
+else
+    ko "cambio password con remember: il cookie nuovo ha ancora la scadenza di 30 giorni" "status $res, scadenza fra ${ttl:-?} s: $line"
+fi
+expect "dopo il cambio password la sessione nuova vale" 200 "$(curl -s -o /dev/null -w '%{http_code}' -b "$JAR2" "$BASE"api/user/read.php)"
+
+status="$(web_post_headers api/user/logout.php '{}')"
+line="$(session_cookie_lines)"
+if [[ "$status" == 200 ]] && grep -qiE 'max-age=0|expires=thu, 01 jan 1970' <<<"$line"; then ok "logout: il cookie di sessione è cancellato"; else ko "logout: il cookie di sessione è cancellato" "status $status: $line"; fi
+
+rm -f "$JAR2"
+status="$(web_post_headers api/user/login.php "$(cookie_login_body)" https://origine-estranea.example)"
+line="$(session_cookie_lines)"
+if [[ "$status" == 403 && -z "$line" ]]; then ok "login da un'origine estranea: 403 e nessun cookie"; else ko "login da un'origine estranea: 403 e nessun cookie" "status $status: $line"; fi
+status="$(web_post_headers api/user/login.php "$(cookie_login_body)" "$OWN_ORIGIN")"
+if [[ "$status" == 200 && -n "$(session_cookie_lines)" ]]; then ok "login dall'origine nostra ($OWN_ORIGIN): 200 e cookie"; else ko "login dall'origine nostra ($OWN_ORIGIN): 200 e cookie" "status $status"; fi
 
 echo "Reset password"
 expect "token malformato rifiutato" 400 "$(call POST api/user/reset_password.php "" "{\"token\":\"abc\",\"new_password\":\"$NEW_PASS!\"}")"
