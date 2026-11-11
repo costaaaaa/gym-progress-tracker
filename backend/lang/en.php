@@ -46,7 +46,7 @@ return array(
     'register.incomplete' => 'Missing data. Username, email and password are required.',
     'register.error' => 'An error occurred during sign-up.',
 
-    'forgot.sent' => "If the address is registered, we've sent you an email with instructions to reset your password.",
+    'forgot.sent' => "If the address is registered, we've sent you an email with instructions to reset your password. If one arrived in the last few minutes, use the link in that email.",
     'forgot.too_many' => 'Too many requests. Try again later.',
     'forgot.email_subject' => 'Reset your password',
     'forgot.email_body' => "Hi {username},\n\n"

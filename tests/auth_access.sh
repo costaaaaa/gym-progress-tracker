@@ -12,7 +12,8 @@
 # e mobile chiudono davvero; il cookie di sessione nasce solo al login (nessun Set-Cookie per chi non
 # ha fatto l'accesso), dura 30 giorni solo con `remember: true`, viene cancellato al logout e
 # conserva la sua scadenza al cambio password; il login da un'origine estranea è rifiutato senza
-# cookie; token di reset falsi rifiutati. Alla fine cancella gli account.
+# cookie; token di reset falsi rifiutati; recupero password con la stessa risposta per indirizzi
+# registrati o no e per richieste ravvicinate. Alla fine cancella gli account.
 # Non va lanciato in produzione: crea account veri.
 #
 # OWN_ORIGIN è un'origine in CORS_ALLOWED_ORIGINS (default: quella dell'URL del backend, come con
@@ -255,6 +256,17 @@ verdict "login dall'origine nostra ($OWN_ORIGIN): 200 e cookie" "$rc" "status $s
 echo "Reset password"
 expect "token malformato rifiutato" 400 "$(call POST api/user/reset_password.php "" "{\"token\":\"abc\",\"new_password\":\"$NEW_PASS!\"}")"
 expect "token ben formato ma inventato rifiutato" 400 "$(call POST api/user/reset_password.php "" "{\"token\":\"$(openssl rand -hex 32)\",\"new_password\":\"$NEW_PASS!\"}")"
+
+echo "Recupero password"
+# Il link nuovo o il link già valido si vedono solo nell'email: da fuori conta che la risposta sia
+# sempre la stessa, per indirizzo registrato e non, alla prima richiesta e alle successive.
+forgot() { call POST api/user/forgot_password.php "" "$(jq -nc --arg e "$1" '{email:$e}')"; }
+first="$(forgot "$B_USER@example.com")"
+second="$(forgot "$B_USER@example.com")"
+unknown="$(forgot "nessuno$SUFFIX@example.com")"
+expect "indirizzo registrato: 200" 200 "$first"
+rc=1; [[ "$second" == "$first" && "$unknown" == "$first" ]] && rc=0
+verdict "stessa risposta alla richiesta ravvicinata e per un indirizzo non registrato" "$rc" "1ª: ${first:0:200} | 2ª: ${second:0:200} | non registrato: ${unknown:0:200}"
 
 echo
 if [[ $fails -eq 0 ]]; then echo "TUTTO OK ($checks controlli)"; else echo "FALLITI $fails su $checks"; exit 1; fi
