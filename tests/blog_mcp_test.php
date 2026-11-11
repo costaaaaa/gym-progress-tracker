@@ -40,7 +40,7 @@ check('indirizzo del connettore', strpos($html, 'https://liftindex.app/mcp<') !=
 check('link all\'elenco delle app ammesse', strpos($html, 'href="https://liftindex.app/assistenti-ai"') !== false);
 check('link alla privacy, sezione assistenti AI', strpos($html, 'href="https://liftindex.app/privacy.html#assistenti-ai"') !== false);
 check('dice che è in sola lettura', strpos($html, 'sola lettura') !== false);
-check('dice che è premium', strpos($html, 'premium') !== false);
+check('dice che è premium', strpos($html, 'Premium') !== false);
 check('JSON-LD in italiano', strpos($html, '"inLanguage": "it"') !== false);
 check('link alla versione inglese', strpos($html, 'href="' . $en . '"') !== false && strpos($html, '>English</a>') !== false);
 
@@ -53,7 +53,7 @@ check('hreflang x-default italiano', strpos($html, 'hreflang="x-default" href="'
 check('indirizzo del connettore', strpos($html, 'https://liftindex.app/mcp<') !== false);
 check('link all\'elenco inglese delle app ammesse', strpos($html, 'href="https://liftindex.app/en/assistenti-ai"') !== false);
 check('dice che è in sola lettura', strpos($html, 'read-only') !== false);
-check('dice che è premium', strpos($html, 'premium') !== false);
+check('dice che è premium', strpos($html, 'Premium') !== false);
 check('registrazione su /en/register', strpos($html, 'href="https://liftindex.app/en/register"') !== false);
 check('niente link italiani a login e registrazione', strpos($html, 'https://liftindex.app/register"') === false && strpos($html, 'https://liftindex.app/login"') === false);
 check('JSON-LD in inglese', strpos($html, '"inLanguage": "en"') !== false);

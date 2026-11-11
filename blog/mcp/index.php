@@ -20,7 +20,8 @@ $description = 'Collega il tuo assistente AI a LiftIndex con MCP: legge in sola 
 ob_start();
 ?>
         <h1>Assistenti AI collegati: LiftIndex e MCP</h1>
-        <p class="page-intro">Collega Claude, ChatGPT o un altro assistente AI al tuo account LiftIndex: invece di risponderti in generale, legge i tuoi allenamenti e ragiona sui tuoi numeri veri. Il collegamento usa MCP (Model Context Protocol), lo standard aperto con cui gli assistenti AI si collegano ad app esterne.</p>
+        <p class="page-intro">Chiedi a un assistente AI come sta andando la tua panca e ti risponde in generale: non sa quanto sollevi, né da quanto sei fermo. Collegalo al tuo account LiftIndex e ragiona sui tuoi numeri veri.</p>
+        <p>Claude, ChatGPT e gli altri assistenti ammessi si collegano con MCP (Model Context Protocol), lo standard aperto con cui un assistente AI legge i dati di un'altra app. Qui trovi cosa legge, come collegarlo e cosa serve.</p>
 
         <h2>Cosa può leggere</h2>
         <p>L'assistente collegato legge i tuoi dati <strong>in sola lettura</strong>: non può creare, modificare o cancellare nulla sul tuo account.</p>
@@ -35,9 +36,9 @@ ob_start();
 
         <h2>Cosa puoi chiedergli</h2>
         <ul>
-            <li>«Com'è andata la mia panca nell'ultimo mese? Sto migliorando o sono fermo?»</li>
-            <li>«Quante serie ho fatto per gruppo muscolare questa settimana? Sto trascurando qualcosa?»</li>
-            <li>«Guarda la mia scheda e i miei record: cosa cambieresti per le prossime quattro settimane?»</li>
+            <li>"Com'è andata la mia panca nell'ultimo mese? Sto migliorando o sono fermo?"</li>
+            <li>"Quante serie ho fatto per gruppo muscolare questa settimana? Sto trascurando qualcosa?"</li>
+            <li>"Guarda la mia scheda e i miei record: cosa cambieresti per le prossime quattro settimane?"</li>
         </ul>
         <p>Le proposte restano nella chat: se una modifica alla scheda ti convince, la fai tu su LiftIndex.</p>
 
@@ -45,13 +46,13 @@ ob_start();
         <ol>
             <li>Copia l'indirizzo del connettore: <code><?php echo blog_e(MCP_CONNECTOR_URL); ?></code></li>
             <li>Nell'app AI aggiungi un connettore personalizzato e incolla l'indirizzo.</li>
-            <li>Si apre LiftIndex: accedi, scegli se condividere le misure corporee e premi Consenti.</li>
+            <li>Si apre LiftIndex: accedi, spunta "Condividi anche le misure corporee" se vuoi che le legga e premi "Consenti".</li>
         </ol>
         <p>Trovi gli stessi passi, con il pulsante per copiare l'indirizzo, nella scheda Account dell'app.</p>
 
         <h2>Cosa serve</h2>
         <ul>
-            <li>Un account LiftIndex <strong>premium</strong>: il collegamento è riservato a chi ha almeno 18 anni.</li>
+            <li>Un account LiftIndex <strong>Premium</strong>: il collegamento è riservato a chi ha almeno 18 anni.</li>
             <li>Un'app AI tra quelle ammesse: l'elenco aggiornato, con la scheda di ciascuna su come tratta i tuoi dati, è nella pagina <a href="<?php echo blog_e(BLOG_APP_URL); ?>assistenti-ai">app AI collegabili</a>.</li>
         </ul>
 

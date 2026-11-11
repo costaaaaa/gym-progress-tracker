@@ -19,7 +19,8 @@ $description = 'Connect your AI assistant to LiftIndex with MCP: it reads your w
 ob_start();
 ?>
         <h1>Connected AI assistants: LiftIndex and MCP</h1>
-        <p class="page-intro">Connect Claude, ChatGPT or another AI assistant to your LiftIndex account: instead of generic advice, it reads your workouts and works with your real numbers. The connection uses MCP (Model Context Protocol), the open standard AI assistants use to connect to other apps.</p>
+        <p class="page-intro">Ask an AI assistant how your bench press is going and you get a generic answer: it doesn't know how much you lift, or how long you've been stuck. Connect it to your LiftIndex account and it works with your real numbers.</p>
+        <p>Claude, ChatGPT and the other approved assistants connect through MCP (Model Context Protocol), the open standard an AI assistant uses to read data from another app. Here you'll find what it reads, how to connect it and what you need.</p>
 
         <h2>What it can read</h2>
         <p>The connected assistant reads your data <strong>read-only</strong>: it can't create, change or delete anything in your account.</p>
@@ -34,9 +35,9 @@ ob_start();
 
         <h2>What you can ask</h2>
         <ul>
-            <li>“How did my bench press go this past month? Am I progressing or stuck?”</li>
-            <li>“How many sets per muscle group did I do this week? Am I neglecting anything?”</li>
-            <li>“Look at my plan and my records: what would you change for the next four weeks?”</li>
+            <li>"How did my bench press go this past month? Am I progressing or stuck?"</li>
+            <li>"How many sets per muscle group did I do this week? Am I neglecting anything?"</li>
+            <li>"Look at my plan and my records: what would you change for the next four weeks?"</li>
         </ul>
         <p>Suggestions stay in the chat: if a change to your plan makes sense, you make it in LiftIndex.</p>
 
@@ -44,13 +45,13 @@ ob_start();
         <ol>
             <li>Copy the connector address: <code><?php echo blog_e(MCP_CONNECTOR_URL); ?></code></li>
             <li>In the AI app, add a custom connector and paste the address.</li>
-            <li>LiftIndex opens: sign in, choose whether to share body measurements and press Allow.</li>
+            <li>LiftIndex opens: sign in, check "Also share body measurements" if you want it to read them and press "Allow".</li>
         </ol>
         <p>The same steps, with a button to copy the address, are on the Account page of the app.</p>
 
         <h2>What you need</h2>
         <ul>
-            <li>A <strong>premium</strong> LiftIndex account: connecting is for users who are at least 18.</li>
+            <li>A <strong>Premium</strong> LiftIndex account: connecting is for users who are at least 18.</li>
             <li>One of the approved AI apps: the up-to-date list, with how each one handles your data, is on the <a href="<?php echo blog_e(BLOG_APP_URL); ?>en/assistenti-ai">AI apps you can connect</a> page.</li>
         </ul>
 
