@@ -8,6 +8,7 @@
   "login.toggle_password": "Show or hide password",
   "login.submitting": "Logging in...",
   "login.submit": "Log in",
+  "login.remember": "Stay signed in for 30 days",
   "login.forgot": "Forgot your password?",
   "login.no_account": "Don't have an account?",
   "login.register": "Sign up",

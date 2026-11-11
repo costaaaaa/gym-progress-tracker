@@ -61,8 +61,7 @@ try {
         // Le altre sessioni e gli altri dispositivi devono rifare il login: la sessione web
         // in uso riparte con un nuovo id, il token mobile in uso resta valido, gli altri no.
         if (isset($_SESSION['user_id'])) {
-            session_regenerate_id(true);
-            $_SESSION['auth_at'] = time();
+            web_session_regenerate();
         }
         (new ApiToken($db))->revokeAllForUserExcept($user_id, bearer_token_from_request());
         http_response_code(200);

@@ -2,6 +2,7 @@
 
 include_once __DIR__ . '/../models/ApiToken.php';
 include_once __DIR__ . '/../lib/plan_sets_rules.php';
+include_once __DIR__ . '/../lib/web_session.php';
 
 // Token Bearer in chiaro dall'header Authorization, o null.
 function bearer_token_from_request()
@@ -42,8 +43,7 @@ function find_authenticated_user_id($db)
         if (web_session_is_current($db, $user_id)) {
             return $user_id;
         }
-        $_SESSION = array();
-        session_destroy();
+        web_session_end();
         return null;
     }
 

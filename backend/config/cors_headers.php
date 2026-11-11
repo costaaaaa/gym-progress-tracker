@@ -14,6 +14,7 @@ ob_start();
 
 // t_server() per i messaggi d'errore qui sotto: gli endpoint includono api_helpers.php dopo questo file
 include_once __DIR__ . '/api_helpers.php';
+include_once __DIR__ . '/../lib/web_session.php';
 
 // Rete di sicurezza per ogni endpoint: un'eccezione non gestita (errore del database, tipo inatteso
 // nel JSON ricevuto) o un errore fatale diventa un 500 JSON generico invece di una risposta vuota.
@@ -61,41 +62,15 @@ $allowed_origins = $configured_origins
     : $default_allowed_origins;
 
 // Client mobile (React Native): stateless, autenticati via header "Authorization: Bearer <token>",
-// non mandano mai il cookie di sessione. Avviare comunque session_start() per loro creerebbe un
-// file di sessione e un lock inutili ad ogni richiesta, quindi si salta l'intero blocco sessione
-// quando l'header è presente e sintatticamente valido — la validazione vera del token avviene poi
-// in resolve_authenticated_user_id() (backend/config/api_helpers.php).
+// non mandano mai il cookie di sessione. Aprire la sessione per loro creerebbe un file e un lock
+// inutili ad ogni richiesta, quindi si salta l'intero blocco sessione quando l'header è presente e
+// sintatticamente valido — la validazione vera del token avviene poi in resolve_authenticated_user_id()
+// (backend/config/api_helpers.php).
 $has_bearer_token = isset($_SERVER['HTTP_AUTHORIZATION']) && stripos($_SERVER['HTTP_AUTHORIZATION'], 'Bearer ') === 0;
 
 if (!$has_bearer_token) {
-    // Gestione centralizzata della sessione (percorso web, invariato)
-    if (session_status() === PHP_SESSION_NONE) {
-        // Flag del cookie di sessione. Secure solo su HTTPS (anche dietro proxy), altrimenti
-        // il cookie non verrebbe mai inviato in sviluppo locale su http.
-        $is_https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https');
-        // Sessione web di 30 giorni: cookie persistente e pulizia lato server allineata
-        $session_lifetime = 30 * 24 * 60 * 60;
-        ini_set('session.gc_maxlifetime', (string)$session_lifetime);
-        session_set_cookie_params([
-            'lifetime' => $session_lifetime,
-            'path' => '/',
-            'secure' => $is_https,
-            'httponly' => true,
-            'samesite' => 'Lax',
-        ]);
-        session_start();
-    }
-
-    // Verifica e pulizia sessione se dati inconsistenti
-    if (isset($_SESSION['user_id']) && empty($_SESSION['username'])) {
-        // Se abbiamo ID ma non username, qualcosa non va
-        session_unset();
-        session_destroy();
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-    }
+    // La sessione web si apre solo se la richiesta porta il cookie (backend/lib/web_session.php)
+    web_session_open_if_present();
 }
 
 // Set CORS headers
@@ -110,16 +85,24 @@ if ($http_origin && in_array($http_origin, $allowed_origins, true)) {
     header("Access-Control-Allow-Credentials: true");
 }
 
+// Risposta 403 per una richiesta che arriva da un'origine che non è la nostra.
+function reject_foreign_origin($origin, $allowed_origins)
+{
+    if ($origin !== null && !in_array($origin, $allowed_origins, true)) {
+        http_response_code(403);
+        echo json_encode(array('success' => false, 'message' => t_server('common.forbidden')));
+        exit;
+    }
+}
+
 // CSRF, oltre a SameSite=Lax: una scrittura fatta con la sessione web deve arrivare da un'origine
 // nostra. Senza Origin (curl, test) passa; il client mobile usa il token e non la sessione.
+// Il login (che non ha ancora una sessione) fa lo stesso controllo da solo: vedi login.php.
 if (
-    !$has_bearer_token && isset($_SESSION['user_id']) && $http_origin !== null
+    !$has_bearer_token && isset($_SESSION['user_id'])
     && !in_array($_SERVER['REQUEST_METHOD'], array('GET', 'HEAD', 'OPTIONS'), true)
-    && !in_array($http_origin, $allowed_origins, true)
 ) {
-    http_response_code(403);
-    echo json_encode(array('success' => false, 'message' => t_server('common.forbidden')));
-    exit;
+    reject_foreign_origin($http_origin, $allowed_origins);
 }
 
 // Handle preflight OPTIONS request
