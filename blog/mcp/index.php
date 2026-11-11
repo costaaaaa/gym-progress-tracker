@@ -44,20 +44,21 @@ ob_start();
 
         <h2>Come collegarlo</h2>
         <ol>
-            <li>Copia l'indirizzo del connettore: <code><?php echo blog_e(MCP_CONNECTOR_URL); ?></code></li>
-            <li>Nell'app AI aggiungi un connettore personalizzato e incolla l'indirizzo.</li>
-            <li>Si apre LiftIndex: accedi, spunta "Condividi anche le misure corporee" se vuoi che le legga e premi "Consenti".</li>
+            <li>Copia il link: <code><?php echo blog_e(MCP_CONNECTOR_URL); ?></code></li>
+            <li>Nell'app AI aggiungi un connettore personalizzato e incolla il link.</li>
+            <li>Si apre LiftIndex: accedi, conferma la password e premi "Consenti".</li>
         </ol>
-        <p>Trovi gli stessi passi, con il pulsante per copiare l'indirizzo, nella scheda Account dell'app.</p>
+        <p>Se vuoi che legga anche le misure corporee, prima di premere "Consenti" spunta "Condividi anche le misure corporee (peso e simili)". La casella è attiva solo se hai già dato il consenso alle misure corporee nelle impostazioni dell'account.</p>
+        <p>Trovi gli stessi passi, con il pulsante "Copia link", nella scheda Account dell'app.</p>
 
         <h2>Cosa serve</h2>
         <ul>
             <li>Un account LiftIndex <strong>Premium</strong>: il collegamento è riservato a chi ha almeno 18 anni.</li>
-            <li>Un'app AI tra quelle ammesse: l'elenco aggiornato, con la scheda di ciascuna su come tratta i tuoi dati, è nella pagina <a href="<?php echo blog_e(BLOG_APP_URL); ?>assistenti-ai">app AI collegabili</a>.</li>
+            <li>Un'app AI tra quelle ammesse: l'elenco aggiornato, con la scheda di ciascuna su come tratta i tuoi dati, è nella pagina <a href="<?php echo blog_e(BLOG_APP_URL . 'assistenti-ai'); ?>">app AI collegabili</a>.</li>
         </ul>
 
         <h2>I tuoi dati</h2>
-        <p>Ogni collegamento richiede il tuo consenso esplicito e puoi revocarlo in qualunque momento dalla scheda Account. I dati che l'assistente legge passano al fornitore dell'app AI, che li tratta secondo la propria informativa: i dettagli sono nella <a href="<?php echo blog_e(BLOG_APP_URL); ?>privacy.html#assistenti-ai">privacy di LiftIndex</a>.</p>
+        <p>Ogni collegamento richiede il tuo consenso esplicito e puoi revocarlo in qualunque momento dalla scheda Account. I dati che l'assistente legge passano al fornitore dell'app AI, che li tratta secondo la propria informativa: i dettagli sono nella <a href="<?php echo blog_e(BLOG_APP_URL . 'privacy.html#assistenti-ai'); ?>">privacy di LiftIndex</a>.</p>
 
         <aside class="article-cta">
             <h2>Prima i dati, poi le domande</h2>

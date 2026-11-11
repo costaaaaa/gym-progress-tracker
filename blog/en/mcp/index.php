@@ -25,11 +25,11 @@ ob_start();
         <h2>What it can read</h2>
         <p>The connected assistant reads your data <strong>read-only</strong>: it can't create, change or delete anything in your account.</p>
         <ul>
-            <li>workouts and sessions, with exercises, sets and how your loads progress</li>
+            <li>workouts and sessions, with exercises, sets and load progress</li>
             <li>personal records</li>
-            <li>workout plans</li>
-            <li>stats and sets per muscle group</li>
-            <li>body measurements, history included, only if you choose to share them</li>
+            <li>training plans</li>
+            <li>stats and sets by muscle group</li>
+            <li>body measurements, including history, only if you choose to share them</li>
         </ul>
         <p>It never reads your notes, your email or your password.</p>
 
@@ -43,25 +43,26 @@ ob_start();
 
         <h2>How to connect it</h2>
         <ol>
-            <li>Copy the connector address: <code><?php echo blog_e(MCP_CONNECTOR_URL); ?></code></li>
-            <li>In the AI app, add a custom connector and paste the address.</li>
-            <li>LiftIndex opens: sign in, check "Also share body measurements" if you want it to read them and press "Allow".</li>
+            <li>Copy the link: <code><?php echo blog_e(MCP_CONNECTOR_URL); ?></code></li>
+            <li>In the AI app, add a custom connector and paste the link.</li>
+            <li>LiftIndex opens: sign in, confirm your password and press "Allow".</li>
         </ol>
-        <p>The same steps, with a button to copy the address, are on the Account page of the app.</p>
+        <p>If you want it to read your body measurements too, check "Also share body measurements (weight and similar)" before pressing "Allow". The box is enabled only if you've already consented to body measurements in your account settings.</p>
+        <p>The same steps, with the "Copy link" button, are on the Account page of the app.</p>
 
         <h2>What you need</h2>
         <ul>
             <li>A <strong>Premium</strong> LiftIndex account: connecting is for users who are at least 18.</li>
-            <li>One of the approved AI apps: the up-to-date list, with how each one handles your data, is on the <a href="<?php echo blog_e(BLOG_APP_URL); ?>en/assistenti-ai">AI apps you can connect</a> page.</li>
+            <li>One of the approved AI apps: the up-to-date list, with how each one handles your data, is on the <a href="<?php echo blog_e(BLOG_APP_URL . 'en/assistenti-ai'); ?>">AI apps you can connect</a> page.</li>
         </ul>
 
         <h2>Your data</h2>
-        <p>Every connection asks for your explicit consent, and you can revoke it anytime from the Account page. The data the assistant reads goes to the AI app's provider, which handles it under its own privacy policy: the details are in the <a href="<?php echo blog_e(BLOG_APP_URL); ?>privacy.html#assistenti-ai">LiftIndex privacy policy</a> (in Italian).</p>
+        <p>Every connection asks for your explicit consent, and you can revoke it anytime from the Account page. The data the assistant reads goes to the AI app's provider, which handles it under its own privacy policy: the details are in the <a href="<?php echo blog_e(BLOG_APP_URL . 'privacy.html#assistenti-ai'); ?>">LiftIndex privacy policy</a> (in Italian).</p>
 
         <aside class="article-cta">
             <h2>Your data first, then the questions</h2>
             <p>In LiftIndex you log sets, loads and body measurements: the numbers your AI assistant works with.</p>
-            <a class="cta" href="<?php echo blog_e(BLOG_APP_URL); ?>en/register">Create a free account</a>
+            <a class="cta" href="<?php echo blog_e(BLOG_APP_URL . 'en/register'); ?>">Create a free account</a>
         </aside>
 <?php
 $bodyHtml = ob_get_clean();
