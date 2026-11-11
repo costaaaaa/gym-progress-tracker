@@ -35,12 +35,14 @@ const englishLanding = () => ({
     writeFileSync('build/en/index.html', html);
 
     // Pagine in italiano e in inglese: ogni URL elenca entrambe le versioni, x-default e' l'italiana.
-    // Le coppie del calcolatore 1RM sono le stesse di calc_alternates() in blog/lib/calculator.php.
+    // Le coppie del calcolatore 1RM e della pagina MCP sono le stesse di calc_alternates() in
+    // blog/lib/calculator.php e di mcp_page_alternates() in blog/lib/mcp.php.
     // Gli articoli e l'indice /blog/ no: li elenca blog/sitemap.php, che vede i .md (non sono nel
     // repo) e mette l'indice solo quando c'e' almeno un articolo uscito.
     const pairs = [
       { it: '/', en: '/en/' },
       { it: '/blog/calcolatore-1rm/', en: '/en/blog/1rm-calculator/' },
+      { it: '/blog/mcp/', en: '/en/blog/mcp/' },
     ];
     const urls = pairs
       .flatMap((pair) => {
