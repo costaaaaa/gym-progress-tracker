@@ -20,7 +20,7 @@ ob_start();
 ?>
         <h1>Connected AI assistants: LiftIndex and MCP</h1>
         <p class="page-intro">Ask an AI assistant how your bench press is going and you get a generic answer: it doesn't know how much you lift, or how long you've been stuck. Connect it to your LiftIndex account and it works with your real numbers.</p>
-        <p>Claude, ChatGPT and the other approved assistants connect through MCP (Model Context Protocol), the open standard an AI assistant uses to read data from another app. Here you'll find what it reads, how to connect it and what you need.</p>
+        <p>Claude, ChatGPT and the other approved assistants connect through MCP (Model Context Protocol), the open standard an AI assistant uses to read data from another app.</p>
 
         <h2>What it can read</h2>
         <p>The connected assistant reads your data <strong>read-only</strong>: it can't create, change or delete anything in your account.</p>
@@ -52,7 +52,7 @@ ob_start();
 
         <h2>What you need</h2>
         <ul>
-            <li>A <strong>Premium</strong> LiftIndex account: connecting is for users who are at least 18.</li>
+            <li>A Premium LiftIndex account: connecting is for users who are at least 18.</li>
             <li>One of the approved AI apps: the up-to-date list, with how each one handles your data, is on the <a href="<?php echo blog_e(BLOG_APP_URL . 'en/assistenti-ai'); ?>">AI apps you can connect</a> page.</li>
         </ul>
 
@@ -60,8 +60,8 @@ ob_start();
         <p>Every connection asks for your explicit consent, and you can revoke it anytime from the Account tab. The data the assistant reads goes to the AI app's provider, which handles it under its own privacy policy: the details are in the <a href="<?php echo blog_e(BLOG_APP_URL . 'privacy.html#assistenti-ai'); ?>">LiftIndex privacy policy</a> (in Italian).</p>
 
         <aside class="article-cta">
-            <h2>Your data first, then the questions</h2>
-            <p>In LiftIndex you log sets, loads and body measurements: the numbers your AI assistant works with.</p>
+            <h2>Log your workouts first</h2>
+            <p>The assistant only reads what you've logged in LiftIndex: sets, loads and, if you want, body measurements.</p>
             <a class="cta" href="<?php echo blog_e(BLOG_APP_URL . 'en/register'); ?>">Create a free account</a>
         </aside>
 <?php

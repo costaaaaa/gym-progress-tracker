@@ -21,7 +21,7 @@ ob_start();
 ?>
         <h1>Assistenti AI collegati: LiftIndex e MCP</h1>
         <p class="page-intro">Chiedi a un assistente AI come sta andando la tua panca e ti risponde in generale: non sa quanto sollevi, né da quanto sei fermo. Collegalo al tuo account LiftIndex e ragiona sui tuoi numeri veri.</p>
-        <p>Claude, ChatGPT e gli altri assistenti ammessi si collegano con MCP (Model Context Protocol), lo standard aperto con cui un assistente AI legge i dati di un'altra app. Qui trovi cosa legge, come collegarlo e cosa serve.</p>
+        <p>Claude, ChatGPT e gli altri assistenti ammessi si collegano con MCP (Model Context Protocol), lo standard aperto con cui un assistente AI legge i dati di un'altra app.</p>
 
         <h2>Cosa può leggere</h2>
         <p>L'assistente collegato legge i tuoi dati <strong>in sola lettura</strong>: non può creare, modificare o cancellare nulla sul tuo account.</p>
@@ -53,7 +53,7 @@ ob_start();
 
         <h2>Cosa serve</h2>
         <ul>
-            <li>Un account LiftIndex <strong>Premium</strong>: il collegamento è riservato a chi ha almeno 18 anni.</li>
+            <li>Un account LiftIndex Premium: il collegamento è riservato a chi ha almeno 18 anni.</li>
             <li>Un'app AI tra quelle ammesse: l'elenco aggiornato, con la scheda di ciascuna su come tratta i tuoi dati, è nella pagina <a href="<?php echo blog_e(BLOG_APP_URL . 'assistenti-ai'); ?>">app AI collegabili</a>.</li>
         </ul>
 
@@ -61,8 +61,8 @@ ob_start();
         <p>Ogni collegamento richiede il tuo consenso esplicito e puoi revocarlo in qualunque momento dalla scheda Account. I dati che l'assistente legge passano al fornitore dell'app AI, che li tratta secondo la propria informativa: i dettagli sono nella <a href="<?php echo blog_e(BLOG_APP_URL . 'privacy.html#assistenti-ai'); ?>">privacy di LiftIndex</a>.</p>
 
         <aside class="article-cta">
-            <h2>Prima i dati, poi le domande</h2>
-            <p>Su LiftIndex registri serie, carichi e misure corporee: sono i numeri su cui il tuo assistente AI ragiona.</p>
+            <h2>Prima registra i tuoi allenamenti</h2>
+            <p>L'assistente legge solo quello che hai registrato su LiftIndex: serie, carichi e, se vuoi, le misure corporee.</p>
             <a class="cta" href="<?php echo blog_e(BLOG_REGISTER_URL); ?>">Crea l'account gratis</a>
         </aside>
 <?php
