@@ -5,6 +5,7 @@ include_once '../../config/api_helpers.php';
 include_once '../../models/WorkoutHistory.php';
 include_once '../../models/WorkoutSet.php';
 include_once '../../models/Exercise.php';
+require_once '../../lib/id_rules.php';
 require_once '../../lib/workout_gamification.php';
 
 // Allenamento già salvato con la stessa chiave: per il client è un successo, senza nuovi XP.
@@ -55,6 +56,12 @@ try {
             api_json_response(['success' => false, 'message' => t_server('workout.record_invalid')], 400);
         }
         if (!isset($record->exercise_id) || empty($record->exercise_id)) continue;
+        // L'identificatore convertito sostituisce quello grezzo: visibilità, controllo premium, serie
+        // salvate, gamification e JSON di `exercises` usano tutti lo stesso valore.
+        $record->exercise_id = parse_positive_id($record->exercise_id);
+        if ($record->exercise_id === null) {
+            api_json_response(['success' => false, 'message' => t_server('workout.record_invalid')], 400);
+        }
         $weight = $record->weight ?? null;
         $reps = $record->reps ?? null;
         $set_number = $record->set_number ?? null;
@@ -88,7 +95,7 @@ try {
     $exercise_ids = array();
     foreach ($data->workout_records as $record) {
         if (isset($record->exercise_id) && !empty($record->exercise_id)) {
-            $exercise_ids[(int) $record->exercise_id] = true;
+            $exercise_ids[$record->exercise_id] = true;
         }
     }
     foreach (array_keys($exercise_ids) as $eid) {
@@ -108,7 +115,7 @@ try {
         foreach ($data->workout_records as $record) {
             if (!isset($record->exercise_id) || empty($record->exercise_id)) continue;
             $day = isset($record->day_id) && is_numeric($record->day_id) ? (int) $record->day_id : 0;
-            $eid = (int) $record->exercise_id;
+            $eid = $record->exercise_id;
             $pairs[$day . ':' . $eid] = array($day, $eid);
         }
         $stmt_in_plan = $db->prepare(
