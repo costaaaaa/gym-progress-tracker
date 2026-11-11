@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Typography, TextField, Button, Box, Alert, Link, InputAdornment, IconButton } from '@mui/material';
+import { Typography, TextField, Button, Box, Alert, Link, InputAdornment, IconButton, Checkbox, FormControlLabel } from '@mui/material';
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
@@ -20,6 +20,8 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  // Cookie di accesso di 30 giorni invece che fino alla chiusura del browser
+  const [remember, setRemember] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   // Dove tornare dopo l'accesso, per esempio un link di invito a un gruppo
@@ -44,7 +46,8 @@ const Login = () => {
         },
         body: JSON.stringify({
           username,
-          password
+          password,
+          remember
         }),
         credentials: 'include'
       });
@@ -112,6 +115,18 @@ const Login = () => {
               </InputAdornment>
             ),
           }}
+        />
+        <FormControlLabel
+          sx={{ mt: 1 }}
+          control={
+            <Checkbox
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
+              // Spunta nel colore del testo: il rosso resta al bottone principale
+              sx={{ '&.Mui-checked': { color: 'text.primary' } }}
+            />
+          }
+          label={<Typography>{t('login.remember')}</Typography>}
         />
         <Button
           type="submit"
