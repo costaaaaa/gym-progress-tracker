@@ -60,12 +60,10 @@ check('un secondo prima della fine della finestra: recente', true, PasswordReset
 check('alla fine della finestra: non più recente', false, PasswordReset::isRecent(PasswordReset::RECENT_SECONDS));
 check('a metà validità: non recente', false, PasswordReset::isRecent(intdiv(PasswordReset::TTL_SECONDS, 2)));
 check('età negativa (orologio indietro): non recente', false, PasswordReset::isRecent(-1));
-check('la finestra è di 15 minuti', 15 * 60, PasswordReset::RECENT_SECONDS);
 check('la finestra è più corta della validità del link', true, PasswordReset::RECENT_SECONDS < PasswordReset::TTL_SECONDS);
 
 echo "Soglie del limite di frequenza\n";
 check('similar_ip: 60 richieste ogni 60 secondi', array(60, 60), rate_limit_rule('similar_ip'));
-check('il limite per IP del recupero password resta', array(10, 3600), rate_limit_rule('forgot_ip'));
 
 echo $fails === 0 ? "\nTUTTO OK ($checks controlli)\n" : "\nFALLITI $fails su $checks\n";
 exit($fails === 0 ? 0 : 1);

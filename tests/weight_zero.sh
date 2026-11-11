@@ -11,8 +11,8 @@
 # un esercizio in scheda e data di inizio allenamento fuori range pure, come note e tecnica di
 # intensità che non sono stringhe o superano le colonne (5000 e 100 caratteri); l'exercise_id di serie
 # ed esercizi in scheda deve essere un intero positivo (o una stringa di sole cifre), altrimenti 400
-# senza salvare nulla. Gli obiettivi di
-# tonnellaggio seguono la scala dall'automobile alla Torre Eiffel. Registra un account usa e getta (token Bearer) e lo
+# senza salvare nulla. Gli obiettivi di tonnellaggio seguono la scala dall'automobile alla Torre
+# Eiffel. Registra un account usa e getta (token Bearer) e lo
 # cancella alla fine. Non va lanciato in produzione: crea account veri.
 #
 # Richiede curl e jq. Esce con 1 se un controllo fallisce.
@@ -171,16 +171,20 @@ set_with_id() { # exercise_id come JSON → corpo per record_workout, con una se
 exercise_with_id() { # exercise_id come JSON → corpo per add_exercise
     jq -nc --argjson e "$1" --argjson d "$DAY" '{day_id:$d, exercise_id:$e, planned_sets:[range(1;4) | {set_number:., kind:"working", reps_min:10, reps_max:10}], rest:60}'
 }
+day_exercises() { call GET api/workout/read_plans.php "$T" | cut -d' ' -f2- | jq "[.records[].days[] | select(.id == $DAY) | .exercises[]] | length"; }
 BEFORE="$(history_count)"
+IN_DAY="$(day_exercises)"
 for bad in "\"${E1}abc\"" "${E1}.7" "\"${E1}.7\"" -3 true "[$E1]" '"0x1"' '" 1"' 99999999999; do
     status_is "serie con exercise_id $bad: 400" "$(call POST api/workout/record_workout.php "$T" "$(set_with_id "$bad")")" 400
     status_is "esercizio in scheda con exercise_id $bad: 400" "$(call POST api/workout/add_exercise.php "$T" "$(exercise_with_id "$bad")")" 400
 done
 check "nessun allenamento salvato dai rifiutati" "200 {\"n\": $(history_count), \"before\": $BEFORE}" '.n == .before'
+check "nessun esercizio aggiunto al giorno dai rifiutati" "200 {\"n\": $(day_exercises), \"before\": $IN_DAY}" '.n == .before'
 status_is "exercise_id intero: 201" "$(call POST api/workout/record_workout.php "$T" "$(set_with_id "$E1")")" 201
 status_is "exercise_id stringa di cifre: 201" "$(call POST api/workout/record_workout.php "$T" "$(set_with_id "\"$E1\"")")" 201
 status_is "esercizio in scheda con exercise_id stringa di cifre: 201" "$(call POST api/workout/add_exercise.php "$T" "$(exercise_with_id "\"$E1\"")")" 201
 check "i due allenamenti salvati" "200 {\"n\": $(history_count), \"before\": $BEFORE}" '.n == .before + 2'
+check "un solo esercizio aggiunto al giorno" "200 {\"n\": $(day_exercises), \"before\": $IN_DAY}" '.n == .before + 1'
 
 echo
 if [[ $fails -eq 0 ]]; then printf '\033[32mTutti i %d controlli passati.\033[0m\n' "$checks"; else printf '\033[31m%d controlli su %d falliti.\033[0m\n' "$fails" "$checks"; exit 1; fi

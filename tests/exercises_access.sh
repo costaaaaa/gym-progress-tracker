@@ -8,7 +8,7 @@
 # Registra due account usa e getta (A crea, B estraneo), usa i token Bearer come l'app mobile e
 # alla fine li cancella (e con loro gli esercizi non approvati di A). La parte admin gira solo con
 # ADMIN_USER e ADMIN_PASS di un account reso admin con `tools/admin.php grant`: senza, la salta.
-# Controlla anche il limite dei suggerimenti «Forse cercavi» (60 richieste al minuto per IP): dopo il
+# Controlla anche il limite dei suggerimenti «Forse cercavi» (RL_SIMILAR_IP_MAX richieste al minuto per IP): dopo il
 # test l'IP resta bloccato su quell'endpoint fino a un minuto.
 # Non va lanciato in produzione: crea account veri e lascia nel catalogo un esercizio approvato
 # se la parte admin fallisce a metà.
@@ -108,9 +108,9 @@ check "ad A propone il suo esercizio" "$(call GET "$SIMILAR" "$A")" "[.records[]
 check "a B non propone quello in attesa di A" "$(call GET "$SIMILAR" "$B")" "[.records[] | select(.id == $EID)] | length == 0"
 check "senza login nemmeno" "$(call GET "$SIMILAR" "")" "[.records[] | select(.id == $EID)] | length == 0"
 check "nome troppo corto: nessuna proposta" "$(call GET 'api/exercise/similar.php?name=ab' "$A")" ".records == []"
-# Soglia di default: 60 richieste al minuto per IP (RL_SIMILAR_IP_MAX). Le richieste fatte sopra contano
-# nella stessa finestra, quindi il primo 429 arriva entro la 61ª; quelle a nomi sotto i 3 caratteri non contano.
-SIMILAR_MAX=60
+# Soglia: RL_SIMILAR_IP_MAX richieste al minuto per IP. Le richieste fatte sopra contano
+# nella stessa finestra, quindi il primo 429 arriva al più alla richiesta successiva alla soglia; quelle a nomi sotto i 3 caratteri non contano.
+SIMILAR_MAX="${RL_SIMILAR_IP_MAX:-60}"
 first_429=0
 for i in $(seq 1 $((SIMILAR_MAX + 1))); do
     res="$(call GET "$SIMILAR" "$A")"

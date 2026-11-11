@@ -258,8 +258,9 @@ expect "token malformato rifiutato" 400 "$(call POST api/user/reset_password.php
 expect "token ben formato ma inventato rifiutato" 400 "$(call POST api/user/reset_password.php "" "{\"token\":\"$(openssl rand -hex 32)\",\"new_password\":\"$NEW_PASS!\"}")"
 
 echo "Recupero password"
-# Il link nuovo o il link già valido si vedono solo nell'email: da fuori conta che la risposta sia
-# sempre la stessa, per indirizzo registrato e non, alla prima richiesta e alle successive.
+# Questo script NON verifica la regola dei 15 minuti (un solo link attivo, il primo resta valido): il
+# link si vede solo nell'email, da HTTP non si distingue. Controlla solo che la risposta sia sempre la
+# stessa, per indirizzo registrato e non, alla prima richiesta e alle successive.
 forgot() { call POST api/user/forgot_password.php "" "$(jq -nc --arg e "$1" '{email:$e}')"; }
 first="$(forgot "$B_USER@example.com")"
 second="$(forgot "$B_USER@example.com")"

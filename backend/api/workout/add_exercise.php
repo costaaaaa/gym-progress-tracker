@@ -22,7 +22,7 @@ if (
 ) {
     $exercise_id = parse_positive_id($data->exercise_id);
     if ($exercise_id === null) {
-        api_json_response(array("message" => t_server('workout.exercise_add_incomplete')), 400);
+        api_json_response(array("message" => t_server('workout.record_invalid')), 400);
     }
     $params_error = exercise_params_error($data);
     if ($params_error !== null) {
