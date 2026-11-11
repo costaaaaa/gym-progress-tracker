@@ -63,8 +63,9 @@ $allowed_origins = $configured_origins
 
 // Client mobile (React Native): stateless, autenticati via header "Authorization: Bearer <token>",
 // non mandano mai il cookie di sessione. Aprire la sessione per loro creerebbe un file e un lock
-// inutili ad ogni richiesta, quindi si salta l'intero blocco sessione quando l'header è presente e sintatticamente valido — la validazione vera del token avviene poi
-// in resolve_authenticated_user_id() (backend/config/api_helpers.php).
+// inutili ad ogni richiesta, quindi si salta l'intero blocco sessione quando l'header è presente e
+// sintatticamente valido — la validazione vera del token avviene poi in resolve_authenticated_user_id()
+// (backend/config/api_helpers.php).
 $has_bearer_token = isset($_SERVER['HTTP_AUTHORIZATION']) && stripos($_SERVER['HTTP_AUTHORIZATION'], 'Bearer ') === 0;
 
 if (!$has_bearer_token) {
@@ -85,10 +86,9 @@ if ($http_origin && in_array($http_origin, $allowed_origins, true)) {
 }
 
 // Risposta 403 per una richiesta che arriva da un'origine che non è la nostra.
-function reject_foreign_origin()
+function reject_foreign_origin($origin, $allowed_origins)
 {
-    global $http_origin, $allowed_origins;
-    if ($http_origin !== null && !in_array($http_origin, $allowed_origins, true)) {
+    if ($origin !== null && !in_array($origin, $allowed_origins, true)) {
         http_response_code(403);
         echo json_encode(array('success' => false, 'message' => t_server('common.forbidden')));
         exit;
@@ -102,7 +102,7 @@ if (
     !$has_bearer_token && isset($_SESSION['user_id'])
     && !in_array($_SERVER['REQUEST_METHOD'], array('GET', 'HEAD', 'OPTIONS'), true)
 ) {
-    reject_foreign_origin();
+    reject_foreign_origin($http_origin, $allowed_origins);
 }
 
 // Handle preflight OPTIONS request

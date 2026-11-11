@@ -31,7 +31,10 @@ function web_session_cookie_options($expires)
 function web_session_configure()
 {
     ini_set('session.gc_maxlifetime', (string)WEB_SESSION_LIFETIME);
-    session_set_cookie_params(web_session_cookie_options(0) + array('lifetime' => 0));
+    // session_set_cookie_params() non accetta la chiave expires: qui il cookie è «fino alla chiusura del browser»
+    $options = web_session_cookie_options(0);
+    unset($options['expires']);
+    session_set_cookie_params($options + array('lifetime' => 0));
 }
 
 // Toglie dalla risposta ogni Set-Cookie del cookie di sessione (anche quelli che PHP ha già accodato).
@@ -118,6 +121,8 @@ function web_session_login($user_id, $username, $remember)
 }
 
 // Nuovo id per la sessione in corso, con la stessa scadenza assoluta del cookie di prima.
+// Una sessione aperta prima che la scelta venisse ricordata non ha una scadenza: il cookie nuovo
+// finisce con la chiusura del browser, come se non avesse mai scelto i 30 giorni.
 function web_session_regenerate()
 {
     if (session_status() !== PHP_SESSION_ACTIVE) {

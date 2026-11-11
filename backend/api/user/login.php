@@ -5,7 +5,7 @@ include_once '../../config/database.php';
 include_once '../../lib/login_attempt.php';
 
 // Prima di tutto: una richiesta da un'origine estranea non conta come tentativo di accesso
-reject_foreign_origin();
+reject_foreign_origin($http_origin, $allowed_origins);
 
 try {
     $raw_data = file_get_contents("php://input");
@@ -24,8 +24,9 @@ try {
     $user = authenticate_login_request($db, $data);
 
     // La sessione nasce qui, con un id nuovo a ogni login (contro il session fixation); auth_at serve
-    // a invalidare la sessione se la password cambia dopo l'accesso
-    // "remember" vale solo se è il booleano vero del JSON: cookie di 30 giorni, altrimenti fino alla chiusura del browser
+    // a invalidare la sessione se la password cambia dopo l'accesso.
+    // "remember" vale solo se è il booleano vero del JSON: il cookie dura 30 giorni,
+    // altrimenti finisce con la chiusura del browser.
     web_session_login($user->id, $user->username, is_object($data) && ($data->remember ?? false) === true);
 
     http_response_code(200);
