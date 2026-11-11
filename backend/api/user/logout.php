@@ -9,11 +9,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// La sessione l'ha già avviata cors_headers.php (non con un header Bearer: allora non c'è nulla da chiudere)
-if (session_status() === PHP_SESSION_ACTIVE) {
-    $_SESSION = array();
-    session_destroy();
-}
+// La sessione l'ha già aperta cors_headers.php se c'era il cookie (con un header Bearer non c'è nulla da chiudere)
+web_session_end();
 
 http_response_code(200);
 

@@ -4,6 +4,9 @@ include_once '../../config/cors_headers.php';
 include_once '../../config/database.php';
 include_once '../../lib/login_attempt.php';
 
+// Prima di tutto: una richiesta da un'origine estranea non conta come tentativo di accesso
+reject_foreign_origin();
+
 try {
     $raw_data = file_get_contents("php://input");
     if (!$raw_data) {
@@ -20,16 +23,10 @@ try {
 
     $user = authenticate_login_request($db, $data);
 
-    // Create session
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-    // Nuovo id di sessione a ogni login (contro il session fixation); auth_at serve a
-    // invalidare la sessione se la password cambia dopo l'accesso
-    session_regenerate_id(true);
-    $_SESSION['user_id'] = $user->id;
-    $_SESSION['username'] = $user->username;
-    $_SESSION['auth_at'] = time();
+    // La sessione nasce qui, con un id nuovo a ogni login (contro il session fixation); auth_at serve
+    // a invalidare la sessione se la password cambia dopo l'accesso
+    // "remember" vale solo se è il booleano vero del JSON: cookie di 30 giorni, altrimenti fino alla chiusura del browser
+    web_session_login($user->id, $user->username, is_object($data) && ($data->remember ?? false) === true);
 
     http_response_code(200);
     echo json_encode(array(

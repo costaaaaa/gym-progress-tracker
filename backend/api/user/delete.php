@@ -42,10 +42,7 @@ try {
         // Pulizia sessione solo se presente (percorso web) — sul percorso
         // mobile (token Bearer) non esiste una sessione da distruggere; il
         // token stesso viene rimosso via ON DELETE CASCADE su gym_api_tokens.
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            session_unset();
-            session_destroy();
-        }
+        web_session_end();
 
         http_response_code(200);
         echo json_encode(array(
