@@ -14,11 +14,10 @@ function web_session_is_https()
         || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https');
 }
 
-// Attributi del cookie di sessione; $expires = 0 significa cookie che finisce con il browser.
-function web_session_cookie_options($expires)
+// Attributi comuni del cookie di sessione.
+function web_session_cookie_attributes()
 {
     return array(
-        'expires' => $expires,
         'path' => '/',
         'secure' => web_session_is_https(),
         'httponly' => true,
@@ -26,15 +25,20 @@ function web_session_cookie_options($expires)
     );
 }
 
+// Attributi del cookie che scriviamo noi; $expires = 0 significa cookie che finisce con il browser.
+function web_session_cookie_options($expires)
+{
+    return array('expires' => $expires) + web_session_cookie_attributes();
+}
+
 // Impostazioni da dare prima di session_start(): inattività massima lato server di 30 giorni per tutte
-// le sessioni; il cookie lo scrive poi web_session_send_cookie().
+// le sessioni. Il cookie che PHP accoda da sé all'apertura non arriva mai al browser così com'è:
+// web_session_send_cookie() lo sostituisce sempre. lifetime 0 serve a non ereditare la durata
+// impostata nel php.ini.
 function web_session_configure()
 {
     ini_set('session.gc_maxlifetime', (string)WEB_SESSION_LIFETIME);
-    // session_set_cookie_params() non accetta la chiave expires: qui il cookie è «fino alla chiusura del browser»
-    $options = web_session_cookie_options(0);
-    unset($options['expires']);
-    session_set_cookie_params($options + array('lifetime' => 0));
+    session_set_cookie_params(array('lifetime' => 0) + web_session_cookie_attributes());
 }
 
 // Toglie dalla risposta ogni Set-Cookie del cookie di sessione (anche quelli che PHP ha già accodato).
@@ -46,7 +50,7 @@ function web_session_drop_cookie_headers()
         if (stripos($line, 'Set-Cookie:') !== 0) {
             continue;
         }
-        if (strpos(strtolower(ltrim(substr($line, 11))), $prefix) !== 0) {
+        if (strpos(strtolower(ltrim(substr($line, strlen('Set-Cookie:')))), $prefix) !== 0) {
             $kept[] = $line;
         }
     }

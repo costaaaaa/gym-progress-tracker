@@ -22,7 +22,7 @@ mkdir($dir . '/sessions', 0700, true);
 $port = 18000 + getmypid() % 1000;
 $server = proc_open(
     array(PHP_BINARY, '-S', "127.0.0.1:$port", '-d', "session.save_path=$dir/sessions", '-d', 'error_reporting=-1', '-d', 'log_errors=1', __DIR__ . '/web_session_server.php'),
-    array(0 => array('file', '/dev/null', 'r'), 1 => array('file', "$dir/server.log", 'w'), 2 => array('file', "$dir/server.log", 'w')),
+    array(0 => array('file', '/dev/null', 'r'), 1 => array('file', "$dir/server.log", 'a'), 2 => array('file', "$dir/server.log", 'a')),
     $pipes
 );
 register_shutdown_function(function () use ($server, $dir) {
@@ -33,7 +33,7 @@ for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $port); $i++) {
     usleep(100000);
 }
 
-// Richiesta GET: ritorna [corpo JSON, righe Set-Cookie del cookie di sessione, tutte le righe Set-Cookie]
+// Richiesta GET: ritorna [corpo JSON, righe Set-Cookie del cookie di sessione, tutte le righe Set-Cookie, status]
 function request($path, $headers = array())
 {
     global $port;
@@ -62,6 +62,12 @@ function cookie_id($line)
     return $m[1] ?? '';
 }
 
+// path=/, HttpOnly e SameSite=Lax: gli attributi del cookie di sessione
+function has_session_attributes($line)
+{
+    return stripos($line, 'path=/') !== false && stripos($line, 'httponly') !== false && stripos($line, 'samesite=Lax') !== false;
+}
+
 function cookie_expiry($line)
 {
     return preg_match('/expires=([^;]+)/i', $line, $m) ? strtotime($m[1]) : null;
@@ -81,7 +87,7 @@ check('nessuna sessione aperta', $body['session_active'] === false);
 echo "Cookie di sessione sconosciuto\n";
 [$body, $session, $cookies] = request('/whoami', array('Cookie: PHPSESSID=abcdefabcdefabcdefabcdefabcdefab'));
 check('un solo Set-Cookie, e cancella il cookie', count($cookies) === 1 && count($session) === 1 && is_deleted($session[0]));
-check('il cookie cancellato ha gli stessi attributi (path, HttpOnly, SameSite)', stripos($session[0], 'path=/') !== false && stripos($session[0], 'httponly') !== false && stripos($session[0], 'samesite=Lax') !== false);
+check('il cookie cancellato ha gli stessi attributi (path, HttpOnly, SameSite)', has_session_attributes($session[0]));
 check('nessun file di sessione resta', count(session_files()) === 0);
 check('nessun utente', $body['user_id'] === null);
 
@@ -96,7 +102,7 @@ check('un solo Set-Cookie', count($cookies) === 1 && count($session) === 1);
 check('utente riconosciuto', $body['user_id'] === 7);
 $expiry = cookie_expiry($session[0]);
 check('scadenza a 30 giorni dal login', $expiry !== null && abs($expiry - (time() + 30 * 86400)) < 10);
-check('HttpOnly, SameSite=Lax, path=/', stripos($session[0], 'httponly') !== false && stripos($session[0], 'samesite=Lax') !== false && stripos($session[0], 'path=/') !== false);
+check('HttpOnly, SameSite=Lax, path=/', has_session_attributes($session[0]));
 check('non Secure su http', stripos($session[0], 'secure') === false);
 [, $https] = request('/login?remember=1', array('X-Forwarded-Proto: https'));
 check('Secure dietro HTTPS', stripos($https[0] ?? '', '; secure') !== false);
@@ -123,7 +129,7 @@ check('il nuovo vale', request('/whoami', array("Cookie: PHPSESSID=$id"))[0]['us
 echo "Chiusura\n";
 [$body, $session, $cookies] = request('/logout', array("Cookie: PHPSESSID=$id"));
 check('un solo Set-Cookie, e cancella il cookie', count($cookies) === 1 && is_deleted($session[0] ?? ''));
-check('attributi uguali a quelli di creazione', stripos($session[0], 'path=/') !== false && stripos($session[0], 'httponly') !== false && stripos($session[0], 'samesite=Lax') !== false);
+check('attributi uguali a quelli di creazione', has_session_attributes($session[0]));
 check('il file di sessione sparisce', count(session_files()) === 0);
 check('chiusura senza cookie: nessun Set-Cookie', count(request('/logout')[2]) === 0);
 
@@ -131,7 +137,7 @@ echo "Accesso senza Resta collegato\n";
 [$body, $session, $cookies] = request('/login?remember=0');
 check('un solo Set-Cookie', count($cookies) === 1 && count($session) === 1);
 check('nessun Expires né Max-Age', stripos($session[0], 'expires') === false && stripos($session[0], 'max-age') === false);
-check('HttpOnly, SameSite=Lax, path=/', stripos($session[0], 'httponly') !== false && stripos($session[0], 'samesite=Lax') !== false && stripos($session[0], 'path=/') !== false);
+check('HttpOnly, SameSite=Lax, path=/', has_session_attributes($session[0]));
 $id = cookie_id($session[0]);
 [$body, $session, $cookies] = request('/regenerate', array("Cookie: PHPSESSID=$id"));
 check('id rigenerato: un solo Set-Cookie, ancora senza scadenza', count($cookies) === 1 && stripos($session[0], 'expires') === false && stripos($session[0], 'max-age') === false);
@@ -163,9 +169,8 @@ check('anche con un cookie: nessuna sessione, nessun Set-Cookie', $body['session
 check('nessun file di sessione', count(session_files()) === 0);
 
 echo "Origine della richiesta di accesso\n";
-[, , , $status] = request('/login?remember=0', array('Origin: https://origine-estranea.example'));
+[, , $cookies, $status] = request('/login?remember=0', array('Origin: https://origine-estranea.example'));
 check('origine estranea: 403', $status === 403);
-[$body, $session, $cookies] = request('/login?remember=0', array('Origin: https://origine-estranea.example'));
 check('origine estranea: nessun cookie, nessun file di sessione', count($cookies) === 0 && count(session_files()) === 0);
 [, $session, $cookies, $status] = request('/login?remember=0', array('Origin: https://liftindex.app'));
 check('origine consentita: 200 e cookie', $status === 200 && count($session) === 1);
@@ -174,9 +179,10 @@ request('/logout', array('Cookie: PHPSESSID=' . cookie_id($session[0])));
 check('senza Origin: 200 e cookie', $status === 200 && count($session) === 1);
 
 echo "Avvisi del server\n";
-$log = (string)@file_get_contents("$dir/server.log");
-preg_match_all('/^.*(Warning|Notice|Deprecated|Fatal).*$/mi', $log, $problems);
-check('nessun Warning, Notice, Deprecated o Fatal in nessun passo', count($problems[0]) === 0);
+$log = @file_get_contents("$dir/server.log");
+check('l\'uscita d\'errore del server si legge', $log !== false);
+preg_match_all('/^.*(Warning|Notice|Deprecated|Fatal).*$/mi', (string)$log, $problems);
+check('nessun Warning, Notice, Deprecated o Fatal in nessun passo', $log !== false && count($problems[0]) === 0);
 foreach (array_slice(array_unique($problems[0]), 0, 3) as $line) {
     echo "      $line\n";
 }

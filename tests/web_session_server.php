@@ -5,7 +5,7 @@
 //   /login?remember=1|0      apre la sessione di un utente di prova
 //   /regenerate              nuovo id di sessione (come il cambio password)
 //   /logout                  chiude la sessione
-//   /origin                  esito del controllo sull'origine (come login.php)
+// /login controlla anche l'origine della richiesta (come login.php).
 
 require __DIR__ . '/../backend/config/cors_headers.php';
 
