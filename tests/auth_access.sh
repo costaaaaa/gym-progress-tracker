@@ -203,53 +203,54 @@ cookie_ttl() {
 is_about_30_days() { # secondi (anche vuoti)
     [[ -n "$1" && "$1" -gt $((30 * 86400 - 120)) && "$1" -le $((30 * 86400 + 120)) ]]
 }
-# judge "descrizione" esito dettaglio → ok se l'esito (r=1; controllo && r=0) è 0, altrimenti ko con il dettaglio
-judge() { if [[ "$2" == 0 ]]; then ok "$1"; else ko "$1" "${3:-}"; fi; }
+# verdict "descrizione" rc dettaglio → ok se rc è 0, altrimenti ko con il dettaglio. Il controllo si
+# scrive `rc=1; <condizione> && rc=0` (con `<condizione>; rc=$?` shellcheck segnala SC2319).
+verdict() { if [[ "$2" == 0 ]]; then ok "$1"; else ko "$1" "${3:-}"; fi; }
 
 curl -s -o /dev/null -D "$HEADERS" "$BASE"api/user/read.php
-r=1; [[ -z "$(session_cookie_lines)" ]] && r=0
-judge "richiesta anonima: nessun Set-Cookie di sessione" "$r" "$(session_cookie_lines)"
+rc=1; [[ -z "$(session_cookie_lines)" ]] && rc=0
+verdict "richiesta anonima: nessun Set-Cookie di sessione" "$rc" "$(session_cookie_lines)"
 
 status="$(web_post_headers api/user/login.php "$(cookie_login_body false)")"
 line="$(session_cookie_lines)"
-r=1; [[ "$status" == 200 && -n "$line" ]] && r=0
-judge "login senza remember: 200 e cookie" "$r" "status $status, cookie: $line"
-r=1; [[ "$(printf '%s\n' "$line" | grep -c .)" == 1 ]] && r=0
-judge "un solo Set-Cookie di sessione" "$r" "$line"
-r=1; ! grep -qiE 'expires=|max-age=' <<<"$line" && r=0
-judge "login senza remember: cookie senza scadenza" "$r" "$line"
-r=1; grep -qi 'httponly' <<<"$line" && grep -qi 'samesite=lax' <<<"$line" && r=0
-judge "cookie HttpOnly e SameSite=Lax" "$r" "$line"
+rc=1; [[ "$status" == 200 && -n "$line" ]] && rc=0
+verdict "login senza remember: 200 e cookie" "$rc" "status $status, cookie: $line"
+rc=1; [[ "$(printf '%s\n' "$line" | grep -c .)" == 1 ]] && rc=0
+verdict "un solo Set-Cookie di sessione" "$rc" "$line"
+rc=1; ! grep -qiE 'expires=|max-age=' <<<"$line" && rc=0
+verdict "login senza remember: cookie senza scadenza" "$rc" "$line"
+rc=1; grep -qi 'httponly' <<<"$line" && grep -qi 'samesite=lax' <<<"$line" && rc=0
+verdict "cookie HttpOnly e SameSite=Lax" "$rc" "$line"
 
 rm -f "$JAR2"
 status="$(web_post_headers api/user/login.php "$(cookie_login_body true)")"
 line="$(session_cookie_lines)"
 ttl="$(cookie_ttl "$line")"
-r=1; [[ "$status" == 200 ]] && is_about_30_days "$ttl" && r=0
-judge "login con remember: cookie con scadenza a circa 30 giorni" "$r" "status $status, scadenza fra ${ttl:-?} s: $line"
+rc=1; [[ "$status" == 200 ]] && is_about_30_days "$ttl" && rc=0
+verdict "login con remember: cookie con scadenza a circa 30 giorni" "$rc" "status $status, scadenza fra ${ttl:-?} s: $line"
 
 sleep 1  # password_changed_at e l'ora del login si confrontano al secondo
 status="$(web_post_headers api/user/change_password.php "$(jq -nc --arg c "$A_PASS" --arg n "$PASS" '{current_password:$c, new_password:$n}')")"
 A_PASS="$PASS"
 line="$(session_cookie_lines)"
 ttl="$(cookie_ttl "$line")"
-r=1; [[ "$status" == 200 ]] && is_about_30_days "$ttl" && r=0
-judge "cambio password con remember: il cookie nuovo ha ancora la scadenza di 30 giorni" "$r" "status $status, scadenza fra ${ttl:-?} s: $line"
+rc=1; [[ "$status" == 200 ]] && is_about_30_days "$ttl" && rc=0
+verdict "cambio password con remember: il cookie nuovo ha ancora la scadenza di 30 giorni" "$rc" "status $status, scadenza fra ${ttl:-?} s: $line"
 expect "dopo il cambio password la sessione nuova vale" 200 "$(curl -s -o /dev/null -w '%{http_code}' -b "$JAR2" "$BASE"api/user/read.php)"
 
 status="$(web_post_headers api/user/logout.php '{}')"
 line="$(session_cookie_lines)"
-r=1; [[ "$status" == 200 ]] && grep -qiE 'max-age=0|expires=thu, 01 jan 1970' <<<"$line" && r=0
-judge "logout: il cookie di sessione è cancellato" "$r" "status $status: $line"
+rc=1; [[ "$status" == 200 ]] && grep -qiE 'max-age=0|expires=thu, 01 jan 1970' <<<"$line" && rc=0
+verdict "logout: il cookie di sessione è cancellato" "$rc" "status $status: $line"
 
 rm -f "$JAR2"
 status="$(web_post_headers api/user/login.php "$(cookie_login_body false)" "$FOREIGN_ORIGIN")"
 line="$(session_cookie_lines)"
-r=1; [[ "$status" == 403 && -z "$line" ]] && r=0
-judge "login da un'origine estranea: 403 e nessun cookie" "$r" "status $status: $line"
+rc=1; [[ "$status" == 403 && -z "$line" ]] && rc=0
+verdict "login da un'origine estranea: 403 e nessun cookie" "$rc" "status $status: $line"
 status="$(web_post_headers api/user/login.php "$(cookie_login_body false)" "$OWN_ORIGIN")"
-r=1; [[ "$status" == 200 && -n "$(session_cookie_lines)" ]] && r=0
-judge "login dall'origine nostra ($OWN_ORIGIN): 200 e cookie" "$r" "status $status"
+rc=1; [[ "$status" == 200 && -n "$(session_cookie_lines)" ]] && rc=0
+verdict "login dall'origine nostra ($OWN_ORIGIN): 200 e cookie" "$rc" "status $status"
 
 echo "Reset password"
 expect "token malformato rifiutato" 400 "$(call POST api/user/reset_password.php "" "{\"token\":\"abc\",\"new_password\":\"$NEW_PASS!\"}")"

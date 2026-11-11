@@ -25,16 +25,18 @@ function web_session_cookie_attributes()
     );
 }
 
-// Attributi del cookie che scriviamo noi; $expires = 0 significa cookie che finisce con il browser.
-function web_session_cookie_options($expires)
+// Attributi comuni più la scadenza, per il cookie che scriviamo noi; $expires = 0 significa cookie
+// che finisce con il browser.
+function web_session_cookie_with_expiry($expires)
 {
     return array('expires' => $expires) + web_session_cookie_attributes();
 }
 
 // Impostazioni da dare prima di session_start(): inattività massima lato server di 30 giorni per tutte
-// le sessioni. Il cookie che PHP accoda da sé all'apertura non arriva mai al browser così com'è:
-// web_session_send_cookie() lo sostituisce sempre. lifetime 0 serve a non ereditare la durata
-// impostata nel php.ini.
+// le sessioni. lifetime 0 al posto della durata impostata nel php.ini: così, davanti a un cookie
+// valido, PHP non ne accoda uno di rinnovo. Quando invece PHP accoda il suo (id nuovo), non arriva mai
+// al browser così com'è: lo sostituisce web_session_send_cookie() o lo cancella
+// web_session_clear_cookie().
 function web_session_configure()
 {
     ini_set('session.gc_maxlifetime', (string)WEB_SESSION_LIFETIME);
@@ -64,14 +66,14 @@ function web_session_drop_cookie_headers()
 function web_session_send_cookie($expires)
 {
     web_session_drop_cookie_headers();
-    setcookie(session_name(), session_id(), web_session_cookie_options($expires));
+    setcookie(session_name(), session_id(), web_session_cookie_with_expiry($expires));
 }
 
 // Cancella il cookie nel browser, con gli stessi attributi con cui è stato creato.
 function web_session_clear_cookie()
 {
     web_session_drop_cookie_headers();
-    setcookie(session_name(), '', web_session_cookie_options(1));
+    setcookie(session_name(), '', web_session_cookie_with_expiry(1));
 }
 
 // Chiude la sessione (il file sparisce) e cancella il cookie. Senza sessione né cookie non fa nulla.

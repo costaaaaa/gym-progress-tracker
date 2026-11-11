@@ -42,7 +42,7 @@ function request($path, $headers = array())
     $cookies = array();
     foreach ($http_response_header ?? array() as $line) {
         if (stripos($line, 'Set-Cookie:') === 0) {
-            $cookies[] = trim(substr($line, 11));
+            $cookies[] = trim(substr($line, strlen('Set-Cookie:')));
         }
     }
     $session = array_values(array_filter($cookies, fn($c) => strpos($c, 'PHPSESSID=') === 0));
@@ -180,9 +180,9 @@ check('senza Origin: 200 e cookie', $status === 200 && count($session) === 1);
 
 echo "Avvisi del server\n";
 $log = @file_get_contents("$dir/server.log");
-check('l\'uscita d\'errore del server si legge', $log !== false);
+check('il log del server di prova si legge', $log !== false);
 preg_match_all('/^.*(Warning|Notice|Deprecated|Fatal).*$/mi', (string)$log, $problems);
-check('nessun Warning, Notice, Deprecated o Fatal in nessun passo', $log !== false && count($problems[0]) === 0);
+check('nessun Warning, Notice, Deprecated o Fatal in nessun passo', count($problems[0]) === 0);
 foreach (array_slice(array_unique($problems[0]), 0, 3) as $line) {
     echo "      $line\n";
 }
