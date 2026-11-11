@@ -13,7 +13,7 @@ $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 switch ($path) {
     case '/login':
-        reject_foreign_origin();
+        reject_foreign_origin($http_origin, $allowed_origins);
         web_session_login(7, 'prova', ($_GET['remember'] ?? '0') === '1');
         break;
     case '/regenerate':

@@ -21,7 +21,7 @@ $dir = sys_get_temp_dir() . '/web_session_test_' . getmypid();
 mkdir($dir . '/sessions', 0700, true);
 $port = 18000 + getmypid() % 1000;
 $server = proc_open(
-    array(PHP_BINARY, '-S', "127.0.0.1:$port", '-d', "session.save_path=$dir/sessions", __DIR__ . '/web_session_server.php'),
+    array(PHP_BINARY, '-S', "127.0.0.1:$port", '-d', "session.save_path=$dir/sessions", '-d', 'error_reporting=-1', '-d', 'log_errors=1', __DIR__ . '/web_session_server.php'),
     array(0 => array('file', '/dev/null', 'r'), 1 => array('file', "$dir/server.log", 'w'), 2 => array('file', "$dir/server.log", 'w')),
     $pipes
 );
@@ -172,6 +172,14 @@ check('origine consentita: 200 e cookie', $status === 200 && count($session) ===
 request('/logout', array('Cookie: PHPSESSID=' . cookie_id($session[0])));
 [, $session, $cookies, $status] = request('/login?remember=0');
 check('senza Origin: 200 e cookie', $status === 200 && count($session) === 1);
+
+echo "Avvisi del server\n";
+$log = (string)@file_get_contents("$dir/server.log");
+preg_match_all('/^.*(Warning|Notice|Deprecated|Fatal).*$/mi', $log, $problems);
+check('nessun Warning, Notice, Deprecated o Fatal in nessun passo', count($problems[0]) === 0);
+foreach (array_slice(array_unique($problems[0]), 0, 3) as $line) {
+    echo "      $line\n";
+}
 
 echo "\n" . ($checks - $fails) . "/$checks controlli riusciti\n";
 exit($fails > 0 ? 1 : 0);
