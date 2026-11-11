@@ -46,7 +46,7 @@ ob_start();
         <ol>
             <li>Copia il link: <code><?php echo blog_e(MCP_CONNECTOR_URL); ?></code></li>
             <li>Nell'app AI aggiungi un connettore personalizzato e incolla il link.</li>
-            <li>Si apre LiftIndex: accedi, conferma la password e premi "Consenti".</li>
+            <li>Si apre LiftIndex: accedi, conferma la password se te lo chiede e premi "Consenti".</li>
         </ol>
         <p>Se vuoi che legga anche le misure corporee, prima di premere "Consenti" spunta "Condividi anche le misure corporee (peso e simili)". La casella è attiva solo se hai già dato il consenso alle misure corporee nelle impostazioni dell'account.</p>
         <p>Trovi gli stessi passi, con il pulsante "Copia link", nella scheda Account dell'app.</p>

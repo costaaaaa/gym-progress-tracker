@@ -44,8 +44,8 @@ function check_page($html, $lang, $canonical, array $t)
     check('link alla privacy, sezione assistenti AI', strpos($html, 'href="https://liftindex.app/privacy.html#assistenti-ai"') !== false);
     check('registrazione nella lingua della pagina', strpos($html, 'href="' . $app . 'register"') !== false);
     check('JSON-LD nella lingua della pagina', strpos($html, '"inLanguage": "' . $lang . '"') !== false);
-    check('link all\'altra lingua', strpos($html, 'href="' . ($lang === 'en' ? $it : $en) . '"') !== false
-        && strpos($html, '>' . ($lang === 'en' ? 'Italiano' : 'English') . '</a>') !== false);
+    $other = $lang === 'en' ? array($it, 'it', 'Italiano') : array($en, 'en', 'English');
+    check('link all\'altra lingua', strpos($html, '<a href="' . $other[0] . '" hreflang="' . $other[1] . '" lang="' . $other[1] . '">' . $other[2] . '</a>') !== false);
     foreach ($t as $desc => $text) {
         check($desc, strpos($html, $text) !== false);
     }
@@ -53,7 +53,7 @@ function check_page($html, $lang, $canonical, array $t)
 
 echo "Pagina italiana\n";
 check_page(render('mcp/index.php'), 'it', $it, array(
-    'sola lettura' => 'in sola lettura',
+    'sola lettura' => '<strong>in sola lettura</strong>',
     'nessuna scrittura' => 'non può creare, modificare o cancellare nulla',
     'le proposte restano in chat' => 'Le proposte restano nella chat',
     'mai note, email e password' => 'Non legge mai le note, la tua email né la password.',
@@ -66,7 +66,7 @@ check_page(render('mcp/index.php'), 'it', $it, array(
 
 echo "Pagina inglese\n";
 check_page(render('en/mcp/index.php'), 'en', $en, array(
-    'sola lettura' => 'read-only',
+    'sola lettura' => '<strong>read-only</strong>',
     'nessuna scrittura' => "it can't create, change or delete anything",
     'le proposte restano in chat' => 'Suggestions stay in the chat',
     'mai note, email e password' => 'It never reads your notes, your email or your password.',
@@ -74,7 +74,7 @@ check_page(render('en/mcp/index.php'), 'en', $en, array(
     'almeno 18 anni' => 'at least 18',
     'pulsante del consenso' => '"Allow"',
     'casella delle misure corporee' => '"Also share body measurements (weight and similar)"',
-    'revoca dalla scheda Account' => 'you can revoke it anytime from the Account page',
+    'revoca dalla scheda Account' => 'you can revoke it anytime from the Account tab',
 ));
 $html = render('en/mcp/index.php');
 check('EN: niente link italiani a login e registrazione', strpos($html, 'https://liftindex.app/register"') === false && strpos($html, 'https://liftindex.app/login"') === false);

@@ -45,10 +45,10 @@ ob_start();
         <ol>
             <li>Copy the link: <code><?php echo blog_e(MCP_CONNECTOR_URL); ?></code></li>
             <li>In the AI app, add a custom connector and paste the link.</li>
-            <li>LiftIndex opens: sign in, confirm your password and press "Allow".</li>
+            <li>LiftIndex opens: sign in, confirm your password if asked and press "Allow".</li>
         </ol>
         <p>If you want it to read your body measurements too, check "Also share body measurements (weight and similar)" before pressing "Allow". The box is enabled only if you've already consented to body measurements in your account settings.</p>
-        <p>The same steps, with the "Copy link" button, are on the Account page of the app.</p>
+        <p>The same steps, with the "Copy link" button, are on the Account tab of the app.</p>
 
         <h2>What you need</h2>
         <ul>
@@ -57,7 +57,7 @@ ob_start();
         </ul>
 
         <h2>Your data</h2>
-        <p>Every connection asks for your explicit consent, and you can revoke it anytime from the Account page. The data the assistant reads goes to the AI app's provider, which handles it under its own privacy policy: the details are in the <a href="<?php echo blog_e(BLOG_APP_URL . 'privacy.html#assistenti-ai'); ?>">LiftIndex privacy policy</a> (in Italian).</p>
+        <p>Every connection asks for your explicit consent, and you can revoke it anytime from the Account tab. The data the assistant reads goes to the AI app's provider, which handles it under its own privacy policy: the details are in the <a href="<?php echo blog_e(BLOG_APP_URL . 'privacy.html#assistenti-ai'); ?>">LiftIndex privacy policy</a> (in Italian).</p>
 
         <aside class="article-cta">
             <h2>Your data first, then the questions</h2>
