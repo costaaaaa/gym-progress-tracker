@@ -1,7 +1,8 @@
 <?php
-// Regole pure di validazione e limiti: identificatore intero positivo. Nessun database. Si lancia con tests/validation_limits.sh.
+// Regole pure di validazione e limiti: identificatore intero positivo, soglie del limite di frequenza. Nessun database. Si lancia con tests/validation_limits.sh.
 
 require __DIR__ . '/../backend/lib/id_rules.php';
+require __DIR__ . '/../backend/config/rate_limiter.php';
 
 $fails = 0;
 $checks = 0;
@@ -51,6 +52,9 @@ $rejected = array(
 foreach ($rejected as $desc => $value) {
     check("$desc: rifiutato", null, parse_positive_id($value));
 }
+
+echo "Soglie del limite di frequenza\n";
+check('similar_ip: 60 richieste ogni 60 secondi', array(60, 60), rate_limit_rule('similar_ip'));
 
 echo $fails === 0 ? "\nTUTTO OK ($checks controlli)\n" : "\nFALLITI $fails su $checks\n";
 exit($fails === 0 ? 0 : 1);

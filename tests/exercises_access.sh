@@ -8,6 +8,8 @@
 # Registra due account usa e getta (A crea, B estraneo), usa i token Bearer come l'app mobile e
 # alla fine li cancella (e con loro gli esercizi non approvati di A). La parte admin gira solo con
 # ADMIN_USER e ADMIN_PASS di un account reso admin con `tools/admin.php grant`: senza, la salta.
+# Controlla anche il limite dei suggerimenti «Forse cercavi» (60 richieste al minuto per IP): dopo il
+# test l'IP resta bloccato su quell'endpoint fino a un minuto.
 # Non va lanciato in produzione: crea account veri e lascia nel catalogo un esercizio approvato
 # se la parte admin fallisce a metà.
 #
@@ -106,6 +108,17 @@ check "ad A propone il suo esercizio" "$(call GET "$SIMILAR" "$A")" "[.records[]
 check "a B non propone quello in attesa di A" "$(call GET "$SIMILAR" "$B")" "[.records[] | select(.id == $EID)] | length == 0"
 check "senza login nemmeno" "$(call GET "$SIMILAR" "")" "[.records[] | select(.id == $EID)] | length == 0"
 check "nome troppo corto: nessuna proposta" "$(call GET 'api/exercise/similar.php?name=ab' "$A")" ".records == []"
+# Soglia di default: 60 richieste al minuto per IP (RL_SIMILAR_IP_MAX). Le richieste fatte sopra contano
+# nella stessa finestra, quindi il primo 429 arriva entro la 61ª; quelle a nomi sotto i 3 caratteri non contano.
+SIMILAR_MAX=60
+first_429=0
+for i in $(seq 1 $((SIMILAR_MAX + 1))); do
+    res="$(call GET "$SIMILAR" "$A")"
+    [[ "${res%% *}" == 429 ]] && { first_429=$i; break; }
+done
+if [[ "$first_429" -gt 1 ]]; then ok "oltre $SIMILAR_MAX richieste al minuto per IP: 429 (la ${first_429}ª)"; else ko "oltre $SIMILAR_MAX richieste al minuto per IP: 429" "ultima risposta: ${res:0:200}"; fi
+check "il 429 ha codice e messaggio tradotto" "$res" '.success == false and .code == "rate_limited" and (.message | length) > 0'
+expect "il nome troppo corto non conta e non è bloccato" 200 "$(call GET 'api/exercise/similar.php?name=ab' "$A")"
 
 PLAN_A="$(call POST api/workout/create_plan.php "$A" '{"name":"Scheda A"}' | cut -d' ' -f2- | jq -r '.plan.id')"
 DAY_A="$(call POST api/workout/create_days.php "$A" "{\"plan_id\":$PLAN_A,\"days\":[{\"name\":\"Giorno 1\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
