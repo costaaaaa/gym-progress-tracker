@@ -83,10 +83,10 @@ ob_start();
 
         <h2>Quando la stima è affidabile</h2>
         <ul>
-            <li><strong>Usa una serie vera</strong>: ripetizioni pulite, con tecnica corretta, vicino al cedimento ma senza sbavature.</li>
-            <li><strong>Resta tra 3 e 10 ripetizioni</strong>: con serie più lunghe entrano in gioco la resistenza e la stima tende a sbagliare.</li>
-            <li><strong>Un esercizio alla volta</strong>: il massimale di panca non dice nulla sul tuo squat. Calcolalo per ogni esercizio che vuoi programmare.</li>
-            <li><strong>È una stima</strong>: due persone con lo stesso 1RM possono fare un numero di ripetizioni diverso allo stesso carico. Usala per orientarti, non come verità assoluta.</li>
+            <li>Parti da una serie vera: ripetizioni pulite e tecnica corretta, vicino al cedimento ma senza sbavature.</li>
+            <li>Resta tra 3 e 10 ripetizioni: con serie più lunghe entra in gioco la resistenza e la stima tende a sbagliare.</li>
+            <li>Calcola il massimale per ogni esercizio che vuoi programmare: quello di panca non dice nulla sul tuo squat.</li>
+            <li>Ricorda che è una stima: due persone con lo stesso 1RM possono fare un numero di ripetizioni diverso allo stesso carico.</li>
         </ul>
 
         <h2>Perché stimarlo invece di testarlo</h2>

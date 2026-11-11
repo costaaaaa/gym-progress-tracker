@@ -81,10 +81,10 @@ ob_start();
 
         <h2>When the estimate is reliable</h2>
         <ul>
-            <li><strong>Use a real set</strong>: clean reps with good form, close to failure but without your technique breaking down.</li>
-            <li><strong>Stay between 3 and 10 reps</strong>: in longer sets endurance starts to matter and the estimate drifts.</li>
-            <li><strong>One lift at a time</strong>: your bench press max tells you nothing about your squat. Work it out for every exercise you want to program.</li>
-            <li><strong>It's an estimate</strong>: two people with the same 1RM can get a different number of reps with the same weight. Use it to find your bearings, not as gospel.</li>
+            <li>Start from a real set: clean reps with good form, close to failure but without your technique breaking down.</li>
+            <li>Stay between 3 and 10 reps: in longer sets endurance starts to matter and the estimate drifts.</li>
+            <li>Work out your max for every exercise you want to program: your bench press max tells you nothing about your squat.</li>
+            <li>Remember it's an estimate: two people with the same 1RM can get a different number of reps with the same weight.</li>
         </ul>
 
         <h2>Why estimate it instead of testing it</h2>
