@@ -33,10 +33,9 @@ function web_session_cookie_with_expiry($expires)
 }
 
 // Impostazioni da dare prima di session_start(): inattività massima lato server di 30 giorni per tutte
-// le sessioni. lifetime 0 al posto della durata impostata nel php.ini: così, davanti a un cookie
-// valido, PHP non ne accoda uno di rinnovo. Quando invece PHP accoda il suo (id nuovo), non arriva mai
-// al browser così com'è: lo sostituisce web_session_send_cookie() o lo cancella
-// web_session_clear_cookie().
+// le sessioni. lifetime 0 al posto della durata impostata nel php.ini: il cookie che PHP accoda da sé
+// quando crea un id nuovo non porta i 30 giorni. Quel cookie comunque non arriva al browser così
+// com'è: lo sostituisce web_session_send_cookie() o lo cancella web_session_clear_cookie().
 function web_session_configure()
 {
     ini_set('session.gc_maxlifetime', (string)WEB_SESSION_LIFETIME);
