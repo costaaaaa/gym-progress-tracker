@@ -60,11 +60,12 @@ call POST api/workout/add_exercise.php "$T" "{\"day_id\":$DAY,\"exercise_id\":$E
 iso() { date -u -d "$1" +%Y-%m-%dT%H:%M:%SZ; }
 
 # body peso start_time [ended_at] [backdated]
+# time_zone UTC: il giorno salvato è quello UTC di start_time, a qualunque ora giri lo script
 body() {
     local recs='[]' i
     for i in 1 2 3; do recs="$(jq -c --argjson e "$E1" --argjson d "$DAY" --argjson i "$i" --argjson w "$1" '. + [{exercise_id:$e, day_id:$d, set_number:$i, weight:$w, reps:10}]' <<<"$recs")"; done
     jq -nc --argjson r "$recs" --arg s "$2" --arg e "${3:-}" --argjson b "${4:-false}" \
-        '{workout_records:$r, start_time:$s} + (if $e != "" then {ended_at:$e} else {} end) + (if $b then {backdated:true} else {} end)'
+        '{workout_records:$r, start_time:$s, time_zone:"UTC"} + (if $e != "" then {ended_at:$e} else {} end) + (if $b then {backdated:true} else {} end)'
 }
 
 echo "Sessione recuperata (utente di prova)"
