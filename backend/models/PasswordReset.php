@@ -46,7 +46,7 @@ class PasswordReset
     // L'età si calcola nel database, con lo stesso orologio di created_at.
     public function createUnlessRecent($user_id)
     {
-        $this->conn->beginTransaction();
+        $this->beginTransactionWithoutGapLocks();
         try {
             $lock = $this->conn->prepare("SELECT id FROM gym_users WHERE id = ? FOR UPDATE");
             $lock->execute([$user_id]);
@@ -84,6 +84,14 @@ class PasswordReset
         }
     }
 
+    // Apre una transazione READ COMMITTED: l'UPDATE dei link dell'utente non blocca lo spazio in coda
+    // all'indice per user_id, dove altrimenti gli INSERT di utenti diversi si bloccherebbero a vicenda.
+    private function beginTransactionWithoutGapLocks()
+    {
+        $this->conn->exec("SET TRANSACTION ISOLATION LEVEL READ COMMITTED");
+        $this->conn->beginTransaction();
+    }
+
     // Segna come usati tutti i token ancora attivi dell'utente.
     private function invalidateForUser($user_id)
     {
@@ -95,6 +103,9 @@ class PasswordReset
 
     // Consuma il token e imposta la nuova password in un'unica transazione. Ritorna true solo se
     // il token esiste, non è scaduto e non è già stato usato. Revoca anche i token mobile attivi.
+    // I blocchi si prendono nello stesso ordine di createUnlessRecent(): prima la riga dell'utente
+    // (il suo id si legge senza blocco), poi quella del link. Con l'ordine inverso un cambio password
+    // e una nuova richiesta per lo stesso account potrebbero bloccarsi a vicenda.
     public function consumeAndSetPassword($plain_token, $new_password)
     {
         if (!self::isWellFormed($plain_token)) {
@@ -102,8 +113,23 @@ class PasswordReset
         }
         $token_hash = hash('sha256', $plain_token);
 
-        $this->conn->beginTransaction();
+        $find = $this->conn->prepare(
+            "SELECT user_id FROM " . $this->table_name . "
+             WHERE token_hash = ? AND used_at IS NULL AND expires_at > NOW()
+             LIMIT 1"
+        );
+        $find->execute([$token_hash]);
+        $user_id = $find->fetchColumn();
+        if ($user_id === false) {
+            return false;
+        }
+
+        $this->beginTransactionWithoutGapLocks();
         try {
+            $lock = $this->conn->prepare("SELECT id FROM gym_users WHERE id = ? FOR UPDATE");
+            $lock->execute([$user_id]);
+
+            // Riletto con blocco: dopo l'attesa il link può essere già stato invalidato.
             $stmt = $this->conn->prepare(
                 "SELECT id, user_id FROM " . $this->table_name . "
                  WHERE token_hash = ? AND used_at IS NULL AND expires_at > NOW()
