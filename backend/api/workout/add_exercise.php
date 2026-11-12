@@ -47,6 +47,10 @@ if (
             // Day belongs to user's plan, proceed with adding the exercise
             $workout_exercise = new WorkoutExercise($db);
 
+            if ($workout_exercise->countByDay($data->day_id) >= WorkoutExercise::MAX_PER_DAY) {
+                api_error(409, 'too_many_plan_exercises', t_server('workout.too_many_plan_exercises', array('max' => WorkoutExercise::MAX_PER_DAY)));
+            }
+
             $workout_exercise->day_id = $data->day_id;
             $workout_exercise->exercise_id = $exercise_id;
             $workout_exercise->rest = $data->rest;
