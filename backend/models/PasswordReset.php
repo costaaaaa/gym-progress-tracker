@@ -42,7 +42,7 @@ class PasswordReset
     // True se l'utente ha un link attivo (non usato, non scaduto) creato da meno di RECENT_SECONDS.
     // L'età si calcola nel database, con lo stesso orologio di created_at.
     // Limite noto: due richieste contemporanee per lo stesso account possono entrambe non vedere un
-    // link recente e crearne uno ciascuna; vale l'ultimo creato, come prima di questo controllo.
+    // link recente e crearne uno ciascuna; partono due email e resta valido solo l'ultimo link creato.
     public function hasRecentActiveLink($user_id)
     {
         $stmt = $this->conn->prepare(

@@ -63,7 +63,7 @@ check('età negativa (orologio indietro): non recente', false, PasswordReset::is
 check('la finestra è più corta della validità del link', true, PasswordReset::RECENT_SECONDS < PasswordReset::TTL_SECONDS);
 
 echo "Soglie del limite di frequenza\n";
-check('similar_ip: 60 richieste ogni 60 secondi', array(60, 60), rate_limit_rule('similar_ip'));
+check('similar_ip: richieste e secondi di default', array(60, 60), rate_limit_rule('similar_ip'));
 
 echo $fails === 0 ? "\nTUTTO OK ($checks controlli)\n" : "\nFALLITI $fails su $checks\n";
 exit($fails === 0 ? 0 : 1);
