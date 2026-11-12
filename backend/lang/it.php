@@ -46,7 +46,7 @@ return array(
     'register.incomplete' => 'Dati incompleti. Username, email e password sono obbligatori.',
     'register.error' => 'Si è verificato un errore durante la registrazione.',
 
-    'forgot.sent' => "Se l'indirizzo è registrato, ti abbiamo inviato un'email con le istruzioni per reimpostare la password.",
+    'forgot.sent' => "Se l'indirizzo è registrato, ti abbiamo inviato un'email con le istruzioni per reimpostare la password. Se ne è già arrivata una negli ultimi minuti, vale il link di quella email.",
     'forgot.too_many' => 'Troppe richieste. Riprova più tardi.',
     'forgot.email_subject' => 'Reimposta la tua password',
     'forgot.email_body' => "Ciao {username},\n\n"

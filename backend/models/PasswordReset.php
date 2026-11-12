@@ -9,6 +9,9 @@ class PasswordReset
     // Validità del link di reset.
     const TTL_SECONDS = 3600; // 1 ora
 
+    // Un link attivo creato da meno di così non viene sostituito da una nuova richiesta.
+    const RECENT_SECONDS = 900; // 15 minuti
+
     public function __construct($db)
     {
         $this->conn = $db;
@@ -28,6 +31,28 @@ class PasswordReset
         $stmt->execute();
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
+    }
+
+    // True se $age_seconds (età di un link) è dentro la finestra RECENT_SECONDS.
+    public static function isRecent($age_seconds)
+    {
+        return $age_seconds >= 0 && $age_seconds < self::RECENT_SECONDS;
+    }
+
+    // True se l'utente ha un link attivo (non usato, non scaduto) creato da meno di RECENT_SECONDS.
+    // L'età si calcola nel database, con lo stesso orologio di created_at.
+    // Limite noto: due richieste contemporanee per lo stesso account possono entrambe non vedere un
+    // link recente e crearne uno ciascuna; partono due email e resta valido solo l'ultimo link creato.
+    public function hasRecentActiveLink($user_id)
+    {
+        $stmt = $this->conn->prepare(
+            "SELECT TIMESTAMPDIFF(SECOND, created_at, NOW()) FROM " . $this->table_name . "
+             WHERE user_id = ? AND used_at IS NULL AND expires_at > NOW()
+             ORDER BY created_at DESC, id DESC LIMIT 1"
+        );
+        $stmt->execute([$user_id]);
+        $age = $stmt->fetchColumn();
+        return $age !== false && self::isRecent((int)$age);
     }
 
     // Invalida i token precedenti dell'utente e ne crea uno nuovo. Ritorna il token in chiaro.

@@ -7,6 +7,7 @@ include_once '../../models/WorkoutExercise.php';
 include_once '../../models/WorkoutDay.php';
 include_once '../../models/WorkoutPlan.php';
 include_once '../../models/Exercise.php';
+require_once '../../lib/id_rules.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -19,6 +20,10 @@ if (
     !empty($data->day_id) &&
     !empty($data->exercise_id)
 ) {
+    $exercise_id = parse_positive_id($data->exercise_id);
+    if ($exercise_id === null) {
+        api_json_response(array("message" => t_server('workout.record_invalid')), 400);
+    }
     $params_error = exercise_params_error($data);
     if ($params_error !== null) {
         api_json_response(array("message" => $params_error), 400);
@@ -35,7 +40,7 @@ if (
 
         if ($workout_plan->readOne()) {
             // Solo esercizi approvati o creati dall'utente: quelli in attesa degli altri non si usano
-            if (!Exercise::isVisibleTo($db, $data->exercise_id, $user_id)) {
+            if (!Exercise::isVisibleTo($db, $exercise_id, $user_id)) {
                 api_not_found(t_server('workout.exercise_not_found'));
             }
 
@@ -43,7 +48,7 @@ if (
             $workout_exercise = new WorkoutExercise($db);
 
             $workout_exercise->day_id = $data->day_id;
-            $workout_exercise->exercise_id = $data->exercise_id;
+            $workout_exercise->exercise_id = $exercise_id;
             $workout_exercise->rest = $data->rest;
             $workout_exercise->notes = isset($data->notes) ? $data->notes : null; // Aggiungiamo il campo notes
             $workout_exercise->planned_sets = planned_sets_normalize($data->planned_sets);

@@ -67,7 +67,7 @@ With it you can:
 * **Transparent migration**: accounts created with older hashes are automatically re-hashed to bcrypt on their next successful login (`backend/tools/wrap_legacy_hashes.php` wraps the old hashes in one go).
 * **Session-based authentication** via PHP sessions for the web app; every request uses `credentials: 'include'`. The session is created at login only (no cookie, no session file for anonymous visits); the "Stay signed in for 30 days" checkbox makes the cookie last 30 days, otherwise it ends with the browser. The login, and any write made with an existing web session, get 403 when the request comes from an `Origin` that is not allowed.
 * **Bearer tokens** for the mobile client (`backend/api/user/mobile_login.php` and `mobile_logout.php`): only the SHA-256 hash of the token is stored, with a 30-day sliding expiration.
-* **Rate limiting** on authentication, password recovery, group and exercise-creation endpoints to mitigate abuse.
+* **Rate limiting** on authentication, password recovery, group, exercise-creation and similar-exercise suggestion endpoints to mitigate abuse.
 * **Data retention**: `backend/tools/purge.php` (run daily from cron) deletes expired tokens, used or expired reset links and expired rate-limit counters.
 
 ## Try it Out
@@ -124,7 +124,7 @@ Under `backend/tools/` (CLI only, they answer 404 over HTTP): `admin.php list|gr
 
 ### Tests
 
-`tests/*.sh` are integration checks (access rules for personal exercises and groups, and the Apple Health / Health Connect sync rules) run against a live instance, for example `tests/groups_access.sh http://localhost/gym-progress-tracker/backend/`. They register throwaway accounts and delete them at the end: run them on a local or test instance, **never on a production one**. The ones with a `tests/*_test.php` next to them (`admin_notify`, `blog_calculator`, `blog_mcp`, `client_ip`, `client_time`, `gamification_rules`, `muscle_rules`, `recovery_rules`, `web_session`, `weekly_sets`) are different: they run that file with the PHP of the web image, in Docker, and need no live instance or database.
+`tests/*.sh` are integration checks (access rules for personal exercises and groups, and the Apple Health / Health Connect sync rules) run against a live instance, for example `tests/groups_access.sh http://localhost/gym-progress-tracker/backend/`. They register throwaway accounts and delete them at the end: run them on a local or test instance, **never on a production one**. The ones with a `tests/*_test.php` next to them (`admin_notify`, `blog_calculator`, `blog_mcp`, `client_ip`, `client_time`, `gamification_rules`, `muscle_rules`, `recovery_rules`, `validation_limits`, `web_session`, `weekly_sets`) are different: they run that file with the PHP of the web image, in Docker, and need no live instance or database.
 
 ### Blog (optional)
 
@@ -228,7 +228,7 @@ Con questo strumento è possibile:
 * **Migrazione trasparente**: gli account con hash più vecchi vengono ri-hashati automaticamente in bcrypt al primo login andato a buon fine (`backend/tools/wrap_legacy_hashes.php` avvolge i vecchi hash in un colpo solo).
 * **Autenticazione basata su sessione** tramite sessioni PHP per l'app web; ogni richiesta usa `credentials: 'include'`. La sessione nasce solo al login (nessun cookie né file di sessione per le visite anonime); la casella «Resta collegato per 30 giorni» fa durare il cookie 30 giorni, altrimenti finisce con il browser. Il login, e ogni scrittura fatta con una sessione web già aperta, ricevono 403 se la richiesta arriva da un `Origin` non consentito.
 * **Token Bearer** per il client mobile (`backend/api/user/mobile_login.php` e `mobile_logout.php`): nel database finisce solo l'hash SHA-256 del token, con scadenza scorrevole di 30 giorni.
-* **Rate limiting** sugli endpoint di autenticazione, recupero password, gruppi e creazione di esercizi per mitigare gli abusi.
+* **Rate limiting** sugli endpoint di autenticazione, recupero password, gruppi, creazione di esercizi e suggerimenti di esercizi simili per mitigare gli abusi.
 * **Conservazione dei dati**: `backend/tools/purge.php` (da lanciare ogni giorno dal cron) elimina token scaduti, link di reset usati o scaduti e contatori del rate limiter scaduti.
 
 ## Come provarlo
@@ -285,7 +285,7 @@ In `backend/tools/` (solo CLI, via HTTP rispondono 404): `admin.php list|grant|r
 
 ### Test
 
-`tests/*.sh` sono controlli di integrazione (regole di accesso a esercizi personali e gruppi, regole della sincronizzazione con Apple Salute / Health Connect) da lanciare contro un'istanza attiva, per esempio `tests/groups_access.sh http://localhost/gym-progress-tracker/backend/`. Registrano account usa e getta e li cancellano alla fine: vanno usati su un'istanza locale o di prova, **mai in produzione**. Fanno eccezione quelli con accanto un `tests/*_test.php` (`admin_notify`, `blog_calculator`, `blog_mcp`, `client_ip`, `client_time`, `gamification_rules`, `muscle_rules`, `recovery_rules`, `web_session`, `weekly_sets`): eseguono quel file con il PHP dell'immagine web, in Docker, e non richiedono un'istanza attiva né un database.
+`tests/*.sh` sono controlli di integrazione (regole di accesso a esercizi personali e gruppi, regole della sincronizzazione con Apple Salute / Health Connect) da lanciare contro un'istanza attiva, per esempio `tests/groups_access.sh http://localhost/gym-progress-tracker/backend/`. Registrano account usa e getta e li cancellano alla fine: vanno usati su un'istanza locale o di prova, **mai in produzione**. Fanno eccezione quelli con accanto un `tests/*_test.php` (`admin_notify`, `blog_calculator`, `blog_mcp`, `client_ip`, `client_time`, `gamification_rules`, `muscle_rules`, `recovery_rules`, `validation_limits`, `web_session`, `weekly_sets`): eseguono quel file con il PHP dell'immagine web, in Docker, e non richiedono un'istanza attiva né un database.
 
 ### Blog (facoltativo)
 

@@ -4,6 +4,7 @@
 include_once '../../config/cors_headers.php';
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
+include_once '../../config/rate_limiter.php';
 include_once '../../models/Exercise.php';
 
 header('Content-Type: application/json');
@@ -17,6 +18,8 @@ try {
 
     $database = new Database();
     $db = $database->getConnection();
+    // Dopo il controllo della lunghezza: i nomi corti non confrontano nulla e non contano
+    enforce_rate_limit($db, 'similar_ip', client_ip_key('similar'));
     $user_id = resolve_authenticated_user_id($db);
     $user_id = $user_id ? (int)$user_id : null;
 
