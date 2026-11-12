@@ -22,6 +22,11 @@ MYSQL_IMAGE="${MYSQL_IMAGE:-mysql:9.7}"
 
 USERS=20     # account di prova
 PARALLEL=16  # richieste contemporanee per account
+RACE_USERS=40    # account della sezione «cambio password e nuova richiesta insieme»
+RACE_PARALLEL=4  # richieste di recupero contemporanee per account in quella sezione
+WORKERS=$((USERS * (PARALLEL + 1)))
+RESETTOKEN="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd" # + 2 cifre: 64 caratteri
+NEWPASS='Nuova!Prova2026x'
 RUN="fp$RANDOM$RANDOM"
 NET="$RUN-net"
 DB="$RUN-mysql"
@@ -52,7 +57,7 @@ docker run --rm --entrypoint cat "$PHP_IMAGE" /var/www/app/backend/config/databa
 
 docker network create "$NET" >/dev/null || exit 2
 docker run -d --name "$DB" --network "$NET" --tmpfs /var/lib/mysql \
-    -e MYSQL_ROOT_PASSWORD="$DBPASS" "$MYSQL_IMAGE" >/dev/null || exit 2
+    -e MYSQL_ROOT_PASSWORD="$DBPASS" "$MYSQL_IMAGE" --max-connections=$((WORKERS + 20)) >/dev/null || exit 2
 
 echo "Avvio MySQL..."
 ready=0
@@ -67,7 +72,8 @@ docker exec -i "$DB" mysql -uroot -p"$DBPASS" <"$ROOT/backend/database/gym_progr
 docker run -d --name "$WEB" --network "$NET" \
     -v "$TMP/backend:/w/backend:ro" \
     -e DB_HOST="$DB" -e DB_NAME=gym_progress_tracker -e DB_USER=root -e DB_PASSWORD="$DBPASS" \
-    -e RL_FORGOT_IP_MAX=100000 -e MAIL_DRIVER=log -e PHP_CLI_SERVER_WORKERS=$((USERS * PARALLEL + 8)) \
+    -e RL_FORGOT_IP_MAX=100000 -e RL_RESET_IP_MAX=100000 -e MAIL_DRIVER=log \
+    -e PHP_CLI_SERVER_WORKERS=$WORKERS \
     --entrypoint php "$PHP_IMAGE" -S 0.0.0.0:8080 -t /w/backend >/dev/null || exit 2
 for _ in $(seq 1 30); do
     docker exec "$WEB" curl -s -o /dev/null http://127.0.0.1:8080/ 2>/dev/null && break
@@ -75,21 +81,39 @@ for _ in $(seq 1 30); do
 done
 
 # Account di prova, inseriti direttamente nel database.
-for i in $(seq 1 "$USERS"); do
+for i in $(seq 1 "$RACE_USERS"); do
     sql "INSERT INTO gym_users (username, email, password) VALUES ('fp$i', 'fp$i@example.test', 'x')"
 done
 
-# forgot UTENTE... → una raffica di PARALLEL richieste per ciascun utente, tutte insieme.
-forgot() {
-    docker exec "$WEB" sh -c '
+# burst RESET RICHIESTE UTENTE... → una raffica di PARALLEL richieste di recupero per ciascun utente, tutte
+# insieme; con RESET=1 anche un cambio password per ciascuno (token $RESETTOKEN, password $NEWPASS).
+# Stampa su $TMP/codes una riga "F|R account codice" per richiesta.
+burst() {
+    local reset="$1" count="$2"
+    shift 2
+    docker exec -e RESET="$reset" -e COUNT="$count" -e TOKEN_PREFIX="$RESETTOKEN" -e NEWPASS="$NEWPASS" "$WEB" sh -c '
         for i in "$@"; do
-            for n in $(seq 1 '"$PARALLEL"'); do
-                curl -s -o /dev/null -X POST -H "Content-Type: application/json" \
+            for n in $(seq 1 "$COUNT"); do
+                curl -s -o /dev/null -w "F $i %{http_code}\n" -X POST -H "Content-Type: application/json" \
                     --data "{\"email\":\"fp$i@example.test\"}" http://127.0.0.1:8080/api/user/forgot_password.php &
             done
+            if [ "$RESET" = 1 ]; then
+                curl -s -o /dev/null -w "R $i %{http_code}\n" -X POST -H "Content-Type: application/json" \
+                    --data "{\"token\":\"$(printf "%s%02d" "$TOKEN_PREFIX" "$i")\",\"new_password\":\"$NEWPASS\"}" \
+                    http://127.0.0.1:8080/api/user/reset_password.php &
+            fi
         done
-        wait' sh "$@"
+        wait' sh "$@" >"$TMP/codes"
     sleep 2 # il lavoro dopo la risposta (token e email) può finire dopo la risposta stessa
+}
+
+# Tutte le richieste del tipo $1 (F o R) devono aver risposto con i codici ammessi $2 (regex).
+check_codes() {
+    local kind="$1" allowed="$2" label="$3" total bad
+    total="$(grep -c "^$kind " "$TMP/codes")"
+    bad="$(grep "^$kind " "$TMP/codes" | awk '{print $3}' | grep -Ev "^($allowed)$" | sort | uniq -c | tr '\n' ' ')"
+    if [[ -z "$bad" && "$total" -gt 0 ]]; then ok "$label: $total richieste, tutte con risposta attesa"
+    else ko "$label: $total richieste, codici inattesi: ${bad:-nessuna risposta}"; fi
 }
 
 rows() { sql "SELECT COUNT(*) FROM gym_password_resets WHERE user_id = (SELECT id FROM gym_users WHERE email = 'fp$1@example.test')"; }
@@ -97,7 +121,8 @@ rows() { sql "SELECT COUNT(*) FROM gym_password_resets WHERE user_id = (SELECT i
 echo "$PARALLEL richieste contemporanee per ciascuno dei $USERS account"
 all=$(seq 1 "$USERS")
 # shellcheck disable=SC2086
-forgot $all
+burst 0 "$PARALLEL" $all
+check_codes F 200 "raffica"
 for i in $all; do
     n="$(rows "$i")"
     if [[ "$n" == 1 ]]; then ok "account $i: una sola riga"; else ko "account $i: righe trovate: $n (attesa: 1)"; fi
@@ -105,7 +130,8 @@ done
 
 echo "Seconda richiesta subito dopo"
 # shellcheck disable=SC2086
-forgot $all
+burst 0 "$PARALLEL" $all
+check_codes F 200 "raffica"
 for i in $all; do
     n="$(rows "$i")"
     if [[ "$n" == 1 ]]; then ok "account $i: nessuna riga in più"; else ko "account $i: righe trovate: $n (attesa: 1)"; fi
@@ -116,7 +142,8 @@ for i in $all; do
     sql "UPDATE gym_password_resets SET created_at = created_at - INTERVAL 20 MINUTE WHERE user_id = (SELECT id FROM gym_users WHERE email = 'fp$i@example.test')"
 done
 # shellcheck disable=SC2086
-forgot $all
+burst 0 "$PARALLEL" $all
+check_codes F 200 "raffica"
 for i in $all; do
     uid="(SELECT id FROM gym_users WHERE email = 'fp$i@example.test')"
     total="$(rows "$i")"
@@ -126,6 +153,36 @@ for i in $all; do
         ok "account $i: nuovo link attivo, vecchio segnato usato"
     else
         ko "account $i: righe $total, attive $active, usate $used (attese: 2, 1, 1)"
+    fi
+done
+
+echo "Cambio password e nuova richiesta insieme"
+race=$(seq 1 "$RACE_USERS")
+for i in $race; do
+    uid="(SELECT id FROM gym_users WHERE email = 'fp$i@example.test')"
+    tok="$(printf '%s%02d' "$RESETTOKEN" "$i")"
+    sql "UPDATE gym_users SET password = 'x' WHERE id = $uid"
+    sql "UPDATE gym_password_resets SET used_at = NOW() WHERE user_id = $uid AND used_at IS NULL"
+    sql "INSERT INTO gym_password_resets (user_id, token_hash, created_at, expires_at)
+         VALUES ($uid, SHA2('$tok', 256), NOW() - INTERVAL 20 MINUTE, NOW() + INTERVAL 40 MINUTE)"
+done
+# shellcheck disable=SC2086
+burst 1 "$RACE_PARALLEL" $race
+check_codes F 200 "recupero"
+check_codes R "200|400" "cambio password"
+errlog="$(docker logs "$WEB" 2>&1 | grep -c 'after_response\|Reset password error')"
+if [[ "$errlog" == 0 ]]; then ok "nessun errore nel log del server"; else ko "righe di errore nel log del server: $errlog"; fi
+for i in $race; do
+    uid="(SELECT id FROM gym_users WHERE email = 'fp$i@example.test')"
+    active="$(sql "SELECT COUNT(*) FROM gym_password_resets WHERE user_id = $uid AND used_at IS NULL")"
+    changed="$(sql "SELECT password <> 'x' FROM gym_users WHERE id = $uid")"
+    if [[ "$active" -le 1 ]]; then ok "account $i: al massimo un link attivo"; else ko "account $i: link attivi: $active"; fi
+    # Il cambio password risponde 200 se ha preso il link prima della richiesta di recupero, 400 dopo.
+    rcode="$(awk -v a="$i" '$1 == "R" && $2 == a {print $3}' "$TMP/codes")"
+    if [[ "$rcode" == 200 && "$changed" == 1 ]] || [[ "$rcode" == 400 && "$changed" == 0 ]]; then
+        ok "account $i: cambio password $rcode, password coerente"
+    else
+        ko "account $i: cambio password $rcode, password cambiata: $changed"
     fi
 done
 
