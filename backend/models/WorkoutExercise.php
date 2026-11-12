@@ -7,6 +7,9 @@ class WorkoutExercise
     private $conn;
     private $table_name = "gym_workout_exercises";
 
+    // Esercizi che un giorno di scheda può avere (stesso discorso di WorkoutPlan::MAX_PER_USER sulla concorrenza)
+    const MAX_PER_DAY = 30;
+
     // Object properties
     public $id;
     public $day_id;
@@ -27,6 +30,14 @@ class WorkoutExercise
     public function __construct($db)
     {
         $this->conn = $db;
+    }
+
+    // Numero di esercizi del giorno (per il tetto MAX_PER_DAY)
+    public function countByDay($day_id)
+    {
+        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM " . $this->table_name . " WHERE day_id = ?");
+        $stmt->execute([(int)$day_id]);
+        return (int)$stmt->fetchColumn();
     }
 
     // Create new workout exercise

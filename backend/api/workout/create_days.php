@@ -19,6 +19,12 @@ if (!empty($data->plan_id) && !empty($data->days)) {
     }
 
     $workout_day = new WorkoutDay($db);
+
+    // Tutta la richiesta o niente: giorni già presenti + nuovi non superano il tetto
+    if ($workout_day->countByPlan($data->plan_id) + count($data->days) > WorkoutDay::MAX_PER_PLAN) {
+        api_error(409, 'too_many_days', t_server('workout.too_many_days', array('max' => WorkoutDay::MAX_PER_PLAN)));
+    }
+
     $created_days = array();
 
     foreach ($data->days as $index => $day) {

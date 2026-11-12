@@ -4,6 +4,9 @@ class WorkoutDay {
     private $conn;
     private $table_name = "gym_workout_days";
 
+    // Giorni che una scheda può avere (stesso discorso di WorkoutPlan::MAX_PER_USER sulla concorrenza)
+    const MAX_PER_PLAN = 14;
+
     // Object properties
     public $id;
     public $plan_id;
@@ -48,6 +51,13 @@ class WorkoutDay {
         }
 
         return false;
+    }
+
+    // Numero di giorni della scheda (per il tetto MAX_PER_PLAN)
+    public function countByPlan($plan_id) {
+        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM " . $this->table_name . " WHERE plan_id = ?");
+        $stmt->execute([(int)$plan_id]);
+        return (int)$stmt->fetchColumn();
     }
 
     // Read all workout days for a plan

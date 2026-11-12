@@ -2,6 +2,7 @@
 include_once '../../config/cors_headers.php';
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
+include_once '../../config/rate_limiter.php';
 include_once '../../models/WorkoutHistory.php';
 include_once '../../models/WorkoutSet.php';
 include_once '../../models/Exercise.php';
@@ -27,6 +28,9 @@ $database = new Database();
 $db = $database->getConnection();
 
 $user_id = require_authenticated_user($db);
+
+// Argine all'abuso: sotto richieste contemporanee il limite può essere superato di poco
+enforce_rate_limit($db, 'workout_save_user', 'workout:save:user:' . $user_id);
 
 try {
     $data = json_decode(file_get_contents("php://input"));
