@@ -148,13 +148,14 @@ move "$A" "$W5" 4 >/dev/null # −30 giorni cade nella settimana −5 di lunedì
 
 echo "Anteprima del cambio data (utente A, settimane 0..-2 e -4 chiuse)"
 W6="$(saved_id "$(save "$A" "$DAY_A")")"
+W6_DATE="$(call GET api/workout_history/read.php "$A" | cut -d' ' -f2- | jq -r "[.records[] | select(.id == $W6)][0].date")"
 XP2="$(total_xp "$A")"
 check "anteprima: 3 settimane fa riempie il buco, +30, streak da 3 a 5, sblocca streak_4" "$(move "$A" "$W6" 3 true)" \
     '.preview and .xp_delta == 30 and .streak_before == 3 and .streak_after == 5 and (.achievements_unlocked | index("streak_4") != null)'
 expect "l'anteprima non cambia lo streak" "$(streak "$A")" 3
 expect "l'anteprima non cambia gli XP" "$(total_xp "$A")" "$XP2"
 check "l'anteprima non sposta l'allenamento" "$(call GET api/workout_history/read.php "$A")" \
-    "[.records[] | select(.id == $W6)][0].date | startswith(\"$(date +%Y-%m-%d)\")"
+    "[.records[] | select(.id == $W6)][0].date | . != null and . == \"$W6_DATE\""
 
 echo "Riapertura con obiettivo cambiato (utente A)"
 PLAN_A="$(call GET api/workout/read_plans.php "$A" | cut -d' ' -f2- | jq -r '[.. | objects | select(has("is_active")) | select(.is_active == 1 or .is_active == "1" or .is_active == true)][0].id')"
