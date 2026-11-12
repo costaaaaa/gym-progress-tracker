@@ -27,6 +27,7 @@ USERS=20         # account delle prime tre sezioni
 PARALLEL=16      # richieste contemporanee per account
 RACE_USERS=40    # account della sezione «cambio password e nuova richiesta insieme»
 RACE_PARALLEL=4  # richieste di recupero contemporanee per account in quella sezione
+SOLO=$((RACE_USERS + 1)) # account del cambio password senza altre richieste
 GROUP=5          # account per raffica: le raffiche partono a gruppi per non saturare la macchina
 WORKERS=$((GROUP * (PARALLEL + 1)))
 (( GROUP * (RACE_PARALLEL + 1) <= WORKERS )) || WORKERS=$((GROUP * (RACE_PARALLEL + 1)))
@@ -101,14 +102,14 @@ done
 [[ "$ready" == 1 ]] || die "il server web non risponde"
 
 # Account di prova, inseriti direttamente nel database.
-for i in $(seq 1 "$RACE_USERS"); do
+for i in $(seq 1 "$SOLO"); do
     prep "INSERT INTO gym_users (username, email, password) VALUES ('fp$i', 'fp$i@example.test', 'x')"
 done
 
-# burst RESET RICHIESTE UTENTE... → per ciascun utente una raffica di RICHIESTE richieste di recupero,
-# tutte insieme (a gruppi di GROUP utenti); con RESET=1 anche un cambio password per ciascuno (token
-# $RESETTOKEN, password $NEWPASS). Ogni gruppo finisce, lavoro dopo la risposta compreso, prima del
-# successivo. Scrive su $TMP/codes una riga "F|R account codice" per richiesta.
+# burst RESET QUANTE UTENTE... → per ciascun utente QUANTE richieste di recupero, tutte insieme (a gruppi
+# di GROUP utenti); con RESET=1 anche un cambio password per ciascuno (token $RESETTOKEN, password
+# $NEWPASS). Ogni gruppo finisce, lavoro dopo la risposta compreso, prima del successivo. Scrive su
+# $TMP/codes una riga "F|R account codice" per richiesta.
 burst() {
     local reset="$1" count="$2" group
     shift 2
@@ -191,15 +192,31 @@ for i in $all; do
     emails "$i" 2
 done
 
-echo "Cambio password e nuova richiesta insieme"
-race=$(seq 1 "$RACE_USERS")
-for i in $race; do
-    uid="$(uid_of "$i")"
-    tok="$(printf '%s%02d' "$RESETTOKEN" "$i")"
-    prep "UPDATE gym_users SET password = 'x' WHERE email = 'fp$i@example.test'"
+# known_link N → l'account N ha la password 'x' e un solo link attivo, creato 20 minuti fa, con il token
+# che burst manda per lui.
+known_link() {
+    local uid tok
+    uid="$(uid_of "$1")"
+    tok="$(printf '%s%02d' "$RESETTOKEN" "$1")"
+    prep "UPDATE gym_users SET password = 'x' WHERE email = 'fp$1@example.test'"
     prep "UPDATE gym_password_resets SET used_at = NOW() WHERE user_id = $uid AND used_at IS NULL"
     prep "INSERT INTO gym_password_resets (user_id, token_hash, created_at, expires_at)
          VALUES ($uid, SHA2('$tok', 256), NOW() - INTERVAL 20 MINUTE, NOW() + INTERVAL 40 MINUTE)"
+}
+
+# Senza altre richieste il cambio password con il token noto riesce: nella sezione dopo un 400 viene
+# quindi dalla richiesta di recupero arrivata prima, non dalla preparazione.
+echo "Cambio password da solo"
+known_link "$SOLO"
+burst 1 0 "$SOLO"
+check_codes R 200 "cambio password"
+changed="$(num "SELECT password <> 'x' FROM gym_users WHERE id = $(uid_of "$SOLO")")" || exit 2
+if [[ "$changed" == 1 ]]; then ok "password cambiata"; else ko "password non cambiata"; fi
+
+echo "Cambio password e nuova richiesta insieme"
+race=$(seq 1 "$RACE_USERS")
+for i in $race; do
+    known_link "$i"
 done
 # shellcheck disable=SC2086
 burst 1 "$RACE_PARALLEL" $race
@@ -221,8 +238,6 @@ for i in $race; do
         ko "account $i: cambio password $rcode, password cambiata: $changed"
     fi
 done
-
-if [[ "$(awk '$1 == "R" && $3 == 200' "$TMP/codes" | wc -l)" -ge 1 ]]; then ok "almeno un cambio password riuscito (200)"; else ko "nessun cambio password ha risposto 200"; fi
 
 echo
 if [[ "$fails" -eq 0 ]]; then
