@@ -197,7 +197,8 @@ try {
     }
     if ($duration_seconds !== null && $duration_seconds < 60) $duration_seconds = null;
 
-    // Il limite conta solo i salvataggi da scrivere (non 400 né reinvii); con richieste contemporanee può essere superato di poco
+    // Il limite conta solo i salvataggi da scrivere (non 400 né reinvii); con richieste
+    // contemporanee può essere superato di poco
     enforce_rate_limit($db, 'workout_save_user', 'workout:save:user:' . $user_id);
 
     $db->beginTransaction();
