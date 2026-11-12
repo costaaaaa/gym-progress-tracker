@@ -29,9 +29,6 @@ $db = $database->getConnection();
 
 $user_id = require_authenticated_user($db);
 
-// Argine all'abuso: sotto richieste contemporanee il limite può essere superato di poco
-enforce_rate_limit($db, 'workout_save_user', 'workout:save:user:' . $user_id);
-
 try {
     $data = json_decode(file_get_contents("php://input"));
 
@@ -199,6 +196,9 @@ try {
         }
     }
     if ($duration_seconds !== null && $duration_seconds < 60) $duration_seconds = null;
+
+    // Il limite conta solo i salvataggi da scrivere (non 400 né reinvii); con richieste contemporanee può essere superato di poco
+    enforce_rate_limit($db, 'workout_save_user', 'workout:save:user:' . $user_id);
 
     $db->beginTransaction();
 

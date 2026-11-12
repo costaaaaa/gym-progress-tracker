@@ -117,6 +117,10 @@ PLAN2="$(plan_id "$(new_plan "$DY")")"
 check "15 giorni in una volta su scheda vuota: 409" "$(new_days "$DY" "$PLAN2" 15)" '$status == 409 and .code == "too_many_days"'
 check "nessun giorno creato" "200 {\"n\": $(day_count "$DY" "$PLAN2")}" '.n == 0'
 check "14 giorni in una volta su scheda vuota: creati" "$(new_days "$DY" "$PLAN2" 14)" '$status == 201 and (.days | length) == 14'
+PLAN3="$(plan_id "$(new_plan "$DY")")"
+check "days come oggetto (non un elenco): 400 «dati incompleti», non 500" \
+    "$(call POST api/workout/create_days.php "$DY" "{\"plan_id\":$PLAN3,\"days\":{\"a\":{\"name\":\"x\"}}}")" '$status == 400 and (.message | type) == "string"'
+check "nessun giorno creato" "200 {\"n\": $(day_count "$DY" "$PLAN3")}" '.n == 0'
 check "il tetto è per scheda: un'altra scheda ha i suoi 14" "$(new_days "$DY" "$(plan_id "$(new_plan "$DY")")" 14)" '$status == 201'
 
 echo "Esercizi: 30 per giorno"
@@ -149,8 +153,15 @@ save() { # token day → "status corpo"
 }
 DAY_S="$(make_day "$SV")"
 DAY_O="$(make_day "$OT")"
+# Il 1° salvataggio ha una chiave, per reinviarlo a limite raggiunto; gli altri 59 no
+KEY_S="limite-$SUFFIX-0123456789"
+save_keyed() { # token day chiave
+    call POST api/workout/record_workout.php "$1" "$(jq -nc --argjson e "$E1" --argjson d "$2" --arg k "$3" \
+        '{workout_records:[{exercise_id:$e, day_id:$d, set_number:1, weight:20, reps:10}], idempotency_key:$k}')"
+}
+save_keyed "$SV" "$DAY_S" "$KEY_S" >/dev/null
 last=""
-for _ in $(seq 1 60); do
+for _ in $(seq 1 59); do
     last="$(save "$SV" "$DAY_S")"
     [[ "${last%% *}" == 201 ]] || break
 done
@@ -164,6 +175,13 @@ else
     ko "il 61° è 429 con Retry-After" "ricevuto: ${LIMITED:0:300}"
 fi
 check "il 61° non salva niente (60 in storico)" "200 $(call GET api/workout_history/read.php "$SV" | cut -d' ' -f2- | jq -c '{n: (.records | length)}')" '.n == 60'
+# A limite raggiunto il limite conta solo i salvataggi che stanno per essere scritti
+check "a limite raggiunto, reinvio con la stessa chiave: 200 already_saved, non 429" "$(save_keyed "$SV" "$DAY_S" "$KEY_S")" \
+    '$status == 200 and .success and .already_saved == true'
+check "a limite raggiunto, richiesta non valida: 400, non 429" \
+    "$(call POST api/workout/record_workout.php "$SV" '{"workout_records":[]}')" '$status == 400'
+check "a limite raggiunto, salvataggio nuovo con chiave: 429" "$(save_keyed "$SV" "$DAY_S" "nuovo-$SUFFIX-0123456789")" '$status == 429 and .code == "rate_limited"'
+check "lo storico resta a 60" "200 $(call GET api/workout_history/read.php "$SV" | cut -d' ' -f2- | jq -c '{n: (.records | length)}')" '.n == 60'
 check "un altro utente salva lo stesso" "$(save "$OT" "$DAY_O")" '$status == 201 and .success'
 
 echo

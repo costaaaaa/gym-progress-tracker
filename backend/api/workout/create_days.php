@@ -13,7 +13,7 @@ $user_id = require_authenticated_user($db);
 
 $data = json_decode(file_get_contents("php://input"));
 
-if (!empty($data->plan_id) && !empty($data->days)) {
+if (!empty($data->plan_id) && !empty($data->days) && is_array($data->days)) {
     if (!workout_plan_belongs_to_user($db, $data->plan_id, $user_id)) {
         api_not_found();
     }
