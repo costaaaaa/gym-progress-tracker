@@ -8,9 +8,10 @@
 # Registra due account usa e getta (A crea, B estraneo), usa i token Bearer come l'app mobile e
 # alla fine li cancella (e con loro gli esercizi non approvati di A). La parte admin gira solo con
 # ADMIN_USER e ADMIN_PASS di un account reso admin con `tools/admin.php grant`: senza, la salta.
-# Controlla anche il limite dei suggerimenti «Forse cercavi» (richieste al minuto per IP): dopo il
-# test l'IP resta bloccato su quell'endpoint fino a un minuto. Se l'istanza imposta
-# RL_SIMILAR_IP_MAX, passa lo stesso valore allo script: senza, usa il default del backend.
+# Controlla anche il limite dei suggerimenti «Forse cercavi» (richieste per IP in una finestra, un
+# minuto di default): dopo il test l'IP resta bloccato su quell'endpoint fino alla fine della
+# finestra. Lo script conta sui default di similar_ip in backend/config/rate_limiter.php: se
+# l'istanza imposta RL_SIMILAR_IP_MAX, passa lo stesso valore allo script.
 # Non va lanciato in produzione: crea account veri e lascia nel catalogo un esercizio approvato
 # se la parte admin fallisce a metà.
 #
@@ -109,17 +110,17 @@ check "ad A propone il suo esercizio" "$(call GET "$SIMILAR" "$A")" "[.records[]
 check "a B non propone quello in attesa di A" "$(call GET "$SIMILAR" "$B")" "[.records[] | select(.id == $EID)] | length == 0"
 check "senza login nemmeno" "$(call GET "$SIMILAR" "")" "[.records[] | select(.id == $EID)] | length == 0"
 check "nome troppo corto: nessuna proposta" "$(call GET 'api/exercise/similar.php?name=ab' "$A")" ".records == []"
-# Soglia per IP al minuto: il valore passato allo script, altrimenti il default di similar_ip in
-# backend/config/rate_limiter.php. Le richieste fatte sopra contano nella stessa finestra, quindi il
-# primo 429 arriva al più alla richiesta successiva alla soglia; quelle a nomi sotto i 3 caratteri
-# non contano.
+# Soglia per IP nella finestra: il valore passato allo script, altrimenti 60, il default di
+# similar_ip in backend/config/rate_limiter.php. Le richieste fatte sopra contano nella stessa
+# finestra, quindi il primo 429 arriva al più alla richiesta successiva alla soglia; quelle a nomi
+# sotto i 3 caratteri non contano.
 SIMILAR_MAX="${RL_SIMILAR_IP_MAX:-60}"
 first_429=0
 for i in $(seq 1 $((SIMILAR_MAX + 1))); do
     res="$(call GET "$SIMILAR" "$A")"
     [[ "${res%% *}" == 429 ]] && { first_429=$i; break; }
 done
-if [[ "$first_429" -gt 1 ]]; then ok "oltre $SIMILAR_MAX richieste al minuto per IP: 429 (la ${first_429}ª)"; else ko "oltre $SIMILAR_MAX richieste al minuto per IP: 429" "ultima risposta: ${res:0:200}"; fi
+if [[ "$first_429" -gt 1 ]]; then ok "oltre $SIMILAR_MAX richieste per IP nella finestra: 429 (la ${first_429}ª)"; else ko "oltre $SIMILAR_MAX richieste per IP nella finestra: 429" "ultima risposta: ${res:0:200}"; fi
 check "il 429 ha codice e messaggio tradotto" "$res" '.success == false and .code == "rate_limited" and (.message | length) > 0'
 expect "il nome troppo corto non conta e non è bloccato" 200 "$(call GET 'api/exercise/similar.php?name=ab' "$A")"
 
