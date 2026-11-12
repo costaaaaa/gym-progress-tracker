@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # write_limits.sh — controlla i tetti sulle schede (50 per utente), sui giorni (14 per scheda) e
-# sugli esercizi (30 per giorno), e il limite di 60 salvataggi di allenamento all'ora per utente.
+# sugli esercizi (30 per giorno), e il limite di salvataggi di allenamento all'ora per utente.
 #
 #   tests/write_limits.sh http://localhost:8080/backend/
 #
@@ -114,7 +114,8 @@ call POST api/workout/delete_plan.php "$PL" "{\"plan_id\":$FIRST_PLAN}" >/dev/nu
 check "dopo averne cancellata una se ne può creare un'altra" "$(new_plan "$PL")" '$status == 201'
 check "e la successiva è di nuovo 409" "$(new_plan "$PL")" '$status == 409 and .code == "too_many_plans"'
 
-echo "Giorni: 14 per scheda (non c'è un endpoint per cancellare un giorno: «cancello e riaggiungo» vale solo per schede ed esercizi)"
+# Non c'è un endpoint per cancellare un giorno: «cancello e riaggiungo» vale solo per schede ed esercizi
+echo "Giorni: 14 per scheda"
 PLAN="$(plan_id "$(new_plan "$DY")")"
 check "3 giorni su scheda vuota: creati" "$(new_days "$DY" "$PLAN" 3)" '$status == 201 and (.days | length) == 3'
 check "3 presenti + 12 nuovi: 409 too_many_days, con il massimo nel messaggio" "$(new_days "$DY" "$PLAN" 12)" \
@@ -139,10 +140,11 @@ DAYS="$(body_of "$(call GET api/workout/read_plans.php "$DY")" | jq -r --argjson
 DAY1="$(echo "$DAYS" | sed -n 1p)"
 DAY2="$(echo "$DAYS" | sed -n 2p)"
 last=""
+FIRST_EX=""
 for _ in $(seq 1 30); do
     last="$(new_exercise "$DY" "$DAY1")"
     [[ "${last%% *}" == 201 ]] || break
-    [[ -n "${FIRST_EX:-}" ]] || FIRST_EX="$(body_of "$last" | jq -r '.workout_exercise.id')"
+    [[ -z "$FIRST_EX" ]] && FIRST_EX="$(body_of "$last" | jq -r '.workout_exercise.id')"
 done
 check "il 30° esercizio è aggiunto" "$last" '$status == 201'
 expect_n "30 esercizi nel giorno" "$(exercise_count "$DY" "$PLAN")" 30
