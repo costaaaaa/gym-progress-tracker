@@ -46,11 +46,9 @@ class PasswordReset
     // L'età si calcola nel database, con lo stesso orologio di created_at.
     public function createUnlessRecent($user_id)
     {
-        $this->beginTransactionWithoutGapLocks();
+        $this->beginReadCommitted();
         try {
-            $lock = $this->conn->prepare("SELECT id FROM gym_users WHERE id = ? FOR UPDATE");
-            $lock->execute([$user_id]);
-            if ($lock->fetchColumn() === false) {
+            if (!$this->lockUser($user_id)) {
                 $this->conn->rollBack();
                 return null;
             }
@@ -84,12 +82,22 @@ class PasswordReset
         }
     }
 
-    // Apre una transazione READ COMMITTED: l'UPDATE dei link dell'utente non blocca lo spazio in coda
-    // all'indice per user_id, dove altrimenti gli INSERT di utenti diversi si bloccherebbero a vicenda.
-    private function beginTransactionWithoutGapLocks()
+    // Apre una transazione READ COMMITTED. Con il livello predefinito l'UPDATE dei link di un utente
+    // blocca l'intervallo dell'indice idx_reset_user_id fino al user_id successivo, e gli INSERT di
+    // altri utenti in quell'intervallo aspettano: due richieste di account diversi possono bloccarsi
+    // a vicenda. Restano i blocchi di intervallo dei controlli di chiave esterna e di chiave duplicata.
+    private function beginReadCommitted()
     {
         $this->conn->exec("SET TRANSACTION ISOLATION LEVEL READ COMMITTED");
         $this->conn->beginTransaction();
+    }
+
+    // Blocca la riga dell'utente fino alla fine della transazione. Ritorna false se non esiste più.
+    private function lockUser($user_id)
+    {
+        $stmt = $this->conn->prepare("SELECT id FROM gym_users WHERE id = ? FOR UPDATE");
+        $stmt->execute([$user_id]);
+        return $stmt->fetchColumn() !== false;
     }
 
     // Segna come usati tutti i token ancora attivi dell'utente.
@@ -124,10 +132,12 @@ class PasswordReset
             return false;
         }
 
-        $this->beginTransactionWithoutGapLocks();
+        $this->beginReadCommitted();
         try {
-            $lock = $this->conn->prepare("SELECT id FROM gym_users WHERE id = ? FOR UPDATE");
-            $lock->execute([$user_id]);
+            if (!$this->lockUser($user_id)) {
+                $this->conn->rollBack();
+                return false;
+            }
 
             // Riletto con blocco: dopo l'attesa il link può essere già stato invalidato.
             $stmt = $this->conn->prepare(
