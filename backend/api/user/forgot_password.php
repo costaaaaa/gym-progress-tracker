@@ -55,10 +55,10 @@ try {
         $lang = normalize_locale($user['locale'] ?? null) ?? 'it';
         $baseUrl = rtrim(getenv('APP_PUBLIC_URL') ?: 'http://localhost:3000', '/');
         after_response(function () use ($reset, $user, $email, $lang, $baseUrl) {
-            if ($reset->hasRecentActiveLink($user['id'])) {
+            $token = $reset->createUnlessRecent($user['id']);
+            if ($token === null) {
                 return;
             }
-            $token = $reset->create($user['id']);
             $link = $baseUrl . ($lang === 'en' ? '/en' : '') . '/reset-password#token=' . $token;
             $text = t_server('forgot.email_body', array('username' => $user['username'], 'link' => $link), $lang);
             mail_send($email, t_server('forgot.email_subject', array(), $lang), $text);
