@@ -68,7 +68,7 @@
       <tr><td><strong>Misure corporee</strong> (dati sulla salute)</td><td>peso, percentuale di massa grassa e muscolare, circonferenze di torace, braccio, vita e gamba, inserite da te o, se lo attivi nell'app, lette da Apple Salute o Health Connect. Sono trattate solo con il tuo consenso esplicito (vedi punto 4)</td></tr>
       <tr><td>Gruppi</td><td>i gruppi in cui sei, il tuo ruolo, la data di ingresso e la data in cui hai accettato cosa vedono gli altri membri (vedi punto 5)</td></tr>
       <tr><td>Segnalazioni</td><td>solo se ne fai una o se riguarda te: chi la fa, il gruppo, cosa viene segnalato (il nome del gruppo o il nome utente di un membro), il motivo scritto da chi segnala, la decisione e la sua motivazione (vedi punto 5)</td></tr>
-      <tr><td>AI Coach</td><td>solo se lo usi: le domande che scrivi, le risposte, la data e il modello che le ha generate (vedi punto 6)</td></tr>
+      <tr><td>AI Coach</td><td>solo se lo usi: le domande che scrivi, le risposte, la data e il modello che le ha generate, e il registro delle interrogazioni ai tuoi dati (vedi punto 6)</td></tr>
       <tr><td>Assistenti AI collegati</td><td>solo se li usi: i collegamenti attivi, la scelta sulle misure corporee per ciascuno e il registro delle letture (vedi punto 7)</td></tr>
       <tr><td>Dati tecnici</td><td>indirizzo IP e nome utente usati per limitare i tentativi di accesso ripetuti, cookie di sessione, sul telefono un codice di accesso associato al dispositivo, registri tecnici del server</td></tr>
       <tr><td>Statistiche di utilizzo</td><td>pagine visitate e azioni principali (per esempio "registrazione completata"), in forma aggregata e senza cookie, con lo strumento Umami installato sui nostri server</td></tr>
@@ -120,10 +120,11 @@
   <h2 id="ai-coach">6. AI Coach</h2>
   <p>L'AI Coach è una chat facoltativa, non ancora disponibile per tutti, che risponde a domande sui tuoi allenamenti. Le risposte sono generate automaticamente da un modello di intelligenza artificiale: possono contenere errori e non sono consigli medici.</p>
   <ul>
-    <li><strong>Consenso</strong>: te lo chiediamo al primo utilizzo, separato dagli altri. Puoi revocarlo in qualsiasi momento dal pannello dell'AI Coach: la revoca cancella subito tutte le tue chat.</li>
+    <li><strong>Consenso</strong>: te lo chiediamo al primo utilizzo, separato dagli altri. Puoi revocarlo in qualsiasi momento dal pannello dell'AI Coach: la revoca cancella subito tutte le tue chat e il registro delle interrogazioni.</li>
     <li><strong>Cosa vede il modello</strong>: la tua domanda, gli ultimi messaggi della stessa chat e i dati che servono a rispondere, letti dal tuo account: nome utente, data di nascita, sesso, schede, allenamenti, carichi, note, punti esperienza e traguardi. Le misure corporee solo se hai dato anche il consenso del punto 4. Mai email, password o dati di altri utenti.</li>
     <li><strong>Fornitore</strong>: le richieste sono elaborate da Mistral AI SAS (Francia), su server nell'Unione europea, in qualità di responsabile del trattamento. Non usa i tuoi dati per addestrare i propri modelli e non li conserva dopo aver generato la risposta.</li>
     <li><strong>Chat salvate</strong>: conserviamo le tue chat sul nostro server per poterle riprendere. Puoi cancellarne una o tutte quando vuoi dall'elenco delle chat; in ogni caso ciascuna viene cancellata 30 giorni dopo il suo ultimo messaggio.</li>
+    <li><strong>Registro delle interrogazioni</strong>: ogni volta che l'AI Coach interroga i tuoi dati per rispondere registriamo il testo dell'interrogazione, il suo esito, il numero di righe lette e la data. Ci serve per controllare che l'AI Coach legga solo i tuoi dati. Il registro si cancella dopo 30 giorni, quando revochi il consenso e quando elimini l'account, ed è compreso nell'esportazione dei tuoi dati. Cancellare le chat non lo cancella.</li>
     <li><strong>Nessuna decisione automatica</strong>: le risposte dell'AI non hanno effetti sul tuo account e non vengono usate per profilarti.</li>
   </ul>
 
@@ -197,6 +198,7 @@
     <li><strong>Appartenenza ai gruppi</strong>: finché resti nel gruppo. Quando esci, vieni rimosso o il gruppo viene eliminato, la cancelliamo subito.</li>
     <li><strong>Segnalazioni</strong>: finché sono aperte e poi per 5 anni dalla decisione, per poter rispondere a contestazioni o a richieste delle autorità; poi le cancelliamo. Se chi ha segnalato o chi è stato segnalato elimina l'account, la segnalazione resta senza il collegamento all'account (restano il nome segnalato, il motivo e la decisione).</li>
     <li><strong>Chat dell'AI Coach</strong>: ciascuna fino a 30 giorni dopo il suo ultimo messaggio, oppure finché non la cancelli tu o revochi il consenso.</li>
+    <li><strong>Registro delle interrogazioni dell'AI Coach</strong>: 30 giorni, oppure finché non revochi il consenso (vedi punto 6).</li>
     <li><strong>Collegamenti con assistenti AI e registro delle letture</strong>: i collegamenti fino alla chiusura e poi fino alla pulizia notturna, che li cancella (vedi punto 7); il registro delle letture per 90 giorni (anche dopo la chiusura del collegamento).</li>
     <li><strong>Codici di accesso del telefono e link di recupero password</strong>: scadono da soli (30 giorni di inattività e 1 ora) e vengono ripuliti periodicamente.</li>
     <li><strong>Tentativi di accesso (indirizzo IP)</strong>: pochi minuti o ore, il tempo necessario a limitare gli abusi.</li>
@@ -232,7 +234,7 @@
     <li>vai in <em>Profilo → Account</em> sul sito, oppure <em>Profilo → Impostazioni</em> nell'app;</li>
     <li>scegli "Elimina Account" e conferma.</li>
   </ol>
-  <p>Se non riesci ad accedere, scrivi a <a href="mailto:info@liftindex.app">info@liftindex.app</a> dall'indirizzo email dell'account: lo eliminiamo entro un mese. Vengono cancellati account, profilo, allenamenti, misure corporee, appartenenza ai gruppi, chat dell'AI Coach, collegamenti con assistenti AI e il relativo registro, e consensi. Restano solo nelle copie di sicurezza, fino a 14 giorni.</p>
+  <p>Se non riesci ad accedere, scrivi a <a href="mailto:info@liftindex.app">info@liftindex.app</a> dall'indirizzo email dell'account: lo eliminiamo entro un mese. Vengono cancellati account, profilo, allenamenti, misure corporee, appartenenza ai gruppi, chat dell'AI Coach e registro delle sue interrogazioni, collegamenti con assistenti AI e il relativo registro, e consensi. Restano solo nelle copie di sicurezza, fino a 14 giorni.</p>
 
   <h2 id="eta">11. Età minima</h2>
   <p>Per registrarti devi avere almeno 14 anni. Se hai meno di 14 anni non puoi creare un account: se veniamo a sapere che un account è di chi ne ha meno, lo eliminiamo. Per creare un gruppo o entrarci devi avere almeno 16 anni. Per collegare un assistente AI devi avere almeno 18 anni.</p>
