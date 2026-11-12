@@ -104,7 +104,12 @@ burst() {
             fi
         done
         wait' sh "$@" >"$TMP/codes"
-    sleep 2 # il lavoro dopo la risposta (token e email) può finire dopo la risposta stessa
+    # Il lavoro dopo la risposta (token e email) può finire dopo la risposta stessa: si aspetta che
+    # nessun processo PHP abbia più una connessione al database (le sessioni del client mysql sono locali).
+    for _ in $(seq 1 60); do
+        [[ "$(sql "SELECT COUNT(*) FROM information_schema.processlist WHERE host NOT LIKE 'localhost%'")" == 0 ]] && break
+        sleep 0.5
+    done
 }
 
 # Tutte le richieste del tipo $1 (F o R) devono aver risposto con i codici ammessi $2 (regex).
@@ -171,6 +176,7 @@ burst 1 "$RACE_PARALLEL" $race
 check_codes F 200 "recupero"
 check_codes R "200|400" "cambio password"
 errlog="$(docker logs "$WEB" 2>&1 | grep -c 'after_response\|Reset password error')"
+[[ "$errlog" == 0 ]] || docker logs "$WEB" 2>&1 | grep "after_response\|Reset password error" >&2
 if [[ "$errlog" == 0 ]]; then ok "nessun errore nel log del server"; else ko "righe di errore nel log del server: $errlog"; fi
 for i in $race; do
     uid="(SELECT id FROM gym_users WHERE email = 'fp$i@example.test')"
