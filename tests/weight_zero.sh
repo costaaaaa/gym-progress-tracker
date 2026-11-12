@@ -12,8 +12,8 @@
 # intensità che non sono stringhe o superano le colonne (5000 e 100 caratteri); l'exercise_id di serie
 # ed esercizi in scheda deve essere un intero positivo (o una stringa di sole cifre), altrimenti 400
 # senza salvare nulla. Gli obiettivi di tonnellaggio seguono la scala dall'automobile alla Torre
-# Eiffel. Registra un account usa e getta (token Bearer) e lo
-# cancella alla fine. Non va lanciato in produzione: crea account veri.
+# Eiffel. Registra un account usa e getta (token Bearer) e lo cancella alla fine. Non va lanciato
+# in produzione: crea account veri.
 #
 # Richiede curl e jq. Esce con 1 se un controllo fallisce.
 
