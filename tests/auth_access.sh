@@ -259,9 +259,9 @@ expect "token ben formato ma inventato rifiutato" 400 "$(call POST api/user/rese
 
 echo "Recupero password"
 # Questo script NON verifica la regola del link recente (PasswordReset::RECENT_SECONDS: un solo link
-# attivo, il primo resta valido): il link si vede solo nell'email, da HTTP non si distingue. Controlla
-# solo che la risposta sia sempre la stessa, per indirizzo registrato e non, alla prima richiesta e
-# alle successive.
+# attivo, il primo resta valido; la verifica tests/forgot_parallel.sh): il link si vede solo nell'email,
+# da HTTP non si distingue. Controlla solo che la risposta sia sempre la stessa, per indirizzo
+# registrato e non, alla prima richiesta e alle successive.
 forgot() { call POST api/user/forgot_password.php "" "$(jq -nc --arg e "$1" '{email:$e}')"; }
 first="$(forgot "$B_USER@example.com")"
 second="$(forgot "$B_USER@example.com")"
