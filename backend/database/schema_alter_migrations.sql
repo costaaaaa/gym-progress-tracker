@@ -872,3 +872,15 @@ DROP TEMPORARY TABLE IF EXISTS `tmp_reps_numbers`;
 DROP TEMPORARY TABLE IF EXISTS `tmp_reps_parts`;
 DROP TEMPORARY TABLE IF EXISTS `tmp_exercises_to_convert`;
 DROP TEMPORARY TABLE IF EXISTS `tmp_set_numbers`;
+
+-- ------------------------------------------------------------------------------
+-- 35. Livello dell'account: gym_users.tier ('free', 'plus', 'pro'; cumulativi) e tier_until, la
+--     scadenza in UTC (NULL = senza scadenza; passata = l'utente è free, calcolato alla lettura,
+--     niente cron). Tutti partono da 'free'. Si imposta solo da riga di comando
+--     (backend/tools/tier.php). Colonne nuove con valore di default: il rollback del codice
+--     resta possibile (il codice vecchio le ignora).
+-- ------------------------------------------------------------------------------
+
+ALTER TABLE `gym_users`
+  ADD COLUMN `tier` ENUM('free','plus','pro') NOT NULL DEFAULT 'free' AFTER `is_admin`,
+  ADD COLUMN `tier_until` DATETIME NULL DEFAULT NULL AFTER `tier`;

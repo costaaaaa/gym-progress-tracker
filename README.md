@@ -120,11 +120,11 @@ Frontend build variables (Vite, read at build time): `VITE_UMAMI_SRC` and `VITE_
 
 ### Command-line tools
 
-Under `backend/tools/` (CLI only, they answer 404 over HTTP): `admin.php list|grant|revoke <user>` manages admins, `purge.php [--dry-run]` removes data that is no longer needed, `wrap_legacy_hashes.php [--dry-run]` wraps old password hashes in bcrypt.
+Under `backend/tools/` (CLI only, they answer 404 over HTTP): `admin.php list|grant|revoke <user>` manages admins, `tier.php show|set <user> ...` shows or sets the account level (free, plus, pro) with an optional last valid day, `purge.php [--dry-run]` removes data that is no longer needed, `wrap_legacy_hashes.php [--dry-run]` wraps old password hashes in bcrypt.
 
 ### Tests
 
-`tests/*.sh` are integration checks (access rules for personal exercises and groups, and the Apple Health / Health Connect sync rules) run against a live instance, for example `tests/groups_access.sh http://localhost/gym-progress-tracker/backend/`. They register throwaway accounts and delete them at the end: run them on a local or test instance, **never on a production one**. The ones with a `tests/*_test.php` next to them (`admin_notify`, `blog_calculator`, `blog_mcp`, `client_ip`, `client_time`, `gamification_rules`, `muscle_rules`, `recovery_rules`, `validation_limits`, `web_session`, `weekly_sets`) are different: they run that file with the PHP of the web image, in Docker, and need no live instance or database. `forgot_parallel.sh` also needs neither: it starts a throwaway MySQL and the backend in Docker by itself.
+`tests/*.sh` are integration checks (access rules for personal exercises and groups, and the Apple Health / Health Connect sync rules) run against a live instance, for example `tests/groups_access.sh http://localhost/gym-progress-tracker/backend/`. They register throwaway accounts and delete them at the end: run them on a local or test instance, **never on a production one**. The ones with a `tests/*_test.php` next to them (`admin_notify`, `blog_calculator`, `blog_mcp`, `client_ip`, `client_time`, `gamification_rules`, `muscle_rules`, `recovery_rules`, `tier_rules`, `validation_limits`, `web_session`, `weekly_sets`) are different: they run that file with the PHP of the web image, in Docker, and need no live instance or database. `forgot_parallel.sh` also needs neither: it starts a throwaway MySQL and the backend in Docker by itself.
 
 ### Blog (optional)
 
@@ -281,11 +281,11 @@ Variabili di build del frontend (Vite, `VITE_*`, lette in fase di build): `VITE_
 
 ### Strumenti da riga di comando
 
-In `backend/tools/` (solo CLI, via HTTP rispondono 404): `admin.php list|grant|revoke <utente>` gestisce gli admin, `purge.php [--dry-run]` elimina i dati non più necessari, `wrap_legacy_hashes.php [--dry-run]` avvolge in bcrypt i vecchi hash delle password.
+In `backend/tools/` (solo CLI, via HTTP rispondono 404): `admin.php list|grant|revoke <utente>` gestisce gli admin, `tier.php show|set <utente> ...` mostra o imposta il livello dell'account (free, plus, pro) con un ultimo giorno valido facoltativo, `purge.php [--dry-run]` elimina i dati non più necessari, `wrap_legacy_hashes.php [--dry-run]` avvolge in bcrypt i vecchi hash delle password.
 
 ### Test
 
-`tests/*.sh` sono controlli di integrazione (regole di accesso a esercizi personali e gruppi, regole della sincronizzazione con Apple Salute / Health Connect) da lanciare contro un'istanza attiva, per esempio `tests/groups_access.sh http://localhost/gym-progress-tracker/backend/`. Registrano account usa e getta e li cancellano alla fine: vanno usati su un'istanza locale o di prova, **mai in produzione**. Fanno eccezione quelli con accanto un `tests/*_test.php` (`admin_notify`, `blog_calculator`, `blog_mcp`, `client_ip`, `client_time`, `gamification_rules`, `muscle_rules`, `recovery_rules`, `validation_limits`, `web_session`, `weekly_sets`): eseguono quel file con il PHP dell'immagine web, in Docker, e non richiedono un'istanza attiva né un database. Anche `forgot_parallel.sh` non ne richiede: avvia da solo in Docker un MySQL usa e getta e il backend.
+`tests/*.sh` sono controlli di integrazione (regole di accesso a esercizi personali e gruppi, regole della sincronizzazione con Apple Salute / Health Connect) da lanciare contro un'istanza attiva, per esempio `tests/groups_access.sh http://localhost/gym-progress-tracker/backend/`. Registrano account usa e getta e li cancellano alla fine: vanno usati su un'istanza locale o di prova, **mai in produzione**. Fanno eccezione quelli con accanto un `tests/*_test.php` (`admin_notify`, `blog_calculator`, `blog_mcp`, `client_ip`, `client_time`, `gamification_rules`, `muscle_rules`, `recovery_rules`, `tier_rules`, `validation_limits`, `web_session`, `weekly_sets`): eseguono quel file con il PHP dell'immagine web, in Docker, e non richiedono un'istanza attiva né un database. Anche `forgot_parallel.sh` non ne richiede: avvia da solo in Docker un MySQL usa e getta e il backend.
 
 ### Blog (facoltativo)
 
