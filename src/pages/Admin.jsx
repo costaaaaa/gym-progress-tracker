@@ -5,6 +5,7 @@ import RequireLogin from '../components/Groups/RequireLogin';
 import AdminExercises from '../components/Admin/AdminExercises';
 import AdminReports from '../components/Admin/AdminReports';
 import AdminGroups from '../components/Admin/AdminGroups';
+import AdminTiers from '../components/Admin/AdminTiers';
 import { listAdminExercises } from '../api/exercises';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
@@ -29,6 +30,7 @@ const AdminContent = () => {
       <AdminExercises />
       <AdminReports />
       <AdminGroups />
+      <AdminTiers />
     </Box>
   );
 };

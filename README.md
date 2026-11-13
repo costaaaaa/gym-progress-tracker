@@ -120,7 +120,7 @@ Frontend build variables (Vite, read at build time): `VITE_UMAMI_SRC` and `VITE_
 
 ### Command-line tools
 
-Under `backend/tools/` (CLI only, they answer 404 over HTTP): `admin.php list|grant|revoke <user>` manages admins, `tier.php show|set <user> ...` shows or sets the account level (free, plus, pro) with an optional last valid day, `purge.php [--dry-run]` removes data that is no longer needed, `wrap_legacy_hashes.php [--dry-run]` wraps old password hashes in bcrypt.
+Under `backend/tools/` (CLI only, they answer 404 over HTTP): `admin.php list|grant|revoke <user>` manages admins, `tier.php show|set <user> ...` shows or sets the account level (free, plus, pro) with an optional last valid day (admins can also do it from the "User level" section of `/admin`), `purge.php [--dry-run]` removes data that is no longer needed, `wrap_legacy_hashes.php [--dry-run]` wraps old password hashes in bcrypt.
 
 ### Tests
 
@@ -281,7 +281,7 @@ Variabili di build del frontend (Vite, `VITE_*`, lette in fase di build): `VITE_
 
 ### Strumenti da riga di comando
 
-In `backend/tools/` (solo CLI, via HTTP rispondono 404): `admin.php list|grant|revoke <utente>` gestisce gli admin, `tier.php show|set <utente> ...` mostra o imposta il livello dell'account (free, plus, pro) con un ultimo giorno valido facoltativo, `purge.php [--dry-run]` elimina i dati non più necessari, `wrap_legacy_hashes.php [--dry-run]` avvolge in bcrypt i vecchi hash delle password.
+In `backend/tools/` (solo CLI, via HTTP rispondono 404): `admin.php list|grant|revoke <utente>` gestisce gli admin, `tier.php show|set <utente> ...` mostra o imposta il livello dell'account (free, plus, pro) con un ultimo giorno valido facoltativo (gli admin possono farlo anche dalla sezione «Livello utente» di `/admin`), `purge.php [--dry-run]` elimina i dati non più necessari, `wrap_legacy_hashes.php [--dry-run]` avvolge in bcrypt i vecchi hash delle password.
 
 ### Test
 

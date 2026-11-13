@@ -51,5 +51,12 @@ check('9999-12-31: oltre il massimo di DATETIME, errore', str_contains(tierSetUn
 check('9999-12-30: scade 9999-12-31 00:00:00', tierSetUntil('plus', '9999-12-30', $now) === ['until' => '9999-12-31 00:00:00']);
 check('livello sconosciuto: errore', isset(tierSetUntil('gold', null, $now)['error']));
 
+echo "tier_until -> ultimo giorno valido\n";
+check('senza scadenza: null', tierLastDay(null) === null);
+check('mezzanotte: l\'ultimo giorno è il giorno prima', tierLastDay('2027-01-01 00:00:00') === '2026-12-31');
+check('inverso di tierSetUntil (fine febbraio)', tierLastDay(tierSetUntil('pro', '2026-02-28', '2026-01-01 00:00:00')['until']) === '2026-02-28');
+check('inverso di tierSetUntil (9999-12-30)', tierLastDay('9999-12-31 00:00:00') === '9999-12-30');
+check('scadenza a metà giornata: vale fino a quel giorno', tierLastDay('2026-11-13 10:30:00') === '2026-11-13');
+
 echo "\n$checks controlli, $fails falliti\n";
 exit($fails > 0 ? 1 : 0);

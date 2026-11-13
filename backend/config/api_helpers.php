@@ -609,7 +609,7 @@ function user_is_admin($db, $user_id)
 
 // Livello in vigore dell'utente ('free', 'plus' o 'pro'; cumulativi): gym_users.tier, ma free se
 // gym_users.tier_until (UTC, NULL = senza scadenza) è passata (regole in lib/tier_rules.php).
-// Si imposta solo da riga di comando (backend/tools/tier.php).
+// Si imposta da /admin (api/admin/tiers.php) o da riga di comando (backend/tools/tier.php).
 function user_tier($db, $user_id)
 {
     $stmt = $db->prepare("SELECT tier, tier_until FROM gym_users WHERE id = ? LIMIT 1");

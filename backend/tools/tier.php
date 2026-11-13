@@ -1,5 +1,6 @@
 <?php
-// Livello dell'account (free, plus, pro): l'unico modo per cambiarlo e' da qui (nessun endpoint lo concede).
+// Livello dell'account (free, plus, pro): lo si cambia da qui o dalla pagina /admin
+// (api/admin/tiers.php); nessun altro endpoint lo concede.
 //
 //   php backend/tools/tier.php show <id|email|username>                           livello salvato, scadenza e livello in vigore
 //   php backend/tools/tier.php set <id|email|username> <free|plus|pro> [AAAA-MM-GG]
