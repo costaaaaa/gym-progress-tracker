@@ -52,7 +52,7 @@ ob_start();
 
         <h2>What you need</h2>
         <ul>
-            <li>A Premium LiftIndex account: connecting is for users who are at least 18.</li>
+            <li>A LiftIndex account: connecting is for users who are at least 18.</li>
             <li>One of the approved AI apps: the up-to-date list, with how each one handles your data, is on the <a href="<?php echo blog_e(BLOG_APP_URL . 'en/assistenti-ai'); ?>">AI apps you can connect</a> page.</li>
         </ul>
 

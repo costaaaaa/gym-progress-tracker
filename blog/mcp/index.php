@@ -53,7 +53,7 @@ ob_start();
 
         <h2>Cosa serve</h2>
         <ul>
-            <li>Un account LiftIndex Premium: il collegamento è riservato a chi ha almeno 18 anni.</li>
+            <li>Un account LiftIndex: il collegamento è riservato a chi ha almeno 18 anni.</li>
             <li>Un'app AI tra quelle ammesse: l'elenco aggiornato, con la scheda di ciascuna su come tratta i tuoi dati, è nella pagina <a href="<?php echo blog_e(BLOG_APP_URL . 'assistenti-ai'); ?>">app AI collegabili</a>.</li>
         </ul>
 

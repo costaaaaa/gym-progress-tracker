@@ -39,6 +39,7 @@ function check_page($html, $lang, $canonical, array $t)
         && strpos($html, 'hreflang="en" href="' . $en . '"') !== false
         && strpos($html, 'hreflang="x-default" href="' . $it . '"') !== false);
     check('indicizzabile', strpos($html, 'noindex') === false);
+    check('il collegamento non è riservato ai Premium', stripos($html, 'Premium') === false);
     check('indirizzo del connettore', strpos($html, '<code>https://liftindex.app/mcp</code>') !== false);
     check('link all\'elenco delle app ammesse', strpos($html, 'href="' . $app . 'assistenti-ai"') !== false);
     check('link alla privacy, sezione assistenti AI', strpos($html, 'href="https://liftindex.app/privacy.html#assistenti-ai"') !== false);
@@ -57,7 +58,7 @@ check_page(render('mcp/index.php'), 'it', $it, array(
     'nessuna scrittura' => 'non può creare, modificare o cancellare nulla',
     'le proposte restano in chat' => 'Le proposte restano nella chat',
     'mai note, email e password' => 'Non legge mai le note, la tua email né la password.',
-    'Premium' => 'Un account LiftIndex Premium',
+    'requisito: account e età' => 'Un account LiftIndex: il collegamento è riservato a chi ha almeno 18 anni.',
     'almeno 18 anni' => 'almeno 18 anni',
     'pulsante del consenso' => '"Consenti"',
     'casella delle misure corporee' => '"Condividi anche le misure corporee (peso e simili)"',
@@ -70,7 +71,7 @@ check_page(render('en/mcp/index.php'), 'en', $en, array(
     'nessuna scrittura' => "it can't create, change or delete anything",
     'le proposte restano in chat' => 'Suggestions stay in the chat',
     'mai note, email e password' => 'It never reads your notes, your email or your password.',
-    'Premium' => 'A Premium LiftIndex account',
+    'requisito: account e età' => 'A LiftIndex account: connecting is for users who are at least 18.',
     'almeno 18 anni' => 'at least 18',
     'pulsante del consenso' => '"Allow"',
     'casella delle misure corporee' => '"Also share body measurements (weight and similar)"',
