@@ -70,6 +70,7 @@ class WorkoutPlan
         if ($this->conn->inTransaction()) {
             throw new LogicException($label . ": transazione già aperta");
         }
+        $this->plan_gone = false;
         try {
             $this->conn->beginTransaction();
             if (!$this->lockUser() || !$work()) {

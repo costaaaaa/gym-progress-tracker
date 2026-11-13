@@ -23,6 +23,7 @@ BASE="${1:?uso: $(basename "$0") <url del backend, es. http://localhost:8080/bac
 PASS='Prova!PrimoUso2026'
 SUFFIX="$(date +%s | tail -c 7)$RANDOM"
 TOKENS=()
+TMPFILES=()
 fails=0
 checks=0
 
@@ -68,6 +69,7 @@ cleanup() {
         res="$(call POST api/user/delete.php "$t" "$(jq -nc --arg p "$PASS" '{password:$p}')")"
         [[ "$(jq -r .success <<<"${res#* }" 2>/dev/null)" == true ]] || left=$((left + 1))
     done
+    rm -f "${TMPFILES[@]}"
     echo "Account di prova cancellati ($left rimasti)."
 }
 trap cleanup EXIT
@@ -158,31 +160,31 @@ wait
 expect_n "8 schede" "$(body_of "$(call GET api/workout/read_plans.php "$F")" | jq '.records | length')" 8
 expect_n "una sola attiva" "$(active_count "$F")" 1
 
-echo "Scheda cancellata mentre la si attiva o la si modifica"
+echo "Scheda cancellata mentre la si attiva o la si modifica (sicurezza: mai 5xx; la regressione è in tests/workout_plan_active.sh)"
 new_account "fuG$SUFFIX"; G="$TOKEN"
 GA="$(plan_id "$(new_plan "$G")")"
 bad=0; notfound=0
+FU_R="$(mktemp)"; TMPFILES+=("$FU_R")
 for i in $(seq 1 25); do
     GB="$(plan_id "$(new_plan "$G" '{"name":"Da cancellare","is_active":0}')")"
     if ((i % 2)); then
-        call POST api/workout/activate_plan.php "$G" "{\"plan_id\":$GB}" >/tmp/fu_r.$$ &
+        call POST api/workout/activate_plan.php "$G" "{\"plan_id\":$GB}" >"$FU_R" &
     else
-        call POST api/workout/update_plan.php "$G" "{\"plan_id\":$GB,\"name\":\"X\",\"is_active\":1}" >/tmp/fu_r.$$ &
+        call POST api/workout/update_plan.php "$G" "{\"plan_id\":$GB,\"name\":\"X\",\"is_active\":1}" >"$FU_R" &
     fi
     call POST api/workout/delete_plan.php "$G" "{\"plan_id\":$GB}" >/dev/null &
     wait
-    st="$(cut -d' ' -f1 /tmp/fu_r.$$)"
+    st="$(cut -d' ' -f1 "$FU_R")"
     [[ "$st" == 404 ]] && notfound=$((notfound + 1))
-    # Risposta solo 200 o 404 (mai 5xx); con 404 la scheda A, già attiva, non deve essere stata toccata.
-    # Con 200 e poi cancellazione zero attive è lecito (attivata e poi cancellata): per questo il caso
-    # "cancellata dopo il controllo di proprietà" non è distinguibile via HTTP dal "cancellata dopo".
+    # Test di sicurezza, non di regressione: passa anche senza la verifica sotto lock. Controlla solo
+    # che la risposta sia 200 o 404 (mai 5xx) e che con 404 la scheda A, già attiva, sia rimasta tale.
+    # Il caso "cancellata dopo il controllo di proprietà" non si distingue via HTTP da "cancellata dopo".
     if [[ "$st" == 200 ]]; then :
     elif [[ "$st" == 404 && "$(active_ids "$G" | tr '\n' ' ')" == "$GA " ]]; then :
     else bad=$((bad + 1)); fi
     if [[ "$st" == 200 && "$(active_count "$G")" == 0 ]]; then GA="$(plan_id "$(new_plan "$G")")"; fi
 done
-rm -f /tmp/fu_r.$$
-expect_n "solo 200 o 404 e con 404 la scheda attiva resta quella di prima (404 ottenuti: $notfound su 25)" "$bad" 0
+expect_n "nessun 5xx e con 404 la scheda attiva resta quella di prima (404 ottenuti: $notfound su 25)" "$bad" 0
 
 echo "Storico"
 new_account "fuH$SUFFIX"; H="$TOKEN"
