@@ -90,9 +90,6 @@ try {
         }
 
         http_response_code(200);
-    } else {
-        http_response_code(404);
-        $records_arr["message"] = t_server('history.none_found');
     }
 
     if (ob_get_length()) ob_clean();
