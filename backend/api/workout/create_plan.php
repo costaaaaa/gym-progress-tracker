@@ -22,10 +22,11 @@ if (!empty($data->name)) {
     $workout_plan->user_id = $user_id;
     $workout_plan->name = $data->name;
     $workout_plan->description = isset($data->description) ? $data->description : "";
-    $workout_plan->is_active = isset($data->is_active) ? $data->is_active : 0;
-    
+    // Se il client non chiede is_active, la scheda nasce attiva solo se l'utente non ne ha una attiva
+    $requested_active = isset($data->is_active) ? filter_var($data->is_active, FILTER_VALIDATE_BOOLEAN) : null;
+
     // Create the workout plan
-    if ($workout_plan->create()) {
+    if ($workout_plan->createKeepingOneActive($requested_active)) {
         http_response_code(201);
 
         echo json_encode(array(

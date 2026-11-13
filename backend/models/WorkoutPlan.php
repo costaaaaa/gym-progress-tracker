@@ -59,6 +59,43 @@ class WorkoutPlan
         return false;
     }
 
+    // Crea la scheda mantenendo una sola scheda attiva per utente. $requested_active è la richiesta
+    // del client: true = attiva (le altre vengono disattivate), false = non attiva, null = non
+    // richiesto: nasce attiva solo se l'utente non ne ha nessuna attiva. La riga dell'utente è
+    // bloccata per la durata della transazione, così due creazioni contemporanee non risultano
+    // entrambe attive.
+    public function createKeepingOneActive($requested_active)
+    {
+        try {
+            $this->conn->beginTransaction();
+            $lock = $this->conn->prepare("SELECT id FROM gym_users WHERE id = ? FOR UPDATE");
+            $lock->execute([(int)$this->user_id]);
+
+            if ($requested_active === null) {
+                $stmt = $this->conn->prepare("SELECT COUNT(*) FROM " . $this->table_name . " WHERE user_id = ? AND is_active = 1");
+                $stmt->execute([(int)$this->user_id]);
+                $this->is_active = (int)$stmt->fetchColumn() === 0 ? 1 : 0;
+            } else {
+                $this->is_active = $requested_active ? 1 : 0;
+                if ($this->is_active === 1) {
+                    $this->deactivateAllPlans();
+                }
+            }
+
+            if (!$this->create()) {
+                $this->conn->rollBack();
+                return false;
+            }
+            return $this->conn->commit();
+        } catch (PDOException $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+            error_log("Create plan error: " . $e->getMessage());
+            return false;
+        }
+    }
+
     // Numero di schede dell'utente (per il tetto MAX_PER_USER)
     public function countByUser($user_id)
     {
