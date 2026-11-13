@@ -5,7 +5,8 @@
 const TIER_LEVELS = ['free', 'plus', 'pro'];
 
 // Livello in vigore: quello salvato, ma free se è scaduto ($until non NULL e $now >= $until; NULL =
-// senza scadenza) o se il valore salvato non è un livello noto. Niente cron: si calcola alla lettura.
+// senza scadenza) o se il valore salvato non è un livello noto. $tier non è tipizzato apposta: accetta
+// qualunque valore arrivi dal database (anche uno che non è un livello). Niente cron: si calcola alla lettura.
 function tierEffective($tier, ?string $until, string $now): string
 {
     if (!in_array($tier, TIER_LEVELS, true)) {
@@ -36,6 +37,10 @@ function tierSetUntil(string $tier, ?string $lastDay, string $now): array
     $day = DateTimeImmutable::createFromFormat('!Y-m-d', $lastDay, $utc);
     if ($day === false || $day->format('Y-m-d') !== $lastDay) {
         return ['error' => "Data non valida: $lastDay (formato AAAA-MM-GG)."];
+    }
+    if ($day->format('Y-m-d') === '9999-12-31') {
+        // il giorno dopo (anno 10000) non entra in un DATETIME
+        return ['error' => "Data non valida: $lastDay (oltre il massimo, 9999-12-30)."];
     }
     $until = $day->modify('+1 day')->format('Y-m-d H:i:s');
     if ($until <= $now) {

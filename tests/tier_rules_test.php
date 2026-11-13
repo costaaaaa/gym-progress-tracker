@@ -15,8 +15,12 @@ function check($desc, $cond)
     }
 }
 
-// Il fuso del processo (TZ) non deve cambiare nulla: tutto è in UTC.
-echo "Livello effettivo (" . date_default_timezone_get() . ", TZ=" . (getenv('TZ') ?: '-') . ")\n";
+// Il fuso del processo non deve cambiare nulla: tutto è in UTC. tests/tier_rules.sh passa il fuso
+// atteso come primo argomento; senza argomento il controllo si salta.
+echo "Livello effettivo (fuso " . date_default_timezone_get() . ")\n";
+if (isset($argv[1])) {
+    check("il fuso di PHP è quello atteso ({$argv[1]})", date_default_timezone_get() === $argv[1]);
+}
 $now = '2026-11-13 12:00:00';
 check('senza scadenza: plus resta plus', tierEffective('plus', null, $now) === 'plus');
 check('senza scadenza: pro resta pro', tierEffective('pro', null, $now) === 'pro');
@@ -43,6 +47,8 @@ check('data non valida (testo)', isset(tierSetUntil('plus', 'domani', $now)['err
 check('data non valida (stringa vuota)', isset(tierSetUntil('plus', '', $now)['error']));
 check('data nel passato', isset(tierSetUntil('plus', '2026-11-12', $now)['error']));
 check('free con data: errore', isset(tierSetUntil('free', '2026-12-31', $now)['error']));
+check('9999-12-31: oltre il massimo di DATETIME, errore', str_contains(tierSetUntil('plus', '9999-12-31', $now)['error'] ?? '', 'non valida'));
+check('9999-12-30: scade 9999-12-31 00:00:00', tierSetUntil('plus', '9999-12-30', $now) === ['until' => '9999-12-31 00:00:00']);
 check('livello sconosciuto: errore', isset(tierSetUntil('gold', null, $now)['error']));
 
 echo "\n$checks controlli, $fails falliti\n";
