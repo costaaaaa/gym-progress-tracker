@@ -20,7 +20,8 @@ const summary = (u) => {
   return u.last_day ? `${label(u.tier)} fino al ${formatDay(u.last_day)} compreso` : `${label(u.tier)}, senza scadenza`;
 };
 
-// Una riga scaduta parte dallo stato in vigore (Gratis, senza data): Salva senza toccare nulla non ridà il livello
+// Una riga scaduta parte dallo stato in vigore (Gratis, senza data):
+// Salva senza toccare nulla non ridà il livello
 const TierRow = ({ user, onSaved }) => {
   const [tier, setTier] = useState(user.effective_tier);
   const [lastDay, setLastDay] = useState(isExpired(user) ? '' : user.last_day || '');

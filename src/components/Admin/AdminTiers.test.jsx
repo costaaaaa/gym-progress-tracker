@@ -6,6 +6,7 @@ import AdminTiers from './AdminTiers';
 import { json } from '../../test/dom';
 
 const MARIO = { id: 7, username: 'mario', email: 'mario@example.com', tier: 'free', last_day: null, effective_tier: 'free' };
+const MARIO_SCADUTO = { ...MARIO, tier: 'plus', last_day: '2026-10-31', effective_tier: 'free' };
 
 let fetchMock;
 let searchResult;
@@ -68,7 +69,7 @@ describe('AdminTiers', () => {
   });
 
   it('livello salvato scaduto: dice quando è scaduto e che di fatto è Gratis', async () => {
-    searchResult = [{ ...MARIO, tier: 'plus', last_day: '2026-10-31', effective_tier: 'free' }];
+    searchResult = [MARIO_SCADUTO];
     await cerca();
     expect(screen.getByText(/Plus, scaduto il 31\/10\/2026 \(di fatto Gratis\)/)).toBeTruthy();
   });
@@ -104,14 +105,14 @@ describe('AdminTiers', () => {
   });
 
   it('livello scaduto: il campo data parte vuoto, il riepilogo dice ancora "scaduto il"', async () => {
-    searchResult = [{ ...MARIO, tier: 'plus', last_day: '2026-10-31', effective_tier: 'free' }];
+    searchResult = [MARIO_SCADUTO];
     await cerca();
     expect(screen.getByLabelText('Ultimo giorno valido').value).toBe('');
     expect(screen.getByText(/Plus, scaduto il 31\/10\/2026 \(di fatto Gratis\)/)).toBeTruthy();
   });
 
   it('livello scaduto: il modulo parte da Gratis (data disattivata) e Salva senza modifiche manda free', async () => {
-    searchResult = [{ ...MARIO, tier: 'plus', last_day: '2026-10-31', effective_tier: 'free' }];
+    searchResult = [MARIO_SCADUTO];
     await cerca();
     expect(screen.getByLabelText('Livello').value).toBe('free');
     expect(screen.getByLabelText('Ultimo giorno valido').disabled).toBe(true);

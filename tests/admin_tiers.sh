@@ -157,7 +157,7 @@ else
         for bad in "\"${A_ID}abc\"" "[$A_ID]" "true" "$A_ID.9" "\"$A_ID\""; do
             res="$(set_tier "{\"action\":\"set_tier\",\"id\":$bad,\"tier\":\"pro\"}")"
             expect "id non intero ($bad): 404" 404 "$res"
-            check "  con il codice user_not_found" "$res" '.code == "user_not_found"'
+            check "  con il codice user_not_found ($bad)" "$res" '.code == "user_not_found"'
         done
         check "e la riga di A non cambia" "$(tiers "$A_USER")" ". == ${before#* }"
         res="$(set_tier "{\"action\":\"boh\",\"id\":$A_ID,\"tier\":\"plus\"}")"
