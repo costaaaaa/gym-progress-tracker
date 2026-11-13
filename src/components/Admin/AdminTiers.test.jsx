@@ -100,6 +100,30 @@ describe('AdminTiers', () => {
     await salva();
     expect(screen.getByText('La data 2020-01-01 è già passata (UTC).')).toBeTruthy();
     expect(screen.queryByText('Livello salvato.')).toBeNull();
+    expect(screen.getByText('#7 · mario@example.com · Gratis')).toBeTruthy();
+  });
+
+  it('livello scaduto: il campo data parte vuoto, il riepilogo dice ancora "scaduto il"', async () => {
+    searchResult = [{ ...MARIO, tier: 'plus', last_day: '2026-10-31', effective_tier: 'free' }];
+    await cerca();
+    expect(screen.getByLabelText('Ultimo giorno valido').value).toBe('');
+    expect(screen.getByText(/Plus, scaduto il 31\/10\/2026/)).toBeTruthy();
+  });
+
+  it('nuova ricerca: la riga riparte dai valori del server e senza avviso vecchio', async () => {
+    await cerca();
+    fireEvent.change(screen.getByLabelText('Livello'), { target: { value: 'plus' } });
+    fireEvent.change(screen.getByLabelText('Ultimo giorno valido'), { target: { value: '2026-12-31' } });
+    await salva();
+    expect(screen.getByText('Livello salvato.')).toBeTruthy();
+    searchResult = [{ ...MARIO, tier: 'plus', last_day: '2026-12-31', effective_tier: 'plus' }];
+    fireEvent.change(screen.getByLabelText('Livello'), { target: { value: 'pro' } });
+    fireEvent.change(screen.getByLabelText('Ultimo giorno valido'), { target: { value: '2027-01-01' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Cerca' }));
+    await flush();
+    expect(screen.getByLabelText('Livello').value).toBe('plus');
+    expect(screen.getByLabelText('Ultimo giorno valido').value).toBe('2026-12-31');
+    expect(screen.queryByText('Livello salvato.')).toBeNull();
   });
 
   it('con Gratis la data è disattivata e si svuota', async () => {

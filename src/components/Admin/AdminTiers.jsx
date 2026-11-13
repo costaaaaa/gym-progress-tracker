@@ -20,7 +20,7 @@ const summary = (u) => {
 
 const TierRow = ({ user, onSaved }) => {
   const [tier, setTier] = useState(user.tier);
-  const [lastDay, setLastDay] = useState(user.last_day || '');
+  const [lastDay, setLastDay] = useState(user.tier === user.effective_tier ? user.last_day || '' : '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -86,6 +86,8 @@ const AdminTiers = () => {
   const [users, setUsers] = useState(null);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState('');
+  // Cambia a ogni ricerca: le righe ripartono dai valori del server (niente modifiche o avvisi vecchi)
+  const [searchNo, setSearchNo] = useState(0);
 
   const search = async (e) => {
     e.preventDefault();
@@ -94,6 +96,7 @@ const AdminTiers = () => {
     const res = await searchAdminTiers(query.trim());
     setSearching(false);
     if (res.ok) {
+      setSearchNo((n) => n + 1);
       setUsers(res.data.users);
     } else {
       setUsers(null);
@@ -101,7 +104,7 @@ const AdminTiers = () => {
     }
   };
 
-  const saved = (user) => setUsers((prev) => prev.map((u) => (u.id === user.id ? user : u)));
+  const replaceUser = (user) => setUsers((prev) => prev.map((u) => (u.id === user.id ? user : u)));
 
   return (
     <Card sx={{ p: '24px' }}>
@@ -120,7 +123,7 @@ const AdminTiers = () => {
         <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>Nessun utente trovato.</Typography>
       ) : users && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          {users.map((u) => <TierRow key={u.id} user={u} onSaved={saved} />)}
+          {users.map((u) => <TierRow key={`${searchNo}-${u.id}`} user={u} onSaved={replaceUser} />)}
         </Box>
       )}
     </Card>

@@ -5,7 +5,8 @@
 //   GET  ?q=testo                                   utenti con quel testo nello username o nell'email
 //                                                   (almeno 2 caratteri, al massimo 20, per username)
 //   POST {action: set_tier, id, tier, last_day}     last_day = ultimo giorno valido compreso (AAAA-MM-GG,
-//                                                   UTC); null o assente = senza scadenza; con free niente data
+//                                                   UTC); null, assente o stringa vuota = senza scadenza;
+//                                                   con free niente data
 //
 // Ogni utente: id, username, email, tier (salvato), last_day (null se non scade), effective_tier
 // (quello in vigore: free se il salvato è scaduto).
@@ -16,6 +17,7 @@ include_once __DIR__ . '/../../config/api_helpers.php';
 header('Content-Type: application/json');
 
 const TIER_SEARCH_MIN = 2;
+const TIER_USER_COLUMNS = 'id, username, email, tier, tier_until';
 
 function tier_user_row(array $r, string $now): array
 {
@@ -41,7 +43,7 @@ try {
         if (mb_strlen($q, 'UTF-8') >= TIER_SEARCH_MIN) {
             $like = '%' . addcslashes($q, '%_\\') . '%';
             $stmt = $db->prepare(
-                "SELECT id, username, email, tier, tier_until FROM gym_users
+                "SELECT " . TIER_USER_COLUMNS . " FROM gym_users
                  WHERE username LIKE ? OR email LIKE ?
                  ORDER BY username, id
                  LIMIT 20"
@@ -62,10 +64,14 @@ try {
     if (($data['action'] ?? '') !== 'set_tier') {
         api_error(400, 'invalid_action', 'Azione non valida.');
     }
-    $stmt = $db->prepare("SELECT id FROM gym_users WHERE id = ?");
-    $stmt->execute([(int)($data['id'] ?? 0)]);
-    $id = $stmt->fetchColumn();
-    if ($id === false) {
+    $id = $data['id'] ?? null;
+    $user = false;
+    if (is_int($id) && $id > 0) {
+        $stmt = $db->prepare("SELECT " . TIER_USER_COLUMNS . " FROM gym_users WHERE id = ?");
+        $stmt->execute([$id]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    if (!$user) {
         api_error(404, 'user_not_found', 'Utente non trovato.');
     }
     $tier = $data['tier'] ?? null;
@@ -85,9 +91,9 @@ try {
     }
 
     $db->prepare("UPDATE gym_users SET tier = ?, tier_until = ? WHERE id = ?")->execute([$tier, $r['until'], $id]);
-    $stmt = $db->prepare("SELECT id, username, email, tier, tier_until FROM gym_users WHERE id = ?");
-    $stmt->execute([$id]);
-    api_json_response(array('success' => true, 'user' => tier_user_row($stmt->fetch(PDO::FETCH_ASSOC), $now)));
+    $user['tier'] = $tier;
+    $user['tier_until'] = $r['until'];
+    api_json_response(array('success' => true, 'user' => tier_user_row($user, $now)));
 } catch (Throwable $e) {
     api_log_exception('admin/tiers.php', $e);
     if (ob_get_length()) ob_clean();

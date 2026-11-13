@@ -876,7 +876,7 @@ DROP TEMPORARY TABLE IF EXISTS `tmp_set_numbers`;
 -- ------------------------------------------------------------------------------
 -- 35. Livello dell'account: gym_users.tier ('free', 'plus', 'pro'; cumulativi) e tier_until, la
 --     scadenza in UTC (NULL = senza scadenza; passata = l'utente è free, calcolato alla lettura,
---     niente cron). Tutti partono da 'free'. Si imposta solo da riga di comando
+--     niente cron). Tutti partono da 'free'. Si imposta da /admin o da riga di comando
 --     (backend/tools/tier.php). Colonne nuove con valore di default: il rollback del codice
 --     resta possibile (il codice vecchio le ignora).
 -- ------------------------------------------------------------------------------
