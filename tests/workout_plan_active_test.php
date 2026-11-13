@@ -5,9 +5,11 @@ require $argv[1] . '/config/database.php';
 require $argv[1] . '/models/WorkoutPlan.php';
 
 $fails = 0;
+$checks = 0;
 function check($desc, $cond)
 {
-    global $fails;
+    global $fails, $checks;
+    $checks++;
     if ($cond) {
         echo "  \033[32m✓\033[0m $desc\n";
     } else {
@@ -30,7 +32,7 @@ function activeIds($conn, $u)
     return array_map("intval", $conn->query("SELECT id FROM gym_workout_plans WHERE user_id = $u AND is_active = 1 ORDER BY id")->fetchAll(PDO::FETCH_COLUMN));
 }
 
-function model($conn, $u, $id)
+function planFor($conn, $u, $id)
 {
     $p = new WorkoutPlan($conn);
     $p->user_id = $u;
@@ -43,24 +45,28 @@ function model($conn, $u, $id)
 
 foreach (['inesistente' => $gone, 'di un altro utente' => $planOther] as $label => $id) {
     echo "Scheda $label\n";
-    $p = model($conn, $u1, $id);
-    check("updateAtMostOneActive con is_active 1 ritorna false", $p->updateAtMostOneActive() === false);
-    check("plan_gone è vero", $p->plan_gone === true);
-    check("A resta l'unica attiva", activeIds($conn, $u1) === [$planA]);
+    $p = planFor($conn, $u1, $id);
+    check("updateAtMostOneActive con is_active 1 ritorna false ($label)", $p->updateAtMostOneActive() === false);
+    check("updateAtMostOneActive: plan_gone è vero ($label)", $p->plan_gone === true);
+    check("updateAtMostOneActive: A resta l'unica attiva ($label)", activeIds($conn, $u1) === [$planA]);
 
-    $p = model($conn, $u1, $id);
-    check("activateExclusively ritorna false", $p->activateExclusively() === false);
-    check("plan_gone è vero", $p->plan_gone === true);
-    check("A resta l'unica attiva", activeIds($conn, $u1) === [$planA]);
+    $p = planFor($conn, $u1, $id);
+    check("activateExclusively ritorna false ($label)", $p->activateExclusively() === false);
+    check("activateExclusively: plan_gone è vero ($label)", $p->plan_gone === true);
+    check("activateExclusively: A resta l'unica attiva ($label)", activeIds($conn, $u1) === [$planA]);
 }
 check("la scheda dell'altro utente è rimasta attiva", activeIds($conn, $u2) === [$planOther]);
 
 echo "plan_gone si azzera a ogni chiamata\n";
-$p = model($conn, $u1, $gone);
+$p = planFor($conn, $u1, $gone);
 $p->activateExclusively();
 $p->id = $planA;
 check("su una scheda esistente ritorna true", $p->activateExclusively() === true);
 check("plan_gone torna falso", $p->plan_gone === false);
 
-$conn->exec("DELETE FROM gym_users WHERE id IN ($u1, $u2)");
+if ($fails === 0) {
+    echo "$checks controlli, 0 falliti\n";
+} else {
+    echo "$checks controlli, $fails falliti\n";
+}
 exit($fails ? 1 : 0);

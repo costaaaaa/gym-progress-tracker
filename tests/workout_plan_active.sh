@@ -27,7 +27,7 @@ DBPASS="pw$RANDOM$RANDOM"
 TMP="$(mktemp -d)"
 
 cleanup() {
-    docker rm -f "$DB" >/dev/null 2>&1
+    docker rm -f "$DB" "$RUN-cat" "$RUN-php" >/dev/null 2>&1
     docker network rm "$NET" >/dev/null 2>&1
     rm -rf "$TMP"
 }
@@ -37,7 +37,7 @@ die() { echo "$1" >&2; exit 2; }
 
 # Il repo non ha config/database.php (è ignorato): si usa quello dell'immagine web, che legge l'ambiente.
 cp -r "$ROOT/backend" "$TMP/backend" || exit 2
-docker run --rm --entrypoint cat "$PHP_IMAGE" /var/www/app/backend/config/database.php >"$TMP/backend/config/database.php" \
+docker run --rm --name "$RUN-cat" --entrypoint cat "$PHP_IMAGE" /var/www/app/backend/config/database.php >"$TMP/backend/config/database.php" \
     || die "database.php non trovato nell'immagine"
 
 docker network create "$NET" >/dev/null || exit 2
@@ -53,6 +53,10 @@ done
 docker exec -i -e MYSQL_PWD="$DBPASS" "$DB" mysql -uroot <"$ROOT/backend/database/gym_progress_tracker.sql" \
     || die "schema non caricato"
 
-docker run --rm --network "$NET" -v "$TMP:/w:ro" -v "$ROOT/tests:/t:ro" \
+docker run --rm --name "$RUN-php" --network "$NET" -v "$TMP:/w:ro" -v "$ROOT/tests:/t:ro" \
     -e DB_HOST="$DB" -e DB_NAME=gym_progress_tracker -e DB_USER=root -e DB_PASSWORD="$DBPASS" \
     --entrypoint php "$PHP_IMAGE" /t/workout_plan_active_test.php /w/backend
+rc=$?
+# 1 = un controllo fallito; qualunque altro errore (PHP fatale, docker) è un problema di preparazione.
+[[ "$rc" -le 1 ]] && exit "$rc"
+exit 2
