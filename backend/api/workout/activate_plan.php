@@ -26,6 +26,8 @@ if (!empty($data->plan_id)) {
         http_response_code(200);
 
         echo json_encode(array("message" => t_server('workout.plan_activated')));
+    } elseif ($workout_plan->plan_gone) {
+        api_not_found();
     } else {
         http_response_code(503);
 

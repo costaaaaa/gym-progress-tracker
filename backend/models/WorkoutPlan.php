@@ -18,6 +18,8 @@ class WorkoutPlan
     public $created_at;
     public $updated_at;
     public $days = [];
+    // Impostato da lockOwnPlan() se la scheda non esiste più (il chiamante risponde 404)
+    public $plan_gone = false;
 
     // Constructor with database connection
     public function __construct($db)
@@ -62,8 +64,12 @@ class WorkoutPlan
     // Esegue $work in una transazione che tiene bloccata la riga dell'utente: creazioni, attivazioni
     // e modifiche con is_active 1 dello stesso utente si mettono in fila, così non risultano mai due
     // schede attive. $work ritorna true per confermare, false per annullare.
+    // Non annidabile: se il chiamante ha già una transazione aperta lancia LogicException senza toccarla.
     private function runLockedForUser($label, callable $work)
     {
+        if ($this->conn->inTransaction()) {
+            throw new LogicException($label . ": transazione già aperta");
+        }
         try {
             $this->conn->beginTransaction();
             if (!$this->lockUser() || !$work()) {
@@ -78,6 +84,20 @@ class WorkoutPlan
             error_log($label . " error: " . $e->getMessage());
             return false;
         }
+    }
+
+    // Blocca la riga della scheda dell'utente (SELECT ... FOR UPDATE, quindi vale anche se un UPDATE
+    // successivo non cambierebbe nulla, a differenza di rowCount()). Se la scheda è stata cancellata
+    // dopo il controllo del chiamante imposta $plan_gone e ritorna false: il chiamante risponde 404.
+    private function lockOwnPlan()
+    {
+        $stmt = $this->conn->prepare("SELECT id FROM " . $this->table_name . " WHERE id = ? AND user_id = ? FOR UPDATE");
+        $stmt->execute([(int)$this->id, (int)$this->user_id]);
+        if ($stmt->fetchColumn() === false) {
+            $this->plan_gone = true;
+            return false;
+        }
+        return true;
     }
 
     // Blocca la riga dell'utente fino alla fine della transazione. Ritorna false se non esiste più
@@ -96,7 +116,7 @@ class WorkoutPlan
     {
         return $this->runLockedForUser("Create plan", function () use ($requested_active) {
             if ($requested_active === null) {
-                // Il blocco sopra non apre lo snapshot: il COUNT lo apre dopo averlo ottenuto
+                // Il lock dell'utente (runLockedForUser) non apre lo snapshot: il COUNT lo apre dopo averlo ottenuto
                 // (REPEATABLE READ) e quindi vede le creazioni e attivazioni già confermate.
                 $stmt = $this->conn->prepare("SELECT COUNT(*) FROM " . $this->table_name . " WHERE user_id = ? AND is_active = 1");
                 $stmt->execute([(int)$this->user_id]);
@@ -118,6 +138,9 @@ class WorkoutPlan
             return $this->update();
         }
         return $this->runLockedForUser("Update plan", function () {
+            if (!$this->lockOwnPlan()) {
+                return false;
+            }
             $this->deactivateAllPlans();
             return $this->update();
         });
@@ -310,6 +333,9 @@ class WorkoutPlan
     public function activateExclusively()
     {
         return $this->runLockedForUser("Activate plan", function () {
+            if (!$this->lockOwnPlan()) {
+                return false;
+            }
             $this->deactivateAllPlans();
             return $this->activate();
         });

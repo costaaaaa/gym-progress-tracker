@@ -41,6 +41,8 @@ if (!empty($data->plan_id) && !empty($data->name)) {
                 "is_active" => $workout_plan->is_active
             )
         ));
+    } elseif ($workout_plan->plan_gone) {
+        api_not_found(t_server('workout.plan_not_found'));
     } else {
         http_response_code(500);
 

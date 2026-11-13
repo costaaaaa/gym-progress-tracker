@@ -145,6 +145,45 @@ expect_n "con is_active 0 su una non attiva resta attiva l'altra" "$(active_ids 
 call POST api/workout/update_plan.php "$E" "{\"plan_id\":$EP2,\"name\":\"Spenta\",\"is_active\":0}" >/dev/null
 expect_n "con is_active 0 la scheda si disattiva" "$(active_count "$E")" 0
 
+echo "Modifiche is_active 1, attivazioni e creazioni contemporanee"
+new_account "fuF$SUFFIX"; F="$TOKEN"
+FP=()
+for i in 1 2 3 4; do FP+=("$(plan_id "$(new_plan "$F" "{\"name\":\"Esistente $i\",\"is_active\":0}")")"); done
+for i in 1 2 3 4; do
+    call POST api/workout/update_plan.php "$F" "{\"plan_id\":${FP[$((i - 1))]},\"name\":\"Mod $i\",\"is_active\":1}" >/dev/null &
+    call POST api/workout/activate_plan.php "$F" "{\"plan_id\":${FP[$(((i) % 4))]}}" >/dev/null &
+    new_plan "$F" "{\"name\":\"Nuova $i\"}" >/dev/null &
+done
+wait
+expect_n "8 schede" "$(body_of "$(call GET api/workout/read_plans.php "$F")" | jq '.records | length')" 8
+expect_n "una sola attiva" "$(active_count "$F")" 1
+
+echo "Scheda cancellata mentre la si attiva o la si modifica"
+new_account "fuG$SUFFIX"; G="$TOKEN"
+GA="$(plan_id "$(new_plan "$G")")"
+bad=0; notfound=0
+for i in $(seq 1 25); do
+    GB="$(plan_id "$(new_plan "$G" '{"name":"Da cancellare","is_active":0}')")"
+    if ((i % 2)); then
+        call POST api/workout/activate_plan.php "$G" "{\"plan_id\":$GB}" >/tmp/fu_r.$$ &
+    else
+        call POST api/workout/update_plan.php "$G" "{\"plan_id\":$GB,\"name\":\"X\",\"is_active\":1}" >/tmp/fu_r.$$ &
+    fi
+    call POST api/workout/delete_plan.php "$G" "{\"plan_id\":$GB}" >/dev/null &
+    wait
+    st="$(cut -d' ' -f1 /tmp/fu_r.$$)"
+    [[ "$st" == 404 ]] && notfound=$((notfound + 1))
+    # Risposta solo 200 o 404 (mai 5xx); con 404 la scheda A, già attiva, non deve essere stata toccata.
+    # Con 200 e poi cancellazione zero attive è lecito (attivata e poi cancellata): per questo il caso
+    # "cancellata dopo il controllo di proprietà" non è distinguibile via HTTP dal "cancellata dopo".
+    if [[ "$st" == 200 ]]; then :
+    elif [[ "$st" == 404 && "$(active_ids "$G" | tr '\n' ' ')" == "$GA " ]]; then :
+    else bad=$((bad + 1)); fi
+    if [[ "$st" == 200 && "$(active_count "$G")" == 0 ]]; then GA="$(plan_id "$(new_plan "$G")")"; fi
+done
+rm -f /tmp/fu_r.$$
+expect_n "solo 200 o 404 e con 404 la scheda attiva resta quella di prima (404 ottenuti: $notfound su 25)" "$bad" 0
+
 echo "Storico"
 new_account "fuH$SUFFIX"; H="$TOKEN"
 check "utente nuovo: 200 con records []" "$(call GET api/workout_history/read.php "$H")" '$status == 200 and (.records | type) == "array" and (.records | length) == 0'
