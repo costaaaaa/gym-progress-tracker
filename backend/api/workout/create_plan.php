@@ -26,7 +26,7 @@ if (!empty($data->name)) {
     $requested_active = isset($data->is_active) ? filter_var($data->is_active, FILTER_VALIDATE_BOOLEAN) : null;
 
     // Create the workout plan
-    if ($workout_plan->createKeepingOneActive($requested_active)) {
+    if ($workout_plan->createAtMostOneActive($requested_active)) {
         http_response_code(201);
 
         echo json_encode(array(

@@ -88,9 +88,9 @@ try {
             );
             array_push($records_arr["records"], $record_item);
         }
-
-        http_response_code(200);
     }
+
+    http_response_code(200);
 
     if (ob_get_length()) ob_clean();
     header('Content-Type: application/json');

@@ -59,19 +59,45 @@ class WorkoutPlan
         return false;
     }
 
-    // Crea la scheda mantenendo una sola scheda attiva per utente. $requested_active è la richiesta
-    // del client: true = attiva (le altre vengono disattivate), false = non attiva, null = non
-    // richiesto: nasce attiva solo se l'utente non ne ha nessuna attiva. La riga dell'utente è
-    // bloccata per la durata della transazione, così due creazioni contemporanee non risultano
-    // entrambe attive.
-    public function createKeepingOneActive($requested_active)
+    // Esegue $work in una transazione che tiene bloccata la riga dell'utente: creazioni, attivazioni
+    // e modifiche con is_active 1 dello stesso utente si mettono in fila, così non risultano mai due
+    // schede attive. $work ritorna true per confermare, false per annullare.
+    private function runLockedForUser($label, callable $work)
     {
         try {
             $this->conn->beginTransaction();
-            $lock = $this->conn->prepare("SELECT id FROM gym_users WHERE id = ? FOR UPDATE");
-            $lock->execute([(int)$this->user_id]);
+            if (!$this->lockUser() || !$work()) {
+                $this->conn->rollBack();
+                return false;
+            }
+            return $this->conn->commit();
+        } catch (PDOException $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+            error_log($label . " error: " . $e->getMessage());
+            return false;
+        }
+    }
 
+    // Blocca la riga dell'utente fino alla fine della transazione. Ritorna false se non esiste più
+    // (stesso schema di PasswordReset::lockUser()).
+    private function lockUser()
+    {
+        $stmt = $this->conn->prepare("SELECT id FROM gym_users WHERE id = ? FOR UPDATE");
+        $stmt->execute([(int)$this->user_id]);
+        return $stmt->fetchColumn() !== false;
+    }
+
+    // Crea la scheda facendo in modo che l'utente abbia al massimo una scheda attiva.
+    // $requested_active è la richiesta del client: true = attiva (le altre vengono disattivate),
+    // false = non attiva, null = non richiesto: nasce attiva solo se l'utente non ne ha nessuna attiva.
+    public function createAtMostOneActive($requested_active)
+    {
+        return $this->runLockedForUser("Create plan", function () use ($requested_active) {
             if ($requested_active === null) {
+                // Il blocco sopra non apre lo snapshot: il COUNT lo apre dopo averlo ottenuto
+                // (REPEATABLE READ) e quindi vede le creazioni e attivazioni già confermate.
                 $stmt = $this->conn->prepare("SELECT COUNT(*) FROM " . $this->table_name . " WHERE user_id = ? AND is_active = 1");
                 $stmt->execute([(int)$this->user_id]);
                 $this->is_active = (int)$stmt->fetchColumn() === 0 ? 1 : 0;
@@ -81,19 +107,20 @@ class WorkoutPlan
                     $this->deactivateAllPlans();
                 }
             }
+            return $this->create();
+        });
+    }
 
-            if (!$this->create()) {
-                $this->conn->rollBack();
-                return false;
-            }
-            return $this->conn->commit();
-        } catch (PDOException $e) {
-            if ($this->conn->inTransaction()) {
-                $this->conn->rollBack();
-            }
-            error_log("Create plan error: " . $e->getMessage());
-            return false;
+    // Modifica la scheda; con is_active 1 le altre vengono disattivate, con 0 è una semplice modifica.
+    public function updateAtMostOneActive()
+    {
+        if (!$this->is_active) {
+            return $this->update();
         }
+        return $this->runLockedForUser("Update plan", function () {
+            $this->deactivateAllPlans();
+            return $this->update();
+        });
     }
 
     // Numero di schede dell'utente (per il tetto MAX_PER_USER)
@@ -278,21 +305,13 @@ class WorkoutPlan
         return $stmt->execute();
     }
 
-    // Rende attiva solo questa scheda: i due UPDATE stanno in una transazione, così un guasto
-    // fra l'uno e l'altro non lascia l'utente senza scheda attiva.
+    // Rende attiva solo questa scheda: disattivazione e attivazione stanno in una transazione, così
+    // un guasto fra le due non lascia l'utente senza scheda attiva.
     public function activateExclusively()
     {
-        try {
-            $this->conn->beginTransaction();
+        return $this->runLockedForUser("Activate plan", function () {
             $this->deactivateAllPlans();
-            $this->activate();
-            return $this->conn->commit();
-        } catch (PDOException $e) {
-            if ($this->conn->inTransaction()) {
-                $this->conn->rollBack();
-            }
-            error_log("Activate plan error: " . $e->getMessage());
-            return false;
-        }
+            return $this->activate();
+        });
     }
 }

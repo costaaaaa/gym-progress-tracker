@@ -25,12 +25,11 @@ if (!empty($data->plan_id) && !empty($data->name)) {
     $workout_plan->name = $data->name;
     $workout_plan->description = isset($data->description) ? $data->description : "";
     
-    // Set is_active if provided, otherwise default to current status (handled by the model if we had a more flexible update, 
-    // but here we expect the frontend to send it or we use 0 as fallback if missing entirely from request)
-    $workout_plan->is_active = isset($data->is_active) ? $data->is_active : 0;
-    
+    // is_active 1 rende questa l'unica scheda attiva; se manca vale 0
+    $workout_plan->is_active = isset($data->is_active) && filter_var($data->is_active, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+
     // Update the workout plan
-    if ($workout_plan->update()) {
+    if ($workout_plan->updateAtMostOneActive()) {
         http_response_code(200);
 
         echo json_encode(array(

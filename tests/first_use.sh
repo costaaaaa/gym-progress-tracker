@@ -121,6 +121,30 @@ wait
 expect_n "6 schede create" "$(body_of "$(call GET api/workout/read_plans.php "$C")" | jq '.records | length')" 6
 expect_n "una sola attiva" "$(active_count "$C")" 1
 
+echo "Creazioni e attivazioni contemporanee"
+new_account "fuD$SUFFIX"; D="$TOKEN"
+DP=()
+for i in 1 2 3 4; do DP+=("$(plan_id "$(new_plan "$D" "{\"name\":\"Esistente $i\",\"is_active\":0}")")"); done
+for i in 1 2 3 4; do
+    new_plan "$D" "{\"name\":\"Nuova $i\"}" >/dev/null &
+    call POST api/workout/activate_plan.php "$D" "{\"plan_id\":${DP[$((i - 1))]}}" >/dev/null &
+done
+wait
+expect_n "8 schede" "$(body_of "$(call GET api/workout/read_plans.php "$D")" | jq '.records | length')" 8
+expect_n "una sola attiva" "$(active_count "$D")" 1
+
+echo "Modifica di una scheda con is_active 1"
+new_account "fuE$SUFFIX"; E="$TOKEN"
+EP1="$(plan_id "$(new_plan "$E")")"
+EP2="$(plan_id "$(new_plan "$E")")"
+check "update_plan con is_active 1 su una scheda non attiva risponde 200" \
+    "$(call POST api/workout/update_plan.php "$E" "{\"plan_id\":$EP2,\"name\":\"Rinominata\",\"is_active\":1}")" '$status == 200'
+expect_n "l'unica attiva è quella modificata" "$(active_ids "$E" | tr '\n' ' ')" "$EP2 "
+call POST api/workout/update_plan.php "$E" "{\"plan_id\":$EP1,\"name\":\"Altra\",\"is_active\":0}" >/dev/null
+expect_n "con is_active 0 su una non attiva resta attiva l'altra" "$(active_ids "$E" | tr '\n' ' ')" "$EP2 "
+call POST api/workout/update_plan.php "$E" "{\"plan_id\":$EP2,\"name\":\"Spenta\",\"is_active\":0}" >/dev/null
+expect_n "con is_active 0 la scheda si disattiva" "$(active_count "$E")" 0
+
 echo "Storico"
 new_account "fuH$SUFFIX"; H="$TOKEN"
 check "utente nuovo: 200 con records []" "$(call GET api/workout_history/read.php "$H")" '$status == 200 and (.records | type) == "array" and (.records | length) == 0'
