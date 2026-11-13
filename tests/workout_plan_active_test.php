@@ -64,9 +64,5 @@ $p->id = $planA;
 check("su una scheda esistente ritorna true", $p->activateExclusively() === true);
 check("plan_gone torna falso", $p->plan_gone === false);
 
-if ($fails === 0) {
-    echo "$checks controlli, 0 falliti\n";
-} else {
-    echo "$checks controlli, $fails falliti\n";
-}
-exit($fails ? 1 : 0);
+echo "\n$checks controlli, $fails falliti\n";
+exit($fails > 0 ? 1 : 0);
