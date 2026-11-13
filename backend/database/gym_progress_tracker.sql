@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS `gym_users` (
   `experience_years` float DEFAULT '0',
   `rest_timer_enabled` tinyint(1) NOT NULL DEFAULT 1,
   `is_admin` tinyint(1) NOT NULL DEFAULT 0,
+  `tier` enum('free','plus','pro') NOT NULL DEFAULT 'free', -- livello dell'account (backend/tools/tier.php)
+  `tier_until` datetime DEFAULT NULL, -- UTC; NULL = senza scadenza, passata = free
   `locale` varchar(5) NOT NULL DEFAULT 'it',
   `time_zone` varchar(64) DEFAULT NULL, -- ultimo fuso IANA visto dal dispositivo (header X-Timezone)
   `password_changed_at` datetime DEFAULT NULL,

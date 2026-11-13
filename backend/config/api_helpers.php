@@ -2,6 +2,7 @@
 
 include_once __DIR__ . '/../models/ApiToken.php';
 include_once __DIR__ . '/../lib/plan_sets_rules.php';
+include_once __DIR__ . '/../lib/tier_rules.php';
 include_once __DIR__ . '/../lib/web_session.php';
 
 // Token Bearer in chiaro dall'header Authorization, o null.
@@ -604,23 +605,27 @@ function user_is_admin($db, $user_id)
     return (int)$stmt->fetchColumn() === 1;
 }
 
-// ── Funzioni premium ────────────────────────────────────────────────────────
+// ── Livello dell'account e funzioni ─────────────────────────────────────────
 
-// Funzioni premium abilitate per l'utente: è l'unico punto che lega il piano alle funzioni. I client
+// Livello in vigore dell'utente ('free', 'plus' o 'pro'; cumulativi): gym_users.tier, ma free se
+// gym_users.tier_until (UTC, NULL = senza scadenza) è passata (regole in lib/tier_rules.php).
+// Si imposta solo da riga di comando (backend/tools/tier.php).
+function user_tier($db, $user_id)
+{
+    $stmt = $db->prepare("SELECT tier, tier_until FROM gym_users WHERE id = ? LIMIT 1");
+    $stmt->execute([(int)$user_id]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        return 'free';
+    }
+    return tierEffective($row['tier'], $row['tier_until'], gmdate('Y-m-d H:i:s'));
+}
+
+// Funzioni abilitate per l'utente: è l'unico punto che lega il livello alle funzioni. I client
 // le usano solo per mostrare i comandi; dove conta (salvataggio, dati) le controlla il server.
-// Oggi l'unico livello premium è gym_users.ai_tier, creato dall'SQL dell'AI Coach: nelle installazioni
-// che non ce l'hanno la query fallisce e l'utente non ha funzioni premium.
-// Quando ci saranno i piani a pagamento cambia solo questa funzione.
 function user_features($db, $user_id)
 {
-    try {
-        $stmt = $db->prepare("SELECT ai_tier FROM gym_users WHERE id = ? LIMIT 1");
-        $stmt->execute([(int)$user_id]);
-        $tier = $stmt->fetchColumn();
-    } catch (PDOException $e) {
-        return [];
-    }
-    if ($tier === 'premium') {
+    if (in_array(user_tier($db, $user_id), ['plus', 'pro'], true)) {
         // focus_session_edit: cambiare o aggiungere esercizi durante il Focus Mode
         return ['focus_session_edit'];
     }
