@@ -11,16 +11,19 @@ const label = (tier) => LEVELS.find(([value]) => value === tier)?.[1] ?? tier;
 // "2026-12-31" → "31/12/2026", senza passare da Date (niente fusi)
 const formatDay = (day) => day.split('-').reverse().join('/');
 
+const isExpired = (u) => u.tier !== u.effective_tier;
+
 // Livello salvato come lo vede l'admin: se è scaduto lo dice, perché l'utente di fatto è Gratis.
 const summary = (u) => {
-  if (u.tier !== u.effective_tier) return `${label(u.tier)}, scaduto il ${formatDay(u.last_day)} (di fatto ${label(u.effective_tier)})`;
+  if (isExpired(u)) return `${label(u.tier)}, scaduto il ${formatDay(u.last_day)} (di fatto ${label(u.effective_tier)})`;
   if (u.tier === 'free') return label(u.tier);
   return u.last_day ? `${label(u.tier)} fino al ${formatDay(u.last_day)} compreso` : `${label(u.tier)}, senza scadenza`;
 };
 
+// Una riga scaduta parte dallo stato in vigore (Gratis, senza data): Salva senza toccare nulla non ridà il livello
 const TierRow = ({ user, onSaved }) => {
-  const [tier, setTier] = useState(user.tier);
-  const [lastDay, setLastDay] = useState(user.tier === user.effective_tier ? user.last_day || '' : '');
+  const [tier, setTier] = useState(user.effective_tier);
+  const [lastDay, setLastDay] = useState(isExpired(user) ? '' : user.last_day || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);

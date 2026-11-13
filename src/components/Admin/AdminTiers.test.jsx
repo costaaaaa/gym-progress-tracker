@@ -107,7 +107,16 @@ describe('AdminTiers', () => {
     searchResult = [{ ...MARIO, tier: 'plus', last_day: '2026-10-31', effective_tier: 'free' }];
     await cerca();
     expect(screen.getByLabelText('Ultimo giorno valido').value).toBe('');
-    expect(screen.getByText(/Plus, scaduto il 31\/10\/2026/)).toBeTruthy();
+    expect(screen.getByText(/Plus, scaduto il 31\/10\/2026 \(di fatto Gratis\)/)).toBeTruthy();
+  });
+
+  it('livello scaduto: il modulo parte da Gratis (data disattivata) e Salva senza modifiche manda free', async () => {
+    searchResult = [{ ...MARIO, tier: 'plus', last_day: '2026-10-31', effective_tier: 'free' }];
+    await cerca();
+    expect(screen.getByLabelText('Livello').value).toBe('free');
+    expect(screen.getByLabelText('Ultimo giorno valido').disabled).toBe(true);
+    await salva();
+    expect(ultimaPost()).toEqual({ action: 'set_tier', id: 7, tier: 'free', last_day: null });
   });
 
   it('nuova ricerca: la riga riparte dai valori del server e senza avviso vecchio', async () => {

@@ -9,8 +9,8 @@
 #
 # Registra due account usa e getta (A, B) e alla fine li cancella; con DB_SQL_CMD inserisce anche 25
 # righe in gym_users (tiM<suffisso>_NN) per il limite di 20 risultati e le cancella. La parte admin
-# gira solo con
-# ADMIN_USER e ADMIN_PASS di un account reso admin con `tools/admin.php grant`: senza, la salta.
+# gira solo con ADMIN_USER e ADMIN_PASS di un account reso admin con `tools/admin.php grant`: senza,
+# la salta.
 # DB_SQL_CMD (facoltativo) è un comando che legge SQL da stdin sul database dell'istanza: serve per
 # i controlli che l'API non permette (scadenza già passata, più di 20 risultati); senza, si saltano.
 # Non va lanciato in produzione: crea account veri.
@@ -112,7 +112,7 @@ else
         check "i caratteri jolly non fanno da jolly (%%)" "$(tiers '%25%25')" '.users == []'
         check "né il trattino basso (__)" "$(tiers '__')" '.users == []'
         check "una barra rovesciata nella ricerca non dà errori" "$(tiers 'a%5Cb')" '.users == []'
-        check "e non fa da escape per il carattere dopo (tiA\\6… non trova tiA6…)" "$(tiers "${A_USER:0:3}%5C${A_USER:3}")" '.users == []'
+        check "e non fa da escape per il carattere dopo (tiA\\<suffisso> non trova tiA<suffisso>)" "$(tiers "${A_USER:0:3}%5C${A_USER:3}")" '.users == []'
         check "nessun risultato: lista vuota" "$(tiers "nessuno$SUFFIX")" '.users == []'
         if [[ -n "${DB_SQL_CMD:-}" ]]; then
             sql "INSERT INTO gym_users (username, email, password) SELECT CONCAT('tiM${SUFFIX}_', LPAD(n, 2, '0')), CONCAT('tiM${SUFFIX}_', LPAD(n, 2, '0'), '@example.test'), 'x' FROM (WITH RECURSIVE s(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM s WHERE n < 25) SELECT n FROM s) t"
@@ -152,12 +152,14 @@ else
         check "data che non è testo: invalid_date" "$(set_tier "{\"action\":\"set_tier\",\"id\":$A_ID,\"tier\":\"plus\",\"last_day\":20991231}")" '.code == "invalid_date"'
         check "i rifiuti non cambiano nulla" "$(tiers "$A_USER")" ". == ${before#* }"
         res="$(set_tier '{"action":"set_tier","id":999999999,"tier":"plus"}')"
-        for bad in "\"${A_ID}abc\"" "[$A_ID]" "true" "$A_ID.9" "\"$A_ID\""; do
-            expect "id non intero ($bad): 404" 404 "$(set_tier "{\"action\":\"set_tier\",\"id\":$bad,\"tier\":\"pro\"}")"
-        done
-        check "e la riga di A non cambia" "$(tiers "$A_USER")" ". == ${before#* }"
         expect "utente inesistente: 404" 404 "$res"
         check "  con il codice user_not_found" "$res" '.code == "user_not_found"'
+        for bad in "\"${A_ID}abc\"" "[$A_ID]" "true" "$A_ID.9" "\"$A_ID\""; do
+            res="$(set_tier "{\"action\":\"set_tier\",\"id\":$bad,\"tier\":\"pro\"}")"
+            expect "id non intero ($bad): 404" 404 "$res"
+            check "  con il codice user_not_found" "$res" '.code == "user_not_found"'
+        done
+        check "e la riga di A non cambia" "$(tiers "$A_USER")" ". == ${before#* }"
         res="$(set_tier "{\"action\":\"boh\",\"id\":$A_ID,\"tier\":\"plus\"}")"
         expect "azione sconosciuta: 400" 400 "$res"
         check "  con il codice invalid_action" "$res" '.code == "invalid_action"'

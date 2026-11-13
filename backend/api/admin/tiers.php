@@ -4,9 +4,10 @@
 //
 //   GET  ?q=testo                                   utenti con quel testo nello username o nell'email
 //                                                   (almeno 2 caratteri, al massimo 20, per username)
-//   POST {action: set_tier, id, tier, last_day}     last_day = ultimo giorno valido compreso (AAAA-MM-GG,
-//                                                   UTC); null, assente o stringa vuota = senza scadenza;
-//                                                   con free niente data
+//   POST {action: set_tier, id, tier, last_day}     id = intero JSON (altro: 404); last_day = ultimo
+//                                                   giorno valido compreso (AAAA-MM-GG, UTC); null,
+//                                                   assente o stringa vuota = senza scadenza; con free
+//                                                   niente data
 //
 // Ogni utente: id, username, email, tier (salvato), last_day (null se non scade), effective_tier
 // (quello in vigore: free se il salvato è scaduto).
