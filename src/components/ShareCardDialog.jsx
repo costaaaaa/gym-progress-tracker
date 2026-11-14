@@ -1,3 +1,4 @@
+import BackgroundSwatch from './BackgroundSwatch';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -384,16 +385,8 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.25, mt: 1.5 }}>
                 <Typography variant="body2" color="text.secondary" sx={{ mr: 0.5 }}>{t('share.background')}</Typography>
                 {PHOTO_BACKGROUNDS.map((bg) => (
-                  <Box key={bg.id} component="button" type="button" aria-label={t('share.background_named', { name: bgLabel(bg) })}
-                    aria-pressed={photoBackground === bg.id} title={bgLabel(bg)}
-                    onClick={() => setPhotoBackground(bg.id)}
-                    sx={{
-                      width: 28, height: 28, p: 0, borderRadius: '50%', cursor: 'pointer',
-                      background: `linear-gradient(${bg.stops[0]}, ${bg.stops[1]})`,
-                      border: '2px solid', borderColor: 'background.paper',
-                      outline: '2px solid',
-                      outlineColor: photoBackground === bg.id ? theme.palette.primary.main : theme.palette.divider,
-                    }} />
+                  <BackgroundSwatch key={bg.id} stops={bg.stops} selected={photoBackground === bg.id}
+                    label={t('share.background_named', { name: bgLabel(bg) })} onClick={() => setPhotoBackground(bg.id)} />
                 ))}
               </Box>
             )}
