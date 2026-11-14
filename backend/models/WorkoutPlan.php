@@ -18,6 +18,8 @@ class WorkoutPlan
     public $created_at;
     public $updated_at;
     public $days = [];
+    // Impostato da lockOwnPlan() se la scheda non esiste più (il chiamante risponde 404)
+    public $plan_gone = false;
 
     // Constructor with database connection
     public function __construct($db)
@@ -57,6 +59,77 @@ class WorkoutPlan
         }
 
         return false;
+    }
+
+    // Esegue $work in una transazione che tiene bloccata la riga dell'utente: creazioni e attivazioni
+    // dello stesso utente si mettono in fila, così non risultano mai due schede attive. $work ritorna
+    // true per confermare, false per annullare.
+    // Non annidabile: se il chiamante ha già una transazione aperta lancia LogicException senza toccarla.
+    private function runLockedForUser($label, callable $work)
+    {
+        if ($this->conn->inTransaction()) {
+            throw new LogicException($label . ": transazione già aperta");
+        }
+        $this->plan_gone = false;
+        try {
+            $this->conn->beginTransaction();
+            if (!$this->lockUser() || !$work()) {
+                $this->conn->rollBack();
+                return false;
+            }
+            return $this->conn->commit();
+        } catch (PDOException $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+            error_log($label . " error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // Blocca la riga della scheda dell'utente (SELECT ... FOR UPDATE, quindi vale anche se un UPDATE
+    // successivo non cambierebbe nulla, a differenza di rowCount()). Se la scheda è stata cancellata
+    // dopo il controllo del chiamante imposta $plan_gone e ritorna false: il chiamante risponde 404.
+    private function lockOwnPlan()
+    {
+        $stmt = $this->conn->prepare("SELECT id FROM " . $this->table_name . " WHERE id = ? AND user_id = ? FOR UPDATE");
+        $stmt->execute([(int)$this->id, (int)$this->user_id]);
+        if ($stmt->fetchColumn() === false) {
+            $this->plan_gone = true;
+            return false;
+        }
+        return true;
+    }
+
+    // Blocca la riga dell'utente fino alla fine della transazione. Ritorna false se non esiste più
+    // (stesso schema di PasswordReset::lockUser()).
+    private function lockUser()
+    {
+        $stmt = $this->conn->prepare("SELECT id FROM gym_users WHERE id = ? FOR UPDATE");
+        $stmt->execute([(int)$this->user_id]);
+        return $stmt->fetchColumn() !== false;
+    }
+
+    // Crea la scheda facendo in modo che l'utente abbia al massimo una scheda attiva.
+    // $requested_active è la richiesta del client: true = attiva (le altre vengono disattivate),
+    // false = non attiva, null = non richiesto: nasce attiva solo se l'utente non ne ha nessuna attiva.
+    public function createAtMostOneActive($requested_active)
+    {
+        return $this->runLockedForUser("Create plan", function () use ($requested_active) {
+            if ($requested_active === null) {
+                // Il lock dell'utente (runLockedForUser) non apre lo snapshot: il COUNT lo apre dopo averlo ottenuto
+                // (REPEATABLE READ) e quindi vede le creazioni e attivazioni già confermate.
+                $stmt = $this->conn->prepare("SELECT COUNT(*) FROM " . $this->table_name . " WHERE user_id = ? AND is_active = 1");
+                $stmt->execute([(int)$this->user_id]);
+                $this->is_active = (int)$stmt->fetchColumn() === 0 ? 1 : 0;
+            } else {
+                $this->is_active = $requested_active ? 1 : 0;
+                if ($this->is_active === 1) {
+                    $this->deactivateAllPlans();
+                }
+            }
+            return $this->create();
+        });
     }
 
     // Numero di schede dell'utente (per il tetto MAX_PER_USER)
@@ -125,13 +198,12 @@ class WorkoutPlan
         return false;
     }
 
-    // Update workout plan
+    // Modifica solo nome e descrizione: is_active non si tocca
     public function update()
     {
         // Sanitize inputs
         $this->name = trim($this->name);
         $this->description = trim($this->description);
-        $this->is_active = htmlspecialchars(strip_tags($this->is_active));
         $this->id = htmlspecialchars(strip_tags($this->id));
         $this->user_id = htmlspecialchars(strip_tags($this->user_id));
 
@@ -139,8 +211,7 @@ class WorkoutPlan
         $query = "UPDATE " . $this->table_name . "
                 SET
                     name = :name,
-                    description = :description,
-                    is_active = :is_active
+                    description = :description
                 WHERE id = :id AND user_id = :user_id";
 
         // Prepare query
@@ -149,7 +220,6 @@ class WorkoutPlan
         // Bind values
         $stmt->bindParam(":name", $this->name);
         $stmt->bindParam(":description", $this->description);
-        $stmt->bindParam(":is_active", $this->is_active);
         $stmt->bindParam(":id", $this->id);
         $stmt->bindParam(":user_id", $this->user_id);
 
@@ -241,21 +311,16 @@ class WorkoutPlan
         return $stmt->execute();
     }
 
-    // Rende attiva solo questa scheda: i due UPDATE stanno in una transazione, così un guasto
-    // fra l'uno e l'altro non lascia l'utente senza scheda attiva.
+    // Rende attiva solo questa scheda: disattivazione e attivazione stanno in una transazione, così
+    // un guasto fra le due non lascia l'utente senza scheda attiva.
     public function activateExclusively()
     {
-        try {
-            $this->conn->beginTransaction();
-            $this->deactivateAllPlans();
-            $this->activate();
-            return $this->conn->commit();
-        } catch (PDOException $e) {
-            if ($this->conn->inTransaction()) {
-                $this->conn->rollBack();
+        return $this->runLockedForUser("Activate plan", function () {
+            if (!$this->lockOwnPlan()) {
+                return false;
             }
-            error_log("Activate plan error: " . $e->getMessage());
-            return false;
-        }
+            $this->deactivateAllPlans();
+            return $this->activate();
+        });
     }
 }

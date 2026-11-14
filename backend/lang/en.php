@@ -202,7 +202,6 @@ return array(
     'history.date_update_failed' => "Couldn't update the workout date.",
     'history.date_preview' => "Preview: the date hasn't changed.",
     'history.date_updated' => 'Workout date updated.',
-    'history.none_found' => 'No workouts found.',
     'history.date_incomplete' => 'Incomplete data. Specify the workout ID and the new date.',
     'history.health_invalid' => 'Invalid data: expected lists of workout IDs (500 at most).',
     'history.health_failed' => "Couldn't update the Health status of the workouts.",

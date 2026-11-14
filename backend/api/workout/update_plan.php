@@ -24,13 +24,15 @@ if (!empty($data->plan_id) && !empty($data->name)) {
     $workout_plan->user_id = $user_id;
     $workout_plan->name = $data->name;
     $workout_plan->description = isset($data->description) ? $data->description : "";
-    
-    // Set is_active if provided, otherwise default to current status (handled by the model if we had a more flexible update, 
-    // but here we expect the frontend to send it or we use 0 as fallback if missing entirely from request)
-    $workout_plan->is_active = isset($data->is_active) ? $data->is_active : 0;
-    
-    // Update the workout plan
+
+    // is_active del client è ignorato: modificare una scheda non cambia quale scheda è attiva
     if ($workout_plan->update()) {
+        // Letta dal database: la risposta riporta il valore reale di is_active
+        // (rowCount() non serve: vale 0 anche se i valori non cambiano)
+        if (!$workout_plan->readOne()) {
+            api_not_found(t_server('workout.plan_not_found'));
+        }
+
         http_response_code(200);
 
         echo json_encode(array(
@@ -39,7 +41,7 @@ if (!empty($data->plan_id) && !empty($data->name)) {
                 "id" => $workout_plan->id,
                 "name" => $workout_plan->name,
                 "description" => $workout_plan->description,
-                "is_active" => $workout_plan->is_active
+                "is_active" => (int)$workout_plan->is_active
             )
         ));
     } else {

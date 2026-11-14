@@ -1,0 +1,80 @@
+<?php
+// Eseguito da tests/workout_plan_active.sh (serve un database con lo schema del repo).
+// Argomento: la cartella backend da provare.
+require $argv[1] . '/config/database.php';
+require $argv[1] . '/models/WorkoutPlan.php';
+
+$fails = 0;
+$checks = 0;
+function check($desc, $cond)
+{
+    global $fails, $checks;
+    $checks++;
+    if ($cond) {
+        echo "  \033[32m✓\033[0m $desc\n";
+    } else {
+        $fails++;
+        echo "  \033[31m✗\033[0m $desc\n";
+    }
+}
+
+$conn = (new Database())->getConnection();
+$conn->exec("INSERT INTO gym_users (username, email, password) VALUES ('wpa1', 'wpa1@example.test', 'x'), ('wpa2', 'wpa2@example.test', 'x')");
+$u1 = (int)$conn->query("SELECT id FROM gym_users WHERE email = 'wpa1@example.test'")->fetchColumn();
+$u2 = (int)$conn->query("SELECT id FROM gym_users WHERE email = 'wpa2@example.test'")->fetchColumn();
+$conn->exec("INSERT INTO gym_workout_plans (user_id, name, is_active) VALUES ($u1, 'A', 1), ($u2, 'Altra', 1)");
+$planA = (int)$conn->query("SELECT id FROM gym_workout_plans WHERE user_id = $u1")->fetchColumn();
+$planOther = (int)$conn->query("SELECT id FROM gym_workout_plans WHERE user_id = $u2")->fetchColumn();
+$gone = $planOther + 1000;
+
+function activeIds($conn, $u)
+{
+    return array_map("intval", $conn->query("SELECT id FROM gym_workout_plans WHERE user_id = $u AND is_active = 1 ORDER BY id")->fetchAll(PDO::FETCH_COLUMN));
+}
+
+function planFor($conn, $u, $id)
+{
+    $p = new WorkoutPlan($conn);
+    $p->user_id = $u;
+    $p->id = $id;
+    $p->name = 'X';
+    $p->description = '';
+    $p->is_active = 1;
+    return $p;
+}
+
+foreach (['inesistente' => $gone, 'di un altro utente' => $planOther] as $label => $id) {
+    echo "Scheda $label\n";
+    $p = planFor($conn, $u1, $id);
+    check("activateExclusively ritorna false ($label)", $p->activateExclusively() === false);
+    check("activateExclusively: plan_gone è vero ($label)", $p->plan_gone === true);
+    check("activateExclusively: A resta l'unica attiva ($label)", activeIds($conn, $u1) === [$planA]);
+}
+check("la scheda dell'altro utente è rimasta attiva", activeIds($conn, $u2) === [$planOther]);
+
+echo "update() cambia solo nome e descrizione\n";
+$conn->exec("INSERT INTO gym_workout_plans (user_id, name, is_active) VALUES ($u1, 'B', 0)");
+$planB = (int)$conn->query("SELECT id FROM gym_workout_plans WHERE user_id = $u1 AND name = 'B'")->fetchColumn();
+$p = planFor($conn, $u1, $planB);
+$p->name = 'B rinominata';
+$p->description = 'Nuova descrizione';
+$p->is_active = 1;
+check("update su una non attiva ritorna true", $p->update() === true);
+check("update con is_active 1 non cambia le schede attive", activeIds($conn, $u1) === [$planA]);
+$row = $conn->query("SELECT name, description FROM gym_workout_plans WHERE id = $planB")->fetch(PDO::FETCH_ASSOC);
+check("update cambia nome e descrizione", $row === ['name' => 'B rinominata', 'description' => 'Nuova descrizione']);
+$p = planFor($conn, $u1, $planA);
+$p->is_active = 0;
+check("update sull'attiva con is_active 0 ritorna true", $p->update() === true);
+check("update con is_active 0 lascia la scheda attiva", activeIds($conn, $u1) === [$planA]);
+check("le schede dell'altro utente restano com'erano", activeIds($conn, $u2) === [$planOther]);
+
+echo "plan_gone si azzera a ogni chiamata\n";
+$p = planFor($conn, $u1, $gone);
+$p->activateExclusively();
+$p->id = $planA;
+check("su una scheda esistente ritorna true", $p->activateExclusively() === true);
+check("plan_gone torna falso", $p->plan_gone === false);
+
+echo "\n$checks controlli, $fails falliti\n";
+exit($fails > 0 ? 1 : 0);

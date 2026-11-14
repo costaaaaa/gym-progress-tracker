@@ -202,7 +202,6 @@ return array(
     'history.date_update_failed' => "Impossibile aggiornare la data dell'allenamento.",
     'history.date_preview' => 'Anteprima: la data non è cambiata.',
     'history.date_updated' => "Data dell'allenamento aggiornata con successo.",
-    'history.none_found' => 'Nessun allenamento trovato.',
     'history.date_incomplete' => 'Dati incompleti. Specificare ID allenamento e nuova data.',
     'history.health_invalid' => 'Dati non validi: servono liste di ID allenamento (al massimo 500).',
     'history.health_failed' => 'Impossibile aggiornare lo stato di Salute degli allenamenti.',

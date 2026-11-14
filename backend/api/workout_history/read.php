@@ -88,12 +88,9 @@ try {
             );
             array_push($records_arr["records"], $record_item);
         }
-
-        http_response_code(200);
-    } else {
-        http_response_code(404);
-        $records_arr["message"] = t_server('history.none_found');
     }
+
+    http_response_code(200);
 
     if (ob_get_length()) ob_clean();
     header('Content-Type: application/json');

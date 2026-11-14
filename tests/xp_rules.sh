@@ -73,7 +73,7 @@ E2="$(echo "${CAT#* }" | jq -r '.records[1].id')"
 
 make_day() { # token nome sets_E1 sets_E2(0 = solo E1) → id del giorno
     local t="$1" plan day
-    plan="$(call POST api/workout/create_plan.php "$t" '{"name":"Scheda XP"}' | cut -d' ' -f2- | jq -r '.plan.id')"
+    plan="$(call POST api/workout/create_plan.php "$t" '{"name":"Scheda XP","is_active":0}' | cut -d' ' -f2- | jq -r '.plan.id')"
     day="$(call POST api/workout/create_days.php "$t" "{\"plan_id\":$plan,\"days\":[{\"name\":\"$2\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
     call POST api/workout/add_exercise.php "$t" "{\"day_id\":$day,\"exercise_id\":$E1,\"planned_sets\":$(jq -nc --argjson n "$3" '[range(1;$n+1) | {set_number:., kind:"working", reps_min:10, reps_max:10}]'),\"rest\":60}" >/dev/null
     [[ "$4" -gt 0 ]] && call POST api/workout/add_exercise.php "$t" "{\"day_id\":$day,\"exercise_id\":$E2,\"planned_sets\":$(jq -nc --argjson n "$4" '[range(1;$n+1) | {set_number:., kind:"working", reps_min:10, reps_max:10}]'),\"rest\":60}" >/dev/null
@@ -116,7 +116,7 @@ check "3ª sessione (40 kg, stesso giorno): i PR di oggi sono già stati pagati,
     'xpg == 0'
 
 echo "Il riscaldamento non conta tra le serie del giorno (utente D)"
-PLAN_D="$(call POST api/workout/create_plan.php "$D" '{"name":"Scheda riscaldamento"}' | cut -d' ' -f2- | jq -r '.plan.id')"
+PLAN_D="$(call POST api/workout/create_plan.php "$D" '{"name":"Scheda riscaldamento","is_active":0}' | cut -d' ' -f2- | jq -r '.plan.id')"
 DAY_D="$(call POST api/workout/create_days.php "$D" "{\"plan_id\":$PLAN_D,\"days\":[{\"name\":\"Giorno 1\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"
 call POST api/workout/add_exercise.php "$D" "{\"day_id\":$DAY_D,\"exercise_id\":$E1,\"rest\":60,\"planned_sets\":[{\"set_number\":1,\"kind\":\"warmup\"},{\"set_number\":2,\"kind\":\"warmup\"},{\"set_number\":3,\"kind\":\"working\",\"reps_min\":10,\"reps_max\":10},{\"set_number\":4,\"kind\":\"working\",\"reps_min\":10,\"reps_max\":10},{\"set_number\":5,\"kind\":\"working\",\"reps_min\":10,\"reps_max\":10}]}" >/dev/null
 check "2 di riscaldamento + 3 allenanti, 3 serie registrate: giorno completo (100%), 20 XP" "$(call POST api/workout/record_workout.php "$D" "$(body "$DAY_D" 25 3 20 0 0)")" \
@@ -164,7 +164,7 @@ echo "Anteprima della cancellazione (utente C)"
 PREV_SAVE="$(call POST api/workout/record_workout.php "$C" "$(body "$DAY_C" 25 3 140 0 0)")"
 XP_BEFORE="$(profile_total_xp "$C")"
 PREVIEW="$(call POST api/workout_history/delete.php "$C" "{\"id\":$(saved_id "$PREV_SAVE"),\"preview\":true}")"
-# l'allenamento è la 3ª sessione della settimana (obiettivo 3 senza scheda attiva): toglierlo riapre la settimana
+# l'allenamento è la 3ª sessione della settimana (obiettivo 3 senza scheda attiva: le schede di prova nascono con is_active 0): toglierlo riapre la settimana
 check "l'anteprima elenca XP (15 di PR + 30 della settimana) e achievement che si perderebbero" "$PREVIEW" \
     '.success and .xp_removed == 45 and .streak_before == 1 and .streak_after == 0 and (.achievements_removed | index("strength_140") != null)'
 [[ "$(profile_total_xp "$C")" == "$XP_BEFORE" ]] && ok "l'anteprima non cambia gli XP del profilo" || ko "l'anteprima non cambia gli XP del profilo"
