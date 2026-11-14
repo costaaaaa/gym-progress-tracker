@@ -52,4 +52,29 @@ export const PLANS = [
       },
     ],
   },
+  {
+    id: 3, name: 'Upper Lower', description: 'Quattro giorni, parte alta e parte bassa', is_active: 0,
+    days: [
+      {
+        id: 31, name: 'Upper',
+        exercises: [
+          ex('Panca piana', 'petto', [...ws(2), ...work(4, 6, 8)], 120),
+          ex('Rematore con manubrio', 'schiena', work(3, 8, 10)),
+          ex('Lento avanti con manubri', 'spalle', work(3, 8, 10)),
+          ex('Curl con bilanciere EZ', 'bicipiti', work(3, 10, 12), 60),
+          ex('Estensioni sopra la testa', 'tricipiti', work(3, 10, 12), 60),
+        ],
+      },
+      {
+        id: 32, name: 'Lower',
+        exercises: [
+          ex('Squat', 'gambe', [...ws(3), ...work(4, 5, 5)], 150),
+          ex('Stacco rumeno', 'gambe', [...ws(1), ...work(3, 8, 10)], 120),
+          ex('Leg press', 'gambe', work(3, 10, 12)),
+          ex('Calf in piedi', 'polpacci', work(4, 12, 15), 60),
+        ],
+      },
+    ],
+  },
+  { id: 4, name: 'Nuova scheda', description: '', is_active: 0, days: [] },
 ];

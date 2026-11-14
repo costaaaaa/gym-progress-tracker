@@ -12,6 +12,8 @@ export const VARIANTS = {
   B: 'Anteprima a card chiusa',
   C: 'Chip per esercizio',
   D: 'Totali + muscoli',
+  AB: 'A aperta + B chiusa',
+  AB2: 'A aperta + chiusa sobria',
 };
 const KEYS = Object.keys(VARIANTS);
 
