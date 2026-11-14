@@ -63,6 +63,13 @@ const doSet = (weight = '60', reps = '8') => {
   fireEvent.change(screen.getByLabelText('Ripetizioni'), { target: { value: reps } });
   click('Conferma serie');
 };
+// Risposta di read_plans.php trattenuta finché il test non chiama arrivano()
+const pianiInRitardo = (day) => {
+  let arrivano;
+  const plansResponse = new Promise((resolve) => { arrivano = () => resolve(json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [day] }] })); });
+  responses['read_plans.php'] = () => plansResponse;
+  return { arrivano };
+};
 const draft = () => JSON.parse(localStorage.getItem(DRAFT_KEY));
 
 const savedDraft = {
@@ -212,9 +219,7 @@ describe('bozza e ripresa', () => {
   });
 
   it('scartare la bozza prima che arrivino i piani: quando arrivano il giorno unico è già scelto', async () => {
-    let arrivano;
-    const plansResponse = new Promise((resolve) => { arrivano = () => resolve(json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [fullDay] }] })); });
-    responses['read_plans.php'] = () => plansResponse;
+    const { arrivano } = pianiInRitardo(fullDay);
     localStorage.setItem(DRAFT_KEY, JSON.stringify(savedDraft));
     await mount();
     click('Scarta e inizia nuovo');
@@ -224,9 +229,7 @@ describe('bozza e ripresa', () => {
   });
 
   it('riprendere la bozza prima che arrivino i piani: il giorno unico del piano non sostituisce quello della bozza', async () => {
-    let arrivano;
-    const plansResponse = new Promise((resolve) => { arrivano = () => resolve(json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [pushDay] }] })); });
-    responses['read_plans.php'] = () => plansResponse;
+    const { arrivano } = pianiInRitardo(pushDay);
     const draftDay = { id: 2, name: 'Push completo', exercises: [fly] };
     localStorage.setItem(DRAFT_KEY, JSON.stringify({
       ...savedDraft,

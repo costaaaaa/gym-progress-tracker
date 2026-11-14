@@ -238,8 +238,8 @@ export default function useFocusSession() {
         const active = plansData.records.find(p => p.is_active);
         if (active) {
           setActivePlan(active);
-          // Anche con una bozza da riprendere: se l'utente la scarta prima che arrivino i piani
-          // il giorno unico deve già essere scelto (Riprendi lo sovrascrive)
+          // Anche con una bozza da riprendere: se l'utente la scarta, prima o dopo l'arrivo dei piani,
+          // il giorno unico è già scelto (Riprendi lo sovrascrive)
           preselectOnlyDay(active);
           // Se non c'è bozza, vai alla selezione giorno
           if (!resuming) {
