@@ -4,7 +4,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import { useTheme } from '@mui/material/styles';
-import { Button, CardActionArea, Chip, CssBaseline, IconButton, Link, MenuItem, Switch, Tab, Tabs, TextField, Typography } from '@mui/material';
+import { Button, CardActionArea, Chip, CssBaseline, IconButton, Link, MenuItem, Slider, Switch, Tab, Tabs, TextField, Typography } from '@mui/material';
 import { ThemeModeProvider } from './ThemeModeContext';
 
 const RED = 'rgb(213, 0, 0)';
@@ -273,6 +273,13 @@ describe('tema: focus visibile da tastiera (2.4.7)', () => {
     expect(outlineOf(input.parentElement)).toEqual({ outline: `2px solid ${INK.light}`, outlineOffset: '-2px' });
   });
 
+  it('cursore dello slider: contorno pieno da tastiera, sul cursore', () => {
+    renderThemed('dark', <Slider aria-label="Zoom" />);
+    const input = screen.getByRole('slider', { name: 'Zoom' });
+    focusByKeyboard(input);
+    expect(outlineOf(input.parentElement)).toEqual({ outline: `2px solid ${INK.dark}`, outlineOffset: '2px' });
+  });
+
   // Schede e voci di menu stanno in contenitori che tagliano: il contorno resta dentro la voce
   it.each(controls)('%s: con la tastiera ha un contorno pieno di 2px nel colore del testo', (_, ui, find, offset = '2px') => {
     for (const mode of ['light', 'dark']) {
@@ -293,5 +300,11 @@ describe('tema: focus visibile da tastiera (2.4.7)', () => {
     renderThemed('dark', <a href="/x">Vai</a>);
     const css = [...document.querySelectorAll('style')].map((s) => s.textContent).join('');
     expect(css).toMatch(/a:focus-visible\{[^}]*outline:2px solid #ffffff;[^}]*outline-offset:2px/);
+  });
+
+  it('il <button> nativo (ad esempio i campioni di sfondo della condivisione) ha lo stesso contorno su :focus-visible', () => {
+    renderThemed('light', <button type="button">Vai</button>);
+    const css = [...document.querySelectorAll('style')].map((s) => s.textContent).join('');
+    expect(css).toMatch(/button:focus-visible\{[^}]*outline:2px solid #1a1816;[^}]*outline-offset:2px/);
   });
 });

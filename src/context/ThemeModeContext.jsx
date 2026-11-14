@@ -274,6 +274,7 @@ export const ThemeModeProvider = ({ children }) => {
                 transition: 'background-color 0.3s ease, color 0.3s ease',
               },
               'a:focus-visible': focusRing,
+              'button:focus-visible': focusRing,
             }
           },
           // Etichetta a fuoco: rosso come testo (primary.text), non il rosso del marchio. L'errore resta quello dell'errore.
@@ -295,6 +296,8 @@ export const ThemeModeProvider = ({ children }) => {
           MuiTab: { styleOverrides: { root: FOCUS_INSIDE } },
           MuiMenuItem: { styleOverrides: { root: FOCUS_INSIDE } },
           MuiListItemButton: { styleOverrides: { root: FOCUS_INSIDE } },
+          // Il cursore dello slider è un <span> con l'input dentro: il contorno va sul cursore
+          MuiSlider: { styleOverrides: { thumb: { '&.Mui-focusVisible': focusRing } } },
           MuiCardActionArea: { styleOverrides: { root: FOCUS_INSIDE } },
           MuiAppBar: {
             styleOverrides: {
