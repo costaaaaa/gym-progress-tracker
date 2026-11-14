@@ -42,7 +42,7 @@ import FitNames from '../components/FitNames';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
 import { radius } from '../theme/radius';
 
-const MAX_ROWS = 4; // esercizi mostrati per giorno nella card aperta
+const MAX_EXERCISE_ROWS = 4; // esercizi mostrati per giorno nella card aperta
 const DAY_LINK_SX = { fontSize: 12, fontWeight: 600, textTransform: 'none', minWidth: 0, p: 0 };
 
 const WorkoutPlans = ({ isEmbedded = false }) => {
@@ -784,16 +784,6 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                           </Box>
                         )}
                       </Box>
-                      {!isExpanded && summary.splitNames && (
-                        <Box sx={{ display: 'flex', mb: 0.75, fontSize: 15, fontWeight: 600, color: 'text.primary' }}>
-                          <FitNames names={summary.splitNames} sepSx={{ color: 'text.secondary' }} />
-                        </Box>
-                      )}
-                      {plan.description && (
-                        <Typography sx={{ fontSize: 16, color: 'text.secondary', lineHeight: 1.5 }}>
-                          {plan.description}
-                        </Typography>
-                      )}
                     </Box>
                     <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
                       <IconButton
@@ -812,6 +802,17 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                       </IconButton>
                     </Box>
                   </Box>
+
+                  {!isExpanded && summary.splitNames && (
+                    <Box sx={{ display: 'flex', mb: 0.75, fontSize: 16, fontWeight: 600, color: 'text.primary' }}>
+                      <FitNames names={summary.splitNames} sepSx={{ color: 'text.secondary' }} />
+                    </Box>
+                  )}
+                  {plan.description && (
+                    <Typography sx={{ fontSize: 16, color: 'text.secondary', lineHeight: 1.5 }}>
+                      {plan.description}
+                    </Typography>
+                  )}
 
                   {isExpanded ? (
                     <Box sx={{ mt: 2.25, pt: 2.25, borderTop: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -838,7 +839,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
 
                             {day.exercises && day.exercises.length > 0 ? (
                               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                                {day.exercises.slice(0, MAX_ROWS).map((exercise) => (
+                                {day.exercises.slice(0, MAX_EXERCISE_ROWS).map((exercise) => (
                                   <Box key={exercise.id} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
                                     <Typography sx={{ fontSize: 14, fontWeight: 400, color: 'text.primary', flex: 1, minWidth: 0, lineHeight: 1.35 }}>
                                       {exercise.exercise_name}
@@ -859,7 +860,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                 {t('plans.no_exercises')}
                               </Typography>
                             )}
-                            {day.exercises && day.exercises.length > MAX_ROWS && !dayExpanded && (
+                            {day.exercises && day.exercises.length > MAX_EXERCISE_ROWS && !dayExpanded && (
                               <Button
                                 variant="text"
                                 size="small"
@@ -867,7 +868,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                 aria-controls={dayPanelId}
                                 sx={{ ...DAY_LINK_SX, mt: 0.75, display: 'flex' }}
                               >
-                                {t('plans.more_exercises', { count: day.exercises.length - MAX_ROWS })}
+                                {t('plans.more_exercises', { count: day.exercises.length - MAX_EXERCISE_ROWS })}
                               </Button>
                             )}
 

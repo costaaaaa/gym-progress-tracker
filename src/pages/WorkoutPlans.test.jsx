@@ -243,7 +243,7 @@ describe('nuova scheda', () => {
       String(url).includes('create_plan.php') ? json({ plan: { id: 9 } }, 201) : json({ records: [plan] }),
     ));
 
-    let dialog = await creaScheda();
+    const dialog = await creaScheda();
     fireEvent.change(within(dialog).getByLabelText('Nome scheda'), { target: { value: 'Nuova' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Crea' }));
     await waitFor(() => expect(fetch.mock.calls.some(([url]) => String(url).includes('create_days.php'))).toBe(true));
@@ -251,8 +251,7 @@ describe('nuova scheda', () => {
     expect(JSON.parse(call[1].body).days).toEqual([{ name: 'Giorno 1', exercises: [] }]);
 
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    dialog = await creaScheda();
-    expect(dialog).toBeTruthy();
+    await creaScheda(); // riaperto dopo la creazione: mostra di nuovo "1 giorno" (lo controlla creaScheda)
   });
 });
 
@@ -261,7 +260,7 @@ describe('card della scheda: riepilogo (A15)', () => {
     id, exercise_name: name, muscle_group: 'petto', rest: 90, notes: '',
     planned_sets: plannedSets(warmups, times(n, { min: 8, max: 10 })),
   });
-  const render1 = async (records) => {
+  const mostraSchede = async (records) => {
     fetch.mockImplementation(() => Promise.resolve(json({ records })));
     render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
     await screen.findByText(records[0].name);
@@ -275,26 +274,26 @@ describe('card della scheda: riepilogo (A15)', () => {
   };
 
   it('con nomi propri: riga divisa e conteggi senza i giorni (serie allenanti, niente riscaldamento)', async () => {
-    await render1([ppl]);
+    await mostraSchede([ppl]);
     expect(screen.getByText('Push')).toBeTruthy();
     expect(screen.getByText('Pull')).toBeTruthy();
     expect(screen.getByText('3 esercizi · 10 serie')).toBeTruthy();
   });
 
   it('con i nomi di base: niente riga divisa e i giorni compaiono nei conteggi', async () => {
-    await render1([{ ...ppl, days: ppl.days.map((d, i) => ({ ...d, name: `Giorno ${i + 1}` })) }]);
+    await mostraSchede([{ ...ppl, days: ppl.days.map((d, i) => ({ ...d, name: `Giorno ${i + 1}` })) }]);
     expect(screen.getByText('2 giorni · 3 esercizi · 10 serie')).toBeTruthy();
     expect(screen.queryByText('Giorno 1')).toBeNull();
   });
 
   it('senza giorni dice di aggiungerne uno', async () => {
-    await render1([{ ...ppl, days: [] }]);
+    await mostraSchede([{ ...ppl, days: [] }]);
     expect(screen.getByText('Nessun giorno: aggiungine uno')).toBeTruthy();
   });
 
   it('aperta: righe con serie compatte, al massimo 4, "+N esercizi" apre i dettagli del giorno', async () => {
     const many = { id: 9, name: 'Push', exercises: ['A', 'B', 'C', 'D', 'E', 'F'].map((n, i) => exercise(20 + i, `Esercizio ${n}`, i === 0 ? 2 : 0, 3)) };
-    await render1([{ ...ppl, days: [many, { id: 10, name: 'Vuoto', exercises: [] }] }]);
+    await mostraSchede([{ ...ppl, days: [many, { id: 10, name: 'Vuoto', exercises: [] }] }]);
     fireEvent.click(screen.getByRole('button', { name: 'Mostra giorni' }));
     // D sta nelle righe e nel pannello dei dettagli (chiuso), E solo nel pannello
     expect(screen.getAllByText('Esercizio D')).toHaveLength(2);
