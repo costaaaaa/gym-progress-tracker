@@ -97,11 +97,12 @@ describe('testo che può andare a capo', () => {
     expect(mediaStyle(name, 389.95, 'max')).toMatchObject({ 'white-space': 'normal', 'text-overflow': 'clip', overflow: 'visible' });
   });
 
-  it('da 390 px le statistiche usano 12px del margine della card come prima, così «settimane record» non va a capo', async () => {
+  it('sui telefoni il gap tra le colonne delle statistiche è più piccolo, da 600 px come prima', async () => {
     await mount();
     const grid = screen.getByText('sessioni').parentElement.parentElement;
-    expect(style(grid).marginRight).toBe('-12px');
-    expect(mediaStyle(grid, 389.95, 'max')['margin-right']).toBe('0px');
+    expect(mediaStyle(grid, 0)['column-gap']).toBe('16px');
+    expect(mediaStyle(grid, 600)['column-gap']).toBe('24px');
+    expect(mediaStyle(grid, 900)['column-gap']).toBe('40px');
   });
 });
 

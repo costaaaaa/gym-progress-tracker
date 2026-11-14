@@ -42,24 +42,25 @@ describe('barra in alto: voce attiva', () => {
   });
 });
 
-// Reflow a 320 px (1.4.10): sotto 390 px i bottoni di accesso si stringono, sotto 360 px resta il marchio senza la scritta.
+// Reflow a 320 px (1.4.10): sui telefoni i bottoni di accesso si stringono, sotto 360 px resta il marchio senza la scritta.
 // jsdom non valuta le media query: si leggono le regole che gli elementi ricevono sotto quelle larghezze.
 describe('barra in alto: schermi stretti', () => {
   const mount = () => render(<MemoryRouter><ThemeModeProvider><Navbar /></ThemeModeProvider></MemoryRouter>);
 
-  it('sotto 390 px i bottoni Accedi e Registrati hanno meno spazio ai lati', () => {
+  it('sui telefoni (sotto 600 px) i bottoni Accedi e Registrati hanno meno spazio ai lati', () => {
     mount();
     for (const name of ['Accedi', 'Registrati']) {
-      const style = mediaStyle(screen.getByRole('link', { name }), 389.95, 'max');
+      const style = mediaStyle(screen.getByRole('link', { name }), 599.95, 'max');
       expect(style['padding-left']).toBe('8px');
       expect(style['padding-right']).toBe('8px');
     }
   });
 
-  it('sotto 390 px i controlli di destra stanno più vicini', () => {
+  it('sui telefoni i controlli di destra stanno più vicini, da 600 px come prima', () => {
     mount();
     const group = screen.getByRole('link', { name: 'Accedi' }).parentElement;
-    expect(mediaStyle(group, 389.95, 'max').gap).toBe('4px');
+    expect(mediaStyle(group, 0).gap).toBe('4px');
+    expect(mediaStyle(group, 600).gap).toBe('12px');
   });
 
   it('sotto 360 px la scritta LiftIndex resta solo per chi usa lo screen reader, il nome del link non cambia', () => {
@@ -77,9 +78,11 @@ describe('barra in alto: schermi stretti', () => {
     const toolbar = screen.getByRole('link', { name: 'Accedi' }).parentElement.parentElement;
     expect(mediaStyle(toolbar)['flex-wrap']).toBe('wrap');
     expect(mediaStyle(toolbar, 0).display).toBe('flex');
-    expect(mediaStyle(toolbar, 900).display).toBe('grid');
+    expect(mediaStyle(toolbar, 600).display).toBe('grid');
+    expect(mediaStyle(toolbar, 600)['grid-template-columns']).toBe('1fr auto');
+    expect(mediaStyle(toolbar, 900)['grid-template-columns']).toBe('1fr auto 1fr');
     const group = screen.getByRole('link', { name: 'Accedi' }).parentElement;
     expect(mediaStyle(group, 0)['margin-left']).toBe('auto');
-    expect(mediaStyle(toolbar, 390)['padding-right']).toBe('8px');
+    expect(mediaStyle(group, 600)['margin-left']).toBe('0px');
   });
 });
