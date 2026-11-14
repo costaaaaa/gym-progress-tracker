@@ -139,6 +139,31 @@ const openSection = (title) => {
   if (header.getAttribute('aria-expanded') !== 'true') fireEvent.click(header);
 };
 
+describe('nessun PR', () => {
+  it('con un solo allenamento (tutti "Nuovo") dice che ne serve un secondo, non "Nessun record recente"', async () => {
+    stubFetch([session(1, daysAgo(1), 1, 'Panca piana', 80), session(2, daysAgo(1), 4, 'Military press', 50)]);
+    await mount();
+    expect(screen.getByText('Serve un secondo allenamento per confrontare')).toBeTruthy();
+    expect(screen.queryByText('Nessun record recente')).toBeNull();
+  });
+
+  it('con più allenamenti ma senza PR resta "Nessun record recente"', async () => {
+    stubFetch([session(1, daysAgo(40), 1, 'Panca piana', 80), session(2, daysAgo(2), 1, 'Panca piana', 80)]);
+    await mount();
+    expect(screen.getByText('Nessun record recente')).toBeTruthy();
+    expect(screen.queryByText('Serve un secondo allenamento per confrontare')).toBeNull();
+  });
+
+  it('se solo alcuni esercizi sono "Nuovo" resta "Nessun record recente"', async () => {
+    stubFetch([
+      session(1, daysAgo(40), 1, 'Panca piana', 80), session(2, daysAgo(2), 1, 'Panca piana', 80),
+      session(3, daysAgo(1), 4, 'Military press', 50),
+    ]);
+    await mount();
+    expect(screen.getByText('Nessun record recente')).toBeTruthy();
+  });
+});
+
 describe('testi', () => {
   it('nessun testo della pagina è sotto i 16px, salvo chip dei PR, badge della riga (PR e variazione) e campo di ricerca', async () => {
     await mountOpen();

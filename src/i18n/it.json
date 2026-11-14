@@ -226,6 +226,7 @@
   "progress.summary.stalled": "Fermi",
   "progress.summary.prs": "Nuovi PR",
   "progress.summary.prs_none": "Nessun record recente",
+  "progress.summary.prs_need_second": "Serve un secondo allenamento per confrontare",
   "progress.favorites": "Preferiti",
   "progress.favorite_add": "Aggiungi ai preferiti",
   "progress.favorite_remove": "Rimuovi dai preferiti",

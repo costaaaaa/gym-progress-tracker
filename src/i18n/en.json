@@ -226,6 +226,7 @@
   "progress.summary.stalled": "Stalled",
   "progress.summary.prs": "New PRs",
   "progress.summary.prs_none": "No recent records",
+  "progress.summary.prs_need_second": "One more workout to compare against",
   "progress.favorites": "Favorites",
   "progress.favorite_add": "Add to favorites",
   "progress.favorite_remove": "Remove from favorites",
