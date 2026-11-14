@@ -225,6 +225,12 @@ describe('tema: rosso come testo in scuro (1.4.3)', () => {
     expect(contrast(color, PAPER.dark)).toBeGreaterThanOrEqual(4.5);
   });
 
+  it('il colore dell\'etichetta a fuoco esclude il campo in errore (la regola ha la guardia :not(.Mui-error))', () => {
+    renderThemed('light', <TextField label="Utente" focused />);
+    const css = [...document.querySelectorAll('style')].map((s) => s.textContent).join('');
+    expect(css).toMatch(/\.Mui-focused:not\(\.Mui-error\)\{[^}]*color:#d50000/);
+  });
+
   it.each([
     ['bottone di testo', <Button color="primary">Annulla</Button>],
     ['bottone con bordo', <Button variant="outlined" color="primary">Annulla</Button>],

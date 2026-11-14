@@ -1,4 +1,3 @@
-import BackgroundSwatch from './BackgroundSwatch';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -26,6 +25,7 @@ import { track } from '../utils/analytics';
 import { shareCardStrings } from '../i18n/shareCardStrings';
 import { CHIP_FONT } from '../utils/fonts';
 import { radius } from '../theme/radius';
+import BackgroundSwatch from './BackgroundSwatch';
 
 const SWIPE_MIN_PX = 50;
 const PREFS_KEY = 'lx_share_card';
