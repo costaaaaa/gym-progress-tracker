@@ -26,6 +26,17 @@ describe('groupRecovery', () => {
     expect(result.noData).toEqual(['bicipiti', 'tricipiti', 'addome', 'quadricipiti', 'femorali', 'glutei', 'adduttori', 'abduttori', 'polpacci']);
   });
 
+  it('un muscolo mai allenato (last_trained null) è "nessun dato", non "puoi allenare"', () => {
+    const result = groupRecovery({
+      petto: { status: 'PRONTO', percent: 100, last_trained: null },
+      schiena: { status: 'PRONTO', percent: 100, last_trained: '2026-10-10 18:00:00' },
+    }, now);
+
+    expect(result.canTrain).toEqual(['schiena']);
+    expect(result.noData).toContain('petto');
+    expect(result.noData).not.toContain('schiena');
+  });
+
   it('"a riposo" va per giorni crescenti, a parità nell\'ordine del corpo; senza giorno in fondo, sempre nell\'ordine del corpo', () => {
     const result = groupRecovery({
       spalle: { status: 'AFFATICATO', percent: 20, ready_at: '2026-10-24T08:00:00+02:00' },
