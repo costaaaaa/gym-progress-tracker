@@ -55,7 +55,7 @@ check('italiano: il testo concordato', $it === "\n--\nRicevi questa email perchÃ
     . "Informativa privacy: https://liftindex.example/privacy.html\nContatti: info@liftindex.app\n");
 $en = mail_footer('en');
 check('inglese: il testo concordato', $en === "\n--\nYou are receiving this email because you have a LiftIndex account.\n"
-    . "Privacy policy: https://liftindex.example/privacy.html\nContact: info@liftindex.app\n");
+    . "Privacy policy: https://liftindex.example/en/privacy.html\nContact: info@liftindex.app\n");
 
 echo "Email delle segnalazioni all'utente\n";
 $report = array('id' => 7, 'reporter_user_id' => 1, 'target_label' => 'X');

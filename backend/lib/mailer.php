@@ -19,11 +19,12 @@ function app_public_url()
 /**
  * Piè di pagina delle email agli UTENTI (contatto e informativa privacy), nella lingua $lang, con
  * la riga vuota di separazione davanti: va accodato al corpo, che finisce con "\n". Non sta in
- * mail_send(): le email all'admin non lo vogliono. Il link usa APP_PUBLIC_URL, come forgot_password.php.
+ * mail_send(): le email all'admin non lo vogliono. Il link usa APP_PUBLIC_URL, come forgot_password.php, e punta all'informativa nella lingua dell'email.
  */
 function mail_footer($lang)
 {
-    return "\n" . t_server('mail.footer', array('privacy_url' => app_public_url() . '/privacy.html'), $lang);
+    $privacy = $lang === 'en' ? '/en/privacy.html' : '/privacy.html';
+    return "\n" . t_server('mail.footer', array('privacy_url' => app_public_url() . $privacy), $lang);
 }
 
 /**
