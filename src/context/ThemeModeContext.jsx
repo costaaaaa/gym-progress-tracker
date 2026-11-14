@@ -280,7 +280,7 @@ export const ThemeModeProvider = ({ children }) => {
           MuiFormLabel: {
             styleOverrides: {
               root: ({ theme }) => ({
-                '&.Mui-focused:not(.Mui-error)': { color: theme.palette.primary.text },
+                '&.Mui-focused': { color: theme.palette.primary.text },
               }),
             },
           },

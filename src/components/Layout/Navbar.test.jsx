@@ -4,7 +4,7 @@ import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Navbar from './Navbar';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
-import { maxWidthStyle } from '../../test/mediaStyle';
+import { mediaStyle } from '../../test/mediaStyle';
 
 const auth = vi.hoisted(() => ({ value: { user: null, isLoggedIn: false, loading: false } }));
 vi.mock('../../context/AuthContext', () => ({
@@ -50,7 +50,7 @@ describe('barra in alto: schermi stretti', () => {
   it('sotto 390 px i bottoni Accedi e Registrati hanno meno spazio ai lati', () => {
     mount();
     for (const name of ['Accedi', 'Registrati']) {
-      const style = maxWidthStyle(screen.getByRole('link', { name }), 389.95);
+      const style = mediaStyle(screen.getByRole('link', { name }), 389.95, 'max');
       expect(style['padding-left']).toBe('8px');
       expect(style['padding-right']).toBe('8px');
     }
@@ -59,16 +59,27 @@ describe('barra in alto: schermi stretti', () => {
   it('sotto 390 px i controlli di destra stanno più vicini', () => {
     mount();
     const group = screen.getByRole('link', { name: 'Accedi' }).parentElement;
-    expect(maxWidthStyle(group, 389.95).gap).toBe('4px');
+    expect(mediaStyle(group, 389.95, 'max').gap).toBe('4px');
   });
 
   it('sotto 360 px la scritta LiftIndex resta solo per chi usa lo screen reader, il nome del link non cambia', () => {
     mount();
-    const style = maxWidthStyle(screen.getByText('LiftIndex'), 359.95);
+    const style = mediaStyle(screen.getByText('LiftIndex'), 359.95, 'max');
     expect(style.position).toBe('absolute');
     expect(style.width).toBe('1px');
     expect(style.height).toBe('1px');
     expect(style.overflow).toBe('hidden');
     expect(screen.getByRole('link', { name: 'LiftIndex' })).toBeTruthy();
+  });
+
+  it('se i controlli non stanno accanto al marchio (spaziatura del testo) vanno a capo invece di uscire dallo schermo', () => {
+    mount();
+    const toolbar = screen.getByRole('link', { name: 'Accedi' }).parentElement.parentElement;
+    expect(mediaStyle(toolbar)['flex-wrap']).toBe('wrap');
+    expect(mediaStyle(toolbar, 0).display).toBe('flex');
+    expect(mediaStyle(toolbar, 900).display).toBe('grid');
+    const group = screen.getByRole('link', { name: 'Accedi' }).parentElement;
+    expect(mediaStyle(group, 0)['margin-left']).toBe('auto');
+    expect(mediaStyle(toolbar, 390)['padding-right']).toBe('8px');
   });
 });

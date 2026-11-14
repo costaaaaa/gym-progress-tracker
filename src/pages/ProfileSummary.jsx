@@ -7,6 +7,7 @@ import { API_BASE_URL } from '../config';
 import { xpIntoLevel, xpForNextLevel } from '../utils/gamificationLevels';
 import { formatDate, formatNumber } from '../i18n/format';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
+import { BELOW_390 } from '../theme/narrowScreens';
 import { radius } from '../theme/radius';
 
 // Solo queste tre categorie hanno una griglia dedicata: "strength" è esclusa perché il suo
@@ -139,7 +140,7 @@ const ProfileSummary = () => {
           <LinearProgress variant="determinate" value={progress} sx={solidBar(9)} />
         </Box>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', justifyContent: 'start', columnGap: { xs: 3, md: 5 }, '@media (max-width:389.95px)': { columnGap: 1.5 } }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', justifyContent: 'start', columnGap: { xs: 3, md: 5 }, [BELOW_390]: { columnGap: 1.5 } }}>
           {statTiles.map((stat) => (
             <Box key={stat.label} sx={{ minWidth: 0 }}>
               <Typography variant="statNumber">{stat.value}</Typography>

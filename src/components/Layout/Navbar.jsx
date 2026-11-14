@@ -7,6 +7,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useThemeMode } from '../../context/ThemeModeContext';
 import { safeNext } from '../../utils/safeNext';
 import { useTranslation } from 'react-i18next';
+import { visuallyHidden } from '@mui/utils';
+import { BELOW_360, BELOW_390, NARROW_FIT } from '../../theme/narrowScreens';
 import { isAuthPath, stripLangPrefix, useLocalizedPath } from '../../i18n/paths';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 import LogoMark from '../LogoMark';
@@ -22,11 +24,6 @@ const navItems = [
   { label: 'nav.groups', path: '/gruppi' },
 ];
 
-// Sotto 390 px (320 px compreso) i bottoni di accesso si stringono; sotto 360 px la scritta LiftIndex resta
-// solo per gli screen reader (il marchio rimane visibile).
-const NARROW = '@media (max-width:389.95px)';
-const VERY_NARROW = '@media (max-width:359.95px)';
-const SR_ONLY = { position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' };
 
 const Navbar = () => {
   const location = useLocation();
@@ -72,14 +69,20 @@ const Navbar = () => {
     <AppBar position="sticky" elevation={0} sx={{ overflowX: 'hidden' }}>
       <Toolbar
         sx={{
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr auto', md: '1fr auto 1fr' },
+          // Da telefono i controlli di destra vanno a capo se non stanno accanto al marchio (spaziatura del testo).
+          // Tra 390 e 398 px marchio e controlli già uscivano di 6px nel margine destro: lì il margine destro scende a 8px, così
+          // la barra resta su una riga e il bottone resta dove era.
+          display: { xs: 'flex', md: 'grid' },
+          flexWrap: 'wrap',
+          rowGap: 0.5,
+          gridTemplateColumns: '1fr auto 1fr',
           alignItems: 'center',
           minHeight: '64px !important',
           maxWidth: '1180px',
           mx: 'auto',
           width: '100%',
           px: { xs: 2, md: '32px' },
+          [NARROW_FIT]: { pr: '8px' },
         }}
       >
         {/* Sinistra: logo */}
@@ -116,7 +119,7 @@ const Navbar = () => {
               fontWeight: 700,
               fontSize: 16,
               lineHeight: 1,
-              [VERY_NARROW]: SR_ONLY,
+              [BELOW_360]: visuallyHidden,
             }}
           >
             LiftIndex
@@ -155,7 +158,7 @@ const Navbar = () => {
         )}
 
         {/* Destra: toggle tema, avatar / auth — stessa struttura su mobile e desktop */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifySelf: 'end', [NARROW]: { gap: 0.5 } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifySelf: 'end', ml: { xs: 'auto', md: 0 }, [BELOW_390]: { gap: 0.5 } }}>
           <Tooltip title={mode === 'light' ? t('nav.dark_mode') : t('nav.light_mode')}>
             <IconButton
               onClick={toggleThemeMode}
@@ -208,7 +211,7 @@ const Navbar = () => {
                 <Button
                   component={RouterLink}
                   to={withNext('/login')}
-                  sx={{ color: 'text.secondary', fontWeight: 500, fontSize: 14, [NARROW]: { px: 1 } }}
+                  sx={{ color: 'text.secondary', fontWeight: 500, fontSize: 14, [BELOW_390]: { px: 1 } }}
                 >
                   {t('nav.login')}
                 </Button>
@@ -218,7 +221,7 @@ const Navbar = () => {
                   variant={onAccessPage ? 'text' : 'contained'}
                   component={RouterLink}
                   to={withNext('/register')}
-                  sx={onAccessPage ? { color: 'text.secondary', fontWeight: 500, fontSize: 14, [NARROW]: { px: 1 } } : { fontSize: 14, [NARROW]: { px: 1 } }}
+                  sx={onAccessPage ? { color: 'text.secondary', fontWeight: 500, fontSize: 14, [BELOW_390]: { px: 1 } } : { fontSize: 14, [BELOW_390]: { px: 1 } }}
                 >
                   {t('nav.register')}
                 </Button>

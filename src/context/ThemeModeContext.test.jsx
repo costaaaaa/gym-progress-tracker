@@ -150,8 +150,6 @@ const contrast = (a, b) => {
   return (hi + 0.05) / (lo + 0.05);
 };
 
-const cleanupAll = () => cleanup();
-
 const PAPER = { light: '#ffffff', dark: '#141416' };
 
 const renderThemed = (mode, ui) => {
@@ -214,16 +212,18 @@ describe('tema: rosso come testo in scuro (1.4.3)', () => {
     const labelColor = (mode) => {
       renderThemed(mode, <TextField label="Utente" focused />);
       const color = getComputedStyle(screen.getByText('Utente', { selector: 'label' })).color;
-      cleanupAll();
+      cleanup();
       return color;
     };
     expect(contrast(labelColor('dark'), PAPER.dark)).toBeGreaterThanOrEqual(4.5);
     expect(labelColor('light')).toBe(RED);
   });
 
-  it('l\'etichetta del campo in errore e a fuoco resta quella dell\'errore', () => {
-    renderThemed('light', <TextField label="Utente" focused error />);
-    expect(getComputedStyle(screen.getByText('Utente', { selector: 'label' })).color).toBe(RED);
+  it('in scuro l\'etichetta del campo in errore e a fuoco ha almeno 4,5:1 e il colore dell\'errore', () => {
+    renderThemed('dark', <><TextField label="Utente" focused error /><Typography color="error">Errore</Typography></>);
+    const { color } = getComputedStyle(screen.getByText('Utente', { selector: 'label' }));
+    expect(contrast(color, PAPER.dark)).toBeGreaterThanOrEqual(4.5);
+    expect(color).toBe(getComputedStyle(screen.getByText('Errore')).color);
   });
 
   it.each([
@@ -234,7 +234,7 @@ describe('tema: rosso come testo in scuro (1.4.3)', () => {
   ])('in scuro: %s primario ha almeno 4,5:1; in chiaro resta rosso', (_, ui) => {
     const color = (mode) => {
       const value = colorOfButton(mode, ui, 'Annulla');
-      cleanupAll();
+      cleanup();
       return value;
     };
     expect(contrast(color('dark'), PAPER.dark)).toBeGreaterThanOrEqual(4.5);
@@ -279,7 +279,7 @@ describe('tema: focus visibile da tastiera (2.4.7)', () => {
       renderThemed(mode, ui());
       focusByKeyboard(find());
       expect(outlineOf(find())).toEqual({ outline: `2px solid ${INK[mode]}`, outlineOffset: offset });
-      cleanupAll();
+      cleanup();
     }
   });
 
