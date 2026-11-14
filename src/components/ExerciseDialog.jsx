@@ -33,7 +33,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
   const { t } = useTranslation();
   const [exercise, setExercise] = useState({
     name: '',
-    rest: '',
+    rest: '90',
     notes: '',
     muscleGroup: ''
   });
@@ -199,7 +199,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
     onAdd(dayIndex, { ...exercise, planned_sets: plannedSets });
     setExercise({
       name: '',
-      rest: '',
+      rest: '90',
       notes: '',
       muscleGroup: ''
     });
@@ -365,6 +365,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
             <TextField
               name="rest"
               label={t('exercise_dialog.rest')}
+              required
               type="number"
               inputProps={{ min: 0, max: 3600, step: 1 }}
               fullWidth
