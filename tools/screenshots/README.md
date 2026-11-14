@@ -8,7 +8,7 @@ Il kit è separato dall'app: ha un suo `package.json` e non tocca quello di `gym
 
 ## Script
 
-- `shots.mjs <cartella> [porta]`: 11 pagine, i giorni delle schede aperti con i dialog dell'editor
+- `shots.mjs <cartella> [porta]`: 13 pagine, i giorni delle schede aperti con i dialog dell'editor
   delle serie (4 immagini) e le 5 schermate del Focus, con 390 e 1440 px di larghezza e tema
   chiaro/scuro (80 immagini). Ogni schermata usa un contesto browser nuovo con orologio fisso
   (2026-10-23 10:00, Europe/Rome), `reducedMotion: reduce`, animazioni CSS azzerate, font pronti
@@ -20,7 +20,7 @@ Il kit è separato dall'app: ha un suo `package.json` e non tocca quello di `gym
 - `compare.mjs [A=before] [B=after]`: confronto con pixelmatch (soglia 0). Le differenze finiscono in `diff/`.
   Esce con 1 se c'è almeno una differenza o un file mancante.
 
-Pagine (file `<nome>_<390|1440>_<light|dark>.png`): `landing` (ospite), `home`, `progressi`, `misure`,
+Pagine (file `<nome>_<390|1440>_<light|dark>.png`): `landing` (ospite), `home`, `home-nuovo` (utente senza scheda né allenamenti), `progressi`, `progressi-nuovo` (un solo allenamento: ogni esercizio è "Nuovo"), `misure`,
 `account`, `profilo`, `gruppi`, `gruppo-dettaglio`, `allenamenti-piani`, `allenamenti-piani-giorni`,
 `allenamenti-piani-aggiungi-compatto`, `allenamenti-piani-aggiungi-lista`,
 `allenamenti-piani-modifica-lista`, `allenamenti-cronologia`, `admin` (utente con `is_admin`),

@@ -119,6 +119,8 @@ const set = (n, weight, reps) => ({ set_number: n, weight, reps: String(reps) })
 const HISTORY = Array.from({ length: 12 }, (_, i) => ({
   id: 200 - i,
   date: isoDay(-(i * 3 + 1)),
+  // l'istante da cui i Progressi contano i giorni: senza, "ultimo NaN gg fa" e ogni esercizio risulta "Nuovo"
+  started_at: `${isoDay(-(i * 3 + 1))}T16:00:00.000Z`,
   notes: '',
   exercises: [
     { exercise_id: 3, name: 'Panca piana', sets: [set(1, round(55 + i * 1.25), 8), set(2, round(60 + i * 1.25), 8), set(3, round(62.5 + i * 1.25), 6)] },
@@ -148,6 +150,12 @@ const recovery = {
   femorali: { status: 'AFFATICATO', ready_at: stamp(3, '08:00:00') },
 };
 
+// Utente appena iscritto: nessuna scheda, nessun allenamento, nessun muscolo mai allenato (come li manda il server)
+const recoveryNuovo = Object.fromEntries(['petto', 'schiena', 'spalle', 'bicipiti', 'tricipiti', 'addome', 'quadricipiti', 'femorali', 'glutei', 'adduttori', 'abduttori', 'polpacci']
+  .map((group) => [group, { status: 'PRONTO', percent: 100, last_trained: null, ready_at: null }]));
+// Un solo allenamento fatto: ogni esercizio è "Nuovo" nei Progressi
+const HISTORY_UNO = HISTORY.slice(0, 1);
+
 const GROUP_ROWS = [
   { rank: 1, username: 'atleta_2', is_me: false, workouts: 3, goal: 3, volume_kg: 5420, adherence: 1 },
   { rank: 2, username: 'atleta_demo', is_me: true, workouts: 2, goal: 3, volume_kg: 4820, adherence: 0.67 },
@@ -164,11 +172,12 @@ const user = ({ admin }) => ({
 const fixtures = [
   ['user/read.php', user],
   ['user/consent.php', () => ({ success: true, consents: { terms: { granted: true }, health_data: { granted: true } } })],
-  ['workout_history/read.php', () => ({ success: true, records: HISTORY })],
-  ['workout/read_plans.php', ({ plans }) => ({ success: true, records: plans ? PLAN_SETS[plans] : [plan, planInactive] })],
-  ['workout_stats/dashboard.php', () => ({
-    success: true, weekly_workouts: 2, weekly_goal: 3,
-    weekly_volume: { total_weight: 4820, total_reps: 118 }, recovery,
+  ['workout_history/read.php', ({ utente }) => ({ success: true, records: utente === 'nuovo' ? [] : utente === 'un-allenamento' ? HISTORY_UNO : HISTORY })],
+  ['workout/read_plans.php', ({ plans, utente }) => ({ success: true, records: utente === 'nuovo' ? [] : plans ? PLAN_SETS[plans] : [plan, planInactive] })],
+  ['workout_stats/dashboard.php', ({ utente }) => ({
+    success: true, weekly_workouts: utente === 'nuovo' ? 0 : 2, weekly_goal: 3,
+    weekly_volume: { total_weight: utente === 'nuovo' ? 0 : 4820, total_reps: utente === 'nuovo' ? 0 : 118 },
+    recovery: utente === 'nuovo' ? recoveryNuovo : recovery,
   })],
   ['gamification/streak.php', () => ({ success: true, current_streak_weeks: 3, longest_streak_weeks: 5, this_week: { count: 2, goal: 3, completed: false } })],
   ['gamification/profile.php', () => ({
@@ -283,7 +292,7 @@ async function openPage(vp, theme, opts, tag) {
   await ctx.route('**/backend/**', (route) => {
     const url = route.request().url();
     const hit = fixtures.find(([key]) => url.includes(key));
-    const body = hit ? hit[1]({ admin: opts.admin === true, plans: opts.plans }) : fallback;
+    const body = hit ? hit[1]({ admin: opts.admin === true, plans: opts.plans, utente: opts.utente }) : fallback;
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
   });
   const page = await ctx.newPage();
@@ -295,7 +304,9 @@ async function openPage(vp, theme, opts, tag) {
 const SHOT_LIST = [
   ['landing', '/', { loggedIn: false }],
   ['home', '/', { loggedIn: true }],
+  ['home-nuovo', '/', { loggedIn: true, utente: 'nuovo' }],
   ['progressi', '/dashboard?tab=progress', { loggedIn: true }],
+  ['progressi-nuovo', '/dashboard?tab=progress', { loggedIn: true, utente: 'un-allenamento' }],
   ['misure', '/dashboard?tab=body', { loggedIn: true }],
   ['account', '/account', { loggedIn: true }],
   ['profilo', '/profilo', { loggedIn: true }],
