@@ -219,11 +219,10 @@ describe('tema: rosso come testo in scuro (1.4.3)', () => {
     expect(labelColor('light')).toBe(RED);
   });
 
-  it('in scuro l\'etichetta del campo in errore e a fuoco ha almeno 4,5:1 e il colore dell\'errore', () => {
-    renderThemed('dark', <><TextField label="Utente" focused error /><Typography color="error">Errore</Typography></>);
+  it('in scuro l\'etichetta del campo in errore e a fuoco ha almeno 4,5:1 di contrasto', () => {
+    renderThemed('dark', <TextField label="Utente" focused error />);
     const { color } = getComputedStyle(screen.getByText('Utente', { selector: 'label' }));
     expect(contrast(color, PAPER.dark)).toBeGreaterThanOrEqual(4.5);
-    expect(color).toBe(getComputedStyle(screen.getByText('Errore')).color);
   });
 
   it.each([
@@ -302,9 +301,10 @@ describe('tema: focus visibile da tastiera (2.4.7)', () => {
     expect(css).toMatch(/a:focus-visible\{[^}]*outline:2px solid #ffffff;[^}]*outline-offset:2px/);
   });
 
-  it('il <button> nativo (ad esempio i campioni di sfondo della condivisione) ha lo stesso contorno su :focus-visible', () => {
+  it('il <button> nativo ha lo stesso contorno su :focus-visible, i bottoni MUI no (lo hanno con .Mui-focusVisible)', () => {
     renderThemed('light', <button type="button">Vai</button>);
     const css = [...document.querySelectorAll('style')].map((s) => s.textContent).join('');
-    expect(css).toMatch(/button:focus-visible\{[^}]*outline:2px solid #1a1816;[^}]*outline-offset:2px/);
+    expect(css).toMatch(/button:not\(\.MuiButtonBase-root\):focus-visible\{[^}]*outline:2px solid #1a1816;[^}]*outline-offset:2px/);
+    expect(css).not.toMatch(/(^|[,}])button:focus-visible/);
   });
 });

@@ -274,14 +274,15 @@ export const ThemeModeProvider = ({ children }) => {
                 transition: 'background-color 0.3s ease, color 0.3s ease',
               },
               'a:focus-visible': focusRing,
-              'button:focus-visible': focusRing,
+              // Solo i <button> non MUI: quelli MUI hanno già il contorno con .Mui-focusVisible (e FOCUS_INSIDE dove serve)
+              'button:not(.MuiButtonBase-root):focus-visible': focusRing,
             }
           },
-          // Etichetta a fuoco: rosso come testo (primary.text), non il rosso del marchio. L'errore resta quello dell'errore.
+          // Etichetta a fuoco: rosso come testo (primary.text), non il rosso del marchio. In errore resta il colore dell'errore (la guardia :not(.Mui-error)).
           MuiFormLabel: {
             styleOverrides: {
               root: ({ theme }) => ({
-                '&.Mui-focused': { color: theme.palette.primary.text },
+                '&.Mui-focused:not(.Mui-error)': { color: theme.palette.primary.text },
               }),
             },
           },
