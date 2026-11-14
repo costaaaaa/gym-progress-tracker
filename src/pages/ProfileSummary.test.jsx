@@ -6,6 +6,7 @@ import ProfileSummary from './ProfileSummary';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import i18n from '../i18n';
 import { textBelow } from '../test/minText';
+import { mediaStyle } from '../test/mediaStyle';
 
 const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
@@ -89,11 +90,18 @@ describe('testo che può andare a capo', () => {
     }
   });
 
-  it('il nome dell\'esercizio non è troncato con i puntini', async () => {
+  it('da 390 px il nome dell\'esercizio resta su una riga con i puntini; sotto va a capo', async () => {
     await mount();
-    const { whiteSpace, textOverflow } = style(screen.getByText('Rematore con bilanciere'));
-    expect(whiteSpace).not.toBe('nowrap');
-    expect(textOverflow).not.toBe('ellipsis');
+    const name = screen.getByText('Rematore con bilanciere');
+    expect(style(name)).toMatchObject({ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' });
+    expect(mediaStyle(name, 389.95, 'max')).toMatchObject({ 'white-space': 'normal', 'text-overflow': 'clip', overflow: 'visible' });
+  });
+
+  it('da 390 px le statistiche usano 12px del margine della card come prima, così «settimane record» non va a capo', async () => {
+    await mount();
+    const grid = screen.getByText('sessioni').parentElement.parentElement;
+    expect(style(grid).marginRight).toBe('-12px');
+    expect(mediaStyle(grid, 389.95, 'max')['margin-right']).toBe('0px');
   });
 });
 
