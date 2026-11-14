@@ -70,7 +70,7 @@ const LeaderboardTable = ({ rows, board }) => {
             borderBottom: '1px solid',
             borderColor: 'divider',
             borderRadius: row.is_me ? radius.md : 0,
-            bgcolor: row.is_me ? 'action.selected' : 'transparent',
+            bgcolor: row.is_me ? 'background.mine' : 'transparent',
           }}
         >
           <Typography

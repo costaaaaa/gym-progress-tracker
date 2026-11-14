@@ -64,6 +64,9 @@ export const ThemeModeProvider = ({ children }) => {
             // Fondo neutro di una riga/card secondaria (storico, giorni di una scheda): in scuro è
             // lo stesso valore di action.hover di MUI (qui letterale per non dipendere da quello).
             subtle: mode === 'light' ? '#faf9f8' : 'rgba(255, 255, 255, 0.08)',
+            // Riga «tu» della classifica: in chiaro come action.selected di MUI; in scuro più tenue (0.12 invece
+            // di 0.16) perché il testo secondario (#a0a0a2) arrivi a 4.8 : 1 (con 0.16 si ferma a 4.4 : 1).
+            mine: mode === 'light' ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.12)',
           },
           text: {
             primary: mode === 'light' ? '#1a1816' : '#ffffff',

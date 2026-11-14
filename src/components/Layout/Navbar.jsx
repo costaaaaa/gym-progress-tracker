@@ -131,13 +131,13 @@ const Navbar = () => {
                   py: 1,
                   fontSize: 14,
                   fontWeight: isActive(item.path) ? 600 : 500,
-                  color: isActive(item.path) ? 'primary.main' : 'text.secondary',
+                  color: isActive(item.path) ? 'primary.text' : 'text.secondary',
                   borderRadius: 0,
                   borderBottom: '2px solid',
                   borderColor: isActive(item.path) ? 'primary.main' : 'transparent',
                   '&:hover': {
                     backgroundColor: 'transparent',
-                    color: 'primary.main',
+                    color: 'primary.text',
                   },
                 }}
               >
