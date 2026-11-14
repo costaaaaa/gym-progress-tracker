@@ -80,7 +80,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
     name: '',
     description: ''
   });
-  const [numDays, setNumDays] = useState(3);
+  const [numDays, setNumDays] = useState(1);
   
   // Stati per la modifica della scheda
   const [openEditPlanDialog, setOpenEditPlanDialog] = useState(false);
@@ -181,7 +181,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
         name: '',
         description: ''
       });
-      setNumDays(3);
+      setNumDays(1);
     } catch (error) {
       console.error('Error creating workout plan:', error);
       setSnackbar({

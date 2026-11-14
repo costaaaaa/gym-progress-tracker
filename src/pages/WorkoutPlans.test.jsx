@@ -228,3 +228,30 @@ describe('dialogo di eliminazione di una scheda', () => {
     expect(screen.queryByText(obiettivo(3))).toBeNull();
   });
 });
+
+describe('nuova scheda', () => {
+  it('di base ha un solo giorno, anche dopo averne creata una', async () => {
+    const creaScheda = async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: 'Nuova scheda' })[0]);
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).getByRole('combobox').textContent).toBe('1 giorno');
+      return dialog;
+    };
+    render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
+    await screen.findByText('Forza A');
+    fetch.mockImplementation((url) => Promise.resolve(
+      String(url).includes('create_plan.php') ? json({ plan: { id: 9 } }, 201) : json({ records: [plan] }),
+    ));
+
+    let dialog = await creaScheda();
+    fireEvent.change(within(dialog).getByLabelText('Nome scheda'), { target: { value: 'Nuova' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Crea' }));
+    await waitFor(() => expect(fetch.mock.calls.some(([url]) => String(url).includes('create_days.php'))).toBe(true));
+    const call = fetch.mock.calls.find(([url]) => String(url).includes('create_days.php'));
+    expect(JSON.parse(call[1].body).days).toEqual([{ name: 'Giorno 1', exercises: [] }]);
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    dialog = await creaScheda();
+    expect(dialog).toBeTruthy();
+  });
+});
