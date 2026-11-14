@@ -53,14 +53,14 @@ try {
         // inglese sta sotto /en. Email e link sono nella lingua dell'account.
         // Il token sta nel fragment (#): il browser non lo manda al server, quindi resta fuori dai log di accesso e dal Referer.
         $lang = normalize_locale($user['locale'] ?? null) ?? 'it';
-        $baseUrl = rtrim(getenv('APP_PUBLIC_URL') ?: 'http://localhost:3000', '/');
+        $baseUrl = app_public_url();
         after_response(function () use ($reset, $user, $email, $lang, $baseUrl) {
             $token = $reset->createUnlessRecent($user['id']);
             if ($token === null) {
                 return;
             }
             $link = $baseUrl . ($lang === 'en' ? '/en' : '') . '/reset-password#token=' . $token;
-            $text = t_server('forgot.email_body', array('username' => $user['username'], 'link' => $link), $lang);
+            $text = t_server('forgot.email_body', array('username' => $user['username'], 'link' => $link), $lang) . mail_footer($lang);
             mail_send($email, t_server('forgot.email_subject', array(), $lang), $text);
         });
     }
