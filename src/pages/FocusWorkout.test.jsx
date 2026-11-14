@@ -202,6 +202,15 @@ describe('bozza e ripresa', () => {
     expect(saveBody().workout_records.map((r) => [r.set_number, r.seconds_from_start])).toEqual([[1, null], [2, 1200]]);
   });
 
+  it('scartare la bozza con un giorno solo lo lascia già scelto', async () => {
+    responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [fullDay] }] });
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(savedDraft));
+    await mount();
+    click('Scarta e inizia nuovo');
+    expect(screen.getByRole('combobox').textContent).toBe('Push completo');
+    expect(screen.getByRole('button', { name: 'Inizia allenamento' }).disabled).toBe(false);
+  });
+
   it('scartare la bozza la cancella e torna alla scelta del giorno', async () => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(savedDraft));
     await mount();

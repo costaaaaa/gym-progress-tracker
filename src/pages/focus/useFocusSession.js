@@ -143,6 +143,13 @@ export default function useFocusSession() {
   // ================================================
   // CARICA PIANO ATTIVO E IMPOSTAZIONI UTENTE
   // ================================================
+  // Con un giorno solo nella scheda, quel giorno è già scelto (solo setter: stabile)
+  const preselectOnlyDay = useCallback((plan) => {
+    if (plan?.days?.length !== 1) return;
+    setSelectedDayId(plan.days[0].id);
+    setSelectedDay(plan.days[0]);
+  }, []);
+
   // useCallback([clearDraft]): non legge stato reattivo (solo localStorage,
   // setter e clearDraft, a sua volta stabile), quindi l'effetto sotto si
   // riesegue solo al cambio di isLoggedIn.
@@ -232,10 +239,7 @@ export default function useFocusSession() {
           setActivePlan(active);
           // Se non c'è bozza, vai alla selezione giorno (un giorno solo è già scelto)
           if (!resuming) {
-            if (active.days?.length === 1) {
-              setSelectedDayId(active.days[0].id);
-              setSelectedDay(active.days[0]);
-            }
+            preselectOnlyDay(active);
             setPhase('select_day');
           }
         } else {
@@ -256,7 +260,7 @@ export default function useFocusSession() {
         setPhase('select_day');
       }
     }
-  }, [clearDraft]);
+  }, [clearDraft, preselectOnlyDay]);
 
   // Dopo la dichiarazione di loadInitialData: l'array di dipendenze viene
   // valutato durante il render (temporal dead zone se fosse sopra).
@@ -316,6 +320,7 @@ export default function useFocusSession() {
   const handleDiscardDraft = () => {
     clearDraft();
     setDraftToResume(null);
+    preselectOnlyDay(activePlan);
     setPhase('select_day');
   };
 
