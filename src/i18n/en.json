@@ -328,6 +328,7 @@
   "body.field.waist": "Waist (cm)",
   "body.field.leg": "Leg (cm)",
   "common.cancel": "Cancel",
+  "common.premium": "Premium",
   "common.save": "Save",
   "health_consent.title": "Body measurements are health data",
   "health_consent.updated": "We've updated the consent: it now also covers Apple Health and Health Connect. Your measurements are safe and will be visible again as soon as you confirm.",

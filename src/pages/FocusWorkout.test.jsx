@@ -761,9 +761,29 @@ describe('errori e premium', () => {
     expect(screen.getByText('Nessun piano attivo')).toBeTruthy();
   });
 
+  it('senza la funzione premium i blocchi in allenamento mostrano il lucchetto con la parola "Premium"', async () => {
+    await startDay('Push');
+    expect(screen.getByRole('button', { name: 'Cambia esercizio Premium' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Aggiungi esercizio Premium' })).toBeTruthy();
+  });
+
+  it('con la funzione premium non c\'è nessuna etichetta "Premium"', async () => {
+    responses['user/read.php'] = () => json({ rest_timer_enabled: true, features: ['focus_session_edit'] });
+    await startDay('Push');
+    expect(screen.queryByText('Premium')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Cambia esercizio' })).toBeTruthy();
+  });
+
+  it('senza la funzione premium anche "Aggiungi esercizio" del riepilogo mostra "Premium"', async () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...savedDraft, selectedDay: pushDay, selectedDayId: 1, phase: 'summary' }));
+    await mount();
+    click('Riprendi allenamento');
+    expect(screen.getByRole('button', { name: 'Aggiungi esercizio Premium' })).toBeTruthy();
+  });
+
   it('senza la funzione premium, cambiare esercizio apre il dialog premium', async () => {
     await startDay('Push');
-    click('Cambia esercizio');
+    click('Cambia esercizio Premium');
     expect(screen.getByText('Funzione Premium')).toBeTruthy();
     expect(fetchMock.mock.calls.some(([url]) => url.includes('exercise/read_all.php'))).toBe(false);
   });
@@ -856,7 +876,7 @@ describe('colori di Focus: rosso solo per ciò che è distruttivo', () => {
 
   it('il dialogo premium ha il bottone "Ho capito" non rosso', async () => {
     await startDay('Push');
-    click('Cambia esercizio');
+    click('Cambia esercizio Premium');
     expect(getComputedStyle(screen.getByRole('button', { name: 'Ho capito' })).color).not.toBe(RED);
   });
 });

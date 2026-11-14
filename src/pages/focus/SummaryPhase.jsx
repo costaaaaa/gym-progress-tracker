@@ -4,7 +4,7 @@ import {
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon, Save as SaveIcon, EmojiEvents as TrophyIcon, TrendingUp as TrendingUpIcon,
-  Share as ShareIcon, LocalFireDepartment as FireIcon, Add as AddIcon, Lock as LockIcon
+  Share as ShareIcon, LocalFireDepartment as FireIcon, Add as AddIcon
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
@@ -17,6 +17,7 @@ import WarmupBadge from '../../components/WarmupBadge';
 import { track } from '../../utils/analytics';
 import { techniqueLabel } from '../../i18n/labels';
 import { radius } from '../../theme/radius';
+import PremiumLock from './PremiumLock';
 
 const XP_WITHHELD_KEYS = {
   incomplete: 'focus.xp_incomplete',
@@ -238,7 +239,7 @@ export default function SummaryPhase({
           <>
             {/* Esercizio dimenticato: si aggiunge in coda e si torna ad allenarsi */}
             <Button variant="outlined" fullWidth startIcon={<AddIcon />}
-              endIcon={canEditSession ? null : <LockIcon sx={{ fontSize: '16px !important' }} />}
+              endIcon={canEditSession ? null : <PremiumLock />}
               onClick={onAddExercise}
               sx={{ py: 1.25, mb: 3, color: colors.textSecondary, borderColor: colors.border, borderRadius: radius.lg,
                 '&:hover': { borderColor: colors.text, color: colors.text } }}>
