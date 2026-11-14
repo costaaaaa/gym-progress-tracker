@@ -167,6 +167,7 @@ function blog_styles()
   --text-primary: #1a1816;
   --text-secondary: #6b6663;
   --divider: #ececea;
+  --field-border: #8c8885;
   --toggle-bg: #f7f6f5;
   --toggle-bg-hover: #ececea;
   --radius: 16px;
@@ -179,6 +180,7 @@ function blog_styles()
   --text-primary: #ffffff;
   --text-secondary: #a0a0a2;
   --divider: rgba(255, 255, 255, 0.08);
+  --field-border: #6e6e70;
   --toggle-bg: rgba(255, 255, 255, 0.06);
   --toggle-bg-hover: rgba(255, 255, 255, 0.12);
 }
@@ -368,7 +370,7 @@ thead th { color: var(--text-secondary); font-weight: 600; }
   font: inherit;
   color: inherit;
   background: var(--bg-default);
-  border: 1px solid var(--divider);
+  border: 1px solid var(--field-border);
   border-radius: 10px;
   padding: 9px 12px;
 }
