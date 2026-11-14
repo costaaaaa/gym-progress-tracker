@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -10,12 +10,31 @@ export const NAVBAR_HEIGHT = 64;
 const reducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// Sotto questa altezza di finestra il palco fisso taglia titolo, passi e card (misurato a 320 x 568 e a 1280 x 500,
+// dove le scene più alte arrivano a ~510 px): la scena si mostra come composizione statica.
+const SCENE_MIN_HEIGHT = 600;
+const TALL_QUERY = `(min-height: ${SCENE_MIN_HEIGHT}px)`;
+
+function useTallScreen() {
+  const [tall, setTall] = useState(() => window.matchMedia(TALL_QUERY).matches);
+  useEffect(() => {
+    const query = window.matchMedia(TALL_QUERY);
+    const onChange = () => setTall(query.matches);
+    onChange();
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
+  }, []);
+  return tall;
+}
+
 // Scena a scorrimento: la sezione è alta (hold + 1) schermate, il palco `sticky` resta fermo per `hold`
 // schermate e una timeline GSAP avanza con lo scroll nativo (nessuna cattura della rotella).
-// Con movimento ridotto `live` è false: il componente mostra la composizione finita, senza timeline.
+// Con movimento ridotto o schermo basso `live` è false: il componente mostra la composizione finita, senza timeline.
 export function useScrollScene(build) {
   const ref = useRef(null);
-  const [live] = useState(() => !reducedMotion());
+  const [motionOk] = useState(() => !reducedMotion());
+  const tall = useTallScreen();
+  const live = motionOk && tall;
 
   useLayoutEffect(() => {
     if (!live || !ref.current) return undefined;
