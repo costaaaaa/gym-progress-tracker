@@ -14,6 +14,9 @@ export const VARIANTS = {
   D: 'Totali + muscoli',
   AB: 'A aperta + B chiusa',
   AB2: 'A aperta + chiusa sobria',
+  S1: 'Split',
+  S2: 'Attiva in cima',
+  S3: 'Split + attiva',
 };
 const KEYS = Object.keys(VARIANTS);
 

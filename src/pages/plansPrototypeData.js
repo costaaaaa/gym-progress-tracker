@@ -76,5 +76,26 @@ export const PLANS = [
       },
     ],
   },
+  {
+    id: 5, name: 'Upper Lower B', description: '', is_active: 0,
+    days: [
+      {
+        id: 51, name: 'Giorno A',
+        exercises: [
+          ex('Panca inclinata con manubri', 'petto', [...ws(2), ...work(3, 8, 10)], 120),
+          ex('Lat machine', 'schiena', work(3, 10, 12)),
+          ex('Alzate laterali', 'spalle', work(3, 12, 15), 60),
+        ],
+      },
+      {
+        id: 52, name: 'Giorno B',
+        exercises: [
+          ex('Pressa orizzontale', 'gambe', [...ws(1), ...work(4, 10, 12)], 120),
+          ex('Leg curl da seduto', 'gambe', work(3, 10, 12), 60),
+          ex('Crunch ai cavi', 'addome', work(3, 12, 15), 60),
+        ],
+      },
+    ],
+  },
   { id: 4, name: 'Nuova scheda', description: '', is_active: 0, days: [] },
 ];
