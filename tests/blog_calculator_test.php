@@ -92,33 +92,32 @@ function css_contrast($a, $b)
     $lb = css_luminance($b);
     return (max($la, $lb) + 0.05) / (min($la, $lb) + 0.05);
 }
-/** Variabili CSS di un blocco (`:root` chiaro o `:root[data-theme="dark"]` scuro), sopra a quelle del chiaro. */
+/** Variabili colore di un blocco `:root` (o `:root[data-theme="dark"]`), vuoto se il blocco non esiste. */
+function css_block_vars($css, $selector)
+{
+    if (!preg_match('/' . preg_quote($selector, '/') . '\s*\{([^}]*)\}/', $css, $block)) {
+        return array();
+    }
+    preg_match_all('/--([a-z-]+):\s*(#[0-9a-f]{6})\s*;/i', $block[1], $all, PREG_SET_ORDER);
+    $vars = array();
+    foreach ($all as $v) {
+        $vars[$v[1]] = $v[2];
+    }
+    return $vars;
+}
+/** Variabili del tema chiaro, o del scuro sopra a quelle del chiaro. */
 function css_vars($css, $dark)
 {
-    $light = array();
-    $darkVars = array();
-    $inDark = false;
-    foreach (explode("\n", substr($css, 0, strpos($css, '* { box-sizing'))) as $line) {
-        if (strpos($line, 'data-theme="dark"') !== false) {
-            $inDark = true;
-        }
-        if (preg_match('/--([a-z-]+):\s*(#[0-9a-f]{6})\s*;/i', $line, $v)) {
-            if ($inDark) {
-                $darkVars[$v[1]] = $v[2];
-            } else {
-                $light[$v[1]] = $v[2];
-            }
-        }
-    }
-    return $dark ? array_merge($light, $darkVars) : $light;
+    $light = css_block_vars($css, ':root');
+    return $dark ? array_merge($light, css_block_vars($css, ':root[data-theme="dark"]')) : $light;
 }
 $css = blog_styles();
 check('il bordo di input e select usa --field-border', preg_match('/\.calc-field input, \.calc-field select \{[^}]*border: 1px solid var\(--field-border\);/', $css) === 1);
+check('i blocchi :root chiaro e scuro esistono e hanno --field-border', isset(css_block_vars($css, ':root')['field-border']) && isset(css_block_vars($css, ':root[data-theme="dark"]')['field-border']));
 foreach (array('chiaro' => false, 'scuro' => true) as $name => $dark) {
     $vars = css_vars($css, $dark);
-    $border = isset($vars['field-border']) ? $vars['field-border'] : '#000000';
-    check("tema $name: bordo almeno 3:1 sullo sfondo del campo", isset($vars['field-border']) && css_contrast($border, $vars['bg-default']) >= 3.0);
-    check("tema $name: bordo almeno 3:1 sulla card", isset($vars['field-border']) && css_contrast($border, $vars['bg-paper']) >= 3.0);
+    check("tema $name: bordo almeno 3:1 sullo sfondo del campo", css_contrast($vars['field-border'], $vars['bg-default']) >= 3.0);
+    check("tema $name: bordo almeno 3:1 sulla card", css_contrast($vars['field-border'], $vars['bg-paper']) >= 3.0);
 }
 
 echo "Salta al contenuto (WCAG 2.4.1)\n";
@@ -131,7 +130,6 @@ foreach ($pages as $lang => $page) {
     check("$lang: il primo link del body è «{$text}» verso il main", preg_match('/<body>\s*<a class="skip-link" href="#main-content">' . preg_quote($text, '/') . '<\/a>/', $html) === 1);
     check("$lang: il main è raggiungibile dal link e dal programma", strpos($html, '<main class="wrap" id="main-content" tabindex="-1">') !== false);
 }
-$css = blog_styles();
 check('il link sta fuori dallo schermo finché non ha il focus', preg_match('/\.skip-link \{[^}]*transform: translateY\(-200%\)/', $css) === 1 && preg_match('/\.skip-link:focus \{[^}]*transform: none/', $css) === 1);
 
 echo "\n" . ($checks - $fails) . "/$checks controlli riusciti\n";
