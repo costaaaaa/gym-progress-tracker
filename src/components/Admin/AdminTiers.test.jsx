@@ -94,12 +94,12 @@ describe('AdminTiers', () => {
   });
 
   it('mostra l\'errore del server e non cambia la riga', async () => {
-    postResponse = () => json({ success: false, code: 'invalid_date', message: 'La data 2020-01-01 è già passata (UTC).' }, 400);
+    postResponse = () => json({ success: false, code: 'invalid_date', message: 'La data 2020-01-01 è già passata (ora italiana).' }, 400);
     await cerca();
     fireEvent.change(screen.getByLabelText('Livello'), { target: { value: 'plus' } });
     fireEvent.change(screen.getByLabelText('Ultimo giorno valido'), { target: { value: '2020-01-01' } });
     await salva();
-    expect(screen.getByText('La data 2020-01-01 è già passata (UTC).')).toBeTruthy();
+    expect(screen.getByText('La data 2020-01-01 è già passata (ora italiana).')).toBeTruthy();
     expect(screen.queryByText('Livello salvato.')).toBeNull();
     expect(screen.getByText('#7 · mario@example.com · Gratis')).toBeTruthy();
   });

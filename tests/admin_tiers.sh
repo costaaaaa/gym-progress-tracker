@@ -63,6 +63,7 @@ register_and_login() { # nome → token
 }
 
 sql() { echo "$1" | bash -c "$DB_SQL_CMD" >/dev/null; }
+sql_out() { echo "$1" | bash -c "$DB_SQL_CMD -N" 2>/dev/null; }
 
 A_USER="tiA$SUFFIX"; B_USER="tiB$SUFFIX"
 echo "Account di prova: $A_USER $B_USER"
@@ -129,8 +130,8 @@ else
         check "risponde con la riga aggiornata" "$res" ".user.id == $A_ID and .user.tier == \"plus\" and .user.last_day == \"$FUTURE\" and .user.effective_tier == \"plus\" and (.user.email | ascii_downcase) == \"${A_USER,,}@example.com\""
         check "la ricerca la conferma" "$(tiers "$A_USER")" ".users[0].tier == \"plus\" and .users[0].last_day == \"$FUTURE\""
         if [[ "$(features)" == '["focus_session_edit"]' ]]; then ok "A ha le funzioni del livello plus"; else ko "A ha le funzioni del livello plus" "features: $(features)"; fi
-        TODAY="$(date -u +%F)"
-        check "oggi (UTC) come ultimo giorno è valido" "$(set_tier "$(set_json pro "$TODAY")")" ".user.tier == \"pro\" and .user.last_day == \"$TODAY\" and .user.effective_tier == \"pro\""
+        TODAY="$(TZ=Europe/Rome date +%F)"
+        check "oggi (ora italiana) come ultimo giorno è valido" "$(set_tier "$(set_json pro "$TODAY")")" ".user.tier == \"pro\" and .user.last_day == \"$TODAY\" and .user.effective_tier == \"pro\""
         res="$(set_tier "$(set_json pro)")"
         check "pro senza data: senza scadenza" "$res" '.user.tier == "pro" and .user.last_day == null and .user.effective_tier == "pro"'
         check "last_day null o vuoto: come senza data" "$(set_tier "{\"action\":\"set_tier\",\"id\":$A_ID,\"tier\":\"plus\",\"last_day\":\"\"}")" '.user.tier == "plus" and .user.last_day == null'
@@ -139,7 +140,7 @@ else
 
         echo "Dati non validi"
         before="$(tiers "$A_USER")"
-        YESTERDAY="$(date -u -d '-1 day' +%F)"
+        YESTERDAY="$(TZ=Europe/Rome date -d '-1 day' +%F)"
         for c in "data passata|plus|$YESTERDAY|invalid_date" "data non valida (31 febbraio)|plus|2099-02-31|invalid_date" \
                  "data in un altro formato|plus|13/11/2099|invalid_date" "free con data|free|$FUTURE|invalid_date" \
                  "livello sconosciuto|gold||invalid_tier" "livello sconosciuto con data|gold|$FUTURE|invalid_tier"; do
@@ -168,7 +169,15 @@ else
 
         echo "Scadenza"
         if [[ -n "${DB_SQL_CMD:-}" ]]; then
-            sql "UPDATE gym_users SET tier = 'pro', tier_until = '2000-01-01 00:00:00' WHERE id = $A_ID"
+            # l'ultimo giorno è un giorno italiano: tier_until è la mezzanotte italiana dopo, in UTC
+            for c in "2099-12-31|2099-12-31 23:00:00" "2099-06-30|2099-06-30 22:00:00"; do
+                IFS='|' read -r day until <<<"$c"
+                set_tier "$(set_json plus "$day")" >/dev/null
+                got="$(sql_out "SELECT tier_until FROM gym_users WHERE id = $A_ID")"
+                if [[ "$got" == "$until" ]]; then ok "ultimo giorno $day: tier_until $until (UTC)"; else ko "ultimo giorno $day: tier_until $until (UTC)" "nel database: $got"; fi
+                check "  e la risposta torna a $day" "$(tiers "$A_USER")" ".users[0].last_day == \"$day\""
+            done
+            sql "UPDATE gym_users SET tier = 'pro', tier_until = '1999-12-31 23:00:00' WHERE id = $A_ID"
             check "livello scaduto: salvato pro, in vigore free, ultimo giorno 1999-12-31" "$(tiers "$A_USER")" \
                 '.users[0].tier == "pro" and .users[0].last_day == "1999-12-31" and .users[0].effective_tier == "free"'
             if [[ "$(features)" == '[]' ]]; then ok "e A non ha le funzioni del livello"; else ko "e A non ha le funzioni del livello" "features: $(features)"; fi

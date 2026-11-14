@@ -4,7 +4,7 @@
 //
 //   php backend/tools/tier.php show <id|email|username>                           livello salvato, scadenza e livello in vigore
 //   php backend/tools/tier.php set <id|email|username> <free|plus|pro> [AAAA-MM-GG]
-//       la data e' l'ultimo giorno valido compreso (UTC); senza data non scade; con free niente data
+//       la data e' l'ultimo giorno valido compreso (ora italiana); senza data non scade; con free niente data
 
 if (PHP_SAPI !== 'cli') {
     http_response_code(404);
