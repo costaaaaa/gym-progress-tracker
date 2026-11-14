@@ -23,6 +23,7 @@ const PLAN_EDITOR_SHOTS = {
   aggiungiLista: 'allenamenti-piani-aggiungi-lista',
   modificaLista: 'allenamenti-piani-modifica-lista',
 };
+const PLANS_OPEN_SHOT = 'allenamenti-piani-ricche-aperta';
 const base = `http://localhost:${port}`;
 const outDir = path.join(path.dirname(fileURLToPath(import.meta.url)), outName);
 mkdirSync(outDir, { recursive: true });
@@ -338,14 +339,14 @@ for (const vp of viewports) {
     }
 
     // Le card aperte delle schede ricche: giorni con più di 4 esercizi, vuoto, nome lungo
-    if (want('allenamenti-piani-ricche-aperta')) {
-      await attempt(tag, 'allenamenti-piani-ricche-aperta', async () => {
+    if (want(PLANS_OPEN_SHOT)) {
+      await attempt(tag, PLANS_OPEN_SHOT, async () => {
         const { ctx, page } = await openPage(vp, theme, { loggedIn: true, plans: 'ricche' }, tag);
         try {
           await page.goto(`${base}/workouts?tab=plans`, { waitUntil: 'domcontentloaded' });
           await page.getByRole('button', { name: /^(Mostra dettagli|Mostra giorni)$/ }).first().click();
           await page.getByText('Nessun esercizio aggiunto').first().waitFor();
-          await snap(page, 'allenamenti-piani-ricche-aperta', tag);
+          await snap(page, PLANS_OPEN_SHOT, tag);
         } finally {
           await ctx.close();
         }

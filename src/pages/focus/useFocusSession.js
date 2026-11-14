@@ -323,7 +323,6 @@ export default function useFocusSession() {
   const handleDiscardDraft = () => {
     clearDraft();
     setDraftToResume(null);
-    preselectOnlyDay(activePlan);
     setPhase('select_day');
   };
 

@@ -223,6 +223,26 @@ describe('bozza e ripresa', () => {
     expect(screen.getByRole('combobox').textContent).toBe('Push completo');
   });
 
+  it('riprendere la bozza prima che arrivino i piani: il giorno unico del piano non sostituisce quello della bozza', async () => {
+    let arrivano;
+    const plansResponse = new Promise((resolve) => { arrivano = () => resolve(json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [pushDay] }] })); });
+    responses['read_plans.php'] = () => plansResponse;
+    const draftDay = { id: 2, name: 'Push completo', exercises: [fly] };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      ...savedDraft,
+      activePlan: { id: 5, name: 'Push Pull', days: [draftDay] },
+      selectedDay: draftDay,
+      completedSets: {},
+      currentSetIndex: 0,
+    }));
+    await mount();
+    click('Riprendi allenamento');
+    await act(async () => { arrivano(); });
+    await advance(0);
+    expect(screen.getByRole('heading', { name: 'Croci' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Panca piana' })).toBeNull();
+  });
+
   it('scartare la bozza la cancella e torna alla scelta del giorno', async () => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(savedDraft));
     await mount();
