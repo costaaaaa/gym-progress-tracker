@@ -126,13 +126,13 @@ export default function WorkoutPhase({
           <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
             <TextField label={t('record.weight')} type="number" value={weightInput} onChange={(e) => onWeightChange(e.target.value)}
               fullWidth autoFocus inputProps={{ step: 0.5, min: 0, max: MAX_WEIGHT, inputMode: 'decimal' }}
-              sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.text }, '&.Mui-focused fieldset': { borderColor: colors.text } }, '& .MuiOutlinedInput-input': FOCUS_FIELD_PADDING, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.text } }} />
+              sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.fieldBorder, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.text }, '&.Mui-focused fieldset': { borderColor: colors.text } }, '& .MuiOutlinedInput-input': FOCUS_FIELD_PADDING, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.text } }} />
             {/* Vuoto a ogni serie: la scheda in grigio è solo un suggerimento, va scritta */}
             <TextField label={t('record.reps')} value={repsInput} onChange={(e) => onRepsChange(e.target.value)}
               placeholder={target}
               onFocus={(e) => e.target.select()}
               fullWidth inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
-              sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.text }, '&.Mui-focused fieldset': { borderColor: colors.text } }, '& .MuiOutlinedInput-input': FOCUS_FIELD_PADDING, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.text }, ...(failureTarget && { '& input::placeholder': { fontSize: '0.85rem', fontWeight: 500 } }) }} />
+              sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.fieldBorder, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.text }, '&.Mui-focused fieldset': { borderColor: colors.text } }, '& .MuiOutlinedInput-input': FOCUS_FIELD_PADDING, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.text }, ...(failureTarget && { '& input::placeholder': { fontSize: '0.85rem', fontWeight: 500 } }) }} />
           </Box>
 
           {/* Il riscaldamento non ha tecnica di intensità */}
@@ -141,7 +141,7 @@ export default function WorkoutPhase({
               mb: 3,
               '& .MuiOutlinedInput-root': {
                 color: colors.text,
-                '& fieldset': { borderColor: colors.border, borderWidth: 2 },
+                '& fieldset': { borderColor: colors.fieldBorder, borderWidth: 2 },
                 '&:hover fieldset': { borderColor: colors.text },
                 '&.Mui-focused fieldset': { borderColor: colors.text },
               },

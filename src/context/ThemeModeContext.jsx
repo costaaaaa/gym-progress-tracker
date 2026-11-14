@@ -13,6 +13,10 @@ const BRAND_DARK = '#9b0000';
 const ERROR_ON_DARK = '#ff5252';
 // Bordo dei campi a riposo: 3.5 : 1 sul bianco e 3.6 : 1 su #141416 (almeno 3 : 1 anche su #f7f6f5).
 const FIELD_BORDER = { light: '#8c8885', dark: '#6e6e70' };
+const TEXT_PRIMARY = { light: '#1a1816', dark: '#ffffff' };
+// Contorno del focus dentro la voce, per i contenitori che tagliano (scorrimento delle schede, menu, card)
+const FOCUS_INSIDE = { '&.Mui-focusVisible': { outlineOffset: '-2px' } };
+const PRIMARY_AS_TEXT = ({ theme }) => ({ color: theme.palette.primary.text });
 
 const ThemeModeContext = createContext();
 
@@ -39,7 +43,7 @@ export const ThemeModeProvider = ({ children }) => {
     () => {
       // Contorno del focus da tastiera: colore del testo del tema, staccato di 2px dal controllo
       const focusRing = {
-        outline: `2px solid ${mode === 'light' ? '#1a1816' : '#ffffff'}`,
+        outline: `2px solid ${TEXT_PRIMARY[mode]}`,
         outlineOffset: '2px',
       };
       return createTheme({
@@ -69,7 +73,7 @@ export const ThemeModeProvider = ({ children }) => {
             mine: mode === 'light' ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.12)',
           },
           text: {
-            primary: mode === 'light' ? '#1a1816' : '#ffffff',
+            primary: TEXT_PRIMARY[mode],
             secondary: mode === 'light' ? '#6b6663' : '#a0a0a2',
           },
           divider: mode === 'light' ? '#ececea' : 'rgba(255, 255, 255, 0.08)',
@@ -130,6 +134,8 @@ export const ThemeModeProvider = ({ children }) => {
             hover: mode === 'light' ? '#ececea' : 'rgba(255, 255, 255, 0.12)',
           },
           // Avatar di navbar e account: inchiostro e testo sopra, come nell'app.
+          // Bordo a riposo dei campi (3:1): lo usano anche i campi di Focus che ridisegnano il bordo con sx.
+          fieldBorder: FIELD_BORDER[mode],
           ink: mode === 'light' ? '#1a1816' : '#ffffff',
           onInk: mode === 'light' ? '#ffffff' : '#0a0a0b',
         },
@@ -286,10 +292,10 @@ export const ThemeModeProvider = ({ children }) => {
             },
           },
           // Nei contenitori che tagliano (scorrimento delle schede, menu): il contorno resta dentro la voce
-          MuiTab: { styleOverrides: { root: { '&.Mui-focusVisible': { outlineOffset: '-2px' } } } },
-          MuiMenuItem: { styleOverrides: { root: { '&.Mui-focusVisible': { outlineOffset: '-2px' } } } },
-          MuiListItemButton: { styleOverrides: { root: { '&.Mui-focusVisible': { outlineOffset: '-2px' } } } },
-          MuiCardActionArea: { styleOverrides: { root: { '&.Mui-focusVisible': { outlineOffset: '-2px' } } } },
+          MuiTab: { styleOverrides: { root: FOCUS_INSIDE } },
+          MuiMenuItem: { styleOverrides: { root: FOCUS_INSIDE } },
+          MuiListItemButton: { styleOverrides: { root: FOCUS_INSIDE } },
+          MuiCardActionArea: { styleOverrides: { root: FOCUS_INSIDE } },
           MuiAppBar: {
             styleOverrides: {
               root: {
@@ -302,7 +308,7 @@ export const ThemeModeProvider = ({ children }) => {
             },
           },
           // Interruttori mai nel rosso del marchio: acceso = verde semantico
-          MuiSwitch: { defaultProps: { color: 'success' }, styleOverrides: { switchBase: { '&.Mui-focusVisible': { outlineOffset: '-2px' } } } },
+          MuiSwitch: { defaultProps: { color: 'success' }, styleOverrides: { switchBase: FOCUS_INSIDE } },
           MuiButton: {
             styleOverrides: {
               root: {
@@ -325,20 +331,20 @@ export const ThemeModeProvider = ({ children }) => {
                   // MUI rimette palette.main sul tocco (hover: none): senza il reset il bottone resterebbe scuro dopo il tap
                   '&:hover': { backgroundColor: BRAND_DARK, '@media (hover: none)': { backgroundColor: BRAND } },
                 },
-                // Bottoni di testo e con bordo: l'etichetta è un testo, rosso chiaro come primary.text
-                textPrimary: { color: ERROR_ON_DARK },
-                outlinedPrimary: { color: ERROR_ON_DARK },
               }),
+              // Bottoni di testo e con bordo: l'etichetta è un testo, quindi primary.text
+              textPrimary: PRIMARY_AS_TEXT,
+              outlinedPrimary: PRIMARY_AS_TEXT,
             },
           },
-          ...(mode === 'dark' && { MuiIconButton: { styleOverrides: { colorPrimary: { color: ERROR_ON_DARK } } } }),
+          MuiIconButton: { styleOverrides: { colorPrimary: PRIMARY_AS_TEXT } },
           // Ogni Chip con onClick: due classi, quindi vince su fontFamily e fontWeight dati con sx
           MuiChip: {
             styleOverrides: {
               root: {
                 '&.MuiChip-clickable': CHIP_FONT,
               },
-              ...(mode === 'dark' && { outlinedPrimary: { color: ERROR_ON_DARK } }),
+              outlinedPrimary: PRIMARY_AS_TEXT,
             },
           },
           // Link nel testo: colore del testo e sottolineati (il rosso resta ai bottoni principali, agli errori e agli stati)

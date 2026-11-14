@@ -11,6 +11,8 @@ export function useFocusColors() {
     bgCard: theme.palette.background.paper,
     bgElevated: theme.palette.action.hover,
     primary: theme.palette.primary.main,
+    // Rosso quando è il colore di un testo; `primary` resta per gli sfondi
+    primaryText: theme.palette.primary.text,
     primaryDark: theme.palette.primary.dark,
     primaryContrast: theme.palette.primary.contrastText,
     text: theme.palette.text.primary,
@@ -18,6 +20,7 @@ export function useFocusColors() {
     success: theme.palette.success.main,
     warning: theme.palette.warning.main,
     border: theme.palette.divider,
+    fieldBorder: theme.palette.fieldBorder,
     white: theme.palette.common.white,
   };
   return { colors, isDarkMode };

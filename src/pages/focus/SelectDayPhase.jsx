@@ -52,7 +52,7 @@ export default function SelectDayPhase({
             <Button
               variant="outlined"
               onClick={onGoToPlans}
-              sx={{ color: colors.primary, borderColor: colors.primary }}
+              sx={{ color: colors.primaryText, borderColor: colors.primary }}
             >
               {t('focus.go_plans')}
             </Button>
@@ -74,13 +74,13 @@ export default function SelectDayPhase({
                 mb: 3,
                 '& .MuiOutlinedInput-root': {
                   color: colors.text,
-                  '& fieldset': { borderColor: colors.border },
+                  '& fieldset': { borderColor: colors.fieldBorder },
                   '&:hover fieldset': { borderColor: colors.primary },
                   '&.Mui-focused fieldset': { borderColor: colors.primary },
                 },
                 '& .MuiOutlinedInput-input': FOCUS_FIELD_PADDING,
                 '& .MuiInputLabel-root': { color: colors.textSecondary },
-                '& .MuiInputLabel-root.Mui-focused': { color: colors.primary },
+                '& .MuiInputLabel-root.Mui-focused': { color: colors.primaryText },
                 '& .MuiSvgIcon-root': { color: colors.textSecondary },
               }}>
                 <InputLabel>{t('record.select_day')}</InputLabel>
@@ -149,7 +149,7 @@ export default function SelectDayPhase({
             {selectedDay && selectedDay.exercises?.length === 0 && (
               <Typography variant="body2" sx={{ color: colors.textSecondary, textAlign: 'center', mt: 1.5 }}>
                 {t('focus.day_empty')}{' '}
-                <Link component="button" type="button" onClick={onGoToPlans} sx={{ verticalAlign: 'baseline', color: colors.primary }}>
+                <Link component="button" type="button" onClick={onGoToPlans} sx={{ verticalAlign: 'baseline', color: colors.primaryText }}>
                   {t('focus.day_empty_link')}
                 </Link>
               </Typography>
