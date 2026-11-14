@@ -17,6 +17,9 @@ export const VARIANTS = {
   S1: 'Split',
   S2: 'Attiva in cima',
   S3: 'Split + attiva',
+  S1a: 'Split su una riga + N',
+  S1b: 'Split su 2 righe + N',
+  S1c: 'Split fino a 4 giorni',
 };
 const KEYS = Object.keys(VARIANTS);
 

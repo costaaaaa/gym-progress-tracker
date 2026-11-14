@@ -289,7 +289,8 @@ const Heading = ({ children }) => (
 );
 
 // ---- Round 3: varianti S1, S2, S3 e card aperta "A corretta" ----
-const NEW_VARIANTS = ['S1', 'S2', 'S3'];
+const NEW_VARIANTS = ['S1', 'S2', 'S3', 'S1a', 'S1b', 'S1c'];
+const SPLIT_VARIANTS = ['S1', 'S1a', 'S1b', 'S1c', 'S3'];
 const isNew = (v) => NEW_VARIANTS.includes(v);
 const topActive = (v) => v === 'S2' || v === 'S3';
 const DEFAULT_DAY = /^Giorno\s+\S+$/i;
@@ -306,6 +307,61 @@ const linkSx = (rosso) => (rosso === 'oggi'
     textDecoration: 'underline', textUnderlineOffset: '3px',
     '&:hover': { color: 'text.primary', bgcolor: 'transparent', textDecoration: 'underline' },
   });
+
+// Nomi separati da "/" su al massimo 2 righe: si va a capo solo dopo la barra, mai dentro un nome;
+// se non entrano tutti, la seconda riga finisce con "+N". Misura il testo reale con un elemento nascosto.
+const SEP = '\u00a0/ ';
+const FitLines = ({ names, sepSx, maxLines = 2 }) => {
+  const box = useRef(null);
+  const probe = useRef(null);
+  const [count, setCount] = useState(names.length);
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return undefined;
+    const fit = () => {
+      const pr = probe.current;
+      pr.style.width = `${el.clientWidth}px`;
+      const limit = parseFloat(getComputedStyle(pr).lineHeight) * maxLines + 1;
+      let k = names.length;
+      for (; k > 1; k -= 1) {
+        pr.textContent = '';
+        names.slice(0, k).forEach((n, i) => {
+          if (i > 0) pr.append(SEP);
+          const sp = document.createElement('span');
+          sp.style.whiteSpace = 'nowrap';
+          sp.textContent = n;
+          pr.append(sp);
+        });
+        if (k < names.length) {
+          pr.append(' ');
+          const sp = document.createElement('span');
+          sp.style.whiteSpace = 'nowrap';
+          sp.textContent = `+${names.length - k}`;
+          pr.append(sp);
+        }
+        if (pr.offsetHeight <= limit) break;
+      }
+      setCount(k);
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [names, maxLines]);
+  const more = names.length - count;
+  return (
+    <Box ref={box} sx={{ position: 'relative', minWidth: 0, flex: 1, lineHeight: 1.4 }}>
+      <Box ref={probe} aria-hidden sx={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none', lineHeight: 1.4 }} />
+      {names.slice(0, count).map((n, i) => (
+        <span key={n + i}>
+          {i > 0 && <Box component="span" sx={sepSx}>{SEP}</Box>}
+          <Box component="span" sx={{ whiteSpace: 'nowrap' }}>{n}</Box>
+        </span>
+      ))}
+      {more > 0 && <Box component="span" sx={{ whiteSpace: 'nowrap', color: 'text.secondary' }}> +{more}</Box>}
+    </Box>
+  );
+};
 
 const RowsCorrected = ({ day }) => {
   const rows = day.exercises.slice(0, 4);
@@ -331,9 +387,9 @@ const PlanCardV3 = ({ plan, variant, expanded, fill, rosso, wide }) => {
   const days = plan.days.length;
   const exercises = plan.days.reduce((n, d) => n + d.exercises.length, 0);
   const sets = plan.days.reduce((n, d) => n + daySets(d), 0);
-  const split = days >= 2 && !plan.days.every((d) => DEFAULT_DAY.test(d.name));
+  const split = days >= 2 && !plan.days.every((d) => DEFAULT_DAY.test(d.name)) && !(variant === 'S1c' && days > 4);
   const asTop = wide && topActive(variant);
-  const withSplit = !asTop && (variant === 'S1' || variant === 'S3');
+  const withSplit = !asTop && SPLIT_VARIANTS.includes(variant);
   const names = plan.days.map((d) => d.name);
 
   let closedBody;
@@ -348,7 +404,7 @@ const PlanCardV3 = ({ plan, variant, expanded, fill, rosso, wide }) => {
           <Box key={day.id} sx={{ display: 'flex', gap: 1.25, fontSize: 14, alignItems: 'baseline', minWidth: 0 }}>
             <Box component="span" sx={{ fontWeight: 500, color: 'text.primary', flexShrink: 0 }}>{day.name}</Box>
             {day.exercises.length === 0
-              ? <Box component="span" sx={{ color: 'text.secondary' }}>· vuoto</Box>
+              ? <Box component="span" sx={{ color: 'text.secondary', ml: -0.75 }}>· vuoto</Box>
               : <FitNames names={day.exercises.map((e) => e.exercise_name)} sx={{ color: 'text.secondary' }} />}
           </Box>
         ))}
@@ -384,7 +440,9 @@ const PlanCardV3 = ({ plan, variant, expanded, fill, rosso, wide }) => {
         </Box>
         {!expanded && withSplit && split && (
           <Box sx={{ display: 'flex', mb: 0.75, fontSize: 15, fontWeight: 600, color: 'text.primary' }}>
-            <FitNames names={names} sep=" / " sepSx={{ color: 'text.secondary' }} />
+            {variant === 'S1b'
+              ? <FitLines names={names} sepSx={{ color: 'text.secondary' }} />
+              : <FitNames names={names} sep=" / " sepSx={{ color: 'text.secondary' }} />}
           </Box>
         )}
         {plan.description && (
