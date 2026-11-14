@@ -5,7 +5,8 @@
 // giorni in ora italiana.
 
 const TIER_LEVELS = ['free', 'plus', 'pro'];
-// Fuso dei giorni di scadenza: il livello scade a mezzanotte italiana (non è il fuso del dispositivo)
+// Fuso dei giorni di scadenza: il livello scade a mezzanotte italiana. Separato apposta da DEFAULT_TIME_ZONE
+// (api_helpers.php, ripiego per il fuso del dispositivo): sono due regole diverse e non devono seguirsi.
 const TIER_TIME_ZONE = 'Europe/Rome';
 
 // Livello in vigore: quello salvato, ma free se è scaduto ($until non NULL e $now >= $until; NULL =
@@ -43,7 +44,7 @@ function tierSetUntil(string $tier, ?string $lastDay, string $now): array
         return ['error' => "Data non valida: $lastDay (formato AAAA-MM-GG)."];
     }
     if ($day->format('Y-m-d') === '9999-12-31') {
-        // il giorno dopo (anno 10000) non entra in un DATETIME
+        // il giorno dopo, in ora italiana, è nell'anno 10000: il massimo resta 9999-12-30
         return ['error' => "Data non valida: $lastDay (oltre il massimo, 9999-12-30)."];
     }
     $until = $day->modify('+1 day')->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');

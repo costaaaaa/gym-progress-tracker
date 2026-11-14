@@ -42,7 +42,8 @@ if (($cmd === 'show' && $who !== '' && count($argv) === 3)
     }
 
     echo "Utente {$u['id']} ({$u['username']}): livello salvato {$u['tier']}, scadenza "
-        . ($u['tier_until'] === null ? 'nessuna' : $u['tier_until'] . ' UTC')
+        . ($u['tier_until'] === null ? 'nessuna'
+            : $u['tier_until'] . ' UTC (ultimo giorno valido ' . tierLastDay($u['tier_until']) . ', ora italiana)')
         . ', livello in vigore ' . tierEffective($u['tier'], $u['tier_until'], $now) . ".\n";
     exit(0);
 }

@@ -15,8 +15,8 @@ function check($desc, $cond)
     }
 }
 
-// Il fuso del processo non deve cambiare nulla: gli istanti sono UTC, i giorni sono in ora italiana. tests/tier_rules.sh passa il fuso
-// atteso come primo argomento; senza argomento il controllo si salta.
+// Il fuso del processo non deve cambiare nulla: gli istanti sono UTC, i giorni sono in ora italiana.
+// tests/tier_rules.sh passa il fuso atteso come primo argomento; senza argomento il controllo si salta.
 echo "Livello effettivo (fuso " . date_default_timezone_get() . ")\n";
 if (isset($argv[1])) {
     check("il fuso di PHP è quello atteso ({$argv[1]})", date_default_timezone_get() === $argv[1]);
@@ -38,7 +38,7 @@ echo "Data -> tier_until\n";
 $r = tierSetUntil('plus', '2026-12-31', $now);
 check('plus con data: tier_until = giorno dopo alle 00:00 italiane, in UTC', $r === ['until' => '2026-12-31 23:00:00']);
 $r = tierSetUntil('pro', '2026-02-28', '2026-01-01 00:00:00');
-check('fine febbraio: il giorno dopo è il 1 marzo', $r === ['until' => '2026-02-28 23:00:00']);
+check('fine febbraio: scade il 1 marzo alle 00:00 italiane', $r === ['until' => '2026-02-28 23:00:00']);
 $r = tierSetUntil('pro', '2026-11-13', $now);
 check('oggi (ora italiana) è valido: scade domani alle 00:00 italiane', $r === ['until' => '2026-11-13 23:00:00']);
 check('senza data: tier_until NULL', tierSetUntil('pro', null, $now) === ['until' => null]);

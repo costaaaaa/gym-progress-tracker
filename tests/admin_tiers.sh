@@ -63,7 +63,7 @@ register_and_login() { # nome → token
 }
 
 sql() { echo "$1" | bash -c "$DB_SQL_CMD" >/dev/null; }
-sql_out() { echo "$1" | bash -c "$DB_SQL_CMD -N" 2>/dev/null; }
+sql_out() { echo "$1" | bash -c "$DB_SQL_CMD -N"; }
 
 A_USER="tiA$SUFFIX"; B_USER="tiB$SUFFIX"
 echo "Account di prova: $A_USER $B_USER"
