@@ -14,7 +14,7 @@ function report_mail_to_user($db, $user_id, $key, array $vars)
     if (!$user || !$user['email']) return false;
     $lang = normalize_locale($user['locale'] ?? null) ?? 'it';
     $vars += array('username' => $user['username']);
-    return mail_send($user['email'], t_server("report.mail.{$key}_subject", array(), $lang), t_server("report.mail.{$key}_body", $vars, $lang));
+    return mail_send($user['email'], t_server("report.mail.{$key}_subject", array(), $lang), t_server("report.mail.{$key}_body", $vars, $lang) . mail_footer($lang));
 }
 
 // $report: riga di gym_reports

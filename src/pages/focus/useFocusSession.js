@@ -143,8 +143,16 @@ export default function useFocusSession() {
   // ================================================
   // CARICA PIANO ATTIVO E IMPOSTAZIONI UTENTE
   // ================================================
-  // useCallback([clearDraft]): non legge stato reattivo (solo localStorage,
-  // setter e clearDraft, a sua volta stabile), quindi l'effetto sotto si
+  // Con un giorno solo nella scheda, quel giorno è già scelto, a meno che un giorno sia già
+  // scelto (bozza ripresa prima che arrivino i piani). Solo setter: stabile.
+  const preselectOnlyDay = useCallback((plan) => {
+    if (plan?.days?.length !== 1) return;
+    setSelectedDayId((current) => current || plan.days[0].id);
+    setSelectedDay((current) => current || plan.days[0]);
+  }, []);
+
+  // useCallback([clearDraft, preselectOnlyDay]): non legge stato reattivo (solo localStorage,
+  // setter, clearDraft e preselectOnlyDay, a loro volta stabili), quindi l'effetto sotto si
   // riesegue solo al cambio di isLoggedIn.
   const loadInitialData = useCallback(async () => {
     // Variabile locale, non lo stato `phase`: dopo gli await la closure
@@ -230,6 +238,9 @@ export default function useFocusSession() {
         const active = plansData.records.find(p => p.is_active);
         if (active) {
           setActivePlan(active);
+          // Anche con una bozza da riprendere: se l'utente la scarta, prima o dopo l'arrivo dei piani,
+          // il giorno unico è già scelto (Riprendi lo sovrascrive)
+          preselectOnlyDay(active);
           // Se non c'è bozza, vai alla selezione giorno
           if (!resuming) {
             setPhase('select_day');
@@ -252,7 +263,7 @@ export default function useFocusSession() {
         setPhase('select_day');
       }
     }
-  }, [clearDraft]);
+  }, [clearDraft, preselectOnlyDay]);
 
   // Dopo la dichiarazione di loadInitialData: l'array di dipendenze viene
   // valutato durante il render (temporal dead zone se fosse sopra).

@@ -11,7 +11,7 @@ function admin_notify($subject, $text)
     if ($to === '') {
         return false;
     }
-    $baseUrl = rtrim(getenv('APP_PUBLIC_URL') ?: 'http://localhost:3000', '/');
+    $baseUrl = app_public_url();
     return mail_send($to, $subject, $text . "\n\n" . $baseUrl . "/admin\n");
 }
 

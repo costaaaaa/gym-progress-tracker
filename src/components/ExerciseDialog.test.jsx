@@ -7,6 +7,7 @@ import { json } from '../test/dom';
 
 const RECORDS = [
   { id: 1, name: 'Squat (Bilanciere)', muscle_group: 'gambe', equipment: 'bilanciere' },
+  { id: 3, name: 'Croci Panca Piana (Cavi)', muscle_group: 'petto', equipment: 'cavi' },
   { id: 2, name: 'Panca Piana', muscle_group: 'petto', equipment: 'bilanciere' },
 ];
 
@@ -102,7 +103,7 @@ const scegliEsercizioEsistente = async () => {
   fireEvent.click(screen.getByRole('option', { name: 'Panca Piana' }));
   fireEvent.change(screen.getByLabelText('Serie'), { target: { value: '3' } });
   fireEvent.change(screen.getByLabelText('Ripetizioni'), { target: { value: '8-10' } });
-  fireEvent.change(screen.getByLabelText('Recupero (s)'), { target: { value: '90' } });
+  fireEvent.change(screen.getByLabelText(/Recupero \(s\)/), { target: { value: '90' } });
 };
 
 describe('ExerciseDialog · serie di riscaldamento (#66)', () => {
@@ -135,5 +136,40 @@ describe('ExerciseDialog · serie di riscaldamento (#66)', () => {
     expect(planned[4]).toEqual({
       set_number: 5, kind: 'working', reps_min: 8, reps_max: 10, to_failure: false, intensity_technique: null,
     });
+  });
+});
+
+describe('ExerciseDialog · recupero (onboarding)', () => {
+  it('parte da 90 secondi ed è un campo obbligatorio', async () => {
+    await apri();
+    const rest = screen.getByLabelText(/Recupero \(s\)/);
+    expect(rest.value).toBe('90');
+    expect(rest.required).toBe(true);
+  });
+
+  it('dopo aver aggiunto un esercizio torna a 90', async () => {
+    const onAdd = vi.fn();
+    render(<ExerciseDialog open onClose={() => {}} onAdd={onAdd} dayIndex={0} />);
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    await scegliEsercizioEsistente();
+    fireEvent.change(screen.getByLabelText(/Recupero \(s\)/), { target: { value: '120' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Aggiungi' }));
+
+    expect(onAdd.mock.calls[0][1].rest).toBe('120');
+    expect(screen.getByLabelText(/Recupero \(s\)/).value).toBe('90');
+  });
+});
+
+describe('ExerciseDialog · ricerca per pertinenza', () => {
+  it('"panca" propone "Panca Piana" prima di "Croci Panca Piana (Cavi)"', async () => {
+    await apri();
+    await scegliGruppo('Petto');
+    // Senza il focus l'Autocomplete azzera il testo appena digitato
+    const input = screen.getByLabelText('Nome esercizio');
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: 'panca' } });
+    await act(async () => {});
+    const names = screen.getAllByRole('option').map((o) => o.textContent);
+    expect(names).toEqual(['Panca Piana', 'Croci Panca Piana (Cavi)']);
   });
 });

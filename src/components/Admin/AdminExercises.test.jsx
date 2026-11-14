@@ -143,3 +143,19 @@ describe('AdminExercises · ExerciseFormDialog · muscolo principale', () => {
     expect(ultimaCreate()).toMatchObject({ id: 11, muscle_group: 'gambe', primary_muscle: 'femorali' });
   });
 });
+
+describe('AdminExercises · ricerca per pertinenza', () => {
+  it('cercando "panca" l\'elenco mostra prima "Panca Piana" e poi "Croci Panca Piana (Cavi)"', async () => {
+    exercisesFixture = [
+      { id: 1, name: 'Croci Panca Piana (Cavi)', muscle_group: 'petto', equipment: 'cavi', uses: 0 },
+      { id: 2, name: 'Squat', muscle_group: 'gambe', equipment: '', uses: 0 },
+      { id: 3, name: 'Panca Piana', muscle_group: 'petto', equipment: 'bilanciere', uses: 0 },
+    ];
+    render(<AdminExercises />);
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    fireEvent.change(screen.getByPlaceholderText('Cerca'), { target: { value: 'panca' } });
+
+    expect(screen.getAllByText(/panca/i).map((el) => el.textContent)).toEqual(['Panca Piana', 'Croci Panca Piana (Cavi)']);
+    expect(screen.queryByText('Squat')).toBeNull();
+  });
+});
