@@ -71,6 +71,23 @@ describe('livello', () => {
   });
 });
 
+// Reflow a 320 px e spaziatura del testo (1.4.10, 1.4.12): niente riga forzata né troncamento con i puntini
+describe('testo che può andare a capo', () => {
+  it('le etichette delle statistiche vanno a capo', async () => {
+    await mount();
+    for (const label of ['sessioni', 'kg sollevati', 'settimane record']) {
+      expect(style(screen.getByText(label)).whiteSpace).not.toBe('nowrap');
+    }
+  });
+
+  it('il nome dell\'esercizio non è troncato con i puntini', async () => {
+    await mount();
+    const { whiteSpace, textOverflow } = style(screen.getByText('Rematore con bilanciere'));
+    expect(whiteSpace).not.toBe('nowrap');
+    expect(textOverflow).not.toBe('ellipsis');
+  });
+});
+
 describe('statistiche', () => {
   it('sessioni, kg sollevati e settimane record: tre colonne su una riga, in numero grande', async () => {
     await mount();
@@ -85,13 +102,12 @@ describe('statistiche', () => {
     expect(style(value).fontVariantNumeric).toBe('tabular-nums');
   });
 
-  it('le etichette sono grigie da 16px e non vanno a capo', async () => {
+  it('le etichette sono grigie da 16px', async () => {
     await mount();
     ['sessioni', 'kg sollevati', 'settimane record'].forEach((label) => {
       const s = style(screen.getByText(label));
       expect(s.fontSize).toBe('16px');
       expect(s.color).toBe(GREY);
-      expect(s.whiteSpace).toBe('nowrap');
     });
   });
 });

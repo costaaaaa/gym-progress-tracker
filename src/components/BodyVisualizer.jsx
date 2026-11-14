@@ -64,7 +64,7 @@ const BodyVisualizer = ({ recoveryData }) => {
           <Block title={t('recovery.resting')}>
             {resting.map(({ group, status, percent, days }) => (
               <MuscleRow key={group} group={group} status={status} percent={percent}>
-                {days !== null && <Typography noWrap sx={{ fontSize: 13, color: 'text.secondary' }}>{readyLabel(t, days)}</Typography>}
+                {days !== null && <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{readyLabel(t, days)}</Typography>}
               </MuscleRow>
             ))}
           </Block>

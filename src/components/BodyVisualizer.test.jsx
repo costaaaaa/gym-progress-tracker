@@ -59,6 +59,13 @@ describe('card Stato muscolare', () => {
     expect(within(block('A riposo')).queryByText('Pronto')).toBeNull();
   });
 
+  it('la frase "pronto tra N giorni" va a capo, non è troncata con i puntini (1.4.12)', () => {
+    mount(data);
+    const { whiteSpace, textOverflow } = getComputedStyle(within(row('A riposo', 'Femorali')).getByText('pronto tra 2 giorni'));
+    expect(whiteSpace).not.toBe('nowrap');
+    expect(textOverflow).not.toBe('ellipsis');
+  });
+
   it('la barra è larga quanto la percentuale (al massimo 100) e prende il colore dello stato', () => {
     mount(data);
     expect(getComputedStyle(fill('A riposo', 'Schiena')).width).toBe('60%');

@@ -22,6 +22,12 @@ const navItems = [
   { label: 'nav.groups', path: '/gruppi' },
 ];
 
+// Sotto 390 px (320 px compreso) i bottoni di accesso si stringono; sotto 360 px la scritta LiftIndex resta
+// solo per gli screen reader (il marchio rimane visibile).
+const NARROW = '@media (max-width:389.95px)';
+const VERY_NARROW = '@media (max-width:359.95px)';
+const SR_ONLY = { position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' };
+
 const Navbar = () => {
   const location = useLocation();
   const { t } = useTranslation();
@@ -110,6 +116,7 @@ const Navbar = () => {
               fontWeight: 700,
               fontSize: 16,
               lineHeight: 1,
+              [VERY_NARROW]: SR_ONLY,
             }}
           >
             LiftIndex
@@ -148,7 +155,7 @@ const Navbar = () => {
         )}
 
         {/* Destra: toggle tema, avatar / auth — stessa struttura su mobile e desktop */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifySelf: 'end' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifySelf: 'end', [NARROW]: { gap: 0.5 } }}>
           <Tooltip title={mode === 'light' ? t('nav.dark_mode') : t('nav.light_mode')}>
             <IconButton
               onClick={toggleThemeMode}
@@ -201,7 +208,7 @@ const Navbar = () => {
                 <Button
                   component={RouterLink}
                   to={withNext('/login')}
-                  sx={{ color: 'text.secondary', fontWeight: 500, fontSize: 14 }}
+                  sx={{ color: 'text.secondary', fontWeight: 500, fontSize: 14, [NARROW]: { px: 1 } }}
                 >
                   {t('nav.login')}
                 </Button>
@@ -211,7 +218,7 @@ const Navbar = () => {
                   variant={onAccessPage ? 'text' : 'contained'}
                   component={RouterLink}
                   to={withNext('/register')}
-                  sx={onAccessPage ? { color: 'text.secondary', fontWeight: 500, fontSize: 14 } : { fontSize: 14 }}
+                  sx={onAccessPage ? { color: 'text.secondary', fontWeight: 500, fontSize: 14, [NARROW]: { px: 1 } } : { fontSize: 14, [NARROW]: { px: 1 } }}
                 >
                   {t('nav.register')}
                 </Button>

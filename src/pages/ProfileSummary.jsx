@@ -139,11 +139,11 @@ const ProfileSummary = () => {
           <LinearProgress variant="determinate" value={progress} sx={solidBar(9)} />
         </Box>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', justifyContent: 'start', columnGap: { xs: 3, md: 5 } }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', justifyContent: 'start', columnGap: { xs: 3, md: 5 }, '@media (max-width:389.95px)': { columnGap: 1.5 } }}>
           {statTiles.map((stat) => (
             <Box key={stat.label}>
               <Typography variant="statNumber">{stat.value}</Typography>
-              <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5, whiteSpace: 'nowrap' }}>{stat.label}</Typography>
+              <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>{stat.label}</Typography>
             </Box>
           ))}
         </Box>
@@ -160,7 +160,7 @@ const ProfileSummary = () => {
               <Grid item xs={12} sm={6} key={ex.exercise_id}>
                 <Card sx={{ ...BORDERED, borderRadius: radius.xl, p: '18px' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.25 }}>
-                    <Typography sx={{ fontSize: 16, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <Typography sx={{ fontSize: 16, fontWeight: 600, minWidth: 0, overflowWrap: 'anywhere' }}>
                       {ex.name}
                     </Typography>
                     <Box data-level-chip sx={{

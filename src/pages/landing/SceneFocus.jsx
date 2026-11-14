@@ -250,7 +250,7 @@ const SceneFocus = () => {
           sx={{
             width: '100%',
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
+            gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'repeat(2, minmax(0, 1fr))' },
             gap: { xs: 2.5, md: 8 },
             alignItems: 'center',
             // Telefono: il testo in alto, il telefono finto nello spazio che resta (al massimo 480px)

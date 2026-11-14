@@ -20,3 +20,20 @@ export function mediaStyle(el, minWidth = null) {
   }
   return found;
 }
+
+// Come mediaStyle, per `@media (max-width: Npx)`: le regole che un elemento riceve sotto una certa larghezza.
+export function maxWidthStyle(el, maxWidth) {
+  const classes = [...el.classList];
+  const found = {};
+  for (const sheet of document.styleSheets) {
+    for (const rule of sheet.cssRules) {
+      if (!rule.media || !rule.media.mediaText.replace(/\s/g, '').includes(`(max-width:${maxWidth}px)`)) continue;
+      for (const inner of rule.cssRules) {
+        if (classes.some((c) => inner.selectorText === `.${c}`)) {
+          for (const prop of inner.style) found[prop] = inner.style.getPropertyValue(prop);
+        }
+      }
+    }
+  }
+  return found;
+}
