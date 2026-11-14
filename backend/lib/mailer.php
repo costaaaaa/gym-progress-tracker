@@ -20,6 +20,8 @@ function app_public_url()
  * Piè di pagina delle email agli UTENTI (contatto e informativa privacy), nella lingua $lang, con
  * la riga vuota di separazione davanti: va accodato al corpo, che finisce con "\n". Non sta in
  * mail_send(): le email all'admin non lo vogliono. Il link usa APP_PUBLIC_URL, come forgot_password.php, e punta all'informativa nella lingua dell'email.
+ * $lang deve essere GIA' normalizzata ('it' o 'en', come la passano report_mail_to_user e forgot_password.php):
+ * qui non si normalizza, perché mailer.php si carica anche dove api_helpers.php è sostituito da finti.
  */
 function mail_footer($lang)
 {
