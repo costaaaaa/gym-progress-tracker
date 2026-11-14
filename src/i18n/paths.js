@@ -19,6 +19,12 @@ export const isAuthPath = (pathname) => AUTH_PATHS.includes(stripLangPrefix(path
 export const withLangPrefix = (pathname, lang) =>
   lang === 'en' ? `/en${pathname === '/' ? '/' : pathname}` : pathname;
 
+// Informativa privacy e termini: pagine HTML statiche (public/), una per lingua.
+export const legalPaths = (lang) =>
+  lang === 'en'
+    ? { privacy: '/en/privacy.html', terms: '/en/terms.html' }
+    : { privacy: '/privacy.html', terms: '/termini.html' };
+
 // Link tra pagine pubbliche: chi è su /en/ resta su /en/.
 export function useLocalizedPath() {
   const { pathname } = useLocation();

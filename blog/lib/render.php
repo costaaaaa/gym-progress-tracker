@@ -51,8 +51,8 @@ function blog_render_page(array $opts)
     // In inglese il marchio porta alla landing /en/ (il blog e' solo in italiano),
     // accesso e registrazione alle pagine /en/ dell'app.
     $ui = array(
-        'it' => array('locale' => 'it_IT', 'home' => BLOG_BASE_URL . '/', 'app' => BLOG_APP_URL, 'login' => 'Accedi', 'register' => 'Registrati', 'terms' => "Termini d'uso"),
-        'en' => array('locale' => 'en_US', 'home' => BLOG_APP_URL . 'en/', 'app' => BLOG_APP_URL . 'en/', 'login' => 'Log in', 'register' => 'Sign up', 'terms' => 'Terms of use'),
+        'it' => array('locale' => 'it_IT', 'home' => BLOG_BASE_URL . '/', 'app' => BLOG_APP_URL, 'login' => 'Accedi', 'register' => 'Registrati', 'terms' => "Termini d'uso", 'privacyPath' => 'privacy.html', 'termsPath' => 'termini.html'),
+        'en' => array('locale' => 'en_US', 'home' => BLOG_APP_URL . 'en/', 'app' => BLOG_APP_URL . 'en/', 'login' => 'Log in', 'register' => 'Sign up', 'terms' => 'Terms of use', 'privacyPath' => 'en/privacy.html', 'termsPath' => 'en/terms.html'),
     );
     $ui = $ui[$lang];
     $languageNames = array('it' => 'Italiano', 'en' => 'English');
@@ -139,8 +139,8 @@ function blog_render_page(array $opts)
 <?php if ($lang === 'it'): ?>
         <a href="<?php echo blog_e(BLOG_BASE_URL); ?>/">Blog</a> &middot;
 <?php endif; ?>
-        <a href="<?php echo blog_e(BLOG_APP_URL); ?>privacy.html">Privacy</a> &middot;
-        <a href="<?php echo blog_e(BLOG_APP_URL); ?>termini.html"><?php echo blog_e($ui['terms']); ?></a>
+        <a href="<?php echo blog_e(BLOG_APP_URL . $ui['privacyPath']); ?>">Privacy</a> &middot;
+        <a href="<?php echo blog_e(BLOG_APP_URL . $ui['termsPath']); ?>"><?php echo blog_e($ui['terms']); ?></a>
 <?php foreach ($alternates as $hreflang => $href): if (isset($languageNames[$hreflang]) && $hreflang !== $lang): ?>
         &middot; <a href="<?php echo blog_e($href); ?>" hreflang="<?php echo $hreflang; ?>" lang="<?php echo $hreflang; ?>"><?php echo $languageNames[$hreflang]; ?></a>
 <?php endif; endforeach; ?>

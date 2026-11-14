@@ -46,6 +46,7 @@ import { format, parseISO, subYears, startOfToday, formatDistanceToNow } from 'd
 import { useTranslation, Trans } from 'react-i18next';
 import DateLocalization from '../i18n/DateLocalization';
 import { dateFnsLocale } from '../i18n/format';
+import { legalPaths } from '../i18n/paths';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import { validatePassword } from '../utils/passwordPolicy';
@@ -57,7 +58,7 @@ import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
 
 const Account = ({ isEmbedded = false }) => {
   const { user, logout, isLoggedIn, updateUser, loading: authLoading } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -851,9 +852,9 @@ const Account = ({ isEmbedded = false }) => {
           />
         </Box>
         <Typography sx={{ fontSize: 16, mt: 1.5 }}>
-          <Link href="/privacy.html" target="_blank" rel="noopener noreferrer">{t('account.privacy')}</Link>
+          <Link href={legalPaths(i18n.language).privacy} target="_blank" rel="noopener noreferrer">{t('account.privacy')}</Link>
           {' · '}
-          <Link href="/termini.html" target="_blank" rel="noopener noreferrer">{t('account.terms')}</Link>
+          <Link href={legalPaths(i18n.language).terms} target="_blank" rel="noopener noreferrer">{t('account.terms')}</Link>
         </Typography>
       </Card>
 

@@ -9,6 +9,7 @@ import { render, screen, within, fireEvent, waitFor } from '@testing-library/rea
 import { MemoryRouter } from 'react-router-dom';
 import Account from './Account';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
+import i18n from '../i18n';
 import { textBelow } from '../test/minText';
 import { json } from '../test/dom';
 import { setBrowserTimeZone } from '../test/timeZone';
@@ -134,6 +135,15 @@ describe('informativa e termini', () => {
       expect(style.color).toBe(ink);
       expect(style.textDecoration).toContain('underline');
     }
+  });
+});
+
+describe('informativa e termini in inglese', () => {
+  it('i due link portano alle pagine inglesi', async () => {
+    await i18n.changeLanguage('en');
+    await mount();
+    expect(screen.getByRole('link', { name: 'Privacy notice' }).getAttribute('href')).toBe('/en/privacy.html');
+    expect(screen.getByRole('link', { name: 'Terms of use' }).getAttribute('href')).toBe('/en/terms.html');
   });
 });
 

@@ -4,11 +4,12 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
+import { legalPaths } from '../../i18n/paths';
 
 // Consenso all'ingresso in un gruppo: cosa vedranno gli altri membri e cosa no.
 // Senza la spunta il server rifiuta l'ingresso (join.php, code consent_required).
 const ShareConsentDialog = ({ open, groupName, username, loading, onClose, onConfirm }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [accepted, setAccepted] = useState(false);
 
   const close = () => {
@@ -33,7 +34,7 @@ const ShareConsentDialog = ({ open, groupName, username, loading, onClose, onCon
         </Box>
         <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 1.5 }}>
           {t('groups.consent.leave_anytime')}{' '}
-          <Link href="/privacy.html" target="_blank" rel="noopener">{t('groups.consent.privacy')}</Link>
+          <Link href={legalPaths(i18n.language).privacy} target="_blank" rel="noopener">{t('groups.consent.privacy')}</Link>
         </Typography>
         <FormControlLabel
           control={<Checkbox checked={accepted} onChange={(e) => setAccepted(e.target.checked)} />}
