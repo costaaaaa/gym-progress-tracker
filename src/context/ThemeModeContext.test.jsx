@@ -4,7 +4,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import { useTheme } from '@mui/material/styles';
-import { Button, Chip, CssBaseline, IconButton, Link, MenuItem, Tab, Tabs, TextField, Typography } from '@mui/material';
+import { Button, CardActionArea, Chip, CssBaseline, IconButton, Link, MenuItem, Switch, Tab, Tabs, TextField, Typography } from '@mui/material';
 import { ThemeModeProvider } from './ThemeModeContext';
 
 const RED = 'rgb(213, 0, 0)';
@@ -263,7 +263,15 @@ describe('tema: focus visibile da tastiera (2.4.7)', () => {
     ['scheda', () => <Tabs value={0}><Tab label="Vai" /></Tabs>, () => screen.getByRole('tab', { name: 'Vai' }), '-2px'],
     ['voce di menu', () => <MenuItem>Vai</MenuItem>, () => screen.getByRole('menuitem', { name: 'Vai' }), '-2px'],
     ['link MUI', () => <Link href="/x">Vai</Link>, () => screen.getByRole('link', { name: 'Vai' })],
+    ['area cliccabile di una card', () => <CardActionArea>Vai</CardActionArea>, () => screen.getByRole('button', { name: 'Vai' }), '-2px'],
   ];
+
+  it('interruttore: il contorno resta dentro il suo contenitore che taglia', () => {
+    renderThemed('light', <Switch inputProps={{ 'aria-label': 'Vai' }} />);
+    const input = screen.getByRole('checkbox', { name: 'Vai' });
+    focusByKeyboard(input);
+    expect(outlineOf(input.parentElement)).toEqual({ outline: `2px solid ${INK.light}`, outlineOffset: '-2px' });
+  });
 
   // Schede e voci di menu stanno in contenitori che tagliano: il contorno resta dentro la voce
   it.each(controls)('%s: con la tastiera ha un contorno pieno di 2px nel colore del testo', (_, ui, find, offset = '2px') => {

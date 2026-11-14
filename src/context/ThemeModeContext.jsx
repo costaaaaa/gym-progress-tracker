@@ -289,6 +289,7 @@ export const ThemeModeProvider = ({ children }) => {
           MuiTab: { styleOverrides: { root: { '&.Mui-focusVisible': { outlineOffset: '-2px' } } } },
           MuiMenuItem: { styleOverrides: { root: { '&.Mui-focusVisible': { outlineOffset: '-2px' } } } },
           MuiListItemButton: { styleOverrides: { root: { '&.Mui-focusVisible': { outlineOffset: '-2px' } } } },
+          MuiCardActionArea: { styleOverrides: { root: { '&.Mui-focusVisible': { outlineOffset: '-2px' } } } },
           MuiAppBar: {
             styleOverrides: {
               root: {
@@ -301,7 +302,7 @@ export const ThemeModeProvider = ({ children }) => {
             },
           },
           // Interruttori mai nel rosso del marchio: acceso = verde semantico
-          MuiSwitch: { defaultProps: { color: 'success' } },
+          MuiSwitch: { defaultProps: { color: 'success' }, styleOverrides: { switchBase: { '&.Mui-focusVisible': { outlineOffset: '-2px' } } } },
           MuiButton: {
             styleOverrides: {
               root: {
