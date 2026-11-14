@@ -170,7 +170,6 @@ describe('ExerciseDialog · ricerca per pertinenza', () => {
     fireEvent.change(input, { target: { value: 'panca' } });
     await act(async () => {});
     const names = screen.getAllByRole('option').map((o) => o.textContent);
-    expect(names.findIndex((n) => n.startsWith('Panca Piana'))).toBeLessThan(names.findIndex((n) => n.startsWith('Croci Panca')));
-    expect(names.length).toBeGreaterThanOrEqual(2);
+    expect(names).toEqual(['Panca Piana', 'Croci Panca Piana (Cavi)']);
   });
 });

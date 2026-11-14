@@ -29,7 +29,6 @@ describe('rankExerciseMatches', () => {
   it('"panca" mette "Panca piana" prima di "Croci Panca Piana (Cavi)"', () => {
     const names = rankExerciseMatches(list, 'panca').map((e) => e.name);
     expect(names).toEqual(['Panca inclinata', 'Panca piana', 'Croci Panca Piana (Cavi)', 'Superpanca']);
-    expect(names.indexOf('Panca piana')).toBeLessThan(names.indexOf('Croci Panca Piana (Cavi)'));
   });
 
   it('senza ricerca lascia l\'elenco com\'è', () => {
@@ -39,10 +38,5 @@ describe('rankExerciseMatches', () => {
   it('a parità di pertinenza ordina per nome', () => {
     const names = rankExerciseMatches([ex('Pull B'), ex('Pull A')], 'pull').map((e) => e.name);
     expect(names).toEqual(['Pull A', 'Pull B']);
-  });
-
-  it('con toExercise ordina elementi che contengono l\'esercizio', () => {
-    const items = [{ id: 1, e: ex('Croci Panca') }, { id: 2, e: ex('Panca') }];
-    expect(rankExerciseMatches(items, 'panca', (i) => i.e).map((i) => i.id)).toEqual([2, 1]);
   });
 });

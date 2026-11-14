@@ -11,13 +11,6 @@ export const EQUIPMENT_LABELS = {
 
 export const equipmentLabel = (slug) => EQUIPMENT_LABELS[slug] || null;
 
-// True se il testo cercato compare nel nome mostrato, in quello italiano o in quello inglese
-export const exerciseMatches = (exercise, query) => {
-  const q = query.trim().toLowerCase();
-  if (!q) return true;
-  return [exercise.name, exercise.name_it, exercise.name_en].some((n) => (n || '').toLowerCase().includes(q));
-};
-
 const isWordChar = (ch) => /[\p{L}\p{N}]/u.test(ch);
 
 // Pertinenza di un esercizio per il testo cercato (stessa normalizzazione di exerciseMatches):
@@ -44,14 +37,16 @@ export const exerciseRank = (exercise, query) => {
   return best;
 };
 
-// Con un testo cercato: gli elementi che corrispondono, in ordine di pertinenza e poi di nome.
-// Senza testo: l'elenco com'è. toExercise ricava l'esercizio da un elemento che non lo è già.
-export const rankExerciseMatches = (items, query, toExercise = (item) => item) => {
-  if (!query.trim()) return items;
-  return items
-    .map((item) => ({ item, ex: toExercise(item) }))
-    .filter(({ ex }) => exerciseMatches(ex, query))
-    .map(({ item, ex }) => ({ item, ex, rank: exerciseRank(ex, query) }))
-    .sort((a, b) => a.rank - b.rank || (a.ex.name || '').localeCompare(b.ex.name || ''))
-    .map(({ item }) => item);
+// True se il testo cercato compare nel nome mostrato, in quello italiano o in quello inglese
+export const exerciseMatches = (exercise, query) => exerciseRank(exercise, query) !== null;
+
+// Con un testo cercato: gli esercizi che corrispondono, in ordine di pertinenza e poi di nome.
+// Senza testo: l'elenco com'è.
+export const rankExerciseMatches = (exercises, query) => {
+  if (!query.trim()) return exercises;
+  return exercises
+    .map((exercise) => ({ exercise, rank: exerciseRank(exercise, query) }))
+    .filter(({ rank }) => rank !== null)
+    .sort((a, b) => a.rank - b.rank || (a.exercise.name || '').localeCompare(b.exercise.name || ''))
+    .map(({ exercise }) => exercise);
 };

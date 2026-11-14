@@ -19,7 +19,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { API_BASE_URL } from '../config';
 import { useTranslation } from 'react-i18next';
 import { muscleLabel } from '../i18n/labels';
-import { rankExerciseMatches } from '../utils/exerciseCatalog';
+import { exerciseMatches } from '../utils/exerciseCatalog';
 import {
   buildExerciseSeries,
   analyzeExercise,
@@ -103,7 +103,7 @@ const Progress = ({ isEmbedded = false }) => {
   const searching = deferredQuery.trim().length > 0;
   const filtered = useMemo(() => {
     if (!searching) return analyzed;
-    return rankExerciseMatches(analyzed, deferredQuery, (a) => ({ ...exerciseCatalog[a.id], name: a.name }));
+    return analyzed.filter((a) => exerciseMatches({ ...exerciseCatalog[a.id], name: a.name }, deferredQuery));
   }, [analyzed, exerciseCatalog, searching, deferredQuery]);
 
   const favoriteSet = useMemo(() => new Set(favorites), [favorites]);
