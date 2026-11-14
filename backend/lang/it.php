@@ -54,6 +54,9 @@ return array(
         . "Apri questo link entro 1 ora:\n\n{link}\n\n"
         . "Se non l'hai chiesto tu, ignora questa email: la tua password non cambia.\n",
 
+    'mail.footer' => "--\nRicevi questa email perché hai un account su LiftIndex.\n"
+        . "Informativa privacy: {privacy_url}\nContatti: info@liftindex.app\n",
+
     'reset.missing' => 'Token e nuova password sono obbligatori.',
     'reset.ok' => 'Password reimpostata. Ora puoi accedere.',
     'reset.invalid_link' => 'Il link non è valido o è scaduto. Richiedine uno nuovo.',

@@ -60,7 +60,7 @@ try {
                 return;
             }
             $link = $baseUrl . ($lang === 'en' ? '/en' : '') . '/reset-password#token=' . $token;
-            $text = t_server('forgot.email_body', array('username' => $user['username'], 'link' => $link), $lang);
+            $text = t_server('forgot.email_body', array('username' => $user['username'], 'link' => $link), $lang) . mail_footer($lang);
             mail_send($email, t_server('forgot.email_subject', array(), $lang), $text);
         });
     }

@@ -11,6 +11,17 @@
 // MAIL_FROM_NAME (opzionale, default "LiftIndex"); solo per 'brevo' anche MAIL_API_KEY.
 
 /**
+ * Piè di pagina delle email agli UTENTI (contatto e informativa privacy), nella lingua $lang, con
+ * la riga vuota di separazione davanti: va accodato al corpo, che finisce con "\n". Non sta in
+ * mail_send(): le email all'admin non lo vogliono. Il link usa APP_PUBLIC_URL, come forgot_password.php.
+ */
+function mail_footer($lang)
+{
+    $baseUrl = rtrim(getenv('APP_PUBLIC_URL') ?: 'http://localhost:3000', '/');
+    return "\n" . t_server('mail.footer', array('privacy_url' => $baseUrl . '/privacy.html'), $lang);
+}
+
+/**
  * Invia un'email. Ritorna true se il provider l'ha accettata, false altrimenti (mai eccezioni:
  * chi chiama non deve rivelare all'utente se l'invio è fallito).
  */
