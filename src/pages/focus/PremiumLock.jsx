@@ -7,7 +7,7 @@ const PremiumLock = () => {
   return (
     <>
       <LockIcon sx={{ fontSize: '16px !important' }} />
-      <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 4 }}>{t('common.premium')}</span>
+      <span style={{ fontSize: 12, fontWeight: 600, marginLeft: 2 }}>{t('common.premium')}</span>
     </>
   );
 };

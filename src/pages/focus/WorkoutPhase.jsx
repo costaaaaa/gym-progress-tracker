@@ -201,7 +201,8 @@ export default function WorkoutPhase({
               <Button key={pickerMode} variant="outlined" fullWidth startIcon={icon}
                 endIcon={canEditSession ? null : <PremiumLock />}
                 onClick={() => onOpenPicker(pickerMode)}
-                sx={{ py: 1.25, opacity: pickerMode === 'swap' && !canSwap ? 0.45 : 1, color: colors.textSecondary, borderColor: colors.border, borderRadius: radius.lg,
+                sx={{ py: 1.25, px: 1, opacity: pickerMode === 'swap' && !canSwap ? 0.45 : 1, color: colors.textSecondary, borderColor: colors.border, borderRadius: radius.lg,
+                  '& .MuiButton-endIcon': { ml: 0.5 },
                   '&:hover': { borderColor: colors.text, color: colors.text } }}>
                 {label}
               </Button>
