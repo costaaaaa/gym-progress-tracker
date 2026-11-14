@@ -5,7 +5,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { adminExerciseAction, errorMessage, listAdminExercises } from '../../api/exercises';
-import { equipmentLabel, exerciseMatches } from '../../utils/exerciseCatalog';
+import { equipmentLabel, rankExerciseMatches } from '../../utils/exerciseCatalog';
 import { primaryMuscleOptions } from '../../utils/muscleRules';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 
@@ -160,7 +160,7 @@ const AdminExercises = () => {
     setExercises((prev) => prev.filter((e) => e.id !== exercise.id));
   };
 
-  const visible = (exercises || []).filter((e) => exerciseMatches(e, filter));
+  const visible = rankExerciseMatches(exercises || [], filter);
 
   return (
     <Card sx={{ p: '24px' }}>

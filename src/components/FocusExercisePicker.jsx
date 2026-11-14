@@ -18,7 +18,7 @@ import {
   Typography,
 } from '@mui/material';
 import { Close as CloseIcon, Search as SearchIcon } from '@mui/icons-material';
-import { exerciseMatches } from '../utils/exerciseCatalog';
+import { rankExerciseMatches } from '../utils/exerciseCatalog';
 import { API_BASE_URL } from '../config';
 import { personalLabel } from '../api/exercises';
 import { Trans, useTranslation } from 'react-i18next';
@@ -89,12 +89,12 @@ const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return catalog
+    const candidates = catalog
       .filter((ex) => !(mode === 'swap' && String(ex.id) === String(currentExercise?.exercise_id)))
       // Con una ricerca si cerca in tutto il catalogo, senza filtro per gruppo
-      .filter((ex) => q || group === ALL || capitalize(ex.muscle_group) === group)
-      .filter((ex) => exerciseMatches(ex, query))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .filter((ex) => q || group === ALL || capitalize(ex.muscle_group) === group);
+    // Senza ricerca per nome; con una ricerca per pertinenza e poi per nome
+    return q ? rankExerciseMatches(candidates, query) : candidates.sort((a, b) => a.name.localeCompare(b.name));
   }, [catalog, query, group, mode, currentExercise]);
 
   const handleSelect = (ex) => {

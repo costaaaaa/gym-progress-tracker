@@ -7,6 +7,7 @@ import { json } from '../test/dom';
 
 const RECORDS = [
   { id: 1, name: 'Squat (Bilanciere)', muscle_group: 'gambe', equipment: 'bilanciere' },
+  { id: 3, name: 'Croci Panca Piana (Cavi)', muscle_group: 'petto', equipment: 'cavi' },
   { id: 2, name: 'Panca Piana', muscle_group: 'petto', equipment: 'bilanciere' },
 ];
 
@@ -156,5 +157,20 @@ describe('ExerciseDialog · recupero (onboarding)', () => {
 
     expect(onAdd.mock.calls[0][1].rest).toBe('120');
     expect(screen.getByLabelText(/Recupero \(s\)/).value).toBe('90');
+  });
+});
+
+describe('ExerciseDialog · ricerca per pertinenza', () => {
+  it('"panca" propone "Panca Piana" prima di "Croci Panca Piana (Cavi)"', async () => {
+    await apri();
+    await scegliGruppo('Petto');
+    // Senza il focus l'Autocomplete azzera il testo appena digitato
+    const input = screen.getByLabelText('Nome esercizio');
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: 'panca' } });
+    await act(async () => {});
+    const names = screen.getAllByRole('option').map((o) => o.textContent);
+    expect(names.findIndex((n) => n.startsWith('Panca Piana'))).toBeLessThan(names.findIndex((n) => n.startsWith('Croci Panca')));
+    expect(names.length).toBeGreaterThanOrEqual(2);
   });
 });

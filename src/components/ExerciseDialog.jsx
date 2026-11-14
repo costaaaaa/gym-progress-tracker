@@ -20,7 +20,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import { API_BASE_URL } from '../config';
 import { createExercise, errorMessage, findSimilarExercises, personalLabel } from '../api/exercises';
-import { equipmentLabel, exerciseMatches } from '../utils/exerciseCatalog';
+import { equipmentLabel, rankExerciseMatches } from '../utils/exerciseCatalog';
 import { primaryMuscleOptions } from '../utils/muscleRules';
 import { useTranslation } from 'react-i18next';
 import { muscleLabel } from '../i18n/labels';
@@ -273,7 +273,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
                 inputValue={inputValue}
                 onInputChange={handleInputChange}
                 options={exercises.filter(ex => !equipmentFilter || ex.equipment === equipmentFilter || ex.id === exercise.id)}
-                filterOptions={(options, { inputValue: typed }) => options.filter(ex => exerciseMatches(ex, typed))}
+                filterOptions={(options, { inputValue: typed }) => rankExerciseMatches(options, typed)}
                 getOptionLabel={(option) => option.name}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
                 renderOption={(props, option) => {
