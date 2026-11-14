@@ -1,6 +1,7 @@
 <?php
 // Livello dell'account (free, plus, pro; cumulativi). Zero dipendenze DB: sono le regole pure usate da
-// user_tier() in config/api_helpers.php e da tools/tier.php. Gli istanti sono stringhe UTC 'Y-m-d H:i:s'.
+// user_tier() in config/api_helpers.php, da tools/tier.php e da api/admin/tiers.php.
+// Gli istanti sono stringhe UTC 'Y-m-d H:i:s'.
 
 const TIER_LEVELS = ['free', 'plus', 'pro'];
 
@@ -47,4 +48,14 @@ function tierSetUntil(string $tier, ?string $lastDay, string $now): array
         return ['error' => "La data $lastDay è già passata (UTC)."];
     }
     return ['until' => $until];
+}
+
+// Inverso di tierSetUntil: ultimo giorno valido (AAAA-MM-GG, UTC) di un tier_until, o null se non scade.
+// tier_until è il primo istante senza livello, quindi l'ultimo giorno è quello del secondo precedente.
+function tierLastDay(?string $until): ?string
+{
+    if ($until === null) {
+        return null;
+    }
+    return (new DateTimeImmutable($until, new DateTimeZone('UTC')))->modify('-1 second')->format('Y-m-d');
 }
