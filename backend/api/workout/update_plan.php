@@ -25,7 +25,7 @@ if (!empty($data->plan_id) && !empty($data->name)) {
     $workout_plan->name = $data->name;
     $workout_plan->description = isset($data->description) ? $data->description : "";
 
-    // is_active del client è ignorato: la scheda attiva si cambia solo con activate_plan.php
+    // is_active del client è ignorato: modificare una scheda non cambia quale scheda è attiva
     if ($workout_plan->update()) {
         // Letta dal database: la risposta riporta il valore reale di is_active
         // (rowCount() non serve: vale 0 anche se i valori non cambiano)

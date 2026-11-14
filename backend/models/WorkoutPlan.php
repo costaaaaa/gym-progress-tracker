@@ -62,8 +62,8 @@ class WorkoutPlan
     }
 
     // Esegue $work in una transazione che tiene bloccata la riga dell'utente: creazioni e attivazioni
-    // dello stesso utente si mettono in fila, così non risultano mai due
-    // schede attive. $work ritorna true per confermare, false per annullare.
+    // dello stesso utente si mettono in fila, così non risultano mai due schede attive. $work ritorna
+    // true per confermare, false per annullare.
     // Non annidabile: se il chiamante ha già una transazione aperta lancia LogicException senza toccarla.
     private function runLockedForUser($label, callable $work)
     {
@@ -198,7 +198,7 @@ class WorkoutPlan
         return false;
     }
 
-    // Modifica solo nome e descrizione: quale scheda è attiva si cambia solo con activateExclusively()
+    // Modifica solo nome e descrizione: is_active non si tocca
     public function update()
     {
         // Sanitize inputs

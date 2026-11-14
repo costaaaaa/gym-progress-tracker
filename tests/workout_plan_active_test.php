@@ -57,15 +57,17 @@ $conn->exec("INSERT INTO gym_workout_plans (user_id, name, is_active) VALUES ($u
 $planB = (int)$conn->query("SELECT id FROM gym_workout_plans WHERE user_id = $u1 AND name = 'B'")->fetchColumn();
 $p = planFor($conn, $u1, $planB);
 $p->name = 'B rinominata';
+$p->description = 'Nuova descrizione';
 $p->is_active = 1;
 check("update su una non attiva ritorna true", $p->update() === true);
 check("update con is_active 1 non cambia le schede attive", activeIds($conn, $u1) === [$planA]);
-check("update cambia il nome", $conn->query("SELECT name FROM gym_workout_plans WHERE id = $planB")->fetchColumn() === 'B rinominata');
+$row = $conn->query("SELECT name, description FROM gym_workout_plans WHERE id = $planB")->fetch(PDO::FETCH_ASSOC);
+check("update cambia nome e descrizione", $row === ['name' => 'B rinominata', 'description' => 'Nuova descrizione']);
 $p = planFor($conn, $u1, $planA);
 $p->is_active = 0;
-check("update su l'attiva con is_active 0 ritorna true", $p->update() === true);
+check("update sull'attiva con is_active 0 ritorna true", $p->update() === true);
 check("update con is_active 0 lascia la scheda attiva", activeIds($conn, $u1) === [$planA]);
-check("update sull'altro utente non tocca le sue schede", activeIds($conn, $u2) === [$planOther]);
+check("le schede dell'altro utente restano com'erano", activeIds($conn, $u2) === [$planOther]);
 
 echo "plan_gone si azzera a ogni chiamata\n";
 $p = planFor($conn, $u1, $gone);

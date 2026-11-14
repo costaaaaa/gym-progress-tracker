@@ -146,7 +146,7 @@ check "update_plan con is_active 1 su una non attiva risponde 200 e is_active 0"
 expect_n "l'unica attiva resta la prima" "$(active_ids "$E" | tr '\n' ' ')" "$EP1 "
 expect_n "il nome è cambiato" "$(body_of "$(call GET api/workout/read_plans.php "$E")" | jq -r --argjson id "$EP2" '.records[] | select(.id == $id or .id == ($id | tostring)) | .name')" "Rinominata"
 check "update_plan con is_active 0 sull'attiva risponde 200 e is_active 1" \
-    "$(call POST api/workout/update_plan.php "$E" "{\"plan_id\":$EP1,\"name\":\"Spenta\",\"is_active\":0}")" '$status == 200 and (.plan.is_active | tonumber) == 1'
+    "$(call POST api/workout/update_plan.php "$E" "{\"plan_id\":$EP1,\"name\":\"Ancora attiva\",\"is_active\":0}")" '$status == 200 and (.plan.is_active | tonumber) == 1'
 expect_n "l'attiva resta attiva" "$(active_ids "$E" | tr '\n' ' ')" "$EP1 "
 
 echo "Scheda cancellata mentre la si attiva (sicurezza: mai 5xx; la regressione è in tests/workout_plan_active.sh)"
@@ -170,6 +170,19 @@ for i in $(seq 1 25); do
     if [[ "$st" == 200 && "$(active_count "$G")" == 0 ]]; then GA="$(plan_id "$(new_plan "$G")")"; fi
 done
 expect_n "nessun 5xx e con 404 la scheda attiva resta quella di prima (404 ottenuti: $notfound su 25)" "$bad" 0
+
+echo "Scheda cancellata mentre la si modifica (sicurezza: mai 5xx)"
+bad=0; notfound=0
+for i in $(seq 1 25); do
+    GB="$(plan_id "$(new_plan "$G" '{"name":"Da cancellare","is_active":0}')")"
+    call POST api/workout/update_plan.php "$G" "{\"plan_id\":$GB,\"name\":\"Rinominata\"}" >"$FU_R" &
+    call POST api/workout/delete_plan.php "$G" "{\"plan_id\":$GB}" >/dev/null &
+    wait
+    st="$(cut -d' ' -f1 "$FU_R")"
+    [[ "$st" == 404 ]] && notfound=$((notfound + 1))
+    [[ "$st" == 200 || "$st" == 404 ]] || bad=$((bad + 1))
+done
+expect_n "modifica e cancellazione insieme: sempre 200 o 404 (404 ottenuti: $notfound su 25)" "$bad" 0
 
 echo "Storico"
 new_account "fuH$SUFFIX"; H="$TOKEN"
