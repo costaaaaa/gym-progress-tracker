@@ -2,9 +2,9 @@
 // Titolo di pagina: Lexend 800 a 28px, un <h1>. Bottone pieno di errore: rosso del marchio #d50000 con testo bianco,
 // anche in scuro; disabilitato resta grigio (scuro: fondo bianco al 12%, testo bianco al 30%).
 import { describe, it, expect, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import { useTheme } from '@mui/material/styles';
-import { Button, Chip, Typography } from '@mui/material';
+import { Button, Chip, CssBaseline, IconButton, Link, MenuItem, Tab, Tabs, TextField, Typography } from '@mui/material';
 import { ThemeModeProvider } from './ThemeModeContext';
 
 const RED = 'rgb(213, 0, 0)';
@@ -131,5 +131,159 @@ describe('tema: token nuovi', () => {
       expect(p.health).toBe('#ff2d55');
       expect(p.warning.muted).toBe('rgba(255, 167, 38, 0.15)');
     }
+  });
+});
+
+// Rapporto di contrasto WCAG 2.1 tra due colori rgb()/#rrggbb opachi
+const channels = (css) => (css.startsWith('#')
+  ? [1, 3, 5].map((i) => parseInt(css.slice(i, i + 2), 16))
+  : css.match(/[\d.]+/g).slice(0, 3).map(Number));
+const luminance = (css) => {
+  const [r, g, b] = channels(css).map((v) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const contrast = (a, b) => {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+const cleanupAll = () => cleanup();
+
+const PAPER = { light: '#ffffff', dark: '#141416' };
+
+const renderThemed = (mode, ui) => {
+  localStorage.setItem('themeMode', mode);
+  return render(<ThemeModeProvider><CssBaseline />{ui}</ThemeModeProvider>);
+};
+
+// Tastiera: il focus arriva dopo un tasto, come con Tab; col mouse no.
+const focusByKeyboard = (el) => {
+  fireEvent.keyDown(document.body, { key: 'Tab' });
+  act(() => el.focus());
+};
+const focusByMouse = (el) => {
+  fireEvent.mouseDown(el);
+  act(() => el.focus());
+};
+
+describe('tema: bordo dei campi (1.4.11)', () => {
+  afterEach(() => localStorage.clear());
+  const outline = (mode, props = {}) => {
+    const { container } = renderThemed(mode, <TextField label="Peso" {...props} />);
+    return getComputedStyle(container.querySelector('.MuiOutlinedInput-notchedOutline')).borderTopColor;
+  };
+
+  it.each(['light', 'dark'])('in %s il bordo a riposo ha almeno 3:1 sullo sfondo della card, senza arrivare al testo secondario', (mode) => {
+    const ratio = contrast(outline(mode), PAPER[mode]);
+    expect(ratio).toBeGreaterThanOrEqual(3.2);
+    expect(ratio).toBeLessThanOrEqual(3.8);
+  });
+
+  it('in chiaro ha almeno 3:1 anche sullo sfondo della pagina (#f7f6f5)', () => {
+    expect(contrast(outline('light'), '#f7f6f5')).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each(['light', 'dark'])('in %s il campo disabilitato non prende il nuovo bordo', (mode) => {
+    expect(outline(mode, { disabled: true })).not.toBe(outline(mode));
+  });
+});
+
+describe('tema: rosso come testo in scuro (1.4.3)', () => {
+  afterEach(() => localStorage.clear());
+  const colorOfButton = (mode, ui, name) => {
+    renderThemed(mode, ui);
+    return getComputedStyle(screen.getByRole('button', { name })).color;
+  };
+
+  it('il token primary.text è il rosso del marchio in chiaro e il rosso chiaro in scuro', () => {
+    let captured;
+    const Probe = () => { captured = useTheme().palette.primary; return null; };
+    localStorage.setItem('themeMode', 'light');
+    const { unmount } = render(<ThemeModeProvider><Probe /></ThemeModeProvider>);
+    expect(captured.text).toBe('#d50000');
+    unmount();
+    localStorage.setItem('themeMode', 'dark');
+    render(<ThemeModeProvider><Probe /></ThemeModeProvider>);
+    expect(captured.text).toBe('#ff5252');
+  });
+
+  it('l\'etichetta del campo a fuoco in scuro ha almeno 4,5:1; in chiaro resta rossa', () => {
+    const labelColor = (mode) => {
+      renderThemed(mode, <TextField label="Utente" focused />);
+      const color = getComputedStyle(screen.getByText('Utente', { selector: 'label' })).color;
+      cleanupAll();
+      return color;
+    };
+    expect(contrast(labelColor('dark'), PAPER.dark)).toBeGreaterThanOrEqual(4.5);
+    expect(labelColor('light')).toBe(RED);
+  });
+
+  it('l\'etichetta del campo in errore e a fuoco resta quella dell\'errore', () => {
+    renderThemed('light', <TextField label="Utente" focused error />);
+    expect(getComputedStyle(screen.getByText('Utente', { selector: 'label' })).color).toBe(RED);
+  });
+
+  it.each([
+    ['bottone di testo', <Button color="primary">Annulla</Button>],
+    ['bottone con bordo', <Button variant="outlined" color="primary">Annulla</Button>],
+    ['icona', <IconButton color="primary" aria-label="Annulla" />],
+    ['chip con bordo', <Chip variant="outlined" color="primary" label="Annulla" onClick={() => {}} />],
+  ])('in scuro: %s primario ha almeno 4,5:1; in chiaro resta rosso', (_, ui) => {
+    const color = (mode) => {
+      const value = colorOfButton(mode, ui, 'Annulla');
+      cleanupAll();
+      return value;
+    };
+    expect(contrast(color('dark'), PAPER.dark)).toBeGreaterThanOrEqual(4.5);
+    expect(color('light')).toBe(RED);
+  });
+
+  it('in scuro il bottone pieno resta rosso del marchio con testo bianco', () => {
+    renderThemed('dark', <Button variant="contained">Salva</Button>);
+    const { backgroundColor, color } = getComputedStyle(screen.getByRole('button', { name: 'Salva' }));
+    expect({ backgroundColor, color }).toEqual({ backgroundColor: RED, color: WHITE });
+  });
+});
+
+describe('tema: focus visibile da tastiera (2.4.7)', () => {
+  afterEach(() => localStorage.clear());
+  const outlineOf = (el) => {
+    const { outline, outlineOffset } = getComputedStyle(el);
+    return { outline, outlineOffset };
+  };
+  const INK = { light: '#1a1816', dark: '#ffffff' };
+  const controls = [
+    ['bottone', () => <Button>Vai</Button>, () => screen.getByRole('button', { name: 'Vai' })],
+    ['bottone senza ripple', () => <Button disableRipple>Vai</Button>, () => screen.getByRole('button', { name: 'Vai' })],
+    ['icona', () => <IconButton aria-label="Vai" />, () => screen.getByRole('button', { name: 'Vai' })],
+    ['chip che si preme', () => <Chip label="Vai" onClick={() => {}} />, () => screen.getByRole('button', { name: 'Vai' })],
+    ['scheda', () => <Tabs value={0}><Tab label="Vai" /></Tabs>, () => screen.getByRole('tab', { name: 'Vai' }), '-2px'],
+    ['voce di menu', () => <MenuItem>Vai</MenuItem>, () => screen.getByRole('menuitem', { name: 'Vai' }), '-2px'],
+    ['link MUI', () => <Link href="/x">Vai</Link>, () => screen.getByRole('link', { name: 'Vai' })],
+  ];
+
+  // Schede e voci di menu stanno in contenitori che tagliano: il contorno resta dentro la voce
+  it.each(controls)('%s: con la tastiera ha un contorno pieno di 2px nel colore del testo', (_, ui, find, offset = '2px') => {
+    for (const mode of ['light', 'dark']) {
+      renderThemed(mode, ui());
+      focusByKeyboard(find());
+      expect(outlineOf(find())).toEqual({ outline: `2px solid ${INK[mode]}`, outlineOffset: offset });
+      cleanupAll();
+    }
+  });
+
+  it.each(controls.slice(0, 6))('%s: col mouse non compare alcun contorno', (_, ui, find) => {
+    renderThemed('light', ui());
+    focusByMouse(find());
+    expect(outlineOf(find()).outline).not.toMatch(/solid/);
+  });
+
+  it('il link semplice <a> ha lo stesso contorno su :focus-visible (jsdom non lo valuta: si legge la regola)', () => {
+    renderThemed('dark', <a href="/x">Vai</a>);
+    const css = [...document.querySelectorAll('style')].map((s) => s.textContent).join('');
+    expect(css).toMatch(/a:focus-visible\{[^}]*outline:2px solid #ffffff;[^}]*outline-offset:2px/);
   });
 });

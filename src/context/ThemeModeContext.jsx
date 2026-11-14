@@ -11,6 +11,8 @@ import { FIELD_INPUT_PADDING_Y } from '../theme/fieldHeight';
 const BRAND = '#d50000';
 const BRAND_DARK = '#9b0000';
 const ERROR_ON_DARK = '#ff5252';
+// Bordo dei campi a riposo: 3.5 : 1 sul bianco e 3.6 : 1 su #141416 (almeno 3 : 1 anche su #f7f6f5).
+const FIELD_BORDER = { light: '#8c8885', dark: '#6e6e70' };
 
 const ThemeModeContext = createContext();
 
@@ -34,14 +36,22 @@ export const ThemeModeProvider = ({ children }) => {
   const muiLocale = i18n.language === 'en' ? enUS : itIT;
 
   const theme = useMemo(
-    () =>
-      createTheme({
+    () => {
+      // Contorno del focus da tastiera: colore del testo del tema, staccato di 2px dal controllo
+      const focusRing = {
+        outline: `2px solid ${mode === 'light' ? '#1a1816' : '#ffffff'}`,
+        outlineOffset: '2px',
+      };
+      return createTheme({
         palette: {
           mode,
           primary: {
             main: BRAND,
             light: '#ff5131',
             dark: BRAND_DARK,
+            // Rosso quando è il colore di un testo o di un'icona: in scuro il rosso del marchio
+            // dà 3.35 : 1 su #141416 (serve 4.5 : 1), qui il rosso chiaro degli errori.
+            text: mode === 'light' ? BRAND : ERROR_ON_DARK,
           },
           secondary: {
             main: mode === 'light' ? grey[900] : grey[300],
@@ -189,6 +199,10 @@ export const ThemeModeProvider = ({ children }) => {
             styleOverrides: {
               root: {
                 borderRadius: radius.md,
+                // MUI, sul tocco, rimette il bordo chiaro di default quando il campo ha l'hover: qui resta il bordo del tema
+                '&:hover:not(.Mui-focused):not(.Mui-error):not(.Mui-disabled) .MuiOutlinedInput-notchedOutline': {
+                  '@media (hover: none)': { borderColor: FIELD_BORDER[mode] },
+                },
               },
               input: {
                 paddingTop: FIELD_INPUT_PADDING_Y,
@@ -201,6 +215,7 @@ export const ThemeModeProvider = ({ children }) => {
               // Con displayEmpty (sotto) il Select outlined impone notched=true qualunque sia il valore:
               // solo il CSS può chiudere la tacca, qui, come per ogni altro campo.
               notchedOutline: {
+                borderColor: FIELD_BORDER[mode],
                 '& legend': { maxWidth: '0.01px' },
               },
             },
@@ -248,9 +263,29 @@ export const ThemeModeProvider = ({ children }) => {
             styleOverrides: {
               body: {
                 transition: 'background-color 0.3s ease, color 0.3s ease',
-              }
+              },
+              'a:focus-visible': focusRing,
             }
           },
+          // Etichetta a fuoco: rosso come testo (primary.text), non il rosso del marchio. L'errore resta quello dell'errore.
+          MuiFormLabel: {
+            styleOverrides: {
+              root: ({ theme }) => ({
+                '&.Mui-focused:not(.Mui-error)': { color: theme.palette.primary.text },
+              }),
+            },
+          },
+          // Focus da tastiera su ogni controllo basato su ButtonBase (bottoni, icone, chip, voci di menu e di
+          // lista, schede, link di navigazione): solo con :focus-visible, mouse e tocco non vedono nulla.
+          MuiButtonBase: {
+            styleOverrides: {
+              root: { '&.Mui-focusVisible': focusRing },
+            },
+          },
+          // Nei contenitori che tagliano (scorrimento delle schede, menu): il contorno resta dentro la voce
+          MuiTab: { styleOverrides: { root: { '&.Mui-focusVisible': { outlineOffset: '-2px' } } } },
+          MuiMenuItem: { styleOverrides: { root: { '&.Mui-focusVisible': { outlineOffset: '-2px' } } } },
+          MuiListItemButton: { styleOverrides: { root: { '&.Mui-focusVisible': { outlineOffset: '-2px' } } } },
           MuiAppBar: {
             styleOverrides: {
               root: {
@@ -286,15 +321,20 @@ export const ThemeModeProvider = ({ children }) => {
                   // MUI rimette palette.main sul tocco (hover: none): senza il reset il bottone resterebbe scuro dopo il tap
                   '&:hover': { backgroundColor: BRAND_DARK, '@media (hover: none)': { backgroundColor: BRAND } },
                 },
+                // Bottoni di testo e con bordo: l'etichetta è un testo, rosso chiaro come primary.text
+                textPrimary: { color: ERROR_ON_DARK },
+                outlinedPrimary: { color: ERROR_ON_DARK },
               }),
             },
           },
+          ...(mode === 'dark' && { MuiIconButton: { styleOverrides: { colorPrimary: { color: ERROR_ON_DARK } } } }),
           // Ogni Chip con onClick: due classi, quindi vince su fontFamily e fontWeight dati con sx
           MuiChip: {
             styleOverrides: {
               root: {
                 '&.MuiChip-clickable': CHIP_FONT,
               },
+              ...(mode === 'dark' && { outlinedPrimary: { color: ERROR_ON_DARK } }),
             },
           },
           // Link nel testo: colore del testo e sottolineati (il rosso resta ai bottoni principali, agli errori e agli stati)
@@ -306,6 +346,7 @@ export const ThemeModeProvider = ({ children }) => {
             styleOverrides: {
               root: {
                 '&:hover': { textDecorationColor: 'inherit' },
+                '&.Mui-focusVisible': focusRing,
               },
             },
           },
@@ -348,7 +389,8 @@ export const ThemeModeProvider = ({ children }) => {
             }
           }
         },
-      }, muiLocale),
+      }, muiLocale);
+    },
     [mode, muiLocale]
   );
 
