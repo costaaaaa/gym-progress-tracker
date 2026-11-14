@@ -141,9 +141,9 @@ const ProfileSummary = () => {
 
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', justifyContent: 'start', columnGap: { xs: 3, md: 5 }, '@media (max-width:389.95px)': { columnGap: 1.5 } }}>
           {statTiles.map((stat) => (
-            <Box key={stat.label}>
+            <Box key={stat.label} sx={{ minWidth: 0 }}>
               <Typography variant="statNumber">{stat.value}</Typography>
-              <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>{stat.label}</Typography>
+              <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5, overflowWrap: 'anywhere' }}>{stat.label}</Typography>
             </Box>
           ))}
         </Box>

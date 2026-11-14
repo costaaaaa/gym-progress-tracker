@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Outlet, Link as RouterLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LanguageHint from './LanguageHint';
+import { radius } from '../../theme/radius';
 import { isEnPath, stripLangPrefix, withLangPrefix } from '../../i18n/paths';
 import { setLanguageChoice } from '../../i18n';
 
@@ -19,7 +20,7 @@ const skipLinkSx = {
   zIndex: 2000,
   px: 2,
   py: 1,
-  borderRadius: 1,
+  borderRadius: radius.sm,
   border: '1px solid',
   borderColor: 'text.primary',
   bgcolor: 'background.paper',

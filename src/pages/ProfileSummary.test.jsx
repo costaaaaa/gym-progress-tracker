@@ -80,6 +80,15 @@ describe('testo che può andare a capo', () => {
     }
   });
 
+  it('con la spaziatura del testo aumentata le colonne possono restringersi sotto la parola più lunga', async () => {
+    await mount();
+    for (const label of ['sessioni', 'kg sollevati', 'settimane record']) {
+      const el = screen.getByText(label);
+      expect(style(el).overflowWrap).toBe('anywhere');
+      expect(style(el.parentElement).minWidth).toBe('0px');
+    }
+  });
+
   it('il nome dell\'esercizio non è troncato con i puntini', async () => {
     await mount();
     const { whiteSpace, textOverflow } = style(screen.getByText('Rematore con bilanciere'));
