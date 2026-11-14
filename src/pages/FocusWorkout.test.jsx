@@ -63,6 +63,13 @@ const doSet = (weight = '60', reps = '8') => {
   fireEvent.change(screen.getByLabelText('Ripetizioni'), { target: { value: reps } });
   click('Conferma serie');
 };
+// Risposta di read_plans.php trattenuta finché il test non chiama arrivano()
+const pianiInRitardo = (day) => {
+  let arrivano;
+  const plansResponse = new Promise((resolve) => { arrivano = () => resolve(json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [day] }] })); });
+  responses['read_plans.php'] = () => plansResponse;
+  return { arrivano };
+};
 const draft = () => JSON.parse(localStorage.getItem(DRAFT_KEY));
 
 const savedDraft = {
@@ -200,6 +207,43 @@ describe('bozza e ripresa', () => {
     await advance(0);
 
     expect(saveBody().workout_records.map((r) => [r.set_number, r.seconds_from_start])).toEqual([[1, null], [2, 1200]]);
+  });
+
+  it('scartare la bozza con un giorno solo lo lascia già scelto', async () => {
+    responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [fullDay] }] });
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(savedDraft));
+    await mount();
+    click('Scarta e inizia nuovo');
+    expect(screen.getByRole('combobox').textContent).toBe('Push completo');
+    expect(screen.getByRole('button', { name: 'Inizia allenamento' }).disabled).toBe(false);
+  });
+
+  it('scartare la bozza prima che arrivino i piani: quando arrivano il giorno unico è già scelto', async () => {
+    const { arrivano } = pianiInRitardo(fullDay);
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(savedDraft));
+    await mount();
+    click('Scarta e inizia nuovo');
+    await act(async () => { arrivano(); });
+    await advance(0);
+    expect(screen.getByRole('combobox').textContent).toBe('Push completo');
+  });
+
+  it('riprendere la bozza prima che arrivino i piani: il giorno unico del piano non sostituisce quello della bozza', async () => {
+    const { arrivano } = pianiInRitardo(pushDay);
+    const draftDay = { id: 2, name: 'Push completo', exercises: [fly] };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      ...savedDraft,
+      activePlan: { id: 5, name: 'Push Pull', days: [draftDay] },
+      selectedDay: draftDay,
+      completedSets: {},
+      currentSetIndex: 0,
+    }));
+    await mount();
+    click('Riprendi allenamento');
+    await act(async () => { arrivano(); });
+    await advance(0);
+    expect(screen.getByRole('heading', { name: 'Croci' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Panca piana' })).toBeNull();
   });
 
   it('scartare la bozza la cancella e torna alla scelta del giorno', async () => {
@@ -982,7 +1026,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     await mount();
     expect(screen.queryByText('Riprendi allenamento')).toBeNull();
     expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
-    expect(screen.getByText('Gambe')).toBeTruthy();
+    expect(screen.getAllByText('Gambe').length).toBeGreaterThan(0);
   });
 
   it('serie per serie: obiettivo in grigio della serie in corso e tecnica solo sulla serie che la prevede (12 / 10 / a cedimento min. 6 + Drop set)', async () => {
@@ -1186,5 +1230,42 @@ describe('ordine reale e orario delle serie (#26)', () => {
     await advance(0);
 
     expect(saveBody().workout_records.map((r) => [r.exercise_id, r.seconds_from_start])).toEqual([[4, 1200], [3, null], [3, 900]]);
+  });
+});
+
+describe('scelta del giorno con una scheda appena creata', () => {
+  const emptyDay = { id: 3, name: 'Giorno 1', exercises: [] };
+  const withDays = (days) => {
+    responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days }] });
+  };
+
+  it('con un solo giorno è già scelto e si può iniziare subito', async () => {
+    withDays([pushDay]);
+    await mount();
+    expect(screen.getByRole('combobox').textContent).toBe('Push');
+    expect(screen.getByRole('button', { name: 'Inizia allenamento' }).disabled).toBe(false);
+  });
+
+  it('con più giorni nessuno è scelto, come prima', async () => {
+    await mount();
+    expect(screen.getByRole('combobox').textContent.replace(/\u200b/g, '').trim()).toBe('');
+    expect(screen.getByRole('button', { name: 'Inizia allenamento' }).disabled).toBe(true);
+  });
+
+  it('un giorno senza esercizi lascia il bottone spento e dice dove aggiungerli', async () => {
+    withDays([emptyDay]);
+    await mount();
+    expect(screen.getByRole('button', { name: 'Inizia allenamento' }).disabled).toBe(true);
+    expect(screen.getByText(/Questo giorno non ha esercizi\./)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Schede' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/workouts?tab=plans');
+  });
+
+  it('il messaggio non compare finché non c\'è un giorno scelto né quando ha esercizi', async () => {
+    await mount();
+    expect(screen.queryByText(/Questo giorno non ha esercizi/)).toBeNull();
+    fireEvent.mouseDown(screen.getByRole('combobox'));
+    fireEvent.click(screen.getByRole('option', { name: 'Push' }));
+    expect(screen.queryByText(/Questo giorno non ha esercizi/)).toBeNull();
   });
 });

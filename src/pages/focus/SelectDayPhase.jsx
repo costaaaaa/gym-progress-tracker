@@ -1,5 +1,5 @@
 import {
-  Container, Box, Typography, Button, FormControl, InputLabel, Select, MenuItem, Paper, IconButton, Chip
+  Container, Box, Typography, Button, Link, FormControl, InputLabel, Select, MenuItem, Paper, IconButton, Chip
 } from '@mui/material';
 import {
   PlayArrow as PlayArrowIcon, FitnessCenter as FitnessCenterIcon, Timer as TimerIcon, TimerOff as TimerOffIcon,
@@ -145,6 +145,15 @@ export default function SelectDayPhase({
             >
               {t('focus.start')}
             </Button>
+
+            {selectedDay && selectedDay.exercises?.length === 0 && (
+              <Typography variant="body2" sx={{ color: colors.textSecondary, textAlign: 'center', mt: 1.5 }}>
+                {t('focus.day_empty')}{' '}
+                <Link component="button" type="button" onClick={onGoToPlans} sx={{ verticalAlign: 'baseline', color: colors.primary }}>
+                  {t('focus.day_empty_link')}
+                </Link>
+              </Typography>
+            )}
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 2, gap: 1 }}>
               {timerEnabled ? (

@@ -5,7 +5,25 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const [, , outName = 'before', port = '4181'] = process.argv;
+const [, , outName = 'before', port = '4181', onlyArg] = process.argv;
+// Terzo parametro facoltativo: elenco di nomi (separati da virgola) delle sole schermate da scattare
+const only = onlyArg ? new Set(onlyArg.split(',')) : null;
+const want = (...names) => !only || names.some((name) => only.has(name));
+// Nomi delle schermate di ogni flusso: una sola lista, usata sia da want(...) sia da snap(...)
+const FOCUS_SHOTS = {
+  scelta: 'focus-scelta-giorno',
+  recupero: 'focus-recupero',
+  allenamento: 'focus-allenamento',
+  riscaldamento: 'focus-riscaldamento',
+  riepilogo: 'focus-riepilogo',
+};
+const PLAN_EDITOR_SHOTS = {
+  giorni: 'allenamenti-piani-giorni',
+  aggiungiCompatto: 'allenamenti-piani-aggiungi-compatto',
+  aggiungiLista: 'allenamenti-piani-aggiungi-lista',
+  modificaLista: 'allenamenti-piani-modifica-lista',
+};
+const PLANS_OPEN_SHOT = 'allenamenti-piani-ricche-aperta';
 const base = `http://localhost:${port}`;
 const outDir = path.join(path.dirname(fileURLToPath(import.meta.url)), outName);
 mkdirSync(outDir, { recursive: true });
@@ -36,6 +54,56 @@ const plan = {
 const planInactive = {
   id: 6, name: 'Gambe e core', description: 'Blocco di forza sulle gambe', is_active: false,
   days: [{ id: 3, name: 'Gambe', exercises: [exercise(13, 7, 'Squat', planned(0, times(5, { min: 5, max: 5 })), 'quadricipiti'), exercise(14, 8, 'Stacco da terra', planned(0, [{ failure: true }]), 'femorali')] }],
+};
+
+// Schede più ricche per i controlli sulle card (scelta `plans: 'ricche'`) e per il Focus con un giorno solo
+const day = (id, name, exercises) => ({ id, name, exercises });
+let nextExerciseId = 100;
+const ex = (name, sets, group = 'petto') => {
+  const id = nextExerciseId;
+  nextExerciseId += 1;
+  return exercise(id, id, name, sets, group);
+};
+const std = planned(0, times(3, { min: 8, max: 10 }));
+const richPlans = [
+  {
+    id: 5, name: 'Push Pull Legs', description: 'Tre giorni a settimana', is_active: true,
+    days: [
+      day(1, 'Push', [
+        ex('Panca piana', planned(2, times(3, { min: 6, max: 8 }))),
+        ex('Distensioni con manubri su panca inclinata a 30°', std),
+        ex('Lento avanti', std, 'spalle'),
+        ex('Alzate laterali', planned(0, [...times(2, { min: 12, max: 15 }), { failure: true }]), 'spalle'),
+        ex('Croci ai cavi', std),
+        ex('French press', std, 'tricipiti'),
+      ]),
+      day(2, 'Pull', [
+        ex('Trazioni alla sbarra', planned(1, times(4, { min: 6, max: 8 })), 'schiena'),
+        ex('Rematore con bilanciere', std, 'schiena'),
+        ex('Lat machine presa stretta', planned(0, times(3, { min: 10, max: 12 })), 'schiena'),
+        ex('Curl con manubri', planned(0, times(3, { min: 10, max: 12 })), 'bicipiti'),
+      ]),
+      day(3, 'Gambe', [ex('Squat', planned(3, times(4, { min: 5, max: 5 })), 'quadricipiti')]),
+      day(4, 'Giorno 4', []),
+    ],
+  },
+  { id: 6, name: 'Full body', description: '', is_active: false, days: [day(11, 'Giorno 1', [ex('Squat', std, 'quadricipiti'), ex('Panca piana', std)])] },
+  {
+    id: 7, name: 'Upper Lower', description: 'Quattro giorni, parte alta e parte bassa', is_active: false,
+    days: [day(21, 'Upper', [ex('Panca piana', std), ex('Rematore con bilanciere', std, 'schiena')]), day(22, 'Lower', [ex('Squat', std, 'quadricipiti')])],
+  },
+  {
+    id: 8, name: 'PPL x2', description: 'Sei giorni, ogni gruppo due volte', is_active: false,
+    days: Array.from({ length: 6 }, (_, i) => day(30 + i, `Giorno ${i + 1}`, [ex('Panca piana', std), ex('Squat', std, 'quadricipiti'), ex('Curl con manubri', std, 'bicipiti')])),
+  },
+  { id: 9, name: 'Nuova scheda', description: '', is_active: false, days: [] },
+];
+// Scheda attiva con un giorno solo: con esercizi (preselezionato) o ancora vuoto (appena creata)
+const oneDayPlan = (exercises) => [{ id: 5, name: 'La mia scheda', description: '', is_active: true, days: [day(1, 'Giorno 1', exercises)] }];
+const PLAN_SETS = {
+  ricche: richPlans,
+  'un-giorno': oneDayPlan([ex('Panca piana', std), ex('Squat', std, 'quadricipiti')]),
+  'un-giorno-vuoto': oneDayPlan([]),
 };
 
 const CATALOG = [
@@ -97,7 +165,7 @@ const fixtures = [
   ['user/read.php', user],
   ['user/consent.php', () => ({ success: true, consents: { terms: { granted: true }, health_data: { granted: true } } })],
   ['workout_history/read.php', () => ({ success: true, records: HISTORY })],
-  ['workout/read_plans.php', () => ({ success: true, records: [plan, planInactive] })],
+  ['workout/read_plans.php', ({ plans }) => ({ success: true, records: plans ? PLAN_SETS[plans] : [plan, planInactive] })],
   ['workout_stats/dashboard.php', () => ({
     success: true, weekly_workouts: 2, weekly_goal: 3,
     weekly_volume: { total_weight: 4820, total_reps: 118 }, recovery,
@@ -215,7 +283,7 @@ async function openPage(vp, theme, opts, tag) {
   await ctx.route('**/backend/**', (route) => {
     const url = route.request().url();
     const hit = fixtures.find(([key]) => url.includes(key));
-    const body = hit ? hit[1]({ admin: opts.admin === true }) : fallback;
+    const body = hit ? hit[1]({ admin: opts.admin === true, plans: opts.plans }) : fallback;
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
   });
   const page = await ctx.newPage();
@@ -234,6 +302,7 @@ const SHOT_LIST = [
   ['gruppi', '/gruppi', { loggedIn: true }],
   ['gruppo-dettaglio', '/gruppi/1', { loggedIn: true }],
   ['allenamenti-piani', '/workouts?tab=plans', { loggedIn: true }],
+  ['allenamenti-piani-ricche', '/workouts?tab=plans', { loggedIn: true, plans: 'ricche' }],
   ['allenamenti-cronologia', '/workouts?tab=history', { loggedIn: true }],
   ['admin', '/admin', { loggedIn: true, admin: true }],
 ];
@@ -243,6 +312,7 @@ for (const vp of viewports) {
     const tag = `${vp.w}_${theme}`;
 
     for (const [name, url, opts] of SHOT_LIST) {
+      if (!want(name)) continue;
       await attempt(tag, name, async () => {
         const { ctx, page } = await openPage(vp, theme, opts, tag);
         try {
@@ -254,12 +324,41 @@ for (const vp of viewports) {
       });
     }
 
-    await attempt(tag, 'focus', async () => {
+    for (const [name, plans] of [['focus-scelta-giorno-un-giorno', 'un-giorno'], ['focus-scelta-giorno-vuoto', 'un-giorno-vuoto']]) {
+      if (!want(name)) continue;
+      await attempt(tag, name, async () => {
+        const { ctx, page } = await openPage(vp, theme, { loggedIn: true, plans }, tag);
+        try {
+          await page.goto(`${base}/focus`, { waitUntil: 'domcontentloaded' });
+          await page.getByRole('button', { name: 'Inizia allenamento', exact: true }).waitFor();
+          await snap(page, name, tag);
+        } finally {
+          await ctx.close();
+        }
+      });
+    }
+
+    // Le card aperte delle schede ricche: giorni con più di 4 esercizi, vuoto, nome lungo
+    if (want(PLANS_OPEN_SHOT)) {
+      await attempt(tag, PLANS_OPEN_SHOT, async () => {
+        const { ctx, page } = await openPage(vp, theme, { loggedIn: true, plans: 'ricche' }, tag);
+        try {
+          await page.goto(`${base}/workouts?tab=plans`, { waitUntil: 'domcontentloaded' });
+          await page.getByRole('button', { name: /^(Mostra dettagli|Mostra giorni)$/ }).first().click();
+          await page.getByText('Nessun esercizio aggiunto').first().waitFor();
+          await snap(page, PLANS_OPEN_SHOT, tag);
+        } finally {
+          await ctx.close();
+        }
+      });
+    }
+
+    if (want(...Object.values(FOCUS_SHOTS))) await attempt(tag, 'focus', async () => {
       const { ctx, page } = await openPage(vp, theme, { loggedIn: true }, tag);
       try {
         await page.goto(`${base}/focus`, { waitUntil: 'domcontentloaded' });
         await page.getByRole('button', { name: 'Inizia allenamento', exact: true }).waitFor();
-        await snap(page, 'focus-scelta-giorno', tag);
+        await snap(page, FOCUS_SHOTS.scelta, tag);
 
         await page.getByRole('combobox').click();
         await page.getByRole('option', { name: 'Trazione', exact: true }).click();
@@ -280,36 +379,36 @@ for (const vp of viewports) {
         };
         await confirmSet('12');
         await page.getByText('Recupero', { exact: true }).waitFor();
-        await snap(page, 'focus-recupero', tag);
+        await snap(page, FOCUS_SHOTS.recupero, tag);
         await skipRest();
         await confirmSet('10');
         await skipRest();
-        await snap(page, 'focus-allenamento', tag);
+        await snap(page, FOCUS_SHOTS.allenamento, tag);
 
         // L'ultima serie dell'esercizio porta subito al successivo (Rematore, parte dal riscaldamento), senza recupero
         await confirmSet('8');
         await page.getByRole('heading', { name: 'Rematore con bilanciere' }).waitFor();
-        await snap(page, 'focus-riscaldamento', tag);
+        await snap(page, FOCUS_SHOTS.riscaldamento, tag);
         for (let i = 0; i < 10 && !(await page.getByText('Riepilogo', { exact: true }).isVisible()); i++) {
           await page.getByRole('button', { name: 'Salta esercizio', exact: true }).click();
           await page.waitForTimeout(300);
         }
         await page.getByText('Riepilogo', { exact: true }).waitFor();
-        await snap(page, 'focus-riepilogo', tag);
+        await snap(page, FOCUS_SHOTS.riepilogo, tag);
       } finally {
         await ctx.close();
       }
     });
 
-    await attempt(tag, 'piani-editor', async () => {
+    if (want(...Object.values(PLAN_EDITOR_SHOTS))) await attempt(tag, 'piani-editor', async () => {
       const { ctx, page } = await openPage(vp, theme, { loggedIn: true }, tag);
       try {
         await page.goto(`${base}/workouts?tab=plans`, { waitUntil: 'domcontentloaded' });
-        await page.getByRole('button', { name: 'Mostra dettagli' }).first().click();
+        await page.getByRole('button', { name: /^(Mostra dettagli|Mostra giorni)$/ }).first().click();
         await page.getByRole('button', { name: 'Dettagli', exact: true }).first().click();
         await page.getByRole('button', { name: 'Dettagli', exact: true }).first().click();
         await page.getByText('Trazioni').first().waitFor();
-        await snap(page, 'allenamenti-piani-giorni', tag);
+        await snap(page, PLAN_EDITOR_SHOTS.giorni, tag);
 
         // I dialog sono più alti dello schermo: si allarga la finestra e si ritaglia il solo dialog
         await page.setViewportSize({ width: vp.w, height: 1600 });
@@ -326,7 +425,7 @@ for (const vp of viewports) {
         await page.getByRole('combobox', { name: /Tecnica/ }).click();
         await page.getByRole('option', { name: 'Drop set (stripping)' }).click();
         await page.getByLabel('Recupero (s)').fill('90');
-        await snapDialog('allenamenti-piani-aggiungi-compatto');
+        await snapDialog(PLAN_EDITOR_SHOTS.aggiungiCompatto);
 
         await page.getByLabel('Serie diverse').check();
         await page.getByRole('group', { name: 'Serie 1' }).getByRole('textbox').fill('12');
@@ -334,14 +433,14 @@ for (const vp of viewports) {
         const last = page.getByRole('group', { name: 'Serie 3' });
         await last.getByRole('checkbox', { name: 'A cedimento' }).check();
         await last.getByRole('textbox').fill('6');
-        await snapDialog('allenamenti-piani-aggiungi-lista');
+        await snapDialog(PLAN_EDITOR_SHOTS.aggiungiLista);
         await page.getByRole('button', { name: 'Annulla' }).click();
         await page.getByRole('dialog').waitFor({ state: 'detached' });
 
         // Trazioni ha serie diverse: la modifica si apre già per serie
         await page.getByRole('button', { name: 'Modifica esercizio' }).nth(2).click();
         await page.getByRole('group', { name: 'Serie 3' }).waitFor();
-        await snapDialog('allenamenti-piani-modifica-lista');
+        await snapDialog(PLAN_EDITOR_SHOTS.modificaLista);
       } finally {
         await ctx.close();
       }

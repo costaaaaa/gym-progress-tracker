@@ -35,9 +35,9 @@ afterEach(() => {
 
 const openDay = async () => {
   render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
-  fireEvent.click(await screen.findByRole('button', { name: 'Mostra dettagli' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Mostra giorni' }));
   fireEvent.click(await screen.findByRole('button', { name: 'Dettagli' }));
-  await screen.findByText('Panca piana');
+  await screen.findAllByText('Panca piana');
 };
 
 describe('giorno aperto', () => {
@@ -66,9 +66,9 @@ describe('serie pianificate (#77)', () => {
   const apriConPiano = async (records, fetchMock = vi.fn(() => Promise.resolve(json({ records })))) => {
     vi.stubGlobal('fetch', fetchMock);
     render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
-    fireEvent.click(await screen.findByRole('button', { name: 'Mostra dettagli' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Mostra giorni' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Dettagli' }));
-    await screen.findByText('Panca piana');
+    await screen.findAllByText('Panca piana');
     return fetchMock;
   };
 
@@ -226,5 +226,82 @@ describe('dialogo di eliminazione di una scheda', () => {
     await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Elimina', hidden: true }).disabled).toBe(false));
     await act(async () => { rispondi(); });
     expect(screen.queryByText(obiettivo(3))).toBeNull();
+  });
+});
+
+describe('nuova scheda', () => {
+  it('di base ha un solo giorno, anche dopo averne creata una', async () => {
+    const creaScheda = async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: 'Nuova scheda' })[0]);
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).getByRole('combobox').textContent).toBe('1 giorno');
+      return dialog;
+    };
+    render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
+    await screen.findByText('Forza A');
+    fetch.mockImplementation((url) => Promise.resolve(
+      String(url).includes('create_plan.php') ? json({ plan: { id: 9 } }, 201) : json({ records: [plan] }),
+    ));
+
+    const dialog = await creaScheda();
+    fireEvent.change(within(dialog).getByLabelText('Nome scheda'), { target: { value: 'Nuova' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Crea' }));
+    await waitFor(() => expect(fetch.mock.calls.some(([url]) => String(url).includes('create_days.php'))).toBe(true));
+    const call = fetch.mock.calls.find(([url]) => String(url).includes('create_days.php'));
+    expect(JSON.parse(call[1].body).days).toEqual([{ name: 'Giorno 1', exercises: [] }]);
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await creaScheda(); // riaperto dopo la creazione: mostra di nuovo "1 giorno" (lo controlla creaScheda)
+  });
+});
+
+describe('card della scheda: riepilogo (A15)', () => {
+  const exercise = (id, name, warmups, n) => ({
+    id, exercise_name: name, muscle_group: 'petto', rest: 90, notes: '',
+    planned_sets: plannedSets(warmups, times(n, { min: 8, max: 10 })),
+  });
+  const mostraSchede = async (records) => {
+    fetch.mockImplementation(() => Promise.resolve(json({ records })));
+    render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
+    await screen.findByText(records[0].name);
+  };
+  const ppl = {
+    id: 1, name: 'PPL', description: 'Tre giorni', is_active: 1,
+    days: [
+      { id: 1, name: 'Push', exercises: [exercise(1, 'Panca piana', 2, 3), exercise(2, 'Lento', 0, 3)] },
+      { id: 2, name: 'Pull', exercises: [exercise(3, 'Trazioni', 0, 4)] },
+    ],
+  };
+
+  it('con nomi propri: riga divisa e conteggi senza i giorni (serie allenanti, niente riscaldamento)', async () => {
+    await mostraSchede([ppl]);
+    expect(screen.getByText('Push')).toBeTruthy();
+    expect(screen.getByText('Pull')).toBeTruthy();
+    expect(screen.getByText('3 esercizi · 10 serie')).toBeTruthy();
+  });
+
+  it('con i nomi di base: niente riga divisa e i giorni compaiono nei conteggi', async () => {
+    await mostraSchede([{ ...ppl, days: ppl.days.map((d, i) => ({ ...d, name: `Giorno ${i + 1}` })) }]);
+    expect(screen.getByText('2 giorni · 3 esercizi · 10 serie')).toBeTruthy();
+    expect(screen.queryByText('Giorno 1')).toBeNull();
+  });
+
+  it('senza giorni dice di aggiungerne uno', async () => {
+    await mostraSchede([{ ...ppl, days: [] }]);
+    expect(screen.getByText('Nessun giorno: aggiungine uno')).toBeTruthy();
+  });
+
+  it('aperta: righe con serie compatte, al massimo 4, "+N esercizi" apre i dettagli del giorno', async () => {
+    const many = { id: 9, name: 'Push', exercises: ['A', 'B', 'C', 'D', 'E', 'F'].map((n, i) => exercise(20 + i, `Esercizio ${n}`, i === 0 ? 2 : 0, 3)) };
+    await mostraSchede([{ ...ppl, days: [many, { id: 10, name: 'Vuoto', exercises: [] }] }]);
+    fireEvent.click(screen.getByRole('button', { name: 'Mostra giorni' }));
+    // D sta nelle righe e nel pannello dei dettagli (chiuso), E solo nel pannello
+    expect(screen.getAllByText('Esercizio D')).toHaveLength(2);
+    expect(screen.getAllByText('Esercizio E')).toHaveLength(1);
+    expect(screen.getByText('2 risc. + 3 × 8-10')).toBeTruthy();
+    expect(screen.getByText('Nessun esercizio aggiunto')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '+2 esercizi' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Nascondi' })).toBeTruthy());
+    expect(screen.queryByRole('button', { name: '+2 esercizi' })).toBeNull();
   });
 });

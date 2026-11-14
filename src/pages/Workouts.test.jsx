@@ -14,7 +14,8 @@ const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
 
 const day = { id: 1, name: 'Push', exercises: [{ id: 11, exercise_name: 'Panca piana', planned_sets: plannedSets(0, times(3, { min: 8, max: 8 })), rest: 90, muscle_group: 'petto' }] };
-const plan = { id: 5, name: 'Push Pull', description: 'Spinta e tirata', is_active: true, days: [day] };
+const pullDay = { id: 2, name: 'Pull', exercises: [{ id: 12, exercise_name: 'Trazioni', planned_sets: plannedSets(0, times(3, { min: 8, max: 8 })), rest: 90, muscle_group: 'schiena' }] };
+const plan = { id: 5, name: 'Push Pull', description: 'Spinta e tirata', is_active: true, days: [day, pullDay] };
 const otherPlan = { id: 6, name: 'Full body', description: 'Tre giorni a settimana', is_active: false, days: [day] };
 
 // Le tab sono lazy: il primo import della Cronologia (con i suoi dialoghi) è lento, lo scaldiamo prima dei test
@@ -101,12 +102,12 @@ describe('schede', () => {
     expect(style.borderStyle).toBe('solid');
   });
 
-  it('descrizione normale in text.secondary; "Mostra dettagli" in text.secondary', async () => {
+  it('descrizione normale in text.secondary; "Mostra giorni" in text.secondary', async () => {
     await mount();
     const descrizione = getComputedStyle(screen.getByText('Spinta e tirata'));
     expect(descrizione.fontStyle).not.toBe('italic');
     expect(descrizione.color).toBe(GREY);
-    expect(getComputedStyle(screen.getAllByRole('button', { name: 'Mostra dettagli' })[0]).color).toBe(GREY);
+    expect(getComputedStyle(screen.getAllByRole('button', { name: 'Mostra giorni' })[0]).color).toBe(GREY);
   });
 
   it('card e bottoni a riposo senza ombra né sfumatura', async () => {
