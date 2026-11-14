@@ -40,11 +40,11 @@ export const parseRowTarget = (text, toFailure) => {
   return min === null ? null : { reps_min: min, reps_max: null, to_failure: true };
 };
 
-// Il target di una serie a parole: "8", "8-10", "a cedimento", "a cedimento (min. 8)".
 const FAILURE_LABELS = { any: 'plans.target_failure', atLeast: 'plans.target_failure_min' };
 // Per le righe strette: "ced." al posto di "a cedimento"
 const FAILURE_LABELS_SHORT = { any: 'plans.target_failure_short', atLeast: 'plans.target_failure_min_short' };
 
+// Il target di una serie a parole: "8", "8-10", "a cedimento", "a cedimento (min. 8)".
 export const targetLabel = (set, failureLabels = FAILURE_LABELS) => {
   if (set.to_failure) {
     return set.reps_min === null

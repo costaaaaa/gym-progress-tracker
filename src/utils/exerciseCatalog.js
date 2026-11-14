@@ -13,7 +13,7 @@ export const equipmentLabel = (slug) => EQUIPMENT_LABELS[slug] || null;
 
 const isWordChar = (ch) => /[\p{L}\p{N}]/u.test(ch);
 
-// Pertinenza di un esercizio per il testo cercato (stessa normalizzazione di exerciseMatches):
+// Pertinenza di un esercizio per il testo cercato (senza maiuscole né spazi attorno):
 // 0 = un nome è uguale, 1 = inizia con il testo, 2 = una parola inizia con il testo, 3 = lo contiene.
 // Vince il migliore tra name, name_it e name_en; null se non c'è corrispondenza.
 export const exerciseRank = (exercise, query) => {

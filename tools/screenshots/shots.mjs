@@ -9,6 +9,20 @@ const [, , outName = 'before', port = '4181', onlyArg] = process.argv;
 // Terzo parametro facoltativo: elenco di nomi (separati da virgola) delle sole schermate da scattare
 const only = onlyArg ? new Set(onlyArg.split(',')) : null;
 const want = (...names) => !only || names.some((name) => only.has(name));
+// Nomi delle schermate di ogni flusso: una sola lista, usata sia da want(...) sia da snap(...)
+const FOCUS_SHOTS = {
+  scelta: 'focus-scelta-giorno',
+  recupero: 'focus-recupero',
+  allenamento: 'focus-allenamento',
+  riscaldamento: 'focus-riscaldamento',
+  riepilogo: 'focus-riepilogo',
+};
+const PLAN_EDITOR_SHOTS = {
+  giorni: 'allenamenti-piani-giorni',
+  aggiungiCompatto: 'allenamenti-piani-aggiungi-compatto',
+  aggiungiLista: 'allenamenti-piani-aggiungi-lista',
+  modificaLista: 'allenamenti-piani-modifica-lista',
+};
 const base = `http://localhost:${port}`;
 const outDir = path.join(path.dirname(fileURLToPath(import.meta.url)), outName);
 mkdirSync(outDir, { recursive: true });
@@ -338,12 +352,12 @@ for (const vp of viewports) {
       });
     }
 
-    if (want('focus-scelta-giorno', 'focus-recupero', 'focus-allenamento', 'focus-riscaldamento', 'focus-riepilogo')) await attempt(tag, 'focus', async () => {
+    if (want(...Object.values(FOCUS_SHOTS))) await attempt(tag, 'focus', async () => {
       const { ctx, page } = await openPage(vp, theme, { loggedIn: true }, tag);
       try {
         await page.goto(`${base}/focus`, { waitUntil: 'domcontentloaded' });
         await page.getByRole('button', { name: 'Inizia allenamento', exact: true }).waitFor();
-        await snap(page, 'focus-scelta-giorno', tag);
+        await snap(page, FOCUS_SHOTS.scelta, tag);
 
         await page.getByRole('combobox').click();
         await page.getByRole('option', { name: 'Trazione', exact: true }).click();
@@ -364,28 +378,28 @@ for (const vp of viewports) {
         };
         await confirmSet('12');
         await page.getByText('Recupero', { exact: true }).waitFor();
-        await snap(page, 'focus-recupero', tag);
+        await snap(page, FOCUS_SHOTS.recupero, tag);
         await skipRest();
         await confirmSet('10');
         await skipRest();
-        await snap(page, 'focus-allenamento', tag);
+        await snap(page, FOCUS_SHOTS.allenamento, tag);
 
         // L'ultima serie dell'esercizio porta subito al successivo (Rematore, parte dal riscaldamento), senza recupero
         await confirmSet('8');
         await page.getByRole('heading', { name: 'Rematore con bilanciere' }).waitFor();
-        await snap(page, 'focus-riscaldamento', tag);
+        await snap(page, FOCUS_SHOTS.riscaldamento, tag);
         for (let i = 0; i < 10 && !(await page.getByText('Riepilogo', { exact: true }).isVisible()); i++) {
           await page.getByRole('button', { name: 'Salta esercizio', exact: true }).click();
           await page.waitForTimeout(300);
         }
         await page.getByText('Riepilogo', { exact: true }).waitFor();
-        await snap(page, 'focus-riepilogo', tag);
+        await snap(page, FOCUS_SHOTS.riepilogo, tag);
       } finally {
         await ctx.close();
       }
     });
 
-    if (want('allenamenti-piani-giorni', 'allenamenti-piani-aggiungi-compatto', 'allenamenti-piani-aggiungi-lista', 'allenamenti-piani-modifica-lista')) await attempt(tag, 'piani-editor', async () => {
+    if (want(...Object.values(PLAN_EDITOR_SHOTS))) await attempt(tag, 'piani-editor', async () => {
       const { ctx, page } = await openPage(vp, theme, { loggedIn: true }, tag);
       try {
         await page.goto(`${base}/workouts?tab=plans`, { waitUntil: 'domcontentloaded' });
@@ -393,7 +407,7 @@ for (const vp of viewports) {
         await page.getByRole('button', { name: 'Dettagli', exact: true }).first().click();
         await page.getByRole('button', { name: 'Dettagli', exact: true }).first().click();
         await page.getByText('Trazioni').first().waitFor();
-        await snap(page, 'allenamenti-piani-giorni', tag);
+        await snap(page, PLAN_EDITOR_SHOTS.giorni, tag);
 
         // I dialog sono più alti dello schermo: si allarga la finestra e si ritaglia il solo dialog
         await page.setViewportSize({ width: vp.w, height: 1600 });
@@ -410,7 +424,7 @@ for (const vp of viewports) {
         await page.getByRole('combobox', { name: /Tecnica/ }).click();
         await page.getByRole('option', { name: 'Drop set (stripping)' }).click();
         await page.getByLabel('Recupero (s)').fill('90');
-        await snapDialog('allenamenti-piani-aggiungi-compatto');
+        await snapDialog(PLAN_EDITOR_SHOTS.aggiungiCompatto);
 
         await page.getByLabel('Serie diverse').check();
         await page.getByRole('group', { name: 'Serie 1' }).getByRole('textbox').fill('12');
@@ -418,14 +432,14 @@ for (const vp of viewports) {
         const last = page.getByRole('group', { name: 'Serie 3' });
         await last.getByRole('checkbox', { name: 'A cedimento' }).check();
         await last.getByRole('textbox').fill('6');
-        await snapDialog('allenamenti-piani-aggiungi-lista');
+        await snapDialog(PLAN_EDITOR_SHOTS.aggiungiLista);
         await page.getByRole('button', { name: 'Annulla' }).click();
         await page.getByRole('dialog').waitFor({ state: 'detached' });
 
         // Trazioni ha serie diverse: la modifica si apre già per serie
         await page.getByRole('button', { name: 'Modifica esercizio' }).nth(2).click();
         await page.getByRole('group', { name: 'Serie 3' }).waitFor();
-        await snapDialog('allenamenti-piani-modifica-lista');
+        await snapDialog(PLAN_EDITOR_SHOTS.modificaLista);
       } finally {
         await ctx.close();
       }
