@@ -41,13 +41,15 @@ export const parseRowTarget = (text, toFailure) => {
 };
 
 // Il target di una serie a parole: "8", "8-10", "a cedimento", "a cedimento (min. 8)".
-// Con short "a cedimento" diventa "ced.".
-export const targetLabel = (set, short = false) => {
+const FAILURE_LABELS = { any: 'plans.target_failure', atLeast: 'plans.target_failure_min' };
+// Per le righe strette: "ced." al posto di "a cedimento"
+const FAILURE_LABELS_SHORT = { any: 'plans.target_failure_short', atLeast: 'plans.target_failure_min_short' };
+
+export const targetLabel = (set, failureLabels = FAILURE_LABELS) => {
   if (set.to_failure) {
-    const suffix = short ? '_short' : '';
     return set.reps_min === null
-      ? i18n.t(`plans.target_failure${suffix}`)
-      : i18n.t(`plans.target_failure_min${suffix}`, { min: set.reps_min });
+      ? i18n.t(failureLabels.any)
+      : i18n.t(failureLabels.atLeast, { min: set.reps_min });
   }
   return set.reps_min === set.reps_max ? String(set.reps_min) : `${set.reps_min}-${set.reps_max}`;
 };
@@ -106,8 +108,8 @@ export const fromCompact = ({ warmups, sets, target, technique }) =>
   })));
 
 // Allenanti consecutive con lo stesso target -> [{ count, label }].
-const groupWorking = (working, short = false) => working.reduce((groups, set) => {
-  const label = targetLabel(set, short);
+const groupWorking = (working, failureLabels) => working.reduce((groups, set) => {
+  const label = targetLabel(set, failureLabels);
   const last = groups[groups.length - 1];
   if (last && last.label === label) last.count += 1;
   else groups.push({ count: 1, label });
@@ -130,23 +132,24 @@ const techniqueParts = (plannedSets, working) => {
   });
 };
 
+// Riscaldamento e serie allenanti raggruppate: "2 risc. + 2 × 8-10 + 1 × 12-15".
+const setsPart = (plannedSets, working, failureLabels) => {
+  const warmups = plannedSets.length - working.length;
+  const prefix = warmups > 0 ? i18n.t('plans.warmup_prefix', { n: warmups }) : '';
+  return prefix + groupWorking(working, failureLabels).map(({ count, label }) => `${count} × ${label}`).join(' + ');
+};
+
 // Riga riassuntiva: "2 risc. + 2 × 8-10 + 1 × 12-15 · Drop set (stripping) sulla serie 3".
 export const planSummary = (plannedSets) => {
   if (!plannedSets || plannedSets.length === 0) return '';
   const working = workingOf(plannedSets);
-  const warmups = plannedSets.length - working.length;
-  const groups = groupWorking(working).map(({ count, label }) => `${count} × ${label}`).join(' + ');
-  const prefix = warmups > 0 ? i18n.t('plans.warmup_prefix', { n: warmups }) : '';
-  return [prefix + groups, ...techniqueParts(plannedSets, working)].join(' · ');
+  return [setsPart(plannedSets, working, FAILURE_LABELS), ...techniqueParts(plannedSets, working)].join(' · ');
 };
 
 // Come planSummary, ma per le righe strette: niente tecnica (resta nei dettagli) e "ced." per il cedimento.
 export const planSummaryCompact = (plannedSets) => {
   if (!plannedSets || plannedSets.length === 0) return '';
-  const working = workingOf(plannedSets);
-  const warmups = plannedSets.length - working.length;
-  const groups = groupWorking(working, true).map(({ count, label }) => `${count} × ${label}`).join(' + ');
-  return (warmups > 0 ? i18n.t('plans.warmup_prefix', { n: warmups }) : '') + groups;
+  return setsPart(plannedSets, workingOf(plannedSets), FAILURE_LABELS_SHORT);
 };
 
 const TECHNIQUE_MAX_LENGTH = 100;
