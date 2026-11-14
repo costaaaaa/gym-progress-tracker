@@ -5,7 +5,8 @@ const reducedMotion = () =>
 
 export const celebrate = (opts = {}) => {
   if (reducedMotion()) return;
-  confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, ...opts });
+  // useWorker: false, perché la CSP del sito blocca i worker creati da blob:
+  confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, useWorker: false, ...opts });
 };
 
 export const celebratePR = () =>
