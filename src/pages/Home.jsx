@@ -57,6 +57,9 @@ const Home = () => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [lastWorkout, setLastWorkout] = useState(null);
   const [activePlan, setActivePlan] = useState(null);
+  // Veri solo se la risposta è arrivata: un errore di rete non deve far passare un utente per nuovo
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [plansLoaded, setPlansLoaded] = useState(false);
   const [dashboardStats, setDashboardStats] = useState(null);
   // weekly_goal è l'obiettivo effettivo; plan_days_total resta per i server più vecchi
   const weeklyGoal = dashboardStats?.weekly_goal ?? dashboardStats?.plan_days_total;
@@ -78,6 +81,7 @@ const Home = () => {
       });
       if (historyResponse.ok) {
         const historyData = await historyResponse.json();
+        setHistoryLoaded(true);
         if (historyData.records && historyData.records.length > 0) {
           setLastWorkout(historyData.records[0]);
         }
@@ -89,6 +93,7 @@ const Home = () => {
       });
       if (plansResponse.ok) {
         const plansData = await plansResponse.json();
+        setPlansLoaded(true);
         if (plansData.records) {
           const active = plansData.records.find(plan => plan.is_active);
           setActivePlan(active || null);
@@ -123,6 +128,9 @@ const Home = () => {
   const formatDate = (dateString) =>
     formatLocalDate(dateString, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
+  const isNewUser = historyLoaded && !lastWorkout;
+  const showStartHere = isNewUser && plansLoaded && !activePlan;
+
   if (!isLoggedIn) {
     return (
       <Suspense fallback={null}>
@@ -135,7 +143,7 @@ const Home = () => {
     <>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h1" sx={{ fontSize: { xs: '1.75rem', md: '2.25rem' }, mb: 1.5 }}>
-          {t('home.hero.welcome', { username: user?.username || '' })}
+          {t(isNewUser ? 'home.hero.welcome_new' : 'home.hero.welcome', { username: user?.username || '' })}
         </Typography>
         <Typography sx={{ fontSize: 16, color: 'text.secondary', mb: 3, maxWidth: 560, lineHeight: 1.6 }}>
           {t('home.hero.sub_user')}
@@ -150,6 +158,18 @@ const Home = () => {
           {t('home.hero.start_workout')}
         </Button>
       </Box>
+
+      {showStartHere && (
+        <Card sx={{ mb: 3, p: '22px' }}>
+          <Typography component="h2" variant="cardTitle" sx={{ mb: 1 }}>{t('home.start_here.title')}</Typography>
+          <Typography sx={{ color: 'text.secondary', fontSize: 14, lineHeight: 1.5, mb: 2 }}>
+            {t('home.start_here.text')}
+          </Typography>
+          <Button variant="outlined" component={RouterLink} to="/workouts?tab=plans" sx={{ borderRadius: radius.lg, fontWeight: 700 }}>
+            {t('home.start_here.cta')}
+          </Button>
+        </Card>
+      )}
 
       <Grid container spacing={3}>
         {loading ? (

@@ -1,6 +1,6 @@
 // Home dopo il login: i dati arrivano dalla fetch (confine), l'utente vede link, testi e intestazioni.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Home from './Home';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
@@ -59,11 +59,69 @@ const fakeFetch = vi.fn((url) => {
 
 const renderHome = () => render(<MemoryRouter><ThemeModeProvider><Home /></ThemeModeProvider></MemoryRouter>);
 
+const original = { ...responses };
+
 beforeEach(() => {
   vi.stubGlobal('fetch', fakeFetch);
 });
 afterEach(() => {
   vi.unstubAllGlobals();
+  Object.assign(responses, original);
+});
+
+const newUser = () => {
+  responses['workout_history/read.php'] = { success: true, records: [] };
+  responses['workout/read_plans.php'] = { success: true, records: [] };
+};
+
+describe('primo accesso', () => {
+  it('senza allenamenti il titolo è "Benvenuto", con lo storico "Bentornato"', async () => {
+    newUser();
+    renderHome();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Benvenuto, mario88' })).toBeTruthy();
+    cleanup();
+    Object.assign(responses, original);
+    renderHome();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Bentornato, mario88' })).toBeTruthy();
+    expect(screen.queryByText('Benvenuto, mario88')).toBeNull();
+  });
+
+  it('mentre lo storico si carica non compare "Benvenuto"', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
+    renderHome();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Bentornato, mario88');
+  });
+
+  it('senza scheda e senza allenamenti c\'è "Inizia da qui" con il link a "Crea la tua prima scheda"', async () => {
+    newUser();
+    renderHome();
+    expect(await screen.findByText('Inizia da qui')).toBeTruthy();
+    const link = screen.getByRole('link', { name: 'Crea la tua prima scheda' });
+    expect(link.getAttribute('href')).toBe('/workouts?tab=plans');
+  });
+
+  it('"Inizia da qui" non c\'è se c\'è una scheda attiva', async () => {
+    responses['workout_history/read.php'] = { success: true, records: [] };
+    renderHome();
+    await screen.findByRole('link', { name: /Piano attivo/ });
+    expect(screen.queryByText('Inizia da qui')).toBeNull();
+  });
+
+  it('"Inizia da qui" non c\'è se c\'è uno storico, anche senza scheda attiva', async () => {
+    responses['workout/read_plans.php'] = { success: true, records: [] };
+    renderHome();
+    await screen.findByRole('link', { name: /Ultimo allenamento/ });
+    expect(screen.queryByText('Inizia da qui')).toBeNull();
+  });
+
+  it('"Inizia da qui" non compare se il caricamento dei dati fallisce', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: false, status: 500, json: async () => ({}), text: async () => '{}' })));
+    renderHome();
+    await screen.findByRole('link', { name: 'Inizia allenamento' });
+    await waitFor(() => expect(screen.queryByRole('progressbar')).toBeNull());
+    expect(screen.queryByText('Inizia da qui')).toBeNull();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Bentornato, mario88');
+  });
 });
 
 describe('home dopo il login', () => {
