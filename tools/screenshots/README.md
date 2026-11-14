@@ -15,6 +15,8 @@ Il kit è separato dall'app: ha un suo `package.json` e non tocca quello di `gym
   e rete ferma.
   Le API sono finte: ogni risposta del backend è in `fixtures` dentro `shots.mjs`, con dati inventati
   (dominio `example.com`, nomi `atleta_*`).
+- `shots.mjs <cartella> <porta> <nomi>`: con un terzo parametro (nomi separati da virgola, es. `allenamenti-piani,focus-scelta-giorno`) scatta solo quelle schermate.
+  Le schermate `allenamenti-piani-ricche*` e `focus-scelta-giorno-un-giorno|vuoto` usano schede con più giorni e giorni vuoti.
 - `compare.mjs [A=before] [B=after]`: confronto con pixelmatch (soglia 0). Le differenze finiscono in `diff/`.
   Esce con 1 se c'è almeno una differenza o un file mancante.
 

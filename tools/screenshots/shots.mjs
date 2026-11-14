@@ -5,7 +5,10 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const [, , outName = 'before', port = '4181'] = process.argv;
+const [, , outName = 'before', port = '4181', onlyArg] = process.argv;
+// Terzo parametro facoltativo: elenco di nomi (separati da virgola) delle sole schermate da scattare
+const only = onlyArg ? new Set(onlyArg.split(',')) : null;
+const want = (name) => !only || only.has(name);
 const base = `http://localhost:${port}`;
 const outDir = path.join(path.dirname(fileURLToPath(import.meta.url)), outName);
 mkdirSync(outDir, { recursive: true });
@@ -36,6 +39,52 @@ const plan = {
 const planInactive = {
   id: 6, name: 'Gambe e core', description: 'Blocco di forza sulle gambe', is_active: false,
   days: [{ id: 3, name: 'Gambe', exercises: [exercise(13, 7, 'Squat', planned(0, times(5, { min: 5, max: 5 })), 'quadricipiti'), exercise(14, 8, 'Stacco da terra', planned(0, [{ failure: true }]), 'femorali')] }],
+};
+
+// Schede più ricche per i controlli sulle card (scelta `plans: 'ricche'`) e per il Focus con un giorno solo
+const day = (id, name, exercises) => ({ id, name, exercises });
+let exId = 100;
+const ex = (name, sets, group = 'petto') => exercise(exId++, exId, name, sets, group);
+const std = planned(0, times(3, { min: 8, max: 10 }));
+const richPlans = [
+  {
+    id: 5, name: 'Push Pull Legs', description: 'Tre giorni a settimana', is_active: true,
+    days: [
+      day(1, 'Push', [
+        ex('Panca piana', planned(2, times(3, { min: 6, max: 8 }))),
+        ex('Distensioni con manubri su panca inclinata a 30°', std),
+        ex('Lento avanti', std, 'spalle'),
+        ex('Alzate laterali', planned(0, [...times(2, { min: 12, max: 15 }), { failure: true }]), 'spalle'),
+        ex('Croci ai cavi', std),
+        ex('French press', std, 'tricipiti'),
+      ]),
+      day(2, 'Pull', [
+        ex('Trazioni alla sbarra', planned(1, times(4, { min: 6, max: 8 })), 'schiena'),
+        ex('Rematore con bilanciere', std, 'schiena'),
+        ex('Lat machine presa stretta', planned(0, times(3, { min: 10, max: 12 })), 'schiena'),
+        ex('Curl con manubri', planned(0, times(3, { min: 10, max: 12 })), 'bicipiti'),
+      ]),
+      day(3, 'Gambe', [ex('Squat', planned(3, times(4, { min: 5, max: 5 })), 'quadricipiti')]),
+      day(4, 'Giorno 4', []),
+    ],
+  },
+  { id: 6, name: 'Full body', description: '', is_active: false, days: [day(11, 'Giorno 1', [ex('Squat', std, 'quadricipiti'), ex('Panca piana', std)])] },
+  {
+    id: 7, name: 'Upper Lower', description: 'Quattro giorni, parte alta e parte bassa', is_active: false,
+    days: [day(21, 'Upper', [ex('Panca piana', std), ex('Rematore con bilanciere', std, 'schiena')]), day(22, 'Lower', [ex('Squat', std, 'quadricipiti')])],
+  },
+  {
+    id: 8, name: 'PPL x2', description: 'Sei giorni, ogni gruppo due volte', is_active: false,
+    days: Array.from({ length: 6 }, (_, i) => day(30 + i, `Giorno ${i + 1}`, [ex('Panca piana', std), ex('Squat', std, 'quadricipiti'), ex('Curl con manubri', std, 'bicipiti')])),
+  },
+  { id: 9, name: 'Nuova scheda', description: '', is_active: false, days: [] },
+];
+// Scheda attiva con un giorno solo: con esercizi (preselezionato) o ancora vuoto (appena creata)
+const oneDayPlan = (exercises) => [{ id: 5, name: 'La mia scheda', description: '', is_active: true, days: [day(1, 'Giorno 1', exercises)] }];
+const PLAN_SETS = {
+  ricche: () => richPlans,
+  'un-giorno': () => oneDayPlan([ex('Panca piana', std), ex('Squat', std, 'quadricipiti')]),
+  'un-giorno-vuoto': () => oneDayPlan([]),
 };
 
 const CATALOG = [
@@ -97,7 +146,7 @@ const fixtures = [
   ['user/read.php', user],
   ['user/consent.php', () => ({ success: true, consents: { terms: { granted: true }, health_data: { granted: true } } })],
   ['workout_history/read.php', () => ({ success: true, records: HISTORY })],
-  ['workout/read_plans.php', () => ({ success: true, records: [plan, planInactive] })],
+  ['workout/read_plans.php', ({ plans }) => ({ success: true, records: plans ? PLAN_SETS[plans]() : [plan, planInactive] })],
   ['workout_stats/dashboard.php', () => ({
     success: true, weekly_workouts: 2, weekly_goal: 3,
     weekly_volume: { total_weight: 4820, total_reps: 118 }, recovery,
@@ -215,7 +264,7 @@ async function openPage(vp, theme, opts, tag) {
   await ctx.route('**/backend/**', (route) => {
     const url = route.request().url();
     const hit = fixtures.find(([key]) => url.includes(key));
-    const body = hit ? hit[1]({ admin: opts.admin === true }) : fallback;
+    const body = hit ? hit[1]({ admin: opts.admin === true, plans: opts.plans }) : fallback;
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
   });
   const page = await ctx.newPage();
@@ -234,6 +283,7 @@ const SHOT_LIST = [
   ['gruppi', '/gruppi', { loggedIn: true }],
   ['gruppo-dettaglio', '/gruppi/1', { loggedIn: true }],
   ['allenamenti-piani', '/workouts?tab=plans', { loggedIn: true }],
+  ['allenamenti-piani-ricche', '/workouts?tab=plans', { loggedIn: true, plans: 'ricche' }],
   ['allenamenti-cronologia', '/workouts?tab=history', { loggedIn: true }],
   ['admin', '/admin', { loggedIn: true, admin: true }],
 ];
@@ -243,6 +293,7 @@ for (const vp of viewports) {
     const tag = `${vp.w}_${theme}`;
 
     for (const [name, url, opts] of SHOT_LIST) {
+      if (!want(name)) continue;
       await attempt(tag, name, async () => {
         const { ctx, page } = await openPage(vp, theme, opts, tag);
         try {
@@ -254,7 +305,36 @@ for (const vp of viewports) {
       });
     }
 
-    await attempt(tag, 'focus', async () => {
+    for (const [name, plans] of [['focus-scelta-giorno-un-giorno', 'un-giorno'], ['focus-scelta-giorno-vuoto', 'un-giorno-vuoto']]) {
+      if (!want(name)) continue;
+      await attempt(tag, name, async () => {
+        const { ctx, page } = await openPage(vp, theme, { loggedIn: true, plans }, tag);
+        try {
+          await page.goto(`${base}/focus`, { waitUntil: 'domcontentloaded' });
+          await page.getByRole('button', { name: 'Inizia allenamento', exact: true }).waitFor();
+          await snap(page, name, tag);
+        } finally {
+          await ctx.close();
+        }
+      });
+    }
+
+    // Le card aperte delle schede ricche: giorni con più di 4 esercizi, vuoto, nome lungo
+    if (want('allenamenti-piani-ricche-aperta')) {
+      await attempt(tag, 'allenamenti-piani-ricche-aperta', async () => {
+        const { ctx, page } = await openPage(vp, theme, { loggedIn: true, plans: 'ricche' }, tag);
+        try {
+          await page.goto(`${base}/workouts?tab=plans`, { waitUntil: 'domcontentloaded' });
+          await page.getByRole('button', { name: /^(Mostra dettagli|Mostra giorni)$/ }).first().click();
+          await page.getByText('Nessun esercizio aggiunto').first().waitFor();
+          await snap(page, 'allenamenti-piani-ricche-aperta', tag);
+        } finally {
+          await ctx.close();
+        }
+      });
+    }
+
+    if (want('focus-scelta-giorno') || want('focus-allenamento')) await attempt(tag, 'focus', async () => {
       const { ctx, page } = await openPage(vp, theme, { loggedIn: true }, tag);
       try {
         await page.goto(`${base}/focus`, { waitUntil: 'domcontentloaded' });
@@ -301,11 +381,11 @@ for (const vp of viewports) {
       }
     });
 
-    await attempt(tag, 'piani-editor', async () => {
+    if (want('allenamenti-piani-giorni')) await attempt(tag, 'piani-editor', async () => {
       const { ctx, page } = await openPage(vp, theme, { loggedIn: true }, tag);
       try {
         await page.goto(`${base}/workouts?tab=plans`, { waitUntil: 'domcontentloaded' });
-        await page.getByRole('button', { name: 'Mostra dettagli' }).first().click();
+        await page.getByRole('button', { name: /^(Mostra dettagli|Mostra giorni)$/ }).first().click();
         await page.getByRole('button', { name: 'Dettagli', exact: true }).first().click();
         await page.getByRole('button', { name: 'Dettagli', exact: true }).first().click();
         await page.getByText('Trazioni').first().waitFor();
