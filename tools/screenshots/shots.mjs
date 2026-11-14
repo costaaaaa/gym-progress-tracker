@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 const [, , outName = 'before', port = '4181', onlyArg] = process.argv;
 // Terzo parametro facoltativo: elenco di nomi (separati da virgola) delle sole schermate da scattare
 const only = onlyArg ? new Set(onlyArg.split(',')) : null;
-const want = (name) => !only || only.has(name);
+const want = (...names) => !only || names.some((name) => only.has(name));
 const base = `http://localhost:${port}`;
 const outDir = path.join(path.dirname(fileURLToPath(import.meta.url)), outName);
 mkdirSync(outDir, { recursive: true });
@@ -43,8 +43,12 @@ const planInactive = {
 
 // Schede più ricche per i controlli sulle card (scelta `plans: 'ricche'`) e per il Focus con un giorno solo
 const day = (id, name, exercises) => ({ id, name, exercises });
-let exId = 100;
-const ex = (name, sets, group = 'petto') => exercise(exId++, exId, name, sets, group);
+let nextExerciseId = 100;
+const ex = (name, sets, group = 'petto') => {
+  const id = nextExerciseId;
+  nextExerciseId += 1;
+  return exercise(id, id, name, sets, group);
+};
 const std = planned(0, times(3, { min: 8, max: 10 }));
 const richPlans = [
   {
@@ -82,9 +86,9 @@ const richPlans = [
 // Scheda attiva con un giorno solo: con esercizi (preselezionato) o ancora vuoto (appena creata)
 const oneDayPlan = (exercises) => [{ id: 5, name: 'La mia scheda', description: '', is_active: true, days: [day(1, 'Giorno 1', exercises)] }];
 const PLAN_SETS = {
-  ricche: () => richPlans,
-  'un-giorno': () => oneDayPlan([ex('Panca piana', std), ex('Squat', std, 'quadricipiti')]),
-  'un-giorno-vuoto': () => oneDayPlan([]),
+  ricche: richPlans,
+  'un-giorno': oneDayPlan([ex('Panca piana', std), ex('Squat', std, 'quadricipiti')]),
+  'un-giorno-vuoto': oneDayPlan([]),
 };
 
 const CATALOG = [
@@ -146,7 +150,7 @@ const fixtures = [
   ['user/read.php', user],
   ['user/consent.php', () => ({ success: true, consents: { terms: { granted: true }, health_data: { granted: true } } })],
   ['workout_history/read.php', () => ({ success: true, records: HISTORY })],
-  ['workout/read_plans.php', ({ plans }) => ({ success: true, records: plans ? PLAN_SETS[plans]() : [plan, planInactive] })],
+  ['workout/read_plans.php', ({ plans }) => ({ success: true, records: plans ? PLAN_SETS[plans] : [plan, planInactive] })],
   ['workout_stats/dashboard.php', () => ({
     success: true, weekly_workouts: 2, weekly_goal: 3,
     weekly_volume: { total_weight: 4820, total_reps: 118 }, recovery,
@@ -334,7 +338,7 @@ for (const vp of viewports) {
       });
     }
 
-    if (want('focus-scelta-giorno') || want('focus-allenamento')) await attempt(tag, 'focus', async () => {
+    if (want('focus-scelta-giorno', 'focus-recupero', 'focus-allenamento', 'focus-riscaldamento', 'focus-riepilogo')) await attempt(tag, 'focus', async () => {
       const { ctx, page } = await openPage(vp, theme, { loggedIn: true }, tag);
       try {
         await page.goto(`${base}/focus`, { waitUntil: 'domcontentloaded' });
@@ -381,7 +385,7 @@ for (const vp of viewports) {
       }
     });
 
-    if (want('allenamenti-piani-giorni')) await attempt(tag, 'piani-editor', async () => {
+    if (want('allenamenti-piani-giorni', 'allenamenti-piani-aggiungi-compatto', 'allenamenti-piani-aggiungi-lista', 'allenamenti-piani-modifica-lista')) await attempt(tag, 'piani-editor', async () => {
       const { ctx, page } = await openPage(vp, theme, { loggedIn: true }, tag);
       try {
         await page.goto(`${base}/workouts?tab=plans`, { waitUntil: 'domcontentloaded' });
