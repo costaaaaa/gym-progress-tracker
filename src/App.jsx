@@ -25,6 +25,10 @@ const GroupDetail = lazy(() => import('./pages/GroupDetail'));
 const JoinGroup = lazy(() => import('./pages/JoinGroup'));
 const Admin = lazy(() => import('./pages/Admin'));
 
+// PROTOTIPO USA E GETTA (A15): solo in sviluppo
+const PROTOTYPE_ON = import.meta.env.DEV || import.meta.env.VITE_PROTOTYPE === '1';
+const PlansPrototype = PROTOTYPE_ON ? lazy(() => import('./pages/PlansPrototype')) : null;
+
 // Fallback component while loading chunks
 const PageLoader = () => (
   <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -52,6 +56,7 @@ function App() {
                 <Route path="/gruppi/:id" element={<GroupDetail />} />
                 <Route path="/entra" element={<JoinGroup />} />
                 <Route path="/admin" element={<Admin />} />
+                {PlansPrototype && <Route path="/prototipo-schede" element={<PlansPrototype />} />}
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
