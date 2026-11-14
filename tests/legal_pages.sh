@@ -19,6 +19,9 @@ ko() { checks=$((checks + 1)); fails=$((fails + 1)); printf '  \033[31m✗\033[0
 # conta TAG file → numero di occorrenze del tag di apertura
 conta() { grep -o "<$1[ >]" "$2" | wc -l | tr -d ' '; }
 
+# solo_numeri FILE → i numeri del testo visibile (dopo <body>, senza tag né attributi), in ordine, su una riga
+solo_numeri() { sed -n '/<body>/,$p' "$1" | sed 's/<[^>]*>/ /g' | grep -oE '[0-9]+' | tr '\n' ' ' | sed 's/ *$//'; }
+
 # confronta ITALIANO INGLESE etichetta
 confronta() {
     local it="$ROOT/public/$1" en="$ROOT/public/en/$2" nome="$3"
@@ -57,6 +60,14 @@ confronta() {
     y_en="$(grep -o '20[0-9][0-9]-[0-9][0-9]' "$en" | tr '\n' ' ')"
     [[ "$y_it" == "$y_en" ]] && ok "$nome: stesse versioni (AAAA-MM)" || ko "$nome: versioni diverse"
 
+    # Stessi numeri nel testo visibile (giorni, anni, durate, soglie d'età, articoli), nello stesso ordine.
+    # Unica differenza voluta: l'inglese spiega il Codice privacy con "Legislative Decree 196/2003", numeri
+    # assenti nell'italiano; si tolgono prima del confronto.
+    local n_it n_en
+    n_it="$(solo_numeri "$it")"
+    n_en="$(solo_numeri "$en" | sed 's/ 196 2003//')"
+    [[ "$n_it" == "$n_en" ]] && ok "$nome: stessa sequenza di numeri nel testo" || ko "$nome: numeri diversi nel testo" "$(diff <(echo "$n_it" | tr ' ' '\n') <(echo "$n_en" | tr ' ' '\n') | head -6)"
+
     # Pagina inglese: lingua, canonical, nessun link alle pagine legali italiane, nessuna pagina italiana.
     grep -q '<html lang="en">' "$en" && ok "$nome: <html lang=\"en\">" || ko "$nome: manca lang=en"
     grep -q "<link rel=\"canonical\" href=\"https://liftindex.app/en/$2\">" "$en" && ok "$nome: canonical inglese" || ko "$nome: canonical sbagliato"
@@ -66,13 +77,18 @@ confronta() {
     else
         ok "$nome: nessun link alle pagine legali italiane"
     fi
-    # Alternate: ogni pagina elenca it, en e x-default (x-default = italiana).
+    # Alternate: ogni pagina elenca it, en e x-default (x-default = italiana), come <link rel="alternate">
+    # nell'<head> con l'indirizzo atteso (i link del menu non contano).
+    local base_it="https://liftindex.app/$1" base_en="https://liftindex.app/en/$2" alt_ok=1
     for f in "$it" "$en"; do
-        for l in it en x-default; do
-            grep -q "hreflang=\"$l\"" "$f" || ko "$nome: manca hreflang=$l in $(basename "$f")"
+        for spec in "it|$base_it" "en|$base_en" "x-default|$base_it"; do
+            if ! grep -q "<link rel=\"alternate\" hreflang=\"${spec%%|*}\" href=\"${spec#*|}\">" "$f"; then
+                ko "$nome: manca <link rel=\"alternate\" hreflang=\"${spec%%|*}\" href=\"${spec#*|}\"> in $(basename "$f")"
+                alt_ok=0
+            fi
         done
     done
-    ok "$nome: controllati gli hreflang"
+    [[ "$alt_ok" -eq 1 ]] && ok "$nome: alternate it, en e x-default in entrambe le pagine"
 }
 
 echo "privacy"

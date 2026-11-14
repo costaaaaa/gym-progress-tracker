@@ -16,11 +16,11 @@ const availability = (body) => vi.fn(() => Promise.resolve({ ok: true, status: 2
 
 const renderRegister = () => render(<MemoryRouter><ThemeModeProvider><Register /></ThemeModeProvider></MemoryRouter>);
 
-const fillStep1 = ({ confirm = 'Segreta!2026' } = {}) => {
+const fillStep1 = ({ confirm = 'Segreta!2026', confirmLabel = /^Conferma password/ } = {}) => {
   fireEvent.change(screen.getByLabelText(/^Username/), { target: { value: 'mario88' } });
   fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: 'mario@example.com' } });
   fireEvent.change(screen.getByLabelText(/^Password/), { target: { value: 'Segreta!2026' } });
-  fireEvent.change(screen.getByLabelText(/^Conferma password/), { target: { value: confirm } });
+  fireEvent.change(screen.getByLabelText(confirmLabel), { target: { value: confirm } });
 };
 
 beforeEach(() => {
@@ -47,10 +47,7 @@ describe('informativa e termini', () => {
   it('in inglese i link portano alle pagine inglesi', async () => {
     await i18n.changeLanguage('en');
     renderRegister();
-    fireEvent.change(screen.getByLabelText(/^Username/), { target: { value: 'mario88' } });
-    fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: 'mario@example.com' } });
-    fireEvent.change(screen.getByLabelText(/^Password/), { target: { value: 'Segreta!2026' } });
-    fireEvent.change(screen.getByLabelText(/^Confirm password/), { target: { value: 'Segreta!2026' } });
+    fillStep1({ confirmLabel: /^Confirm password/ });
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     await screen.findByText(/Step 2 of 2/);
     expect(screen.getByRole('link', { name: 'terms of use' }).getAttribute('href')).toBe('/en/terms.html');
