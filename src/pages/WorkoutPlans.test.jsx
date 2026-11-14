@@ -35,9 +35,9 @@ afterEach(() => {
 
 const openDay = async () => {
   render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
-  fireEvent.click(await screen.findByRole('button', { name: 'Mostra dettagli' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Mostra giorni' }));
   fireEvent.click(await screen.findByRole('button', { name: 'Dettagli' }));
-  await screen.findByText('Panca piana');
+  await screen.findAllByText('Panca piana');
 };
 
 describe('giorno aperto', () => {
@@ -66,9 +66,9 @@ describe('serie pianificate (#77)', () => {
   const apriConPiano = async (records, fetchMock = vi.fn(() => Promise.resolve(json({ records })))) => {
     vi.stubGlobal('fetch', fetchMock);
     render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
-    fireEvent.click(await screen.findByRole('button', { name: 'Mostra dettagli' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Mostra giorni' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Dettagli' }));
-    await screen.findByText('Panca piana');
+    await screen.findAllByText('Panca piana');
     return fetchMock;
   };
 
@@ -253,5 +253,56 @@ describe('nuova scheda', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     dialog = await creaScheda();
     expect(dialog).toBeTruthy();
+  });
+});
+
+describe('card della scheda: riepilogo (A15)', () => {
+  const exercise = (id, name, warmups, n) => ({
+    id, exercise_name: name, muscle_group: 'petto', rest: 90, notes: '',
+    planned_sets: plannedSets(warmups, times(n, { min: 8, max: 10 })),
+  });
+  const render1 = async (records) => {
+    fetch.mockImplementation(() => Promise.resolve(json({ records })));
+    render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
+    await screen.findByText(records[0].name);
+  };
+  const ppl = {
+    id: 1, name: 'PPL', description: 'Tre giorni', is_active: 1,
+    days: [
+      { id: 1, name: 'Push', exercises: [exercise(1, 'Panca piana', 2, 3), exercise(2, 'Lento', 0, 3)] },
+      { id: 2, name: 'Pull', exercises: [exercise(3, 'Trazioni', 0, 4)] },
+    ],
+  };
+
+  it('con nomi propri: riga divisa e conteggi senza i giorni (serie allenanti, niente riscaldamento)', async () => {
+    await render1([ppl]);
+    expect(screen.getByText('Push')).toBeTruthy();
+    expect(screen.getByText('Pull')).toBeTruthy();
+    expect(screen.getByText('3 esercizi · 10 serie')).toBeTruthy();
+  });
+
+  it('con i nomi di base: niente riga divisa e i giorni compaiono nei conteggi', async () => {
+    await render1([{ ...ppl, days: ppl.days.map((d, i) => ({ ...d, name: `Giorno ${i + 1}` })) }]);
+    expect(screen.getByText('2 giorni · 3 esercizi · 10 serie')).toBeTruthy();
+    expect(screen.queryByText('Giorno 1')).toBeNull();
+  });
+
+  it('senza giorni dice di aggiungerne uno', async () => {
+    await render1([{ ...ppl, days: [] }]);
+    expect(screen.getByText('Nessun giorno: aggiungine uno')).toBeTruthy();
+  });
+
+  it('aperta: righe con serie compatte, al massimo 4, "+N esercizi" apre i dettagli del giorno', async () => {
+    const many = { id: 9, name: 'Push', exercises: ['A', 'B', 'C', 'D', 'E', 'F'].map((n, i) => exercise(20 + i, `Esercizio ${n}`, i === 0 ? 2 : 0, 3)) };
+    await render1([{ ...ppl, days: [many, { id: 10, name: 'Vuoto', exercises: [] }] }]);
+    fireEvent.click(screen.getByRole('button', { name: 'Mostra giorni' }));
+    // D sta nelle righe e nel pannello dei dettagli (chiuso), E solo nel pannello
+    expect(screen.getAllByText('Esercizio D')).toHaveLength(2);
+    expect(screen.getAllByText('Esercizio E')).toHaveLength(1);
+    expect(screen.getByText('2 risc. + 3 × 8-10')).toBeTruthy();
+    expect(screen.getByText('Nessun esercizio aggiunto')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '+2 esercizi' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Nascondi' })).toBeTruthy());
+    expect(screen.queryByRole('button', { name: '+2 esercizi' })).toBeNull();
   });
 });

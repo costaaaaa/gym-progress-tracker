@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import i18n from '../i18n';
-import { parseTarget, parseRowTarget, targetLabel, compactForm, fromCompact, buildPlannedSets, planSummary, plannedSetsValid, samePlannedSets } from './plannedSets';
+import { parseTarget, parseRowTarget, targetLabel, compactForm, fromCompact, buildPlannedSets, planSummary, planSummaryCompact, plannedSetsValid, samePlannedSets } from './plannedSets';
 import { DROP, warm, work } from '../test/plannedSets';
 
 describe('parseTarget: da testo a { reps_min, reps_max }', () => {
@@ -320,5 +320,27 @@ describe('samePlannedSets: confronto tra quanto inviato e quanto restituito dal 
   it('un server che non restituisce serie non coincide con quelle inviate', () => {
     expect(samePlannedSets(sent, undefined)).toBe(false);
     expect(samePlannedSets(sent, [])).toBe(false);
+  });
+});
+
+describe('planSummaryCompact: la riga stretta della card scheda', () => {
+  it('come planSummary quando non ci sono cedimento né tecnica', () => {
+    const sets = [warm(1), warm(2), work(3, 6, 8), work(4, 6, 8), work(5, 6, 8)];
+    expect(planSummaryCompact(sets)).toBe('2 risc. + 3 × 6-8');
+    expect(planSummaryCompact(sets)).toBe(planSummary(sets));
+  });
+
+  it('il cedimento è "ced.", anche con il minimo', () => {
+    expect(planSummaryCompact([work(1, 12, 15), work(2, 12, 15), work(3, null, null, null, true)])).toBe('2 × 12-15 + 1 × ced.');
+    expect(planSummaryCompact([work(1, 6, null, null, true)])).toBe('1 × ced. (min. 6)');
+  });
+
+  it('la tecnica non compare', () => {
+    expect(planSummaryCompact([work(1, 8, 10), work(2, 8, 10, DROP)])).toBe('2 × 8-10');
+  });
+
+  it('senza serie è vuota; planSummary resta com\'era', () => {
+    expect(planSummaryCompact([])).toBe('');
+    expect(planSummary([work(1, null, null, null, true)])).toBe('1 × a cedimento');
   });
 });

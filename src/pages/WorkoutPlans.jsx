@@ -36,9 +36,14 @@ import PlannedSetsEditor from '../components/PlannedSetsEditor';
 import { API_BASE_URL } from '../config';
 import { useTranslation } from 'react-i18next';
 import { muscleLabel } from '../i18n/labels';
-import { planSummary, samePlannedSets } from '../utils/plannedSets';
+import { planSummary, planSummaryCompact, samePlannedSets } from '../utils/plannedSets';
+import { planCardSummary } from '../utils/planCard';
+import FitNames from '../components/FitNames';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
 import { radius } from '../theme/radius';
+
+const MAX_ROWS = 4; // esercizi mostrati per giorno nella card aperta
+const DAY_LINK_SX = { fontSize: 12, fontWeight: 600, textTransform: 'none', minWidth: 0, p: 0 };
 
 const WorkoutPlans = ({ isEmbedded = false }) => {
   const { t } = useTranslation();
@@ -750,8 +755,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       <Grid container spacing={2.5}>
         {workoutPlans.map((plan, planIndex) => {
           const isExpanded = expandedPlans[plan.id];
-          const totalDays = plan.days?.length || 0;
-          const totalExercises = plan.days?.reduce((acc, day) => acc + (day.exercises?.length || 0), 0) || 0;
+          const summary = planCardSummary(plan);
 
           return (
             <Grid item xs={12} md={6} key={plan.id}>
@@ -780,6 +784,11 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                           </Box>
                         )}
                       </Box>
+                      {!isExpanded && summary.splitNames && (
+                        <Box sx={{ display: 'flex', mb: 0.75, fontSize: 15, fontWeight: 600, color: 'text.primary' }}>
+                          <FitNames names={summary.splitNames} sepSx={{ color: 'text.secondary' }} />
+                        </Box>
+                      )}
                       {plan.description && (
                         <Typography sx={{ fontSize: 16, color: 'text.secondary', lineHeight: 1.5 }}>
                           {plan.description}
@@ -812,7 +821,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                         return (
                           <Box key={day.id}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                              <Typography sx={{ fontSize: 14, fontWeight: 600 }}>
+                              <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'text.primary' }}>
                                 {day.name}
                               </Typography>
                               <Button
@@ -821,38 +830,46 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                 onClick={() => toggleDayExpansion(day.id)}
                                 aria-expanded={dayExpanded}
                                 aria-controls={dayPanelId}
-                                sx={{ fontSize: 12, fontWeight: 600, textTransform: 'none', minWidth: 0, p: 0 }}
+                                sx={DAY_LINK_SX}
                               >
                                 {dayExpanded ? t('plans.hide') : t('plans.details')}
                               </Button>
                             </Box>
 
-                            <Box sx={{ mb: 1 }}>
-                              {day.exercises && day.exercises.length > 0 ? (
-                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                                  {groupExercisesByMuscleGroup(day.exercises).map((group, idx) => (
-                                    <Box
-                                      key={idx}
+                            {day.exercises && day.exercises.length > 0 ? (
+                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                                {day.exercises.slice(0, MAX_ROWS).map((exercise) => (
+                                  <Box key={exercise.id} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                                    <Typography sx={{ fontSize: 14, fontWeight: 400, color: 'text.primary', flex: 1, minWidth: 0, lineHeight: 1.35 }}>
+                                      {exercise.exercise_name}
+                                    </Typography>
+                                    <Typography
                                       sx={{
-                                        border: '1px solid',
-                                        borderColor: 'divider',
-                                        borderRadius: radius.sm,
-                                        px: 1.5,
-                                        py: 0.75,
-                                        fontSize: 12,
-                                        fontWeight: 600,
+                                        fontSize: 13, color: 'text.secondary', whiteSpace: 'nowrap', textAlign: 'right',
+                                        flexShrink: 0, lineHeight: 1.45, fontVariantNumeric: 'tabular-nums',
                                       }}
                                     >
-                                      {muscleLabel(group.name)} ({group.count})
-                                    </Box>
-                                  ))}
-                                </Box>
-                              ) : (
-                                <Typography variant="body2" color="text.secondary">
-                                  {t('plans.no_exercises')}
-                                </Typography>
-                              )}
-                            </Box>
+                                      {planSummaryCompact(exercise.planned_sets)}
+                                    </Typography>
+                                  </Box>
+                                ))}
+                              </Box>
+                            ) : (
+                              <Typography variant="body2" color="text.secondary">
+                                {t('plans.no_exercises')}
+                              </Typography>
+                            )}
+                            {day.exercises && day.exercises.length > MAX_ROWS && !dayExpanded && (
+                              <Button
+                                variant="text"
+                                size="small"
+                                onClick={() => toggleDayExpansion(day.id)}
+                                aria-controls={dayPanelId}
+                                sx={{ ...DAY_LINK_SX, mt: 0.75, display: 'flex' }}
+                              >
+                                {t('plans.more_exercises', { count: day.exercises.length - MAX_ROWS })}
+                              </Button>
+                            )}
 
                             <Collapse in={dayExpanded} id={dayPanelId} timeout="auto">
                               <Box sx={{
@@ -933,10 +950,9 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                             </Collapse>
 
                             <Button
-                              startIcon={<AddIcon fontSize="small" />}
                               onClick={() => handleOpenExerciseDialog(planIndex, dayIndex)}
                               size="small"
-                              sx={{ fontSize: 12, fontWeight: 600, textTransform: 'none' }}
+                              sx={{ ...DAY_LINK_SX, mt: 1, display: 'flex' }}
                             >
                               {t('plans.add_exercise')}
                             </Button>
@@ -946,19 +962,25 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                     </Box>
                   ) : (
                     <Typography sx={{ mt: 1.75, fontSize: 16, color: 'text.secondary' }}>
-                      {t('plans.days_count', { count: totalDays })} · {t('plans.exercises_count', { count: totalExercises })}
+                      {summary.days === 0
+                        ? t('plans.no_days')
+                        : [
+                          summary.splitNames ? null : t('plans.days_count', { count: summary.days }),
+                          t('plans.exercises_count', { count: summary.exercises }),
+                          t('plans.sets_count', { count: summary.sets }),
+                        ].filter(Boolean).join(' · ')}
                     </Typography>
                   )}
                 </CardContent>
-                <CardActions sx={{ px: 3, pb: 2.5, pt: 2, mt: 'auto', borderTop: '1px solid', borderColor: 'divider', justifyContent: 'space-between' }}>
+                <CardActions sx={{ px: 3, pb: 2.5, pt: 2, mt: 'auto', borderTop: '1px solid', borderColor: 'divider', justifyContent: 'space-between', gap: 1 }}>
                   <Button
                     size="small"
                     variant="text"
                     onClick={() => togglePlanExpansion(plan.id)}
                     aria-expanded={isExpanded}
-                    sx={{ fontSize: 16, fontWeight: 600, textTransform: 'none', color: 'text.secondary', minWidth: 0, p: 0 }}
+                    sx={{ fontSize: 16, fontWeight: 600, textTransform: 'none', color: 'text.secondary', minWidth: 0, p: 0, whiteSpace: 'nowrap' }}
                   >
-                    {isExpanded ? t('plans.hide_details') : t('plans.show_details')}
+                    {isExpanded ? t('plans.hide_days') : t('plans.show_days')}
                   </Button>
 
                   {!plan.is_active && (
@@ -968,7 +990,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                       onClick={() => handleActivatePlan(plan.id)}
                       sx={{
                         color: 'text.primary', borderColor: 'text.secondary',
-                        borderRadius: radius.sm, px: 2, py: 1, fontSize: 16, fontWeight: 600, textTransform: 'none',
+                        borderRadius: radius.sm, px: 2, py: 1, fontSize: 16, fontWeight: 600, textTransform: 'none', whiteSpace: 'nowrap',
                         '&:hover': { borderColor: 'text.primary', bgcolor: 'action.hover' },
                       }}
                     >

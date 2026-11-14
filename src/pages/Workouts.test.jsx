@@ -101,12 +101,12 @@ describe('schede', () => {
     expect(style.borderStyle).toBe('solid');
   });
 
-  it('descrizione normale in text.secondary; "Mostra dettagli" in text.secondary', async () => {
+  it('descrizione normale in text.secondary; "Mostra giorni" in text.secondary', async () => {
     await mount();
     const descrizione = getComputedStyle(screen.getByText('Spinta e tirata'));
     expect(descrizione.fontStyle).not.toBe('italic');
     expect(descrizione.color).toBe(GREY);
-    expect(getComputedStyle(screen.getAllByRole('button', { name: 'Mostra dettagli' })[0]).color).toBe(GREY);
+    expect(getComputedStyle(screen.getAllByRole('button', { name: 'Mostra giorni' })[0]).color).toBe(GREY);
   });
 
   it('card e bottoni a riposo senza ombra né sfumatura', async () => {

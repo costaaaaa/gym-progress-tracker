@@ -41,11 +41,13 @@ export const parseRowTarget = (text, toFailure) => {
 };
 
 // Il target di una serie a parole: "8", "8-10", "a cedimento", "a cedimento (min. 8)".
-export const targetLabel = (set) => {
+// Con short "a cedimento" diventa "ced.".
+export const targetLabel = (set, short = false) => {
   if (set.to_failure) {
+    const suffix = short ? '_short' : '';
     return set.reps_min === null
-      ? i18n.t('plans.target_failure')
-      : i18n.t('plans.target_failure_min', { min: set.reps_min });
+      ? i18n.t(`plans.target_failure${suffix}`)
+      : i18n.t(`plans.target_failure_min${suffix}`, { min: set.reps_min });
   }
   return set.reps_min === set.reps_max ? String(set.reps_min) : `${set.reps_min}-${set.reps_max}`;
 };
@@ -104,8 +106,8 @@ export const fromCompact = ({ warmups, sets, target, technique }) =>
   })));
 
 // Allenanti consecutive con lo stesso target -> [{ count, label }].
-const groupWorking = (working) => working.reduce((groups, set) => {
-  const label = targetLabel(set);
+const groupWorking = (working, short = false) => working.reduce((groups, set) => {
+  const label = targetLabel(set, short);
   const last = groups[groups.length - 1];
   if (last && last.label === label) last.count += 1;
   else groups.push({ count: 1, label });
@@ -136,6 +138,15 @@ export const planSummary = (plannedSets) => {
   const groups = groupWorking(working).map(({ count, label }) => `${count} × ${label}`).join(' + ');
   const prefix = warmups > 0 ? i18n.t('plans.warmup_prefix', { n: warmups }) : '';
   return [prefix + groups, ...techniqueParts(plannedSets, working)].join(' · ');
+};
+
+// Come planSummary, ma per le righe strette: niente tecnica (resta nei dettagli) e "ced." per il cedimento.
+export const planSummaryCompact = (plannedSets) => {
+  if (!plannedSets || plannedSets.length === 0) return '';
+  const working = workingOf(plannedSets);
+  const warmups = plannedSets.length - working.length;
+  const groups = groupWorking(working, true).map(({ count, label }) => `${count} × ${label}`).join(' + ');
+  return (warmups > 0 ? i18n.t('plans.warmup_prefix', { n: warmups }) : '') + groups;
 };
 
 const TECHNIQUE_MAX_LENGTH = 100;
