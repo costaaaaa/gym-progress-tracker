@@ -56,6 +56,7 @@ function blog_render_page(array $opts)
     );
     $ui = $ui[$lang];
     $languageNames = array('it' => 'Italiano', 'en' => 'English');
+    $skipText = $lang === 'en' ? 'Skip to main content' : 'Salta al contenuto';
 
     // Suffisso brand solo se il <title> resta entro i ~60 caratteri che Google
     // mostra nella SERP: su un titolo d'articolo gia' lungo, aggiungerlo
@@ -112,6 +113,7 @@ function blog_render_page(array $opts)
 <?php endif; ?>
 </head>
 <body>
+    <a class="skip-link" href="#main-content"><?php echo blog_e($skipText); ?></a>
     <header class="site-header">
         <div class="header-inner">
             <a class="brand" href="<?php echo blog_e($ui['home']); ?>">
@@ -131,7 +133,7 @@ function blog_render_page(array $opts)
         </div>
     </header>
 
-    <main class="wrap">
+    <main class="wrap" id="main-content" tabindex="-1">
 <?php echo $bodyHtml; ?>
     </main>
 
@@ -196,6 +198,23 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 .wrap { width: 100%; max-width: 760px; margin: 0 auto; padding: 0 20px; }
+.wrap:focus { outline: none; }
+/* Primo elemento raggiungibile con Tab: fuori dallo schermo finche' non ha il focus. */
+.skip-link {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  padding: 8px 16px;
+  border: 1px solid var(--text-primary);
+  border-radius: 8px;
+  background: var(--bg-paper);
+  color: var(--text-primary);
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+.skip-link:focus { transform: none; outline: 2px solid var(--text-primary); outline-offset: 2px; }
 h1, h2, h3, h4 {
   font-family: "Lexend", sans-serif;
   letter-spacing: -0.02em;

@@ -121,5 +121,18 @@ foreach (array('chiaro' => false, 'scuro' => true) as $name => $dark) {
     check("tema $name: bordo almeno 3:1 sulla card", isset($vars['field-border']) && css_contrast($border, $vars['bg-paper']) >= 3.0);
 }
 
+echo "Salta al contenuto (WCAG 2.4.1)\n";
+$pages = array(
+    'it' => array(render('calcolatore-1rm/index.php'), 'Salta al contenuto'),
+    'en' => array(render('en/1rm-calculator/index.php'), 'Skip to main content'),
+);
+foreach ($pages as $lang => $page) {
+    list($html, $text) = $page;
+    check("$lang: il primo link del body è «{$text}» verso il main", preg_match('/<body>\s*<a class="skip-link" href="#main-content">' . preg_quote($text, '/') . '<\/a>/', $html) === 1);
+    check("$lang: il main è raggiungibile dal link e dal programma", strpos($html, '<main class="wrap" id="main-content" tabindex="-1">') !== false);
+}
+$css = blog_styles();
+check('il link sta fuori dallo schermo finché non ha il focus', preg_match('/\.skip-link \{[^}]*transform: translateY\(-200%\)/', $css) === 1 && preg_match('/\.skip-link:focus \{[^}]*transform: none/', $css) === 1);
+
 echo "\n" . ($checks - $fails) . "/$checks controlli riusciti\n";
 exit($fails > 0 ? 1 : 0);

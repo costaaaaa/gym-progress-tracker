@@ -8,6 +8,26 @@ import LanguageHint from './LanguageHint';
 import { isEnPath, stripLangPrefix, withLangPrefix } from '../../i18n/paths';
 import { setLanguageChoice } from '../../i18n';
 
+const MAIN_ID = 'main-content';
+
+// Primo elemento raggiungibile con Tab: fuori dallo schermo finché non ha il focus. Il clic sposta il focus
+// sul <main> senza toccare la rotta (un href con #ancora lascerebbe una voce in più nella cronologia).
+const skipLinkSx = {
+  position: 'absolute',
+  top: 8,
+  left: 8,
+  zIndex: 2000,
+  px: 2,
+  py: 1,
+  borderRadius: 1,
+  border: '1px solid',
+  borderColor: 'text.primary',
+  bgcolor: 'background.paper',
+  fontWeight: 600,
+  transform: 'translateY(-200%)',
+  '&:focus': { transform: 'none' },
+};
+
 const Layout = () => {
   // Utilizziamo il context di autenticazione - questo forza il re-render quando cambia lo stato di autenticazione
   const { isLoggedIn } = useAuth();
@@ -19,10 +39,22 @@ const Layout = () => {
     // Solo per gli ospiti: serve al campo pieno della home (100cqw); i Safari più vecchi trattavano il container
     // come riferimento dei position: fixed, e le pagine con login ne hanno (BottomNav, Snackbar).
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', containerType: isLoggedIn ? 'normal' : 'inline-size' }}>
+      <Link
+        href={`#${MAIN_ID}`}
+        onClick={(event) => {
+          event.preventDefault();
+          document.getElementById(MAIN_ID)?.focus();
+        }}
+        sx={skipLinkSx}
+      >
+        {t('nav.skip_to_content')}
+      </Link>
       {!isLoggedIn && <LanguageHint />}
       <Navbar />
       <Container
         component="main"
+        id={MAIN_ID}
+        tabIndex={-1}
         disableGutters
         sx={{
           mt: 4,
@@ -30,6 +62,7 @@ const Layout = () => {
           flexGrow: 1,
           maxWidth: { xs: '100%', md: '1180px' },
           px: { xs: 2, md: '32px' },
+          '&:focus': { outline: 'none' },
         }}
       >
         <Outlet />
