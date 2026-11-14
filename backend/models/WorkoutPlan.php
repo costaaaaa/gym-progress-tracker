@@ -61,8 +61,8 @@ class WorkoutPlan
         return false;
     }
 
-    // Esegue $work in una transazione che tiene bloccata la riga dell'utente: creazioni, attivazioni
-    // e modifiche con is_active 1 dello stesso utente si mettono in fila, così non risultano mai due
+    // Esegue $work in una transazione che tiene bloccata la riga dell'utente: creazioni e attivazioni
+    // dello stesso utente si mettono in fila, così non risultano mai due
     // schede attive. $work ritorna true per confermare, false per annullare.
     // Non annidabile: se il chiamante ha già una transazione aperta lancia LogicException senza toccarla.
     private function runLockedForUser($label, callable $work)
@@ -132,21 +132,6 @@ class WorkoutPlan
         });
     }
 
-    // Modifica la scheda; con is_active 1 le altre vengono disattivate, con 0 è una semplice modifica.
-    public function updateAtMostOneActive()
-    {
-        if (!$this->is_active) {
-            return $this->update();
-        }
-        return $this->runLockedForUser("Update plan", function () {
-            if (!$this->lockOwnPlan()) {
-                return false;
-            }
-            $this->deactivateAllPlans();
-            return $this->update();
-        });
-    }
-
     // Numero di schede dell'utente (per il tetto MAX_PER_USER)
     public function countByUser($user_id)
     {
@@ -213,13 +198,12 @@ class WorkoutPlan
         return false;
     }
 
-    // Update workout plan
+    // Modifica solo nome e descrizione: quale scheda è attiva si cambia solo con activateExclusively()
     public function update()
     {
         // Sanitize inputs
         $this->name = trim($this->name);
         $this->description = trim($this->description);
-        $this->is_active = htmlspecialchars(strip_tags($this->is_active));
         $this->id = htmlspecialchars(strip_tags($this->id));
         $this->user_id = htmlspecialchars(strip_tags($this->user_id));
 
@@ -227,8 +211,7 @@ class WorkoutPlan
         $query = "UPDATE " . $this->table_name . "
                 SET
                     name = :name,
-                    description = :description,
-                    is_active = :is_active
+                    description = :description
                 WHERE id = :id AND user_id = :user_id";
 
         // Prepare query
@@ -237,7 +220,6 @@ class WorkoutPlan
         // Bind values
         $stmt->bindParam(":name", $this->name);
         $stmt->bindParam(":description", $this->description);
-        $stmt->bindParam(":is_active", $this->is_active);
         $stmt->bindParam(":id", $this->id);
         $stmt->bindParam(":user_id", $this->user_id);
 

@@ -46,16 +46,26 @@ function planFor($conn, $u, $id)
 foreach (['inesistente' => $gone, 'di un altro utente' => $planOther] as $label => $id) {
     echo "Scheda $label\n";
     $p = planFor($conn, $u1, $id);
-    check("updateAtMostOneActive con is_active 1 ritorna false ($label)", $p->updateAtMostOneActive() === false);
-    check("updateAtMostOneActive: plan_gone è vero ($label)", $p->plan_gone === true);
-    check("updateAtMostOneActive: A resta l'unica attiva ($label)", activeIds($conn, $u1) === [$planA]);
-
-    $p = planFor($conn, $u1, $id);
     check("activateExclusively ritorna false ($label)", $p->activateExclusively() === false);
     check("activateExclusively: plan_gone è vero ($label)", $p->plan_gone === true);
     check("activateExclusively: A resta l'unica attiva ($label)", activeIds($conn, $u1) === [$planA]);
 }
 check("la scheda dell'altro utente è rimasta attiva", activeIds($conn, $u2) === [$planOther]);
+
+echo "update() cambia solo nome e descrizione\n";
+$conn->exec("INSERT INTO gym_workout_plans (user_id, name, is_active) VALUES ($u1, 'B', 0)");
+$planB = (int)$conn->query("SELECT id FROM gym_workout_plans WHERE user_id = $u1 AND name = 'B'")->fetchColumn();
+$p = planFor($conn, $u1, $planB);
+$p->name = 'B rinominata';
+$p->is_active = 1;
+check("update su una non attiva ritorna true", $p->update() === true);
+check("update con is_active 1 non cambia le schede attive", activeIds($conn, $u1) === [$planA]);
+check("update cambia il nome", $conn->query("SELECT name FROM gym_workout_plans WHERE id = $planB")->fetchColumn() === 'B rinominata');
+$p = planFor($conn, $u1, $planA);
+$p->is_active = 0;
+check("update su l'attiva con is_active 0 ritorna true", $p->update() === true);
+check("update con is_active 0 lascia la scheda attiva", activeIds($conn, $u1) === [$planA]);
+check("update sull'altro utente non tocca le sue schede", activeIds($conn, $u2) === [$planOther]);
 
 echo "plan_gone si azzera a ogni chiamata\n";
 $p = planFor($conn, $u1, $gone);

@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 #
-# first_use.sh — controlla due regole del primo utilizzo:
+# first_use.sh — controlla tre regole del primo utilizzo:
 #   - la scheda creata da un utente senza scheda attiva nasce attiva (se il client non chiede
-#     altro); non risultano mai due schede attive, nemmeno con creazioni contemporanee;
+#     altro); non risultano mai due schede attive, nemmeno con creazioni e attivazioni contemporanee;
+#   - modificare una scheda cambia nome e descrizione, mai quale è attiva: is_active del client
+#     è ignorato e la risposta riporta il valore reale;
 #   - lo storico vuoto risponde 200 con "records": [] (non 404).
 #
 #   tests/first_use.sh http://localhost:8080/backend/
@@ -135,43 +137,26 @@ wait
 expect_n "8 schede" "$(body_of "$(call GET api/workout/read_plans.php "$D")" | jq '.records | length')" 8
 expect_n "una sola attiva" "$(active_count "$D")" 1
 
-echo "Modifica di una scheda con is_active 1"
+echo "Modifica di una scheda: is_active del client è ignorato"
 new_account "fuE$SUFFIX"; E="$TOKEN"
 EP1="$(plan_id "$(new_plan "$E")")"
 EP2="$(plan_id "$(new_plan "$E")")"
-check "update_plan con is_active 1 su una scheda non attiva risponde 200" \
-    "$(call POST api/workout/update_plan.php "$E" "{\"plan_id\":$EP2,\"name\":\"Rinominata\",\"is_active\":1}")" '$status == 200'
-expect_n "l'unica attiva è quella modificata" "$(active_ids "$E" | tr '\n' ' ')" "$EP2 "
-call POST api/workout/update_plan.php "$E" "{\"plan_id\":$EP1,\"name\":\"Altra\",\"is_active\":0}" >/dev/null
-expect_n "con is_active 0 su una non attiva resta attiva l'altra" "$(active_ids "$E" | tr '\n' ' ')" "$EP2 "
-call POST api/workout/update_plan.php "$E" "{\"plan_id\":$EP2,\"name\":\"Spenta\",\"is_active\":0}" >/dev/null
-expect_n "con is_active 0 la scheda si disattiva" "$(active_count "$E")" 0
+check "update_plan con is_active 1 su una non attiva risponde 200 e is_active 0" \
+    "$(call POST api/workout/update_plan.php "$E" "{\"plan_id\":$EP2,\"name\":\"Rinominata\",\"is_active\":1}")" '$status == 200 and (.plan.is_active | tonumber) == 0'
+expect_n "l'unica attiva resta la prima" "$(active_ids "$E" | tr '\n' ' ')" "$EP1 "
+expect_n "il nome è cambiato" "$(body_of "$(call GET api/workout/read_plans.php "$E")" | jq -r --argjson id "$EP2" '.records[] | select(.id == $id or .id == ($id | tostring)) | .name')" "Rinominata"
+check "update_plan con is_active 0 sull'attiva risponde 200 e is_active 1" \
+    "$(call POST api/workout/update_plan.php "$E" "{\"plan_id\":$EP1,\"name\":\"Spenta\",\"is_active\":0}")" '$status == 200 and (.plan.is_active | tonumber) == 1'
+expect_n "l'attiva resta attiva" "$(active_ids "$E" | tr '\n' ' ')" "$EP1 "
 
-echo "Modifiche is_active 1, attivazioni e creazioni contemporanee"
-new_account "fuF$SUFFIX"; F="$TOKEN"
-FP=()
-for i in 1 2 3 4; do FP+=("$(plan_id "$(new_plan "$F" "{\"name\":\"Esistente $i\",\"is_active\":0}")")"); done
-for i in 1 2 3 4; do
-    call POST api/workout/update_plan.php "$F" "{\"plan_id\":${FP[$((i - 1))]},\"name\":\"Mod $i\",\"is_active\":1}" >/dev/null &
-    call POST api/workout/activate_plan.php "$F" "{\"plan_id\":${FP[$(((i) % 4))]}}" >/dev/null &
-    new_plan "$F" "{\"name\":\"Nuova $i\"}" >/dev/null &
-done
-wait
-expect_n "8 schede" "$(body_of "$(call GET api/workout/read_plans.php "$F")" | jq '.records | length')" 8
-expect_n "una sola attiva" "$(active_count "$F")" 1
-
-echo "Scheda cancellata mentre la si attiva o la si modifica (sicurezza: mai 5xx; la regressione è in tests/workout_plan_active.sh)"
+echo "Scheda cancellata mentre la si attiva (sicurezza: mai 5xx; la regressione è in tests/workout_plan_active.sh)"
 new_account "fuG$SUFFIX"; G="$TOKEN"
 GA="$(plan_id "$(new_plan "$G")")"
 bad=0; notfound=0
 FU_R="$(mktemp)"; TMPFILES+=("$FU_R")
 for i in $(seq 1 25); do
     GB="$(plan_id "$(new_plan "$G" '{"name":"Da cancellare","is_active":0}')")"
-    if ((i % 2)); then
-        call POST api/workout/activate_plan.php "$G" "{\"plan_id\":$GB}" >"$FU_R" &
-    else
-        call POST api/workout/update_plan.php "$G" "{\"plan_id\":$GB,\"name\":\"X\",\"is_active\":1}" >"$FU_R" &
-    fi
+    call POST api/workout/activate_plan.php "$G" "{\"plan_id\":$GB}" >"$FU_R" &
     call POST api/workout/delete_plan.php "$G" "{\"plan_id\":$GB}" >/dev/null &
     wait
     st="$(cut -d' ' -f1 "$FU_R")"

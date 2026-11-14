@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# workout_plan_active.sh — controlla che updateAtMostOneActive (is_active 1) e activateExclusively su una
-# scheda inesistente o di un altro utente ritornino false con plan_gone vero e lascino attiva solo la
-# scheda che lo era (WorkoutPlan.php).
+# workout_plan_active.sh — controlla che activateExclusively su una scheda inesistente o di un altro
+# utente ritorni false con plan_gone vero e lasci attiva solo la scheda che lo era, e che update() cambi
+# solo nome e descrizione, mai la scheda attiva (WorkoutPlan.php).
 #
 #   tests/workout_plan_active.sh
 #

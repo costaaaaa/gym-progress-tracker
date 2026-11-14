@@ -24,12 +24,15 @@ if (!empty($data->plan_id) && !empty($data->name)) {
     $workout_plan->user_id = $user_id;
     $workout_plan->name = $data->name;
     $workout_plan->description = isset($data->description) ? $data->description : "";
-    
-    // is_active 1 rende questa l'unica scheda attiva; se manca vale 0
-    $workout_plan->is_active = isset($data->is_active) && filter_var($data->is_active, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
 
-    // Update the workout plan
-    if ($workout_plan->updateAtMostOneActive()) {
+    // is_active del client è ignorato: la scheda attiva si cambia solo con activate_plan.php
+    if ($workout_plan->update()) {
+        // Letta dal database: la risposta riporta il valore reale di is_active
+        // (rowCount() non serve: vale 0 anche se i valori non cambiano)
+        if (!$workout_plan->readOne()) {
+            api_not_found(t_server('workout.plan_not_found'));
+        }
+
         http_response_code(200);
 
         echo json_encode(array(
@@ -38,11 +41,9 @@ if (!empty($data->plan_id) && !empty($data->name)) {
                 "id" => $workout_plan->id,
                 "name" => $workout_plan->name,
                 "description" => $workout_plan->description,
-                "is_active" => $workout_plan->is_active
+                "is_active" => (int)$workout_plan->is_active
             )
         ));
-    } elseif ($workout_plan->plan_gone) {
-        api_not_found(t_server('workout.plan_not_found'));
     } else {
         http_response_code(500);
 
