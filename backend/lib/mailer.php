@@ -10,6 +10,12 @@
 // Variabili d'ambiente: MAIL_FROM_EMAIL (mittente, con dominio configurato sul server o sul provider),
 // MAIL_FROM_NAME (opzionale, default "LiftIndex"); solo per 'brevo' anche MAIL_API_KEY.
 
+/** Indirizzo pubblico dell'app (env APP_PUBLIC_URL, es. https://liftindex.app), senza "/" finale. */
+function app_public_url()
+{
+    return rtrim(getenv('APP_PUBLIC_URL') ?: 'http://localhost:3000', '/');
+}
+
 /**
  * Piè di pagina delle email agli UTENTI (contatto e informativa privacy), nella lingua $lang, con
  * la riga vuota di separazione davanti: va accodato al corpo, che finisce con "\n". Non sta in
@@ -17,8 +23,7 @@
  */
 function mail_footer($lang)
 {
-    $baseUrl = rtrim(getenv('APP_PUBLIC_URL') ?: 'http://localhost:3000', '/');
-    return "\n" . t_server('mail.footer', array('privacy_url' => $baseUrl . '/privacy.html'), $lang);
+    return "\n" . t_server('mail.footer', array('privacy_url' => app_public_url() . '/privacy.html'), $lang);
 }
 
 /**

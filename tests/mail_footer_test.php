@@ -54,16 +54,26 @@ $it = mail_footer('it');
 check('italiano: il testo concordato', $it === "\n--\nRicevi questa email perché hai un account su LiftIndex.\n"
     . "Informativa privacy: https://liftindex.example/privacy.html\nContatti: info@liftindex.app\n");
 $en = mail_footer('en');
-check('inglese: stesso link e contatto', strpos($en, 'https://liftindex.example/privacy.html') !== false
-    && strpos($en, 'info@liftindex.app') !== false && strpos($en, 'Ricevi') === false);
+check('inglese: il testo concordato', $en === "\n--\nYou are receiving this email because you have a LiftIndex account.\n"
+    . "Privacy policy: https://liftindex.example/privacy.html\nContact: info@liftindex.app\n");
 
 echo "Email delle segnalazioni all'utente\n";
+$report = array('id' => 7, 'reporter_user_id' => 1, 'target_label' => 'X');
+$senders = array(
+    'received' => function ($db) use ($report) { report_mail_received($db, $report); },
+    'dismissed' => function ($db) use ($report) { report_mail_outcome($db, $report, 'dismissed', 'Nota'); },
+);
 foreach (array('it', 'en') as $lang) {
     $db = new FakeDb();
     $db->row = array('email' => 'u@example.com', 'username' => 'Mario', 'locale' => $lang);
-    $mail = sent_mail(function () use ($db) { report_mail_received($db, array('id' => 7, 'reporter_user_id' => 1, 'target_label' => 'X')); });
-    check("$lang: l'email finisce con il piè di pagina", substr($mail, -strlen(mail_footer($lang))) === mail_footer($lang) || strpos($mail, mail_footer($lang)) !== false);
-    check("$lang: una sola riga vuota fra firma e piè di pagina", strpos($mail, "LiftIndex\n\n--\n") !== false && strpos($mail, "\n\n\n") === false);
+    $footer = mail_footer($lang);
+    foreach ($senders as $name => $send) {
+        $mail = sent_mail(function () use ($send, $db) { $send($db); });
+        // error_log aggiunge un a-capo in coda
+        $mail = rtrim($mail, "\n") . "\n";
+        check("$lang/$name: l'email finisce con il piè di pagina", substr($mail, -strlen($footer)) === $footer);
+        check("$lang/$name: una sola riga vuota fra firma e piè di pagina", strpos($mail, "LiftIndex\n\n--\n") !== false && strpos($mail, "\n\n\n") === false);
+    }
 }
 
 echo "Email all'admin\n";
