@@ -138,7 +138,7 @@ export default function SummaryPhase({
                 <FireIcon sx={{ fontSize: 40, color: colors.warning, mb: 0.5 }} />
                 <Typography variant="h6" sx={{ fontWeight: 700, color: colors.text }}>
                   {savedResult.new_longest
-                    ? t('focus.streak_new_longest', { weeks: savedResult.current_streak_weeks })
+                    ? t('focus.streak_new_longest', { count: savedResult.current_streak_weeks })
                     : savedResult.streak_milestone && savedResult.current_streak_weeks > 1
                       ? t('focus.streak_milestone', { weeks: savedResult.current_streak_weeks })
                       : t('focus.week_completed')}
