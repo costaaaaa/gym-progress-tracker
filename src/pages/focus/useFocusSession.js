@@ -230,8 +230,12 @@ export default function useFocusSession() {
         const active = plansData.records.find(p => p.is_active);
         if (active) {
           setActivePlan(active);
-          // Se non c'è bozza, vai alla selezione giorno
+          // Se non c'è bozza, vai alla selezione giorno (un giorno solo è già scelto)
           if (!resuming) {
+            if (active.days?.length === 1) {
+              setSelectedDayId(active.days[0].id);
+              setSelectedDay(active.days[0]);
+            }
             setPhase('select_day');
           }
         } else {

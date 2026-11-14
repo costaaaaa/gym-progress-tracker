@@ -747,6 +747,8 @@
   "focus.active_plan": "Piano attivo",
   "focus.exercises_header": "Esercizi ({{count}})",
   "focus.start": "Inizia allenamento",
+  "focus.day_empty": "Questo giorno non ha esercizi. Aggiungili in",
+  "focus.day_empty_link": "Schede",
   "focus.timer_on": "Timer di recupero attivo",
   "focus.timer_off": "Timer di recupero disattivato",
   "focus.rest": "Recupero",

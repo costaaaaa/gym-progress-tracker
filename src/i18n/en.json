@@ -747,6 +747,8 @@
   "focus.active_plan": "Active plan",
   "focus.exercises_header": "Exercises ({{count}})",
   "focus.start": "Start workout",
+  "focus.day_empty": "This day has no exercises yet. Add them in",
+  "focus.day_empty_link": "Plans",
   "focus.timer_on": "Rest timer on",
   "focus.timer_off": "Rest timer off",
   "focus.rest": "Rest",

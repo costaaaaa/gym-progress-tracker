@@ -982,7 +982,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     await mount();
     expect(screen.queryByText('Riprendi allenamento')).toBeNull();
     expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
-    expect(screen.getByText('Gambe')).toBeTruthy();
+    expect(screen.getAllByText('Gambe').length).toBeGreaterThan(0);
   });
 
   it('serie per serie: obiettivo in grigio della serie in corso e tecnica solo sulla serie che la prevede (12 / 10 / a cedimento min. 6 + Drop set)', async () => {
@@ -1186,5 +1186,42 @@ describe('ordine reale e orario delle serie (#26)', () => {
     await advance(0);
 
     expect(saveBody().workout_records.map((r) => [r.exercise_id, r.seconds_from_start])).toEqual([[4, 1200], [3, null], [3, 900]]);
+  });
+});
+
+describe('scelta del giorno con una scheda appena creata', () => {
+  const emptyDay = { id: 3, name: 'Giorno 1', exercises: [] };
+  const withDays = (days) => {
+    responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days }] });
+  };
+
+  it('con un solo giorno è già scelto e si può iniziare subito', async () => {
+    withDays([pushDay]);
+    await mount();
+    expect(screen.getByRole('combobox').textContent).toBe('Push');
+    expect(screen.getByRole('button', { name: 'Inizia allenamento' }).disabled).toBe(false);
+  });
+
+  it('con più giorni nessuno è scelto, come prima', async () => {
+    await mount();
+    expect(screen.getByRole('combobox').textContent.replace(/\u200b/g, '').trim()).toBe('');
+    expect(screen.getByRole('button', { name: 'Inizia allenamento' }).disabled).toBe(true);
+  });
+
+  it('un giorno senza esercizi lascia il bottone spento e dice dove aggiungerli', async () => {
+    withDays([emptyDay]);
+    await mount();
+    expect(screen.getByRole('button', { name: 'Inizia allenamento' }).disabled).toBe(true);
+    expect(screen.getByText(/Questo giorno non ha esercizi\./)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Schede' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/workouts?tab=plans');
+  });
+
+  it('il messaggio non compare finché non c\'è un giorno scelto né quando ha esercizi', async () => {
+    await mount();
+    expect(screen.queryByText(/Questo giorno non ha esercizi/)).toBeNull();
+    fireEvent.mouseDown(screen.getByRole('combobox'));
+    fireEvent.click(screen.getByRole('option', { name: 'Push' }));
+    expect(screen.queryByText(/Questo giorno non ha esercizi/)).toBeNull();
   });
 });
