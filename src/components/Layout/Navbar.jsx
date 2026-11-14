@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AppBar, Toolbar, Typography, Button, Box, Avatar, useMediaQuery, IconButton, useTheme, Tooltip, CircularProgress } from '@mui/material';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
@@ -8,7 +8,7 @@ import { useThemeMode } from '../../context/ThemeModeContext';
 import { safeNext } from '../../utils/safeNext';
 import { useTranslation } from 'react-i18next';
 import { visuallyHidden } from '@mui/utils';
-import { BELOW_360, BELOW_600 } from '../../theme/narrowScreens';
+import { BELOW_360 } from '../../theme/narrowScreens';
 import { isAuthPath, stripLangPrefix, useLocalizedPath } from '../../i18n/paths';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 import LogoMark from '../LogoMark';
@@ -17,6 +17,9 @@ import LogoMark from '../LogoMark';
 // Su mobile la navigazione vive in BottomNav.jsx (Home/Allenamenti/Focus/Dashboard/Profilo);
 // qui restano solo logo, toggle tema e avatar — "Profilo" non ha un link testuale,
 // l'avatar è l'unico ingresso, sia su desktop che su mobile.
+// Bottoni di accesso: sui telefoni meno spazio ai lati, da sm il padding del tema (18px)
+const SIGN_IN_PX = { xs: 1, sm: '18px' };
+
 const navItems = [
   { label: 'nav.home', path: '/' },
   { label: 'nav.workouts', path: '/workouts' },
@@ -32,6 +35,21 @@ const Navbar = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { mode, toggleThemeMode } = useThemeMode();
+
+  // L'altezza della riga dei controlli (sale se vanno a capo) la legge la scena della landing per stare sotto la barra
+  const toolbarRef = useRef(null);
+  useEffect(() => {
+    const root = document.documentElement;
+    const publish = () => root.style.setProperty('--navbar-height', `${toolbarRef.current.getBoundingClientRect().height}px`);
+    publish();
+    if (typeof ResizeObserver === 'undefined') return () => root.style.removeProperty('--navbar-height');
+    const observer = new ResizeObserver(publish);
+    observer.observe(toolbarRef.current);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty('--navbar-height');
+    };
+  }, []);
 
   // Utilizziamo il context invece della logica locale
   const { isLoggedIn, user, loading } = useAuth();
@@ -68,6 +86,7 @@ const Navbar = () => {
   return (
     <AppBar position="sticky" elevation={0} sx={{ overflowX: 'hidden' }}>
       <Toolbar
+        ref={toolbarRef}
         sx={{
           // Telefoni: riga che va a capo se i controlli non stanno accanto al marchio (spaziatura del testo)
           display: { xs: 'flex', sm: 'grid' },
@@ -155,7 +174,7 @@ const Navbar = () => {
         )}
 
         {/* Destra: toggle tema, avatar / auth — stessa struttura su mobile e desktop */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1.5 }, justifySelf: 'end', ml: { xs: 'auto', sm: 0 } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, justifySelf: 'end', ml: { xs: 'auto', sm: 0 } }}>
           <Tooltip title={mode === 'light' ? t('nav.dark_mode') : t('nav.light_mode')}>
             <IconButton
               onClick={toggleThemeMode}
@@ -203,12 +222,12 @@ const Navbar = () => {
 
           {/* Sulla pagina di accesso o di registrazione non si ripete il bottone della pagina stessa */}
           {authVerified && !isLoggedIn && (
-            <>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1.5 } }}>
               {barePath !== '/login' && (
                 <Button
                   component={RouterLink}
                   to={withNext('/login')}
-                  sx={{ color: 'text.secondary', fontWeight: 500, fontSize: 14, [BELOW_600]: { px: 1 } }}
+                  sx={{ color: 'text.secondary', fontWeight: 500, fontSize: 14, px: SIGN_IN_PX }}
                 >
                   {t('nav.login')}
                 </Button>
@@ -218,12 +237,12 @@ const Navbar = () => {
                   variant={onAccessPage ? 'text' : 'contained'}
                   component={RouterLink}
                   to={withNext('/register')}
-                  sx={onAccessPage ? { color: 'text.secondary', fontWeight: 500, fontSize: 14, [BELOW_600]: { px: 1 } } : { fontSize: 14, [BELOW_600]: { px: 1 } }}
+                  sx={onAccessPage ? { color: 'text.secondary', fontWeight: 500, fontSize: 14, px: SIGN_IN_PX } : { fontSize: 14, px: SIGN_IN_PX }}
                 >
                   {t('nav.register')}
                 </Button>
               )}
-            </>
+            </Box>
           )}
         </Box>
       </Toolbar>

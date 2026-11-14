@@ -45,22 +45,34 @@ describe('barra in alto: voce attiva', () => {
 // Reflow a 320 px (1.4.10): sui telefoni i bottoni di accesso si stringono, sotto 360 px resta il marchio senza la scritta.
 // jsdom non valuta le media query: si leggono le regole che gli elementi ricevono sotto quelle larghezze.
 describe('barra in alto: schermi stretti', () => {
+  afterEach(() => {
+    auth.value = { user: null, isLoggedIn: false, loading: false };
+  });
   const mount = () => render(<MemoryRouter><ThemeModeProvider><Navbar /></ThemeModeProvider></MemoryRouter>);
 
-  it('sui telefoni (sotto 600 px) i bottoni Accedi e Registrati hanno meno spazio ai lati', () => {
+  it('sui telefoni i bottoni Accedi e Registrati hanno meno spazio ai lati, da 600 px come prima', () => {
     mount();
     for (const name of ['Accedi', 'Registrati']) {
-      const style = mediaStyle(screen.getByRole('link', { name }), 599.95, 'max');
-      expect(style['padding-left']).toBe('8px');
-      expect(style['padding-right']).toBe('8px');
+      const link = screen.getByRole('link', { name });
+      expect(mediaStyle(link, 0)['padding-left']).toBe('8px');
+      expect(mediaStyle(link, 0)['padding-right']).toBe('8px');
+      expect(mediaStyle(link, 600)['padding-left']).toBe('18px');
+      expect(mediaStyle(link, 600)['padding-right']).toBe('18px');
     }
   });
 
-  it('sui telefoni i controlli di destra stanno più vicini, da 600 px come prima', () => {
+  it('sui telefoni Accedi e Registrati stanno più vicini, da 600 px come prima', () => {
     mount();
-    const group = screen.getByRole('link', { name: 'Accedi' }).parentElement;
-    expect(mediaStyle(group, 0).gap).toBe('4px');
-    expect(mediaStyle(group, 600).gap).toBe('12px');
+    const buttons = screen.getByRole('link', { name: 'Accedi' }).parentElement;
+    expect(mediaStyle(buttons, 0).gap).toBe('4px');
+    expect(mediaStyle(buttons, 600).gap).toBe('12px');
+  });
+
+  it('per chi è loggato tema e avatar restano a 12 px anche sui telefoni', () => {
+    auth.value = { user: { username: 'atleta_demo' }, isLoggedIn: true, loading: false };
+    mount();
+    const group = screen.getByRole('link', { name: 'Profilo' }).parentElement;
+    expect(mediaStyle(group).gap).toBe('12px');
   });
 
   it('sotto 360 px la scritta LiftIndex resta solo per chi usa lo screen reader, il nome del link non cambia', () => {
@@ -75,14 +87,32 @@ describe('barra in alto: schermi stretti', () => {
 
   it('se i controlli non stanno accanto al marchio (spaziatura del testo) vanno a capo invece di uscire dallo schermo', () => {
     mount();
-    const toolbar = screen.getByRole('link', { name: 'Accedi' }).parentElement.parentElement;
+    const group = screen.getByRole('link', { name: 'Accedi' }).parentElement.parentElement;
+    const toolbar = group.parentElement;
     expect(mediaStyle(toolbar)['flex-wrap']).toBe('wrap');
     expect(mediaStyle(toolbar, 0).display).toBe('flex');
     expect(mediaStyle(toolbar, 600).display).toBe('grid');
     expect(mediaStyle(toolbar, 600)['grid-template-columns']).toBe('1fr auto');
     expect(mediaStyle(toolbar, 900)['grid-template-columns']).toBe('1fr auto 1fr');
-    const group = screen.getByRole('link', { name: 'Accedi' }).parentElement;
     expect(mediaStyle(group, 0)['margin-left']).toBe('auto');
     expect(mediaStyle(group, 600)['margin-left']).toBe('0px');
+  });
+});
+
+// Con la spaziatura del testo la barra va su due righe: il palco della landing, fisso sotto la barra, ne segue l'altezza.
+describe('barra in alto: altezza pubblicata', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    document.documentElement.style.removeProperty('--navbar-height');
+  });
+
+  it('scrive in --navbar-height l\'altezza della riga dei controlli e la toglie allo smontaggio', () => {
+    vi.stubGlobal('ResizeObserver', class { constructor(cb) { this.cb = cb; } observe() { this.cb(); } disconnect() {} });
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({ height: 79 });
+    const { unmount } = render(<MemoryRouter><ThemeModeProvider><Navbar /></ThemeModeProvider></MemoryRouter>);
+    expect(document.documentElement.style.getPropertyValue('--navbar-height')).toBe('79px');
+    unmount();
+    expect(document.documentElement.style.getPropertyValue('--navbar-height')).toBe('');
   });
 });

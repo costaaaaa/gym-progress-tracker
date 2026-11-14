@@ -4,8 +4,12 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
-// Altezza della Navbar sticky: il palco della scena resta fermo subito sotto.
+// Altezza della Navbar sticky: il palco della scena resta fermo subito sotto. La Navbar pubblica l'altezza reale
+// in --navbar-height (due righe con la spaziatura del testo); 64 è quella di una riga.
 export const NAVBAR_HEIGHT = 64;
+const NAVBAR_VAR = `var(--navbar-height, ${NAVBAR_HEIGHT}px)`;
+const navbarHeight = () =>
+  parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navbar-height')) || NAVBAR_HEIGHT;
 
 const reducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -33,7 +37,7 @@ export function useScrollScene(build) {
         defaults: { ease: 'none' },
         scrollTrigger: {
           trigger: ref.current,
-          start: `top top+=${NAVBAR_HEIGHT}`,
+          start: () => `top top+=${navbarHeight()}`,
           end: 'bottom bottom',
           scrub: 0.5,
         },
@@ -58,8 +62,8 @@ export const stageSx = (live) =>
   live
     ? {
         position: 'sticky',
-        top: NAVBAR_HEIGHT,
-        height: `calc(100svh - ${NAVBAR_HEIGHT}px)`,
+        top: NAVBAR_VAR,
+        height: `calc(100svh - ${NAVBAR_VAR})`,
         display: 'flex',
         alignItems: 'center',
         overflow: 'hidden',

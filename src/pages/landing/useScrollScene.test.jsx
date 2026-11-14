@@ -2,7 +2,7 @@
 // finestre basse titolo, passi e card verrebbero tagliati dal palco (1.4.4, 1.4.10).
 import { describe, it, expect, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
-import { useScrollScene } from './useScrollScene';
+import { useScrollScene, stageSx } from './useScrollScene';
 
 const mockScreen = ({ reduced, tall }) => {
   window.matchMedia = (query) => ({
@@ -37,5 +37,11 @@ describe('scena a scorrimento', () => {
     mockScreen({ reduced: true, tall: true });
     render(<Probe />);
     expect(live).toBe(false);
+  });
+
+  it('il palco fisso sta sotto la barra con l\'altezza che la Navbar pubblica (64 px se non la pubblica)', () => {
+    const stage = stageSx(true);
+    expect(stage.top).toBe('var(--navbar-height, 64px)');
+    expect(stage.height).toBe('calc(100svh - var(--navbar-height, 64px))');
   });
 });
