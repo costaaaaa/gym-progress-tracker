@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { Paper, Typography, Button, Alert, Box, Link } from '@mui/material';
 import { setConsent } from '../utils/consent';
 import { useTranslation, Trans } from 'react-i18next';
+import { legalPaths } from '../i18n/paths';
 
 // Mostrata al posto delle misure corporee finché l'utente non dà il consenso esplicito.
 // Peso e misure sono dati sulla salute (art. 9 GDPR): il consenso è separato dai termini d'uso
 // e si può revocare in qualsiasi momento da Profilo > Impostazioni.
 // updated: l'utente l'aveva già dato per una versione precedente del testo.
 const HealthConsentCard = ({ onGranted, updated = false }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -47,7 +48,7 @@ const HealthConsentCard = ({ onGranted, updated = false }) => {
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
         <Trans
           i18nKey="health_consent.details"
-          components={{ privacy: <Link href="/privacy.html" target="_blank" rel="noopener" /> }}
+          components={{ privacy: <Link href={legalPaths(i18n.language).privacy} target="_blank" rel="noopener" /> }}
         />
       </Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}

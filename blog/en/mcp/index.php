@@ -57,7 +57,7 @@ ob_start();
         </ul>
 
         <h2>Your data</h2>
-        <p>Every connection asks for your explicit consent, and you can revoke it anytime from the Account tab. The data the assistant reads goes to the AI app's provider, which handles it under its own privacy policy: the details are in the <a href="<?php echo blog_e(BLOG_APP_URL . 'privacy.html#assistenti-ai'); ?>">LiftIndex privacy policy</a> (in Italian).</p>
+        <p>Every connection asks for your explicit consent, and you can revoke it anytime from the Account tab. The data the assistant reads goes to the AI app's provider, which handles it under its own privacy policy: the details are in the <a href="<?php echo blog_e(BLOG_APP_URL . 'en/privacy.html#assistenti-ai'); ?>">LiftIndex privacy policy</a>.</p>
 
         <aside class="article-cta">
             <h2>Log your workouts first</h2>

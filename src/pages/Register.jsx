@@ -28,7 +28,7 @@ import { track } from '../utils/analytics';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { useTranslation, Trans } from 'react-i18next';
 import DateLocalization from '../i18n/DateLocalization';
-import { useLocalizedPath } from '../i18n/paths';
+import { useLocalizedPath, legalPaths } from '../i18n/paths';
 import AuthLayout from '../components/Auth/AuthLayout';
 
 // Username: stessa regola di register.php. Email: solo un primo filtro, il server usa FILTER_VALIDATE_EMAIL
@@ -382,8 +382,8 @@ const Register = () => {
                   <Trans
                     i18nKey="register.terms"
                     components={{
-                      terms: <Link href="/termini.html" target="_blank" rel="noopener" />,
-                      privacy: <Link href="/privacy.html" target="_blank" rel="noopener" />,
+                      terms: <Link href={legalPaths(i18n.language).terms} target="_blank" rel="noopener" />,
+                      privacy: <Link href={legalPaths(i18n.language).privacy} target="_blank" rel="noopener" />,
                     }}
                   />
                 </Typography>

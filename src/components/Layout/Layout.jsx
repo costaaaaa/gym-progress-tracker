@@ -6,7 +6,7 @@ import { Outlet, Link as RouterLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LanguageHint from './LanguageHint';
 import { radius } from '../../theme/radius';
-import { isEnPath, stripLangPrefix, withLangPrefix } from '../../i18n/paths';
+import { isEnPath, stripLangPrefix, withLangPrefix, legalPaths } from '../../i18n/paths';
 import { setLanguageChoice } from '../../i18n';
 
 const MAIN_ID = 'main-content';
@@ -32,7 +32,7 @@ const skipLinkSx = {
 const Layout = () => {
   // Utilizziamo il context di autenticazione - questo forza il re-render quando cambia lo stato di autenticazione
   const { isLoggedIn } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { pathname, search } = useLocation();
   const otherLang = isEnPath(pathname) ? 'it' : 'en';
 
@@ -73,9 +73,9 @@ const Layout = () => {
         sx={{ textAlign: 'center', pb: { xs: isLoggedIn ? 10 : 2, md: 2 }, px: 2 }}
       >
         <Typography variant="caption" color="text.secondary" sx={{ fontSize: 14 }}>
-          <Link href="/privacy.html" color="inherit" underline="hover">{t('footer.privacy')}</Link>
+          <Link href={legalPaths(i18n.language).privacy} color="inherit" underline="hover">{t('footer.privacy')}</Link>
           {' · '}
-          <Link href="/termini.html" color="inherit" underline="hover">{t('footer.terms')}</Link>
+          <Link href={legalPaths(i18n.language).terms} color="inherit" underline="hover">{t('footer.terms')}</Link>
           {!isLoggedIn && (
             <>
               {' · '}
