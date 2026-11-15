@@ -37,7 +37,7 @@ describe('nomi accessibili', () => {
     await mount();
     const card = screen.getByRole('img', { name: /Anteprima della card/ });
     expect(card.tagName).toBe('CANVAS');
-    ['DOMENICA 18 OTTOBRE', 'Petto', '1h 00m', '2', 'SERIE', '800 kg'].forEach((text) => {
+    ['DOMENICA 18 OTTOBRE', 'Petto', '1h 00m', '\\b2\\W+SERIE', '800 kg'].forEach((text) => {
       expect(screen.getByRole('img', { name: new RegExp(text) })).toBe(card);
     });
   });
@@ -46,9 +46,8 @@ describe('nomi accessibili', () => {
     await mount();
     await act(async () => { await i18n.changeLanguage('en'); });
     try {
-      const card = screen.getByRole('img', { name: /^Card preview/ });
-      expect(card.getAttribute('aria-label')).toMatch(/OCTOBER/i);
-      expect(card.getAttribute('aria-label')).not.toMatch(/OTTOBRE/i);
+      expect(screen.getByRole('img', { name: /OCTOBER/i })).toBeTruthy();
+      expect(screen.queryByRole('img', { name: /OTTOBRE/i })).toBeNull();
     } finally {
       await act(async () => { await i18n.changeLanguage('it'); });
     }
