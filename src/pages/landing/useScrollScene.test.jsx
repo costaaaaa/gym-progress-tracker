@@ -19,7 +19,7 @@ const Probe = () => {
   live = scene.live;
   return (
     <div ref={scene.ref}>
-      <div ref={scene.stageRef} data-testid="stage">
+      <div ref={scene.stageRef} data-testid="stage" data-static={String(!scene.live)}>
         <div ref={scene.textRef} data-testid="text" />
       </div>
     </div>
@@ -133,21 +133,11 @@ describe('scena a scorrimento: testo che non entra nel palco', () => {
   // di prima e la loro timeline andrebbe sfasata. GSAP ricalcola da solo solo su resize e load.
   describe('posizioni delle altre scene', () => {
     it('quando una scena diventa statica, ScrollTrigger ricalcola dopo che il layout è aggiornato', () => {
+      let refreshedWhileStatic;
       const refresh = vi.spyOn(ScrollTrigger, 'refresh').mockImplementation(() => {
         refreshedWhileStatic = document.querySelector('[data-testid="stage"]').dataset.static;
       });
-      let refreshedWhileStatic;
-      const StaticAware = () => {
-        const scene = useScrollScene(build);
-        return (
-          <div ref={scene.ref}>
-            <div ref={scene.stageRef} data-testid="stage" data-static={String(!scene.live)}>
-              <div ref={scene.textRef} data-testid="text" />
-            </div>
-          </div>
-        );
-      };
-      render(<StaticAware />);
+      render(<Probe />);
       expect(refresh).not.toHaveBeenCalled();
       rects.text = { top: 100, bottom: 700 };
       resize();
