@@ -16,6 +16,12 @@ afterEach(() => {
 const renderCard = () => render(<MemoryRouter><LevelCard /></MemoryRouter>);
 
 describe('card Livello', () => {
+  it('la barra dell\'avanzamento ha un nome', async () => {
+    renderCard();
+    await screen.findByRole('link');
+    expect(screen.getByRole('progressbar', { name: 'Avanzamento verso il livello 6' })).toBeTruthy();
+  });
+
   it('mostra livello, XP e XP totali', async () => {
     renderCard();
     const card = await screen.findByRole('link');

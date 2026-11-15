@@ -11,6 +11,12 @@ import { FIELD_INPUT_PADDING_Y } from '../theme/fieldHeight';
 const BRAND = '#d50000';
 const BRAND_DARK = '#9b0000';
 const ERROR_ON_DARK = '#ff5252';
+// Bordo dei campi a riposo: 3.5 : 1 sul bianco e 3.6 : 1 su #141416 (almeno 3 : 1 anche su #f7f6f5).
+const FIELD_BORDER = { light: '#8c8885', dark: '#6e6e70' };
+const TEXT_PRIMARY = { light: '#1a1816', dark: '#ffffff' };
+// Contorno del focus dentro la voce, per i contenitori che tagliano (scorrimento delle schede, menu, card)
+const FOCUS_INSIDE = { '&.Mui-focusVisible': { outlineOffset: '-2px' } };
+const PRIMARY_AS_TEXT = ({ theme }) => ({ color: theme.palette.primary.text });
 
 const ThemeModeContext = createContext();
 
@@ -34,14 +40,22 @@ export const ThemeModeProvider = ({ children }) => {
   const muiLocale = i18n.language === 'en' ? enUS : itIT;
 
   const theme = useMemo(
-    () =>
-      createTheme({
+    () => {
+      // Contorno del focus da tastiera: colore del testo del tema, staccato di 2px dal controllo
+      const focusRing = {
+        outline: `2px solid ${TEXT_PRIMARY[mode]}`,
+        outlineOffset: '2px',
+      };
+      return createTheme({
         palette: {
           mode,
           primary: {
             main: BRAND,
             light: '#ff5131',
             dark: BRAND_DARK,
+            // Rosso quando è il colore di un testo o di un'icona: in scuro il rosso del marchio
+            // dà 3.35 : 1 su #141416 (serve 4.5 : 1), qui il rosso chiaro degli errori.
+            text: mode === 'light' ? BRAND : ERROR_ON_DARK,
           },
           secondary: {
             main: mode === 'light' ? grey[900] : grey[300],
@@ -54,9 +68,12 @@ export const ThemeModeProvider = ({ children }) => {
             // Fondo neutro di una riga/card secondaria (storico, giorni di una scheda): in scuro è
             // lo stesso valore di action.hover di MUI (qui letterale per non dipendere da quello).
             subtle: mode === 'light' ? '#faf9f8' : 'rgba(255, 255, 255, 0.08)',
+            // Riga «tu» della classifica: in chiaro come action.selected di MUI; in scuro più tenue (0.12 invece
+            // di 0.16) perché il testo secondario (#a0a0a2) arrivi a 4.8 : 1 (con 0.16 si ferma a 4.4 : 1).
+            mine: mode === 'light' ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.12)',
           },
           text: {
-            primary: mode === 'light' ? '#1a1816' : '#ffffff',
+            primary: TEXT_PRIMARY[mode],
             secondary: mode === 'light' ? '#6b6663' : '#a0a0a2',
           },
           divider: mode === 'light' ? '#ececea' : 'rgba(255, 255, 255, 0.08)',
@@ -117,6 +134,8 @@ export const ThemeModeProvider = ({ children }) => {
             hover: mode === 'light' ? '#ececea' : 'rgba(255, 255, 255, 0.12)',
           },
           // Avatar di navbar e account: inchiostro e testo sopra, come nell'app.
+          // Bordo a riposo dei campi (3:1): lo usano anche i campi di Focus che ridisegnano il bordo con sx.
+          fieldBorder: FIELD_BORDER[mode],
           ink: mode === 'light' ? '#1a1816' : '#ffffff',
           onInk: mode === 'light' ? '#ffffff' : '#0a0a0b',
         },
@@ -158,6 +177,7 @@ export const ThemeModeProvider = ({ children }) => {
           },
         },
         components: {
+          MuiCircularProgress: { defaultProps: { 'aria-label': i18n.t('common.loading') } },
           // Etichetta fissa sopra il campo, in flusso normale: niente posizione assoluta né la transform
           // che la porta dentro il bordo. Lo shrink è sempre true (etichetta mai dentro il campo). Il
           // colore (testo secondario, focus, errore) resta quello di MuiFormLabel: ridefinirlo qui
@@ -189,6 +209,10 @@ export const ThemeModeProvider = ({ children }) => {
             styleOverrides: {
               root: {
                 borderRadius: radius.md,
+                // MUI, sul tocco, rimette il bordo chiaro di default quando il campo ha l'hover: qui resta il bordo del tema
+                '&:hover:not(.Mui-focused):not(.Mui-error):not(.Mui-disabled) .MuiOutlinedInput-notchedOutline': {
+                  '@media (hover: none)': { borderColor: FIELD_BORDER[mode] },
+                },
               },
               input: {
                 paddingTop: FIELD_INPUT_PADDING_Y,
@@ -201,6 +225,7 @@ export const ThemeModeProvider = ({ children }) => {
               // Con displayEmpty (sotto) il Select outlined impone notched=true qualunque sia il valore:
               // solo il CSS può chiudere la tacca, qui, come per ogni altro campo.
               notchedOutline: {
+                borderColor: FIELD_BORDER[mode],
                 '& legend': { maxWidth: '0.01px' },
               },
             },
@@ -248,9 +273,34 @@ export const ThemeModeProvider = ({ children }) => {
             styleOverrides: {
               body: {
                 transition: 'background-color 0.3s ease, color 0.3s ease',
-              }
+              },
+              'a:focus-visible': focusRing,
+              // Solo i <button> non MUI: quelli MUI hanno già il contorno con .Mui-focusVisible (e FOCUS_INSIDE dove serve)
+              'button:not(.MuiButtonBase-root):focus-visible': focusRing,
             }
           },
+          // Etichetta a fuoco: rosso come testo (primary.text), non il rosso del marchio. In errore resta il colore dell'errore (la guardia :not(.Mui-error)).
+          MuiFormLabel: {
+            styleOverrides: {
+              root: ({ theme }) => ({
+                '&.Mui-focused:not(.Mui-error)': { color: theme.palette.primary.text },
+              }),
+            },
+          },
+          // Focus da tastiera su ogni controllo basato su ButtonBase (bottoni, icone, chip, voci di menu e di
+          // lista, schede, link di navigazione): solo con :focus-visible, mouse e tocco non vedono nulla.
+          MuiButtonBase: {
+            styleOverrides: {
+              root: { '&.Mui-focusVisible': focusRing },
+            },
+          },
+          // Nei contenitori che tagliano (scorrimento delle schede, menu): il contorno resta dentro la voce
+          MuiTab: { styleOverrides: { root: FOCUS_INSIDE } },
+          MuiMenuItem: { styleOverrides: { root: FOCUS_INSIDE } },
+          MuiListItemButton: { styleOverrides: { root: FOCUS_INSIDE } },
+          // Il cursore dello slider è un <span> con l'input dentro: il contorno va sul cursore
+          MuiSlider: { styleOverrides: { thumb: { '&.Mui-focusVisible': focusRing } } },
+          MuiCardActionArea: { styleOverrides: { root: FOCUS_INSIDE } },
           MuiAppBar: {
             styleOverrides: {
               root: {
@@ -263,7 +313,7 @@ export const ThemeModeProvider = ({ children }) => {
             },
           },
           // Interruttori mai nel rosso del marchio: acceso = verde semantico
-          MuiSwitch: { defaultProps: { color: 'success' } },
+          MuiSwitch: { defaultProps: { color: 'success' }, styleOverrides: { switchBase: FOCUS_INSIDE } },
           MuiButton: {
             styleOverrides: {
               root: {
@@ -287,14 +337,19 @@ export const ThemeModeProvider = ({ children }) => {
                   '&:hover': { backgroundColor: BRAND_DARK, '@media (hover: none)': { backgroundColor: BRAND } },
                 },
               }),
+              // Bottoni di testo e con bordo: l'etichetta è un testo, quindi primary.text
+              textPrimary: PRIMARY_AS_TEXT,
+              outlinedPrimary: PRIMARY_AS_TEXT,
             },
           },
+          MuiIconButton: { styleOverrides: { colorPrimary: PRIMARY_AS_TEXT } },
           // Ogni Chip con onClick: due classi, quindi vince su fontFamily e fontWeight dati con sx
           MuiChip: {
             styleOverrides: {
               root: {
                 '&.MuiChip-clickable': CHIP_FONT,
               },
+              outlinedPrimary: PRIMARY_AS_TEXT,
             },
           },
           // Link nel testo: colore del testo e sottolineati (il rosso resta ai bottoni principali, agli errori e agli stati)
@@ -306,6 +361,7 @@ export const ThemeModeProvider = ({ children }) => {
             styleOverrides: {
               root: {
                 '&:hover': { textDecorationColor: 'inherit' },
+                '&.Mui-focusVisible': focusRing,
               },
             },
           },
@@ -348,8 +404,9 @@ export const ThemeModeProvider = ({ children }) => {
             }
           }
         },
-      }, muiLocale),
-    [mode, muiLocale]
+      }, muiLocale);
+    },
+    [mode, muiLocale, i18n]
   );
 
   return (

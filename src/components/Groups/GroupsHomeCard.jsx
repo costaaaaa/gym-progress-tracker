@@ -3,6 +3,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { Box, Button, Card, CardActionArea, Typography } from '@mui/material';
 import { listGroups } from '../../api/groups';
 import { useTranslation } from 'react-i18next';
+import { ELLIPSIS_FROM_390 } from '../../theme/narrowScreens';
 
 // Card «I tuoi gruppi» della home: ingresso ai gruppi anche da mobile web, dove la
 // barra in basso è già piena.
@@ -35,7 +36,11 @@ const GroupsHomeCard = () => {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
             {groups.slice(0, 3).map((g) => (
               <Box key={g.id} sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
-                <Typography sx={{ fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</Typography>
+                <Typography
+                  sx={{ fontWeight: 600, fontSize: 14, ...ELLIPSIS_FROM_390 }}
+                >
+                  {g.name}
+                </Typography>
                 <Typography sx={{ fontSize: 13, color: 'text.secondary', flexShrink: 0 }}>{t('groups_card.members', { count: Number(g.members_count) })}</Typography>
               </Box>
             ))}

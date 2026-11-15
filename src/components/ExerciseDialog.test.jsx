@@ -173,3 +173,22 @@ describe('ExerciseDialog · ricerca per pertinenza', () => {
     expect(names).toEqual(['Panca Piana', 'Croci Panca Piana (Cavi)']);
   });
 });
+
+describe('ExerciseDialog · nomi accessibili', () => {
+  it('le select del gruppo e del muscolo principale hanno un\'etichetta', async () => {
+    await apri();
+    expect(screen.getByRole('combobox', { name: /^Gruppo muscolare/ })).toBeTruthy();
+    await scegliGruppo('Gambe');
+    expect(screen.getByRole('combobox', { name: /^Muscolo principale/ })).toBeTruthy();
+  });
+
+  it('le liste aperte del gruppo e del muscolo principale hanno un nome', async () => {
+    await apri();
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /^Gruppo muscolare/ }));
+    expect(screen.getByRole('listbox', { name: /^Gruppo muscolare/ })).toBeTruthy();
+    fireEvent.click(screen.getByRole('option', { name: 'Gambe' }));
+    await act(async () => {});
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /^Muscolo principale/ }));
+    expect(screen.getByRole('listbox', { name: /^Muscolo principale/ })).toBeTruthy();
+  });
+});

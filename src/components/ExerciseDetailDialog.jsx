@@ -101,7 +101,7 @@ const ExerciseDetailDialog = ({ item, onClose }) => {
             {item.skipped > 0 && (
               <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1 }}>{t('progress.skipped_sessions', { count: item.skipped })}</Typography>
             )}
-            <Box sx={{ height: 220 }}>
+            <Box sx={{ height: 220 }} role="img" aria-label={t('progress.chart_aria', { kind: t(`progress.kind.${item.mode}`), name: item.name })}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 8, right: 12, left: -8, bottom: 0 }}>
                   <CartesianGrid horizontal vertical={false} stroke={theme.palette.divider} />

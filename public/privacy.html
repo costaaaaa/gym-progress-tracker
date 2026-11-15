@@ -24,10 +24,14 @@
     th{color:var(--muted);font-weight:600;font-size:.8rem;text-transform:uppercase;letter-spacing:.04em}
     .tbl{overflow-x:auto}
     nav{margin-bottom:20px;font-size:.92rem}
+    .skip{position:absolute;left:8px;top:8px;z-index:10;padding:8px 16px;border:1px solid var(--ink);border-radius:8px;background:var(--bg);color:var(--ink);font-weight:600;text-decoration:none;transform:translateY(-200%)}
+    .skip:focus{transform:none;outline:2px solid var(--ink);outline-offset:2px}
+    main:focus{outline:none}
   </style>
 </head>
 <body>
-<main>
+<a class="skip" href="#contenuto">Salta al contenuto</a>
+<main id="contenuto" tabindex="-1">
   <nav><a href="/">← Torna a LiftIndex</a> · <a href="/termini.html">Termini d'uso</a></nav>
   <h1>Informativa sulla privacy</h1>
   <p class="meta">Versione 2026-11 · aggiornata il 12 novembre 2026 (durata del cookie di accesso, registro delle interrogazioni dell'AI Coach)</p>

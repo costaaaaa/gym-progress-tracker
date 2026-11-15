@@ -17,7 +17,6 @@ import {
   Divider,
   Alert,
   Snackbar,
-  CircularProgress,
   ButtonGroup,
   Collapse,
   FormControl,
@@ -41,6 +40,7 @@ import { planCardSummary } from '../utils/planCard';
 import FitNames from '../components/FitNames';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
 import { radius } from '../theme/radius';
+import ButtonSpinner from '../components/ButtonSpinner';
 
 const MAX_EXERCISE_ROWS = 4; // esercizi mostrati per giorno nella card aperta
 const DAY_LINK_SX = { fontSize: 12, fontWeight: 600, textTransform: 'none', minWidth: 0, p: 0 };
@@ -788,6 +788,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                     <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
                       <IconButton
                         onClick={() => handleOpenEditPlanDialog(plan)}
+                        aria-label={t('plans.edit_plan.aria', { name: plan.name })}
                         size="small"
                         sx={{ color: 'text.secondary' }}
                       >
@@ -795,6 +796,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                       </IconButton>
                       <IconButton
                         onClick={() => handleOpenDeletePlanDialog(plan)}
+                        aria-label={t('plans.delete_plan.aria', { name: plan.name })}
                         size="small"
                         sx={{ color: 'text.secondary' }}
                       >
@@ -906,6 +908,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                                 <ButtonGroup size="small" sx={{ mr: 1 }}>
                                                   <IconButton
                                                     size="small"
+                                                    aria-label={t('plans.move_up.aria', { name: exercise.exercise_name })}
                                                     disabled={exerciseGlobalIndex <= 0}
                                                     onClick={() => handleMoveExerciseUp(day.id, exercise, exerciseGlobalIndex)}
                                                   >
@@ -913,6 +916,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                                   </IconButton>
                                                   <IconButton
                                                     size="small"
+                                                    aria-label={t('plans.move_down.aria', { name: exercise.exercise_name })}
                                                     disabled={exerciseGlobalIndex >= day.exercises.length - 1}
                                                     onClick={() => handleMoveExerciseDown(day.id, exercise, exerciseGlobalIndex, day.exercises.length)}
                                                   >
@@ -921,7 +925,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                                 </ButtonGroup>
                                                 <IconButton
                                                   size="small"
-                                                  aria-label={t('plans.edit_exercise.aria')}
+                                                  aria-label={t('plans.edit_exercise.aria', { name: exercise.exercise_name })}
                                                   onClick={() => handleOpenEditExerciseDialog(day.id, exercise)}
                                                   sx={{ mr: 1, color: 'text.secondary' }}
                                                 >
@@ -929,7 +933,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                                 </IconButton>
                                                 <IconButton
                                                   size="small"
-                                                  aria-label={t('plans.delete_exercise.aria')}
+                                                  aria-label={t('plans.delete_exercise.aria', { name: exercise.exercise_name })}
                                                   onClick={() => handleOpenDeleteExerciseDialog(day.id, exercise)}
                                                   sx={{ color: 'text.secondary' }}
                                                 >
@@ -1083,7 +1087,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
             onClick={handleEditPlan} 
             variant="contained" 
             disabled={!editedPlanValues.name || updatePlanLoading}
-            startIcon={updatePlanLoading ? <CircularProgress size={20} /> : null}
+            startIcon={updatePlanLoading ? <ButtonSpinner /> : null}
           >
             {updatePlanLoading ? t('plans.saving') : t('common.save')}
           </Button>
@@ -1131,7 +1135,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
             color="error" 
             variant="contained"
             disabled={deletePlanLoading}
-            startIcon={deletePlanLoading ? <CircularProgress size={20} /> : <DeleteIcon />}
+            startIcon={deletePlanLoading ? <ButtonSpinner /> : <DeleteIcon />}
           >
             {deletePlanLoading ? t('plans.deleting') : t('common.delete')}
           </Button>
@@ -1168,7 +1172,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
             color="error" 
             variant="contained"
             disabled={deleteExerciseLoading}
-            startIcon={deleteExerciseLoading ? <CircularProgress size={20} /> : <DeleteIcon />}
+            startIcon={deleteExerciseLoading ? <ButtonSpinner /> : <DeleteIcon />}
           >
             {deleteExerciseLoading ? t('plans.deleting') : t('common.delete')}
           </Button>

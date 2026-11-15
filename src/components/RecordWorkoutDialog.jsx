@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -198,14 +198,22 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
     return notes && notes.length > 50;
   };
 
+  // Stesso nome per il combobox e per la lista aperta della Tecnica di ogni serie.
+  const techniqueNameProps = (exercise, setIndex) => {
+    const name = t('record.technique_aria', { exercise: exercise.exercise_name, n: setIndex + 1 });
+    return { SelectDisplayProps: { 'aria-labelledby': undefined, 'aria-label': name }, MenuProps: { MenuListProps: { 'aria-label': name } } };
+  };
+
   return (
     <Dialog open={open} onClose={() => onClose(false)} maxWidth="sm" fullWidth>
       <DialogTitle>{t('record.title')}</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
           <FormControl fullWidth>
-            <InputLabel>{t('record.select_day')}</InputLabel>
+            <InputLabel id="record-day-label">{t('record.select_day')}</InputLabel>
             <Select
+              labelId="record-day-label"
+              id="record-day"
               value={selectedDay}
               label={t('record.select_day')}
               onChange={handleDayChange}
@@ -227,135 +235,134 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
           {exercises.length > 0 && (
             <List sx={{ p: 0 }}>
               {exercises.map((exercise, index) => (
-                <React.Fragment key={exercise.id}>
+                <ListItem key={exercise.id} sx={{ flexDirection: 'column', alignItems: 'stretch', p: 0 }}>
                   {index > 0 && <Divider sx={{ my: 2.5 }} />}
-                  <ListItem sx={{ flexDirection: 'column', alignItems: 'stretch', p: 0 }}>
-                    <ListItemText
-                      primary={
-                        <Typography sx={{ fontWeight: 700, fontSize: 14, mb: 0.25 }}>
-                          {exercise.exercise_name}
+                  <ListItemText
+                    primary={
+                      <Typography sx={{ fontWeight: 700, fontSize: 14, mb: 0.25 }}>
+                        {exercise.exercise_name}
+                      </Typography>
+                    }
+                    secondary={
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          {t('plans.plan_line', { summary: planSummary(exercise.planned_sets), rest: exercise.rest })}
                         </Typography>
-                      }
-                      secondary={
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
-                            {t('plans.plan_line', { summary: planSummary(exercise.planned_sets), rest: exercise.rest })}
-                          </Typography>
-                          {exercise.notes && (
-                            <Box sx={{ mt: 1 }}>
-                              {isNotesTooLong(exercise.notes) ? (
-                                <Box>
-                                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', mr: 1 }}>
-                                      {t('record.notes_truncated', { notes: exercise.notes.substring(0, 50) })}
-                                    </Typography>
-                                    <IconButton 
-                                      size="small" 
-                                      color="primary" 
-                                      onClick={() => toggleNotes(exercise.id)}
-                                      aria-label={t('record.show_notes')}
-                                    >
-                                      <InfoIcon fontSize="small" />
-                                    </IconButton>
-                                  </Box>
-                                  <Collapse in={openNotes[exercise.id] || false}>
-                                    <Alert 
-                                      severity="info" 
-                                      sx={{ mt: 1 }}
-                                      action={
-                                        <IconButton
-                                          aria-label={t('record.close')}
-                                          color="inherit"
-                                          size="small"
-                                          onClick={() => toggleNotes(exercise.id)}
-                                        >
-                                          <InfoIcon fontSize="inherit" />
-                                        </IconButton>
-                                      }
-                                    >
-                                      {exercise.notes}
-                                    </Alert>
-                                  </Collapse>
+                        {exercise.notes && (
+                          <Box sx={{ mt: 1 }}>
+                            {isNotesTooLong(exercise.notes) ? (
+                              <Box>
+                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                  <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', mr: 1 }}>
+                                    {t('record.notes_truncated', { notes: exercise.notes.substring(0, 50) })}
+                                  </Typography>
+                                  <IconButton 
+                                    size="small" 
+                                    color="primary" 
+                                    onClick={() => toggleNotes(exercise.id)}
+                                    aria-label={t('record.show_notes')}
+                                  >
+                                    <InfoIcon fontSize="small" />
+                                  </IconButton>
                                 </Box>
-                              ) : (
-                                <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                                  {t('record.notes', { notes: exercise.notes })}
-                                </Typography>
-                              )}
-                            </Box>
-                          )}
-                        </Box>
-                      }
-                    />
-                    <Box sx={{ mt: 2 }}>
-                      {(workoutData[exercise.id] || []).map((row, setIndex, rows) => (
-                        <Box key={setIndex} sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                          {/* "Serie N" in alto, all'altezza delle etichette dei campi accanto; la casella del
-                              riscaldamento in basso, alta quanto i campi e quindi centrata su di loro */}
-                          <Box sx={{ minWidth: 60, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                            <Typography variant="body2">{t('record.set', { n: setIndex + 1 })}</Typography>
-                            <FormControlLabel
-                              label={t('common.warmup_badge')}
-                              slotProps={{ typography: { variant: 'caption' } }}
-                              sx={{ m: 0, height: FIELD_HEIGHT }}
-                              control={
-                                <Checkbox
-                                  size="small"
-                                  sx={{ p: 0.5 }}
-                                  checked={!!row.is_warmup}
-                                  onChange={() => handleWarmupToggle(exercise, setIndex)}
-                                  inputProps={{ 'aria-label': t('record.warmup_aria', { n: setIndex + 1 }) }}
-                                />
-                              }
-                            />
+                                <Collapse in={openNotes[exercise.id] || false}>
+                                  <Alert 
+                                    severity="info" 
+                                    sx={{ mt: 1 }}
+                                    action={
+                                      <IconButton
+                                        aria-label={t('record.close')}
+                                        color="inherit"
+                                        size="small"
+                                        onClick={() => toggleNotes(exercise.id)}
+                                      >
+                                        <InfoIcon fontSize="inherit" />
+                                      </IconButton>
+                                    }
+                                  >
+                                    {exercise.notes}
+                                  </Alert>
+                                </Collapse>
+                              </Box>
+                            ) : (
+                              <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                                {t('record.notes', { notes: exercise.notes })}
+                              </Typography>
+                            )}
                           </Box>
-                          <TextField
-                            label={t('record.weight')}
-                            type="number"
-                            value={row.weight || ''}
-                            onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'weight', e.target.value)}
-                            inputProps={{ min: 0, max: MAX_WEIGHT, step: 0.5 }}
-                            fullWidth
-                            size="small"
-                            sx={{
-                              '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
-                                display: 'none',
-                              },
-                              '& input[type=number]': {
-                                MozAppearance: 'textfield',
-                              },
-                            }}
+                        )}
+                      </Box>
+                    }
+                  />
+                  <Box sx={{ mt: 2 }}>
+                    {(workoutData[exercise.id] || []).map((row, setIndex, rows) => (
+                      <Box key={setIndex} sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                        {/* "Serie N" in alto, all'altezza delle etichette dei campi accanto; la casella del
+                            riscaldamento in basso, alta quanto i campi e quindi centrata su di loro */}
+                        <Box sx={{ minWidth: 60, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                          <Typography variant="body2">{t('record.set', { n: setIndex + 1 })}</Typography>
+                          <FormControlLabel
+                            label={t('common.warmup_badge')}
+                            slotProps={{ typography: { variant: 'caption' } }}
+                            sx={{ m: 0, height: FIELD_HEIGHT }}
+                            control={
+                              <Checkbox
+                                size="small"
+                                sx={{ p: 0.5 }}
+                                checked={!!row.is_warmup}
+                                onChange={() => handleWarmupToggle(exercise, setIndex)}
+                                inputProps={{ 'aria-label': t('record.warmup_aria', { n: setIndex + 1 }) }}
+                              />
+                            }
                           />
-                          <TextField
-                            label={t('record.reps')}
-                            value={row.reps ?? ''}
-                            // La scheda indica le ripetizioni per le sole righe che ora non sono riscaldamento
-                            placeholder={rowTarget(rows, setIndex, exercise)}
-                            inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
-                            onFocus={(e) => e.target.select()}
-                            onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'reps', e.target.value)}
-                            fullWidth
-                            size="small"
-                          />
-                          <FormControl fullWidth size="small">
-                            <InputLabel>{t('record.technique')}</InputLabel>
-                            <Select
-                              disabled={!!row.is_warmup}
-                              value={row.is_warmup ? '' : (row.intensity_technique || '')}
-                              label={t('record.technique')}
-                              onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'intensity_technique', e.target.value)}
-                            >
-                              <MenuItem value=""><em>{t('record.no_technique')}</em></MenuItem>
-                              {INTENSITY_TECHNIQUES.filter(tech => tech !== NO_TECHNIQUE).map(tech => (
-                                <MenuItem key={tech} value={tech}>{techniqueLabel(tech)}</MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
                         </Box>
-                      ))}
-                    </Box>
-                  </ListItem>
-                </React.Fragment>
+                        <TextField
+                          label={t('record.weight')}
+                          type="number"
+                          value={row.weight || ''}
+                          onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'weight', e.target.value)}
+                          inputProps={{ min: 0, max: MAX_WEIGHT, step: 0.5 }}
+                          fullWidth
+                          size="small"
+                          sx={{
+                            '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                              display: 'none',
+                            },
+                            '& input[type=number]': {
+                              MozAppearance: 'textfield',
+                            },
+                          }}
+                        />
+                        <TextField
+                          label={t('record.reps')}
+                          value={row.reps ?? ''}
+                          // La scheda indica le ripetizioni per le sole righe che ora non sono riscaldamento
+                          placeholder={rowTarget(rows, setIndex, exercise)}
+                          inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
+                          onFocus={(e) => e.target.select()}
+                          onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'reps', e.target.value)}
+                          fullWidth
+                          size="small"
+                        />
+                        <FormControl fullWidth size="small">
+                          <InputLabel>{t('record.technique')}</InputLabel>
+                          <Select
+                            {...techniqueNameProps(exercise, setIndex)}
+                            disabled={!!row.is_warmup}
+                            value={row.is_warmup ? '' : (row.intensity_technique || '')}
+                            label={t('record.technique')}
+                            onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'intensity_technique', e.target.value)}
+                          >
+                            <MenuItem value=""><em>{t('record.no_technique')}</em></MenuItem>
+                            {INTENSITY_TECHNIQUES.filter(tech => tech !== NO_TECHNIQUE).map(tech => (
+                              <MenuItem key={tech} value={tech}>{techniqueLabel(tech)}</MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </Box>
+                    ))}
+                  </Box>
+                </ListItem>
               ))}
             </List>
           )}

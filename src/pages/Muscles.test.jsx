@@ -125,6 +125,13 @@ describe('righe per muscolo', () => {
     expect(within(row('Abduttori')).getByText('nessun dato')).toBeTruthy();
   });
 
+  it('"pronto tra N giorni" va a capo, non è troncato con i puntini (1.4.12)', async () => {
+    await mount();
+    const { whiteSpace, textOverflow } = getComputedStyle(within(row('Quadricipiti')).getByText('pronto tra 2 giorni'));
+    expect(whiteSpace).not.toBe('nowrap');
+    expect(textOverflow).not.toBe('ellipsis');
+  });
+
   it('"Pronto" è verde e semigrassetto, "nessun dato" è in secondario', async () => {
     await mount();
     const pronto = within(row('Petto')).getByText('Pronto');

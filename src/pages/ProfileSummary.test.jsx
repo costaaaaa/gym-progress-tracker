@@ -6,6 +6,8 @@ import ProfileSummary from './ProfileSummary';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import i18n from '../i18n';
 import { textBelow } from '../test/minText';
+import { unnamedControls } from '../test/accessibleNames';
+import { mediaStyle } from '../test/mediaStyle';
 
 const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
@@ -46,6 +48,16 @@ const mount = async () => {
 };
 const style = (el) => getComputedStyle(el);
 
+describe('nomi accessibili', () => {
+  it('ogni barra di avanzamento dice di cosa è l\'avanzamento', async () => {
+    await mount();
+    ['Avanzamento verso il livello 8', 'Punti esperienza in Panca piana', 'Punti esperienza in Rematore con bilanciere']
+      .forEach((name) => expect(screen.getByRole('progressbar', { name })).toBeTruthy());
+    expect(screen.getAllByRole('progressbar', { name: /^Avanzamento verso / }).length).toBeGreaterThan(1);
+    expect(unnamedControls(['progressbar'])).toEqual([]);
+  });
+});
+
 describe('livello', () => {
   it('niente stella rossa decorativa accanto al livello', async () => {
     await mount();
@@ -71,6 +83,40 @@ describe('livello', () => {
   });
 });
 
+// Reflow a 320 px e spaziatura del testo (1.4.10, 1.4.12): niente riga forzata né troncamento con i puntini
+describe('testo che può andare a capo', () => {
+  it('le etichette delle statistiche vanno a capo', async () => {
+    await mount();
+    for (const label of ['sessioni', 'kg sollevati', 'settimane record']) {
+      expect(style(screen.getByText(label)).whiteSpace).not.toBe('nowrap');
+    }
+  });
+
+  it('con la spaziatura del testo aumentata le colonne possono restringersi sotto la parola più lunga', async () => {
+    await mount();
+    for (const label of ['sessioni', 'kg sollevati', 'settimane record']) {
+      const el = screen.getByText(label);
+      expect(style(el).overflowWrap).toBe('anywhere');
+      expect(style(el.parentElement).minWidth).toBe('0px');
+    }
+  });
+
+  it('da 390 px il nome dell\'esercizio resta su una riga con i puntini; sotto va a capo', async () => {
+    await mount();
+    const name = screen.getByText('Rematore con bilanciere');
+    expect(style(name)).toMatchObject({ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' });
+    expect(mediaStyle(name, 389.95, 'max')).toMatchObject({ 'white-space': 'normal', 'text-overflow': 'clip', overflow: 'visible' });
+  });
+
+  it('sui telefoni il gap tra le colonne delle statistiche è più piccolo, da 600 px come prima', async () => {
+    await mount();
+    const grid = screen.getByText('sessioni').parentElement.parentElement;
+    expect(mediaStyle(grid, 0)['column-gap']).toBe('16px');
+    expect(mediaStyle(grid, 600)['column-gap']).toBe('24px');
+    expect(mediaStyle(grid, 900)['column-gap']).toBe('40px');
+  });
+});
+
 describe('statistiche', () => {
   it('sessioni, kg sollevati e settimane record: tre colonne su una riga, in numero grande', async () => {
     await mount();
@@ -85,13 +131,12 @@ describe('statistiche', () => {
     expect(style(value).fontVariantNumeric).toBe('tabular-nums');
   });
 
-  it('le etichette sono grigie da 16px e non vanno a capo', async () => {
+  it('le etichette sono grigie da 16px', async () => {
     await mount();
     ['sessioni', 'kg sollevati', 'settimane record'].forEach((label) => {
       const s = style(screen.getByText(label));
       expect(s.fontSize).toBe('16px');
       expect(s.color).toBe(GREY);
-      expect(s.whiteSpace).toBe('nowrap');
     });
   });
 });

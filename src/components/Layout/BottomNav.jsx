@@ -11,6 +11,9 @@ import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 
 // Voce di navigazione standard (icona + etichetta), come link/bottone accessibile
 // (component=RouterLink su ButtonBase: focus da tastiera, aria-current sulla voce attiva).
+// Le voci riempiono la cella fino al bordo dello schermo: il contorno del focus sta dentro, non fuori
+const FOCUS_INSIDE = { '&.Mui-focusVisible': { outlineOffset: '-4px' } };
+
 const NavItem = ({ path, label, Icon, active }) => (
   <ButtonBase
     component={RouterLink}
@@ -25,12 +28,13 @@ const NavItem = ({ path, label, Icon, active }) => (
       gap: '3px',
       height: '100%',
       borderRadius: 0,
+      ...FOCUS_INSIDE,
     }}
   >
-    <Icon sx={{ fontSize: 21, color: active ? 'primary.main' : 'text.secondary' }} />
+    <Icon sx={{ fontSize: 21, color: active ? 'primary.text' : 'text.secondary' }} />
     <Box
       component="span"
-      sx={{ fontSize: '10.5px', fontWeight: active ? 700 : 500, color: active ? 'primary.main' : 'text.secondary' }}
+      sx={{ fontSize: '10.5px', fontWeight: active ? 700 : 500, color: active ? 'primary.text' : 'text.secondary' }}
     >
       {label}
     </Box>
@@ -83,7 +87,7 @@ const BottomNav = () => {
         to="/focus"
         disableRipple
         aria-label={t('nav.focus_aria')}
-        sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', borderRadius: 0 }}
+        sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', borderRadius: 0, ...FOCUS_INSIDE }}
       >
         <Box
           sx={{
@@ -102,7 +106,7 @@ const BottomNav = () => {
         >
           <PlayArrowIcon sx={{ color: 'common.white', fontSize: 22 }} />
         </Box>
-        <Box component="span" sx={{ fontSize: '10.5px', fontWeight: 700, color: 'primary.main', transform: 'translateY(-10px)' }}>
+        <Box component="span" sx={{ fontSize: '10.5px', fontWeight: 700, color: 'primary.text', transform: 'translateY(-10px)' }}>
           Focus
         </Box>
       </ButtonBase>
@@ -114,7 +118,7 @@ const BottomNav = () => {
         to="/profilo"
         disableRipple
         aria-current={profileActive ? 'page' : undefined}
-        sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', height: '100%', borderRadius: 0 }}
+        sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', height: '100%', borderRadius: 0, ...FOCUS_INSIDE }}
       >
         <Box
           sx={{
@@ -133,7 +137,7 @@ const BottomNav = () => {
         >
           {initials}
         </Box>
-        <Box component="span" sx={{ fontSize: '10.5px', fontWeight: profileActive ? 700 : 500, color: profileActive ? 'primary.main' : 'text.secondary' }}>
+        <Box component="span" sx={{ fontSize: '10.5px', fontWeight: profileActive ? 700 : 500, color: profileActive ? 'primary.text' : 'text.secondary' }}>
           {t('nav.profile')}
         </Box>
       </ButtonBase>

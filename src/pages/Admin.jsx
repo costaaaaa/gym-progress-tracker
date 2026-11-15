@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Box, CircularProgress, Container, Typography } from '@mui/material';
 import { usePageMeta } from '../hooks/usePageMeta';
 import RequireLogin from '../components/Groups/RequireLogin';
@@ -36,7 +37,8 @@ const AdminContent = () => {
 };
 
 const Admin = () => {
-  usePageMeta('Admin', 'Area di amministrazione di LiftIndex.');
+  const { t } = useTranslation();
+  usePageMeta(t('admin.meta.title'), t('admin.meta.description'));
   return (
     <Container maxWidth="md" sx={{ py: 3 }}>
       <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 22, mb: 3 }}>Admin</Typography>

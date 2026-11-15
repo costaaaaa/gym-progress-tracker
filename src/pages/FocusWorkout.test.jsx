@@ -7,6 +7,7 @@ import { json } from '../test/dom';
 import { currentTimeZone } from '../utils/workoutTime';
 import { setBrowserTimeZone } from '../test/timeZone';
 import { DROP, plannedSets, times } from '../test/plannedSets';
+import { unnamedControls } from '../test/accessibleNames';
 
 const { mockNavigate, mockTrack } = vi.hoisted(() => ({ mockNavigate: vi.fn(), mockTrack: vi.fn() }));
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => mockNavigate }));
@@ -1287,5 +1288,61 @@ describe('scelta del giorno con una scheda appena creata', () => {
     fireEvent.mouseDown(screen.getByRole('combobox'));
     fireEvent.click(screen.getByRole('option', { name: 'Push' }));
     expect(screen.queryByText(/Questo giorno non ha esercizi/)).toBeNull();
+  });
+});
+
+describe('nomi accessibili', () => {
+  it('scelta del giorno: il tasto indietro e il menu dei giorni hanno un nome', async () => {
+    await mount();
+    expect(screen.getByRole('button', { name: 'Indietro' })).toBeTruthy();
+    expect(screen.getByRole('combobox', { name: 'Seleziona giorno' })).toBeTruthy();
+    expect(unnamedControls()).toEqual([]);
+  });
+
+  it('la lista aperta dei giorni ha un nome', async () => {
+    await mount();
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Seleziona giorno' }));
+    expect(screen.getByRole('listbox', { name: 'Seleziona giorno' })).toBeTruthy();
+  });
+
+  it('la lista aperta della tecnica ha un nome', async () => {
+    await startDay('Push');
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Tecnica di intensità' }));
+    expect(screen.getByRole('listbox', { name: 'Tecnica di intensità' })).toBeTruthy();
+  });
+
+  it('allenamento: uscita, avanzamento e menu della tecnica hanno un nome', async () => {
+    await startDay('Push');
+    expect(screen.getByRole('button', { name: 'Esci dall\'allenamento' })).toBeTruthy();
+    expect(screen.getByRole('progressbar', { name: 'Avanzamento dell\'allenamento' })).toBeTruthy();
+    expect(screen.getByRole('combobox', { name: 'Tecnica di intensità' })).toBeTruthy();
+    expect(unnamedControls()).toEqual([]);
+  });
+
+  it('recupero: il cerchio che si svuota dice che cosa misura, quello di sfondo non è esposto', async () => {
+    await startDay('Push');
+    doSet();
+    expect(screen.getByRole('progressbar', { name: 'Avanzamento del recupero' })).toBeTruthy();
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1);
+    expect(unnamedControls()).toEqual([]);
+  });
+
+  it('riepilogo: il tasto per uscire ha un nome', async () => {
+    await startDay('Push');
+    doSet();
+    click('Salta timer');
+    doSet();
+    expect(screen.getByRole('button', { name: 'Esci dall\'allenamento' })).toBeTruthy();
+    expect(unnamedControls()).toEqual([]);
+  });
+
+  it('il picker degli esercizi: il tasto di chiusura ha un nome e non finisce in quello del dialogo', async () => {
+    responses['user/read.php'] = () => json({ rest_timer_enabled: true, features: ['focus_session_edit'] });
+    await startDay('Push');
+    click('Cambia esercizio');
+    await advance(0);
+    expect(screen.getByRole('dialog', { name: 'Cambia esercizio' })).toBeTruthy();
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Chiudi' })).toBeTruthy();
+    expect(unnamedControls()).toEqual([]);
   });
 });

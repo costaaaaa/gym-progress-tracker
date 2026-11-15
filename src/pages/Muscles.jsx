@@ -73,7 +73,6 @@ const MuscleRow = ({ muscle, week, prev, status, days, max }) => {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.75, pl: 2.25 }}>
         <Bar value={week} max={max} label={muscleLabel(muscle)} />
         <Typography
-          noWrap
           sx={{
             width: 120,
             textAlign: 'right',
