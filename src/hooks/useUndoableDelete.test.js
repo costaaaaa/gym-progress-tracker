@@ -11,7 +11,6 @@ vi.mock('../utils/focus', async (importOriginal) => ({ ...(await importOriginal(
 beforeEach(() => { vi.useFakeTimers(); });
 afterEach(() => {
   isKeyboardFocus.mockReset(); // un valore rimasto in coda non passa al test dopo
-  isKeyboardFocus.mockReturnValue(true);
   vi.useRealTimers();
 });
 

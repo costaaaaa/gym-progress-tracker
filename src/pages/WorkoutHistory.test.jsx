@@ -49,7 +49,6 @@ beforeEach(() => {
 });
 afterEach(() => {
   isKeyboardFocus.mockReset(); // un valore rimasto in coda non passa al test dopo
-  isKeyboardFocus.mockReturnValue(true);
   vi.useRealTimers();
   vi.unstubAllGlobals();
   window.matchMedia = originalMatchMedia;
