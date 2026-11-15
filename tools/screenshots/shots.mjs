@@ -150,12 +150,6 @@ const recovery = {
   femorali: { status: 'AFFATICATO', ready_at: stamp(3, '08:00:00') },
 };
 
-// Utente appena iscritto: nessuna scheda, nessun allenamento, nessun muscolo mai allenato (come li manda il server)
-const recoveryNuovo = Object.fromEntries(['petto', 'schiena', 'spalle', 'bicipiti', 'tricipiti', 'addome', 'quadricipiti', 'femorali', 'glutei', 'adduttori', 'abduttori', 'polpacci']
-  .map((group) => [group, { status: 'PRONTO', percent: 100, last_trained: null, ready_at: null }]));
-// Un solo allenamento fatto: ogni esercizio è "Nuovo" nei Progressi
-const HISTORY_UNO = HISTORY.slice(0, 1);
-
 const GROUP_ROWS = [
   { rank: 1, username: 'atleta_2', is_me: false, workouts: 3, goal: 3, volume_kg: 5420, adherence: 1 },
   { rank: 2, username: 'atleta_demo', is_me: true, workouts: 2, goal: 3, volume_kg: 4820, adherence: 0.67 },
@@ -169,40 +163,72 @@ const user = ({ admin }) => ({
   rest_timer_enabled: true, locale: 'it', language: 'it', features: [], is_admin: admin,
 });
 
+// Utenti dei dati finti: `attivo` è l'utente di tutte le pagine; gli altri cambiano solo ciò che li distingue.
+// `nuovo` risponde come un account vuoto (livello 1, nessuna streak, nessun gruppo, muscoli mai allenati).
+// `un-allenamento`: un solo allenamento fatto, quindi ogni esercizio è "Nuovo" nei Progressi.
+const PROFILE_ATTIVO = {
+  success: true, level: 7, total_xp: 3140, xp_into_level: 340, xp_for_next_level: 600,
+  lifetime_volume_kg: 184250, total_sessions: 58, longest_streak: 5,
+  exercises: [
+    { exercise_id: 3, name: 'Panca piana', level: 6, xp: 820 },
+    { exercise_id: 6, name: 'Rematore con bilanciere', level: 5, xp: 610 },
+    { exercise_id: 7, name: 'Squat', level: 4, xp: 430 },
+  ],
+  achievements: [
+    { key: 's10', category: 'sessions', label: '10 sessioni', threshold: 10, unlocked_at: stamp(-200, '18:00:00'), locked: false },
+    { key: 's50', category: 'sessions', label: '50 sessioni', threshold: 50, unlocked_at: null, locked: true },
+    { key: 't10000', category: 'tonnage', label: '10.000 kg sollevati', threshold: 10000, unlocked_at: stamp(-120, '18:00:00'), locked: false },
+    { key: 't100000', category: 'tonnage', label: '100.000 kg sollevati', threshold: 100000, unlocked_at: null, locked: true },
+    { key: 'st4', category: 'streak', label: '4 settimane di fila', threshold: 4, unlocked_at: stamp(-30, '18:00:00'), locked: false },
+    { key: 'st12', category: 'streak', label: '12 settimane di fila', threshold: 12, unlocked_at: null, locked: true },
+  ],
+};
+const ATTIVO = {
+  history: HISTORY,
+  plans: [plan, planInactive],
+  weekly: { workouts: 2, kg: 4820, reps: 118 },
+  recovery,
+  streak: { current_streak_weeks: 3, longest_streak_weeks: 5, this_week: { count: 2, goal: 3, completed: false } },
+  profile: PROFILE_ATTIVO,
+  groups: [
+    { id: 1, name: 'Palestra Esempio', type: 'gym', members_count: 4, my_role: 'owner' },
+    { id: 2, name: 'Amici del sabato', type: 'friends', members_count: 3, my_role: 'member' },
+  ],
+};
+// I muscoli di MUSCLE_GROUPS (src/utils/recoveryGroups.js): il file non si importa da Node (import senza estensione)
+const MUSCLI = ['petto', 'schiena', 'spalle', 'bicipiti', 'tricipiti', 'addome', 'quadricipiti', 'femorali', 'glutei', 'adduttori', 'abduttori', 'polpacci'];
+const UTENTI = {
+  attivo: ATTIVO,
+  'un-allenamento': { ...ATTIVO, history: HISTORY.slice(0, 1) },
+  nuovo: {
+    history: [],
+    plans: [],
+    weekly: { workouts: 0, kg: 0, reps: 0 },
+    recovery: Object.fromEntries(MUSCLI.map((group) => [group, { status: 'PRONTO', percent: 100, last_trained: null }])),
+    streak: { current_streak_weeks: 0, longest_streak_weeks: 0, this_week: { count: 0, goal: 3, completed: false } },
+    profile: {
+      success: true, level: 1, total_xp: 0, xp_into_level: 0, xp_for_next_level: 100,
+      lifetime_volume_kg: 0, total_sessions: 0, longest_streak: 0, exercises: [],
+      achievements: PROFILE_ATTIVO.achievements.map((a) => ({ ...a, unlocked_at: null, locked: true })),
+    },
+    groups: [],
+  },
+};
+
 const fixtures = [
   ['user/read.php', user],
   ['user/consent.php', () => ({ success: true, consents: { terms: { granted: true }, health_data: { granted: true } } })],
-  ['workout_history/read.php', ({ utente }) => ({ success: true, records: utente === 'nuovo' ? [] : utente === 'un-allenamento' ? HISTORY_UNO : HISTORY })],
-  ['workout/read_plans.php', ({ plans, utente }) => ({ success: true, records: utente === 'nuovo' ? [] : plans ? PLAN_SETS[plans] : [plan, planInactive] })],
-  ['workout_stats/dashboard.php', ({ utente }) => ({
-    success: true, weekly_workouts: utente === 'nuovo' ? 0 : 2, weekly_goal: 3,
-    weekly_volume: { total_weight: utente === 'nuovo' ? 0 : 4820, total_reps: utente === 'nuovo' ? 0 : 118 },
-    recovery: utente === 'nuovo' ? recoveryNuovo : recovery,
+  ['workout_history/read.php', ({ u }) => ({ success: true, records: u.history })],
+  ['workout/read_plans.php', ({ plans, u }) => ({ success: true, records: plans ? PLAN_SETS[plans] : u.plans })],
+  ['workout_stats/dashboard.php', ({ u }) => ({
+    success: true, weekly_workouts: u.weekly.workouts, weekly_goal: 3,
+    weekly_volume: { total_weight: u.weekly.kg, total_reps: u.weekly.reps }, recovery: u.recovery,
   })],
-  ['gamification/streak.php', () => ({ success: true, current_streak_weeks: 3, longest_streak_weeks: 5, this_week: { count: 2, goal: 3, completed: false } })],
-  ['gamification/profile.php', () => ({
-    success: true, level: 7, total_xp: 3140, xp_into_level: 340, xp_for_next_level: 600,
-    lifetime_volume_kg: 184250, total_sessions: 58, longest_streak: 5,
-    exercises: [
-      { exercise_id: 3, name: 'Panca piana', level: 6, xp: 820 },
-      { exercise_id: 6, name: 'Rematore con bilanciere', level: 5, xp: 610 },
-      { exercise_id: 7, name: 'Squat', level: 4, xp: 430 },
-    ],
-    achievements: [
-      { key: 's10', category: 'sessions', label: '10 sessioni', threshold: 10, unlocked_at: stamp(-200, '18:00:00'), locked: false },
-      { key: 's50', category: 'sessions', label: '50 sessioni', threshold: 50, unlocked_at: null, locked: true },
-      { key: 't10000', category: 'tonnage', label: '10.000 kg sollevati', threshold: 10000, unlocked_at: stamp(-120, '18:00:00'), locked: false },
-      { key: 't100000', category: 'tonnage', label: '100.000 kg sollevati', threshold: 100000, unlocked_at: null, locked: true },
-      { key: 'st4', category: 'streak', label: '4 settimane di fila', threshold: 4, unlocked_at: stamp(-30, '18:00:00'), locked: false },
-      { key: 'st12', category: 'streak', label: '12 settimane di fila', threshold: 12, unlocked_at: null, locked: true },
-    ],
-  })],
+  ['gamification/streak.php', ({ u }) => ({ success: true, ...u.streak })],
+  ['gamification/profile.php', ({ u }) => u.profile],
   ['exercise/read_all.php', () => ({ success: true, records: CATALOG })],
   ['user_stats/read.php', () => ({ success: true, records: BODY, consent_required: false, consent_updated: false })],
-  ['groups/list.php', () => ({ success: true, groups: [
-    { id: 1, name: 'Palestra Esempio', type: 'gym', members_count: 4, my_role: 'owner' },
-    { id: 2, name: 'Amici del sabato', type: 'friends', members_count: 3, my_role: 'member' },
-  ] })],
+  ['groups/list.php', ({ u }) => ({ success: true, groups: u.groups })],
   ['groups/read.php', () => ({
     success: true,
     group: { id: 1, name: 'Palestra Esempio', type: 'gym', invite_code: 'ESEMPIO7', invite_enabled: true, members_count: 4, max_members: 30, my_role: 'owner', name_locked: false, name_locked_until: null },
@@ -292,7 +318,7 @@ async function openPage(vp, theme, opts, tag) {
   await ctx.route('**/backend/**', (route) => {
     const url = route.request().url();
     const hit = fixtures.find(([key]) => url.includes(key));
-    const body = hit ? hit[1]({ admin: opts.admin === true, plans: opts.plans, utente: opts.utente }) : fallback;
+    const body = hit ? hit[1]({ admin: opts.admin === true, plans: opts.plans, u: UTENTI[opts.utente ?? 'attivo'] }) : fallback;
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
   });
   const page = await ctx.newPage();

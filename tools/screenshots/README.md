@@ -10,7 +10,7 @@ Il kit è separato dall'app: ha un suo `package.json` e non tocca quello di `gym
 
 - `shots.mjs <cartella> [porta]`: 13 pagine, i giorni delle schede aperti con i dialog dell'editor
   delle serie (4 immagini) e le 5 schermate del Focus, con 390 e 1440 px di larghezza e tema
-  chiaro/scuro (80 immagini). Ogni schermata usa un contesto browser nuovo con orologio fisso
+  chiaro/scuro. Ogni schermata usa un contesto browser nuovo con orologio fisso
   (2026-10-23 10:00, Europe/Rome), `reducedMotion: reduce`, animazioni CSS azzerate, font pronti
   e rete ferma.
   Le API sono finte: ogni risposta del backend è in `fixtures` dentro `shots.mjs`, con dati inventati
