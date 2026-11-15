@@ -95,10 +95,10 @@ export default function SummaryPhase({
                   )}
                   {pr.isPR && (
                     <Chip
-                      icon={<TrophyIcon sx={{ fontSize: 16, color: `${colors.warning} !important` }} />}
+                      icon={<TrophyIcon sx={{ fontSize: 16, color: `${colors.warningText} !important` }} />}
                       label={prParts.length ? t('focus.new_record_parts', { parts: prParts.join(', ') }) : t('focus.new_record')}
                       size="small"
-                      sx={{ bgcolor: 'warning.muted', color: colors.warning, fontWeight: 700, fontSize: '0.7rem' }}
+                      sx={{ bgcolor: 'warning.muted', color: colors.warningText, fontWeight: 700, fontSize: '0.7rem' }}
                     />
                   )}
                   {!!pr.volume && (
@@ -136,7 +136,7 @@ export default function SummaryPhase({
                 border: `1px solid ${colors.border}`,
                 p: 2.5, mb: 3, textAlign: 'center'
               }}>
-                <FireIcon sx={{ fontSize: 40, color: colors.warning, mb: 0.5 }} />
+                <FireIcon sx={{ fontSize: 40, color: colors.warningText, mb: 0.5 }} />
                 <Typography variant="h6" component="h2" sx={{ fontWeight: 700, color: colors.text }}>
                   {savedResult.new_longest
                     ? t('focus.streak_new_longest', { weeks: savedResult.current_streak_weeks })
@@ -195,7 +195,7 @@ export default function SummaryPhase({
                     ⏱ {elapsedTime} · {t('focus.exercises_count', { count: exercisesCompleted })} · {t('focus.sets_count', { count: totalSets })}
                   </Typography>
                   {prList.length > 0 && (
-                    <Typography variant="body2" sx={{ color: colors.warning, mb: 0.5 }}>
+                    <Typography variant="body2" sx={{ color: colors.warningText, mb: 0.5 }}>
                       {t('focus.new_records', { list: prList.join(', ') })}
                     </Typography>
                   )}

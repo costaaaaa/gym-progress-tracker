@@ -840,7 +840,7 @@ const Account = ({ isEmbedded = false }) => {
               {t('account.consent.help')}
             </Typography>
             {healthConsentOutdated && healthConsent !== true && (
-              <Typography sx={{ fontSize: 16, color: 'warning.main', mt: 0.5 }}>
+              <Typography sx={{ fontSize: 16, color: 'warning.text', mt: 0.5 }}>
                 {t('account.consent.outdated')}
               </Typography>
             )}

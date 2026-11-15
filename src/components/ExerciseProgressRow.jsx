@@ -84,7 +84,7 @@ const ExerciseProgressRow = ({ item, showMuscle = false, favorite, onToggleFavor
         onClick={() => onToggleFavorite(item.id)}
         aria-label={favorite ? t('progress.favorite_remove') : t('progress.favorite_add')}
         aria-pressed={favorite}
-        sx={{ width: 44, height: 44, color: favorite ? 'warning.main' : 'text.disabled' }}
+        sx={{ width: 44, height: 44, color: favorite ? 'warning.text' : 'text.disabled' }}
       >
         {favorite ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
       </IconButton>

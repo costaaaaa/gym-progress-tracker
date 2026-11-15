@@ -7,7 +7,7 @@ export default function WarmupBadge({ sx }) {
   return (
     <Box component="span" sx={{
       fontSize: 10, fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase',
-      color: 'warning.main', border: '1px solid', borderColor: 'warning.main', borderRadius: '6px', px: 0.5, lineHeight: 1.6, ...sx,
+      color: 'warning.text', border: '1px solid', borderColor: 'warning.text', borderRadius: '6px', px: 0.5, lineHeight: 1.6, ...sx,
     }}>
       {t('common.warmup_badge')}
     </Box>

@@ -85,6 +85,9 @@ export const ThemeModeProvider = ({ children }) => {
           },
           warning: {
             main: mode === 'light' ? '#d97706' : '#f59e0b',
+            // Arancio quando è il colore di un testo o di un'icona: #d97706 dà 2.9 : 1 sul grigio #f5f5f5 (serve 4.5 : 1);
+            // questo arriva ad almeno 4.6 : 1 su bianco, fondo pagina, grigio e chip dei record. In scuro main basta già.
+            text: mode === 'light' ? '#a85007' : '#f59e0b',
             // Chip "nuovo record" in Focus: arancio proprio, non legato a warning.main
             muted: 'rgba(255, 167, 38, 0.15)',
           },

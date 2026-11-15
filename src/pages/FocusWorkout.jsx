@@ -115,7 +115,7 @@ const FocusWorkout = () => {
       <Dialog open={premiumDialog.open} onClose={premiumDialog.onClose}
         PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: radius.xxl } }}>
         <DialogTitle sx={{ color: colors.text, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <LockIcon sx={{ color: colors.warning }} /> {t('focus.premium_title')}
+          <LockIcon sx={{ color: colors.warningText }} /> {t('focus.premium_title')}
         </DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ color: colors.textSecondary }}>

@@ -46,7 +46,7 @@ const StreakCard = () => {
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, flexWrap: 'wrap' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <LocalFireDepartmentIcon sx={{ fontSize: 30, color: 'warning.main' }} />
+          <LocalFireDepartmentIcon sx={{ fontSize: 30, color: 'warning.text' }} />
           <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 30, lineHeight: 1 }}>
             {current_streak_weeks}
           </Typography>
