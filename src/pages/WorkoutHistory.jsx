@@ -14,7 +14,6 @@ import {
   IconButton,
   Alert,
   Snackbar,
-  Container,
   Link as MuiLink,
   Button,
   Dialog,
@@ -546,7 +545,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
 
   return (
     <>
-      {isEmbedded ? renderContent() : <Container maxWidth="lg" sx={{ py: 2 }}>{renderContent()}</Container>}
+      {isEmbedded ? renderContent() : <Box sx={{ py: 2 }}>{renderContent()}</Box>}
       {activePlan && <RecordWorkoutDialog open={openRecordDialog} onClose={handleRecordWorkout} activePlan={activePlan} />}
       <Dialog open={openDeleteDialog} onClose={handleCloseDeleteDialog}>
         <DialogTitle>{t('history.delete.title')}</DialogTitle>

@@ -1,6 +1,5 @@
 import { Fragment, useState, useEffect } from 'react';
 import {
-  Container,
   Typography,
   Grid,
   Box,
@@ -537,7 +536,7 @@ const BodyStats = ({ isEmbedded = false }) => {
       {isEmbedded ? (
         <Box sx={{ mt: 2 }}>{renderContent()}</Box>
       ) : (
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>{renderContent()}</Container>
+        <Box sx={{ mt: 4, mb: 4 }}>{renderContent()}</Box>
       )}
 
       {/* Dialog Nuova Misurazione */}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import {
-  Alert, Box, Button, Card, Chip, CircularProgress, Container, Dialog, DialogActions, DialogContent,
+  Alert, Box, Button, Card, Chip, CircularProgress, Dialog, DialogActions, DialogContent,
   DialogContentText, DialogTitle, Grid, IconButton, Snackbar, Switch, FormControlLabel, Tab, Tabs, TextField, Tooltip, Typography,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -121,10 +121,10 @@ const GroupDetailContent = () => {
 
   if (error) {
     return (
-      <Container maxWidth="md" sx={{ py: 3 }}>
+      <Box sx={{ py: 3 }}>
         <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
         <Button component={RouterLink} to="/gruppi" startIcon={<ArrowBackIcon />} sx={{ fontSize: 16 }}>{t('groups.join.your_groups')}</Button>
-      </Container>
+      </Box>
     );
   }
   if (!data) {
@@ -165,7 +165,7 @@ const GroupDetailContent = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 3 }}>
+    <Box sx={{ py: 3 }}>
       <Button component={RouterLink} to="/gruppi" startIcon={<ArrowBackIcon />} sx={{ ...NEUTRAL_TEXT, mb: 1 }}>{t('groups.join.your_groups')}</Button>
       <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, flexWrap: 'wrap', mb: 3 }}>
         <Typography variant="pageTitle">{group.name}</Typography>
@@ -292,7 +292,7 @@ const GroupDetailContent = () => {
         }}
       />
       <Snackbar open={Boolean(toast)} autoHideDuration={4000} onClose={() => setToast('')} message={toast} />
-    </Container>
+    </Box>
   );
 };
 
