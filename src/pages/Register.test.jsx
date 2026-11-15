@@ -207,40 +207,56 @@ describe('campi data su telefono: il nome contiene l\'etichetta visibile', () =>
   });
 });
 
-// Senza data scelta il calendario si apre sulla vista anni, centrata su 30 anni fa (non sul mese di «oggi - 14 anni»).
+// Senza data scelta il calendario si apre sulla vista anni, centrata su 30 anni fa (non sul mese di «oggi - 14 anni»);
+// poi si sceglie il mese e il giorno.
 describe('calendario della data di nascita: apertura su un anno sensato', () => {
-  afterEach(() => { vi.useRealTimers(); });
-
-  it('senza data scelta si apre sulla scelta dell\'anno, vicino a 30 anni fa', async () => {
+  beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date(2026, 5, 15, 12, 0, 0));
+  });
+  afterEach(() => { vi.useRealTimers(); });
+
+  const field = () => screen.getByRole('textbox', { name: /^Data di nascita/ });
+  const openBirthPicker = async () => {
+    fireEvent.click(field());
+    return screen.findByRole('dialog');
+  };
+  const goToStep2 = async () => {
     renderRegister();
     fillStep1();
     fireEvent.click(screen.getByRole('button', { name: 'Avanti' }));
     await screen.findByText('Il tuo profilo');
-    fireEvent.click(screen.getByRole('textbox', { name: /^Data di nascita/ }));
-    const dialog = await screen.findByRole('dialog');
-    // vista anni: il 1996 (2026 - 30) è tra le scelte, e non c'è la griglia dei giorni del mese
-    expect(within(dialog).getByRole('radio', { name: '1996' })).toBeTruthy();
+  };
+
+  it('senza data scelta si apre sulla scelta dell\'anno, con 30 anni fa come anno di riferimento', async () => {
+    await goToStep2();
+    const dialog = await openBirthPicker();
+    // vista anni, non la griglia dei giorni; solo l'anno di riferimento (2026 - 30) è raggiungibile con Tab
     expect(within(dialog).queryByRole('gridcell', { name: '15' })).toBeNull();
+    expect(within(dialog).getByRole('radio', { name: '1996' }).tabIndex).toBe(0);
+    expect(within(dialog).getByRole('radio', { name: '2012' }).tabIndex).toBe(-1);
+  });
+
+  it('dopo l\'anno si sceglie il mese, poi il giorno di quel mese', async () => {
+    await goToStep2();
+    const dialog = await openBirthPicker();
+    fireEvent.click(within(dialog).getByRole('radio', { name: '1996' }));
+    fireEvent.click(await within(dialog).findByRole('radio', { name: 'marzo' }));
+    expect(await within(dialog).findByText(/marzo 1996/i)).toBeTruthy();
+    // marzo ha 31 giorni (aprile, il mese di oggi con giorno 30, no)
+    expect(within(dialog).getByRole('gridcell', { name: '31' })).toBeTruthy();
   });
 
   it('con una data già scelta si apre sul suo mese, non sulla scelta dell\'anno', async () => {
-    vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date(2026, 5, 15, 12, 0, 0));
-    renderRegister();
-    fillStep1();
-    fireEvent.click(screen.getByRole('button', { name: 'Avanti' }));
-    await screen.findByText('Il tuo profilo');
-    const field = () => screen.getByRole('textbox', { name: /^Data di nascita/ });
-    fireEvent.click(field());
-    let dialog = await screen.findByRole('dialog');
+    await goToStep2();
+    let dialog = await openBirthPicker();
     fireEvent.click(within(dialog).getByRole('radio', { name: '1996' }));
+    fireEvent.click(await within(dialog).findByRole('radio', { name: 'marzo' }));
     fireEvent.click(await within(dialog).findByRole('gridcell', { name: '10' }));
-    fireEvent.click(within(dialog).getByRole('button', { name: /^(OK|Ok)$/ }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'OK' }));
     await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    fireEvent.click(field());
-    dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByRole('gridcell', { name: '10' })).toBeTruthy();
+    dialog = await openBirthPicker();
+    expect(within(dialog).getByText(/marzo 1996/i)).toBeTruthy();
+    expect(within(dialog).getByRole('gridcell', { name: '10', selected: true })).toBeTruthy();
   });
 });
