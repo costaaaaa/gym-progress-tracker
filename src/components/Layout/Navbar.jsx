@@ -91,6 +91,7 @@ const Navbar = () => {
           display: { xs: 'flex', sm: 'grid' },
           flexWrap: 'wrap',
           rowGap: 0.5,
+          columnGap: 1,
           gridTemplateColumns: { sm: '1fr auto', md: '1fr auto 1fr' },
           alignItems: 'center',
           minHeight: '64px !important',
@@ -179,6 +180,8 @@ const Navbar = () => {
               onClick={toggleThemeMode}
               size="small"
               sx={{
+                width: 40,
+                height: 40,
                 color: 'text.secondary',
                 bgcolor: 'navToggle.bg',
                 '&:hover': { bgcolor: 'navToggle.hover' },
