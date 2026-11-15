@@ -1279,6 +1279,18 @@ describe('nomi accessibili', () => {
     expect(unnamedControls()).toEqual([]);
   });
 
+  it('la lista aperta dei giorni ha un nome', async () => {
+    await mount();
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Seleziona giorno' }));
+    expect(screen.getByRole('listbox', { name: 'Seleziona giorno' })).toBeTruthy();
+  });
+
+  it('la lista aperta della tecnica ha un nome', async () => {
+    await startDay('Push');
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Tecnica di intensità' }));
+    expect(screen.getByRole('listbox', { name: 'Tecnica di intensità' })).toBeTruthy();
+  });
+
   it('allenamento: uscita, avanzamento e menu della tecnica hanno un nome', async () => {
     await startDay('Push');
     expect(screen.getByRole('button', { name: 'Esci dall\'allenamento' })).toBeTruthy();

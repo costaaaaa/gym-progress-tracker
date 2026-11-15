@@ -164,6 +164,18 @@ describe('nomi accessibili', () => {
     expect(screen.getByRole('combobox', { name: /^Seleziona giorno/ })).toBeTruthy();
     [1, 2, 3, 4].forEach((n) => expect(screen.getByRole('combobox', { name: `Tecnica, Squat, serie ${n}` })).toBeTruthy());
   });
+
+  it('la lista aperta della tecnica ha lo stesso nome della sua riga', () => {
+    open();
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Tecnica, Squat, serie 4' }));
+    expect(screen.getByRole('listbox', { name: 'Tecnica, Squat, serie 4' })).toBeTruthy();
+  });
+
+  it('la lista aperta del giorno ha un nome', () => {
+    render(<RecordWorkoutDialog open onClose={() => {}} activePlan={basePlan} />);
+    fireEvent.mouseDown(screen.getByRole('combobox'));
+    expect(screen.getByRole('listbox', { name: /^Seleziona giorno/ })).toBeTruthy();
+  });
 });
 
 describe('struttura accessibile', () => {

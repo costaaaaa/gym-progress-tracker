@@ -198,6 +198,8 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
     return notes && notes.length > 50;
   };
 
+  const techniqueName = (exercise, setIndex) => t('record.technique_aria', { exercise: exercise.exercise_name, n: setIndex + 1 });
+
   return (
     <Dialog open={open} onClose={() => onClose(false)} maxWidth="sm" fullWidth>
       <DialogTitle>{t('record.title')}</DialogTitle>
@@ -341,7 +343,8 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                         <FormControl fullWidth size="small">
                           <InputLabel>{t('record.technique')}</InputLabel>
                           <Select
-                            SelectDisplayProps={{ 'aria-labelledby': undefined, 'aria-label': t('record.technique_aria', { exercise: exercise.exercise_name, n: setIndex + 1 }) }}
+                            SelectDisplayProps={{ 'aria-labelledby': undefined, 'aria-label': techniqueName(exercise, setIndex) }}
+                            MenuProps={{ MenuListProps: { 'aria-label': techniqueName(exercise, setIndex) } }}
                             disabled={!!row.is_warmup}
                             value={row.is_warmup ? '' : (row.intensity_technique || '')}
                             label={t('record.technique')}
