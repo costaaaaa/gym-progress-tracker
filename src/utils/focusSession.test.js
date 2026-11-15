@@ -40,6 +40,11 @@ describe('lastSessionSets: il riscaldamento non è "ultima volta" (#66)', () => 
     expect(lastSessionSets({ sets: [{ weight: 82.5, reps: 5 }] }, 'en-US')[0].label).toBe('82.5\u00a0kg\u00a0×\u00a05');
   });
 
+  it('senza peso usa l\'etichetta passata dal chiamante, non un testo fisso', () => {
+    const chips = lastSessionSets({ sets: [{ weight: 0, reps: 8 }] }, 'en-US', (reps) => `${reps} reps`);
+    expect(chips[0].label).toBe('8 reps');
+  });
+
   it('senza sessione precedente ritorna un elenco vuoto', () => {
     expect(lastSessionSets(null)).toEqual([]);
   });

@@ -87,7 +87,7 @@ export default function WorkoutPhase({
           </Typography>
 
           {(() => {
-            const lastSets = lastSessionSets(lastSession, intlLocale());
+            const lastSets = lastSessionSets(lastSession, intlLocale(), (reps) => t('focus.last_reps', { reps }));
             if (lastSets.length === 0) return null;
             return (
               <Box sx={{

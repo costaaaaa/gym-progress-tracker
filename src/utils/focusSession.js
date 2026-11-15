@@ -97,12 +97,13 @@ export const slotWeight = (exercise, slotIndex, { suggested = '', current = '' }
 };
 
 // Serie dell'ultima sessione per le chip "Ultima volta": [{ label, technique }]
-export const lastSessionSets = (lastSession, locale) => {
+// repsLabel(reps) scrive le ripetizioni di una serie senza peso: il testo lo dà il chiamante (lingua).
+export const lastSessionSets = (lastSession, locale, repsLabel) => {
   if (!lastSession || !Array.isArray(lastSession.sets)) return [];
   return lastSession.sets.filter(isWorkingSet).map((s) => {
     const w = parseFloat(s.weight) || 0;
     return {
-      label: w > 0 ? formatSet(w, s.reps, locale) : `${s.reps} rip`,
+      label: w > 0 ? formatSet(w, s.reps, locale) : repsLabel(s.reps),
       technique: s.intensity_technique || '',
     };
   });

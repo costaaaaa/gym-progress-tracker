@@ -773,6 +773,7 @@
   "focus.skip_timer": "Salta timer",
   "focus.set_skipped": "Serie saltata",
   "focus.last_time": "Ultima volta",
+  "focus.last_reps": "{{reps}} rip",
   "focus.technique": "Tecnica di intensità",
   "focus.confirm_set": "Conferma serie",
   "focus.skip_set": "Salta serie",

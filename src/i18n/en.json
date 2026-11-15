@@ -773,6 +773,7 @@
   "focus.skip_timer": "Skip timer",
   "focus.set_skipped": "Set skipped",
   "focus.last_time": "Last time",
+  "focus.last_reps": "{{reps}} reps",
   "focus.technique": "Intensity technique",
   "focus.confirm_set": "Confirm set",
   "focus.skip_set": "Skip set",
