@@ -1,5 +1,5 @@
 // Chip "Ultima volta" di Focus: una serie senza peso ("8 rip" / "8 reps") segue la lingua
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
 import i18n from '../../i18n';
@@ -20,18 +20,21 @@ const props = {
 };
 const renderPhase = () => render(<ThemeModeProvider><WorkoutPhase {...props} /></ThemeModeProvider>);
 
-afterEach(() => i18n.changeLanguage('it'));
-
 describe('chip "Ultima volta" senza peso', () => {
-  it('in italiano dice "8 rip"', async () => {
-    await i18n.changeLanguage('it');
+  it('in italiano dice "8 rip"', () => {
     renderPhase();
-    expect(screen.getByText('8 rip')).toBeTruthy();
+    screen.getByText('8 rip');
   });
 
   it('in inglese dice "8 reps"', async () => {
     await i18n.changeLanguage('en');
     renderPhase();
-    expect(screen.getByText('8 reps')).toBeTruthy();
+    screen.getByText('8 reps');
+  });
+
+  it('in inglese una sola ripetizione è singolare: "1 rep"', async () => {
+    await i18n.changeLanguage('en');
+    render(<ThemeModeProvider><WorkoutPhase {...props} lastSession={{ sets: [{ weight: 0, reps: 1 }] }} /></ThemeModeProvider>);
+    screen.getByText('1 rep');
   });
 });
