@@ -10,6 +10,7 @@ import { setBrowserTimeZone } from '../test/timeZone';
 import { textBelow } from '../test/minText';
 import { describedBy } from '../test/accessibleNames';
 import { mockPointer } from '../test/pointer';
+import { expectNoNestedContainer } from '../test/dom';
 
 const row = (date, weight, extra = {}) => ({ id: date, date, weight, ...extra });
 
@@ -40,7 +41,7 @@ describe('contenitore', () => {
   it('non incorporata, la pagina non apre un Container dentro quello del Layout', async () => {
     records = [row('2026-10-15', '80.0')];
     await mount();
-    expect(document.querySelector('.MuiContainer-root')).toBeNull();
+    expectNoNestedContainer();
   });
 });
 

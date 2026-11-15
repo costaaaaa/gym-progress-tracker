@@ -7,7 +7,7 @@ import Progress from './Progress';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { textBelow } from '../test/minText';
 import { mediaStyle } from '../test/mediaStyle';
-import { json } from '../test/dom';
+import { json, expectNoNestedContainer } from '../test/dom';
 import { format } from 'date-fns';
 
 const INK = 'rgb(26, 24, 22)';
@@ -56,11 +56,6 @@ const mount = async () => {
   render(<ThemeModeProvider><Progress isEmbedded /></ThemeModeProvider>);
   await screen.findByText('Ultimi 60 giorni');
 };
-it('non incorporata, la pagina non apre un Container dentro quello del Layout', async () => {
-  render(<ThemeModeProvider><Progress /></ThemeModeProvider>);
-  await screen.findByText('Ultimi 60 giorni');
-  expect(document.querySelector('.MuiContainer-root')).toBeNull();
-});
 const mountOpen = async () => {
   await mount();
   ['Petto', 'Quadricipiti', 'Spalle', 'Schiena'].forEach(openSection);
@@ -73,6 +68,12 @@ const stat = (label) => {
 };
 
 describe('riepilogo', () => {
+  it('non incorporata, la pagina non apre un Container dentro quello del Layout', async () => {
+    render(<ThemeModeProvider><Progress /></ThemeModeProvider>);
+    await screen.findByText('Ultimi 60 giorni');
+    expectNoNestedContainer();
+  });
+
   it('i numeri sono nello stile numero grande: Lexend 700, 22px, cifre tabulari', async () => {
     await mount();
     const { number } = stat('In crescita');

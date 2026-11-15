@@ -9,9 +9,9 @@ const toNumber = (value) => {
   return Number.isFinite(n) ? n : null;
 };
 
-// 79.30 → "79,3 kg" (it) / "79.3 kg" (en): al massimo due decimali, niente zeri finali, spazio non separabile.
-// Senza un valore valido: "—". Opzioni: signed (segno anche per i positivi), unit: false (solo il numero),
-// maxDecimals (default 2).
+// 79.30 → "79,3 kg" (it) / "79.3 kg" (en): niente zeri finali e spazio non separabile prima di kg.
+// Senza un valore valido: "—". Opzioni: maxDecimals (default 2), signed (segno anche per i positivi),
+// unit: false (solo il numero).
 export function formatWeight(value, locale, { signed = false, unit = true, maxDecimals = 2 } = {}) {
   const n = toNumber(value);
   if (n === null) return '—';

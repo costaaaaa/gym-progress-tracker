@@ -5,7 +5,7 @@ import { render, screen, fireEvent, within, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import WorkoutHistory from './WorkoutHistory';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
-import { json } from '../test/dom';
+import { json, expectNoNestedContainer } from '../test/dom';
 import { setBrowserTimeZone } from '../test/timeZone';
 import { strayListChildren } from '../test/accessibleNames';
 import { isKeyboardFocus } from '../utils/focus';
@@ -71,7 +71,7 @@ describe('intestazioni e testi', () => {
       </ThemeModeProvider>,
     );
     await screen.findByText('02:00 · 3 esercizi');
-    expect(document.querySelector('.MuiContainer-root')).toBeNull();
+    expectNoNestedContainer();
   });
 
   it('il titolo del mese è nello stile titolo di card, senza sottolineatura rossa', async () => {

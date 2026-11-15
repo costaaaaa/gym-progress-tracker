@@ -26,5 +26,7 @@ export const formatClockTime = (value) => clockDate(value).toLocaleTimeString(in
 
 export const formatNumber = (value, options) => Number(value || 0).toLocaleString(intlLocale(), options);
 
+// Una misura in numero (grasso, circonferenze, peso in tabella): lingua dell'utente, al massimo due decimali, niente zeri finali
+export const formatMeasureText = (value) => formatWeight(value, intlLocale(), { unit: false });
 export const formatWeightText = (value, options) => formatWeight(value, intlLocale(), options);
 export const formatSetText = (weight, reps) => formatSet(weight, reps, intlLocale());

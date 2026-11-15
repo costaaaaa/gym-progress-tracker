@@ -5,7 +5,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Workouts from './Workouts';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
-import { json } from '../test/dom';
+import { json, expectNoNestedContainer } from '../test/dom';
 import { plannedSets, times } from '../test/plannedSets';
 
 vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ isLoggedIn: true, loading: false }) }));
@@ -41,7 +41,7 @@ const mount = async () => {
 describe('shell di Allenamenti', () => {
   it('Layout ha già il Container: la pagina non ne apre un secondo', async () => {
     await mount();
-    expect(document.querySelector('.MuiContainer-root')).toBeNull();
+    expectNoNestedContainer();
   });
 
   it('un solo h1 "Allenamenti" nello stile titolo di pagina, sopra i tab', async () => {
