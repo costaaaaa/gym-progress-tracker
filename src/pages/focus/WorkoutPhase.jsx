@@ -4,7 +4,7 @@ import {
 } from '@mui/material';
 import {
   SkipNext as SkipNextIcon, Check as CheckIcon, Close as CloseIcon, Info as InfoIcon, AccessTime as AccessTimeIcon,
-  History as HistoryIcon, SwapHoriz as SwapIcon, Add as AddIcon, Lock as LockIcon, Remove as RemoveIcon
+  History as HistoryIcon, SwapHoriz as SwapIcon, Add as AddIcon, Remove as RemoveIcon
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
@@ -16,6 +16,7 @@ import { slotLabel } from './slotLabel';
 import { MAX_WEIGHT, isValidWeight, isValidReps, plannedSetAt, slotTarget, lastSessionSets, setStatus, setSlot } from '../../utils/focusSession';
 import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, muscleLabel, techniqueLabel } from '../../i18n/labels';
 import { radius } from '../../theme/radius';
+import PremiumButton from './PremiumButton';
 
 export default function WorkoutPhase({
   currentExercise, currentExerciseIndex, totalExercises, currentSetIndex, totalSlotsForCurrentExercise,
@@ -199,13 +200,10 @@ export default function WorkoutPhase({
               { mode: 'swap', label: t('focus.swap_exercise'), icon: <SwapIcon /> },
               { mode: 'add', label: t('focus.add_exercise'), icon: <AddIcon /> },
             ].map(({ mode: pickerMode, label, icon }) => (
-              <Button key={pickerMode} variant="outlined" fullWidth startIcon={icon}
-                endIcon={canEditSession ? null : <LockIcon sx={{ fontSize: '16px !important' }} />}
+              <PremiumButton key={pickerMode} locked={!canEditSession} label={label} startIcon={icon}
                 onClick={() => onOpenPicker(pickerMode)}
-                sx={{ py: 1.25, opacity: pickerMode === 'swap' && !canSwap ? 0.45 : 1, color: colors.textSecondary, borderColor: colors.border, borderRadius: radius.lg,
-                  '&:hover': { borderColor: colors.text, color: colors.text } }}>
-                {label}
-              </Button>
+                wrapperSx={{ flex: 1, minWidth: 0 }}
+                faded={pickerMode === 'swap' && !canSwap} />
             ))}
           </Box>
 

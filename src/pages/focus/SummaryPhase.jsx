@@ -4,7 +4,7 @@ import {
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon, Save as SaveIcon, EmojiEvents as TrophyIcon, TrendingUp as TrendingUpIcon,
-  Share as ShareIcon, LocalFireDepartment as FireIcon, Add as AddIcon, Lock as LockIcon
+  Share as ShareIcon, LocalFireDepartment as FireIcon, Add as AddIcon
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
@@ -17,6 +17,7 @@ import WarmupBadge from '../../components/WarmupBadge';
 import { track } from '../../utils/analytics';
 import { techniqueLabel } from '../../i18n/labels';
 import { radius } from '../../theme/radius';
+import PremiumButton from './PremiumButton';
 import ButtonSpinner from '../../components/ButtonSpinner';
 
 const XP_WITHHELD_KEYS = {
@@ -139,7 +140,7 @@ export default function SummaryPhase({
                 <FireIcon sx={{ fontSize: 40, color: colors.warningText, mb: 0.5 }} />
                 <Typography variant="h6" component="h2" sx={{ fontWeight: 700, color: colors.text }}>
                   {savedResult.new_longest
-                    ? t('focus.streak_new_longest', { weeks: savedResult.current_streak_weeks })
+                    ? t('focus.streak_new_longest', { count: savedResult.current_streak_weeks })
                     : savedResult.streak_milestone && savedResult.current_streak_weeks > 1
                       ? t('focus.streak_milestone', { weeks: savedResult.current_streak_weeks })
                       : t('focus.week_completed')}
@@ -238,13 +239,8 @@ export default function SummaryPhase({
         ) : (
           <>
             {/* Esercizio dimenticato: si aggiunge in coda e si torna ad allenarsi */}
-            <Button variant="outlined" fullWidth startIcon={<AddIcon />}
-              endIcon={canEditSession ? null : <LockIcon sx={{ fontSize: '16px !important' }} />}
-              onClick={onAddExercise}
-              sx={{ py: 1.25, mb: 3, color: colors.textSecondary, borderColor: colors.border, borderRadius: radius.lg,
-                '&:hover': { borderColor: colors.text, color: colors.text } }}>
-              {t('focus.add_exercise')}
-            </Button>
+            <PremiumButton locked={!canEditSession} label={t('focus.add_exercise')} startIcon={<AddIcon />}
+              onClick={onAddExercise} wrapperSx={{ mb: 3 }} />
 
             <TextField label={t('focus.notes_label')} multiline rows={3} value={workoutNotes}
               onChange={(e) => onNotesChange(e.target.value)} fullWidth placeholder={t('focus.notes_placeholder')}

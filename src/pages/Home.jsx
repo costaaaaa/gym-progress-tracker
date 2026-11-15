@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useState, useEffect } from 'react';
-import { Typography, Grid, Button, Box, Alert, Snackbar, CircularProgress, Card, CardActionArea } from '@mui/material';
+import { Typography, Grid, Button, Box, Alert, Snackbar, CircularProgress, Skeleton, Card, CardActionArea } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import CalendarTodayOutlined from '@mui/icons-material/CalendarTodayOutlined';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -57,11 +57,17 @@ const Home = () => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [lastWorkout, setLastWorkout] = useState(null);
   const [activePlan, setActivePlan] = useState(null);
+  // Stato di ogni richiesta: 'pending' | 'ok' | 'failed'. Un errore di rete non deve far passare un utente per nuovo
+  const [historyStatus, setHistoryStatus] = useState('pending');
+  const [plansStatus, setPlansStatus] = useState('pending');
+  const [hasPlans, setHasPlans] = useState(false);
   const [dashboardStats, setDashboardStats] = useState(null);
   // weekly_goal è l'obiettivo effettivo; plan_days_total resta per i server più vecchi
   const weeklyGoal = dashboardStats?.weekly_goal ?? dashboardStats?.plan_days_total;
   const weeklySets = totalSets(dashboardStats?.weekly_sets?.week);
-  const [loading, setLoading] = useState(false);
+  // Il primo render è già il caricamento: niente card dei dati prima della fetch. Parte a true anche
+  // se isLoggedIn è ancora false: dopo un ricaricamento la sessione si conferma senza rimontare Home
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -78,9 +84,12 @@ const Home = () => {
       });
       if (historyResponse.ok) {
         const historyData = await historyResponse.json();
+        setHistoryStatus('ok');
         if (historyData.records && historyData.records.length > 0) {
           setLastWorkout(historyData.records[0]);
         }
+      } else {
+        setHistoryStatus('failed');
       }
 
       // Fetch plans for the active plan
@@ -89,10 +98,14 @@ const Home = () => {
       });
       if (plansResponse.ok) {
         const plansData = await plansResponse.json();
+        setPlansStatus('ok');
         if (plansData.records) {
+          setHasPlans(plansData.records.length > 0);
           const active = plansData.records.find(plan => plan.is_active);
           setActivePlan(active || null);
         }
+      } else {
+        setPlansStatus('failed');
       }
 
       // Fetch dashboard stats
@@ -116,12 +129,22 @@ const Home = () => {
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
+      // Una richiesta fallita mostra la Home completa (saluto e bottone compaiono comunque)
+      const failIfPending = (status) => (status === 'pending' ? 'failed' : status);
+      setHistoryStatus(failIfPending);
+      setPlansStatus(failIfPending);
       setLoading(false);
     }
   };
 
   const formatDate = (dateString) =>
     formatLocalDate(dateString, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  const historyDone = historyStatus !== 'pending';
+  const heroReady = historyDone && plansStatus !== 'pending';
+  const isNewUser = historyStatus === 'ok' && !lastWorkout;
+  // Nuovo = nessun allenamento e nessuna scheda (nemmeno inattiva): la Home propone una sola azione
+  const showStartHere = isNewUser && plansStatus === 'ok' && !hasPlans;
 
   if (!isLoggedIn) {
     return (
@@ -131,31 +154,106 @@ const Home = () => {
     );
   }
 
+  // Riepilogo settimanale: con "Inizia da qui" è tutto ciò che resta alla Home del nuovo utente
+  const weeklySummary = (
+    <Grid item xs={12} md={6}>
+      <Card sx={{ height: '100%', p: '22px' }}>
+        <Typography component="h2" variant="cardTitle" sx={{ mb: 2.5 }}>
+          {t('home.weekly.title')}
+        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+          <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{t('home.weekly.done')}</Typography>
+          <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
+            {dashboardStats?.weekly_workouts || 0} / {weeklyGoal || '-'}
+          </Typography>
+        </Box>
+        <Box sx={{ height: 9, borderRadius: '5px', bgcolor: 'divider', overflow: 'hidden' }}>
+          <Box
+            sx={{
+              height: '100%',
+              width: `${weeklyGoal ? Math.min(100, (dashboardStats.weekly_workouts / weeklyGoal) * 100) : 0}%`,
+              bgcolor: 'primary.main',
+              borderRadius: '5px',
+            }}
+          />
+        </Box>
+        <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 1, mb: 2.5 }}>
+          {dashboardStats?.weekly_workouts >= weeklyGoal
+            ? t('home.weekly.goal_reached')
+            : t(activePlan ? 'home.weekly.missing' : 'home.weekly.missing_goal', { count: Math.max(0, (weeklyGoal || 0) - (dashboardStats?.weekly_workouts || 0)) })}
+        </Typography>
+
+        <Box sx={{ display: 'flex', gap: 1.5 }}>
+          <Box sx={{ flex: 1 }}>
+            <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
+              {formatNumber(dashboardStats?.weekly_volume?.total_weight)}
+              <Box component="span" sx={{ fontSize: 13, fontWeight: 600, ml: 0.5 }}>kg</Box>
+            </Typography>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.volume')}</Typography>
+          </Box>
+          <CardActionArea
+            component={RouterLink}
+            to="/dashboard?tab=muscles"
+            sx={{ flex: 1, borderRadius: radius.xxl, mx: -1, px: 1, width: 'auto' }}
+          >
+            <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
+              {formatNumber(weeklySets)}
+              <Box component="span" sx={{ fontSize: 15, fontWeight: 600, ml: 0.5, color: 'primary.text' }}>›</Box>
+            </Typography>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.sets')}</Typography>
+          </CardActionArea>
+        </Box>
+      </Card>
+    </Grid>
+  );
+
   return (
     <>
-      <Box sx={{ mb: 4 }}>
+      <Box sx={{ mb: 4 }} aria-busy={!heroReady}>
         <Typography variant="h1" sx={{ fontSize: { xs: '1.75rem', md: '2.25rem' }, mb: 1.5 }}>
-          {t('home.hero.welcome', { username: user?.username || '' })}
+          {historyDone
+            ? t(isNewUser ? 'home.hero.welcome_new' : 'home.hero.welcome', { username: user?.username || '' })
+            : <Skeleton width={280} />}
         </Typography>
         <Typography sx={{ fontSize: 16, color: 'text.secondary', mb: 3, maxWidth: 560, lineHeight: 1.6 }}>
           {t('home.hero.sub_user')}
         </Typography>
+        {/* Invisibile (ma con il suo spazio) finché storico e schede non sono arrivati: per un utente nuovo sparisce
+            nello stesso render in cui compare la card "Inizia da qui", senza altri spostamenti */}
         <Button
           variant="contained"
           component={RouterLink}
           to="/focus"
           startIcon={<PlayArrowIcon />}
-          sx={{ borderRadius: radius.lg, px: 3, py: 1.25, fontWeight: 700 }}
+          sx={{
+            borderRadius: radius.lg, px: 3, py: 1.25, fontWeight: 700,
+            ...(!heroReady && { visibility: 'hidden' }),
+            ...(showStartHere && { display: 'none' }),
+          }}
         >
           {t('home.hero.start_workout')}
         </Button>
       </Box>
+
+      {showStartHere && (
+        <Card sx={{ mb: 3, p: '22px' }}>
+          <Typography component="h2" variant="cardTitle" sx={{ mb: 1 }}>{t('home.start_here.title')}</Typography>
+          <Typography sx={{ color: 'text.secondary', fontSize: 14, lineHeight: 1.5, mb: 2 }}>
+            {t('home.start_here.text')}
+          </Typography>
+          <Button variant="outlined" component={RouterLink} to="/workouts?tab=plans" sx={{ borderRadius: radius.lg, fontWeight: 700 }}>
+            {t('home.start_here.cta')}
+          </Button>
+        </Card>
+      )}
 
       <Grid container spacing={3}>
         {loading ? (
           <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
             <CircularProgress color="primary" size={60} thickness={4} />
           </Grid>
+        ) : showStartHere ? (
+          weeklySummary
         ) : (
           <>
             {/* Streak / Livello */}
@@ -166,56 +264,7 @@ const Home = () => {
               <LevelCard />
             </Grid>
 
-            {/* Riepilogo Settimanale */}
-            <Grid item xs={12} md={6}>
-              <Card sx={{ height: '100%', p: '22px' }}>
-                <Typography component="h2" variant="cardTitle" sx={{ mb: 2.5 }}>
-                  {t('home.weekly.title')}
-                </Typography>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{t('home.weekly.done')}</Typography>
-                  <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
-                    {dashboardStats?.weekly_workouts || 0} / {weeklyGoal || '-'}
-                  </Typography>
-                </Box>
-                <Box sx={{ height: 9, borderRadius: '5px', bgcolor: 'divider', overflow: 'hidden' }}>
-                  <Box
-                    sx={{
-                      height: '100%',
-                      width: `${weeklyGoal ? Math.min(100, (dashboardStats.weekly_workouts / weeklyGoal) * 100) : 0}%`,
-                      bgcolor: 'primary.main',
-                      borderRadius: '5px',
-                    }}
-                  />
-                </Box>
-                <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 1, mb: 2.5 }}>
-                  {dashboardStats?.weekly_workouts >= weeklyGoal
-                    ? t('home.weekly.goal_reached')
-                    : t('home.weekly.missing', { count: Math.max(0, (weeklyGoal || 0) - (dashboardStats?.weekly_workouts || 0)) })}
-                </Typography>
-
-                <Box sx={{ display: 'flex', gap: 1.5 }}>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
-                      {formatNumber(dashboardStats?.weekly_volume?.total_weight)}
-                      <Box component="span" sx={{ fontSize: 13, fontWeight: 600, ml: 0.5 }}>kg</Box>
-                    </Typography>
-                    <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.volume')}</Typography>
-                  </Box>
-                  <CardActionArea
-                    component={RouterLink}
-                    to="/dashboard?tab=muscles"
-                    sx={{ flex: 1, borderRadius: radius.xxl, mx: -1, px: 1, width: 'auto' }}
-                  >
-                    <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
-                      {formatNumber(weeklySets)}
-                      <Box component="span" sx={{ fontSize: 15, fontWeight: 600, ml: 0.5, color: 'primary.text' }}>›</Box>
-                    </Typography>
-                    <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.sets')}</Typography>
-                  </CardActionArea>
-                </Box>
-              </Card>
-            </Grid>
+            {weeklySummary}
 
             {/* Stato Muscolare */}
             <Grid item xs={12} md={6}>

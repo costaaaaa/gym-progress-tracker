@@ -188,4 +188,6 @@ export const summarize = (analyzed) => ({
   stalled: analyzed.filter((a) => a.status === STATUS.STALLED).length,
   declining: analyzed.filter((a) => a.status === STATUS.DECLINING).length,
   prs: analyzed.filter((a) => a.recentPR),
+  // Con un solo allenamento per esercizio non c'è nulla da confrontare
+  allNew: analyzed.length > 0 && analyzed.every((a) => a.status === STATUS.NEW),
 });

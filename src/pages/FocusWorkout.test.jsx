@@ -762,9 +762,50 @@ describe('errori e premium', () => {
     expect(screen.getByText('Nessun piano attivo')).toBeTruthy();
   });
 
+  it('senza la funzione premium i bottoni in allenamento hanno l\'etichetta "Premium" e il nome accessibile "… (Premium)"', async () => {
+    await startDay('Push');
+    expect(screen.getByRole('button', { name: 'Cambia esercizio (Premium)' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Aggiungi esercizio (Premium)' })).toBeTruthy();
+  });
+
+  it('l\'etichetta "Premium" sta fuori dal bottone sbiadito e resta piena, anche dopo una serie fatta', async () => {
+    await startDay('Push');
+    doSet();
+    click('Salta timer');
+    const swap = screen.getByRole('button', { name: 'Cambia esercizio (Premium)' });
+    expect(getComputedStyle(swap).opacity).toBe('0.45');
+    const labels = screen.getAllByText('Premium');
+    expect(labels).toHaveLength(2);
+    labels.forEach((label) => {
+      expect(swap.contains(label)).toBe(false);
+      for (let el = label; el && el !== document.body; el = el.parentElement) {
+        expect(getComputedStyle(el).opacity).toBe('1');
+      }
+    });
+  });
+
+  it('l\'etichetta è solo testo, senza lucchetto', async () => {
+    await startDay('Push');
+    expect(screen.queryByTestId('LockIcon')).toBeNull();
+  });
+
+  it('con la funzione premium non c\'è nessuna etichetta "Premium"', async () => {
+    responses['user/read.php'] = () => json({ rest_timer_enabled: true, features: ['focus_session_edit'] });
+    await startDay('Push');
+    expect(screen.queryByText('Premium')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Cambia esercizio' })).toBeTruthy();
+  });
+
+  it('senza la funzione premium anche "Aggiungi esercizio" del riepilogo mostra "Premium"', async () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...savedDraft, selectedDay: pushDay, selectedDayId: 1, phase: 'summary' }));
+    await mount();
+    click('Riprendi allenamento');
+    expect(screen.getByRole('button', { name: 'Aggiungi esercizio (Premium)' })).toBeTruthy();
+  });
+
   it('senza la funzione premium, cambiare esercizio apre il dialog premium', async () => {
     await startDay('Push');
-    click('Cambia esercizio');
+    click('Cambia esercizio (Premium)');
     expect(screen.getByText('Funzione Premium')).toBeTruthy();
     expect(fetchMock.mock.calls.some(([url]) => url.includes('exercise/read_all.php'))).toBe(false);
   });
@@ -859,7 +900,7 @@ describe('colori di Focus: rosso solo per ciò che è distruttivo', () => {
 
   it('il dialogo premium ha il bottone "Ho capito" non rosso', async () => {
     await startDay('Push');
-    click('Cambia esercizio');
+    click('Cambia esercizio (Premium)');
     expect(getComputedStyle(screen.getByRole('button', { name: 'Ho capito' })).color).not.toBe(RED);
   });
 });
@@ -883,6 +924,23 @@ describe('riepilogo', () => {
     const header = screen.getByText('Dettaglio esercizi');
     expect(getComputedStyle(header).color).toBe(GREY);
     expect(['', 'rgba(0, 0, 0, 0)', 'transparent']).toContain(getComputedStyle(header.parentElement).backgroundColor);
+  });
+
+  it('il nuovo record di streak con 1 settimana dice "1 settimana consecutiva" (singolare)', async () => {
+    responses['record_workout.php'] = () => json({ success: true, id: 77, new_longest: true, current_streak_weeks: 1 });
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...savedDraft, selectedDay: pushDay, selectedDayId: 1, phase: 'summary' }));
+    await mount();
+    click('Riprendi allenamento');
+    await act(async () => { click('Salva allenamento'); });
+    await advance(0);
+    expect(screen.getByText('Nuovo record! 🏆 1 settimana consecutiva')).toBeTruthy();
+  });
+
+  it('con la funzione premium "Aggiungi esercizio" del riepilogo non ha l\'etichetta "Premium" e il nome è semplice', async () => {
+    responses['user/read.php'] = () => json({ rest_timer_enabled: true, features: ['focus_session_edit'] });
+    await toSummary();
+    expect(screen.getByRole('button', { name: 'Aggiungi esercizio' })).toBeTruthy();
+    expect(screen.queryByText('Premium')).toBeNull();
   });
 });
 

@@ -3,7 +3,7 @@ import { Alert, Box, Card, CircularProgress, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../config';
 import { muscleLabel } from '../i18n/labels';
-import { MUSCLE_GROUPS } from '../utils/recoveryGroups';
+import { MUSCLE_GROUPS, isNeverTrained } from '../utils/recoveryGroups';
 import { readyInDays } from '../utils/recoveryDay';
 import { STATUS_COLOR, readyLabel } from '../utils/recoveryStatus';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
@@ -131,7 +131,7 @@ const Muscles = () => {
           const week = sets.week?.[muscle] || 0;
           const prev = sets.previous_to_date?.[muscle] || 0;
           const recovery = data.recovery?.[muscle];
-          const status = recovery?.status || null;
+          const status = isNeverTrained(recovery) ? null : recovery?.status || null;
           const days = recovery?.ready_at ? readyInDays(recovery.ready_at) : null;
           return <MuscleRow key={muscle} muscle={muscle} week={week} prev={prev} status={status} days={days} max={max} />;
         })}

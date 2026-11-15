@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { daysSince, buildExerciseSeries, analyzeExercise } from './progressOverview';
+import { daysSince, buildExerciseSeries, analyzeExercise, summarize, STATUS } from './progressOverview';
 
 const rec = (id, date, extra = {}) => ({
   id, date, ...extra, exercises: [{ exercise_id: 1, name: 'Panca', sets: [{ weight: 80, reps: 5 }] }],
@@ -149,5 +149,21 @@ describe('analyzeExercise: laterInSession', () => {
     const a = analyze([[100, 10, 500], [70, 600, 10], [90, 10, 500], [90, 600, 10]]);
     expect(a.status).toBe('declining');
     expect(a.laterInSession).toBe(false);
+  });
+});
+
+describe('summarize: allNew', () => {
+  const item = (status, recentPR = false) => ({ status, recentPR });
+
+  it('è vero se ci sono esercizi e sono tutti "nuovo"', () => {
+    expect(summarize([item(STATUS.NEW), item(STATUS.NEW)]).allNew).toBe(true);
+  });
+
+  it('è falso se anche un solo esercizio ha un altro stato', () => {
+    expect(summarize([item(STATUS.NEW), item(STATUS.STALLED)]).allNew).toBe(false);
+  });
+
+  it('è falso senza esercizi', () => {
+    expect(summarize([]).allNew).toBe(false);
   });
 });

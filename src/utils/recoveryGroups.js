@@ -9,10 +9,14 @@ export const MUSCLE_GROUPS = [
 // Stati di chi sta ancora recuperando (PRONTO è l'altro stato valido).
 const RESTING_STATUSES = new Set(['IN RECUPERO', 'AFFATICATO']);
 
+// Mai allenato: il server manda last_trained null (e stato PRONTO), ma non c'è un recupero da mostrare.
+export const isNeverTrained = (info) => info?.last_trained === null;
+
 const clampPercent = (value) => (typeof value === 'number' ? Math.max(0, Math.min(100, value)) : null);
 
 // Divide lo stato di recupero in ciò che si può allenare, ciò che riposa (per giorni a pronto crescenti,
-// a parità nell'ordine del corpo; senza giorno in fondo) e i gruppi senza uno stato valido.
+// a parità nell'ordine del corpo; senza giorno in fondo) e i gruppi senza uno stato valido o mai allenati
+// (last_trained null: il server li manda come PRONTO, ma non c'è nulla da cui siano recuperati).
 export function groupRecovery(recoveryData, now = new Date()) {
   const canTrain = [];
   const resting = [];
@@ -20,7 +24,7 @@ export function groupRecovery(recoveryData, now = new Date()) {
 
   for (const group of MUSCLE_GROUPS) {
     const info = recoveryData?.[group];
-    if (info?.status === 'PRONTO') {
+    if (info?.status === 'PRONTO' && !isNeverTrained(info)) {
       canTrain.push(group);
     } else if (RESTING_STATUSES.has(info?.status)) {
       resting.push({ group, status: info.status, percent: clampPercent(info.percent), days: readyInDays(info.ready_at, now) });

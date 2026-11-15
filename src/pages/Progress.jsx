@@ -165,7 +165,7 @@ const Progress = ({ isEmbedded = false }) => {
               </Box>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mt: 2 }}>
                 {summary.prs.length === 0 ? (
-                  <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{t('progress.summary.prs_none')}</Typography>
+                  <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{t(summary.allNew ? 'progress.summary.prs_need_second' : 'progress.summary.prs_none')}</Typography>
                 ) : (
                   <>
                     {summary.prs.slice(0, MAX_PR_CHIPS).map((a) => (

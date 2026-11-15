@@ -119,6 +119,8 @@ const set = (n, weight, reps) => ({ set_number: n, weight, reps: String(reps) })
 const HISTORY = Array.from({ length: 12 }, (_, i) => ({
   id: 200 - i,
   date: isoDay(-(i * 3 + 1)),
+  // l'istante da cui i Progressi contano i giorni: senza, "ultimo NaN gg fa" e ogni esercizio risulta "Nuovo"
+  started_at: `${isoDay(-(i * 3 + 1))}T16:00:00.000Z`,
   notes: '',
   exercises: [
     { exercise_id: 3, name: 'Panca piana', sets: [set(1, round(55 + i * 1.25), 8), set(2, round(60 + i * 1.25), 8), set(3, round(62.5 + i * 1.25), 6)] },
@@ -161,39 +163,73 @@ const user = ({ admin }) => ({
   rest_timer_enabled: true, locale: 'it', language: 'it', features: [], is_admin: admin,
 });
 
+// Utenti dei dati finti: `attivo` è l'utente di tutte le pagine, `un-allenamento` cambia solo lo storico
+// (un solo allenamento: ogni esercizio è "Nuovo" nei Progressi). `nuovo` risponde come un account vuoto
+// (livello 1, nessuna streak, nessun gruppo, muscoli mai allenati). È scritto per esteso e non parte da
+// `attivo`; prende solo l'elenco dei traguardi da `PROFILE_ATTIVO`, tutti bloccati.
+const PROFILE_ATTIVO = {
+  success: true, level: 7, total_xp: 3140, xp_into_level: 340, xp_for_next_level: 600,
+  lifetime_volume_kg: 184250, total_sessions: 58, longest_streak: 5,
+  exercises: [
+    { exercise_id: 3, name: 'Panca piana', level: 6, xp: 820 },
+    { exercise_id: 6, name: 'Rematore con bilanciere', level: 5, xp: 610 },
+    { exercise_id: 7, name: 'Squat', level: 4, xp: 430 },
+  ],
+  achievements: [
+    { key: 's10', category: 'sessions', label: '10 sessioni', threshold: 10, unlocked_at: stamp(-200, '18:00:00'), locked: false },
+    { key: 's50', category: 'sessions', label: '50 sessioni', threshold: 50, unlocked_at: null, locked: true },
+    { key: 't10000', category: 'tonnage', label: '10.000 kg sollevati', threshold: 10000, unlocked_at: stamp(-120, '18:00:00'), locked: false },
+    { key: 't100000', category: 'tonnage', label: '100.000 kg sollevati', threshold: 100000, unlocked_at: null, locked: true },
+    { key: 'st4', category: 'streak', label: '4 settimane di fila', threshold: 4, unlocked_at: stamp(-30, '18:00:00'), locked: false },
+    { key: 'st12', category: 'streak', label: '12 settimane di fila', threshold: 12, unlocked_at: null, locked: true },
+  ],
+};
+const ATTIVO = {
+  history: HISTORY,
+  plans: [plan, planInactive],
+  weekly: { workouts: 2, kg: 4820, reps: 118 },
+  recovery,
+  streak: { current_streak_weeks: 3, longest_streak_weeks: 5, this_week: { count: 2, goal: 3, completed: false } },
+  profile: PROFILE_ATTIVO,
+  groups: [
+    { id: 1, name: 'Palestra Esempio', type: 'gym', members_count: 4, my_role: 'owner' },
+    { id: 2, name: 'Amici del sabato', type: 'friends', members_count: 3, my_role: 'member' },
+  ],
+};
+// I muscoli di MUSCLE_GROUPS (src/utils/recoveryGroups.js): il file non si importa da Node (import senza estensione)
+const MUSCLI = ['petto', 'schiena', 'spalle', 'bicipiti', 'tricipiti', 'addome', 'quadricipiti', 'femorali', 'glutei', 'adduttori', 'abduttori', 'polpacci'];
+const UTENTI = {
+  attivo: ATTIVO,
+  'un-allenamento': { ...ATTIVO, history: HISTORY.slice(0, 1) },
+  nuovo: {
+    history: [],
+    plans: [],
+    weekly: { workouts: 0, kg: 0, reps: 0 },
+    recovery: Object.fromEntries(MUSCLI.map((group) => [group, { status: 'PRONTO', percent: 100, last_trained: null }])),
+    streak: { current_streak_weeks: 0, longest_streak_weeks: 0, this_week: { count: 0, goal: 3, completed: false } },
+    profile: {
+      success: true, level: 1, total_xp: 0, xp_into_level: 0, xp_for_next_level: 100,
+      lifetime_volume_kg: 0, total_sessions: 0, longest_streak: 0, exercises: [],
+      achievements: PROFILE_ATTIVO.achievements.map((a) => ({ ...a, unlocked_at: null, locked: true })),
+    },
+    groups: [],
+  },
+};
+
 const fixtures = [
   ['user/read.php', user],
   ['user/consent.php', () => ({ success: true, consents: { terms: { granted: true }, health_data: { granted: true } } })],
-  ['workout_history/read.php', () => ({ success: true, records: HISTORY })],
-  ['workout/read_plans.php', ({ plans }) => ({ success: true, records: plans ? PLAN_SETS[plans] : [plan, planInactive] })],
-  ['workout_stats/dashboard.php', () => ({
-    success: true, weekly_workouts: 2, weekly_goal: 3,
-    weekly_volume: { total_weight: 4820, total_reps: 118 }, recovery,
+  ['workout_history/read.php', ({ u }) => ({ success: true, records: u.history })],
+  ['workout/read_plans.php', ({ plans, u }) => ({ success: true, records: plans ? PLAN_SETS[plans] : u.plans })],
+  ['workout_stats/dashboard.php', ({ u }) => ({
+    success: true, weekly_workouts: u.weekly.workouts, weekly_goal: 3,
+    weekly_volume: { total_weight: u.weekly.kg, total_reps: u.weekly.reps }, recovery: u.recovery,
   })],
-  ['gamification/streak.php', () => ({ success: true, current_streak_weeks: 3, longest_streak_weeks: 5, this_week: { count: 2, goal: 3, completed: false } })],
-  ['gamification/profile.php', () => ({
-    success: true, level: 7, total_xp: 3140, xp_into_level: 340, xp_for_next_level: 600,
-    lifetime_volume_kg: 184250, total_sessions: 58, longest_streak: 5,
-    exercises: [
-      { exercise_id: 3, name: 'Panca piana', level: 6, xp: 820 },
-      { exercise_id: 6, name: 'Rematore con bilanciere', level: 5, xp: 610 },
-      { exercise_id: 7, name: 'Squat', level: 4, xp: 430 },
-    ],
-    achievements: [
-      { key: 's10', category: 'sessions', label: '10 sessioni', threshold: 10, unlocked_at: stamp(-200, '18:00:00'), locked: false },
-      { key: 's50', category: 'sessions', label: '50 sessioni', threshold: 50, unlocked_at: null, locked: true },
-      { key: 't10000', category: 'tonnage', label: '10.000 kg sollevati', threshold: 10000, unlocked_at: stamp(-120, '18:00:00'), locked: false },
-      { key: 't100000', category: 'tonnage', label: '100.000 kg sollevati', threshold: 100000, unlocked_at: null, locked: true },
-      { key: 'st4', category: 'streak', label: '4 settimane di fila', threshold: 4, unlocked_at: stamp(-30, '18:00:00'), locked: false },
-      { key: 'st12', category: 'streak', label: '12 settimane di fila', threshold: 12, unlocked_at: null, locked: true },
-    ],
-  })],
+  ['gamification/streak.php', ({ u }) => ({ success: true, ...u.streak })],
+  ['gamification/profile.php', ({ u }) => u.profile],
   ['exercise/read_all.php', () => ({ success: true, records: CATALOG })],
   ['user_stats/read.php', () => ({ success: true, records: BODY, consent_required: false, consent_updated: false })],
-  ['groups/list.php', () => ({ success: true, groups: [
-    { id: 1, name: 'Palestra Esempio', type: 'gym', members_count: 4, my_role: 'owner' },
-    { id: 2, name: 'Amici del sabato', type: 'friends', members_count: 3, my_role: 'member' },
-  ] })],
+  ['groups/list.php', ({ u }) => ({ success: true, groups: u.groups })],
   ['groups/read.php', () => ({
     success: true,
     group: { id: 1, name: 'Palestra Esempio', type: 'gym', invite_code: 'ESEMPIO7', invite_enabled: true, members_count: 4, max_members: 30, my_role: 'owner', name_locked: false, name_locked_until: null },
@@ -283,7 +319,7 @@ async function openPage(vp, theme, opts, tag) {
   await ctx.route('**/backend/**', (route) => {
     const url = route.request().url();
     const hit = fixtures.find(([key]) => url.includes(key));
-    const body = hit ? hit[1]({ admin: opts.admin === true, plans: opts.plans }) : fallback;
+    const body = hit ? hit[1]({ admin: opts.admin === true, plans: opts.plans, u: UTENTI[opts.utente ?? 'attivo'] }) : fallback;
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
   });
   const page = await ctx.newPage();
@@ -295,7 +331,9 @@ async function openPage(vp, theme, opts, tag) {
 const SHOT_LIST = [
   ['landing', '/', { loggedIn: false }],
   ['home', '/', { loggedIn: true }],
+  ['home-nuovo', '/', { loggedIn: true, utente: 'nuovo' }],
   ['progressi', '/dashboard?tab=progress', { loggedIn: true }],
+  ['progressi-nuovo', '/dashboard?tab=progress', { loggedIn: true, utente: 'un-allenamento' }],
   ['misure', '/dashboard?tab=body', { loggedIn: true }],
   ['account', '/account', { loggedIn: true }],
   ['profilo', '/profilo', { loggedIn: true }],
