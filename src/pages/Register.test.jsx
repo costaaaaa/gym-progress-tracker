@@ -115,9 +115,7 @@ describe('registrazione in due passaggi', () => {
 
 describe('errori annunciati e focus sul primo campo sbagliato (WCAG 3.3.1, 4.1.3)', () => {
   // Con il puntatore preciso il selettore di date è il campo da digitare (in jsdom, senza, sarebbe di sola lettura)
-  let restorePointer;
-  beforeEach(() => { restorePointer = mockPointer(true); });
-  afterEach(() => restorePointer());
+  beforeEach(() => mockPointer(true));
   const goToStep2 = async () => {
     renderRegister();
     fillStep1();
