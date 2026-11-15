@@ -925,7 +925,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                                 </ButtonGroup>
                                                 <IconButton
                                                   size="small"
-                                                  aria-label={t('plans.edit_exercise.aria')}
+                                                  aria-label={t('plans.edit_exercise.aria', { name: exercise.exercise_name })}
                                                   onClick={() => handleOpenEditExerciseDialog(day.id, exercise)}
                                                   sx={{ mr: 1, color: 'text.secondary' }}
                                                 >
@@ -933,7 +933,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                                 </IconButton>
                                                 <IconButton
                                                   size="small"
-                                                  aria-label={t('plans.delete_exercise.aria')}
+                                                  aria-label={t('plans.delete_exercise.aria', { name: exercise.exercise_name })}
                                                   onClick={() => handleOpenDeleteExerciseDialog(day.id, exercise)}
                                                   sx={{ color: 'text.secondary' }}
                                                 >
