@@ -164,3 +164,12 @@ describe('nomi accessibili', () => {
     expect(screen.getAllByRole('combobox', { name: /^Tecnica/ })).toHaveLength(4);
   });
 });
+
+describe('struttura accessibile', () => {
+  it('l\'elenco degli esercizi ha solo voci <li>: il separatore sta dentro la voce', () => {
+    const row = { ...squat, id: 12, exercise_id: 6, exercise_name: 'Stacco' };
+    open({ ...basePlan, days: [{ id: 3, name: 'Gambe', exercises: [squat, row] }] });
+    const list = document.querySelector('ul.MuiList-root');
+    expect([...list.children].map((c) => c.tagName)).toEqual(['LI', 'LI']);
+  });
+});
