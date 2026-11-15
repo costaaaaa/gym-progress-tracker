@@ -97,7 +97,7 @@ export const slotWeight = (exercise, slotIndex, { suggested = '', current = '' }
 };
 
 // Serie dell'ultima sessione per le chip "Ultima volta": [{ label, technique }]
-export const lastSessionSets = (lastSession, locale = 'it-IT') => {
+export const lastSessionSets = (lastSession, locale) => {
   if (!lastSession || !Array.isArray(lastSession.sets)) return [];
   return lastSession.sets.filter(isWorkingSet).map((s) => {
     const w = parseFloat(s.weight) || 0;

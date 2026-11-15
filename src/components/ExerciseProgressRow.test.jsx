@@ -1,7 +1,7 @@
 // Card di un esercizio in Progressi: la sparkline segue le date delle sessioni.
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import ExerciseProgressRow from './ExerciseProgressRow';
+import ExerciseProgressRow, { formatValue } from './ExerciseProgressRow';
 import { STATUS } from '../utils/progressOverview';
 import { polylineX } from '../test/polyline';
 
@@ -70,5 +70,11 @@ describe('nota "più avanti nella seduta" (#26)', () => {
     renderRow(declining(false));
     expect(screen.getByText('▼ 10%')).toBeTruthy();
     expect(screen.queryByText(/seduta/)).toBeNull();
+  });
+});
+
+describe('formatValue', () => {
+  it('il 1RM stimato ha al massimo un decimale, come prima', () => {
+    expect(formatValue((k) => k, 'oneRM', 101.33)).toBe('101,3\u00a0kg');
   });
 });

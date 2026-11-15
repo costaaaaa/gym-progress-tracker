@@ -31,7 +31,7 @@ const mount = async (wrap = (page) => page) => {
   await screen.findByRole('group', { name: 'Periodo' });
 };
 // Il peso grande della scheda (la tabella nascosta del grafico ha lo stesso testo)
-const bigValue = (text) => screen.getAllByText(text).find((el) => el.className.includes('statNumber'));
+const bigValue = (text) => screen.getAllByText(text).find((el) => !el.closest('table'));
 const pill = (name) => screen.getByRole('button', { name });
 const history = () => screen.getByRole('table', { name: 'Storico delle misure' });
 const tableRows = () => within(history()).getAllByRole('row').slice(1);
@@ -240,6 +240,7 @@ describe('titoli, peso e variazione', () => {
   it.each([
     ['calo', ['85.0', '80.0'], /-5 kg negli ultimi 3 mesi/],
     ['aumento', ['80.0', '85.0'], /\+5 kg negli ultimi 3 mesi/],
+    ['arrotondato a un decimale', ['80.0', '80.06'], /\+0,1 kg negli ultimi 3 mesi/],
     ['stabile', ['80.0', '80.0'], /Stabile negli ultimi 3 mesi/],
   ])('la variazione del peso è grigia e da 16px: %s', async (_, [first, last], text) => {
     records = [row('2026-10-01', first), row('2026-10-15', last)];
@@ -256,8 +257,8 @@ describe('composizione e circonferenze', () => {
     await mount(themed);
     const fat = measureRow('Grasso');
     expect(style(within(fat).getByText('Grasso')).fontSize).toBe('16px');
-    expect(style(within(fat).getByText('18.5%')).fontSize).toBe('16px');
-    expect(within(measureRow('Muscolo')).getByText('41.0%')).toBeTruthy();
+    expect(style(within(fat).getByText('18,5%')).fontSize).toBe('16px');
+    expect(within(measureRow('Muscolo')).getByText('41%')).toBeTruthy();
     expect(within(measureRow('Torace')).getByText('102 cm')).toBeTruthy();
     expect(within(measureRow('Vita')).getByText('83 cm')).toBeTruthy();
   });
@@ -277,13 +278,13 @@ describe('composizione e circonferenze', () => {
     expect(screen.queryByText(/Grasso:/)).toBeNull();
   });
 
-  it('ogni misura ha il suo grafico con la propria scala e tutti hanno lo stesso colore, il rosso del marchio come la linea del peso', async () => {
+  it('ogni misura ha il suo grafico con la propria scala e tutti hanno lo stesso colore, neutro come la linea del peso', async () => {
     await mount(themed);
     // Grasso scende da 20 a 18,5 e Muscolo sale da 40 a 41: scale diverse, ma entrambi occupano tutta l'altezza (4 e 32 su 36)
     for (const name of ['Grasso', 'Muscolo', 'Torace', 'Vita']) {
       const r = measureRow(name);
       expect([...polylineY(r)].sort((a, b) => a - b)).toEqual([4, 32]);
-      expect(style(r.querySelector('svg').parentElement).color).toBe(RED);
+      expect(style(r.querySelector('svg').parentElement).color).toBe(INK);
     }
   });
 
@@ -292,14 +293,14 @@ describe('composizione e circonferenze', () => {
     await mount(themed);
     expect(within(measureRow('Gamba')).getByText('—')).toBeTruthy();
     expect(measureRow('Gamba').querySelector('polyline')).toBeNull();
-    expect(within(measureRow('Grasso')).getByText('18.5%')).toBeTruthy();
+    expect(within(measureRow('Grasso')).getByText('18,5%')).toBeTruthy();
     expect(measureRow('Grasso').querySelector('polyline')).toBeNull();
   });
 
   it('il valore è l\'ultimo disponibile nel periodo, anche se l\'ultima rilevazione non lo ha', async () => {
     records = [...measured(), row('2026-10-18', '79.5')];
     await mount(themed);
-    expect(within(measureRow('Grasso')).getByText('18.5%')).toBeTruthy();
+    expect(within(measureRow('Grasso')).getByText('18,5%')).toBeTruthy();
   });
 });
 
@@ -336,7 +337,7 @@ describe('storico', () => {
   it('da tablet è una tabella con intestazioni in sentence case da 16px e celle da 16px', async () => {
     await mount(themed);
     const headers = within(history()).getAllByRole('columnheader');
-    expect(headers.map((h) => h.textContent)).toEqual(['Data', 'Peso', 'Grasso %', 'Muscolo %', 'Torace', 'Braccio', 'Vita', 'Gamba', 'Azioni']);
+    expect(headers.map((h) => h.textContent)).toEqual(['Data', 'Peso (kg)', 'Grasso %', 'Muscolo %', 'Torace', 'Braccio', 'Vita', 'Gamba', 'Azioni']);
     headers.forEach((h) => {
       expect(style(h).textTransform).not.toBe('uppercase');
       expect(style(h).fontSize).toBe('16px');
@@ -360,8 +361,8 @@ describe('storico', () => {
     const first = items[0];
     expect(within(first).getByText(formatDate('2026-10-15'))).toBeTruthy();
     expect(style(within(first).getByText('80 kg')).fontWeight).toBe('700');
-    const detail = within(first).getByText(/Grasso 18\.5%/);
-    expect(detail.textContent).toBe('Grasso 18.5% · Muscolo 41.0% · Torace 102 cm · Vita 83 cm');
+    const detail = within(first).getByText(/Grasso 18,5%/);
+    expect(detail.textContent).toBe('Grasso 18,5% · Muscolo 41% · Torace 102 cm · Vita 83 cm');
     expect(style(detail).color).toBe(GREY);
     expect(style(detail).fontSize).toBe('16px');
   });
@@ -416,17 +417,38 @@ describe('giorno della nuova misura', () => {
   });
 });
 
-describe('grafico del peso: colore', () => {
+describe('grafici del corpo: colore', () => {
   beforeEach(() => { records = measured(); });
 
   it.each([
     ['light', 'rgb(26, 24, 22)'],
     ['dark', 'rgb(255, 255, 255)'],
-  ])('la linea del peso è neutra (colore del testo) in %s, non rossa', async (mode, ink) => {
+  ])('le linee del peso e delle altre misure sono neutre (colore del testo) in %s, non rosse', async (mode, ink) => {
     localStorage.setItem('themeMode', mode);
     await mount(themed);
-    const line = screen.getByRole('img', { name: /Andamento peso/ });
-    expect(style(line).color).toBe(ink);
+    expect(style(screen.getByRole('img', { name: /Andamento peso/ })).color).toBe(ink);
+    ['Grasso', 'Muscolo', 'Torace', 'Vita'].forEach((name) => {
+      expect(style(measureRow(name).querySelector('polyline').parentElement.parentElement).color).toBe(ink);
+    });
+  });
+});
+
+describe('misure: separatore decimale della lingua', () => {
+  beforeEach(() => { records = [row('2026-10-15', '79.30', { body_fat_percentage: '18.50', muscle_mass_percentage: '41.00', waist_size: '83.25' })]; });
+
+  it('la tabella dello storico scrive pesi e misure con la virgola e senza zeri finali', async () => {
+    await mount();
+    const cells = within(tableRows()[0]).getAllByRole('cell').map((c) => c.textContent);
+    expect(cells.slice(1, 3)).toEqual(['79,3', '18,5']);
+    expect(cells).toContain('41');
+    expect(cells).toContain('83,25');
+    expect(cells.join(' ')).not.toMatch(/\d\.\d/);
+  });
+
+  it('le righe delle misure scrivono il valore con la virgola', async () => {
+    await mount();
+    expect(within(measureRow('Grasso')).getByText('18,5%')).toBeTruthy();
+    expect(within(measureRow('Vita')).getByText('83,25 cm')).toBeTruthy();
   });
 });
 
@@ -444,11 +466,11 @@ describe('grafico del peso: alternativa testuale', () => {
     await mount();
     const table = screen.getByRole('table', { name: 'Andamento peso (kg)' });
     expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Data', 'Peso']);
-    const body = within(table).getAllByRole('row').slice(1).map((r) => within(r).getAllByRole('cell').map((c) => c.textContent.replace(/\u00a0/g, ' ')));
+    const body = within(table).getAllByRole('row').slice(1).map((r) => within(r).getAllByRole('cell').map((c) => c.textContent));
     expect(body).toEqual([
-      [formatDate('2026-08-10'), '82 kg'],
-      [formatDate('2026-09-25'), '81,5 kg'],
-      [formatDate('2026-10-15'), '80 kg'],
+      [formatDate('2026-08-10'), '82\u00a0kg'],
+      [formatDate('2026-09-25'), '81,5\u00a0kg'],
+      [formatDate('2026-10-15'), '80\u00a0kg'],
     ]);
   });
 

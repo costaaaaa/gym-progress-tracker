@@ -26,5 +26,5 @@ export const formatClockTime = (value) => clockDate(value).toLocaleTimeString(in
 
 export const formatNumber = (value, options) => Number(value || 0).toLocaleString(intlLocale(), options);
 
-export const weightText = (value, options) => formatWeight(value, intlLocale(), options);
-export const setText = (weight, reps) => formatSet(weight, reps, intlLocale());
+export const formatWeightText = (value, options) => formatWeight(value, intlLocale(), options);
+export const formatSetText = (weight, reps) => formatSet(weight, reps, intlLocale());

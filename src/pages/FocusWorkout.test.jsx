@@ -841,7 +841,7 @@ describe('colori di Focus: rosso solo per ciò che è distruttivo', () => {
   it.each([
     ['light', GREEN, 'rgb(255, 255, 255)'],
     ['dark', 'rgb(34, 197, 94)', 'rgb(10, 10, 11)'],
-  ])('"Conferma serie" in %s: verde del tema con testo a 4.5:1 (bianco su verde scuro, quasi nero su verde chiaro)', async (mode, bg, fg) => {
+  ])('"Conferma serie" in %s: verde del tema con testo a 4,5:1 (bianco su verde scuro, quasi nero su verde chiaro)', async (mode, bg, fg) => {
     localStorage.setItem('themeMode', mode);
     await startDay('Push');
     fireEvent.change(screen.getByLabelText('Peso (kg)'), { target: { value: '60' } });
@@ -1020,7 +1020,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     expect(screen.getAllByText('Tecnica di intensità').length).toBeGreaterThan(0);
     // La tecnica è della seconda serie allenante, non della prima
     expect(shownTechnique()).not.toContain('Rest Pause');
-    expect(screen.getByRole('listitem', { current: true }).textContent.replace(/\u00a0/g, ' ')).toBe('100 kg × 5');
+    expect(screen.getByRole('listitem', { current: true }).textContent).toBe('100\u00a0kg\u00a0×\u00a05');
     // Saltare la prima serie allenante equivale a saltare l'esercizio; "Salta riscaldamento" non c'è più
     expect(screen.queryByRole('button', { name: 'Salta serie' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Salta riscaldamento' })).toBeNull();

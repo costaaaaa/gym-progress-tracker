@@ -16,7 +16,7 @@ import ShareCardDialog from '../../components/ShareCardDialog';
 import WarmupBadge from '../../components/WarmupBadge';
 import { track } from '../../utils/analytics';
 import { techniqueLabel } from '../../i18n/labels';
-import { setText } from '../../i18n/format';
+import { formatSetText } from '../../i18n/format';
 import { radius } from '../../theme/radius';
 import PremiumButton from './PremiumButton';
 import ButtonSpinner from '../../components/ButtonSpinner';
@@ -120,7 +120,7 @@ export default function SummaryPhase({
                       fontSize: 12, fontWeight: 600, color: colors.textSecondary, fontVariantNumeric: 'tabular-nums',
                     }}>
                       {set.is_warmup && <WarmupBadge sx={{ mr: 0.75 }} />}
-                      {setText(set.weight, set.reps)}{set.intensity_technique ? ` · ${techniqueLabel(set.intensity_technique)}` : ''}
+                      {formatSetText(set.weight, set.reps)}{set.intensity_technique ? ` · ${techniqueLabel(set.intensity_technique)}` : ''}
                     </Box>
                   ))}
                 </Box>

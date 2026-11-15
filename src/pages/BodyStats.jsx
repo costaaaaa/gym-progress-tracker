@@ -30,7 +30,7 @@ import { useTranslation } from 'react-i18next';
 import { format, isValid } from 'date-fns';
 import i18n from '../i18n';
 import DateLocalization from '../i18n/DateLocalization';
-import { formatDate, weightText } from '../i18n/format';
+import { formatDate, formatNumber, formatWeightText } from '../i18n/format';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import FavoriteIcon from '@mui/icons-material/Favorite';
@@ -61,11 +61,14 @@ const HealthMark = () => {
   );
 };
 
+// Misure in numero con la lingua dell'utente: virgola o punto, al massimo due decimali, niente zeri finali
+const measureText = (value) => formatNumber(value, { maximumFractionDigits: 2 });
+
 const StatValue = ({ row, field }) => {
   if (!row[field]) return '-';
   return (
     <>
-      {field === 'weight' ? weightText(row[field], { unit: false }) : row[field]}
+      {field === 'weight' ? formatWeightText(row[field], { unit: false }) : measureText(row[field])}
       {isFromHealth(row, field) && <HealthMark />}
     </>
   );
@@ -83,6 +86,9 @@ const CIRCUMFERENCE_SERIES = [
   { key: 'leg_size', label: 'body.leg', unit: ' cm' },
 ];
 const HISTORY_SERIES = [...BODY_COMPOSITION_SERIES, ...CIRCUMFERENCE_SERIES];
+
+// Linea dei grafici del corpo: neutra, il rosso del marchio non è un dato
+const SPARK_COLOR = 'text.primary';
 
 const hasValue = (v) => v !== null && v !== undefined && v !== '';
 
@@ -106,14 +112,14 @@ const MeasureRow = ({ series, data, domain }) => {
     <Box data-measure-row sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, md: 3 }, py: 1.25 }}>
       <Typography sx={{ flex: 1, minWidth: 0, fontSize: 16 }}>{t(series.label)}</Typography>
       {polyline && (
-        <Box sx={{ width: { xs: 72, md: 160 }, height: { xs: 28, md: 32 }, flexShrink: 0, color: 'primary.main' }}>
+        <Box sx={{ width: { xs: 72, md: 160 }, height: { xs: 28, md: 32 }, flexShrink: 0, color: SPARK_COLOR }}>
           <svg viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} width="100%" height="100%" preserveAspectRatio="none" aria-hidden="true">
             <polyline points={polyline} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
           </svg>
         </Box>
       )}
       <Typography variant="statNumber" sx={{ fontSize: 16, minWidth: { xs: 72, md: 96 }, textAlign: 'right' }}>
-        {value !== null ? `${value}${series.unit}` : '—'}
+        {value !== null ? `${measureText(value)}${series.unit}` : '—'}
       </Typography>
     </Box>
   );
@@ -173,6 +179,7 @@ const HistoryList = ({ rows, empty, onDelete }) => {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 1 }}>
                 <Typography sx={{ fontSize: 16 }}>{formatDate(row.date)}</Typography>
                 <Typography sx={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+                  {/* Numero (con il cuore di Salute) e unità sono pezzi separati: lo spazio non separabile e kg si scrivono a mano */}
                   {row.weight ? <><StatValue row={row} field="weight" />{'\u00a0'}kg</> : '-'}
                 </Typography>
               </Box>
@@ -180,7 +187,7 @@ const HistoryList = ({ rows, empty, onDelete }) => {
                 <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
                   {others.map((s, i) => (
                     <Fragment key={s.key}>
-                      {i > 0 && ' · '}{t(s.label)} {row[s.key]}{s.unit}{isFromHealth(row, s.key) && <HealthMark />}
+                      {i > 0 && ' · '}{t(s.label)} {measureText(row[s.key])}{s.unit}{isFromHealth(row, s.key) && <HealthMark />}
                     </Fragment>
                   ))}
                 </Typography>
@@ -378,14 +385,14 @@ const BodyStats = ({ isEmbedded = false }) => {
 
   const weighed = chartData.filter(d => d.weight !== null && d.weight !== undefined);
   const weightPoints = weighed.map(d => ({ x: d.day, value: d.weight }));
-  const weightRows = weighed.map(d => [formatDate(d.date), weightText(d.weight)]);
+  const weightRows = weighed.map(d => [formatDate(d.date), formatWeightText(d.weight)]);
   const lastWeight = lastValueOf(chartData, 'weight');
-  const weightLabel = lastWeight !== null ? weightText(lastWeight) : '—';
+  const weightLabel = formatWeightText(lastWeight);
   const weightDelta = periodWeightDelta(periodRows);
   const trend = weightTrend(weightDelta);
   const deltaText = trend === null ? undefined
     : trend === 'flat' ? t(PERIOD_UI[period].stable)
-      : t(PERIOD_UI[period].delta, { delta: weightText(weightDelta, { signed: true }) });
+      : t(PERIOD_UI[period].delta, { delta: formatWeightText(weightDelta, { signed: true, maxDecimals: 1 }) });
 
   // Lo storico non segue il periodo: tutte le righe, dalla più recente, a pagine
   const sortedStats = sortByDate(stats);
@@ -425,7 +432,7 @@ const BodyStats = ({ isEmbedded = false }) => {
                 <Typography sx={{ color: 'text.secondary', fontSize: 16, mt: 0.5 }}>
                   {t('body.period_empty_last', {
                     date: formatDate(latestRow.date),
-                    weight: latestRow.weight ? weightText(latestRow.weight) : '—',
+                    weight: latestRow.weight ? formatWeightText(latestRow.weight) : '—',
                   })}
                 </Typography>
               </Card>
@@ -438,7 +445,7 @@ const BodyStats = ({ isEmbedded = false }) => {
                   title={t('body.weight_trend')}
                   points={weightPoints}
                   domain={chartDomain}
-                  color="text.primary"
+                  color={SPARK_COLOR}
                   valueLabel={weightLabel}
                   trend={trend}
                   deltaText={deltaText}
@@ -469,7 +476,7 @@ const BodyStats = ({ isEmbedded = false }) => {
                   <TableHead>
                     <TableRow>
                       <TableCell sx={headCellSx}>{t('body.col.date')}</TableCell>
-                      <TableCell align="right" sx={headCellSx}>{t('body.col.weight')}</TableCell>
+                      <TableCell align="right" sx={headCellSx}>{t('body.col.weight_kg')}</TableCell>
                       <TableCell align="right" sx={headCellSx}>{t('body.col.fat')}</TableCell>
                       <TableCell align="right" sx={headCellSx}>{t('body.col.muscle')}</TableCell>
                       <TableCell align="right" sx={headCellSx}>{t('body.chest')}</TableCell>
@@ -485,11 +492,11 @@ const BodyStats = ({ isEmbedded = false }) => {
                         <TableCell sx={bodyCellSx}>{formatDate(row.date)}</TableCell>
                         <TableCell align="right" sx={{ ...bodyCellSx, fontWeight: 700 }}><StatValue row={row} field="weight" /></TableCell>
                         <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="body_fat_percentage" /></TableCell>
-                        <TableCell align="right" sx={bodyCellSx}>{row.muscle_mass_percentage || '-'}</TableCell>
-                        <TableCell align="right" sx={bodyCellSx}>{row.chest_size || '-'}</TableCell>
-                        <TableCell align="right" sx={bodyCellSx}>{row.arm_size || '-'}</TableCell>
+                        <TableCell align="right" sx={bodyCellSx}>{row.muscle_mass_percentage ? measureText(row.muscle_mass_percentage) : '-'}</TableCell>
+                        <TableCell align="right" sx={bodyCellSx}>{row.chest_size ? measureText(row.chest_size) : '-'}</TableCell>
+                        <TableCell align="right" sx={bodyCellSx}>{row.arm_size ? measureText(row.arm_size) : '-'}</TableCell>
                         <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="waist_size" /></TableCell>
-                        <TableCell align="right" sx={bodyCellSx}>{row.leg_size || '-'}</TableCell>
+                        <TableCell align="right" sx={bodyCellSx}>{row.leg_size ? measureText(row.leg_size) : '-'}</TableCell>
                         <TableCell align="center">
                           <IconButton size="small" aria-label={t('common.delete')} onClick={() => handleDelete(row.id)} sx={{ color: 'text.secondary' }}>
                             <DeleteIcon fontSize="small" />

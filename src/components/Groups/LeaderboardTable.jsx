@@ -1,7 +1,7 @@
 import { Box, Chip, LinearProgress, Typography } from '@mui/material';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import { useTranslation } from 'react-i18next';
-import { intlLocale, weightText } from '../../i18n/format';
+import { intlLocale, formatWeightText } from '../../i18n/format';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 import { radius } from '../../theme/radius';
 
@@ -33,7 +33,7 @@ const Metric = ({ row, board }) => {
     <Box sx={{ minWidth: 150 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
         <Typography sx={{ fontSize: 16, fontWeight: 700 }}>{row.workouts}/{row.goal}</Typography>
-        <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{weightText(row.volume_kg)}</Typography>
+        <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{formatWeightText(row.volume_kg)}</Typography>
       </Box>
       <LinearProgress
         variant="determinate"

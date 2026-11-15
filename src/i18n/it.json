@@ -316,6 +316,7 @@
   "body.circumferences": "Circonferenze",
   "body.col.date": "Data",
   "body.col.weight": "Peso",
+  "body.col.weight_kg": "Peso (kg)",
   "body.col.fat": "Grasso %",
   "body.col.muscle": "Muscolo %",
   "body.col.actions": "Azioni",

@@ -14,7 +14,7 @@ import ElapsedClock from './ElapsedClock';
 import QuitDialog from './QuitDialog';
 import { slotLabel } from './slotLabel';
 import { MAX_WEIGHT, isValidWeight, isValidReps, plannedSetAt, slotTarget, lastSessionSets, setStatus, setSlot } from '../../utils/focusSession';
-import { intlLocale, setText } from '../../i18n/format';
+import { intlLocale, formatSetText } from '../../i18n/format';
 import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, muscleLabel, techniqueLabel } from '../../i18n/labels';
 import { radius } from '../../theme/radius';
 import PremiumButton from './PremiumButton';
@@ -223,7 +223,7 @@ export default function WorkoutPhase({
                     {slotLabel(t, setSlot(currentExercise, set.setNumber - 1), 'name')}
                   </Typography>
                   <Box sx={{ textAlign: 'right' }}>
-                    <Typography variant="body2" sx={{ color: colors.text, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{setText(set.weight, set.reps)}</Typography>
+                    <Typography variant="body2" sx={{ color: colors.text, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{formatSetText(set.weight, set.reps)}</Typography>
                     {set.intensity_technique && (
                       <Typography variant="caption" sx={{ color: colors.textSecondary, display: 'block' }}>{techniqueLabel(set.intensity_technique)}</Typography>
                     )}

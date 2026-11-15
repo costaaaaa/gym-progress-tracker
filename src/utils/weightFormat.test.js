@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { formatWeight, formatSet } from './weightFormat';
 
-const NB = ' ';
+const NB = '\u00a0';
 
 describe('formatWeight', () => {
   it('italiano: virgola, niente zeri finali, spazio non separabile prima di kg', () => {
@@ -40,7 +40,14 @@ describe('formatWeight', () => {
     expect(formatWeight(-2.1, 'it-IT', { signed: true })).toBe(`-2,1${NB}kg`);
   });
 
-  it('unit: false dà solo il numero (colonne con unità in intestazione)', () => {
+  it('maxDecimals limita i decimali (default 2)', () => {
+    expect(formatWeight(101.33, 'it-IT', { maxDecimals: 1 })).toBe(`101,3${NB}kg`);
+    expect(formatWeight(0.04, 'it-IT', { signed: true, maxDecimals: 1 })).toBe(`0${NB}kg`);
+    expect(formatWeight(0.05, 'it-IT', { signed: true, maxDecimals: 1 })).toBe(`+0,1${NB}kg`);
+    expect(formatWeight(101.33, 'it-IT')).toBe(`101,33${NB}kg`);
+  });
+
+  it('unit: false dà solo il numero', () => {
     expect(formatWeight('79.30', 'it-IT', { unit: false })).toBe('79,3');
   });
 });

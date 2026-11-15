@@ -32,8 +32,12 @@ describe('lastSessionSets: il riscaldamento non è "ultima volta" (#66)', () => 
         { weight: 20, reps: 10, is_warmup: true },
         { weight: 80, reps: 5, intensity_technique: '' },
       ],
-    });
+    }, 'it-IT');
     expect(chips).toEqual([{ label: '80\u00a0kg\u00a0×\u00a05', technique: '' }]);
+  });
+
+  it('scrive il peso con la lingua passata', () => {
+    expect(lastSessionSets({ sets: [{ weight: 82.5, reps: 5 }] }, 'en-US')[0].label).toBe('82.5\u00a0kg\u00a0×\u00a05');
   });
 
   it('senza sessione precedente ritorna un elenco vuoto', () => {

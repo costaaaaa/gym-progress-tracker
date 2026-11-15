@@ -1,7 +1,7 @@
 // Come si scrive un peso e una serie. File puro (nessun import da i18n o React): la lingua arriva
 // come argomento, così lo stesso file si può copiare identico in un altro client.
 
-const NBSP = ' ';
+const NBSP = '\u00a0';
 
 const toNumber = (value) => {
   if (value === null || value === undefined || value === '') return null;
@@ -10,11 +10,12 @@ const toNumber = (value) => {
 };
 
 // 79.30 → "79,3 kg" (it) / "79.3 kg" (en): al massimo due decimali, niente zeri finali, spazio non separabile.
-// Senza un valore valido: "—". Opzioni: signed (segno anche per i positivi), unit: false (solo il numero).
-export function formatWeight(value, locale, { signed = false, unit = true } = {}) {
+// Senza un valore valido: "—". Opzioni: signed (segno anche per i positivi), unit: false (solo il numero),
+// maxDecimals (default 2).
+export function formatWeight(value, locale, { signed = false, unit = true, maxDecimals = 2 } = {}) {
   const n = toNumber(value);
   if (n === null) return '—';
-  const text = n.toLocaleString(locale, { maximumFractionDigits: 2, ...(signed && { signDisplay: 'exceptZero' }) });
+  const text = n.toLocaleString(locale, { maximumFractionDigits: maxDecimals, ...(signed && { signDisplay: 'exceptZero' }) });
   return unit ? `${text}${NBSP}kg` : text;
 }
 
