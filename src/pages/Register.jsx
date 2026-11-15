@@ -338,6 +338,10 @@ const Register = () => {
                 onChange={(newValue) => { setBirthDate(newValue); clearError('birthDate'); }}
                 minDate={subYears(startOfToday(), 100)}
                 maxDate={subYears(startOfToday(), 14)}
+                // Calendario vuoto: vista anni, centrata su 30 anni fa (senza, si apre sul mese di oggi - 14 anni).
+                // Con una data già scelta si apre sul suo mese.
+                openTo={birthDate ? 'day' : 'year'}
+                referenceDate={subYears(startOfToday(), 30)}
                 slotProps={{
                   textField: {
                     fullWidth: true,

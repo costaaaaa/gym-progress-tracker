@@ -206,3 +206,41 @@ describe('campi data su telefono: il nome contiene l\'etichetta visibile', () =>
     expect(screen.getByRole('textbox', { name: /^Mese inizio allenamento/ })).toBeTruthy();
   });
 });
+
+// Senza data scelta il calendario si apre sulla vista anni, centrata su 30 anni fa (non sul mese di «oggi - 14 anni»).
+describe('calendario della data di nascita: apertura su un anno sensato', () => {
+  afterEach(() => { vi.useRealTimers(); });
+
+  it('senza data scelta si apre sulla scelta dell\'anno, vicino a 30 anni fa', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 5, 15, 12, 0, 0));
+    renderRegister();
+    fillStep1();
+    fireEvent.click(screen.getByRole('button', { name: 'Avanti' }));
+    await screen.findByText('Il tuo profilo');
+    fireEvent.click(screen.getByRole('textbox', { name: /^Data di nascita/ }));
+    const dialog = await screen.findByRole('dialog');
+    // vista anni: il 1996 (2026 - 30) è tra le scelte, e non c'è la griglia dei giorni del mese
+    expect(within(dialog).getByRole('radio', { name: '1996' })).toBeTruthy();
+    expect(within(dialog).queryByRole('gridcell', { name: '15' })).toBeNull();
+  });
+
+  it('con una data già scelta si apre sul suo mese, non sulla scelta dell\'anno', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 5, 15, 12, 0, 0));
+    renderRegister();
+    fillStep1();
+    fireEvent.click(screen.getByRole('button', { name: 'Avanti' }));
+    await screen.findByText('Il tuo profilo');
+    const field = () => screen.getByRole('textbox', { name: /^Data di nascita/ });
+    fireEvent.click(field());
+    let dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('radio', { name: '1996' }));
+    fireEvent.click(await within(dialog).findByRole('gridcell', { name: '10' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: /^(OK|Ok)$/ }));
+    await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    fireEvent.click(field());
+    dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('gridcell', { name: '10' })).toBeTruthy();
+  });
+});
