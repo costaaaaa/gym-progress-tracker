@@ -50,6 +50,8 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [birthDate, setBirthDate] = useState(null);
+  // Vista con cui si apre il calendario: fissata all'apertura, perché se cambiasse con la data MUI riporterebbe ai giorni.
+  const [birthOpenTo, setBirthOpenTo] = useState('year');
   const [gender, setGender] = useState('');
   const [trainingStartDate, setTrainingStartDate] = useState(null);
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -338,6 +340,12 @@ const Register = () => {
                 onChange={(newValue) => { setBirthDate(newValue); clearError('birthDate'); }}
                 minDate={subYears(startOfToday(), 100)}
                 maxDate={subYears(startOfToday(), 14)}
+                // Se la data non è ancora scelta si apre sulla vista anni, centrata su 30 anni fa (altrimenti
+                // sul mese di oggi - 14 anni); poi mese e giorno. Con una data scelta si apre sul suo mese.
+                views={['year', 'month', 'day']}
+                openTo={birthOpenTo}
+                onOpen={() => setBirthOpenTo(birthDate ? 'day' : 'year')}
+                referenceDate={subYears(startOfToday(), 30)}
                 slotProps={{
                   textField: {
                     fullWidth: true,
