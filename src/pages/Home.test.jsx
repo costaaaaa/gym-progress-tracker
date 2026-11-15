@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { renderToString } from 'react-dom/server';
 import Home from './Home';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 
@@ -96,10 +97,10 @@ describe('primo accesso', () => {
     expect(screen.queryByText('Piano attivo')).toBeNull();
     expect(screen.queryByText('Ultimo allenamento')).toBeNull();
     expect(screen.queryByText('I tuoi gruppi')).toBeNull();
-    expect(screen.queryByText(/tornare/)).toBeNull();
+    expect(screen.queryByText('Nessun allenamento recente. È ora di tornare in palestra!')).toBeNull();
   });
 
-  it('con una scheda o uno storico la Home mostra tutte le card e il bottone "Inizia allenamento"', async () => {
+  it('con una scheda attiva e uno storico la Home mostra tutte le card e il bottone "Inizia allenamento"', async () => {
     renderHome();
     expect(await screen.findByRole('link', { name: 'Inizia allenamento' })).toBeTruthy();
     expect(await screen.findByText('Piano attivo')).toBeTruthy();
@@ -123,10 +124,52 @@ describe('primo accesso', () => {
     expect(screen.queryByText(/per completare il piano/)).toBeNull();
   });
 
-  it('mentre lo storico si carica non compare "Benvenuto"', async () => {
+  it('mentre i dati si caricano non ci sono né saluto, né bottone, né card "Inizia da qui"', async () => {
     vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
     renderHome();
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Bentornato, mario88');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('');
+    expect(screen.queryByText(/Bentornato|Benvenuto/)).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Inizia allenamento' })).toBeNull();
+    expect(screen.queryByText('Inizia da qui')).toBeNull();
+  });
+
+  it('arrivato lo storico vuoto compare "Benvenuto", ma né bottone né card finché non arrivano le schede', async () => {
+    let plansArrive;
+    const plans = new Promise((resolve) => { plansArrive = resolve; });
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      const reply = (body) => Promise.resolve({ ok: true, status: 200, json: async () => body, text: async () => JSON.stringify(body) });
+      if (String(url).includes('workout_history/read.php')) return reply({ success: true, records: [] });
+      if (String(url).includes('workout/read_plans.php')) return plans.then(() => reply({ success: true, records: [] }));
+      return reply({ success: false });
+    }));
+    renderHome();
+    expect(await screen.findByText('Benvenuto, mario88')).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Inizia allenamento' })).toBeNull();
+    expect(screen.queryByText('Inizia da qui')).toBeNull();
+    plansArrive();
+    expect(await screen.findByText('Inizia da qui')).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Inizia allenamento' })).toBeNull();
+  });
+
+  it('un utente con lo storico vede "Bentornato" e il bottone, mai "Benvenuto"', async () => {
+    renderHome();
+    expect(await screen.findByText('Bentornato, mario88')).toBeTruthy();
+    expect(await screen.findByRole('link', { name: 'Inizia allenamento' })).toBeTruthy();
+    expect(screen.queryByText(/Benvenuto/)).toBeNull();
+  });
+
+  it('al primo render di un utente loggato la Home è già in caricamento: nessuna card dei dati', () => {
+    const html = renderToString(<MemoryRouter><ThemeModeProvider><Home /></ThemeModeProvider></MemoryRouter>);
+    expect(html).toContain('role="progressbar"');
+    expect(html).not.toContain('Riepilogo settimanale');
+    expect(html).not.toContain('Bentornato');
+  });
+
+  it('il riepilogo settimanale con sole schede inattive parla di traguardo, non di piano', async () => {
+    responses['workout/read_plans.php'] = { success: true, records: [{ id: 2, name: 'Vecchia', is_active: false }] };
+    renderHome();
+    expect(await screen.findByText('Ti manca 1 sessione per il traguardo settimanale.')).toBeTruthy();
+    expect(screen.queryByText(/per completare il piano/)).toBeNull();
   });
 
   it('senza scheda e senza allenamenti c\'è "Inizia da qui" con il link a "Crea la tua prima scheda"', async () => {

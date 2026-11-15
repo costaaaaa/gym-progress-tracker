@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useState, useEffect } from 'react';
-import { Typography, Grid, Button, Box, Alert, Snackbar, CircularProgress, Card, CardActionArea } from '@mui/material';
+import { Typography, Grid, Button, Box, Alert, Snackbar, CircularProgress, Skeleton, Card, CardActionArea } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import CalendarTodayOutlined from '@mui/icons-material/CalendarTodayOutlined';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -60,12 +60,16 @@ const Home = () => {
   // Veri solo se la risposta è arrivata: un errore di rete non deve far passare un utente per nuovo
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [plansLoaded, setPlansLoaded] = useState(false);
+  // Risposta arrivata o fallita: il saluto aspetta lo storico, il bottone anche le schede
+  const [historyDone, setHistoryDone] = useState(false);
+  const [plansDone, setPlansDone] = useState(false);
   const [hasPlans, setHasPlans] = useState(false);
   const [dashboardStats, setDashboardStats] = useState(null);
   // weekly_goal è l'obiettivo effettivo; plan_days_total resta per i server più vecchi
   const weeklyGoal = dashboardStats?.weekly_goal ?? dashboardStats?.plan_days_total;
   const weeklySets = totalSets(dashboardStats?.weekly_sets?.week);
-  const [loading, setLoading] = useState(false);
+  // Per un utente loggato il primo render è già il caricamento: niente card dei dati prima della fetch
+  const [loading, setLoading] = useState(isLoggedIn);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -87,6 +91,7 @@ const Home = () => {
           setLastWorkout(historyData.records[0]);
         }
       }
+      setHistoryDone(true);
 
       // Fetch plans for the active plan
       const plansResponse = await fetch(`${API_BASE_URL}api/workout/read_plans.php`, {
@@ -101,6 +106,7 @@ const Home = () => {
           setActivePlan(active || null);
         }
       }
+      setPlansDone(true);
 
       // Fetch dashboard stats
       const statsResponse = await fetch(`${API_BASE_URL}api/workout_stats/dashboard.php`, {
@@ -123,6 +129,9 @@ const Home = () => {
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
+      // Una richiesta fallita mostra la Home completa (saluto e bottone compaiono comunque)
+      setHistoryDone(true);
+      setPlansDone(true);
       setLoading(false);
     }
   };
@@ -133,6 +142,7 @@ const Home = () => {
   const isNewUser = historyLoaded && !lastWorkout;
   // Nuovo = nessun allenamento e nessuna scheda (nemmeno inattiva): la Home propone una sola azione
   const showStartHere = isNewUser && plansLoaded && !hasPlans;
+  const heroButtonVisible = historyDone && plansDone && !showStartHere;
 
   if (!isLoggedIn) {
     return (
@@ -142,26 +152,82 @@ const Home = () => {
     );
   }
 
+  // Riepilogo settimanale: è l'unica card che resta alla Home del nuovo utente
+  const weeklySummary = (
+    <Grid item xs={12} md={6}>
+      <Card sx={{ height: '100%', p: '22px' }}>
+        <Typography component="h2" variant="cardTitle" sx={{ mb: 2.5 }}>
+          {t('home.weekly.title')}
+        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+          <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{t('home.weekly.done')}</Typography>
+          <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
+            {dashboardStats?.weekly_workouts || 0} / {weeklyGoal || '-'}
+          </Typography>
+        </Box>
+        <Box sx={{ height: 9, borderRadius: '5px', bgcolor: 'divider', overflow: 'hidden' }}>
+          <Box
+            sx={{
+              height: '100%',
+              width: `${weeklyGoal ? Math.min(100, (dashboardStats.weekly_workouts / weeklyGoal) * 100) : 0}%`,
+              bgcolor: 'primary.main',
+              borderRadius: '5px',
+            }}
+          />
+        </Box>
+        <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 1, mb: 2.5 }}>
+          {dashboardStats?.weekly_workouts >= weeklyGoal
+            ? t('home.weekly.goal_reached')
+            : t(activePlan ? 'home.weekly.missing' : 'home.weekly.missing_goal', { count: Math.max(0, (weeklyGoal || 0) - (dashboardStats?.weekly_workouts || 0)) })}
+        </Typography>
+
+        <Box sx={{ display: 'flex', gap: 1.5 }}>
+          <Box sx={{ flex: 1 }}>
+            <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
+              {formatNumber(dashboardStats?.weekly_volume?.total_weight)}
+              <Box component="span" sx={{ fontSize: 13, fontWeight: 600, ml: 0.5 }}>kg</Box>
+            </Typography>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.volume')}</Typography>
+          </Box>
+          <CardActionArea
+            component={RouterLink}
+            to="/dashboard?tab=muscles"
+            sx={{ flex: 1, borderRadius: radius.xxl, mx: -1, px: 1, width: 'auto' }}
+          >
+            <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
+              {formatNumber(weeklySets)}
+              <Box component="span" sx={{ fontSize: 15, fontWeight: 600, ml: 0.5, color: 'primary.text' }}>›</Box>
+            </Typography>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.sets')}</Typography>
+          </CardActionArea>
+        </Box>
+      </Card>
+    </Grid>
+  );
+
   return (
     <>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h1" sx={{ fontSize: { xs: '1.75rem', md: '2.25rem' }, mb: 1.5 }}>
-          {t(isNewUser ? 'home.hero.welcome_new' : 'home.hero.welcome', { username: user?.username || '' })}
+          {historyDone
+            ? t(isNewUser ? 'home.hero.welcome_new' : 'home.hero.welcome', { username: user?.username || '' })
+            : <Skeleton width={280} />}
         </Typography>
         <Typography sx={{ fontSize: 16, color: 'text.secondary', mb: 3, maxWidth: 560, lineHeight: 1.6 }}>
           {t('home.hero.sub_user')}
         </Typography>
-        {!showStartHere && (
-          <Button
-            variant="contained"
-            component={RouterLink}
-            to="/focus"
-            startIcon={<PlayArrowIcon />}
-            sx={{ borderRadius: radius.lg, px: 3, py: 1.25, fontWeight: 700 }}
-          >
-            {t('home.hero.start_workout')}
-          </Button>
-        )}
+        {/* Sempre nel DOM ma invisibile finché non si sa se serve: l'altezza dell'intestazione non cambia */}
+        <Button
+          variant="contained"
+          component={RouterLink}
+          to="/focus"
+          startIcon={<PlayArrowIcon />}
+          aria-hidden={!heroButtonVisible || undefined}
+          tabIndex={heroButtonVisible ? undefined : -1}
+          sx={{ borderRadius: radius.lg, px: 3, py: 1.25, fontWeight: 700, ...(!heroButtonVisible && { visibility: 'hidden' }), ...(showStartHere && { display: 'none' }) }}
+        >
+          {t('home.hero.start_workout')}
+        </Button>
       </Box>
 
       {showStartHere && (
@@ -181,9 +247,10 @@ const Home = () => {
           <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
             <CircularProgress color="primary" size={60} thickness={4} />
           </Grid>
+        ) : showStartHere ? (
+          weeklySummary
         ) : (
           <>
-            {!showStartHere && (<>
             {/* Streak / Livello */}
             <Grid item xs={12} md={6}>
               <StreakCard />
@@ -191,60 +258,9 @@ const Home = () => {
             <Grid item xs={12} md={6}>
               <LevelCard />
             </Grid>
-            </>)}
 
-            {/* Riepilogo Settimanale */}
-            <Grid item xs={12} md={6}>
-              <Card sx={{ height: '100%', p: '22px' }}>
-                <Typography component="h2" variant="cardTitle" sx={{ mb: 2.5 }}>
-                  {t('home.weekly.title')}
-                </Typography>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{t('home.weekly.done')}</Typography>
-                  <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
-                    {dashboardStats?.weekly_workouts || 0} / {weeklyGoal || '-'}
-                  </Typography>
-                </Box>
-                <Box sx={{ height: 9, borderRadius: '5px', bgcolor: 'divider', overflow: 'hidden' }}>
-                  <Box
-                    sx={{
-                      height: '100%',
-                      width: `${weeklyGoal ? Math.min(100, (dashboardStats.weekly_workouts / weeklyGoal) * 100) : 0}%`,
-                      bgcolor: 'primary.main',
-                      borderRadius: '5px',
-                    }}
-                  />
-                </Box>
-                <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 1, mb: 2.5 }}>
-                  {dashboardStats?.weekly_workouts >= weeklyGoal
-                    ? t('home.weekly.goal_reached')
-                    : t(activePlan ? 'home.weekly.missing' : 'home.weekly.missing_goal', { count: Math.max(0, (weeklyGoal || 0) - (dashboardStats?.weekly_workouts || 0)) })}
-                </Typography>
+            {weeklySummary}
 
-                <Box sx={{ display: 'flex', gap: 1.5 }}>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
-                      {formatNumber(dashboardStats?.weekly_volume?.total_weight)}
-                      <Box component="span" sx={{ fontSize: 13, fontWeight: 600, ml: 0.5 }}>kg</Box>
-                    </Typography>
-                    <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.volume')}</Typography>
-                  </Box>
-                  <CardActionArea
-                    component={RouterLink}
-                    to="/dashboard?tab=muscles"
-                    sx={{ flex: 1, borderRadius: radius.xxl, mx: -1, px: 1, width: 'auto' }}
-                  >
-                    <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
-                      {formatNumber(weeklySets)}
-                      <Box component="span" sx={{ fontSize: 15, fontWeight: 600, ml: 0.5, color: 'primary.text' }}>›</Box>
-                    </Typography>
-                    <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.sets')}</Typography>
-                  </CardActionArea>
-                </Box>
-              </Card>
-            </Grid>
-
-            {!showStartHere && (<>
             {/* Stato Muscolare */}
             <Grid item xs={12} md={6}>
               <Card sx={{ height: '100%', p: '22px' }}>
@@ -339,7 +355,6 @@ const Home = () => {
                 <QuickActionPill to="/profilo?tab=settings" icon={<HealthAndSafetyOutlined />} label={t('home.quick.settings')} />
               </Box>
             </Grid>
-            </>)}
           </>
         )}
       </Grid>
