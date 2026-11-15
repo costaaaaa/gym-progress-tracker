@@ -42,7 +42,8 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import LabeledDatePicker from '../components/LabeledDatePicker';
-import { format, parseISO, subYears, startOfToday, formatDistanceToNow } from 'date-fns';
+import { oldestBirthDate, youngestBirthDate, isInvalidBirthDate } from '../utils/birthDate';
+import { format, parseISO, startOfToday, formatDistanceToNow } from 'date-fns';
 import { useTranslation, Trans } from 'react-i18next';
 import DateLocalization from '../i18n/DateLocalization';
 import { dateFnsLocale } from '../i18n/format';
@@ -53,6 +54,7 @@ import { validatePassword } from '../utils/passwordPolicy';
 import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
 import { NEUTRAL_OUTLINED } from '../utils/buttonStyles';
 import { getConsents, setConsent } from '../utils/consent';
+import useFocusField from '../hooks/useFocusField';
 import { loginWithNext } from '../utils/safeNext';
 import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
 import ButtonSpinner from '../components/ButtonSpinner';
@@ -84,6 +86,8 @@ const Account = ({ isEmbedded = false }) => {
   const [gender, setGender] = useState('');
   const [experienceYears, setExperienceYears] = useState('');
   const [birthDate, setBirthDate] = useState(null);
+  const [birthDateError, setBirthDateError] = useState('');
+  const { fieldRef, focusField } = useFocusField();
   const [trainingStartDate, setTrainingStartDate] = useState(null);
   const [updatingProfile, setUpdatingProfile] = useState(false);
 
@@ -411,6 +415,11 @@ const Account = ({ isEmbedded = false }) => {
   }, [user, fetchUserData]);
 
   const handleUpdateProfile = async () => {
+    if (birthDate && isInvalidBirthDate(birthDate)) {
+      setBirthDateError(t('birth_date.error_invalid'));
+      focusField('birthDate');
+      return;
+    }
     setUpdatingProfile(true);
     try {
       const response = await fetch(`${API_BASE_URL}api/user/update_settings.php`, {
@@ -620,14 +629,19 @@ const Account = ({ isEmbedded = false }) => {
                     <LabeledDatePicker
                       label={t('account.birth_date')}
                       value={birthDate}
-                      onChange={(newValue) => setBirthDate(newValue)}
-                      minDate={subYears(startOfToday(), 100)}
-                      maxDate={subYears(startOfToday(), 14)}
+                      onChange={(newValue) => { setBirthDate(newValue); setBirthDateError(''); }}
+                      minDate={oldestBirthDate()}
+                      maxDate={youngestBirthDate()}
                       slotProps={{
                         textField: {
                           fullWidth: true,
                           size: 'small',
-                          helperText: age ? t('account.age_current', { age }) : t('account.age_auto')
+                          // undefined (non false) lascia a MUI X il suo errore di validazione (data fuori da minDate/maxDate)
+                          error: birthDateError ? true : undefined,
+                          inputRef: fieldRef('birthDate'),
+                          // MUI X ignora autoComplete di textField e lo mette a "off": passa solo da inputProps
+                          inputProps: { autoComplete: 'bday' },
+                          helperText: birthDateError || (age ? t('account.age_current', { age }) : t('account.age_auto'))
                         }
                       }}
                     />
