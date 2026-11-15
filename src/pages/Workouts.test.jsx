@@ -133,7 +133,7 @@ describe('schede', () => {
 describe('nomi accessibili', () => {
   it('l\'elenco dei tab ha un nome in italiano', async () => {
     await mount();
-    expect(screen.getByRole('tablist', { name: 'Sezioni di Allenamenti' })).toBeTruthy();
+    expect(screen.getByRole('tablist', { name: 'Sezioni di allenamenti' })).toBeTruthy();
   });
 
   it('il titolo del documento segue il tab: «tab · Allenamenti | LiftIndex»', async () => {

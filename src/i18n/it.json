@@ -969,7 +969,7 @@
   "profile.exercise_xp_aria": "Punti esperienza in {{name}}",
   "profile.achievement_progress_aria": "Avanzamento verso {{label}}",
   "share.card_aria": "Anteprima della card: {{content}}",
-  "workouts.tabs_aria": "Sezioni di Allenamenti",
+  "workouts.tabs_aria": "Sezioni di allenamenti",
   "dashboard.tabs_aria": "Sezioni della dashboard",
   "profile.tabs_aria": "Sezioni del profilo",
   "admin.meta.title": "Amministrazione",

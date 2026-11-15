@@ -15,8 +15,8 @@ const profile = {
   lifetime_volume_kg: 1000, total_sessions: 3, longest_streak: 1, exercises: [], achievements: [],
 };
 
-// Le tab sono lazy: scaldiamo il primo import prima dei test
-beforeAll(() => import('./ProfileSummary'), 30000);
+// Le tab sono lazy: scaldiamo il primo import di ciascuna prima dei test
+beforeAll(() => Promise.all([import('./ProfileSummary'), import('./Account')]), 30000);
 
 beforeEach(() => {
   localStorage.setItem('themeMode', 'light');
