@@ -107,12 +107,17 @@ describe('barra in alto: altezza pubblicata', () => {
     document.documentElement.style.removeProperty('--navbar-height');
   });
 
-  it('scrive in --navbar-height l\'altezza della riga dei controlli e la toglie allo smontaggio', () => {
-    vi.stubGlobal('ResizeObserver', class { constructor(cb) { this.cb = cb; } observe() { this.cb(); } disconnect() {} });
-    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({ height: 79 });
+  it('scrive in --navbar-height l\'altezza della riga dei controlli, la aggiorna quando cambia e la toglie allo smontaggio', () => {
+    let resize;
+    vi.stubGlobal('ResizeObserver', class { constructor(cb) { this.cb = cb; } observe() { resize = this.cb; } disconnect() {} });
+    const height = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({ height: 64 });
+    const value = () => document.documentElement.style.getPropertyValue('--navbar-height');
     const { unmount } = render(<MemoryRouter><ThemeModeProvider><Navbar /></ThemeModeProvider></MemoryRouter>);
-    expect(document.documentElement.style.getPropertyValue('--navbar-height')).toBe('79px');
+    expect(value()).toBe('64px');
+    height.mockReturnValue({ height: 79 });
+    resize();
+    expect(value()).toBe('79px');
     unmount();
-    expect(document.documentElement.style.getPropertyValue('--navbar-height')).toBe('');
+    expect(value()).toBe('');
   });
 });

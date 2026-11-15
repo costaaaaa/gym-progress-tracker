@@ -6,7 +6,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 // Altezza della Navbar sticky: il palco della scena resta fermo subito sotto. La Navbar pubblica l'altezza reale
 // in --navbar-height (due righe con la spaziatura del testo); 64 è quella di una riga.
-export const NAVBAR_HEIGHT = 64;
+const NAVBAR_HEIGHT = 64;
 const NAVBAR_VAR = `var(--navbar-height, ${NAVBAR_HEIGHT}px)`;
 const navbarHeight = () =>
   parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navbar-height')) || NAVBAR_HEIGHT;

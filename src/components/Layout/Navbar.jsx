@@ -42,7 +42,6 @@ const Navbar = () => {
     const root = document.documentElement;
     const publish = () => root.style.setProperty('--navbar-height', `${toolbarRef.current.getBoundingClientRect().height}px`);
     publish();
-    if (typeof ResizeObserver === 'undefined') return () => root.style.removeProperty('--navbar-height');
     const observer = new ResizeObserver(publish);
     observer.observe(toolbarRef.current);
     return () => {
