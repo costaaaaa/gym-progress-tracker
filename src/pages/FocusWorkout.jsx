@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import {
   Box,
   Button,
@@ -12,8 +13,10 @@ import {
   GlobalStyles
 } from '@mui/material';
 import { Lock as LockIcon } from '@mui/icons-material';
+import { visuallyHidden } from '@mui/utils';
 import FocusExercisePicker from '../components/FocusExercisePicker';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { focusedElement } from '../utils/focus';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './focus/useFocusColors';
 import useFocusSession from './focus/useFocusSession';
@@ -31,6 +34,24 @@ const FocusWorkout = () => {
 
   const { colors, isDarkMode } = useFocusColors();
   const { loading, phase, resumePrompt, selectDay, restTimer, workout, summary, picker, premiumDialog, snackbar } = useFocusSession();
+
+  // Al cambio di fase (e dopo il salvataggio) il pulsante premuto sparisce e il focus finirebbe sul <body>: va sul
+  // titolo, ma solo se si è perso. Se un campo l'ha preso da solo (autoFocus del peso) resta lì.
+  // Non alla prima schermata (nessun campo da sostituire) e non mentre carica.
+  const mainRef = useRef(null);
+  const lastScreen = useRef(null);
+  const saved = Boolean(summary.savedResult);
+  useEffect(() => {
+    if (loading) return;
+    const last = lastScreen.current;
+    if (last && (last.phase !== phase || last.saved !== saved)) {
+      const main = mainRef.current;
+      if (!main?.contains(focusedElement())) main?.querySelector('h1')?.focus();
+    }
+    lastScreen.current = { phase, saved };
+  }, [loading, phase, saved]);
+  // Fine del recupero: l'unico annuncio, niente conto alla rovescia a voce
+  const restOver = phase === 'rest_timer' && restTimer.timerDuration > 0 && restTimer.timerRemaining === 0;
 
   // ================================================
   // RENDER — CONTENUTO IN BASE ALLA FASE
@@ -93,12 +114,15 @@ const FocusWorkout = () => {
         color: 'inherit',
       }
     }} />
-    {renderContent()}
+    <Box component="main" ref={mainRef} sx={{ '& h1:focus': { outline: 'none' } }}>
+      {renderContent()}
+    </Box>
+    <Box role="status" aria-live="polite" sx={visuallyHidden}>{restOver ? t('focus.rest_over') : ''}</Box>
       <FocusExercisePicker {...picker} />
       <Dialog open={premiumDialog.open} onClose={premiumDialog.onClose}
         PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: radius.xxl } }}>
         <DialogTitle sx={{ color: colors.text, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <LockIcon sx={{ color: colors.warning }} /> {t('focus.premium_title')}
+          <LockIcon sx={{ color: colors.warningText }} /> {t('focus.premium_title')}
         </DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ color: colors.textSecondary }}>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { format, subDays } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import {
@@ -45,6 +45,7 @@ import ShareCardDialog from '../components/ShareCardDialog';
 import useUndoableDelete from '../hooks/useUndoableDelete';
 import { buildShareStats, historyRecords, muscleGroupsTitle } from '../utils/shareCard';
 import { track } from '../utils/analytics';
+import { focusedElement } from '../utils/focus';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import { radius } from '../theme/radius';
@@ -245,7 +246,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
   }, [workoutToDelete]);
   
   // La riga sparisce subito; la richiesta al server parte solo allo scadere dell'«Annulla» (vedi useUndoableDelete)
-  const { hiddenIds, pendingId, schedule: scheduleDelete, undo: undoDelete } = useUndoableDelete({
+  const { hiddenIds, pendingId, schedule: scheduleDelete, undo: undoDelete, holdProps: undoHoldProps } = useUndoableDelete({
     commit: async (id) => {
       const response = await fetch(`${API_BASE_URL}api/workout_history/delete.php`, {
         method: 'POST',
@@ -260,6 +261,24 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
     },
     onError: (error) => setSnackbar({ open: true, message: error.message, severity: 'error' }),
   });
+
+  // Tastiera: col messaggio «Annulla» il fuoco va sul pulsante; quando il messaggio finisce (e il fuoco era
+  // lì o è andato perso su body) torna nella lista: sulla riga ripristinata, o sull'intestazione del mese
+  const undoButtonRef = useRef(null);
+  const contentRef = useRef(null);
+  const previousPendingId = useRef(null);
+  useEffect(() => {
+    const previous = previousPendingId.current;
+    previousPendingId.current = pendingId;
+    if (pendingId !== null) { undoButtonRef.current?.focus(); return; }
+    if (previous === null) return;
+    const active = focusedElement();
+    if (active && !undoButtonRef.current?.contains(active)) return;
+    const root = contentRef.current;
+    const target = (!hiddenIds.includes(previous) && root?.querySelector(`[data-workout-row="${previous}"]`))
+      || root?.querySelector('[data-month-header]') || root;
+    target?.focus();
+  }, [pendingId, hiddenIds]);
 
   const handleConfirmDelete = () => {
     if (!workoutToDelete) return;
@@ -402,7 +421,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
   };
 
   const renderContent = () => (
-    <Box sx={{ pt: isEmbedded ? 0 : 3, pb: 6 }}>
+    <Box ref={contentRef} tabIndex={-1} sx={{ pt: isEmbedded ? 0 : 3, pb: 6, '&:focus': { outline: 'none' } }}>
       <Box sx={{ display: 'flex', justifyContent: isEmbedded ? 'flex-end' : 'space-between', alignItems: 'center', mb: 3 }}>
         {!isEmbedded && (
           <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 20 }}>
@@ -452,6 +471,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                 onClick={() => toggleMonthExpansion(monthYear)}
                 aria-expanded={isExpanded}
                 aria-controls={monthPanelId}
+                data-month-header
                 sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.75, py: 0.5, borderRadius: radius.xxl, textAlign: 'left' }}
               >
                 <Typography component="span" variant="cardTitle">
@@ -493,6 +513,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                               onClick={() => toggleWorkoutExpansion(workout.id)}
                               aria-expanded={isRowExpanded}
                               aria-controls={rowPanelId}
+                              data-workout-row={workout.id}
                             >
                               <ListItemText
                                 primary={<Typography sx={{ fontWeight: 600, fontSize: 16 }}>{workoutDay(workout)}</Typography>}
@@ -575,7 +596,8 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
       <Snackbar
         open={pendingId !== null}
         message={t('history.delete.removed')}
-        action={<Button color="inherit" size="small" onClick={undoDelete}>{t('history.delete.undo')}</Button>}
+        {...undoHoldProps}
+        action={<Button ref={undoButtonRef} color="inherit" size="small" onClick={undoDelete}>{t('history.delete.undo')}</Button>}
       />
       {/* Con l'«Annulla» in attesa gli altri messaggi stanno sopra, senza coprirlo */}
       <Snackbar open={snackbar.open} autoHideDuration={6000} sx={pendingId !== null ? { bottom: 88 } : undefined} onClose={() => setSnackbar({ ...snackbar, open: false })}>

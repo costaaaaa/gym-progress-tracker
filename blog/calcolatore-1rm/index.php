@@ -40,14 +40,16 @@ ob_start();
 
         <section class="calc-card" aria-labelledby="calc-title">
             <h2 id="calc-title" class="visually-hidden">Calcola il tuo 1RM</h2>
-            <form class="calc-form" method="get" action="/blog/calcolatore-1rm/" data-calc-form data-calc-decimal=",">
+            <form class="calc-form" method="get" action="/blog/calcolatore-1rm/" data-calc-form data-calc-decimal="," data-calc-msg-weight="Inserisci un peso maggiore di 0 e fino a {max} kg." data-calc-msg-reps="Inserisci da 1 a {max} ripetizioni.">
                 <div class="calc-field">
                     <label for="calc-peso">Peso sollevato (kg)</label>
-                    <input id="calc-peso" name="peso" data-calc-weight type="number" inputmode="decimal" min="1" max="<?php echo CALC_UNITS['kg']['max']; ?>" step="any" value="<?php echo blog_e(number_format($weight, 1, '.', '') + 0); ?>" required>
+                    <input id="calc-peso" name="peso" data-calc-weight type="number" inputmode="decimal" min="1" max="<?php echo CALC_UNITS['kg']['max']; ?>" step="any" value="<?php echo blog_e(number_format($weight, 1, '.', '') + 0); ?>" required aria-describedby="calc-peso-error">
+                    <p class="calc-error" id="calc-peso-error" data-calc-error="weight" role="alert" hidden></p>
                 </div>
                 <div class="calc-field">
                     <label for="calc-ripetizioni">Ripetizioni</label>
-                    <input id="calc-ripetizioni" name="ripetizioni" data-calc-reps type="number" inputmode="numeric" min="1" max="<?php echo CALC_MAX_REPS; ?>" step="1" value="<?php echo blog_e($reps); ?>" required>
+                    <input id="calc-ripetizioni" name="ripetizioni" data-calc-reps type="number" inputmode="numeric" min="1" max="<?php echo CALC_MAX_REPS; ?>" step="1" value="<?php echo blog_e($reps); ?>" required aria-describedby="calc-ripetizioni-error">
+                    <p class="calc-error" id="calc-ripetizioni-error" data-calc-error="reps" role="alert" hidden></p>
                 </div>
                 <button class="cta calc-submit" type="submit">Calcola</button>
             </form>

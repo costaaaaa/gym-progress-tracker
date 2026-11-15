@@ -5,6 +5,7 @@ include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/Consent.php';
 include_once '../../models/UserStat.php';
+include_once '../../lib/stats_rules.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -24,25 +25,17 @@ if (!(new Consent($db))->isActive($user_id, 'health_data')) {
 
 $data = json_decode(file_get_contents("php://input"));
 
-// Valori plausibili: numeri finiti, non negativi, con un tetto ragionevole
-$limits = array(
-    'weight' => 500, 'body_fat_percentage' => 100, 'muscle_mass_percentage' => 100,
-    'chest_size' => 300, 'arm_size' => 150, 'waist_size' => 300, 'leg_size' => 200,
-);
 $dateObj = (isset($data->date) && is_string($data->date)) ? DateTime::createFromFormat('!Y-m-d', $data->date) : false;
 if (!empty($data->date) && (!$dateObj || $dateObj->format('Y-m-d') !== $data->date || $dateObj > user_today())) {
     http_response_code(400);
     echo json_encode(array("message" => t_server('stats.date_invalid')));
     exit;
 }
-foreach ($limits as $field => $max) {
-    if (isset($data->$field) && $data->$field !== '' && $data->$field !== null) {
-        if (!is_numeric($data->$field) || $data->$field < 0 || $data->$field > $max) {
-            http_response_code(400);
-            echo json_encode(array("message" => t_server('stats.value_invalid', array('field' => $field))));
-            exit;
-        }
-    }
+$invalid_field = stats_invalid_field($data);
+if ($invalid_field !== null) {
+    http_response_code(400);
+    echo json_encode(stats_invalid_value($invalid_field));
+    exit;
 }
 
 // Make sure data is not empty (at least date is required)

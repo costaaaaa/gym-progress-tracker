@@ -12,15 +12,16 @@ const STEPS = ['s1', 's2', 's3'];
 
 const clock = (seconds) => `${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, '0')}`;
 
-// Timeline: .2-.34 conferma della serie, .38-.46 cambio schermata, .46-.80 recupero che scorre, .80-.95 fine e vibrazione.
+// I passi (data-step) cambiano solo opacity: autoAlpha metterebbe visibility: hidden e li toglierebbe agli screen reader
+// finché lo scorrimento non li mostra. Timeline: .2-.34 conferma della serie, .38-.46 cambio schermata, .46-.80 recupero che scorre, .80-.95 fine e vibrazione.
 function build(tl, q) {
   const time = { v: REST_SECONDS };
   tl.to(q('[data-confirm]'), { scale: 0.95, duration: 0.03 }, 0.2)
     .to(q('[data-confirm]'), { scale: 1, duration: 0.03 }, 0.23)
     .fromTo(q('[data-dot-fill]'), { scale: 0 }, { scale: 1, duration: 0.05 }, 0.24)
     .fromTo(q('[data-new-set]'), { autoAlpha: 0, y: -8 }, { autoAlpha: 1, y: 0, duration: 0.05 }, 0.25)
-    .to(q('[data-step="s1"]'), { autoAlpha: 0, y: -16, duration: 0.05 }, 0.34)
-    .fromTo(q('[data-step="s2"]'), { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: 0.05 }, 0.38)
+    .to(q('[data-step="s1"]'), { opacity: 0, y: -16, duration: 0.05 }, 0.34)
+    .fromTo(q('[data-step="s2"]'), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.05 }, 0.38)
     .to(q('[data-screen="work"]'), { autoAlpha: 0, xPercent: -8, duration: 0.07 }, 0.38)
     .fromTo(q('[data-screen="rest"]'), { autoAlpha: 0, xPercent: 8 }, { autoAlpha: 1, xPercent: 0, duration: 0.07 }, 0.4)
     // autoRound: false, se no GSAP arrotonda i px all'intero e l'anello (pathLength 1) scatta da pieno a vuoto a metà.
@@ -33,8 +34,8 @@ function build(tl, q) {
         if (el) el.textContent = clock(time.v);
       },
     }, 0.46)
-    .to(q('[data-step="s2"]'), { autoAlpha: 0, y: -16, duration: 0.05 }, 0.78)
-    .fromTo(q('[data-step="s3"]'), { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: 0.05 }, 0.82)
+    .to(q('[data-step="s2"]'), { opacity: 0, y: -16, duration: 0.05 }, 0.78)
+    .fromTo(q('[data-step="s3"]'), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.05 }, 0.82)
     .fromTo(q('[data-done]'), { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.04 }, 0.82)
     .to(q('[data-phone]'), { x: 5, duration: 0.012, repeat: 7, yoyo: true }, 0.82)
     .to(q('[data-phone]'), { x: 0, duration: 0.012 }, 0.92);
@@ -241,11 +242,11 @@ const Step = ({ id, t, live }) => (
 
 const SceneFocus = () => {
   const { t } = useTranslation();
-  const { ref, live } = useScrollScene(build);
+  const { ref, live, stageRef, textRef } = useScrollScene(build);
 
   return (
     <Box ref={ref} component="section" aria-labelledby="scene-focus-title" sx={{ ...sceneSx(live, 1.5, 1.5), ...FIELD }}>
-      <Box sx={stageSx(live)}>
+      <Box ref={stageRef} sx={stageSx(live)}>
         <Box
           sx={{
             width: '100%',
@@ -257,7 +258,7 @@ const SceneFocus = () => {
             ...(live && { height: { xs: '100%', md: 'auto' }, gridTemplateRows: { xs: 'auto minmax(0, 1fr)', md: 'none' }, py: { xs: 2, md: 0 } }),
           }}
         >
-          <Box sx={{ width: '100%', color: 'scene.text' }}>
+          <Box ref={textRef} sx={{ width: '100%', color: 'scene.text' }}>
             <Typography id="scene-focus-title" variant="h2" sx={{ fontSize: { xs: '1.75rem', md: '2.75rem' }, lineHeight: 1.1, mb: { xs: 2, md: 4 } }}>
               {t('home.landing.focus.title')}
             </Typography>

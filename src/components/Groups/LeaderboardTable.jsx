@@ -14,7 +14,7 @@ const Metric = ({ row, board }) => {
   if (board === 'streak') {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-        <LocalFireDepartmentIcon sx={{ fontSize: 18, color: 'warning.main' }} />
+        <LocalFireDepartmentIcon sx={{ fontSize: 18, color: 'warning.text' }} />
         <Typography sx={{ fontWeight: 700 }}>
           {t('groups.board.streak_weeks', { count: row.streak_weeks })}
         </Typography>

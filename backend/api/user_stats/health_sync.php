@@ -19,6 +19,7 @@ include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/Consent.php';
 include_once '../../models/UserStat.php';
+include_once '../../lib/stats_rules.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -70,8 +71,8 @@ if (count($days) > 1000) {
     exit;
 }
 
-// Stessi tetti di create.php
-$limits = array('weight' => 500, 'body_fat_percentage' => 100, 'waist_size' => 300);
+// Stessi tetti di create.php, per i campi che Salute porta
+$limits = array_intersect_key(STATS_LIMITS, array_flip(array('weight', 'body_fat_percentage', 'waist_size')));
 // Il telefono conta i giorni nel suo fuso: accanto al nostro può già essere domani
 $maxDate = user_today()->modify('+1 day');
 
@@ -106,7 +107,7 @@ try {
         }
         // Un campione assurdo (una bilancia che segna 900 kg) non deve bloccare gli altri giorni
         if ($invalid !== null) {
-            $errors[] = array("date" => $date, "message" => t_server('stats.value_invalid', array('field' => $invalid)));
+            $errors[] = array("date" => $date, "message" => stats_invalid_value($invalid)['message']);
             continue;
         }
         if (!$values) {

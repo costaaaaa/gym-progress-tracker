@@ -390,7 +390,8 @@
   "share.change_photo": "Change photo",
   "share.zoom": "Photo zoom",
   "share.center": "Center the photo",
-  "share.photo_hint": "Move and zoom the photo with two fingers, or drag it and use the wheel with a mouse",
+  "share.photo_hint": "Move and zoom the photo with two fingers, or drag it and use the wheel with a mouse. With the keyboard: arrow keys move it. Shift plus arrows moves it further",
+  "share.photo_position": "Photo position",
   "share.background": "Background",
   "share.background_named": "{{name}} background",
   "share.download": "Download",
@@ -978,5 +979,8 @@
   "body.history_aria": "Measurement history",
   "progress.chart_aria": "Chart: {{kind}} for {{name}} over time. The values are in the history.",
   "record.technique_aria": "Technique, {{exercise}}, set {{n}}",
-  "history.row_action_aria": "{{action}}, {{date}}"
+  "history.row_action_aria": "{{action}}, {{date}}",
+  "focus.rest_over": "Rest over: you can do the next set",
+  "body.error.range": "The value must be between 0 and {{max}}, inclusive.",
+  "body.error.date": "Enter a valid date."
 }

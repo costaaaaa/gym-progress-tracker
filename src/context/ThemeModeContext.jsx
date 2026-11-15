@@ -13,6 +13,10 @@ const BRAND_DARK = '#9b0000';
 const ERROR_ON_DARK = '#ff5252';
 // Bordo dei campi a riposo: 3.5 : 1 sul bianco e 3.6 : 1 su #141416 (almeno 3 : 1 anche su #f7f6f5).
 const FIELD_BORDER = { light: '#8c8885', dark: '#6e6e70' };
+const WARNING = { light: '#d97706', dark: '#f59e0b' };
+// Arancio come testo o icona: in chiaro WARNING dà 2.9 : 1 sul grigio di fondo (serve 4.5 : 1), questo arriva ad almeno
+// 4.6 : 1 su bianco, fondo pagina, grigio e chip dei record; in scuro WARNING basta già.
+const WARNING_TEXT = { light: '#a85007', dark: WARNING.dark };
 const TEXT_PRIMARY = { light: '#1a1816', dark: '#ffffff' };
 // Contorno del focus dentro la voce, per i contenitori che tagliano (scorrimento delle schede, menu, card)
 const FOCUS_INSIDE = { '&.Mui-focusVisible': { outlineOffset: '-2px' } };
@@ -84,7 +88,8 @@ export const ThemeModeProvider = ({ children }) => {
             title: mode === 'light' ? '#166534' : '#86efac',
           },
           warning: {
-            main: mode === 'light' ? '#d97706' : '#f59e0b',
+            main: WARNING[mode],
+            text: WARNING_TEXT[mode],
             // Chip "nuovo record" in Focus: arancio proprio, non legato a warning.main
             muted: 'rgba(255, 167, 38, 0.15)',
           },

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Dialog, DialogContent, DialogActions, Box, Button, Chip, Collapse, FormControlLabel, IconButton, Slider, Switch, Typography,
@@ -28,6 +28,10 @@ import { radius } from '../theme/radius';
 import BackgroundSwatch from './BackgroundSwatch';
 
 const SWIPE_MIN_PX = 50;
+// Frecce: [dx, dy] e passo in px della card (1080 di larghezza); con Maiusc il passo grande
+const PHOTO_KEY_DIRECTIONS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+const PHOTO_KEY_STEP = 20;
+const PHOTO_KEY_STEP_BIG = 100;
 const PREFS_KEY = 'lx_share_card';
 
 const loadPrefs = () => {
@@ -193,6 +197,16 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
     movePhoto((t, iw, ih) => zoomPhotoAt({ ...t, dx: t.dx + m1.x - m0.x, dy: t.dy + m1.y - m0.y }, factor, m1, iw, ih, box));
   };
 
+  // Tastiera: le frecce spostano la foto come il trascinamento (stessi limiti), Maiusc di un passo più grande
+  const photoHintId = useId();
+  const handlePhotoKeyDown = (e) => {
+    const direction = PHOTO_KEY_DIRECTIONS[e.key];
+    if (!direction || e.altKey || e.ctrlKey || e.metaKey) return;
+    e.preventDefault();
+    const step = e.shiftKey ? PHOTO_KEY_STEP_BIG : PHOTO_KEY_STEP;
+    movePhoto((t, iw, ih) => clampPhotoTransform({ ...t, dx: t.dx + direction[0] * step, dy: t.dy + direction[1] * step }, iw, ih, box));
+  };
+
   const handlePointerUp = (e) => {
     const swipe = swipeRef.current;
     const wasOnlyFinger = e.pointerType === 'touch' && pointersRef.current.size === 1 && swipe && !swipe.multi;
@@ -341,6 +355,17 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
               width: '100%', height: '100%', borderRadius: radius.lg, display: 'block', ...(template === 'trasparente' ? CHECKERBOARD : { background: '#0a0a0b' }),
               touchAction: editable ? 'none' : 'pan-y', cursor: editable ? 'grab' : 'default',
             }} />
+          {/* Il canvas è un'immagine e non può avere il fuoco: la superficie per la tastiera è un elemento a parte,
+              sopra, che lascia passare il puntatore. Nessun ruolo nativo descrive uno spostamento in due dimensioni
+              (slider è a una sola): "application" fa arrivare le frecce al widget anche a un lettore di schermo */}
+          {editable && (
+            <Box role="application" tabIndex={0} aria-label={t('share.photo_position')} aria-describedby={photoHintId}
+              onKeyDown={handlePhotoKeyDown}
+              sx={(theme) => ({
+                position: 'absolute', inset: 0, pointerEvents: 'none', borderRadius: radius.lg,
+                '&:focus-visible': { outline: `2px solid ${theme.palette.text.primary}`, outlineOffset: '2px' },
+              })} />
+          )}
           {!fontsReady && (
             <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <CircularProgress size={28} />
@@ -384,7 +409,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
                 <CenterIcon fontSize="small" />
               </IconButton>
             </Box>
-            <Typography variant="caption" color="text.secondary" component="p" sx={{ textAlign: 'center' }}>
+            <Typography id={photoHintId} variant="caption" color="text.secondary" component="p" sx={{ textAlign: 'center' }}>
               {t('share.photo_hint')}
             </Typography>
             {backgroundVisible && (

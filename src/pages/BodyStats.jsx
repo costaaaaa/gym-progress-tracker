@@ -26,9 +26,9 @@ import {
   DialogActions,
 } from '@mui/material';
 import { API_BASE_URL } from '../config';
-import { DatePicker } from '@mui/x-date-pickers';
+import LabeledDatePicker from '../components/LabeledDatePicker';
 import { useTranslation } from 'react-i18next';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import i18n from '../i18n';
 import DateLocalization from '../i18n/DateLocalization';
 import { formatDate, formatNumber } from '../i18n/format';
@@ -46,6 +46,8 @@ import HealthConsentCard from '../components/HealthConsentCard';
 import HealthAppHint from '../components/HealthAppHint';
 import { DEFAULT_PERIOD, PERIODS, PERIOD_UI, filterByPeriod, periodStart, periodWeightDelta, weightTrend, sortByDate, paginate } from '../utils/bodyStatsPeriod';
 import { radius } from '../theme/radius';
+import useFocusField from '../hooks/useFocusField';
+import { BODY_LIMITS, isValueOutOfRange } from '../utils/bodyStatsRules';
 
 // Cuore accanto a un valore arrivato da Apple Salute / Health Connect
 // (health_fields è l'elenco dei campi importati, separati da virgola).
@@ -195,6 +197,9 @@ const HistoryList = ({ rows, empty, onDelete }) => {
   );
 };
 
+// Campi del modulo nell'ordine in cui compaiono (il primo con un errore riceve il focus)
+const FORM_FIELDS = ['date', ...Object.keys(BODY_LIMITS)];
+
 const numberFieldSx = {
   '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': { display: 'none' },
   '& input[type=number]': { MozAppearance: 'textfield' },
@@ -212,6 +217,9 @@ const BodyStats = ({ isEmbedded = false }) => {
   // true se il consenso era stato dato a una versione precedente del testo
   const [consentUpdated, setConsentUpdated] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  // Messaggio d'errore sotto ogni campo sbagliato; il focus va sul primo
+  const [fieldErrors, setFieldErrors] = useState({});
+  const { fieldRef, focusField } = useFocusField();
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
 
   const [formData, setFormData] = useState({
@@ -223,6 +231,12 @@ const BodyStats = ({ isEmbedded = false }) => {
     arm_size: '',
     waist_size: '',
     leg_size: '',
+  });
+
+  // Proprietà comuni dei sette campi numerici del modulo; l'errore passa da error + helperText (aria-describedby)
+  const numberField = (name, labelKey) => ({
+    label: t(labelKey), name, type: 'number', fullWidth: true, value: formData[name], onChange: handleInputChange, sx: numberFieldSx,
+    error: !!fieldErrors[name], helperText: fieldErrors[name], inputRef: fieldRef(name),
   });
 
   const fetchStats = async () => {
@@ -252,13 +266,35 @@ const BodyStats = ({ isEmbedded = false }) => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    if (fieldErrors[name]) setFieldErrors(({ [name]: _removed, ...others }) => others);
+  };
+
+  const showFieldErrors = (errors) => {
+    setFieldErrors(errors);
+    focusField(FORM_FIELDS.find((name) => errors[name]));
+  };
+
+  const openDialog = () => {
+    setFieldErrors({});
+    setIsDialogOpen(true);
   };
 
   const handleDateChange = (date) => {
     setFormData({ ...formData, date });
+    if (fieldErrors.date) setFieldErrors(({ date: _removed, ...others }) => others);
   };
 
   const handleSubmit = async () => {
+    const errors = {};
+    // Data cancellata o incompleta (si digita con il puntatore preciso): arriva null o una data non valida
+    if (!isValid(formData.date)) errors.date = t('body.error.date');
+    Object.entries(BODY_LIMITS).forEach(([name, max]) => {
+      if (isValueOutOfRange(formData[name], max)) errors[name] = t('body.error.range', { max });
+    });
+    if (Object.keys(errors).length > 0) {
+      showFieldErrors(errors);
+      return;
+    }
     try {
       const formattedData = {
         ...formData,
@@ -294,6 +330,9 @@ const BodyStats = ({ isEmbedded = false }) => {
           leg_size: '',
         });
         fetchStats();
+      } else if (BODY_LIMITS[result.field]) {
+        // Con "max" il testo è quello del client (uguale a quello prima dell'invio); il messaggio del server resta il ripiego
+        showFieldErrors({ [result.field]: Number.isFinite(result.max) ? t('body.error.range', { max: result.max }) : result.message });
       } else {
         setSnackbar({ open: true, message: result.message || t('body.error.save'), severity: 'error' });
       }
@@ -364,7 +403,7 @@ const BodyStats = ({ isEmbedded = false }) => {
             {t('body.title')}
           </Typography>
         )}
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsDialogOpen(true)} sx={{ fontSize: 16 }}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={openDialog} sx={{ fontSize: 16 }}>
           {t('body.new')}
         </Button>
       </Box>
@@ -506,35 +545,36 @@ const BodyStats = ({ isEmbedded = false }) => {
         <DialogTitle sx={{ fontWeight: 700 }}>{t('body.dialog_title')}</DialogTitle>
         <DialogContent dividers>
           <DateLocalization>
-            <DatePicker
+            <LabeledDatePicker
               label={t('body.field.date')}
               value={formData.date}
               onChange={handleDateChange}
-              slotProps={{ textField: { fullWidth: true, sx: { mb: 3, mt: 1 } } }}
+              // L'errore proprio del selettore (data digitata non valida) resta; il nostro compare solo dopo "Salva"
+              slotProps={{ textField: { fullWidth: true, sx: { mb: 3, mt: 1 }, inputRef: fieldRef('date'), ...(fieldErrors.date && { error: true, helperText: fieldErrors.date }) } }}
             />
           </DateLocalization>
 
           <Grid container spacing={2}>
             <Grid item xs={12} sm={4}>
-              <TextField label={t('body.field.weight')} name="weight" type="number" fullWidth value={formData.weight} onChange={handleInputChange} sx={numberFieldSx} />
+              <TextField {...numberField('weight', 'body.field.weight')} />
             </Grid>
             <Grid item xs={12} sm={4}>
-              <TextField label={t('body.field.fat')} name="body_fat_percentage" type="number" fullWidth value={formData.body_fat_percentage} onChange={handleInputChange} sx={numberFieldSx} />
+              <TextField {...numberField('body_fat_percentage', 'body.field.fat')} />
             </Grid>
             <Grid item xs={12} sm={4}>
-              <TextField label={t('body.field.muscle')} name="muscle_mass_percentage" type="number" fullWidth value={formData.muscle_mass_percentage} onChange={handleInputChange} sx={numberFieldSx} />
+              <TextField {...numberField('muscle_mass_percentage', 'body.field.muscle')} />
             </Grid>
             <Grid item xs={12} sm={3}>
-              <TextField label={t('body.field.chest')} name="chest_size" type="number" fullWidth value={formData.chest_size} onChange={handleInputChange} sx={numberFieldSx} />
+              <TextField {...numberField('chest_size', 'body.field.chest')} />
             </Grid>
             <Grid item xs={12} sm={3}>
-              <TextField label={t('body.field.arm')} name="arm_size" type="number" fullWidth value={formData.arm_size} onChange={handleInputChange} sx={numberFieldSx} />
+              <TextField {...numberField('arm_size', 'body.field.arm')} />
             </Grid>
             <Grid item xs={12} sm={3}>
-              <TextField label={t('body.field.waist')} name="waist_size" type="number" fullWidth value={formData.waist_size} onChange={handleInputChange} sx={numberFieldSx} />
+              <TextField {...numberField('waist_size', 'body.field.waist')} />
             </Grid>
             <Grid item xs={12} sm={3}>
-              <TextField label={t('body.field.leg')} name="leg_size" type="number" fullWidth value={formData.leg_size} onChange={handleInputChange} sx={numberFieldSx} />
+              <TextField {...numberField('leg_size', 'body.field.leg')} />
             </Grid>
           </Grid>
         </DialogContent>

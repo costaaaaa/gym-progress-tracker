@@ -390,7 +390,8 @@
   "share.change_photo": "Cambia foto",
   "share.zoom": "Zoom della foto",
   "share.center": "Rimetti la foto al centro",
-  "share.photo_hint": "Sposta e ingrandisci la foto con due dita, o col mouse trascinando e usando la rotella",
+  "share.photo_hint": "Sposta e ingrandisci la foto con due dita, o col mouse trascinando e usando la rotella. Da tastiera: le frecce la spostano. Maiusc con le frecce la sposta di più",
+  "share.photo_position": "Posizione della foto",
   "share.background": "Sfondo",
   "share.background_named": "Sfondo {{name}}",
   "share.download": "Scarica",
@@ -978,5 +979,8 @@
   "body.history_aria": "Storico delle misure",
   "progress.chart_aria": "Grafico: {{kind}} di {{name}} nel tempo. I valori sono nella cronologia.",
   "record.technique_aria": "Tecnica, {{exercise}}, serie {{n}}",
-  "history.row_action_aria": "{{action}}, {{date}}"
+  "history.row_action_aria": "{{action}}, {{date}}",
+  "focus.rest_over": "Recupero finito: puoi fare la serie successiva",
+  "body.error.range": "Il valore deve essere tra 0 e {{max}}, estremi inclusi.",
+  "body.error.date": "Inserisci una data valida."
 }

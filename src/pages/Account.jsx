@@ -41,7 +41,7 @@ import {
   Logout as LogoutIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import LabeledDatePicker from '../components/LabeledDatePicker';
 import { format, parseISO, subYears, startOfToday, formatDistanceToNow } from 'date-fns';
 import { useTranslation, Trans } from 'react-i18next';
 import DateLocalization from '../i18n/DateLocalization';
@@ -617,7 +617,7 @@ const Account = ({ isEmbedded = false }) => {
               <DateLocalization>
                 <Grid container spacing={2} alignItems="flex-start">
                   <Grid item xs={12} sm={6}>
-                    <DatePicker
+                    <LabeledDatePicker
                       label={t('account.birth_date')}
                       value={birthDate}
                       onChange={(newValue) => setBirthDate(newValue)}
@@ -648,7 +648,7 @@ const Account = ({ isEmbedded = false }) => {
                     </FormControl>
                   </Grid>
                   <Grid item xs={12}>
-                    <DatePicker
+                    <LabeledDatePicker
                       label={t('account.training_start')}
                       value={trainingStartDate}
                       onChange={(newValue) => setTrainingStartDate(newValue)}
@@ -841,7 +841,7 @@ const Account = ({ isEmbedded = false }) => {
               {t('account.consent.help')}
             </Typography>
             {healthConsentOutdated && healthConsent !== true && (
-              <Typography sx={{ fontSize: 16, color: 'warning.main', mt: 0.5 }}>
+              <Typography sx={{ fontSize: 16, color: 'warning.text', mt: 0.5 }}>
                 {t('account.consent.outdated')}
               </Typography>
             )}

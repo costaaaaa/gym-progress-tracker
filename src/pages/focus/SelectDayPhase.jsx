@@ -34,7 +34,7 @@ export default function SelectDayPhase({
         }}>
           <LogoMark width={15} color={colors.primaryContrast} />
         </Box>
-        <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 14 }}>
+        <Typography component="h1" tabIndex={-1} sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 14 }}>
           Focus mode
         </Typography>
       </Box>
@@ -43,7 +43,7 @@ export default function SelectDayPhase({
         {!activePlan ? (
           <Box sx={{ textAlign: 'center', py: 6 }}>
             <FitnessCenterIcon sx={{ fontSize: 64, color: colors.textSecondary, mb: 2 }} />
-            <Typography variant="h6" sx={{ color: colors.textSecondary, mb: 2 }}>
+            <Typography variant="h6" component="h2" sx={{ color: colors.textSecondary, mb: 2 }}>
               {t('focus.no_plan')}
             </Typography>
             <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 3 }}>
@@ -63,10 +63,10 @@ export default function SelectDayPhase({
               bgcolor: colors.bgCard, p: 3, mb: 3,
               border: `1px solid ${colors.border}`
             }}>
-              <Typography variant="subtitle2" sx={{ color: colors.textSecondary }}>
+              <Typography variant="subtitle2" component="p" sx={{ color: colors.textSecondary }}>
                 {t('focus.active_plan')}
               </Typography>
-              <Typography variant="h5" sx={{ color: colors.text, fontWeight: 700, mb: 3 }}>
+              <Typography variant="h5" component="h2" sx={{ color: colors.text, fontWeight: 700, mb: 3 }}>
                 {activePlan.name}
               </Typography>
 
@@ -99,7 +99,7 @@ export default function SelectDayPhase({
 
               {selectedDay && selectedDay.exercises && (
                 <Box>
-                  <Typography variant="subtitle2" sx={{ color: colors.textSecondary, mb: 1.5 }}>
+                  <Typography variant="subtitle2" component="h3" sx={{ color: colors.textSecondary, mb: 1.5 }}>
                     {t('focus.exercises_header', { count: selectedDay.exercises.length })}
                   </Typography>
                   {selectedDay.exercises.map((ex, idx) => (

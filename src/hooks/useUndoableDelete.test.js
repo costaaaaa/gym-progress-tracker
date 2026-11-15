@@ -3,9 +3,16 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import process from 'node:process';
 import useUndoableDelete, { UNDO_DELAY_MS } from './useUndoableDelete';
+import { isKeyboardFocus } from '../utils/focus';
+
+// jsdom dà :focus-visible a ogni focus: la distinzione tastiera/mouse si sostituisce (il resto del modulo resta vero)
+vi.mock('../utils/focus', async (importOriginal) => ({ ...(await importOriginal()), isKeyboardFocus: vi.fn(() => true) }));
 
 beforeEach(() => { vi.useFakeTimers(); });
-afterEach(() => { vi.useRealTimers(); });
+afterEach(() => {
+  isKeyboardFocus.mockReset(); // un valore rimasto in coda non passa al test dopo
+  vi.useRealTimers();
+});
 
 const setup = (commit = vi.fn().mockResolvedValue(undefined), onError = vi.fn()) => {
   const hook = renderHook(() => useUndoableDelete({ commit, onError }));
@@ -102,5 +109,76 @@ describe('useUndoableDelete', () => {
     await act(async () => { vi.advanceTimersByTime(UNDO_DELAY_MS); });
     expect(vecchio).not.toHaveBeenCalled();
     expect(nuovo).toHaveBeenCalledWith(7);
+  });
+
+  // WCAG 2.2.1: finché il messaggio ha il puntatore o il fuoco, il conto alla rovescia si ferma
+  describe('pausa del conto alla rovescia', () => {
+    it('con il fuoco sul messaggio i 10 secondi non scadono, quando il fuoco esce ripartono da capo', async () => {
+      const { result, commit } = setup();
+      act(() => { result.current.schedule(7); });
+      await act(async () => { vi.advanceTimersByTime(UNDO_DELAY_MS - 1000); });
+      act(() => { result.current.holdProps.onFocus({ target: document.body }); });
+      await act(async () => { vi.advanceTimersByTime(UNDO_DELAY_MS * 3); });
+      expect(commit).not.toHaveBeenCalled();
+      expect(result.current.pendingId).toBe(7);
+      act(() => { result.current.holdProps.onBlur(); });
+      await act(async () => { vi.advanceTimersByTime(UNDO_DELAY_MS - 1); });
+      expect(commit).not.toHaveBeenCalled();
+      await act(async () => { vi.advanceTimersByTime(1); });
+      expect(commit).toHaveBeenCalledWith(7);
+    });
+
+    it('il fuoco dato da mouse o tocco (non da tastiera) non ferma il conto', async () => {
+      isKeyboardFocus.mockReturnValueOnce(false);
+      const { result, commit } = setup();
+      act(() => { result.current.schedule(7); });
+      act(() => { result.current.holdProps.onFocus({ target: document.body }); });
+      expect(isKeyboardFocus).toHaveBeenCalledWith(document.body);
+      await act(async () => { vi.advanceTimersByTime(UNDO_DELAY_MS); });
+      expect(commit).toHaveBeenCalledWith(7);
+    });
+
+    it('con il puntatore sopra il messaggio il conto si ferma, e riparte solo quando il puntatore esce', async () => {
+      const { result, commit } = setup();
+      act(() => { result.current.schedule(7); });
+      act(() => { result.current.holdProps.onMouseEnter(); });
+      await act(async () => { vi.advanceTimersByTime(UNDO_DELAY_MS * 3); });
+      expect(commit).not.toHaveBeenCalled();
+      act(() => { result.current.holdProps.onMouseLeave(); });
+      await act(async () => { vi.advanceTimersByTime(UNDO_DELAY_MS); });
+      expect(commit).toHaveBeenCalledWith(7);
+    });
+
+    it('con fuoco e puntatore insieme, uscire da uno solo non fa ripartire il conto', async () => {
+      const { result, commit } = setup();
+      act(() => { result.current.schedule(7); });
+      act(() => { result.current.holdProps.onFocus({ target: document.body }); result.current.holdProps.onMouseEnter(); });
+      act(() => { result.current.holdProps.onMouseLeave(); });
+      await act(async () => { vi.advanceTimersByTime(UNDO_DELAY_MS * 3); });
+      expect(commit).not.toHaveBeenCalled();
+      act(() => { result.current.holdProps.onBlur(); });
+      await act(async () => { vi.advanceTimersByTime(UNDO_DELAY_MS); });
+      expect(commit).toHaveBeenCalledTimes(1);
+    });
+
+    it('«Annulla» durante la pausa ripristina l\'elemento e dopo non parte nessuna richiesta', async () => {
+      const { result, commit } = setup();
+      act(() => { result.current.schedule(7); });
+      act(() => { result.current.holdProps.onFocus({ target: document.body }); });
+      act(() => { result.current.undo(); });
+      act(() => { result.current.holdProps.onBlur(); });
+      await act(async () => { vi.advanceTimersByTime(UNDO_DELAY_MS * 3); });
+      expect(commit).not.toHaveBeenCalled();
+    });
+
+    it('un nuovo elemento eliminato dopo una pausa ha il suo conto di 10 secondi (la pausa non resta appesa)', async () => {
+      const { result, commit } = setup();
+      act(() => { result.current.schedule(1); });
+      act(() => { result.current.holdProps.onMouseEnter(); });
+      act(() => { result.current.schedule(2); });
+      expect(commit).toHaveBeenCalledWith(1);
+      await act(async () => { vi.advanceTimersByTime(UNDO_DELAY_MS); });
+      expect(commit).toHaveBeenCalledWith(2);
+    });
   });
 });

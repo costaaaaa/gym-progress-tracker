@@ -30,10 +30,11 @@ ob_start();
 
         <section class="calc-card" aria-labelledby="calc-title">
             <h2 id="calc-title" class="visually-hidden">Calculate your 1RM</h2>
-            <form class="calc-form" method="get" action="/en/blog/1rm-calculator/" data-calc-form data-calc-decimal=".">
+            <form class="calc-form" method="get" action="/en/blog/1rm-calculator/" data-calc-form data-calc-decimal="." data-calc-msg-weight="Enter a weight above 0 and up to {max} {unit}." data-calc-msg-reps="Enter between 1 and {max} reps.">
                 <div class="calc-field">
                     <label for="calc-weight">Weight lifted</label>
-                    <input id="calc-weight" name="weight" data-calc-weight type="number" inputmode="decimal" min="1" max="<?php echo CALC_UNITS[$unit]['max']; ?>" step="any" value="<?php echo blog_e(number_format($weight, 1, '.', '') + 0); ?>" required>
+                    <input id="calc-weight" name="weight" data-calc-weight type="number" inputmode="decimal" min="1" max="<?php echo CALC_UNITS[$unit]['max']; ?>" step="any" value="<?php echo blog_e(number_format($weight, 1, '.', '') + 0); ?>" required aria-describedby="calc-weight-error">
+                    <p class="calc-error" id="calc-weight-error" data-calc-error="weight" role="alert" hidden></p>
                 </div>
                 <div class="calc-field calc-field-unit">
                     <label for="calc-unit">Unit</label>
@@ -45,7 +46,8 @@ ob_start();
                 </div>
                 <div class="calc-field">
                     <label for="calc-reps">Reps</label>
-                    <input id="calc-reps" name="reps" data-calc-reps type="number" inputmode="numeric" min="1" max="<?php echo CALC_MAX_REPS; ?>" step="1" value="<?php echo blog_e($reps); ?>" required>
+                    <input id="calc-reps" name="reps" data-calc-reps type="number" inputmode="numeric" min="1" max="<?php echo CALC_MAX_REPS; ?>" step="1" value="<?php echo blog_e($reps); ?>" required aria-describedby="calc-reps-error">
+                    <p class="calc-error" id="calc-reps-error" data-calc-error="reps" role="alert" hidden></p>
                 </div>
                 <button class="cta calc-submit" type="submit">Calculate</button>
             </form>

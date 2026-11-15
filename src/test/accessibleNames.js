@@ -14,3 +14,6 @@ export const unnamedControls = (roles = NAMED_ROLES) => roles.flatMap((role) => 
 export const strayListChildren = (list) => [...list.children]
   .filter((child) => child.tagName !== 'LI' || child.hasAttribute('role'))
   .map((child) => child.outerHTML.slice(0, 80));
+
+// Testo collegato a un elemento da aria-describedby (aiuto o errore sotto il campo), o undefined se non ce n'è
+export const describedBy = (el) => el.getAttribute('aria-describedby')?.split(' ').map((id) => document.getElementById(id)?.textContent).join(' ');

@@ -13,12 +13,13 @@ import {
   Select,
   MenuItem,
   Checkbox,
-  FormControlLabel
+  FormControlLabel,
+  FormHelperText
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import LabeledDatePicker from '../components/LabeledDatePicker';
 import { format, subYears, startOfToday } from 'date-fns';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
@@ -30,10 +31,15 @@ import { useTranslation, Trans } from 'react-i18next';
 import DateLocalization from '../i18n/DateLocalization';
 import { useLocalizedPath, legalPaths } from '../i18n/paths';
 import AuthLayout from '../components/Auth/AuthLayout';
+import useFocusField from '../hooks/useFocusField';
 
 // Username: stessa regola di register.php. Email: solo un primo filtro, il server usa FILTER_VALIDATE_EMAIL
 const USERNAME_RE = /^[a-zA-Z0-9]{3,50}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Ordine dei campi di ogni passo (il primo con un errore riceve il focus)
+const STEP1_FIELDS = ['username', 'email', 'password', 'confirmPassword'];
+const STEP2_FIELDS = ['birthDate', 'gender', 'terms'];
 
 const Register = () => {
   const { t, i18n } = useTranslation();
@@ -54,6 +60,7 @@ const Register = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const { fieldRef, focusField } = useFocusField();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -85,9 +92,11 @@ const Register = () => {
 
   // L'errore di un campo sparisce mentre si scrive; uscendo dal campo può solo comparire. Se sparisse
   // all'uscita, il clic su "Avanti" sposterebbe il bottone sotto il dito e andrebbe perso.
+  const clearError = (field) => setFieldErrors((prev) => (prev[field] ? { ...prev, [field]: '' } : prev));
+
   const edit = (setter, field) => (e) => {
     setter(e.target.value);
-    if (fieldErrors[field]) setFieldErrors((prev) => ({ ...prev, [field]: '' }));
+    clearError(field);
   };
 
   const checkConfirm = () => {
@@ -105,7 +114,10 @@ const Register = () => {
       confirmPassword: password === confirmPassword ? '' : t('register.error.password_mismatch'),
     };
     setFieldErrors(errors);
-    if (Object.values(errors).some(Boolean)) return;
+    if (Object.values(errors).some(Boolean)) {
+      focusField(STEP1_FIELDS.find((field) => errors[field]));
+      return;
+    }
 
     setLoading(true);
     try {
@@ -124,6 +136,7 @@ const Register = () => {
           username: data.username_taken ? takenError('username') : '',
           email: data.email_taken ? takenError('email') : '',
         });
+        focusField(data.username_taken ? 'username' : 'email');
         return;
       }
     } catch {
@@ -138,21 +151,18 @@ const Register = () => {
   const handleSubmit = async () => {
     setError('');
     setSuccess('');
+    setFieldErrors({});
 
-    if (!birthDate) {
-      setError(t('register.error.birth_date_required'));
-      return;
-    }
-    if (birthDate > subYears(startOfToday(), 14)) {
-      setError(t('register.error.min_age'));
-      return;
-    }
-    if (!gender) {
-      setError(t('register.error.gender_required'));
-      return;
-    }
-    if (!acceptTerms) {
-      setError(t('register.error.terms_required'));
+    // Un errore sotto ogni campo sbagliato, il focus sul primo
+    const errors = {
+      birthDate: !birthDate ? t('register.error.birth_date_required')
+        : birthDate > subYears(startOfToday(), 14) ? t('register.error.min_age') : '',
+      gender: gender ? '' : t('register.error.gender_required'),
+      terms: acceptTerms ? '' : t('register.error.terms_required'),
+    };
+    setFieldErrors(errors);
+    if (Object.values(errors).some(Boolean)) {
+      focusField(STEP2_FIELDS.find((field) => errors[field]));
       return;
     }
 
@@ -184,6 +194,7 @@ const Register = () => {
       if (response.status === 409 && (data.field === 'username' || data.field === 'email')) {
         setFieldErrors({ [data.field]: takenError(data.field) });
         setStep(1);
+        focusField(data.field);
         return;
       }
       if (!response.ok) {
@@ -254,6 +265,7 @@ const Register = () => {
               required
               fullWidth
               id="username"
+              inputRef={fieldRef('username')}
               label={t('register.username')}
               name="username"
               autoComplete="username"
@@ -268,6 +280,7 @@ const Register = () => {
               required
               fullWidth
               id="email"
+              inputRef={fieldRef('email')}
               label={t('register.email')}
               name="email"
               autoComplete="email"
@@ -285,6 +298,7 @@ const Register = () => {
               label={t('register.password')}
               type={showPassword ? "text" : "password"}
               id="password"
+              inputRef={fieldRef('password')}
               autoComplete="new-password"
               value={password}
               onChange={edit(setPassword, 'password')}
@@ -300,6 +314,7 @@ const Register = () => {
               label={t('register.confirm_password')}
               type={showConfirmPassword ? "text" : "password"}
               id="confirmPassword"
+              inputRef={fieldRef('confirmPassword')}
               autoComplete="new-password"
               value={confirmPassword}
               onChange={edit(setConfirmPassword, 'confirmPassword')}
@@ -317,10 +332,10 @@ const Register = () => {
             <Typography variant="h2" sx={{ fontSize: '1.25rem', mt: 1, mb: 1 }}>{t('register.profile_title')}</Typography>
             <Typography sx={{ mb: 1 }}>{t('register.profile_text')}</Typography>
             <DateLocalization>
-              <DatePicker
+              <LabeledDatePicker
                 label={t('register.birth_date')}
                 value={birthDate}
-                onChange={(newValue) => setBirthDate(newValue)}
+                onChange={(newValue) => { setBirthDate(newValue); clearError('birthDate'); }}
                 minDate={subYears(startOfToday(), 100)}
                 maxDate={subYears(startOfToday(), 14)}
                 slotProps={{
@@ -328,26 +343,31 @@ const Register = () => {
                     fullWidth: true,
                     required: true,
                     margin: 'normal',
-                    helperText: t('register.birth_date_help'),
+                    error: Boolean(fieldErrors.birthDate),
+                    helperText: fieldErrors.birthDate || t('register.birth_date_help'),
+                    inputRef: fieldRef('birthDate'),
                     id: "birthDate",
                     name: "birthDate"
                   }
                 }}
               />
-              <FormControl fullWidth required margin="normal">
+              <FormControl fullWidth required margin="normal" error={Boolean(fieldErrors.gender)}>
                 <InputLabel id="gender-label">{t('register.gender')}</InputLabel>
                 <Select
                   labelId="gender-label"
+                  inputRef={fieldRef('gender')}
                   value={gender}
                   label={t('register.gender')}
-                  onChange={(e) => setGender(e.target.value)}
+                  onChange={(e) => { setGender(e.target.value); clearError('gender'); }}
+                  SelectDisplayProps={{ 'aria-describedby': fieldErrors.gender ? 'gender-error' : undefined, 'aria-invalid': fieldErrors.gender ? true : undefined }}
                 >
                   <MenuItem value="M">{t('register.gender_m')}</MenuItem>
                   <MenuItem value="F">{t('register.gender_f')}</MenuItem>
                   <MenuItem value="O">{t('register.gender_o')}</MenuItem>
                 </Select>
+                {fieldErrors.gender && <FormHelperText id="gender-error">{fieldErrors.gender}</FormHelperText>}
               </FormControl>
-              <DatePicker
+              <LabeledDatePicker
                 label={t('register.training_start')}
                 value={trainingStartDate}
                 onChange={(newValue) => setTrainingStartDate(newValue)}
@@ -367,12 +387,15 @@ const Register = () => {
                 }}
               />
             </DateLocalization>
+            <FormControl fullWidth error={Boolean(fieldErrors.terms)} sx={{ mt: 2 }}>
             <FormControlLabel
-              sx={{ mt: 2, alignItems: 'flex-start' }}
+              sx={{ alignItems: 'flex-start' }}
               control={
                 <Checkbox
                   checked={acceptTerms}
-                  onChange={(e) => setAcceptTerms(e.target.checked)}
+                  onChange={(e) => { setAcceptTerms(e.target.checked); clearError('terms'); }}
+                  inputRef={fieldRef('terms')}
+                  inputProps={{ 'aria-describedby': fieldErrors.terms ? 'terms-error' : undefined }}
                   // Spunta nel colore del testo: il rosso resta al bottone principale
                   sx={{ pt: 0.5, '&.Mui-checked': { color: 'text.primary' } }}
                 />
@@ -389,6 +412,8 @@ const Register = () => {
                 </Typography>
               }
             />
+            {fieldErrors.terms && <FormHelperText id="terms-error">{fieldErrors.terms}</FormHelperText>}
+            </FormControl>
             <Box sx={{ display: 'flex', gap: 1.5, mt: 3, mb: 2 }}>
               <Button color="inherit" size="large" onClick={() => { setError(''); setStep(1); }} disabled={loading}>
                 {t('register.back')}

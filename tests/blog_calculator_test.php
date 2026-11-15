@@ -120,6 +120,38 @@ foreach (array('chiaro' => false, 'scuro' => true) as $name => $dark) {
     check("tema $name: bordo almeno 3:1 sulla card", css_contrast($vars['field-border'], $vars['bg-paper']) >= 3.0);
 }
 
+echo "Messaggi d'errore dei valori non validi (WCAG 3.3.1, 4.1.3)\n";
+$errorPages = array(
+    'it' => array(
+        render('calcolatore-1rm/index.php'),
+        'Inserisci un peso maggiore di 0 e fino a {max} kg.',
+        'Inserisci da 1 a {max} ripetizioni.',
+        array('calc-peso' => 'calc-peso-error', 'calc-ripetizioni' => 'calc-ripetizioni-error'),
+    ),
+    'en' => array(
+        render('en/1rm-calculator/index.php'),
+        'Enter a weight above 0 and up to {max} {unit}.',
+        'Enter between 1 and {max} reps.',
+        array('calc-weight' => 'calc-weight-error', 'calc-reps' => 'calc-reps-error'),
+    ),
+);
+foreach ($errorPages as $lang => $page) {
+    list($html, $msgWeight, $msgReps, $fields) = $page;
+    check("$lang: i testi dei due errori sono sul form, con {max}", strpos($html, 'data-calc-msg-weight="' . $msgWeight . '"') !== false && strpos($html, 'data-calc-msg-reps="' . $msgReps . '"') !== false);
+    foreach ($fields as $inputId => $errorId) {
+        check("$lang: il campo $inputId è collegato a $errorId con aria-describedby", preg_match('/<input id="' . $inputId . '"[^>]*aria-describedby="' . $errorId . '"/', $html) === 1);
+        check("$lang: $errorId è un avviso (role=alert), nascosto finché non serve e vuoto", preg_match('/<p class="calc-error" id="' . $errorId . '" data-calc-error="(weight|reps)" role="alert" hidden><\/p>/', $html) === 1);
+        check("$lang: $errorId sta nello stesso .calc-field del suo campo", preg_match('/<div class="calc-field">\s*<label for="' . $inputId . '">[^<]*<\/label>\s*<input id="' . $inputId . '"[^>]*>\s*<p class="calc-error" id="' . $errorId . '"/', $html) === 1);
+    }
+}
+check('il messaggio usa il colore --error-text e il campo sbagliato ha il bordo dello stesso colore', preg_match('/\.calc-error \{[^}]*color: var\(--error-text\)/', $css) === 1 && preg_match('/\.calc-field input\[aria-invalid="true"\] \{[^}]*border-color: var\(--error-text\)/', $css) === 1);
+foreach (array('chiaro' => false, 'scuro' => true) as $name => $dark) {
+    $vars = css_vars($css, $dark);
+    check("tema $name: --error-text definito", isset($vars['error-text']));
+    check("tema $name: testo dell'errore almeno 4,5:1 sulla card e sullo sfondo", css_contrast($vars['error-text'], $vars['bg-paper']) >= 4.5 && css_contrast($vars['error-text'], $vars['bg-default']) >= 4.5);
+    check("tema $name: bordo del campo sbagliato almeno 3:1 sullo sfondo del campo", css_contrast($vars['error-text'], $vars['bg-default']) >= 3.0);
+}
+
 echo "Salta al contenuto (WCAG 2.4.1)\n";
 $pages = array(
     'it' => array(render('calcolatore-1rm/index.php'), 'Salta al contenuto'),

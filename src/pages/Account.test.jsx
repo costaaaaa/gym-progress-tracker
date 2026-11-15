@@ -259,6 +259,16 @@ describe('testi', () => {
   });
 });
 
+// 2.5.3: su telefono i campi data aprono un dialogo; il nome accessibile contiene l'etichetta visibile
+describe('campi data su telefono', () => {
+  it('data di nascita e mese di inizio allenamento hanno un nome che contiene l\'etichetta', async () => {
+    await mount();
+    fireEvent.click(screen.getAllByRole('button', { name: /^Modifica/ })[0]);
+    expect(screen.getByRole('textbox', { name: /^Data di nascita/ })).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: /^Mese inizio allenamento/ })).toBeTruthy();
+  });
+});
+
 describe('esporta i dati', () => {
   afterEach(() => vi.useRealTimers());
 

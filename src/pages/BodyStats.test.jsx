@@ -1,13 +1,15 @@
 // Misure corporee visto dall'utente: selettore del periodo, variazione del peso, stato vuoto e storico a pagine.
 // La fetch è il confine; "oggi" è fissato al 20/10/2026.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, act, waitFor } from '@testing-library/react';
 import BodyStats from './BodyStats';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { formatDate } from '../i18n/format';
 import { polylineX } from '../test/polyline';
 import { setBrowserTimeZone } from '../test/timeZone';
 import { textBelow } from '../test/minText';
+import { describedBy } from '../test/accessibleNames';
+import { mockPointer } from '../test/pointer';
 
 const row = (date, weight, extra = {}) => ({ id: date, date, weight, ...extra });
 
@@ -438,5 +440,125 @@ describe('grafico del peso: alternativa testuale', () => {
     await mount();
     const { width, height, overflow } = getComputedStyle(screen.getByRole('table', { name: 'Andamento peso (kg)' }));
     expect({ width, height, overflow }).toEqual({ width: '1px', height: '1px', overflow: 'hidden' });
+  });
+});
+
+describe('nuova misura: errori dei valori (WCAG 3.3.1, 4.1.3)', () => {
+  beforeEach(() => { records = [row('2026-10-15', '80.0')]; });
+  const field = (label) => screen.getByRole('spinbutton', { name: label });
+  const type = (label, value) => fireEvent.change(field(label), { target: { value } });
+  const posts = () => fetch.mock.calls.filter(([, init]) => init?.method === 'POST');
+  const open = async () => {
+    await mount();
+    fireEvent.click(screen.getByRole('button', { name: 'Nuova misurazione' }));
+    await screen.findByRole('dialog');
+  };
+  const save = () => fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Salva' }));
+
+  it('un peso oltre il tetto non parte: l\'errore sta sotto il campo, collegato, e il focus va lì', async () => {
+    await open();
+    type('Peso (kg)', '600');
+    save();
+    expect(posts()).toHaveLength(0);
+    expect(field('Peso (kg)').getAttribute('aria-invalid')).toBe('true');
+    expect(describedBy(field('Peso (kg)'))).toBe('Il valore deve essere tra 0 e 500, estremi inclusi.');
+    expect(document.activeElement).toBe(field('Peso (kg)'));
+  });
+
+  it('con più campi sbagliati li segna tutti e porta il focus sul primo della scheda', async () => {
+    await open();
+    type('Gamba (cm)', '999');
+    type('Grasso (%)', '-3');
+    save();
+    expect(describedBy(field('Grasso (%)'))).toBe('Il valore deve essere tra 0 e 100, estremi inclusi.');
+    expect(describedBy(field('Gamba (cm)'))).toBe('Il valore deve essere tra 0 e 200, estremi inclusi.');
+    expect(field('Peso (kg)').getAttribute('aria-invalid')).not.toBe('true');
+    expect(document.activeElement).toBe(field('Grasso (%)'));
+  });
+
+  it('correggere un campo toglie il suo errore; salvare un valore buono parte e chiude', async () => {
+    await open();
+    type('Peso (kg)', '600');
+    save();
+    type('Peso (kg)', '80');
+    expect(field('Peso (kg)').getAttribute('aria-invalid')).not.toBe('true');
+    expect(describedBy(field('Peso (kg)'))).toBeUndefined();
+    save();
+    expect(posts()).toHaveLength(1);
+  });
+
+  const rejectWith = (body) => fetch.mockImplementation((url, init) => Promise.resolve(init?.method === 'POST'
+    ? { ok: false, status: 400, json: async () => body }
+    : { ok: true, json: async () => ({ records }) }));
+
+  it('un errore del server su un campo (con "field" e "max") finisce sotto quel campo, col testo del client e non del server', async () => {
+    await open();
+    type('Vita (cm)', '90');
+    rejectWith({ message: 'Vita: il valore deve essere tra 0 e 80, estremi inclusi.', field: 'waist_size', max: 80 });
+    await act(async () => { save(); });
+    expect(describedBy(field('Vita (cm)'))).toBe('Il valore deve essere tra 0 e 80, estremi inclusi.');
+    expect(document.activeElement).toBe(field('Vita (cm)'));
+  });
+
+  it('se la risposta ha "field" ma non "max", sotto il campo c\'è il messaggio del server', async () => {
+    await open();
+    type('Vita (cm)', '90');
+    rejectWith({ message: 'Messaggio del server', field: 'waist_size' });
+    await act(async () => { save(); });
+    expect(describedBy(field('Vita (cm)'))).toBe('Messaggio del server');
+  });
+
+  it('un errore del server senza campo resta un avviso con il suo messaggio', async () => {
+    await open();
+    type('Vita (cm)', '90');
+    rejectWith({ message: 'Qualcosa non va' });
+    await act(async () => { save(); });
+    expect(screen.getByText('Qualcosa non va')).toBeTruthy();
+    expect(field('Vita (cm)').getAttribute('aria-invalid')).not.toBe('true');
+  });
+
+  // 2.5.3: su telefono il campo data apre un dialogo; il suo nome contiene l'etichetta visibile
+  it('il campo data ha un nome che contiene «Data»', async () => {
+    await open();
+    expect(within(screen.getByRole('dialog')).getByRole('textbox', { name: /^Data\b/ })).toBeTruthy();
+  });
+
+  // Con il puntatore preciso il selettore di date si digita (in jsdom, senza, è di sola lettura)
+  describe('data cancellata o incompleta (puntatore preciso)', () => {
+    beforeEach(() => mockPointer(true));
+    const dateField = () => within(screen.getByRole('dialog')).getByRole('textbox', { name: /^Data/ });
+
+    it.each([['cancellata', ''], ['inesistente', '31/02/2026']])('data %s: non parte nulla, l\'errore sta sotto il campo data e il focus va lì', async (_, typed) => {
+      await open();
+      type('Peso (kg)', '80');
+      fireEvent.change(dateField(), { target: { value: typed } });
+      save();
+      expect(posts()).toHaveLength(0);
+      expect(dateField().getAttribute('aria-invalid')).toBe('true');
+      expect(describedBy(dateField())).toBe('Inserisci una data valida.');
+      expect(document.activeElement).toBe(dateField());
+      expect(screen.queryByText('Errore di connessione')).toBeNull();
+    });
+
+    it('con la data sbagliata e un peso sbagliato il focus va prima sulla data; correggere la data toglie il suo errore', async () => {
+      await open();
+      type('Peso (kg)', '600');
+      fireEvent.change(dateField(), { target: { value: '' } });
+      save();
+      expect(document.activeElement).toBe(dateField());
+      expect(describedBy(field('Peso (kg)'))).toBe('Il valore deve essere tra 0 e 500, estremi inclusi.');
+      fireEvent.change(dateField(), { target: { value: '15/10/2026' } });
+      expect(dateField().getAttribute('aria-invalid')).not.toBe('true');
+    });
+  });
+
+  it('riaprendo il dialogo gli errori sono spariti', async () => {
+    await open();
+    type('Peso (kg)', '600');
+    save();
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Annulla' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    fireEvent.click(screen.getByRole('button', { name: 'Nuova misurazione' }));
+    expect(field('Peso (kg)').getAttribute('aria-invalid')).not.toBe('true');
   });
 });
