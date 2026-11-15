@@ -73,7 +73,7 @@ export default function WorkoutPhase({
                   width: size, height: size, alignSelf: 'center', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   border: `2px ${status === 'skipped' ? 'dashed' : 'solid'} ${status === 'done' ? colors.success : status === 'active' ? colors.text : colors.border}`,
                   bgcolor: status === 'done' ? colors.success : status === 'skipped' ? colors.bgElevated : 'transparent',
-                  color: status === 'done' ? colors.white : status === 'active' ? colors.text : colors.textSecondary,
+                  color: status === 'done' ? colors.onSuccess : status === 'active' ? colors.text : colors.textSecondary,
                   fontWeight: 700, fontSize: slot.isWarmup ? '0.75rem' : '0.875rem', transition: 'all 0.3s ease'
                 }}>
                   {status === 'done' ? <CheckIcon sx={{ fontSize: 18 }} /> : status === 'skipped' ? <RemoveIcon sx={{ fontSize: 18 }} /> : slotLabel(t, slot, 'dot')}
@@ -169,7 +169,7 @@ export default function WorkoutPhase({
           )}
 
           <Button variant="contained" fullWidth size="large" startIcon={<CheckIcon />} onClick={onConfirmSet} disabled={!isValidWeight(weightInput) || !isValidReps(repsInput)}
-            sx={{ py: 2.5, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.success, color: colors.white, borderRadius: radius.xl,
+            sx={{ py: 2.5, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.success, color: colors.onSuccess, borderRadius: radius.xl,
               boxShadow: 'none', '&:hover': { bgcolor: 'success.dark', boxShadow: 'none' },
               '&:disabled': { bgcolor: colors.bgElevated, color: colors.textSecondary }, mb: 2, transition: 'all 0.3s ease' }}>
             {t('focus.confirm_set')}

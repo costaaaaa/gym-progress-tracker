@@ -838,6 +838,18 @@ describe('colori di Focus: rosso solo per ciò che è distruttivo', () => {
     expect(button.querySelector('[data-testid="CheckIcon"]')).not.toBeNull();
   });
 
+  it.each([
+    ['light', GREEN, 'rgb(255, 255, 255)'],
+    ['dark', 'rgb(34, 197, 94)', 'rgb(10, 10, 11)'],
+  ])('"Conferma serie" in %s: verde del tema con testo a 4.5:1 (bianco su verde scuro, quasi nero su verde chiaro)', async (mode, bg, fg) => {
+    localStorage.setItem('themeMode', mode);
+    await startDay('Push');
+    fireEvent.change(screen.getByLabelText('Peso (kg)'), { target: { value: '60' } });
+    fireEvent.change(screen.getByLabelText('Ripetizioni'), { target: { value: '8' } });
+    const button = getComputedStyle(screen.getByRole('button', { name: 'Conferma serie' }));
+    expect([button.backgroundColor, button.color]).toEqual([bg, fg]);
+  });
+
   it('il cerchio della serie attiva ha bordo e numero in inchiostro, non rossi', async () => {
     await startDay('Push');
     const circle = screen.getByText('1');

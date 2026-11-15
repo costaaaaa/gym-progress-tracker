@@ -83,6 +83,8 @@ export const ThemeModeProvider = ({ children }) => {
           divider: mode === 'light' ? '#ececea' : 'rgba(255, 255, 255, 0.08)',
           success: {
             main: mode === 'light' ? '#15803d' : '#22c55e',
+            // Testo sul verde pieno: bianco su #15803d è 5.0 : 1; su #22c55e il bianco darebbe 2.3 : 1, il quasi nero 8.7 : 1
+            contrastText: mode === 'light' ? '#ffffff' : '#0a0a0b',
             // Pillola "scheda attiva" in WorkoutPlans
             muted: mode === 'light' ? '#e8f3ec' : 'rgba(34, 197, 94, 0.15)',
             title: mode === 'light' ? '#166534' : '#86efac',
