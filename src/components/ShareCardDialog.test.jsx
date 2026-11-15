@@ -91,7 +91,11 @@ describe('foto: spostamento da tastiera', () => {
     expect(lastTransform().dx).toBeCloseTo(x0);
     fireEvent.keyDown(surface, { key: 'ArrowLeft', shiftKey: true });
     expect(x0 - lastTransform().dx).toBeGreaterThan(piccolo * 2);
-    for (let i = 0; i < 200; i += 1) fireEvent.keyDown(surface, { key: 'ArrowLeft', shiftKey: true });
+    // Fino al limite: ci si ferma appena un passo non sposta più la foto (200 passi fissi, a macchina carica, superavano i 5 s del test)
+    for (let i = 0, before = null; i < 200 && lastTransform().dx !== before; i += 1) {
+      before = lastTransform().dx;
+      fireEvent.keyDown(surface, { key: 'ArrowLeft', shiftKey: true });
+    }
     const limite = lastTransform().dx;
     fireEvent.keyDown(surface, { key: 'ArrowLeft', shiftKey: true });
     expect(lastTransform().dx).toBe(limite);
