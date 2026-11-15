@@ -88,8 +88,9 @@ const Home = () => {
         if (historyData.records && historyData.records.length > 0) {
           setLastWorkout(historyData.records[0]);
         }
+      } else {
+        setHistoryStatus('failed');
       }
-      setHistoryStatus((status) => (status === 'pending' ? 'failed' : status));
 
       // Fetch plans for the active plan
       const plansResponse = await fetch(`${API_BASE_URL}api/workout/read_plans.php`, {
@@ -103,8 +104,9 @@ const Home = () => {
           const active = plansData.records.find(plan => plan.is_active);
           setActivePlan(active || null);
         }
+      } else {
+        setPlansStatus('failed');
       }
-      setPlansStatus((status) => (status === 'pending' ? 'failed' : status));
 
       // Fetch dashboard stats
       const statsResponse = await fetch(`${API_BASE_URL}api/workout_stats/dashboard.php`, {
@@ -128,8 +130,9 @@ const Home = () => {
       console.error('Error fetching dashboard data:', error);
     } finally {
       // Una richiesta fallita mostra la Home completa (saluto e bottone compaiono comunque)
-      setHistoryStatus((status) => (status === 'pending' ? 'failed' : status));
-      setPlansStatus((status) => (status === 'pending' ? 'failed' : status));
+      const failIfPending = (status) => (status === 'pending' ? 'failed' : status);
+      setHistoryStatus(failIfPending);
+      setPlansStatus(failIfPending);
       setLoading(false);
     }
   };
@@ -215,7 +218,7 @@ const Home = () => {
         <Typography sx={{ fontSize: 16, color: 'text.secondary', mb: 3, maxWidth: 560, lineHeight: 1.6 }}>
           {t('home.hero.sub_user')}
         </Typography>
-        {/* Invisibile (ma con il suo spazio) finché le richieste non sono finite: per un utente nuovo sparisce
+        {/* Invisibile (ma con il suo spazio) finché storico e schede non sono arrivati: per un utente nuovo sparisce
             nello stesso render in cui compare la card "Inizia da qui", senza altri spostamenti */}
         <Button
           variant="contained"
@@ -224,7 +227,8 @@ const Home = () => {
           startIcon={<PlayArrowIcon />}
           sx={{
             borderRadius: radius.lg, px: 3, py: 1.25, fontWeight: 700,
-            ...(showStartHere ? { display: 'none' } : !heroReady && { visibility: 'hidden' }),
+            ...(!heroReady && { visibility: 'hidden' }),
+            ...(showStartHere && { display: 'none' }),
           }}
         >
           {t('home.hero.start_workout')}

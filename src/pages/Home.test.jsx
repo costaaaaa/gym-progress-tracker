@@ -6,8 +6,9 @@ import { renderToString } from 'react-dom/server';
 import Home from './Home';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 
+const auth = vi.hoisted(() => ({ isLoggedIn: true }));
 vi.mock('../context/AuthContext', () => ({
-  useAuth: () => ({ user: { username: 'mario88' }, isLoggedIn: true, loading: false }),
+  useAuth: () => ({ user: { username: 'mario88' }, isLoggedIn: auth.isLoggedIn, loading: false }),
 }));
 
 const responses = {
@@ -47,16 +48,15 @@ const responses = {
   'groups/list.php': { success: true, groups: [{ id: 1, name: 'Palestra Roma', members_count: 3 }] },
 };
 
-const jsonResponse = (body, ok = true) => ({
-  ok,
-  status: ok ? 200 : 404,
-  json: async () => body,
-  text: async () => JSON.stringify(body),
-});
-
 const fakeFetch = vi.fn((url) => {
   const key = Object.keys(responses).find((k) => String(url).includes(k));
-  return Promise.resolve(jsonResponse(key ? responses[key] : { success: false }, Boolean(key)));
+  const body = key ? responses[key] : { success: false };
+  return Promise.resolve({
+    ok: Boolean(key),
+    status: key ? 200 : 404,
+    json: async () => body,
+    text: async () => JSON.stringify(body),
+  });
 });
 
 const homeTree = () => <MemoryRouter><ThemeModeProvider><Home /></ThemeModeProvider></MemoryRouter>;
@@ -68,6 +68,7 @@ beforeEach(() => {
   vi.stubGlobal('fetch', fakeFetch);
 });
 afterEach(() => {
+  auth.isLoggedIn = true;
   vi.unstubAllGlobals();
   Object.assign(responses, original);
 });
@@ -188,6 +189,43 @@ describe('primo accesso', () => {
     renderHome();
     await screen.findByRole('link', { name: /Ultimo allenamento/ });
     expect(screen.queryByText('Inizia da qui')).toBeNull();
+  });
+
+  it.each([
+    ['lo storico fallisce e le schede non ci sono', 'workout_history/read.php', 'workout/read_plans.php', { success: true, records: [] }, 'Bentornato, mario88'],
+    ['lo storico è vuoto e le schede falliscono', 'workout/read_plans.php', 'workout_history/read.php', { success: true, records: [] }, 'Benvenuto, mario88'],
+  ])('se %s la Home è completa, con il bottone e senza "Inizia da qui"', async (_nome, failing, emptied, emptyBody, greeting) => {
+    responses[emptied] = emptyBody;
+    vi.stubGlobal('fetch', vi.fn((url) => (
+      String(url).includes(failing)
+        ? Promise.resolve({ ok: false, status: 500, json: async () => ({}), text: async () => '{}' })
+        : fakeFetch(url)
+    )));
+    renderHome();
+    expect(await screen.findByRole('link', { name: 'Inizia allenamento' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(greeting);
+    expect(screen.queryByText('Inizia da qui')).toBeNull();
+  });
+
+  it('l\'intestazione è "occupata" (aria-busy) mentre i dati si caricano e non dopo', async () => {
+    renderHome();
+    const hero = screen.getByRole('heading', { level: 1 }).parentElement;
+    expect(hero.getAttribute('aria-busy')).toBe('true');
+    await screen.findByRole('link', { name: 'Inizia allenamento' });
+    expect(hero.getAttribute('aria-busy')).toBe('false');
+  });
+
+  it('dopo un ricaricamento la sessione si conferma senza rimontare Home: le card dei dati non partono prima di storico e schede', () => {
+    auth.isLoggedIn = false;
+    const fetchSpy = vi.fn(() => new Promise(() => {}));
+    vi.stubGlobal('fetch', fetchSpy);
+    const { rerender } = renderHome();
+    auth.isLoggedIn = true;
+    rerender(homeTree());
+    const requested = fetchSpy.mock.calls.map(([url]) => String(url));
+    expect(requested.some((url) => url.includes('workout_history/read.php'))).toBe(true);
+    expect(requested.some((url) => /gamification|groups\//.test(url))).toBe(false);
+    expect(screen.queryByText('Riepilogo settimanale')).toBeNull();
   });
 
   it('"Inizia da qui" non compare se il caricamento dei dati fallisce', async () => {
