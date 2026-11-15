@@ -29,7 +29,6 @@ import {
   byRecency,
   RECENT_DAYS,
   MAX_PR_CHIPS,
-  STATUS,
 } from '../utils/progressOverview';
 import { useFavoriteExercises } from '../hooks/useFavoriteExercises';
 import ExerciseProgressRow, { formatDaysAgo } from '../components/ExerciseProgressRow';
@@ -99,8 +98,6 @@ const Progress = ({ isEmbedded = false }) => {
   }, [records, exerciseCatalog]);
 
   const summary = useMemo(() => summarize(analyzed), [analyzed]);
-  // Con un solo allenamento per esercizio non c'è nulla da confrontare: "nessun record" suonerebbe come un giudizio
-  const allNew = analyzed.length > 0 && analyzed.every((a) => a.status === STATUS.NEW);
 
   const deferredQuery = useDeferredValue(query);
   const searching = deferredQuery.trim().length > 0;
@@ -168,7 +165,7 @@ const Progress = ({ isEmbedded = false }) => {
               </Box>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', mt: 2 }}>
                 {summary.prs.length === 0 ? (
-                  <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{t(allNew ? 'progress.summary.prs_need_second' : 'progress.summary.prs_none')}</Typography>
+                  <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{t(summary.allNew ? 'progress.summary.prs_need_second' : 'progress.summary.prs_none')}</Typography>
                 ) : (
                   <>
                     {summary.prs.slice(0, MAX_PR_CHIPS).map((a) => (

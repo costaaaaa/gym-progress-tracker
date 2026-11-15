@@ -131,7 +131,8 @@ const Muscles = () => {
           const week = sets.week?.[muscle] || 0;
           const prev = sets.previous_to_date?.[muscle] || 0;
           const recovery = data.recovery?.[muscle];
-          const status = recovery?.status || null;
+          // mai allenato (last_trained null): il server dice PRONTO, ma non c'è un recupero da mostrare
+          const status = recovery?.last_trained === null ? null : recovery?.status || null;
           const days = recovery?.ready_at ? readyInDays(recovery.ready_at) : null;
           return <MuscleRow key={muscle} muscle={muscle} week={week} prev={prev} status={status} days={days} max={max} />;
         })}

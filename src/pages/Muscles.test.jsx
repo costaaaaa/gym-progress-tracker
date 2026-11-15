@@ -125,6 +125,16 @@ describe('righe per muscolo', () => {
     expect(within(row('Abduttori')).getByText('nessun dato')).toBeTruthy();
   });
 
+  it('un muscolo mai allenato (last_trained null) mostra "nessun dato", non "Pronto"', async () => {
+    await mount({
+      ...dashboardStats,
+      recovery: { petto: { status: 'PRONTO', last_trained: null }, schiena: { status: 'PRONTO', last_trained: '2026-10-20 18:00:00' } },
+    });
+    expect(within(row('Petto')).getByText('nessun dato')).toBeTruthy();
+    expect(within(row('Petto')).queryByText('Pronto')).toBeNull();
+    expect(within(row('Schiena')).getByText('Pronto')).toBeTruthy();
+  });
+
   it('"pronto tra N giorni" va a capo, non è troncato con i puntini (1.4.12)', async () => {
     await mount();
     const { whiteSpace, textOverflow } = getComputedStyle(within(row('Quadricipiti')).getByText('pronto tra 2 giorni'));
