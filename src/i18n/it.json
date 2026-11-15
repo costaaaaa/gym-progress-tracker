@@ -964,5 +964,7 @@
   "common.close": "Chiudi",
   "focus.quit_aria": "Esci dall'allenamento",
   "focus.progress_aria": "Avanzamento dell'allenamento",
-  "focus.rest_progress_aria": "Avanzamento del recupero"
+  "focus.rest_progress_aria": "Avanzamento del recupero",
+  "account.password.show_current": "Mostra o nascondi la password attuale",
+  "account.password.show_new": "Mostra o nascondi la nuova password"
 }

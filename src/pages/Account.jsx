@@ -948,6 +948,7 @@ const Account = ({ isEmbedded = false }) => {
             margin="dense"
             label={t('account.password.current')}
             type={showCurrentPassword ? "text" : "password"}
+            autoComplete="current-password"
             fullWidth
             variant="outlined"
             value={currentPassword}
@@ -959,7 +960,7 @@ const Account = ({ isEmbedded = false }) => {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
-                    aria-label="toggle current password visibility"
+                    aria-label={t('account.password.show_current')}
                     onClick={handleToggleCurrentPasswordVisibility}
                     edge="end"
                     disabled={changingPassword}
@@ -975,6 +976,7 @@ const Account = ({ isEmbedded = false }) => {
             margin="dense"
             label={t('account.password.new')}
             type={showNewPassword ? "text" : "password"}
+            autoComplete="new-password"
             fullWidth
             variant="outlined"
             value={newPassword}
@@ -986,7 +988,7 @@ const Account = ({ isEmbedded = false }) => {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
-                    aria-label="toggle new password visibility"
+                    aria-label={t('account.password.show_new')}
                     onClick={handleToggleNewPasswordVisibility}
                     edge="end"
                     disabled={changingPassword}
@@ -1002,6 +1004,7 @@ const Account = ({ isEmbedded = false }) => {
             margin="dense"
             label={t('account.password.confirm')}
             type={showConfirmPassword ? "text" : "password"}
+            autoComplete="new-password"
             fullWidth
             variant="outlined"
             value={confirmPassword}
@@ -1012,7 +1015,7 @@ const Account = ({ isEmbedded = false }) => {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
-                    aria-label="toggle confirm password visibility"
+                    aria-label={t('password.show_confirm')}
                     onClick={handleToggleConfirmPasswordVisibility}
                     edge="end"
                     disabled={changingPassword}
@@ -1074,6 +1077,7 @@ const Account = ({ isEmbedded = false }) => {
             margin="dense"
             label={t('account.password.title')}
             type={showDeletePassword ? "text" : "password"}
+            autoComplete="current-password"
             fullWidth
             variant="outlined"
             value={deletePassword}
@@ -1085,7 +1089,7 @@ const Account = ({ isEmbedded = false }) => {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
-                    aria-label="toggle password visibility"
+                    aria-label={t('password.show')}
                     onClick={handleToggleDeletePasswordVisibility}
                     edge="end"
                     disabled={deletingAccount}

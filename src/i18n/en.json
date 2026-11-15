@@ -964,5 +964,7 @@
   "common.close": "Close",
   "focus.quit_aria": "Leave the workout",
   "focus.progress_aria": "Workout progress",
-  "focus.rest_progress_aria": "Rest progress"
+  "focus.rest_progress_aria": "Rest progress",
+  "account.password.show_current": "Show or hide the current password",
+  "account.password.show_new": "Show or hide the new password"
 }
