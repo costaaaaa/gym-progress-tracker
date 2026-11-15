@@ -204,6 +204,14 @@ describe('interruttori e scelte', () => {
   });
 });
 
+describe('nomi accessibili', () => {
+  it('l\'interruttore del timer di recupero è legato al suo titolo', async () => {
+    await mount();
+    fireEvent.click(button('Modifica'));
+    expect(screen.getByRole('checkbox', { name: 'Timer di recupero' })).toBeTruthy();
+  });
+});
+
 describe('testi', () => {
   it('nessun testo della pagina è sotto i 16px (escluse le etichette dei campi, che MUI rimpicciolisce)', async () => {
     await mount();

@@ -679,13 +679,14 @@ const Account = ({ isEmbedded = false }) => {
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
               <Box>
-                <Typography sx={{ fontSize: 16, fontWeight: 700 }}>{t('account.rest_timer')}</Typography>
+                <Typography id="rest-timer-label" sx={{ fontSize: 16, fontWeight: 700 }}>{t('account.rest_timer')}</Typography>
                 <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
                   {t('account.rest_timer_help')}
                 </Typography>
               </Box>
               <Switch
                 checked={restTimerEnabled}
+                inputProps={{ 'aria-labelledby': 'rest-timer-label' }}
                 onChange={async (e) => {
                   const newValue = e.target.checked;
                   setRestTimerEnabled(newValue);

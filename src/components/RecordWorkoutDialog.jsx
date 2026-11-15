@@ -204,8 +204,10 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
           <FormControl fullWidth>
-            <InputLabel>{t('record.select_day')}</InputLabel>
+            <InputLabel id="record-day-label">{t('record.select_day')}</InputLabel>
             <Select
+              labelId="record-day-label"
+              id="record-day"
               value={selectedDay}
               label={t('record.select_day')}
               onChange={handleDayChange}
@@ -338,8 +340,10 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                             size="small"
                           />
                           <FormControl fullWidth size="small">
-                            <InputLabel>{t('record.technique')}</InputLabel>
+                            <InputLabel id={`record-technique-${exercise.id}-${setIndex}-label`}>{t('record.technique')}</InputLabel>
                             <Select
+                              labelId={`record-technique-${exercise.id}-${setIndex}-label`}
+                              id={`record-technique-${exercise.id}-${setIndex}`}
                               disabled={!!row.is_warmup}
                               value={row.is_warmup ? '' : (row.intensity_technique || '')}
                               label={t('record.technique')}
