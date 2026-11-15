@@ -6,7 +6,7 @@ import { Outlet, Link as RouterLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LanguageHint from './LanguageHint';
 import { radius } from '../../theme/radius';
-import { isEnPath, stripLangPrefix, withLangPrefix, legalPaths } from '../../i18n/paths';
+import { isEnPath, stripLangPrefix, withLangPrefix, legalPaths, blogPaths } from '../../i18n/paths';
 import { setLanguageChoice } from '../../i18n';
 
 const MAIN_ID = 'main-content';
@@ -80,9 +80,9 @@ const Layout = () => {
             <>
               {/* Pagine PHP del blog, fuori dalla SPA: link normali, non del router */}
               {' · '}
-              <Link href={i18n.language === 'en' ? '/en/blog/1rm-calculator/' : '/blog/calcolatore-1rm/'} color="inherit" underline="hover">{t('footer.calculator')}</Link>
+              <Link href={blogPaths(i18n.language).calculator} color="inherit" underline="hover">{t('footer.calculator')}</Link>
               {' · '}
-              <Link href={i18n.language === 'en' ? '/en/blog/mcp/' : '/blog/mcp/'} color="inherit" underline="hover">{t('footer.mcp')}</Link>
+              <Link href={blogPaths(i18n.language).mcp} color="inherit" underline="hover">{t('footer.mcp')}</Link>
               {' · '}
               <Link
                 component={RouterLink}

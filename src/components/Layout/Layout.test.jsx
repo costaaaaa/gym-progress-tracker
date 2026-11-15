@@ -75,7 +75,7 @@ describe('piè di pagina: link al blog', () => {
     mount();
     expect(links()).toEqual(expect.arrayContaining([
       ['Calcolatore 1RM', '/blog/calcolatore-1rm/'],
-      ['Collega un assistente AI', '/blog/mcp/'],
+      ['Collega il tuo assistente AI', '/blog/mcp/'],
     ]));
   });
 
@@ -84,7 +84,7 @@ describe('piè di pagina: link al blog', () => {
     mount();
     expect(links()).toEqual(expect.arrayContaining([
       ['1RM calculator', '/en/blog/1rm-calculator/'],
-      ['Connect an AI assistant', '/en/blog/mcp/'],
+      ['Connect your AI assistant', '/en/blog/mcp/'],
     ]));
   });
 });
