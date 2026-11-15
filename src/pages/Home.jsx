@@ -209,7 +209,7 @@ const Home = () => {
                   >
                     <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
                       {formatNumber(weeklySets)}
-                      <Box component="span" sx={{ fontSize: 15, fontWeight: 600, ml: 0.5, color: 'primary.main' }}>›</Box>
+                      <Box component="span" sx={{ fontSize: 15, fontWeight: 600, ml: 0.5, color: 'primary.text' }}>›</Box>
                     </Typography>
                     <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.sets')}</Typography>
                   </CardActionArea>

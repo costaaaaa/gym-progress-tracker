@@ -41,6 +41,9 @@
     .wordmark,.figure span,.copy>*{animation:rise .6s cubic-bezier(.2,.8,.2,1) both}
     .figure span:nth-child(2){animation-delay:.08s}.figure span:nth-child(3){animation-delay:.16s}.copy>:nth-child(1){animation-delay:.14s}.copy>:nth-child(2){animation-delay:.21s}.copy>:nth-child(3){animation-delay:.28s}.copy>:nth-child(4){animation-delay:.35s}
     @media (prefers-reduced-motion:reduce){.wordmark,.figure span,.copy>*{animation:none}.go,.go span{transition:none}.go:hover,.go:hover span{transform:none}}
+    .skip{position:absolute;left:8px;top:8px;z-index:10;padding:8px 16px;border:1px solid var(--ink);border-radius:8px;background:var(--ground);color:var(--ink);font-weight:600;text-decoration:none;transform:translateY(-200%)}
+    .skip:focus{transform:none;outline:2px solid var(--ink);outline-offset:2px}
+    main:focus{outline:none}
     @media (max-width:900px){
       .stage{grid-template-columns:1fr;gap:clamp(32px,6vh,56px)}
       /* Il 404 riempie la cornice: la larghezza delle tre cifre è circa 1,86 volte il corpo. */
@@ -49,10 +52,11 @@
   </style>
 </head>
 <body>
+<a class="skip" href="#contenuto">Salta al contenuto</a>
 <header class="frame">
   <a class="wordmark" href="/">LiftIndex</a>
 </header>
-<main class="frame">
+<main class="frame" id="contenuto" tabindex="-1">
   <div class="stage">
     <p class="figure" aria-hidden="true"><span>4</span><span>0</span><span>4</span></p>
     <div class="copy">

@@ -20,10 +20,14 @@
     .meta{color:var(--muted);font-size:.9rem;margin:0 0 24px}
     mark{background:var(--mark);color:inherit;padding:0 3px;border-radius:3px}
     nav{margin-bottom:20px;font-size:.92rem}
+    .skip{position:absolute;left:8px;top:8px;z-index:10;padding:8px 16px;border:1px solid var(--ink);border-radius:8px;background:var(--bg);color:var(--ink);font-weight:600;text-decoration:none;transform:translateY(-200%)}
+    .skip:focus{transform:none;outline:2px solid var(--ink);outline-offset:2px}
+    main:focus{outline:none}
   </style>
 </head>
 <body>
-<main>
+<a class="skip" href="#contenuto">Salta al contenuto</a>
+<main id="contenuto" tabindex="-1">
   <nav><a href="/">← Torna a LiftIndex</a> · <a href="/privacy.html">Informativa privacy</a></nav>
   <h1>Termini d'uso</h1>
   <p class="meta">Versione 2026-11 · aggiornati l'11 novembre 2026 (contatto prima del giudice)</p>

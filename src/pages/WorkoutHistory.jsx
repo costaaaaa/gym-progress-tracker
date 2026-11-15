@@ -420,7 +420,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
       ) : !isLoggedIn ? (
         <Paper elevation={2} sx={{ p: 4 }}>
           <Typography variant="body1" sx={{ mb: 2 }}>{t('history.login_prompt')}</Typography>
-          <MuiLink component={Link} to="/login" color="primary" sx={{ fontWeight: 'bold' }}>{t('history.go_login')}</MuiLink>
+          <MuiLink component={Link} to="/login" color="primary.text" sx={{ fontWeight: 'bold' }}>{t('history.go_login')}</MuiLink>
         </Paper>
       ) : loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}><CircularProgress /></Box>
