@@ -1,16 +1,11 @@
-// Tema chiaro/scuro del blog: la stessa scelta dell'app (chiave themeMode in
-// localStorage, stessa origine); se non c'e', la preferenza del sistema, come nell'app. Caricato in
-// <head> senza defer, cosi' la pagina non compare prima nel tema sbagliato;
-// inline non si puo' (CSP script-src 'self'). Senza JS il blog resta chiaro.
+// Bottone del tema del blog. Il tema (scelta salvata nell'app, altrimenti il sistema) lo decide /tema.js,
+// lo stesso delle pagine statiche e dell'app, caricato prima in <head>: qui si legge data-theme da <html> e
+// si salva la scelta (chiave themeMode in localStorage, stessa origine). Senza JS il blog resta chiaro.
 (function () {
   'use strict';
 
   var root = document.documentElement;
-  var mode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  try {
-    var saved = localStorage.getItem('themeMode');
-    if (saved === 'light' || saved === 'dark') mode = saved;
-  } catch (e) { /* storage bloccato: vale il sistema */ }
+  var mode = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
   root.setAttribute('data-theme', mode);
 
   document.addEventListener('DOMContentLoaded', function () {

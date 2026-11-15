@@ -1,7 +1,7 @@
 // Font dei chip, uguale all'app: Lexend 500 su quelli che si premono, i badge restano Inter.
 // Titolo di pagina: Lexend 800 a 28px, un <h1>. Bottone pieno di errore: rosso del marchio #d50000 con testo bianco,
 // anche in scuro; disabilitato resta grigio (scuro: fondo bianco al 12%, testo bianco al 30%).
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import { useTheme } from '@mui/material/styles';
 import { BottomNavigation, BottomNavigationAction, Button, CardActionArea, Chip, CircularProgress, CssBaseline, IconButton, Link, MenuItem, Slider, Switch, Tab, Tabs, TextField, Typography } from '@mui/material';
@@ -368,6 +368,37 @@ describe('tema: modo iniziale', () => {
     localStorage.setItem('themeMode', 'light');
     mount();
     expect(screen.getByRole('button').textContent).toBe('light');
+  });
+
+  it('<html> segue il tema (data-theme), anche dopo il bottone: lo sfondo prima di React non resta indietro', () => {
+    system(true);
+    mount();
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    fireEvent.click(screen.getByRole('button'));
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+  });
+
+  it('con lo storage bloccato segue il sistema', () => {
+    system(true);
+    const get = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('bloccato'); });
+    mount();
+    expect(screen.getByRole('button').textContent).toBe('dark');
+    get.mockRestore();
+  });
+
+  it('senza matchMedia parte chiaro', () => {
+    window.matchMedia = undefined;
+    mount();
+    expect(screen.getByRole('button').textContent).toBe('light');
+  });
+
+  it('il bottone funziona anche con lo storage che rifiuta le scritture', () => {
+    system(false);
+    const set = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('pieno'); });
+    mount();
+    fireEvent.click(screen.getByRole('button'));
+    expect(screen.getByRole('button').textContent).toBe('dark');
+    set.mockRestore();
   });
 
   it('il bottone salva la scelta, il solo caricamento no', () => {

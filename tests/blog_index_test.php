@@ -39,5 +39,9 @@ echo "Marchio nell'intestazione\n";
 check('italiano: porta alla landing', strpos($html, '<a class="brand" href="https://liftindex.app/">') !== false);
 check('inglese: porta alla landing /en/', strpos(render('en/mcp/index.php'), '<a class="brand" href="https://liftindex.app/en/">') !== false);
 
+echo "Tema\n";
+check('carica /tema.js (il tema) prima di /blog/assets/tema.js (il bottone)', ($a = strpos($html, '<script src="/tema.js"></script>')) !== false
+    && ($b = strpos($html, '<script src="/blog/assets/tema.js"></script>')) !== false && $a < $b);
+
 echo "\n" . ($checks - $fails) . "/$checks controlli riusciti\n";
 exit($fails > 0 ? 1 : 0);

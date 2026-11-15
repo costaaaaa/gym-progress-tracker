@@ -91,7 +91,7 @@ confronta() {
     [[ "$alt_ok" -eq 1 ]] && ok "$nome: alternate it, en e x-default in entrambe le pagine"
 }
 
-# tema PAGINA: stessa regola dell'app e del blog (themeMode, chiaro se assente), stesso foglio di stile
+# tema PAGINA: stessa regola dell'app e del blog (themeMode, altrimenti il sistema), stesso foglio di stile
 tema() {
     local f="$ROOT/public/$1"
     if [[ ! -f "$f" ]]; then ko "tema $1: file presente"; return; fi
@@ -108,7 +108,10 @@ for p in privacy.html termini.html en/privacy.html en/terms.html 404.html; do te
 for f in tema.js pagine.css; do
     [[ -f "$ROOT/public/$f" ]] && ok "public/$f presente" || ko "public/$f mancante"
 done
-grep -q 'prefers-color-scheme' "$ROOT/public/pagine.css" 2>/dev/null && ko "pagine.css: ha ancora prefers-color-scheme" || ok "pagine.css: nessun prefers-color-scheme"
+# senza JS il tema segue il sistema: la regola scura vale solo se tema.js non ha messo data-theme
+css="$ROOT/public/pagine.css"
+grep -q 'prefers-color-scheme' "$css" 2>/dev/null && ok "pagine.css: ha il ripiego per il sistema scuro" || ko "pagine.css: manca il ripiego prefers-color-scheme"
+if grep -o 'prefers-color-scheme[^{]*{[^{]*{' "$css" | grep -q ':root:not(\[data-theme\])'; then ok "pagine.css: il ripiego vale solo senza data-theme"; else ko "pagine.css: il ripiego non è limitato a :root:not([data-theme])"; fi
 grep -q "html\[data-theme=\"dark\"\]" "$ROOT/public/pagine.css" 2>/dev/null && ok "pagine.css: scuro da data-theme" || ko "pagine.css: manca html[data-theme=\"dark\"]"
 
 echo "privacy"

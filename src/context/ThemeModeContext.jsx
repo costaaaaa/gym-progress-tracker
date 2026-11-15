@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useMemo } from 'react';
+import { createContext, useState, useContext, useMemo, useEffect } from 'react';
 import { ThemeProvider, createTheme, alpha } from '@mui/material/styles';
 import { grey } from '@mui/material/colors';
 import { GlobalStyles } from '@mui/material';
@@ -28,17 +28,28 @@ export const useThemeMode = () => useContext(ThemeModeContext);
 
 export const ThemeModeProvider = ({ children }) => {
   const [mode, setMode] = useState(() => {
-    // Scelta salvata; senza, la preferenza del sistema (letta una volta sola, senza ascoltarla)
-    const savedMode = localStorage.getItem('themeMode');
-    if (savedMode === 'light' || savedMode === 'dark') return savedMode;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    // Scelta salvata; senza (o con lo storage bloccato), la preferenza del sistema, letta una volta sola
+    try {
+      const savedMode = localStorage.getItem('themeMode');
+      if (savedMode === 'light' || savedMode === 'dark') return savedMode;
+    } catch { /* storage bloccato: vale il sistema */ }
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
+
+  // <html> segue il tema (come /tema.js prima di React): lo sfondo scuro di index.html non resta dopo il passaggio al chiaro
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', mode);
+  }, [mode]);
 
   // Solo il bottone salva la scelta: finché non lo si preme, vale il sistema
   const toggleThemeMode = () => {
-    const next = mode === 'light' ? 'dark' : 'light';
-    localStorage.setItem('themeMode', next);
-    setMode(next);
+    setMode((prevMode) => {
+      const next = prevMode === 'light' ? 'dark' : 'light';
+      try {
+        localStorage.setItem('themeMode', next);
+      } catch { /* vale solo per questa visita */ }
+      return next;
+    });
   };
 
   const { i18n } = useTranslation();
