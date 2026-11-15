@@ -52,7 +52,7 @@ const CHECKERBOARD = {
  * browser: si disegna sul canvas e non viene mai inviata al server.
  */
 const ShareCardDialog = ({ open, onClose, stats }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const bgLabel = (bg) => t(`share.bg.${bg.id}`, { defaultValue: bg.label });
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
@@ -105,10 +105,16 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
 
   // Il disegno segue subito ogni spostamento della foto; il PNG si prepara solo quando
   // l'utente si ferma, perché costa più del disegno.
+  const layout = useMemo(
+    () => (stats ? layoutShareCard(stats, template, { hasPhoto: !!photo, photoBackground, format, preset, blocks: customBlocks || undefined, hideWeights, showBestVolume, strings: shareCardStrings() }) : null),
+    // shareCardStrings() legge la lingua attiva: serve nelle dipendenze per rifare il testo al cambio lingua.
+    [stats, template, photo, photoBackground, format, preset, customBlocks, hideWeights, showBestVolume, i18n.language], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  const cardText = layout ? layout.elements.filter((el) => el.type === 'text').map((el) => el.text).join(', ') : '';
+
   useEffect(() => {
-    if (!open || !stats || !fontsReady || !canvasRef.current) return undefined;
+    if (!open || !layout || !fontsReady || !canvasRef.current) return undefined;
     let cancelled = false;
-    const layout = layoutShareCard(stats, template, { hasPhoto: !!photo, photoBackground, format, preset, blocks: customBlocks || undefined, hideWeights, showBestVolume, strings: shareCardStrings() });
     renderCardToCanvas(canvasRef.current, layout, photo, photoTransform);
     setReady(false);
     fileRef.current = null;
@@ -124,7 +130,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
       }
     }, 250);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [open, stats, template, format, preset, customBlocks, hideWeights, showBestVolume, photo, photoTransform, photoBackground, fontsReady, t]);
+  }, [open, layout, photo, photoTransform, fontsReady, t]);
 
   useEffect(() => {
     try {
@@ -296,10 +302,10 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullScreen={fullScreen} maxWidth="xs" fullWidth
+    <Dialog open={open} onClose={onClose} fullScreen={fullScreen} maxWidth="xs" fullWidth aria-labelledby="share-dialog-title"
       PaperProps={{ sx: { borderRadius: fullScreen ? 0 : radius.xxl } }}>
       <Box sx={{ display: 'flex', alignItems: 'center', px: 2, pt: 1.5 }}>
-        <Typography variant="h6" sx={{ flex: 1, fontWeight: 700 }}>{t('share.title')}</Typography>
+        <Typography id="share-dialog-title" variant="h6" sx={{ flex: 1, fontWeight: 700 }}>{t('share.title')}</Typography>
         <IconButton onClick={onClose} aria-label={t('share.close')}><CloseIcon /></IconButton>
       </Box>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, pt: 1 }}>
@@ -328,7 +334,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
           </Box>
         </Collapse>
         <Box sx={{ position: 'relative', width: '100%', maxWidth: `calc(62vh * ${format.width} / ${format.height})`, aspectRatio: `${format.width} / ${format.height}` }}>
-          <canvas ref={canvasRef}
+          <canvas ref={canvasRef} role="img" aria-label={t('share.card_aria', { content: cardText })}
             onPointerDown={handlePointerDown} onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp}
             style={{

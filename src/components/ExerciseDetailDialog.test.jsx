@@ -36,6 +36,13 @@ describe('ExerciseDetailDialog: fuso nella cronologia', () => {
   });
 });
 
+describe('ExerciseDetailDialog: grafico', () => {
+  it('è un\'immagine con un nome che dice cosa mostra', () => {
+    render(<ExerciseDetailDialog item={{ ...item([session(1, '2026-10-18 10:00:00'), session(2, '2026-10-20 10:00:00')]), mode: 'oneRM' }} onClose={() => {}} />);
+    expect(screen.getByRole('img', { name: 'Grafico: 1RM stimato di Squat nel tempo. I valori sono nella cronologia.' })).toBeTruthy();
+  });
+});
+
 const fireShowAll = () => fireEvent.click(screen.getByRole('button', { name: /Show all|Mostra tutti/ }));
 
 describe('ExerciseDetailDialog: posizione dell\'esercizio nella seduta (#26)', () => {

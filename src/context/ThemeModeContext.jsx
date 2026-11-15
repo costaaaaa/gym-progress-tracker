@@ -177,6 +177,7 @@ export const ThemeModeProvider = ({ children }) => {
           },
         },
         components: {
+          MuiCircularProgress: { defaultProps: { 'aria-label': i18n.t('common.loading') } },
           // Etichetta fissa sopra il campo, in flusso normale: niente posizione assoluta né la transform
           // che la porta dentro il bordo. Lo shrink è sempre true (etichetta mai dentro il campo). Il
           // colore (testo secondario, focus, errore) resta quello di MuiFormLabel: ridefinirlo qui
@@ -405,7 +406,7 @@ export const ThemeModeProvider = ({ children }) => {
         },
       }, muiLocale);
     },
-    [mode, muiLocale]
+    [mode, muiLocale, i18n]
   );
 
   return (

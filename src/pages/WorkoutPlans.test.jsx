@@ -8,6 +8,7 @@ import WorkoutPlans from './WorkoutPlans';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { json, colorOf } from '../test/dom';
 import { plannedSets, times } from '../test/plannedSets';
+import { unnamedControls } from '../test/accessibleNames';
 
 const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
@@ -43,8 +44,8 @@ const openDay = async () => {
 describe('giorno aperto', () => {
   it('Modifica ed Elimina di ogni esercizio sono grigi come le frecce, non rosso', async () => {
     await openDay();
-    const edits = screen.getAllByRole('button', { name: 'Modifica esercizio' });
-    const deletes = screen.getAllByRole('button', { name: 'Elimina esercizio' });
+    const edits = screen.getAllByRole('button', { name: /^Modifica esercizio/ });
+    const deletes = screen.getAllByRole('button', { name: /^Elimina esercizio/ });
     expect(edits).toHaveLength(2);
     expect(deletes).toHaveLength(2);
     for (const button of [...edits, ...deletes]) expect(colorOf(button)).toBe(GREY);
@@ -92,7 +93,7 @@ describe('serie pianificate (#77)', () => {
     const records = [planWith({ planned_sets: plannedSets(2, times(4, { min: 6, max: 8 })) })];
     const fetchMock = await apriConPiano(records);
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Modifica esercizio' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: /^Modifica esercizio/ })[0]);
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByLabelText('Riscaldamento').value).toBe('2');
     expect(within(dialog).getByLabelText('Serie').value).toBe('4');
@@ -114,13 +115,13 @@ describe('serie pianificate (#77)', () => {
   it('chiudere la modifica di un esercizio e aprire subito quella di un altro mostra le serie del secondo e permette di salvare', async () => {
     await apriConPiano([plan]);
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Modifica esercizio' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: /^Modifica esercizio/ })[0]);
     const first = await screen.findByRole('dialog');
     expect(within(first).getByLabelText('Ripetizioni').value).toBe('6-8');
     vi.useFakeTimers();
     try {
       fireEvent.click(within(first).getByRole('button', { name: 'Annulla' }));
-      fireEvent.click(screen.getAllByRole('button', { name: 'Modifica esercizio', hidden: true })[1]);
+      fireEvent.click(screen.getAllByRole('button', { name: /^Modifica esercizio/, hidden: true })[1]);
       act(() => { vi.advanceTimersByTime(300); });
     } finally {
       vi.useRealTimers();
@@ -135,7 +136,7 @@ describe('serie pianificate (#77)', () => {
   it('con un valore non valido "Salva modifiche" è disabilitato', async () => {
     await apriConPiano([plan]);
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Modifica esercizio' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: /^Modifica esercizio/ })[0]);
     const dialog = await screen.findByRole('dialog');
     fireEvent.change(within(dialog).getByLabelText('Ripetizioni'), { target: { value: '10-8' } });
 
@@ -146,7 +147,7 @@ describe('serie pianificate (#77)', () => {
 describe('dialogo di eliminazione di un esercizio', () => {
   it('il rosso resta nel dialogo: il bottone di conferma è pieno rosso', async () => {
     await openDay();
-    fireEvent.click(screen.getAllByRole('button', { name: 'Elimina esercizio' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: /^Elimina esercizio/ })[0]);
     const dialog = await screen.findByRole('dialog');
     const confirm = within(dialog).getByRole('button', { name: 'Elimina' });
     expect(confirm.classList.contains('MuiButton-containedError')).toBe(true);
@@ -303,5 +304,30 @@ describe('card della scheda: riepilogo (A15)', () => {
     fireEvent.click(screen.getByRole('button', { name: '+2 esercizi' }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Nascondi' })).toBeTruthy());
     expect(screen.queryByRole('button', { name: '+2 esercizi' })).toBeNull();
+  });
+});
+
+describe('nomi accessibili', () => {
+  it('Modifica ed Elimina di ogni esercizio hanno il nome dell\'esercizio', async () => {
+    await openDay();
+    for (const nome of ['Panca piana', 'Croci ai cavi']) {
+      expect(screen.getByRole('button', { name: `Modifica esercizio ${nome}` })).toBeTruthy();
+      expect(screen.getByRole('button', { name: `Elimina esercizio ${nome}` })).toBeTruthy();
+    }
+  });
+
+  it('ogni bottone, campo e dialogo della scheda aperta ha un nome', async () => {
+    await openDay();
+    expect(unnamedControls()).toEqual([]);
+  });
+
+  it('modifica ed elimina scheda dicono quale scheda, le frecce quale esercizio', async () => {
+    await openDay();
+    expect(screen.getByRole('button', { name: 'Modifica scheda Forza A' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Elimina scheda Forza A' })).toBeTruthy();
+    for (const name of ['Panca piana', 'Croci ai cavi']) {
+      expect(screen.getByRole('button', { name: `Sposta su ${name}` })).toBeTruthy();
+      expect(screen.getByRole('button', { name: `Sposta giù ${name}` })).toBeTruthy();
+    }
   });
 });

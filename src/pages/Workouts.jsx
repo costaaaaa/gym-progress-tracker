@@ -4,20 +4,21 @@ import { Box, Tabs, Tab, CircularProgress, Container, Typography } from '@mui/ma
 import { useLocation } from 'react-router-dom';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import { usePageMeta } from '../hooks/usePageMeta';
 import { useTabbedPage } from '../hooks/useTabbedPage';
 
 // Lazy loading dei componenti tab
 const WorkoutPlans = lazy(() => import('./WorkoutPlans'));
 const WorkoutHistory = lazy(() => import('./WorkoutHistory'));
 
-const TABS = ['plans', 'history'];
+const TABS = [
+  { id: 'plans', label: 'workouts.tab_plans' },
+  { id: 'history', label: 'workouts.tab_history' },
+];
 
 const Workouts = () => {
   const { t } = useTranslation();
-  usePageMeta(t('workouts.meta.title'), t('workouts.meta.description'));
   const location = useLocation();
-  const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS);
+  const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS, { title: t('workouts.title'), description: t('workouts.meta.description') });
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
@@ -29,7 +30,7 @@ const Workouts = () => {
           <Tabs
             value={tabIndex}
             onChange={handleTabChange}
-            aria-label="workout hub tabs"
+            aria-label={t('workouts.tabs_aria')}
             TabIndicatorProps={{ sx: { height: 2, bgcolor: 'text.primary' } }}
             sx={{
               minHeight: 0,

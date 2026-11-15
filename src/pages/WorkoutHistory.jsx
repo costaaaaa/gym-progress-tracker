@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format, subDays } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import {
@@ -104,6 +104,8 @@ const groupWorkoutsByMonth = (workouts) => {
 };
 
 const newestFirst = (a, b) => clockDate(b.date) - clockDate(a.date);
+
+const DAY_FORMAT = { weekday: 'long', day: 'numeric', month: 'long' };
 
 const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
   const { t } = useTranslation();
@@ -301,6 +303,10 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
     { key: 'delete', label: t('history.delete_aria'), icon: <DeleteIcon fontSize="small" />, run: (e) => handleDeleteClick(workout, e) },
   ];
 
+  const workoutDay = (workout) => formatDate(workout.date, DAY_FORMAT);
+  // Nel nome accessibile c'è anche l'anno: due allenamenti dello stesso giorno di anni diversi si distinguono.
+  const rowActionName = (label, workout) => t('history.row_action_aria', { action: label, date: formatDate(workout.date, { ...DAY_FORMAT, year: 'numeric' }) });
+
   const handleCloseEditDateDialog = () => {
     setOpenEditDateDialog(false);
     setWorkoutToEdit(null);
@@ -462,19 +468,19 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                       const isRowExpanded = !!expandedWorkouts[workout.id];
                       const rowPanelId = `workout-detail-panel-${workout.id}`;
                       return (
-                        <React.Fragment key={workout.id}>
+                        <Box component="li" key={workout.id} sx={{ listStyle: 'none' }}>
                           {/* La card intera apre i dettagli. Condividi, modifica e cestino stanno in
                               secondaryAction, fuori dal ListItemButton: il loro clic non apre la card. */}
-                          <ListItem disablePadding sx={{ '& > .MuiListItemButton-root': { pr: isPhone ? 10 : 19 } }} secondaryAction={
+                          <ListItem component="div" ContainerComponent="div" disablePadding sx={{ '& > .MuiListItemButton-root': { pr: isPhone ? 10 : 19 } }} secondaryAction={
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
                               {isPhone ? (
-                                <IconButton onClick={(e) => setRowMenu({ anchor: e.currentTarget, workout })} size="small" sx={{ color: 'text.secondary' }} aria-label={t('history.more_actions_aria')}><MoreVertIcon fontSize="small" /></IconButton>
+                                <IconButton onClick={(e) => setRowMenu({ anchor: e.currentTarget, workout })} size="small" sx={{ color: 'text.secondary' }} aria-label={rowActionName(t('history.more_actions_aria'), workout)}><MoreVertIcon fontSize="small" /></IconButton>
                               ) : rowActions(workout).map((action) => (action.disabled ? (
                                 <Tooltip key={action.key} title={action.disabledHint}>
-                                  <span><IconButton disabled size="small" aria-label={action.label}>{action.icon}</IconButton></span>
+                                  <span><IconButton disabled size="small" aria-label={rowActionName(action.label, workout)}>{action.icon}</IconButton></span>
                                 </Tooltip>
                               ) : (
-                                <IconButton key={action.key} onClick={action.run} size="small" sx={{ color: 'text.secondary' }} aria-label={action.label}>{action.icon}</IconButton>
+                                <IconButton key={action.key} onClick={action.run} size="small" sx={{ color: 'text.secondary' }} aria-label={rowActionName(action.label, workout)}>{action.icon}</IconButton>
                               )))}
                               {/* Indicatore: per tastiera e lettori di schermo il comando è la card */}
                               <Box component="span" aria-hidden onClick={() => toggleWorkoutExpansion(workout.id)}
@@ -489,7 +495,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                               aria-controls={rowPanelId}
                             >
                               <ListItemText
-                                primary={<Typography sx={{ fontWeight: 600, fontSize: 16 }}>{formatDate(workout.date, { weekday: 'long', day: 'numeric', month: 'long' })}</Typography>}
+                                primary={<Typography sx={{ fontWeight: 600, fontSize: 16 }}>{workoutDay(workout)}</Typography>}
                                 secondaryTypographyProps={{ component: 'div' }}
                                 secondary={(
                                   <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, mt: 0.25 }}>
@@ -500,11 +506,11 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                               />
                             </ListItemButton>
                           </ListItem>
-                          <Collapse component="li" in={isRowExpanded} id={rowPanelId} timeout="auto" sx={{ listStyle: 'none' }}>
+                          <Collapse in={isRowExpanded} id={rowPanelId} timeout="auto">
                             {renderWorkoutExerciseDetails(workout)}
                           </Collapse>
-                          {index < workoutsInMonth.length - 1 && <Divider component="li" />}
-                        </React.Fragment>
+                          {index < workoutsInMonth.length - 1 && <Divider />}
+                        </Box>
                       );
                     })}
                   </List>
@@ -547,7 +553,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
           <Button onClick={handleConfirmDelete} color="error" variant="contained">{t('history.delete.confirm')}</Button>
         </DialogActions>
       </Dialog>
-      <Menu anchorEl={rowMenu?.anchor} open={!!rowMenu} onClose={() => setRowMenu(null)}>
+      <Menu anchorEl={rowMenu?.anchor} open={!!rowMenu} onClose={() => setRowMenu(null)} MenuListProps={{ 'aria-label': rowMenu && rowActionName(t('history.more_actions_aria'), rowMenu.workout) }}>
         {rowMenu && rowActions(rowMenu.workout).map((action) => (
           <MenuItem
             key={action.key}

@@ -54,6 +54,7 @@ const LevelCard = () => {
             <LinearProgress
               variant="determinate"
               value={progress}
+              aria-label={t('level.progress_aria', { level: level + 1 })}
               sx={{
                 height: 8,
                 borderRadius: '4px',

@@ -29,7 +29,8 @@ const mount = async (wrap = (page) => page) => {
   await screen.findByRole('group', { name: 'Periodo' });
 };
 const pill = (name) => screen.getByRole('button', { name });
-const tableRows = () => within(screen.getByRole('table')).getAllByRole('row').slice(1);
+const history = () => screen.getByRole('table', { name: 'Storico delle misure' });
+const tableRows = () => within(history()).getAllByRole('row').slice(1);
 
 describe('periodo e variazione del peso', () => {
   beforeEach(() => {
@@ -309,11 +310,11 @@ describe('testi', () => {
   beforeEach(() => { localStorage.setItem('themeMode', 'light'); records = measured(); });
   afterEach(() => { window.matchMedia = original; });
 
-  // Esenti: le pillole del periodo, che sono chip (13px)
+  // Esenti: le pillole del periodo, che sono chip (13px), e la tabella del grafico, nascosta alla vista
   it.each([['da tablet', () => {}], ['sul telefono', phone]])('nessun testo %s è sotto i 16px, salvo le pillole del periodo', async (_, setup) => {
     setup();
     await mount(themed);
-    expect(textBelow(document.body, 16, '.MuiChip-root')).toEqual([]);
+    expect(textBelow(document.body, 16, '.MuiChip-root, .MuiCard-root > table')).toEqual([]);
   });
 });
 
@@ -330,7 +331,7 @@ describe('storico', () => {
 
   it('da tablet è una tabella con intestazioni in sentence case da 16px e celle da 16px', async () => {
     await mount(themed);
-    const headers = within(screen.getByRole('table')).getAllByRole('columnheader');
+    const headers = within(history()).getAllByRole('columnheader');
     expect(headers.map((h) => h.textContent)).toEqual(['Data', 'Peso', 'Grasso %', 'Muscolo %', 'Torace', 'Braccio', 'Vita', 'Gamba', 'Azioni']);
     headers.forEach((h) => {
       expect(style(h).textTransform).not.toBe('uppercase');
@@ -349,7 +350,7 @@ describe('storico', () => {
   it('sul telefono non c\'è la tabella: ogni misura è un elemento di lista a due linee', async () => {
     phone();
     await mount(themed);
-    expect(screen.queryByRole('table')).toBeNull();
+    expect(screen.queryByRole('table', { name: 'Storico delle misure' })).toBeNull();
     const items = screen.getAllByRole('listitem');
     expect(items).toHaveLength(2);
     const first = items[0];
@@ -408,5 +409,34 @@ describe('giorno della nuova misura', () => {
   });
   it('a fine giornata è il giorno locale, non quello UTC del giorno dopo', async () => {
     expect(await saveAt('America/New_York', 23, 30)).toBe('2026-10-20');
+  });
+});
+
+describe('grafico del peso: alternativa testuale', () => {
+  beforeEach(() => {
+    records = [row('2026-08-10', '82.0'), row('2026-09-25', '81.5'), row('2026-10-15', '80.0')];
+  });
+
+  it('il grafico è un\'immagine con un nome che dice titolo e ultimo valore', async () => {
+    await mount();
+    expect(screen.getByRole('img', { name: 'Grafico: Andamento peso (kg). Ultimo valore: 80.0 kg.' })).toBeTruthy();
+  });
+
+  it('gli stessi valori sono in una tabella con intestazioni, una riga per misura del periodo', async () => {
+    await mount();
+    const table = screen.getByRole('table', { name: 'Andamento peso (kg)' });
+    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Data', 'Peso']);
+    const body = within(table).getAllByRole('row').slice(1).map((r) => within(r).getAllByRole('cell').map((c) => c.textContent));
+    expect(body).toEqual([
+      [formatDate('2026-08-10'), '82 kg'],
+      [formatDate('2026-09-25'), '81,5 kg'],
+      [formatDate('2026-10-15'), '80 kg'],
+    ]);
+  });
+
+  it('la tabella non si vede: è nascosta solo visivamente', async () => {
+    await mount();
+    const { width, height, overflow } = getComputedStyle(screen.getByRole('table', { name: 'Andamento peso (kg)' }));
+    expect({ width, height, overflow }).toEqual({ width: '1px', height: '1px', overflow: 'hidden' });
   });
 });

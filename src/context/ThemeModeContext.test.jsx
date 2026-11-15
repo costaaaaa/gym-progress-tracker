@@ -4,7 +4,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import { useTheme } from '@mui/material/styles';
-import { Button, CardActionArea, Chip, CssBaseline, IconButton, Link, MenuItem, Slider, Switch, Tab, Tabs, TextField, Typography } from '@mui/material';
+import { Button, CardActionArea, Chip, CircularProgress, CssBaseline, IconButton, Link, MenuItem, Slider, Switch, Tab, Tabs, TextField, Typography } from '@mui/material';
 import { ThemeModeProvider } from './ThemeModeContext';
 
 const RED = 'rgb(213, 0, 0)';
@@ -312,5 +312,17 @@ describe('tema: focus visibile da tastiera (2.4.7)', () => {
     const css = [...document.querySelectorAll('style')].map((s) => s.textContent).join('');
     expect(css).toMatch(/button:not\(\.MuiButtonBase-root\):focus-visible\{[^}]*outline:2px solid #1a1816;[^}]*outline-offset:2px/);
     expect(css).not.toMatch(/(^|[,}])button:focus-visible/);
+  });
+});
+
+describe('tema: indicatori di caricamento', () => {
+  it('un CircularProgress senza nome si chiama «Caricamento»', () => {
+    render(<ThemeModeProvider><CircularProgress /></ThemeModeProvider>);
+    expect(screen.getByRole('progressbar', { name: 'Caricamento' })).toBeTruthy();
+  });
+
+  it('il nome scelto dal componente prevale su quello del tema', () => {
+    render(<ThemeModeProvider><CircularProgress aria-label="Avanzamento" /></ThemeModeProvider>);
+    expect(screen.getByRole('progressbar', { name: 'Avanzamento' })).toBeTruthy();
   });
 });

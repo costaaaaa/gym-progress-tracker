@@ -6,6 +6,7 @@ import ProfileSummary from './ProfileSummary';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import i18n from '../i18n';
 import { textBelow } from '../test/minText';
+import { unnamedControls } from '../test/accessibleNames';
 import { mediaStyle } from '../test/mediaStyle';
 
 const INK = 'rgb(26, 24, 22)';
@@ -46,6 +47,16 @@ const mount = async () => {
   await screen.findByText('Livello 7');
 };
 const style = (el) => getComputedStyle(el);
+
+describe('nomi accessibili', () => {
+  it('ogni barra di avanzamento dice di cosa è l\'avanzamento', async () => {
+    await mount();
+    ['Avanzamento verso il livello 8', 'Punti esperienza in Panca piana', 'Punti esperienza in Rematore con bilanciere']
+      .forEach((name) => expect(screen.getByRole('progressbar', { name })).toBeTruthy());
+    expect(screen.getAllByRole('progressbar', { name: /^Avanzamento verso / }).length).toBeGreaterThan(1);
+    expect(unnamedControls(['progressbar'])).toEqual([]);
+  });
+});
 
 describe('livello', () => {
   it('niente stella rossa decorativa accanto al livello', async () => {
