@@ -35,5 +35,9 @@ check('niente sezione "Articoli" vuota', strpos($html, '<h2>Articoli</h2>') === 
 check('niente "Nessun articolo pubblicato"', strpos($html, 'Nessun articolo pubblicato') === false);
 check('indice ancora noindex senza articoli (come la sitemap)', strpos($html, '<meta name="robots" content="noindex">') !== false);
 
+echo "Marchio nell'intestazione\n";
+check('italiano: porta alla landing', strpos($html, '<a class="brand" href="https://liftindex.app/">') !== false);
+check('inglese: porta alla landing /en/', strpos(render('en/mcp/index.php'), '<a class="brand" href="https://liftindex.app/en/">') !== false);
+
 echo "\n" . ($checks - $fails) . "/$checks controlli riusciti\n";
 exit($fails > 0 ? 1 : 0);

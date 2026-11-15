@@ -48,10 +48,9 @@ function blog_render_page(array $opts)
     $lang = isset($opts['lang']) && $opts['lang'] === 'en' ? 'en' : 'it';
     $alternates = isset($opts['alternates']) ? $opts['alternates'] : array();
 
-    // In inglese il marchio porta alla landing /en/ (il blog e' solo in italiano),
-    // accesso e registrazione alle pagine /en/ dell'app.
+    // Il marchio porta alla landing (in inglese /en/), come accesso e registrazione alle pagine dell'app.
     $ui = array(
-        'it' => array('locale' => 'it_IT', 'home' => BLOG_BASE_URL . '/', 'app' => BLOG_APP_URL, 'login' => 'Accedi', 'register' => 'Registrati', 'terms' => "Termini d'uso", 'privacyPath' => 'privacy.html', 'termsPath' => 'termini.html'),
+        'it' => array('locale' => 'it_IT', 'home' => BLOG_APP_URL, 'app' => BLOG_APP_URL, 'login' => 'Accedi', 'register' => 'Registrati', 'terms' => "Termini d'uso", 'privacyPath' => 'privacy.html', 'termsPath' => 'termini.html'),
         'en' => array('locale' => 'en_US', 'home' => BLOG_APP_URL . 'en/', 'app' => BLOG_APP_URL . 'en/', 'login' => 'Log in', 'register' => 'Sign up', 'terms' => 'Terms of use', 'privacyPath' => 'en/privacy.html', 'termsPath' => 'en/terms.html'),
     );
     $ui = $ui[$lang];

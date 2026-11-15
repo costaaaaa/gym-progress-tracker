@@ -78,6 +78,11 @@ const Layout = () => {
           <Link href={legalPaths(i18n.language).terms} color="inherit" underline="hover">{t('footer.terms')}</Link>
           {!isLoggedIn && (
             <>
+              {/* Pagine PHP del blog, fuori dalla SPA: link normali, non del router */}
+              {' · '}
+              <Link href={i18n.language === 'en' ? '/en/blog/1rm-calculator/' : '/blog/calcolatore-1rm/'} color="inherit" underline="hover">{t('footer.calculator')}</Link>
+              {' · '}
+              <Link href={i18n.language === 'en' ? '/en/blog/mcp/' : '/blog/mcp/'} color="inherit" underline="hover">{t('footer.mcp')}</Link>
               {' · '}
               <Link
                 component={RouterLink}
