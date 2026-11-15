@@ -10,20 +10,15 @@ import i18n from '../i18n';
 import { describedBy } from '../test/accessibleNames';
 import { mockPointer } from '../test/pointer';
 import { setBrowserTimeZone } from '../test/timeZone';
+import { birthFieldChange } from '../test/birthFieldSpy';
 
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
 vi.mock('../context/AuthContext', () => ({
   useAuth: () => ({ user: null, isLoggedIn: false, loading: false, login: () => {} }),
 }));
 
-// jsdom non sa scrivere un campo data «a metà» (MUI X lo sa fare solo con la tastiera vera): il campo vero resta, ma
-// ne tengo l'onChange per consegnargli un Invalid Date, come fa MUI X quando una sezione è vuota o impossibile.
-const birthFieldChange = { current: null };
-vi.mock('../components/LabeledDatePicker', async (importOriginal) => {
-  const { createElement } = await import('react');
-  const Real = (await importOriginal()).default;
-  return { default: (props) => { if (props.label === 'Data di nascita') birthFieldChange.current = props.onChange; return createElement(Real, props); } };
-});
+// Il campo data vero, con l'onChange della data di nascita a portata di test (vedi src/test/birthFieldSpy.js)
+vi.mock('../components/LabeledDatePicker', async (importOriginal) => (await import('../test/birthFieldSpy')).spyOnBirthField(await importOriginal()));
 
 const availability = (body) => vi.fn(() => Promise.resolve({ ok: true, status: 200, json: async () => ({ success: true, ...body }) }));
 
@@ -134,6 +129,15 @@ describe('errori annunciati e focus sul primo campo sbagliato (WCAG 3.3.1, 4.1.3
     await screen.findByText('Il tuo profilo');
   };
 
+  // Sesso e termini, poi invio: la data di nascita la mette il test
+  const submitStep2 = () => {
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Sesso/ }));
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: /Maschio/ }));
+    fireEvent.click(screen.getByRole('checkbox'));
+    fetch.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'Registrati' }));
+  };
+
   it('primo passo: email non valida, errore collegato al campo e focus lì (non su "Avanti")', async () => {
     renderRegister();
     fillStep1();
@@ -192,21 +196,23 @@ describe('errori annunciati e focus sul primo campo sbagliato (WCAG 3.3.1, 4.1.3
 
   // Il server accetta esattamente 100 anni (rifiuta birth < oggi - 100 anni): oggi di 100 anni fa passa, il giorno prima no
   describe.each(['UTC', 'Europe/Rome', 'America/Los_Angeles', 'Asia/Tokyo'])('confine dei 100 anni (%s)', (zone) => {
-    // La data si calcola dopo aver cambiato fuso: «oggi» dipende da lì
+    afterEach(() => vi.useRealTimers());
+
+    // Cambia fuso e fissa l'orologio a mezzogiorno di quel fuso (una corsa a cavallo della mezzanotte non cambia «oggi»);
+    // la data si calcola dopo, perché «oggi» dipende da lì
     const submitWith = async (dateFor) => {
       setBrowserTimeZone(zone);
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2026, 10, 15, 12, 0));
       await goToStep2();
       fireEvent.change(screen.getByLabelText(/^Data di nascita/), { target: { value: format(dateFor(), 'dd/MM/yyyy') } });
-      fireEvent.mouseDown(screen.getByRole('combobox', { name: /Sesso/ }));
-      fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: /Maschio/ }));
-      fireEvent.click(screen.getByRole('checkbox'));
-      fetch.mockClear();
-      fireEvent.click(screen.getByRole('button', { name: 'Registrati' }));
+      submitStep2();
     };
 
     it('esattamente 100 anni fa oggi: la richiesta parte', async () => {
       await submitWith(() => subYears(startOfToday(), 100));
       await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+      expect(JSON.parse(fetch.mock.calls[0][1].body).birth_date).toBe(format(subYears(startOfToday(), 100), 'yyyy-MM-dd'));
       expect(screen.getByLabelText(/^Data di nascita/).getAttribute('aria-invalid')).not.toBe('true');
     });
 
@@ -221,11 +227,7 @@ describe('errori annunciati e focus sul primo campo sbagliato (WCAG 3.3.1, 4.1.3
   it('secondo passo: un Invalid Date (campo scritto a metà) è una data non valida: errore sul campo, fuoco, nessuna richiesta', async () => {
     await goToStep2();
     act(() => birthFieldChange.current(new Date(NaN)));
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Sesso/ }));
-    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: /Maschio/ }));
-    fireEvent.click(screen.getByRole('checkbox'));
-    fetch.mockClear();
-    fireEvent.click(screen.getByRole('button', { name: 'Registrati' }));
+    submitStep2();
     const birth = screen.getByLabelText(/^Data di nascita/);
     expect(birth.getAttribute('aria-invalid')).toBe('true');
     expect(describedBy(birth)).toBe('Inserisci una data di nascita valida');
@@ -251,11 +253,8 @@ describe('errori annunciati e focus sul primo campo sbagliato (WCAG 3.3.1, 4.1.3
   it('un errore del server resta un avviso generico con role="alert"', async () => {
     await goToStep2();
     fireEvent.change(screen.getByLabelText(/^Data di nascita/), { target: { value: '01/01/1990' } });
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Sesso/ }));
-    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: /Maschio/ }));
-    fireEvent.click(screen.getByRole('checkbox'));
     vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: false, status: 500, json: async () => ({ message: 'Server in manutenzione' }) })));
-    fireEvent.click(screen.getByRole('button', { name: 'Registrati' }));
+    submitStep2();
     expect((await screen.findByRole('alert')).textContent).toBe('Server in manutenzione');
   });
 

@@ -14,17 +14,12 @@ import i18n from '../i18n';
 import { textBelow } from '../test/minText';
 import { json } from '../test/dom';
 import { setBrowserTimeZone } from '../test/timeZone';
+import { birthFieldChange } from '../test/birthFieldSpy';
 import { describedBy } from '../test/accessibleNames';
 import { mockPointer } from '../test/pointer';
 
-// jsdom non sa scrivere un campo data «a metà» (MUI X lo sa fare solo con la tastiera vera): il campo vero resta, ma
-// ne tengo l'onChange per consegnargli un Invalid Date, come fa MUI X quando una sezione è vuota o impossibile.
-const birthFieldChange = { current: null };
-vi.mock('../components/LabeledDatePicker', async (importOriginal) => {
-  const { createElement } = await import('react');
-  const Real = (await importOriginal()).default;
-  return { default: (props) => { if (props.label === 'Data di nascita') birthFieldChange.current = props.onChange; return createElement(Real, props); } };
-});
+// Il campo data vero, con l'onChange della data di nascita a portata di test (vedi src/test/birthFieldSpy.js)
+vi.mock('../components/LabeledDatePicker', async (importOriginal) => (await import('../test/birthFieldSpy')).spyOnBirthField(await importOriginal()));
 
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
 // Lo stesso oggetto a ogni render: la pagina ricarica i dati quando `user` cambia identità.
@@ -336,9 +331,14 @@ describe('data di nascita', () => {
 
   // Il server accetta esattamente 100 anni (rifiuta birth < oggi - 100 anni): oggi di 100 anni fa passa, il giorno prima no
   describe.each(['UTC', 'Europe/Rome', 'America/Los_Angeles', 'Asia/Tokyo'])('confine dei 100 anni (%s)', (zone) => {
-    // La data si calcola dopo aver cambiato fuso: «oggi» dipende da lì
+    afterEach(() => vi.useRealTimers());
+
+    // Cambia fuso e fissa l'orologio a mezzogiorno di quel fuso (una corsa a cavallo della mezzanotte non cambia «oggi»);
+    // la data si calcola dopo, perché «oggi» dipende da lì
     const saveWith = async (dateFor) => {
       setBrowserTimeZone(zone);
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2026, 10, 15, 12, 0));
       const birth = await apriModifica();
       fireEvent.change(birth, { target: { value: format(dateFor(), 'dd/MM/yyyy') } });
       fetch.mockClear();
