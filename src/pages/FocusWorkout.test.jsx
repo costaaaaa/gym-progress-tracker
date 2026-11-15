@@ -778,6 +778,27 @@ describe('errori e premium', () => {
     expect(screen.getByRole('button', { name: 'Aggiungi esercizio Premium' })).toBeTruthy();
   });
 
+  it('l\'etichetta "Premium" sta fuori dal bottone sbiadito e resta piena, anche dopo una serie fatta', async () => {
+    await startDay('Push');
+    doSet();
+    click('Salta timer');
+    const swap = screen.getByRole('button', { name: 'Cambia esercizio Premium' });
+    expect(getComputedStyle(swap).opacity).toBe('0.45');
+    const labels = screen.getAllByText('Premium');
+    expect(labels).toHaveLength(2);
+    labels.forEach((label) => {
+      expect(swap.contains(label)).toBe(false);
+      for (let el = label; el && el !== document.body; el = el.parentElement) {
+        expect(getComputedStyle(el).opacity).toBe('1');
+      }
+    });
+  });
+
+  it('l\'etichetta è solo testo, senza lucchetto', async () => {
+    await startDay('Push');
+    expect(screen.queryByTestId('LockIcon')).toBeNull();
+  });
+
   it('con la funzione premium non c\'è nessuna etichetta "Premium"', async () => {
     responses['user/read.php'] = () => json({ rest_timer_enabled: true, features: ['focus_session_edit'] });
     await startDay('Push');
