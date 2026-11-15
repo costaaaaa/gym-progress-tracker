@@ -105,6 +105,8 @@ const groupWorkoutsByMonth = (workouts) => {
 
 const newestFirst = (a, b) => clockDate(b.date) - clockDate(a.date);
 
+const DAY_FORMAT = { weekday: 'long', day: 'numeric', month: 'long' };
+
 const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
   const { t } = useTranslation();
   const { isLoggedIn, loading: authLoading } = useAuth();
@@ -301,7 +303,6 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
     { key: 'delete', label: t('history.delete_aria'), icon: <DeleteIcon fontSize="small" />, run: (e) => handleDeleteClick(workout, e) },
   ];
 
-  const DAY_FORMAT = { weekday: 'long', day: 'numeric', month: 'long' };
   const workoutDay = (workout) => formatDate(workout.date, DAY_FORMAT);
   // Nel nome accessibile c'è anche l'anno: due allenamenti dello stesso giorno di anni diversi si distinguono.
   const rowActionName = (label, workout) => t('history.row_action_aria', { action: label, date: formatDate(workout.date, { ...DAY_FORMAT, year: 'numeric' }) });
