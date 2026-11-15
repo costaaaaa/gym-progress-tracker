@@ -18,7 +18,7 @@ const TABS = [
 const Workouts = () => {
   const { t } = useTranslation();
   const location = useLocation();
-  const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS, 'workouts');
+  const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS, { title: t('workouts.title'), description: t('workouts.meta.description') });
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>

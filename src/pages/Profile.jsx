@@ -17,7 +17,7 @@ const TABS = [
 
 const Profile = () => {
   const { t } = useTranslation();
-  const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS, 'profile');
+  const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS, { title: t('profile.title'), description: t('profile.meta.description') });
 
   return (
     <Box sx={{ width: '100%' }}>

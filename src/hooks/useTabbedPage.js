@@ -15,16 +15,16 @@ import { usePageMeta } from './usePageMeta';
  *   tenerla montata, nascosta, per non perderne lo stato.
  * - Una tab non valida nell'URL viene sostituita (replace) con quella di default.
  * - Al cambio tab la pagina torna in cima.
- * - Titolo e descrizione della pagina: `<pageKey>.title` e `<pageKey>.meta.description`,
- *   con il nome della tab attiva davanti al titolo.
+ * - `page`: `{ title, description }` già tradotti (le chiavi restano letterali nelle pagine,
+ *   così i18n:check le vede); il titolo del documento è «tab · pagina».
  */
-export function useTabbedPage(tabs, pageKey) {
+export function useTabbedPage(tabs, { title, description }) {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const currentTab = searchParams.get('tab') || tabs[0].id;
   const tabIndex = Math.max(tabs.findIndex((tab) => tab.id === currentTab), 0);
   const isValidTab = tabs.some((tab) => tab.id === currentTab);
-  usePageMeta(`${t(tabs[tabIndex].label)} · ${t(`${pageKey}.title`)}`, t(`${pageKey}.meta.description`));
+  usePageMeta(`${t(tabs[tabIndex].label)} · ${title}`, description);
   const [visitedTabs, setVisitedTabs] = useState(() => (
     Object.fromEntries(tabs.map((tab) => [tab.id, tab.id === currentTab]))
   ));

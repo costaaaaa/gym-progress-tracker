@@ -20,7 +20,7 @@ const TABS = [
 
 const Dashboard = () => {
   const { t } = useTranslation();
-  const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS, 'dashboard');
+  const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS, { title: t('dashboard.title'), description: t('dashboard.meta.description') });
 
   return (
     <Box sx={{ width: '100%' }}>
