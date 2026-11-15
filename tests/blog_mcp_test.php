@@ -41,7 +41,9 @@ function check_page($html, $lang, $canonical, array $t)
     check('indicizzabile', strpos($html, 'noindex') === false);
     check('indirizzo del connettore', strpos($html, '<code>https://liftindex.app/mcp</code>') !== false);
     check('link all\'elenco delle app ammesse', strpos($html, 'href="' . $app . 'assistenti-ai"') !== false);
-    check('link alla privacy, sezione assistenti AI', strpos($html, 'href="https://liftindex.app/privacy.html#assistenti-ai"') !== false);
+    check('link alla privacy, sezione assistenti AI, nella lingua della pagina', strpos($html, 'href="' . $app . 'privacy.html#assistenti-ai"') !== false);
+    check('piè di pagina: privacy e termini nella lingua della pagina', strpos($html, 'href="' . $app . 'privacy.html">Privacy</a>') !== false
+        && strpos($html, 'href="' . $app . ($lang === 'en' ? 'terms.html' : 'termini.html') . '"') !== false);
     check('registrazione nella lingua della pagina', strpos($html, 'href="' . $app . 'register"') !== false);
     check('JSON-LD nella lingua della pagina', strpos($html, '"inLanguage": "' . $lang . '"') !== false);
     $other = $lang === 'en' ? array($it, 'it', 'Italiano') : array($en, 'en', 'English');
@@ -75,6 +77,7 @@ check_page(render('en/mcp/index.php'), 'en', $en, array(
     'revoca dalla scheda Account' => 'you can revoke it anytime from the Account tab',
 ));
 $html = render('en/mcp/index.php');
+check('EN: niente link alle pagine legali italiane', strpos($html, 'liftindex.app/privacy.html') === false && strpos($html, 'liftindex.app/termini.html') === false);
 check('EN: niente link italiani a login e registrazione', strpos($html, 'https://liftindex.app/register"') === false && strpos($html, 'https://liftindex.app/login"') === false);
 
 echo "Sitemap\n";
