@@ -107,7 +107,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   // l'utente si ferma, perché costa più del disegno.
   const layout = useMemo(
     () => (stats ? layoutShareCard(stats, template, { hasPhoto: !!photo, photoBackground, format, preset, blocks: customBlocks || undefined, hideWeights, showBestVolume, strings: shareCardStrings() }) : null),
-    [stats, template, photo, photoBackground, format, preset, customBlocks, hideWeights, showBestVolume, t],
+    [stats, template, photo, photoBackground, format, preset, customBlocks, hideWeights, showBestVolume],
   );
   const cardText = layout ? layout.elements.filter((el) => el.type === 'text').map((el) => el.text).join(', ') : '';
 

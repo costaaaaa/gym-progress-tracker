@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format, subDays } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import {

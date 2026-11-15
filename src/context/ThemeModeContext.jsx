@@ -406,7 +406,7 @@ export const ThemeModeProvider = ({ children }) => {
         },
       }, muiLocale);
     },
-    [mode, muiLocale]
+    [mode, muiLocale, i18n]
   );
 
   return (
