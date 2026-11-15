@@ -12,12 +12,13 @@ const WorkoutPlans = lazy(() => import('./WorkoutPlans'));
 const WorkoutHistory = lazy(() => import('./WorkoutHistory'));
 
 const TABS = ['plans', 'history'];
+const TAB_LABELS = ['workouts.tab_plans', 'workouts.tab_history'];
 
 const Workouts = () => {
   const { t } = useTranslation();
-  usePageMeta(t('workouts.meta.title'), t('workouts.meta.description'));
   const location = useLocation();
   const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS);
+  usePageMeta(`${t(TAB_LABELS[tabIndex])} · ${t('workouts.title')}`, t('workouts.meta.description'));
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
@@ -29,7 +30,7 @@ const Workouts = () => {
           <Tabs
             value={tabIndex}
             onChange={handleTabChange}
-            aria-label="workout hub tabs"
+            aria-label={t('workouts.tabs_aria')}
             TabIndicatorProps={{ sx: { height: 2, bgcolor: 'text.primary' } }}
             sx={{
               minHeight: 0,

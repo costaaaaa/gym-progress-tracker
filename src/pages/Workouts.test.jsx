@@ -1,7 +1,7 @@
 // Pagina Allenamenti vista dall'utente: titolo unico sopra i tab, tab attivo in inchiostro, nessun titolo ripetuto sotto.
 // Colori del tema chiaro scritti a mano: text.primary #1a1816, text.secondary #6b6663.
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Workouts from './Workouts';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
@@ -127,5 +127,19 @@ describe('schede', () => {
       .filter((el) => fontPx(el) < 16 && !(el.textContent === 'Attiva' && fontPx(el) >= 13))
       .map((el) => `${el.textContent} (${getComputedStyle(el).fontSize})`);
     expect(piccoli).toEqual([]);
+  });
+});
+
+describe('nomi accessibili', () => {
+  it('l\'elenco dei tab ha un nome in italiano', async () => {
+    await mount();
+    expect(screen.getByRole('tablist', { name: 'Sezioni di Allenamenti' })).toBeTruthy();
+  });
+
+  it('il titolo del documento segue il tab: «tab · Allenamenti | LiftIndex»', async () => {
+    await mount();
+    expect(document.title).toBe('Le tue schede · Allenamenti | LiftIndex');
+    fireEvent.click(screen.getByRole('tab', { name: 'Cronologia' }));
+    await waitFor(() => expect(document.title).toBe('Cronologia · Allenamenti | LiftIndex'));
   });
 });

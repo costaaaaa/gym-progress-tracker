@@ -12,11 +12,12 @@ const ProfileSummary = lazy(() => import('./ProfileSummary'));
 const Account = lazy(() => import('./Account'));
 
 const TABS = ['summary', 'settings'];
+const TAB_LABELS = ['profile.tab_summary', 'profile.tab_settings'];
 
 const Profile = () => {
   const { t } = useTranslation();
-  usePageMeta(t('profile.meta.title'), t('profile.meta.description'));
   const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS);
+  usePageMeta(`${t(TAB_LABELS[tabIndex])} · ${t('profile.title')}`, t('profile.meta.description'));
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -25,7 +26,7 @@ const Profile = () => {
         <Tabs
           value={tabIndex}
           onChange={handleTabChange}
-          aria-label="profile hub tabs"
+          aria-label={t('profile.tabs_aria')}
           {...INK_TABS}
         >
           <Tab

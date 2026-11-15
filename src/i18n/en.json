@@ -207,7 +207,6 @@
   "groups_card.members_other": "{{count}} members",
   "groups_card.more": "and {{count}} more",
   "dashboard.title": "Dashboard",
-  "dashboard.meta.title": "Progress dashboard",
   "dashboard.meta.description": "Track your gym progress: charts of your loads, body stats and trends over time for every exercise.",
   "dashboard.tab.progress": "Exercises",
   "dashboard.tab.muscles": "Muscles",
@@ -927,10 +926,8 @@
   "account.delete.warning_text": "All your data, including workouts and plans, will be permanently deleted.",
   "account.delete.confirm_label": "I understand that all my data will be permanently deleted",
   "account.delete.in_progress": "Deleting...",
-  "profile.meta.title": "Profile and settings",
   "profile.meta.description": "Manage your profile, your achievements and your LiftIndex account settings.",
   "workouts.title": "Workouts",
-  "workouts.meta.title": "Workout plans",
   "workouts.meta.description": "Create and manage your gym workout plans: unlimited plans, custom exercises and a complete session history.",
   "consent.load_error": "Error loading consents",
   "consent.failed": "Operation failed",
@@ -971,5 +968,10 @@
   "level.progress_aria": "Progress towards level {{level}}",
   "profile.exercise_xp_aria": "Experience points in {{name}}",
   "profile.achievement_progress_aria": "Progress towards {{label}}",
-  "share.card_aria": "Card preview: {{content}}"
+  "share.card_aria": "Card preview: {{content}}",
+  "workouts.tabs_aria": "Workouts sections",
+  "dashboard.tabs_aria": "Dashboard sections",
+  "profile.tabs_aria": "Profile sections",
+  "admin.meta.title": "Administration",
+  "admin.meta.description": "LiftIndex administration area."
 }

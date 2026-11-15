@@ -14,11 +14,12 @@ const Muscles = lazy(() => import('./Muscles'));
 const BodyStats = lazy(() => import('./BodyStats'));
 
 const TABS = ['progress', 'muscles', 'body'];
+const TAB_LABELS = ['dashboard.tab.progress', 'dashboard.tab.muscles', 'dashboard.tab.body'];
 
 const Dashboard = () => {
   const { t } = useTranslation();
-  usePageMeta(t('dashboard.meta.title'), t('dashboard.meta.description'));
   const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS);
+  usePageMeta(`${t(TAB_LABELS[tabIndex])} · ${t('dashboard.title')}`, t('dashboard.meta.description'));
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -27,7 +28,7 @@ const Dashboard = () => {
         <Tabs
           value={tabIndex}
           onChange={handleTabChange}
-          aria-label="dashboard hub tabs"
+          aria-label={t('dashboard.tabs_aria')}
           {...INK_TABS}
         >
           <Tab

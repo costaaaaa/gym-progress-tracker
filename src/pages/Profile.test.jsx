@@ -1,7 +1,7 @@
 // Pagina Profilo vista dall'utente: titolo unico sopra i tab, tab attivo in inchiostro come in Dashboard.
 // Colori del tema chiaro scritti a mano: text.primary #1a1816, text.secondary #6b6663.
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Profile from './Profile';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
@@ -72,5 +72,19 @@ describe('shell di Profilo', () => {
       expect(style.textOverflow).not.toBe('ellipsis');
       expect(getComputedStyle(tab.querySelector('.MuiTab-iconWrapper')).display).toBe('none');
     });
+  });
+});
+
+describe('nomi accessibili', () => {
+  it('l\'elenco dei tab ha un nome in italiano', async () => {
+    await mount();
+    expect(screen.getByRole('tablist', { name: 'Sezioni del profilo' })).toBeTruthy();
+  });
+
+  it('il titolo del documento segue il tab: «tab · Profilo | LiftIndex»', async () => {
+    await mount();
+    expect(document.title).toBe('Riepilogo · Profilo | LiftIndex');
+    fireEvent.click(screen.getByRole('tab', { name: 'Impostazioni' }));
+    await waitFor(() => expect(document.title).toBe('Impostazioni · Profilo | LiftIndex'));
   });
 });
