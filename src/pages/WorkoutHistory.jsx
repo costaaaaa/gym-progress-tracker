@@ -302,7 +302,8 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
   ];
 
   const workoutDay = (workout) => formatDate(workout.date, { weekday: 'long', day: 'numeric', month: 'long' });
-  const rowActionName = (label, workout) => t('history.row_action_aria', { action: label, date: workoutDay(workout) });
+  // Nel nome accessibile c'è anche l'anno: due allenamenti dello stesso giorno di anni diversi si distinguono.
+  const rowActionName = (label, workout) => t('history.row_action_aria', { action: label, date: formatDate(workout.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) });
 
   const handleCloseEditDateDialog = () => {
     setOpenEditDateDialog(false);

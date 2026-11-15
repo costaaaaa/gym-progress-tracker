@@ -121,7 +121,7 @@ describe('azioni della riga su telefono', () => {
   it('il menu delle azioni ha il nome «Altre azioni»', async () => {
     await mount();
     fireEvent.click(await screen.findByRole('button', { name: /^Altre azioni/ }));
-    expect(screen.getByRole('menu', { name: 'Altre azioni, domenica 18 ottobre' })).toBeTruthy();
+    expect(screen.getByRole('menu', { name: 'Altre azioni, domenica 18 ottobre 2026' })).toBeTruthy();
   });
 
   it('"Elimina allenamento" dal menu apre la conferma', async () => {
@@ -333,14 +333,14 @@ describe('nomi che distinguono le righe', () => {
   it('su desktop le tre icone dicono di quale allenamento sono', async () => {
     await mount();
     ['Condividi allenamento', 'Modifica data', 'Elimina allenamento'].forEach((azione) => {
-      expect(screen.getByRole('button', { name: `${azione}, domenica 18 ottobre` })).toBeTruthy();
+      expect(screen.getByRole('button', { name: `${azione}, domenica 18 ottobre 2026` })).toBeTruthy();
     });
   });
 
   it('su telefono il pulsante «Altre azioni» dice di quale allenamento è', async () => {
     simulaTelefono();
     await mount();
-    expect(screen.getByRole('button', { name: 'Altre azioni, domenica 18 ottobre' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Altre azioni, domenica 18 ottobre 2026' })).toBeTruthy();
   });
 });
 
