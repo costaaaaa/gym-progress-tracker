@@ -41,7 +41,7 @@ import {
   Logout as LogoutIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
-import LabeledDatePicker from '../i18n/LabeledDatePicker';
+import LabeledDatePicker from '../components/LabeledDatePicker';
 import { format, parseISO, subYears, startOfToday, formatDistanceToNow } from 'date-fns';
 import { useTranslation, Trans } from 'react-i18next';
 import DateLocalization from '../i18n/DateLocalization';

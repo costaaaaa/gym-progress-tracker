@@ -19,7 +19,7 @@ import {
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
-import LabeledDatePicker from '../i18n/LabeledDatePicker';
+import LabeledDatePicker from '../components/LabeledDatePicker';
 import { format, subYears, startOfToday } from 'date-fns';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';

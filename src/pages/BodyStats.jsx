@@ -26,7 +26,7 @@ import {
   DialogActions,
 } from '@mui/material';
 import { API_BASE_URL } from '../config';
-import LabeledDatePicker from '../i18n/LabeledDatePicker';
+import LabeledDatePicker from '../components/LabeledDatePicker';
 import { useTranslation } from 'react-i18next';
 import { format, isValid } from 'date-fns';
 import i18n from '../i18n';
