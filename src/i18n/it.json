@@ -966,5 +966,9 @@
   "focus.progress_aria": "Avanzamento dell'allenamento",
   "focus.rest_progress_aria": "Avanzamento del recupero",
   "account.password.show_current": "Mostra o nascondi la password attuale",
-  "account.password.show_new": "Mostra o nascondi la nuova password"
+  "account.password.show_new": "Mostra o nascondi la nuova password",
+  "common.loading": "Caricamento",
+  "level.progress_aria": "Avanzamento verso il livello {{level}}",
+  "profile.exercise_xp_aria": "Punti esperienza in {{name}}",
+  "profile.achievement_progress_aria": "Avanzamento verso {{label}}"
 }

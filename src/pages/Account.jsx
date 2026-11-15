@@ -820,7 +820,7 @@ const Account = ({ isEmbedded = false }) => {
           </Box>
           <Button
             variant="outlined"
-            startIcon={exportLoading ? <CircularProgress size={16} /> : <DownloadIcon />}
+            startIcon={exportLoading ? <CircularProgress aria-hidden size={16} /> : <DownloadIcon />}
             onClick={handleDownloadData}
             disabled={exportLoading}
             sx={NEUTRAL_OUTLINED}
@@ -915,7 +915,7 @@ const Account = ({ isEmbedded = false }) => {
           </DialogContentText>
           <Button
             variant="outlined"
-            startIcon={exportLoading ? <CircularProgress size={16} /> : <DownloadIcon />}
+            startIcon={exportLoading ? <CircularProgress aria-hidden size={16} /> : <DownloadIcon />}
             onClick={handleDownloadData}
             disabled={exportLoading || consentBusy}
             sx={{ fontSize: 16 }}

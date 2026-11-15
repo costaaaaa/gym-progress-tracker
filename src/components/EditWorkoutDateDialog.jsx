@@ -188,7 +188,7 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
           onClick={handleSubmit} 
           variant="contained" 
           disabled={loading || !newDate}
-          startIcon={loading ? <CircularProgress size={20} /> : null}
+          startIcon={loading ? <CircularProgress aria-hidden size={20} /> : null}
         >
           {loading ? t('history.date.saving') : t('common.save')}
         </Button>

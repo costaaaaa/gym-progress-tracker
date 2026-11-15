@@ -316,7 +316,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
                 />
                 <Button
                   variant="outlined"
-                  startIcon={creating ? <CircularProgress size={16} /> : <AddIcon />}
+                  startIcon={creating ? <CircularProgress aria-hidden size={16} /> : <AddIcon />}
                   onClick={handleCreate}
                   disabled={!canCreate}
                 >

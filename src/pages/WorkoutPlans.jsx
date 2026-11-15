@@ -1087,7 +1087,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
             onClick={handleEditPlan} 
             variant="contained" 
             disabled={!editedPlanValues.name || updatePlanLoading}
-            startIcon={updatePlanLoading ? <CircularProgress size={20} /> : null}
+            startIcon={updatePlanLoading ? <CircularProgress aria-hidden size={20} /> : null}
           >
             {updatePlanLoading ? t('plans.saving') : t('common.save')}
           </Button>
@@ -1135,7 +1135,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
             color="error" 
             variant="contained"
             disabled={deletePlanLoading}
-            startIcon={deletePlanLoading ? <CircularProgress size={20} /> : <DeleteIcon />}
+            startIcon={deletePlanLoading ? <CircularProgress aria-hidden size={20} /> : <DeleteIcon />}
           >
             {deletePlanLoading ? t('plans.deleting') : t('common.delete')}
           </Button>
@@ -1172,7 +1172,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
             color="error" 
             variant="contained"
             disabled={deleteExerciseLoading}
-            startIcon={deleteExerciseLoading ? <CircularProgress size={20} /> : <DeleteIcon />}
+            startIcon={deleteExerciseLoading ? <CircularProgress aria-hidden size={20} /> : <DeleteIcon />}
           >
             {deleteExerciseLoading ? t('plans.deleting') : t('common.delete')}
           </Button>

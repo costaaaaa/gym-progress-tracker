@@ -250,7 +250,7 @@ export default function SummaryPhase({
               sx={{ mb: 3, '& .MuiOutlinedInput-root': { color: colors.text, '& fieldset': { borderColor: colors.fieldBorder }, '&:hover fieldset': { borderColor: colors.primary }, '&.Mui-focused fieldset': { borderColor: colors.primary } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.primaryText } }} />
 
             <Button variant="contained" fullWidth size="large"
-              startIcon={saving ? <CircularProgress size={20} sx={{ color: colors.primaryContrast }} /> : <SaveIcon />}
+              startIcon={saving ? <CircularProgress aria-hidden size={20} sx={{ color: colors.primaryContrast }} /> : <SaveIcon />}
               onClick={onSave} disabled={saving || totalCompletedSets === 0}
               sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, bgcolor: colors.primary, color: colors.primaryContrast, borderRadius: radius.lg,
                 '&:hover': { bgcolor: colors.primaryDark },

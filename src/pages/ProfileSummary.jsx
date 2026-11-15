@@ -58,7 +58,7 @@ const AchievementCard = ({ achievement, isNext, progress }) => {
       )}
       {isNext && (
         <Box sx={{ width: '100%', mt: 'auto', pt: 1 }}>
-          <LinearProgress variant="determinate" value={progress.pct} sx={{ ...solidBar(6, 'text.primary'), mb: 0.75 }} />
+          <LinearProgress variant="determinate" value={progress.pct} aria-label={t('profile.achievement_progress_aria', { label })} sx={{ ...solidBar(6, 'text.primary'), mb: 0.75 }} />
           <Typography sx={{ fontSize: 16, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>{progress.label}</Typography>
         </Box>
       )}
@@ -137,7 +137,7 @@ const ProfileSummary = () => {
               {t('profile.xp_to_next', { xp: xp_for_next_level, level: level + 1 })}
             </Typography>
           </Box>
-          <LinearProgress variant="determinate" value={progress} sx={solidBar(9)} />
+          <LinearProgress variant="determinate" value={progress} aria-label={t('level.progress_aria', { level: level + 1 })} sx={solidBar(9)} />
         </Box>
 
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', justifyContent: 'start', columnGap: { xs: 2, sm: 3, md: 5 } }}>
@@ -178,7 +178,7 @@ const ProfileSummary = () => {
                       {t('profile.exercise_level', { level: ex.level })}
                     </Box>
                   </Box>
-                  <LinearProgress variant="determinate" value={exProgressPct(ex.xp)} sx={{ ...solidBar(6), mb: 0.75 }} />
+                  <LinearProgress variant="determinate" value={exProgressPct(ex.xp)} aria-label={t('profile.exercise_xp_aria', { name: ex.name })} sx={{ ...solidBar(6), mb: 0.75 }} />
                   <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{t('profile.xp_current', { xp: ex.xp })}</Typography>
                 </Card>
               </Grid>

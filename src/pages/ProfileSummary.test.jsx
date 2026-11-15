@@ -47,6 +47,18 @@ const mount = async () => {
 };
 const style = (el) => getComputedStyle(el);
 
+describe('nomi accessibili', () => {
+  it('ogni barra di avanzamento dice di cosa è l\'avanzamento', async () => {
+    await mount();
+    const names = screen.getAllByRole('progressbar').map((bar) => bar.getAttribute('aria-label'));
+    expect(names.slice(0, 3)).toEqual([
+      'Avanzamento verso il livello 8', 'Punti esperienza in Panca piana', 'Punti esperienza in Rematore con bilanciere',
+    ]);
+    expect(names.slice(3).every((name) => name.startsWith('Avanzamento verso '))).toBe(true);
+    expect(names.slice(3).length).toBeGreaterThan(0);
+  });
+});
+
 describe('livello', () => {
   it('niente stella rossa decorativa accanto al livello', async () => {
     await mount();

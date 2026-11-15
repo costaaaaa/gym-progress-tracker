@@ -966,5 +966,9 @@
   "focus.progress_aria": "Workout progress",
   "focus.rest_progress_aria": "Rest progress",
   "account.password.show_current": "Show or hide the current password",
-  "account.password.show_new": "Show or hide the new password"
+  "account.password.show_new": "Show or hide the new password",
+  "common.loading": "Loading",
+  "level.progress_aria": "Progress towards level {{level}}",
+  "profile.exercise_xp_aria": "Experience points in {{name}}",
+  "profile.achievement_progress_aria": "Progress towards {{label}}"
 }
