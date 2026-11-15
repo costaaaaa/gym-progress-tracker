@@ -4,21 +4,21 @@ import { Box, Tabs, Tab, CircularProgress, Container, Typography } from '@mui/ma
 import { useLocation } from 'react-router-dom';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import { usePageMeta } from '../hooks/usePageMeta';
 import { useTabbedPage } from '../hooks/useTabbedPage';
 
 // Lazy loading dei componenti tab
 const WorkoutPlans = lazy(() => import('./WorkoutPlans'));
 const WorkoutHistory = lazy(() => import('./WorkoutHistory'));
 
-const TABS = ['plans', 'history'];
-const TAB_LABELS = ['workouts.tab_plans', 'workouts.tab_history'];
+const TABS = [
+  { id: 'plans', label: 'workouts.tab_plans' },
+  { id: 'history', label: 'workouts.tab_history' },
+];
 
 const Workouts = () => {
   const { t } = useTranslation();
   const location = useLocation();
-  const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS);
-  usePageMeta(`${t(TAB_LABELS[tabIndex])} · ${t('workouts.title')}`, t('workouts.meta.description'));
+  const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS, 'workouts');
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
