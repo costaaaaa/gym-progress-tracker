@@ -44,11 +44,11 @@ function build(tl, q) {
 
 const SceneProgress = () => {
   const { t } = useTranslation();
-  const { ref, live } = useScrollScene(build);
+  const { ref, live, stageRef, textRef } = useScrollScene(build);
 
   return (
     <Box ref={ref} component="section" aria-labelledby="scene-progress-title" sx={sceneSx(live, 1.25, 1.25)}>
-      <Box sx={stageSx(live)}>
+      <Box ref={stageRef} sx={stageSx(live)}>
         <Box
           sx={{
             width: '100%',
@@ -58,7 +58,7 @@ const SceneProgress = () => {
             alignItems: 'center',
           }}
         >
-          <Box>
+          <Box ref={textRef}>
             <Typography id="scene-progress-title" variant="h2" sx={{ fontSize: { xs: '1.75rem', md: '2.75rem' }, lineHeight: 1.1, mb: 2 }}>
               {t('home.landing.progress.title')}
             </Typography>

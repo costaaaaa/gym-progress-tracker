@@ -22,12 +22,31 @@ const TALL_QUERY = `(min-height: ${SCENE_MIN_HEIGHT}px)`;
 
 const tallScreen = () => typeof window !== 'undefined' && window.matchMedia(TALL_QUERY).matches;
 
+// Spaziatura del testo WCAG 1.4.12 (interlinea 1,5, spazio fra i paragrafi, lettere e parole): si applica a pagina
+// caricata e il testo può non entrare più nel palco. Un pixel di scarto è arrotondamento, non testo tagliato.
+const CLIP_TOLERANCE = 1;
+export const textIsClipped = (text, stage) => text.top < stage.top - CLIP_TOLERANCE || text.bottom > stage.bottom + CLIP_TOLERANCE;
+
 // Scena a scorrimento: la sezione è alta (hold + 1) schermate, il palco `sticky` resta fermo per `hold`
 // schermate e una timeline GSAP avanza con lo scroll nativo (nessuna cattura della rotella).
 // Con movimento ridotto o schermo basso `live` è false: il componente mostra la composizione finita, senza timeline.
+// `stageRef` va sul palco e `textRef` sulla colonna del testo (non su telefono e grafico, che sono decorativi):
+// se il testo esce dal palco la scena passa alla composizione statica e ci resta fino al ricaricamento.
 export function useScrollScene(build) {
   const ref = useRef(null);
-  const [live] = useState(() => !reducedMotion() && tallScreen());
+  const stageRef = useRef(null);
+  const textRef = useRef(null);
+  const [live, setLive] = useState(() => !reducedMotion() && tallScreen());
+
+  useLayoutEffect(() => {
+    if (!live || !stageRef.current || !textRef.current || typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(() => {
+      if (textIsClipped(textRef.current.getBoundingClientRect(), stageRef.current.getBoundingClientRect())) setLive(false);
+    });
+    observer.observe(textRef.current);
+    observer.observe(stageRef.current);
+    return () => observer.disconnect();
+  }, [live]);
 
   useLayoutEffect(() => {
     if (!live || !ref.current) return undefined;
@@ -49,7 +68,7 @@ export function useScrollScene(build) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [live]);
 
-  return { ref, live };
+  return { ref, live, stageRef, textRef };
 }
 
 // Stile comune: sezione alta (hold + 1) schermate, palco sticky alto quanto lo schermo sotto la Navbar.
@@ -65,8 +84,9 @@ export const stageSx = (live) =>
         top: NAVBAR_VAR,
         height: `calc(100svh - ${NAVBAR_VAR})`,
         display: 'flex',
-        // "safe": se il contenuto è più alto del palco (spaziatura del testo WCAG 1.4.12) parte dall'alto invece di uscire da sopra e da sotto
-        alignItems: 'safe center',
+        alignItems: 'center',
+        // "safe": se il contenuto è più alto del palco parte dall'alto invece di uscire da sopra e da sotto; dove non c'è (Safari < 17.6) resta "center"
+        '@supports (align-items: safe center)': { alignItems: 'safe center' },
         overflow: 'hidden',
       }
     : { py: { xs: 6, md: 10 } };

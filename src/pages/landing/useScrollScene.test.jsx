@@ -1,7 +1,7 @@
 // La scena a scorrimento resta fissa solo se lo schermo è abbastanza alto: a 320 x 256 (zoom 400%) e su
 // finestre basse titolo, passi e card verrebbero tagliati dal palco (1.4.4, 1.4.10).
-import { describe, it, expect, afterEach } from 'vitest';
-import { render } from '@testing-library/react';
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
+import { render, act } from '@testing-library/react';
 import { useScrollScene, stageSx } from './useScrollScene';
 
 const mockScreen = ({ reduced, tall }) => {
@@ -14,8 +14,15 @@ const mockScreen = ({ reduced, tall }) => {
 let live;
 const build = () => {};
 const Probe = () => {
-  ({ live } = useScrollScene(build));
-  return null;
+  const scene = useScrollScene(build);
+  live = scene.live;
+  return (
+    <div ref={scene.ref}>
+      <div ref={scene.stageRef} data-testid="stage">
+        <div ref={scene.textRef} data-testid="text" />
+      </div>
+    </div>
+  );
 };
 
 afterEach(() => { live = undefined; });
@@ -46,8 +53,78 @@ describe('scena a scorrimento', () => {
   });
 
   // 1.4.12: con la spaziatura del testo il contenuto supera il palco; centrato "e basta" esce sia sopra sia sotto
-  // e il titolo viene tagliato. Con "safe" in quel caso parte dall'alto; se il contenuto sta, resta centrato.
-  it('il contenuto del palco si centra solo se ci sta: altrimenti parte dall\'alto e il titolo non si taglia', () => {
-    expect(stageSx(true).alignItems).toBe('safe center');
+  // e il titolo viene tagliato. Con "safe" in quel caso parte dall'alto; dove "safe" non c'è resta "center".
+  it('il contenuto del palco è centrato, e "safe center" solo dove il browser lo capisce', () => {
+    const stage = stageSx(true);
+    expect(stage.alignItems).toBe('center');
+    expect(stage['@supports (align-items: safe center)']).toEqual({ alignItems: 'safe center' });
+  });
+});
+
+// 1.4.12: la spaziatura del testo si applica a pagina caricata. Se il testo della scena non entra nel palco,
+// la scena passa alla composizione statica e ci resta (nessun andirivieni).
+describe('scena a scorrimento: testo che non entra nel palco', () => {
+  let observers;
+  let rects;
+
+  beforeEach(() => {
+    observers = [];
+    rects = { stage: { top: 64, bottom: 640 }, text: { top: 100, bottom: 500 } };
+    window.ResizeObserver = class {
+      constructor(callback) { this.callback = callback; observers.push(this); }
+      observe() {}
+      disconnect() {}
+    };
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function rect() {
+      return rects[this.dataset.testid] ?? { top: 0, bottom: 0, height: 0 };
+    });
+    mockScreen({ reduced: false, tall: true });
+  });
+
+  afterEach(() => { vi.restoreAllMocks(); delete window.ResizeObserver; });
+
+  const resize = () => act(() => { observers.forEach((o) => o.callback([])); });
+
+  it('il testo entra: la scena resta animata', () => {
+    render(<Probe />);
+    resize();
+    expect(live).toBe(true);
+  });
+
+  it('il testo esce dal palco in basso: la scena diventa statica', () => {
+    render(<Probe />);
+    rects.text = { top: 100, bottom: 700 };
+    resize();
+    expect(live).toBe(false);
+  });
+
+  it('il testo esce dal palco in alto: la scena diventa statica', () => {
+    render(<Probe />);
+    rects.text = { top: 20, bottom: 500 };
+    resize();
+    expect(live).toBe(false);
+  });
+
+  it('il testo già troppo alto al montaggio: statica subito', () => {
+    rects.text = { top: 100, bottom: 700 };
+    render(<Probe />);
+    resize();
+    expect(live).toBe(false);
+  });
+
+  it('una volta statica non torna animata, anche se il testo poi rientra', () => {
+    render(<Probe />);
+    rects.text = { top: 100, bottom: 700 };
+    resize();
+    rects.text = { top: 100, bottom: 500 };
+    resize();
+    expect(live).toBe(false);
+  });
+
+  it('un pixel di scarto per arrotondamento non conta', () => {
+    render(<Probe />);
+    rects.text = { top: 100, bottom: 640.6 };
+    resize();
+    expect(live).toBe(true);
   });
 });

@@ -242,11 +242,11 @@ const Step = ({ id, t, live }) => (
 
 const SceneFocus = () => {
   const { t } = useTranslation();
-  const { ref, live } = useScrollScene(build);
+  const { ref, live, stageRef, textRef } = useScrollScene(build);
 
   return (
     <Box ref={ref} component="section" aria-labelledby="scene-focus-title" sx={{ ...sceneSx(live, 1.5, 1.5), ...FIELD }}>
-      <Box sx={stageSx(live)}>
+      <Box ref={stageRef} sx={stageSx(live)}>
         <Box
           sx={{
             width: '100%',
@@ -258,7 +258,7 @@ const SceneFocus = () => {
             ...(live && { height: { xs: '100%', md: 'auto' }, gridTemplateRows: { xs: 'auto minmax(0, 1fr)', md: 'none' }, py: { xs: 2, md: 0 } }),
           }}
         >
-          <Box sx={{ width: '100%', color: 'scene.text' }}>
+          <Box ref={textRef} sx={{ width: '100%', color: 'scene.text' }}>
             <Typography id="scene-focus-title" variant="h2" sx={{ fontSize: { xs: '1.75rem', md: '2.75rem' }, lineHeight: 1.1, mb: { xs: 2, md: 4 } }}>
               {t('home.landing.focus.title')}
             </Typography>
