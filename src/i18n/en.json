@@ -970,5 +970,6 @@
   "common.loading": "Loading",
   "level.progress_aria": "Progress towards level {{level}}",
   "profile.exercise_xp_aria": "Experience points in {{name}}",
-  "profile.achievement_progress_aria": "Progress towards {{label}}"
+  "profile.achievement_progress_aria": "Progress towards {{label}}",
+  "share.card_aria": "Card preview: {{content}}"
 }
