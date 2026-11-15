@@ -19,7 +19,7 @@ import {
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import LabeledDatePicker from '../i18n/LabeledDatePicker';
 import { format, subYears, startOfToday } from 'date-fns';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
@@ -332,7 +332,7 @@ const Register = () => {
             <Typography variant="h2" sx={{ fontSize: '1.25rem', mt: 1, mb: 1 }}>{t('register.profile_title')}</Typography>
             <Typography sx={{ mb: 1 }}>{t('register.profile_text')}</Typography>
             <DateLocalization>
-              <DatePicker
+              <LabeledDatePicker
                 label={t('register.birth_date')}
                 value={birthDate}
                 onChange={(newValue) => { setBirthDate(newValue); clearError('birthDate'); }}
@@ -367,7 +367,7 @@ const Register = () => {
                 </Select>
                 {fieldErrors.gender && <FormHelperText id="gender-error">{fieldErrors.gender}</FormHelperText>}
               </FormControl>
-              <DatePicker
+              <LabeledDatePicker
                 label={t('register.training_start')}
                 value={trainingStartDate}
                 onChange={(newValue) => setTrainingStartDate(newValue)}

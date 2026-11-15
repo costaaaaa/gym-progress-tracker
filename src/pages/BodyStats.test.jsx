@@ -516,6 +516,12 @@ describe('nuova misura: errori dei valori (WCAG 3.3.1, 4.1.3)', () => {
     expect(field('Vita (cm)').getAttribute('aria-invalid')).not.toBe('true');
   });
 
+  // 2.5.3: su telefono il campo data apre un dialogo; il suo nome contiene l'etichetta visibile
+  it('il campo data ha un nome che contiene «Data»', async () => {
+    await open();
+    expect(within(screen.getByRole('dialog')).getByRole('textbox', { name: /^Data\b/ })).toBeTruthy();
+  });
+
   it('riaprendo il dialogo gli errori sono spariti', async () => {
     await open();
     type('Peso (kg)', '600');

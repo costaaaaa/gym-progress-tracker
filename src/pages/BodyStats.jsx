@@ -26,7 +26,7 @@ import {
   DialogActions,
 } from '@mui/material';
 import { API_BASE_URL } from '../config';
-import { DatePicker } from '@mui/x-date-pickers';
+import LabeledDatePicker from '../i18n/LabeledDatePicker';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import i18n from '../i18n';
@@ -539,7 +539,7 @@ const BodyStats = ({ isEmbedded = false }) => {
         <DialogTitle sx={{ fontWeight: 700 }}>{t('body.dialog_title')}</DialogTitle>
         <DialogContent dividers>
           <DateLocalization>
-            <DatePicker
+            <LabeledDatePicker
               label={t('body.field.date')}
               value={formData.date}
               onChange={handleDateChange}

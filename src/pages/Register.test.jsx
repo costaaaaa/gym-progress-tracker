@@ -196,3 +196,16 @@ describe('errori annunciati e focus sul primo campo sbagliato (WCAG 3.3.1, 4.1.3
     expect(describedBy(screen.getByRole('checkbox'))).toBeUndefined();
   });
 });
+
+// 2.5.3 e 4.1.2: su telefono (puntatore non preciso, e in jsdom di default) il campo data è di sola lettura e apre un
+// dialogo; il suo nome accessibile deve contenere l'etichetta visibile, non sostituirla con un testo generico.
+describe('campi data su telefono: il nome contiene l\'etichetta visibile', () => {
+  it('data di nascita e mese di inizio allenamento', async () => {
+    renderRegister();
+    fillStep1();
+    fireEvent.click(screen.getByRole('button', { name: 'Avanti' }));
+    await screen.findByText('Il tuo profilo');
+    expect(screen.getByRole('textbox', { name: /^Data di nascita/ })).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: /^Mese inizio allenamento/ })).toBeTruthy();
+  });
+});
