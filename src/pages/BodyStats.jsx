@@ -338,13 +338,11 @@ const BodyStats = ({ isEmbedded = false }) => {
     Math.max(today, chartData.at(-1)?.day ?? today),
   ];
 
-  const weightPoints = chartData
-    .filter(d => d.weight !== null && d.weight !== undefined)
-    .map(d => ({ x: d.day, value: d.weight }));
-  const weightRows = chartData
-    .filter(d => d.weight !== null && d.weight !== undefined)
-    .map(d => [formatDate(d.date), `${formatNumber(d.weight, { maximumFractionDigits: 2 })} kg`]);
+  const weighed = chartData.filter(d => d.weight !== null && d.weight !== undefined);
+  const weightPoints = weighed.map(d => ({ x: d.day, value: d.weight }));
+  const weightRows = weighed.map(d => [formatDate(d.date), `${formatNumber(d.weight, { maximumFractionDigits: 2 })} kg`]);
   const lastWeight = lastValueOf(chartData, 'weight');
+  const weightLabel = lastWeight !== null ? `${lastWeight} kg` : '—';
   const weightDelta = periodWeightDelta(periodRows);
   const trend = weightTrend(weightDelta);
   const deltaText = trend === null ? undefined
@@ -403,10 +401,10 @@ const BodyStats = ({ isEmbedded = false }) => {
                   points={weightPoints}
                   domain={chartDomain}
                   color="primary.main"
-                  valueLabel={lastWeight !== null ? `${lastWeight} kg` : '—'}
+                  valueLabel={weightLabel}
                   trend={trend}
                   deltaText={deltaText}
-                  ariaLabel={t('body.weight_chart_aria', { title: t('body.weight_trend'), value: lastWeight !== null ? `${lastWeight} kg` : '—' })}
+                  ariaLabel={t('body.weight_chart_aria', { title: t('body.weight_trend'), value: weightLabel })}
                   table={{ head: [t('body.col.date'), t('body.col.weight')], rows: weightRows }}
                 />
               </Grid>

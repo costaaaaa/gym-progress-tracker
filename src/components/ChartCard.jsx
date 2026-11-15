@@ -90,8 +90,8 @@ const ChartCard = ({ title, points, domain, color = 'primary.main', valueLabel, 
             <TableRow>{table.head.map((label) => <TableCell key={label}>{label}</TableCell>)}</TableRow>
           </TableHead>
           <TableBody>
-            {table.rows.map((cells) => (
-              <TableRow key={cells[0]}>{cells.map((cell, i) => <TableCell key={table.head[i]}>{cell}</TableCell>)}</TableRow>
+            {table.rows.map((cells, row) => (
+              <TableRow key={row}>{cells.map((cell, i) => <TableCell key={table.head[i]}>{cell}</TableCell>)}</TableRow>
             ))}
           </TableBody>
         </Table>
