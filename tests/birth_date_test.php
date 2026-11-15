@@ -22,11 +22,37 @@ function check($desc, $cond)
     }
 }
 
+// Senza argomento il controllo sul fuso del server si salta (tests/birth_date.sh lo passa).
 $server_tz = $argv[1] ?? date_default_timezone_get();
-check("il fuso di PHP è $server_tz", date_default_timezone_get() === $server_tz);
+if (isset($argv[1])) {
+    check("il fuso di PHP è $server_tz", date_default_timezone_get() === $server_tz);
+}
 
 $invalid = t_server('birth.invalid');
 $young = t_server('birth.too_young');
+
+// Data di $n anni prima di $today (DateTime), calcolata a mano senza modify() sugli anni. Un 29 febbraio
+// in un anno non bisestile diventa 28 febbraio.
+function years_ago_date($today, $n)
+{
+    $year = (int) $today->format('Y') - $n;
+    $md = $today->format('m-d');
+    if ($md === '02-29' && !checkdate(2, 29, $year)) {
+        $md = '02-28';
+    }
+    return sprintf('%04d-%s', $year, $md);
+}
+
+$day = function ($date, $delta) {
+    return (new DateTime($date))->modify($delta . ' day')->format('Y-m-d');
+};
+
+echo "\nyears_ago_date con oggi 2028-02-29\n";
+$leap_day = new DateTime('2028-02-29');
+check('14 anni: 2014-02-28', years_ago_date($leap_day, 14) === '2014-02-28');
+check('13 anni: 2015-02-28', years_ago_date($leap_day, 13) === '2015-02-28');
+check('100 anni: 1928-02-29', years_ago_date($leap_day, 100) === '1928-02-29');
+check('30 anni: 1998-02-28', years_ago_date($leap_day, 30) === '1998-02-28');
 
 foreach (array('UTC', 'Europe/Rome', 'America/Los_Angeles', 'Asia/Tokyo', 'Pacific/Kiritimati', 'Pacific/Pago_Pago') as $user_tz) {
     $_SERVER['HTTP_X_TIMEZONE'] = $user_tz;
@@ -34,10 +60,7 @@ foreach (array('UTC', 'Europe/Rome', 'America/Los_Angeles', 'Asia/Tokyo', 'Pacif
     $today = user_today();
     // Date attese calcolate a mano dal giorno dell'utente, senza passare da modify() sugli anni.
     $years_ago = function ($n) use ($today) {
-        return sprintf('%04d-%s', (int) $today->format('Y') - $n, $today->format('m-d'));
-    };
-    $day = function ($date, $delta) {
-        return (new DateTime($date))->modify($delta . ' day')->format('Y-m-d');
+        return years_ago_date($today, $n);
     };
     $tomorrow = (new DateTime((new DateTime('now', new DateTimeZone($user_tz)))->format('Y-m-d')))->modify('+1 day')->format('Y-m-d');
     $hundred = $years_ago(100);
