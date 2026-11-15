@@ -49,7 +49,7 @@ import { focusedElement } from '../utils/focus';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import { radius } from '../theme/radius';
-import { intlLocale, formatDate, formatClockTime } from '../i18n/format';
+import { intlLocale, formatDate, formatClockTime, setText } from '../i18n/format';
 import { clockDate, clockDay } from '../utils/calendarDay';
 import TimeZoneBadge from '../components/TimeZoneBadge';
 import { muscleLabel, techniqueLabel } from '../i18n/labels';
@@ -399,7 +399,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                         {set.is_warmup && <WarmupBadge />}
                       </Box>
                       <Box sx={{ textAlign: 'right' }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{set.weight || 0} kg × {set.reps}</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{setText(set.weight, set.reps)}</Typography>
                         {set.intensity_technique && (
                           <Typography variant="caption" color="text.secondary" display="block">{techniqueLabel(set.intensity_technique)}</Typography>
                         )}

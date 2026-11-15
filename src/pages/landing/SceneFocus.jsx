@@ -1,6 +1,6 @@
 import { Box, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { formatNumber } from '../../i18n/format';
+import { setText, weightText } from '../../i18n/format';
 import { TABULAR, TITLE_FONT_FAMILY } from '../../utils/fonts';
 import { sceneSx, stageSx, useScrollScene } from './useScrollScene';
 import { radius } from '../../theme/radius';
@@ -105,7 +105,7 @@ const WorkScreen = ({ t }) => (
       ))}
     </Box>
     <Box sx={{ display: 'flex', gap: 1.25 }}>
-      <Value label={t('home.landing.focus.weight')} value={`${formatNumber(72.5)} kg`} />
+      <Value label={t('home.landing.focus.weight')} value={weightText(72.5)} />
       <Value label={t('home.landing.focus.reps')} value="8" />
     </Box>
     {/* Parte elastica: su un telefono basso mostra meno righe, il bottone resta in fondo.
@@ -115,7 +115,7 @@ const WorkScreen = ({ t }) => (
       {[1, 2, 3].map((n) => (
         <Box key={n} data-new-set={n === 3 ? '' : undefined} sx={{ display: 'flex', justifyContent: 'space-between', py: 0.75 }}>
           <Typography sx={{ fontSize: 16 }}>{t('focus.set_n', { n })}</Typography>
-          <Typography sx={{ ...TABULAR, fontSize: 16, fontWeight: 700 }}>{`${formatNumber(72.5)} kg × 8`}</Typography>
+          <Typography sx={{ ...TABULAR, fontSize: 16, fontWeight: 700 }}>{setText(72.5, 8)}</Typography>
         </Box>
       ))}
     </Box>

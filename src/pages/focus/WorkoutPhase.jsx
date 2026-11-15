@@ -14,6 +14,7 @@ import ElapsedClock from './ElapsedClock';
 import QuitDialog from './QuitDialog';
 import { slotLabel } from './slotLabel';
 import { MAX_WEIGHT, isValidWeight, isValidReps, plannedSetAt, slotTarget, lastSessionSets, setStatus, setSlot } from '../../utils/focusSession';
+import { intlLocale, setText } from '../../i18n/format';
 import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, muscleLabel, techniqueLabel } from '../../i18n/labels';
 import { radius } from '../../theme/radius';
 import PremiumButton from './PremiumButton';
@@ -86,7 +87,7 @@ export default function WorkoutPhase({
           </Typography>
 
           {(() => {
-            const lastSets = lastSessionSets(lastSession);
+            const lastSets = lastSessionSets(lastSession, intlLocale());
             if (lastSets.length === 0) return null;
             return (
               <Box sx={{
@@ -107,7 +108,7 @@ export default function WorkoutPhase({
                           px: 1, py: 0.5, borderRadius: '6px', bgcolor: colors.bgCard,
                           border: `1px solid ${isCurrent ? colors.text : colors.border}`,
                         }}>
-                          <Typography variant="body2" sx={{ color: isCurrent ? colors.text : colors.textSecondary, fontWeight: isCurrent ? 700 : 600, lineHeight: 1.3 }}>
+                          <Typography variant="body2" sx={{ color: isCurrent ? colors.text : colors.textSecondary, fontWeight: isCurrent ? 700 : 600, lineHeight: 1.3, fontVariantNumeric: 'tabular-nums' }}>
                             {set.label}
                           </Typography>
                           {set.technique && (
@@ -222,7 +223,7 @@ export default function WorkoutPhase({
                     {slotLabel(t, setSlot(currentExercise, set.setNumber - 1), 'name')}
                   </Typography>
                   <Box sx={{ textAlign: 'right' }}>
-                    <Typography variant="body2" sx={{ color: colors.text, fontWeight: 600 }}>{set.weight} kg × {set.reps}</Typography>
+                    <Typography variant="body2" sx={{ color: colors.text, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{setText(set.weight, set.reps)}</Typography>
                     {set.intensity_technique && (
                       <Typography variant="caption" sx={{ color: colors.textSecondary, display: 'block' }}>{techniqueLabel(set.intensity_technique)}</Typography>
                     )}

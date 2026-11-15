@@ -33,7 +33,7 @@ describe('lastSessionSets: il riscaldamento non è "ultima volta" (#66)', () => 
         { weight: 80, reps: 5, intensity_technique: '' },
       ],
     });
-    expect(chips).toEqual([{ label: '80kg×5', technique: '' }]);
+    expect(chips).toEqual([{ label: '80\u00a0kg\u00a0×\u00a05', technique: '' }]);
   });
 
   it('senza sessione precedente ritorna un elenco vuoto', () => {

@@ -31,7 +31,7 @@ import { useTranslation } from 'react-i18next';
 import { format, isValid } from 'date-fns';
 import i18n from '../i18n';
 import DateLocalization from '../i18n/DateLocalization';
-import { formatDate, formatNumber } from '../i18n/format';
+import { formatDate, weightText } from '../i18n/format';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import FavoriteIcon from '@mui/icons-material/Favorite';
@@ -66,7 +66,7 @@ const StatValue = ({ row, field }) => {
   if (!row[field]) return '-';
   return (
     <>
-      {row[field]}
+      {field === 'weight' ? weightText(row[field], { unit: false }) : row[field]}
       {isFromHealth(row, field) && <HealthMark />}
     </>
   );
@@ -156,7 +156,7 @@ const PeriodChips = ({ value, onChange }) => {
 };
 
 const headCellSx = { fontWeight: 600, fontSize: 16, color: 'text.secondary' };
-const bodyCellSx = { fontSize: 16 };
+const bodyCellSx = { fontSize: 16, fontVariantNumeric: 'tabular-nums' };
 
 // Storico sul telefono: data e peso sulla prima linea, le altre misure in grigio sulla seconda
 const HistoryList = ({ rows, empty, onDelete }) => {
@@ -174,7 +174,7 @@ const HistoryList = ({ rows, empty, onDelete }) => {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 1 }}>
                 <Typography sx={{ fontSize: 16 }}>{formatDate(row.date)}</Typography>
                 <Typography sx={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
-                  {row.weight ? <><StatValue row={row} field="weight" /> kg</> : '-'}
+                  {row.weight ? <><StatValue row={row} field="weight" />{'\u00a0'}kg</> : '-'}
                 </Typography>
               </Box>
               {others.length > 0 && (
@@ -379,14 +379,14 @@ const BodyStats = ({ isEmbedded = false }) => {
 
   const weighed = chartData.filter(d => d.weight !== null && d.weight !== undefined);
   const weightPoints = weighed.map(d => ({ x: d.day, value: d.weight }));
-  const weightRows = weighed.map(d => [formatDate(d.date), `${formatNumber(d.weight, { maximumFractionDigits: 2 })} kg`]);
+  const weightRows = weighed.map(d => [formatDate(d.date), weightText(d.weight)]);
   const lastWeight = lastValueOf(chartData, 'weight');
-  const weightLabel = lastWeight !== null ? `${lastWeight} kg` : '—';
+  const weightLabel = lastWeight !== null ? weightText(lastWeight) : '—';
   const weightDelta = periodWeightDelta(periodRows);
   const trend = weightTrend(weightDelta);
   const deltaText = trend === null ? undefined
     : trend === 'flat' ? t(PERIOD_UI[period].stable)
-      : t(PERIOD_UI[period].delta, { delta: `${weightDelta >= 0 ? '+' : ''}${formatNumber(weightDelta, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}` });
+      : t(PERIOD_UI[period].delta, { delta: weightText(weightDelta, { signed: true }) });
 
   // Lo storico non segue il periodo: tutte le righe, dalla più recente, a pagine
   const sortedStats = sortByDate(stats);
@@ -426,7 +426,7 @@ const BodyStats = ({ isEmbedded = false }) => {
                 <Typography sx={{ color: 'text.secondary', fontSize: 16, mt: 0.5 }}>
                   {t('body.period_empty_last', {
                     date: formatDate(latestRow.date),
-                    weight: latestRow.weight ? `${latestRow.weight} kg` : '—',
+                    weight: latestRow.weight ? weightText(latestRow.weight) : '—',
                   })}
                 </Typography>
               </Card>

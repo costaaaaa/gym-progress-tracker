@@ -4,6 +4,7 @@
 // Stessa logica di src/screens/Focus/focusHelpers.js nell'app mobile.
 
 import { isWorkingSet } from './workoutMetrics';
+import { formatSet } from './weightFormat';
 import { MAX_WORKING, fromCompact, parseRowTarget, plannedOf, plannedTarget, plannedTechnique, toInt, workingOf } from './plannedSets';
 
 // Funzione premium che sblocca cambio e aggiunta (vedi user_features() nel backend)
@@ -96,12 +97,12 @@ export const slotWeight = (exercise, slotIndex, { suggested = '', current = '' }
 };
 
 // Serie dell'ultima sessione per le chip "Ultima volta": [{ label, technique }]
-export const lastSessionSets = (lastSession) => {
+export const lastSessionSets = (lastSession, locale = 'it-IT') => {
   if (!lastSession || !Array.isArray(lastSession.sets)) return [];
   return lastSession.sets.filter(isWorkingSet).map((s) => {
     const w = parseFloat(s.weight) || 0;
     return {
-      label: w > 0 ? `${w}kg×${s.reps}` : `${s.reps} rip`,
+      label: w > 0 ? formatSet(w, s.reps, locale) : `${s.reps} rip`,
       technique: s.intensity_technique || '',
     };
   });

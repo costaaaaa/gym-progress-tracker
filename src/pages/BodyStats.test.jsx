@@ -30,6 +30,8 @@ const mount = async (wrap = (page) => page) => {
   render(wrap(<BodyStats />));
   await screen.findByRole('group', { name: 'Periodo' });
 };
+// Il peso grande della scheda (la tabella nascosta del grafico ha lo stesso testo)
+const bigValue = (text) => screen.getAllByText(text).find((el) => el.className.includes('statNumber'));
 const pill = (name) => screen.getByRole('button', { name });
 const history = () => screen.getByRole('table', { name: 'Storico delle misure' });
 const tableRows = () => within(history()).getAllByRole('row').slice(1);
@@ -48,26 +50,26 @@ describe('periodo e variazione del peso', () => {
   it('parte da 3 mesi: peso e variazione contano solo il periodo', async () => {
     await mount();
     expect(pill('3M').getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByText('80.0 kg')).toBeTruthy();
-    expect(screen.getByText(/-2,0 kg negli ultimi 3 mesi/)).toBeTruthy();
+    expect(bigValue('80 kg')).toBeTruthy();
+    expect(screen.getByText(/-2 kg negli ultimi 3 mesi/)).toBeTruthy();
   });
 
   it('cambiando periodo cambiano variazione e testo', async () => {
     await mount();
     fireEvent.click(pill('1M'));
-    expect(screen.getByText(/-1,0 kg nell'ultimo mese/)).toBeTruthy();
+    expect(screen.getByText(/-1 kg nell'ultimo mese/)).toBeTruthy();
     fireEvent.click(pill('6M'));
-    expect(screen.getByText(/-5,0 kg negli ultimi 6 mesi/)).toBeTruthy();
+    expect(screen.getByText(/-5 kg negli ultimi 6 mesi/)).toBeTruthy();
     fireEvent.click(pill('1A'));
-    expect(screen.getByText(/-10,0 kg nell'ultimo anno/)).toBeTruthy();
+    expect(screen.getByText(/-10 kg nell'ultimo anno/)).toBeTruthy();
     fireEvent.click(pill('Tutto'));
-    expect(screen.getByText(/-10,0 kg dalla prima rilevazione/)).toBeTruthy();
+    expect(screen.getByText(/-10 kg dalla prima rilevazione/)).toBeTruthy();
   });
 
   it('un solo peso nel periodo: nessuna variazione, ma il valore c\'è', async () => {
     records = [row('2026-05-01', '85.0'), row('2026-10-15', '80.0')];
     await mount();
-    expect(screen.getByText('80.0 kg')).toBeTruthy();
+    expect(bigValue('80 kg')).toBeTruthy();
     expect(screen.queryByText(/kg negli ultimi 3 mesi/)).toBeNull();
   });
 
@@ -99,19 +101,19 @@ describe('periodo senza misure', () => {
 
     fireEvent.click(pill('Tutto'));
     expect(screen.queryByText('Nessuna misura nel periodo')).toBeNull();
-    expect(screen.getByText('84.0 kg')).toBeTruthy();
+    expect(bigValue('84 kg')).toBeTruthy();
   });
 
   it('l\'ultima rilevazione porta il suo peso quando ce l\'ha', async () => {
     records = [row('2026-05-19', '83.5')];
     await mount();
-    expect(screen.getByText(`Ultima rilevazione il ${formatDate('2026-05-19')}: 83.5 kg`)).toBeTruthy();
+    expect(screen.getByText(`Ultima rilevazione il ${formatDate('2026-05-19')}: 83,5 kg`)).toBeTruthy();
   });
 
   it('con l\'API in ordine inverso la riga più recente resta la più recente', async () => {
     records = [row('2026-05-19', '83.5'), row('2026-01-10', '90.0')];
     await mount();
-    expect(screen.getByText(`Ultima rilevazione il ${formatDate('2026-05-19')}: 83.5 kg`)).toBeTruthy();
+    expect(screen.getByText(`Ultima rilevazione il ${formatDate('2026-05-19')}: 83,5 kg`)).toBeTruthy();
   });
 });
 
@@ -228,7 +230,7 @@ describe('titoli, peso e variazione', () => {
 
   it('il peso attuale è nello stile numero grande', async () => {
     await mount(themed);
-    const s = style(screen.getByText('80.0 kg'));
+    const s = style(bigValue('80 kg'));
     expect(s.fontFamily).toBe('"Lexend", sans-serif');
     expect(s.fontWeight).toBe('700');
     expect(s.fontSize).toBe('22px');
@@ -236,8 +238,8 @@ describe('titoli, peso e variazione', () => {
   });
 
   it.each([
-    ['calo', ['85.0', '80.0'], /-5,0 kg negli ultimi 3 mesi/],
-    ['aumento', ['80.0', '85.0'], /\+5,0 kg negli ultimi 3 mesi/],
+    ['calo', ['85.0', '80.0'], /-5 kg negli ultimi 3 mesi/],
+    ['aumento', ['80.0', '85.0'], /\+5 kg negli ultimi 3 mesi/],
     ['stabile', ['80.0', '80.0'], /Stabile negli ultimi 3 mesi/],
   ])('la variazione del peso è grigia e da 16px: %s', async (_, [first, last], text) => {
     records = [row('2026-10-01', first), row('2026-10-15', last)];
@@ -357,7 +359,7 @@ describe('storico', () => {
     expect(items).toHaveLength(2);
     const first = items[0];
     expect(within(first).getByText(formatDate('2026-10-15'))).toBeTruthy();
-    expect(style(within(first).getByText('80.0 kg')).fontWeight).toBe('700');
+    expect(style(within(first).getByText('80 kg')).fontWeight).toBe('700');
     const detail = within(first).getByText(/Grasso 18\.5%/);
     expect(detail.textContent).toBe('Grasso 18.5% · Muscolo 41.0% · Torace 102 cm · Vita 83 cm');
     expect(style(detail).color).toBe(GREY);
@@ -421,14 +423,14 @@ describe('grafico del peso: alternativa testuale', () => {
 
   it('il grafico è un\'immagine con un nome che dice titolo e ultimo valore', async () => {
     await mount();
-    expect(screen.getByRole('img', { name: 'Grafico: Andamento peso (kg). Ultimo valore: 80.0 kg.' })).toBeTruthy();
+    expect(screen.getByRole('img', { name: /^Grafico: Andamento peso \(kg\)\. Ultimo valore: 80\skg\.$/ })).toBeTruthy();
   });
 
   it('gli stessi valori sono in una tabella con intestazioni, una riga per misura del periodo', async () => {
     await mount();
     const table = screen.getByRole('table', { name: 'Andamento peso (kg)' });
     expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Data', 'Peso']);
-    const body = within(table).getAllByRole('row').slice(1).map((r) => within(r).getAllByRole('cell').map((c) => c.textContent));
+    const body = within(table).getAllByRole('row').slice(1).map((r) => within(r).getAllByRole('cell').map((c) => c.textContent.replace(/\u00a0/g, ' ')));
     expect(body).toEqual([
       [formatDate('2026-08-10'), '82 kg'],
       [formatDate('2026-09-25'), '81,5 kg'],

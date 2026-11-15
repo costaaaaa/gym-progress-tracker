@@ -1,6 +1,7 @@
 import { it as dfIt, enUS, enGB } from 'date-fns/locale';
 import i18n from './index';
 import { clockDate, isClockString } from '../utils/calendarDay';
+import { formatWeight, formatSet } from '../utils/weightFormat';
 
 // Per l'inglese si usa la variante del browser (en-GB → giorno/mese), di default en-US.
 export const intlLocale = () => {
@@ -24,3 +25,6 @@ export const formatDate = (value, options) => (isClockString(value)
 export const formatClockTime = (value) => clockDate(value).toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
 
 export const formatNumber = (value, options) => Number(value || 0).toLocaleString(intlLocale(), options);
+
+export const weightText = (value, options) => formatWeight(value, intlLocale(), options);
+export const setText = (weight, reps) => formatSet(weight, reps, intlLocale());
