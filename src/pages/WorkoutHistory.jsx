@@ -462,10 +462,10 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                       const isRowExpanded = !!expandedWorkouts[workout.id];
                       const rowPanelId = `workout-detail-panel-${workout.id}`;
                       return (
-                        <React.Fragment key={workout.id}>
+                        <Box component="li" key={workout.id} sx={{ listStyle: 'none' }}>
                           {/* La card intera apre i dettagli. Condividi, modifica e cestino stanno in
                               secondaryAction, fuori dal ListItemButton: il loro clic non apre la card. */}
-                          <ListItem disablePadding sx={{ '& > .MuiListItemButton-root': { pr: isPhone ? 10 : 19 } }} secondaryAction={
+                          <ListItem component="div" ContainerComponent="div" disablePadding sx={{ '& > .MuiListItemButton-root': { pr: isPhone ? 10 : 19 } }} secondaryAction={
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
                               {isPhone ? (
                                 <IconButton onClick={(e) => setRowMenu({ anchor: e.currentTarget, workout })} size="small" sx={{ color: 'text.secondary' }} aria-label={t('history.more_actions_aria')}><MoreVertIcon fontSize="small" /></IconButton>
@@ -500,11 +500,11 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                               />
                             </ListItemButton>
                           </ListItem>
-                          <Collapse component="li" in={isRowExpanded} id={rowPanelId} timeout="auto" sx={{ listStyle: 'none' }}>
+                          <Collapse in={isRowExpanded} id={rowPanelId} timeout="auto">
                             {renderWorkoutExerciseDetails(workout)}
                           </Collapse>
-                          {index < workoutsInMonth.length - 1 && <Divider component="li" />}
-                        </React.Fragment>
+                          {index < workoutsInMonth.length - 1 && <Divider />}
+                        </Box>
                       );
                     })}
                   </List>
@@ -547,7 +547,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
           <Button onClick={handleConfirmDelete} color="error" variant="contained">{t('history.delete.confirm')}</Button>
         </DialogActions>
       </Dialog>
-      <Menu anchorEl={rowMenu?.anchor} open={!!rowMenu} onClose={() => setRowMenu(null)}>
+      <Menu anchorEl={rowMenu?.anchor} open={!!rowMenu} onClose={() => setRowMenu(null)} MenuListProps={{ 'aria-label': t('history.more_actions_aria') }}>
         {rowMenu && rowActions(rowMenu.workout).map((action) => (
           <MenuItem
             key={action.key}

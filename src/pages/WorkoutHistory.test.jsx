@@ -117,6 +117,12 @@ describe('azioni della riga su telefono', () => {
     expect(within(menu).getAllByRole('menuitem').map((v) => v.textContent)).toEqual(['Condividi allenamento', 'Modifica data', 'Elimina allenamento']);
   });
 
+  it('il menu delle azioni ha il nome «Altre azioni»', async () => {
+    await mount();
+    fireEvent.click(await screen.findByRole('button', { name: 'Altre azioni' }));
+    expect(screen.getByRole('menu', { name: 'Altre azioni' })).toBeTruthy();
+  });
+
   it('"Elimina allenamento" dal menu apre la conferma', async () => {
     await mount();
     fireEvent.click(await screen.findByRole('button', { name: 'Altre azioni' }));
@@ -319,5 +325,22 @@ describe('serie di riscaldamento (#66): visibili ma escluse dal conteggio', () =
     const pancaBox = screen.getByText('Panca piana').closest('div').parentElement;
     expect(within(pancaBox).getByText('Risc.')).toBeTruthy();
     expect(within(pancaBox).getByText('1 serie')).toBeTruthy();
+  });
+});
+
+describe('struttura accessibile', () => {
+  it('l\'elenco ha solo voci <li> senza ruolo: nessun separatore né pannello come figlio diretto', async () => {
+    const second = { ...workout, id: 8, date: '2026-10-17 10:00:00', exercises: [exercise(1, 'Panca piana')] };
+    vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
+      url.includes('read_plans.php') ? json({ records: [plan] })
+        : url.includes('workout_history/read.php') ? json({ records: [workout, second] })
+          : json({ success: true }),
+    )));
+    render(<ThemeModeProvider><MemoryRouter><WorkoutHistory isEmbedded /></MemoryRouter></ThemeModeProvider>);
+    await screen.findByText('02:00 · 3 esercizi');
+    const list = document.querySelector('ul.MuiList-root');
+    const children = [...list.children];
+    expect(children).toHaveLength(2);
+    expect(children.every((c) => c.tagName === 'LI' && !c.hasAttribute('role'))).toBe(true);
   });
 });
