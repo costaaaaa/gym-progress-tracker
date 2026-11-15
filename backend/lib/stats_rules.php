@@ -7,13 +7,6 @@ const STATS_LIMITS = array(
     'chest_size' => 300, 'arm_size' => 150, 'waist_size' => 300, 'leg_size' => 200,
 );
 
-// Chiave (in backend/lang) del nome del campo da mostrare nel messaggio
-const STATS_FIELD_LABELS = array(
-    'weight' => 'stats.field.weight', 'body_fat_percentage' => 'stats.field.body_fat_percentage',
-    'muscle_mass_percentage' => 'stats.field.muscle_mass_percentage', 'chest_size' => 'stats.field.chest_size',
-    'arm_size' => 'stats.field.arm_size', 'waist_size' => 'stats.field.waist_size', 'leg_size' => 'stats.field.leg_size',
-);
-
 // Primo campo di $data (oggetto del JSON) con un valore fuori dai limiti, o null. Vuoto e null si ignorano.
 function stats_invalid_field($data)
 {
@@ -32,9 +25,11 @@ function stats_invalid_field($data)
 function stats_invalid_value($field, $locale = null)
 {
     $max = STATS_LIMITS[$field];
+    // In una variabile: scripts/i18n-check.mjs prenderebbe il prefisso scritto dentro la chiamata per una chiave intera
+    $label_key = 'stats.field.' . $field;
     return array(
         'message' => t_server('stats.value_invalid', array(
-            'field' => t_server(STATS_FIELD_LABELS[$field], array(), $locale),
+            'field' => t_server($label_key, array(), $locale),
             'max' => $max,
         ), $locale),
         'field' => $field,

@@ -27,10 +27,16 @@ function body($json)
 }
 
 echo "Limiti\n";
-check('i tetti sono quelli di sempre', array(
-    'weight' => 500, 'body_fat_percentage' => 100, 'muscle_mass_percentage' => 100,
-    'chest_size' => 300, 'arm_size' => 150, 'waist_size' => 300, 'leg_size' => 200,
-), STATS_LIMITS);
+check('i campi sono quelli del modulo, nell\'ordine', array(
+    'weight', 'body_fat_percentage', 'muscle_mass_percentage', 'chest_size', 'arm_size', 'waist_size', 'leg_size',
+), array_keys(STATS_LIMITS));
+foreach (STATS_LIMITS as $field => $max) {
+    $at = (object) array($field => $max);
+    $over = (object) array($field => $max + 0.1);
+    check("$field: il tetto ($max) è incluso", null, stats_invalid_field($at));
+    check("$field: appena oltre il tetto non va", $field, stats_invalid_field($over));
+    check("$field: zero è ammesso", null, stats_invalid_field((object) array($field => 0)));
+}
 
 echo "Primo campo non valido\n";
 check('niente di strano: nessun errore', null, stats_invalid_field(body('{"date":"2026-11-01","weight":80.5,"waist_size":"90"}')));
@@ -43,11 +49,11 @@ check('con due campi sbagliati vale il primo dell\'elenco', 'weight', stats_inva
 
 echo "Messaggio nella lingua dell'utente\n";
 $it = stats_invalid_value('weight', 'it');
-check('italiano: nomina il campo tradotto e il tetto', 'Valore non valido per peso: inserisci un numero da 0 a 500.', $it['message']);
+check('italiano: nomina il campo tradotto e i limiti', 'Peso: il valore deve essere tra 0 e 500, estremi inclusi.', $it['message']);
 check('italiano: il nome tecnico del campo viaggia a parte', 'weight', $it['field']);
 check('il tetto viaggia a parte', 500, $it['max']);
 $en = stats_invalid_value('body_fat_percentage', 'en');
-check('inglese: campo tradotto', 'Invalid value for body fat: enter a number from 0 to 100.', $en['message']);
+check('inglese: campo tradotto', 'Body fat: the value must be between 0 and 100, inclusive.', $en['message']);
 foreach (array_keys(STATS_LIMITS) as $field) {
     foreach (array('it', 'en') as $lang) {
         $msg = stats_invalid_value($field, $lang)['message'];

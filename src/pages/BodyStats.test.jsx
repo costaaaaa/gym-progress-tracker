@@ -460,7 +460,7 @@ describe('nuova misura: errori dei valori (WCAG 3.3.1, 4.1.3)', () => {
     save();
     expect(posts()).toHaveLength(0);
     expect(field('Peso (kg)').getAttribute('aria-invalid')).toBe('true');
-    expect(describedBy('Peso (kg)')).toBe('Inserisci un numero da 0 a 500.');
+    expect(describedBy('Peso (kg)')).toBe('Il valore deve essere tra 0 e 500, estremi inclusi.');
     expect(document.activeElement).toBe(field('Peso (kg)'));
   });
 
@@ -469,8 +469,8 @@ describe('nuova misura: errori dei valori (WCAG 3.3.1, 4.1.3)', () => {
     type('Gamba (cm)', '999');
     type('Grasso (%)', '-3');
     save();
-    expect(describedBy('Grasso (%)')).toBe('Inserisci un numero da 0 a 100.');
-    expect(describedBy('Gamba (cm)')).toBe('Inserisci un numero da 0 a 200.');
+    expect(describedBy('Grasso (%)')).toBe('Il valore deve essere tra 0 e 100, estremi inclusi.');
+    expect(describedBy('Gamba (cm)')).toBe('Il valore deve essere tra 0 e 200, estremi inclusi.');
     expect(field('Peso (kg)').getAttribute('aria-invalid')).not.toBe('true');
     expect(document.activeElement).toBe(field('Grasso (%)'));
   });
@@ -486,15 +486,34 @@ describe('nuova misura: errori dei valori (WCAG 3.3.1, 4.1.3)', () => {
     expect(posts()).toHaveLength(1);
   });
 
-  it('un errore del server su un campo (con "field") finisce sotto quel campo, col messaggio del server', async () => {
+  const rejectWith = (body) => fetch.mockImplementation((url, init) => Promise.resolve(init?.method === 'POST'
+    ? { ok: false, status: 400, json: async () => body }
+    : { ok: true, json: async () => ({ records }) }));
+
+  it('un errore del server su un campo (con "field" e "max") finisce sotto quel campo, col testo del client e non del server', async () => {
     await open();
     type('Vita (cm)', '90');
-    fetch.mockImplementation((url, init) => Promise.resolve(init?.method === 'POST'
-      ? { ok: false, status: 400, json: async () => ({ message: 'Valore non valido per vita: inserisci un numero da 0 a 80.', field: 'waist_size', max: 80 }) }
-      : { ok: true, json: async () => ({ records }) }));
+    rejectWith({ message: 'Vita: il valore deve essere tra 0 e 80, estremi inclusi.', field: 'waist_size', max: 80 });
     await act(async () => { save(); });
-    expect(describedBy('Vita (cm)')).toBe('Valore non valido per vita: inserisci un numero da 0 a 80.');
+    expect(describedBy('Vita (cm)')).toBe('Il valore deve essere tra 0 e 80, estremi inclusi.');
     expect(document.activeElement).toBe(field('Vita (cm)'));
+  });
+
+  it('se la risposta ha "field" ma non "max", sotto il campo c\'è il messaggio del server', async () => {
+    await open();
+    type('Vita (cm)', '90');
+    rejectWith({ message: 'Messaggio del server', field: 'waist_size' });
+    await act(async () => { save(); });
+    expect(describedBy('Vita (cm)')).toBe('Messaggio del server');
+  });
+
+  it('un errore del server senza campo resta un avviso con il suo messaggio', async () => {
+    await open();
+    type('Vita (cm)', '90');
+    rejectWith({ message: 'Qualcosa non va' });
+    await act(async () => { save(); });
+    expect(screen.getByText('Qualcosa non va')).toBeTruthy();
+    expect(field('Vita (cm)').getAttribute('aria-invalid')).not.toBe('true');
   });
 
   it('riaprendo il dialogo gli errori sono spariti', async () => {

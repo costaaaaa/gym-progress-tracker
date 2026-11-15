@@ -71,8 +71,8 @@ if (count($days) > 1000) {
     exit;
 }
 
-// Stessi tetti di create.php
-$limits = array('weight' => 500, 'body_fat_percentage' => 100, 'waist_size' => 300);
+// Stessi tetti di create.php, per i campi che Salute porta
+$limits = array_intersect_key(STATS_LIMITS, array_flip(array('weight', 'body_fat_percentage', 'waist_size')));
 // Il telefono conta i giorni nel suo fuso: accanto al nostro può già essere domani
 $maxDate = user_today()->modify('+1 day');
 

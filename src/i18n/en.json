@@ -981,5 +981,5 @@
   "record.technique_aria": "Technique, {{exercise}}, set {{n}}",
   "history.row_action_aria": "{{action}}, {{date}}",
   "focus.rest_over": "Rest over: you can do the next set",
-  "body.error.range": "Enter a number from 0 to {{max}}."
+  "body.error.range": "The value must be between 0 and {{max}}, inclusive."
 }

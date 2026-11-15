@@ -47,6 +47,7 @@ import HealthAppHint from '../components/HealthAppHint';
 import { DEFAULT_PERIOD, PERIODS, PERIOD_UI, filterByPeriod, periodStart, periodWeightDelta, weightTrend, sortByDate, paginate } from '../utils/bodyStatsPeriod';
 import { radius } from '../theme/radius';
 import useFocusField from '../hooks/useFocusField';
+import { BODY_LIMITS, isValueOutOfRange } from '../utils/bodyStatsRules';
 
 // Cuore accanto a un valore arrivato da Apple Salute / Health Connect
 // (health_fields è l'elenco dei campi importati, separati da virgola).
@@ -196,13 +197,6 @@ const HistoryList = ({ rows, empty, onDelete }) => {
   );
 };
 
-// Tetti dei valori: gli stessi del server (backend/lib/stats_rules.php), nell'ordine del modulo
-const BODY_LIMITS = {
-  weight: 500, body_fat_percentage: 100, muscle_mass_percentage: 100,
-  chest_size: 300, arm_size: 150, waist_size: 300, leg_size: 200,
-};
-const isValueOutOfRange = (value, max) => value !== '' && !(Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= max);
-
 const numberFieldSx = {
   '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': { display: 'none' },
   '& input[type=number]': { MozAppearance: 'textfield' },
@@ -331,7 +325,8 @@ const BodyStats = ({ isEmbedded = false }) => {
         });
         fetchStats();
       } else if (BODY_LIMITS[result.field]) {
-        showFieldErrors({ [result.field]: result.message });
+        // Con "max" il testo è quello del client (uguale a quello prima dell'invio); il messaggio del server resta il ripiego
+        showFieldErrors({ [result.field]: Number.isFinite(result.max) ? t('body.error.range', { max: result.max }) : result.message });
       } else {
         setSnackbar({ open: true, message: result.message || t('body.error.save'), severity: 'error' });
       }
