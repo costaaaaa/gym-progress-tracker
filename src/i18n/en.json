@@ -390,7 +390,7 @@
   "share.change_photo": "Change photo",
   "share.zoom": "Photo zoom",
   "share.center": "Center the photo",
-  "share.photo_hint": "Move and zoom the photo with two fingers, or drag it and use the wheel with a mouse. With the keyboard: arrow keys move it, Shift plus arrows moves it further",
+  "share.photo_hint": "Move and zoom the photo with two fingers, or drag it and use the wheel with a mouse. With the keyboard: arrow keys move it. Shift plus arrows moves it further",
   "share.photo_position": "Photo position",
   "share.background": "Background",
   "share.background_named": "{{name}} background",
