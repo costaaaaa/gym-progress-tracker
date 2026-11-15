@@ -6,7 +6,6 @@
 
   var root = document.documentElement;
   var mode = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-  root.setAttribute('data-theme', mode);
 
   document.addEventListener('DOMContentLoaded', function () {
     var button = document.querySelector('[data-theme-toggle]');

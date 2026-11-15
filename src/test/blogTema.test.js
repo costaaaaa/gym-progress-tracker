@@ -1,6 +1,6 @@
 // Tema del blog (blog/assets/tema.js): il tema lo decide /tema.js (data-theme su <html>, caricato prima);
 // qui resta solo il bottone, che cambia tema e salva la scelta.
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,10 +16,12 @@ describe('blog/assets/tema.js', () => {
     document.body.innerHTML = '<button data-theme-toggle hidden></button>';
   });
 
-  it('non decide il tema da solo: legge quello già impostato', () => {
-    document.documentElement.setAttribute('data-theme', 'dark');
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('non decide il tema da solo: senza data-theme e con il sistema scuro non lo imposta', () => {
+    vi.stubGlobal('matchMedia', (q) => ({ matches: q === '(prefers-color-scheme: dark)' }));
     run();
-    expect(theme()).toBe('dark');
+    expect(theme()).toBeNull();
   });
 
   it('il bottone cambia tema e salva la scelta', () => {

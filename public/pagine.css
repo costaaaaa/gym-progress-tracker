@@ -5,7 +5,8 @@
 @font-face{font-family:'Inter';font-weight:100 900;font-display:swap;src:url('/fonts/inter-latin-wght-normal.woff2') format('woff2')}
 :root{color-scheme:light;--ground:#f7f6f5;--ink:#1a1816;--muted:#6b6663;--line:#dcd9d5;--accent:#d50000;--accent-text:var(--accent);--accent-press:#9b0000;--on-accent:#ffffff;--mark:#fff3bf}
 html[data-theme="dark"]{color-scheme:dark;--ground:#0a0a0b;--ink:#ffffff;--muted:#a0a0a2;--line:#2c2c30;--accent-text:#ff5252;--mark:#4a4013}
-/* Senza JS tema.js non gira e data-theme manca: si segue il sistema. Con JS data-theme c'è sempre e questa regola non vale. */
+/* Senza JS tema.js non gira e data-theme manca: si segue il sistema. Con JS data-theme c'è sempre e questa regola non vale.
+   I colori sono gli stessi di html[data-theme="dark"] qui sopra: vanno cambiati insieme. */
 @media (prefers-color-scheme:dark){:root:not([data-theme]){color-scheme:dark;--ground:#0a0a0b;--ink:#ffffff;--muted:#a0a0a2;--line:#2c2c30;--accent-text:#ff5252;--mark:#4a4013}}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}

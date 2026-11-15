@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useMemo, useEffect } from 'react';
+import { createContext, useState, useContext, useMemo, useEffect, useRef } from 'react';
 import { ThemeProvider, createTheme, alpha } from '@mui/material/styles';
 import { grey } from '@mui/material/colors';
 import { GlobalStyles } from '@mui/material';
@@ -36,20 +36,22 @@ export const ThemeModeProvider = ({ children }) => {
     return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
 
-  // <html> segue il tema (come /tema.js prima di React): lo sfondo scuro di index.html non resta dopo il passaggio al chiaro
+  // Vero solo dopo un clic sul bottone: il modo iniziale (scelta salvata o sistema) non va salvato come scelta
+  const chosen = useRef(false);
+
+  // <html> segue il tema (come /tema.js prima di React): lo sfondo scuro di index.html non resta dopo il passaggio al chiaro.
+  // Dopo un clic si salva anche la scelta, fuori dall'aggiornamento di stato (che deve restare puro).
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', mode);
+    if (!chosen.current) return;
+    try {
+      localStorage.setItem('themeMode', mode);
+    } catch { /* vale solo per questa visita */ }
   }, [mode]);
 
-  // Solo il bottone salva la scelta: finché non lo si preme, vale il sistema
   const toggleThemeMode = () => {
-    setMode((prevMode) => {
-      const next = prevMode === 'light' ? 'dark' : 'light';
-      try {
-        localStorage.setItem('themeMode', next);
-      } catch { /* vale solo per questa visita */ }
-      return next;
-    });
+    chosen.current = true;
+    setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
   };
 
   const { i18n } = useTranslation();
