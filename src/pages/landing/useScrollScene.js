@@ -65,7 +65,8 @@ export const stageSx = (live) =>
         top: NAVBAR_VAR,
         height: `calc(100svh - ${NAVBAR_VAR})`,
         display: 'flex',
-        alignItems: 'center',
+        // "safe": se il contenuto è più alto del palco (spaziatura del testo WCAG 1.4.12) parte dall'alto invece di uscire da sopra e da sotto
+        alignItems: 'safe center',
         overflow: 'hidden',
       }
     : { py: { xs: 6, md: 10 } };

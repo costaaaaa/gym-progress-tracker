@@ -44,4 +44,10 @@ describe('scena a scorrimento', () => {
     expect(stage.top).toBe('var(--navbar-height, 64px)');
     expect(stage.height).toBe('calc(100svh - var(--navbar-height, 64px))');
   });
+
+  // 1.4.12: con la spaziatura del testo il contenuto supera il palco; centrato "e basta" esce sia sopra sia sotto
+  // e il titolo viene tagliato. Con "safe" in quel caso parte dall'alto; se il contenuto sta, resta centrato.
+  it('il contenuto del palco si centra solo se ci sta: altrimenti parte dall\'alto e il titolo non si taglia', () => {
+    expect(stageSx(true).alignItems).toBe('safe center');
+  });
 });
