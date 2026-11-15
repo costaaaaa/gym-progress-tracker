@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo } from 'react';
+import { isKeyboardFocus } from '../utils/keyboardFocus';
 
 export const UNDO_DELAY_MS = 10000;
 
@@ -60,7 +61,7 @@ const useUndoableDelete = ({ commit, onError }) => {
   const holdProps = useMemo(() => ({
     onMouseEnter: () => hold('pointer', true),
     onMouseLeave: () => hold('pointer', false),
-    onFocus: () => hold('focus', true),
+    onFocus: (e) => hold('focus', isKeyboardFocus(e?.target)),
     onBlur: () => hold('focus', false),
   }), [hold]);
 

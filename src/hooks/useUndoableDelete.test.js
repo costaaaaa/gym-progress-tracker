@@ -3,6 +3,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import process from 'node:process';
 import useUndoableDelete, { UNDO_DELAY_MS } from './useUndoableDelete';
+import { isKeyboardFocus } from '../utils/keyboardFocus';
+
+// jsdom dà :focus-visible a ogni focus: la distinzione tastiera/mouse si sostituisce
+vi.mock('../utils/keyboardFocus', () => ({ isKeyboardFocus: vi.fn(() => true) }));
 
 beforeEach(() => { vi.useFakeTimers(); });
 afterEach(() => { vi.useRealTimers(); });
@@ -118,6 +122,15 @@ describe('useUndoableDelete', () => {
       await act(async () => { vi.advanceTimersByTime(UNDO_DELAY_MS - 1); });
       expect(commit).not.toHaveBeenCalled();
       await act(async () => { vi.advanceTimersByTime(1); });
+      expect(commit).toHaveBeenCalledWith(7);
+    });
+
+    it('il fuoco dato da mouse o tocco (non da tastiera) non ferma il conto', async () => {
+      isKeyboardFocus.mockReturnValueOnce(false);
+      const { result, commit } = setup();
+      act(() => { result.current.schedule(7); });
+      act(() => { result.current.holdProps.onFocus({ target: document.body }); });
+      await act(async () => { vi.advanceTimersByTime(UNDO_DELAY_MS); });
       expect(commit).toHaveBeenCalledWith(7);
     });
 

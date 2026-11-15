@@ -8,7 +8,9 @@ import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { json } from '../test/dom';
 import { setBrowserTimeZone } from '../test/timeZone';
 import { strayListChildren } from '../test/accessibleNames';
+import { isKeyboardFocus } from '../utils/keyboardFocus';
 
+vi.mock('../utils/keyboardFocus', () => ({ isKeyboardFocus: vi.fn(() => true) }));
 vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ isLoggedIn: true, loading: false }) }));
 
 const GREY = 'rgb(107, 102, 99)';
@@ -256,7 +258,19 @@ describe('eliminazione con «Annulla»', () => {
       expect(document.activeElement).toBe(annulla());
     });
 
-    it('con il fuoco su «Annulla» i 10 secondi non scadono: la richiesta non parte', async () => {
+    it('se il fuoco su «Annulla» non viene dalla tastiera (mouse, tocco) il conto parte subito e la richiesta parte', async () => {
+      isKeyboardFocus.mockReturnValue(false);
+      try {
+        await confermaEliminazione();
+        expect(document.activeElement).toBe(annulla());
+        await passano(RESTO);
+        expect(eliminazioni()).toHaveLength(1);
+      } finally {
+        isKeyboardFocus.mockReturnValue(true);
+      }
+    });
+
+    it('con il fuoco da tastiera su «Annulla» i 10 secondi non scadono: la richiesta non parte', async () => {
       await confermaEliminazione();
       await passano(RESTO * 3);
       expect(eliminazioni()).toHaveLength(0);
