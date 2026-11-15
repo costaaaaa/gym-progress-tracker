@@ -1,7 +1,7 @@
 // Registrazione in due passaggi: il primo controlla l'account (anche con check_availability.php),
 // il secondo chiede il profilo. La fetch è il confine.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Register from './Register';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
@@ -82,5 +82,91 @@ describe('registrazione in due passaggi', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Indietro' }));
     expect(screen.getByLabelText(/^Username/).value).toBe('mario88');
     expect(screen.getByLabelText(/^Email/).value).toBe('mario@example.com');
+  });
+});
+
+describe('errori annunciati e focus sul primo campo sbagliato (WCAG 3.3.1, 4.1.3)', () => {
+  // Con il puntatore preciso il selettore di date è il campo da digitare (in jsdom, senza, sarebbe di sola lettura)
+  const realMatchMedia = window.matchMedia;
+  beforeEach(() => {
+    window.matchMedia = (query) => ({ ...realMatchMedia(query), matches: query.includes('pointer: fine') });
+  });
+  afterEach(() => { window.matchMedia = realMatchMedia; });
+  const described = (el) => el.getAttribute('aria-describedby')?.split(' ').map((id) => document.getElementById(id)?.textContent).join(' ');
+  const goToStep2 = async () => {
+    renderRegister();
+    fillStep1();
+    fireEvent.click(screen.getByRole('button', { name: 'Avanti' }));
+    await screen.findByText('Il tuo profilo');
+  };
+
+  it('primo passo: email non valida, errore collegato al campo e focus lì (non su "Avanti")', async () => {
+    renderRegister();
+    fillStep1();
+    fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: 'mario' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Avanti' }));
+    const email = screen.getByLabelText(/^Email/);
+    expect(email.getAttribute('aria-invalid')).toBe('true');
+    expect(described(email)).toBe('Inserisci un\'email valida');
+    expect(document.activeElement).toBe(email);
+  });
+
+  it('primo passo: con più errori il focus va sul primo campo dell\'elenco', async () => {
+    renderRegister();
+    fillStep1({ confirm: 'Diversa!2026' });
+    fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Avanti' }));
+    expect(document.activeElement).toBe(screen.getByLabelText(/^Email/));
+    expect(screen.getByLabelText(/^Conferma password/).getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('primo passo: email già registrata (risposta del server), focus sul campo', async () => {
+    vi.stubGlobal('fetch', availability({ username_taken: false, email_taken: true }));
+    renderRegister();
+    fillStep1();
+    fireEvent.click(screen.getByRole('button', { name: 'Avanti' }));
+    await screen.findByRole('link', { name: 'accedi' });
+    expect(document.activeElement).toBe(screen.getByLabelText(/^Email/));
+  });
+
+  it('secondo passo senza dati: errore sotto data, sesso e termini, focus sulla data, nessun avviso generico', async () => {
+    await goToStep2();
+    fireEvent.click(screen.getByRole('button', { name: 'Registrati' }));
+    const birth = screen.getByLabelText(/^Data di nascita/);
+    expect(birth.getAttribute('aria-invalid')).toBe('true');
+    expect(described(birth)).toBe('Inserisci la data di nascita');
+    const gender = screen.getByRole('combobox', { name: /Sesso/ });
+    expect(gender.getAttribute('aria-invalid')).toBe('true');
+    expect(described(gender)).toBe('Seleziona il sesso');
+    const terms = screen.getByRole('checkbox');
+    expect(described(terms)).toBe('Per registrarti devi accettare i termini d\'uso e l\'informativa privacy');
+    expect(document.activeElement).toBe(birth);
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('secondo passo: con la data giusta il primo errore è il sesso e il focus va sul suo campo', async () => {
+    await goToStep2();
+    fireEvent.change(screen.getByLabelText(/^Data di nascita/), { target: { value: '01/01/1990' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Registrati' }));
+    expect(screen.getByLabelText(/^Data di nascita/).getAttribute('aria-invalid')).not.toBe('true');
+    expect(document.activeElement).toBe(screen.getByRole('combobox', { name: /Sesso/ }));
+  });
+
+  it('un errore del server resta un avviso generico con role="alert"', async () => {
+    await goToStep2();
+    fireEvent.change(screen.getByLabelText(/^Data di nascita/), { target: { value: '01/01/1990' } });
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Sesso/ }));
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: /Maschio/ }));
+    fireEvent.click(screen.getByRole('checkbox'));
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: false, status: 500, json: async () => ({ message: 'Server in manutenzione' }) })));
+    fireEvent.click(screen.getByRole('button', { name: 'Registrati' }));
+    expect((await screen.findByRole('alert')).textContent).toBe('Server in manutenzione');
+  });
+
+  it('correggere un campo del secondo passo toglie il suo errore', async () => {
+    await goToStep2();
+    fireEvent.click(screen.getByRole('button', { name: 'Registrati' }));
+    fireEvent.click(screen.getByRole('checkbox'));
+    expect(described(screen.getByRole('checkbox'))).toBeUndefined();
   });
 });

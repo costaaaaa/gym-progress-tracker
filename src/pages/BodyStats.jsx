@@ -1,4 +1,4 @@
-import { Fragment, useState, useEffect, useRef } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -46,6 +46,7 @@ import HealthConsentCard from '../components/HealthConsentCard';
 import HealthAppHint from '../components/HealthAppHint';
 import { DEFAULT_PERIOD, PERIODS, PERIOD_UI, filterByPeriod, periodStart, periodWeightDelta, weightTrend, sortByDate, paginate } from '../utils/bodyStatsPeriod';
 import { radius } from '../theme/radius';
+import useFocusField from '../hooks/useFocusField';
 
 // Cuore accanto a un valore arrivato da Apple Salute / Health Connect
 // (health_fields è l'elenco dei campi importati, separati da virgola).
@@ -219,9 +220,9 @@ const BodyStats = ({ isEmbedded = false }) => {
   // true se il consenso era stato dato a una versione precedente del testo
   const [consentUpdated, setConsentUpdated] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  // Messaggio d'errore sotto ogni campo sbagliato; fieldRefs serve a portare il focus sul primo
+  // Messaggio d'errore sotto ogni campo sbagliato; il focus va sul primo
   const [fieldErrors, setFieldErrors] = useState({});
-  const fieldRefs = useRef({});
+  const { fieldRef, focusField } = useFocusField();
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
 
   const [formData, setFormData] = useState({
@@ -238,7 +239,7 @@ const BodyStats = ({ isEmbedded = false }) => {
   // Proprietà comuni dei sette campi numerici del modulo; l'errore passa da error + helperText (aria-describedby)
   const numberField = (name, labelKey) => ({
     label: t(labelKey), name, type: 'number', fullWidth: true, value: formData[name], onChange: handleInputChange, sx: numberFieldSx,
-    error: !!fieldErrors[name], helperText: fieldErrors[name], inputRef: (el) => { fieldRefs.current[name] = el; },
+    error: !!fieldErrors[name], helperText: fieldErrors[name], inputRef: fieldRef(name),
   });
 
   const fetchStats = async () => {
@@ -273,7 +274,7 @@ const BodyStats = ({ isEmbedded = false }) => {
 
   const showFieldErrors = (errors) => {
     setFieldErrors(errors);
-    fieldRefs.current[Object.keys(BODY_LIMITS).find((name) => errors[name])]?.focus();
+    focusField(Object.keys(BODY_LIMITS).find((name) => errors[name]));
   };
 
   const openDialog = () => {
