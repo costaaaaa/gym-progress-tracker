@@ -243,7 +243,7 @@ describe('calendario della data di nascita: apertura su un anno sensato', () => 
     fireEvent.click(within(dialog).getByRole('radio', { name: '1996' }));
     fireEvent.click(await within(dialog).findByRole('radio', { name: 'marzo' }));
     expect(await within(dialog).findByText(/marzo 1996/i)).toBeTruthy();
-    // marzo ha 31 giorni (aprile, il mese di oggi con giorno 30, no)
+    // marzo ha 31 giorni (giugno, il mese di oggi, ne ha 30)
     expect(within(dialog).getByRole('gridcell', { name: '31' })).toBeTruthy();
   });
 
