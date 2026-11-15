@@ -9,7 +9,11 @@ import { isKeyboardFocus } from '../utils/focus';
 vi.mock('../utils/focus', async (importOriginal) => ({ ...(await importOriginal()), isKeyboardFocus: vi.fn(() => true) }));
 
 beforeEach(() => { vi.useFakeTimers(); });
-afterEach(() => { vi.useRealTimers(); });
+afterEach(() => {
+  isKeyboardFocus.mockReset(); // un valore rimasto in coda non passa al test dopo
+  isKeyboardFocus.mockReturnValue(true);
+  vi.useRealTimers();
+});
 
 const setup = (commit = vi.fn().mockResolvedValue(undefined), onError = vi.fn()) => {
   const hook = renderHook(() => useUndoableDelete({ commit, onError }));
@@ -130,6 +134,7 @@ describe('useUndoableDelete', () => {
       const { result, commit } = setup();
       act(() => { result.current.schedule(7); });
       act(() => { result.current.holdProps.onFocus({ target: document.body }); });
+      expect(isKeyboardFocus).toHaveBeenCalledWith(document.body);
       await act(async () => { vi.advanceTimersByTime(UNDO_DELAY_MS); });
       expect(commit).toHaveBeenCalledWith(7);
     });

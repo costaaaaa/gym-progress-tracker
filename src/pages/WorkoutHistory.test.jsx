@@ -48,6 +48,8 @@ beforeEach(() => {
   )));
 });
 afterEach(() => {
+  isKeyboardFocus.mockReset(); // un valore rimasto in coda non passa al test dopo
+  isKeyboardFocus.mockReturnValue(true);
   vi.useRealTimers();
   vi.unstubAllGlobals();
   window.matchMedia = originalMatchMedia;
@@ -263,6 +265,7 @@ describe('eliminazione con «Annulla»', () => {
       isKeyboardFocus.mockReturnValueOnce(false);
       await confermaEliminazione();
       expect(document.activeElement).toBe(annulla());
+      expect(isKeyboardFocus).toHaveBeenCalledWith(annulla());
       await passano(RESTO);
       expect(eliminazioni()).toHaveLength(1);
     });
