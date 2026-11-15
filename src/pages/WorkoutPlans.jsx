@@ -788,6 +788,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                     <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
                       <IconButton
                         onClick={() => handleOpenEditPlanDialog(plan)}
+                        aria-label={t('plans.edit_plan.aria', { name: plan.name })}
                         size="small"
                         sx={{ color: 'text.secondary' }}
                       >
@@ -795,6 +796,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                       </IconButton>
                       <IconButton
                         onClick={() => handleOpenDeletePlanDialog(plan)}
+                        aria-label={t('plans.delete_plan.aria', { name: plan.name })}
                         size="small"
                         sx={{ color: 'text.secondary' }}
                       >
@@ -906,6 +908,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                                 <ButtonGroup size="small" sx={{ mr: 1 }}>
                                                   <IconButton
                                                     size="small"
+                                                    aria-label={t('plans.move_up.aria', { name: exercise.exercise_name })}
                                                     disabled={exerciseGlobalIndex <= 0}
                                                     onClick={() => handleMoveExerciseUp(day.id, exercise, exerciseGlobalIndex)}
                                                   >
@@ -913,6 +916,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                                   </IconButton>
                                                   <IconButton
                                                     size="small"
+                                                    aria-label={t('plans.move_down.aria', { name: exercise.exercise_name })}
                                                     disabled={exerciseGlobalIndex >= day.exercises.length - 1}
                                                     onClick={() => handleMoveExerciseDown(day.id, exercise, exerciseGlobalIndex, day.exercises.length)}
                                                   >

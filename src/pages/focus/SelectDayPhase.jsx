@@ -25,7 +25,7 @@ export default function SelectDayPhase({
         px: 2.5, py: 2, display: 'flex', alignItems: 'center', gap: 1.25,
         borderBottom: `1px solid ${colors.border}`
       }}>
-        <IconButton onClick={onBack} sx={{ color: colors.text }}>
+        <IconButton onClick={onBack} aria-label={t('common.back')} sx={{ color: colors.text }}>
           <ArrowBackIcon />
         </IconButton>
         <Box sx={{
@@ -83,8 +83,10 @@ export default function SelectDayPhase({
                 '& .MuiInputLabel-root.Mui-focused': { color: colors.primaryText },
                 '& .MuiSvgIcon-root': { color: colors.textSecondary },
               }}>
-                <InputLabel>{t('record.select_day')}</InputLabel>
+                <InputLabel id="focus-day-label">{t('record.select_day')}</InputLabel>
                 <Select
+                  labelId="focus-day-label"
+                  id="focus-day"
                   value={selectedDayId}
                   label={t('record.select_day')}
                   onChange={onDayChange}

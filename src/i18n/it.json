@@ -955,5 +955,14 @@
   "profile.achievements.progress": "{{current}} di {{target}}",
   "profile.achievements.tonnes": "{{value}} t",
   "workouts.tab_plans": "Le tue schede",
-  "workouts.tab_history": "Cronologia"
+  "workouts.tab_history": "Cronologia",
+  "plans.edit_plan.aria": "Modifica scheda {{name}}",
+  "plans.delete_plan.aria": "Elimina scheda {{name}}",
+  "plans.move_up.aria": "Sposta su {{name}}",
+  "plans.move_down.aria": "Sposta giù {{name}}",
+  "common.back": "Indietro",
+  "common.close": "Chiudi",
+  "focus.quit_aria": "Esci dall'allenamento",
+  "focus.progress_aria": "Avanzamento dell'allenamento",
+  "focus.rest_progress_aria": "Avanzamento del recupero"
 }

@@ -34,7 +34,7 @@ export default function WorkoutPhase({
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text, display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${colors.border}` }}>
-        <IconButton onClick={onQuit} sx={{ color: colors.textSecondary }}><CloseIcon /></IconButton>
+        <IconButton onClick={onQuit} aria-label={t('focus.quit_aria')} sx={{ color: colors.textSecondary }}><CloseIcon /></IconButton>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <AccessTimeIcon sx={{ fontSize: 16, color: colors.textSecondary }} />
           <Typography variant="caption" sx={{ ...TABULAR, color: colors.textSecondary }}>{finishedClock ?? <ElapsedClock startTime={clockStart} />}</Typography>
@@ -42,7 +42,7 @@ export default function WorkoutPhase({
         <Typography variant="caption" sx={{ color: colors.textSecondary }}>{currentExerciseIndex + 1}/{totalExercises}</Typography>
       </Box>
 
-      <LinearProgress variant="determinate" value={((currentExerciseIndex) / totalExercises) * 100}
+      <LinearProgress variant="determinate" value={((currentExerciseIndex) / totalExercises) * 100} aria-label={t('focus.progress_aria')}
         sx={{ height: 3, bgcolor: colors.border, '& .MuiLinearProgress-bar': { bgcolor: colors.text } }} />
 
       <Fade in={exerciseTransition} timeout={300}>
@@ -150,8 +150,10 @@ export default function WorkoutPhase({
               '& .MuiInputLabel-root.Mui-focused': { color: colors.text },
               '& .MuiSvgIcon-root': { color: colors.textSecondary },
             }}>
-              <InputLabel>{t('focus.technique')}</InputLabel>
+              <InputLabel id="focus-technique-label">{t('focus.technique')}</InputLabel>
               <Select
+                labelId="focus-technique-label"
+                id="focus-technique"
                 value={intensityTechniqueInput}
                 label={t('focus.technique')}
                 onChange={(e) => onIntensityChange(e.target.value)}

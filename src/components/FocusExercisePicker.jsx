@@ -109,10 +109,10 @@ const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true
   const canAdd = selected && plannedSets !== null;
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" PaperProps={{ sx: { borderRadius: radius.xxl } }}>
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" aria-labelledby="picker-title" PaperProps={{ sx: { borderRadius: radius.xxl } }}>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1 }}>
-        {mode === 'swap' ? t('picker.swap_title') : t('picker.add_title')}
-        <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
+        <span id="picker-title">{mode === 'swap' ? t('picker.swap_title') : t('picker.add_title')}</span>
+        <IconButton onClick={onClose} aria-label={t('common.close')} size="small"><CloseIcon /></IconButton>
       </DialogTitle>
       <DialogContent dividers>
         {mode === 'swap' && currentExercise && (
@@ -145,7 +145,7 @@ const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true
         ) : (
           <>
             <TextField
-              fullWidth size="small" placeholder={t('picker.search')} value={query}
+              fullWidth size="small" placeholder={t('picker.search')} inputProps={{ 'aria-label': t('picker.search') }} value={query}
               onChange={(e) => setQuery(e.target.value)}
               InputProps={{ startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} /> }}
               sx={{ mb: 1.5 }}

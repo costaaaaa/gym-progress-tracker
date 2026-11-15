@@ -955,5 +955,14 @@
   "profile.achievements.progress": "{{current}} of {{target}}",
   "profile.achievements.tonnes": "{{value}} t",
   "workouts.tab_plans": "Your plans",
-  "workouts.tab_history": "History"
+  "workouts.tab_history": "History",
+  "plans.edit_plan.aria": "Edit plan {{name}}",
+  "plans.delete_plan.aria": "Delete plan {{name}}",
+  "plans.move_up.aria": "Move {{name}} up",
+  "plans.move_down.aria": "Move {{name}} down",
+  "common.back": "Back",
+  "common.close": "Close",
+  "focus.quit_aria": "Leave the workout",
+  "focus.progress_aria": "Workout progress",
+  "focus.rest_progress_aria": "Rest progress"
 }

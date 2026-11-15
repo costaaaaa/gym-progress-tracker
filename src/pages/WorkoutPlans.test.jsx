@@ -8,6 +8,7 @@ import WorkoutPlans from './WorkoutPlans';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { json, colorOf } from '../test/dom';
 import { plannedSets, times } from '../test/plannedSets';
+import { unnamedControls } from '../test/accessibleNames';
 
 const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
@@ -303,5 +304,22 @@ describe('card della scheda: riepilogo (A15)', () => {
     fireEvent.click(screen.getByRole('button', { name: '+2 esercizi' }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Nascondi' })).toBeTruthy());
     expect(screen.queryByRole('button', { name: '+2 esercizi' })).toBeNull();
+  });
+});
+
+describe('nomi accessibili', () => {
+  it('ogni bottone, campo e dialogo della scheda aperta ha un nome', async () => {
+    await openDay();
+    expect(unnamedControls()).toEqual([]);
+  });
+
+  it('modifica ed elimina scheda dicono quale scheda, le frecce quale esercizio', async () => {
+    await openDay();
+    expect(screen.getByRole('button', { name: 'Modifica scheda Forza A' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Elimina scheda Forza A' })).toBeTruthy();
+    for (const name of ['Panca piana', 'Croci ai cavi']) {
+      expect(screen.getByRole('button', { name: `Sposta su ${name}` })).toBeTruthy();
+      expect(screen.getByRole('button', { name: `Sposta giù ${name}` })).toBeTruthy();
+    }
   });
 });
