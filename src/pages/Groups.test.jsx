@@ -100,6 +100,13 @@ describe('dettaglio del gruppo', () => {
     await screen.findByText('Classifica');
   };
 
+  it('le tab della classifica non hanno variant fullWidth (flex-basis 0 contro il flex-grow di INK_TABS)', async () => {
+    await mount();
+    const tab = screen.getAllByRole('tab')[0];
+    expect(tab.classList.contains('MuiTab-fullWidth')).toBe(false);
+    expect(getComputedStyle(tab).flexBasis).not.toBe('0px');
+  });
+
   it('l\'interruttore «Inviti aperti» acceso è verde, non rosso del marchio', async () => {
     await mount();
     const base = screen.getByLabelText('Inviti aperti').closest('.MuiSwitch-switchBase');
