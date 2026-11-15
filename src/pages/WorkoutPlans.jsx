@@ -17,7 +17,6 @@ import {
   Divider,
   Alert,
   Snackbar,
-  CircularProgress,
   ButtonGroup,
   Collapse,
   FormControl,
@@ -41,6 +40,7 @@ import { planCardSummary } from '../utils/planCard';
 import FitNames from '../components/FitNames';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
 import { radius } from '../theme/radius';
+import ButtonSpinner from '../components/ButtonSpinner';
 
 const MAX_EXERCISE_ROWS = 4; // esercizi mostrati per giorno nella card aperta
 const DAY_LINK_SX = { fontSize: 12, fontWeight: 600, textTransform: 'none', minWidth: 0, p: 0 };
@@ -1087,7 +1087,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
             onClick={handleEditPlan} 
             variant="contained" 
             disabled={!editedPlanValues.name || updatePlanLoading}
-            startIcon={updatePlanLoading ? <CircularProgress aria-hidden size={20} /> : null}
+            startIcon={updatePlanLoading ? <ButtonSpinner /> : null}
           >
             {updatePlanLoading ? t('plans.saving') : t('common.save')}
           </Button>
@@ -1135,7 +1135,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
             color="error" 
             variant="contained"
             disabled={deletePlanLoading}
-            startIcon={deletePlanLoading ? <CircularProgress aria-hidden size={20} /> : <DeleteIcon />}
+            startIcon={deletePlanLoading ? <ButtonSpinner /> : <DeleteIcon />}
           >
             {deletePlanLoading ? t('plans.deleting') : t('common.delete')}
           </Button>
@@ -1172,7 +1172,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
             color="error" 
             variant="contained"
             disabled={deleteExerciseLoading}
-            startIcon={deleteExerciseLoading ? <CircularProgress aria-hidden size={20} /> : <DeleteIcon />}
+            startIcon={deleteExerciseLoading ? <ButtonSpinner /> : <DeleteIcon />}
           >
             {deleteExerciseLoading ? t('plans.deleting') : t('common.delete')}
           </Button>

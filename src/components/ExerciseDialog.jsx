@@ -25,6 +25,7 @@ import { primaryMuscleOptions } from '../utils/muscleRules';
 import { useTranslation } from 'react-i18next';
 import { muscleLabel } from '../i18n/labels';
 import PlannedSetsEditor from './PlannedSetsEditor';
+import ButtonSpinner from './ButtonSpinner';
 
 // Helper per rendere maiuscola la prima lettera
 const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
@@ -316,7 +317,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
                 />
                 <Button
                   variant="outlined"
-                  startIcon={creating ? <CircularProgress aria-hidden size={16} /> : <AddIcon />}
+                  startIcon={creating ? <ButtonSpinner size={16} /> : <AddIcon />}
                   onClick={handleCreate}
                   disabled={!canCreate}
                 >

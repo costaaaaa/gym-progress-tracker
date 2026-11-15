@@ -54,6 +54,7 @@ import { NEUTRAL_OUTLINED } from '../utils/buttonStyles';
 import { getConsents, setConsent } from '../utils/consent';
 import { loginWithNext } from '../utils/safeNext';
 import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
+import ButtonSpinner from '../components/ButtonSpinner';
 
 const Account = ({ isEmbedded = false }) => {
   const { user, logout, isLoggedIn, updateUser, loading: authLoading } = useAuth();
@@ -820,7 +821,7 @@ const Account = ({ isEmbedded = false }) => {
           </Box>
           <Button
             variant="outlined"
-            startIcon={exportLoading ? <CircularProgress aria-hidden size={16} /> : <DownloadIcon />}
+            startIcon={exportLoading ? <ButtonSpinner size={16} /> : <DownloadIcon />}
             onClick={handleDownloadData}
             disabled={exportLoading}
             sx={NEUTRAL_OUTLINED}
@@ -915,7 +916,7 @@ const Account = ({ isEmbedded = false }) => {
           </DialogContentText>
           <Button
             variant="outlined"
-            startIcon={exportLoading ? <CircularProgress aria-hidden size={16} /> : <DownloadIcon />}
+            startIcon={exportLoading ? <ButtonSpinner size={16} /> : <DownloadIcon />}
             onClick={handleDownloadData}
             disabled={exportLoading || consentBusy}
             sx={{ fontSize: 16 }}

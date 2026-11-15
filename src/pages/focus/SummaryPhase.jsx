@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import {
-  Container, Box, Typography, Button, TextField, Paper, CircularProgress, IconButton, Chip
+  Container, Box, Typography, Button, TextField, Paper, IconButton, Chip
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon, Save as SaveIcon, EmojiEvents as TrophyIcon, TrendingUp as TrendingUpIcon,
@@ -17,6 +17,7 @@ import WarmupBadge from '../../components/WarmupBadge';
 import { track } from '../../utils/analytics';
 import { techniqueLabel } from '../../i18n/labels';
 import { radius } from '../../theme/radius';
+import ButtonSpinner from '../../components/ButtonSpinner';
 
 const XP_WITHHELD_KEYS = {
   incomplete: 'focus.xp_incomplete',
@@ -250,7 +251,7 @@ export default function SummaryPhase({
               sx={{ mb: 3, '& .MuiOutlinedInput-root': { color: colors.text, '& fieldset': { borderColor: colors.fieldBorder }, '&:hover fieldset': { borderColor: colors.primary }, '&.Mui-focused fieldset': { borderColor: colors.primary } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.primaryText } }} />
 
             <Button variant="contained" fullWidth size="large"
-              startIcon={saving ? <CircularProgress aria-hidden size={20} sx={{ color: colors.primaryContrast }} /> : <SaveIcon />}
+              startIcon={saving ? <ButtonSpinner sx={{ color: colors.primaryContrast }} /> : <SaveIcon />}
               onClick={onSave} disabled={saving || totalCompletedSets === 0}
               sx={{ py: 2, fontSize: '1.1rem', fontWeight: 700, bgcolor: colors.primary, color: colors.primaryContrast, borderRadius: radius.lg,
                 '&:hover': { bgcolor: colors.primaryDark },
