@@ -27,12 +27,14 @@ ob_start();
                 <h3><a href="<?php echo blog_e(BLOG_BASE_URL . '/calcolatore-1rm/'); ?>">Calcolatore 1RM</a></h3>
                 <p>Stima il tuo massimale da peso e ripetizioni e ottieni i carichi in percentuale. Gratis, senza registrazione.</p>
             </li>
+            <li class="post-card">
+                <h3><a href="<?php echo blog_e(BLOG_BASE_URL . '/mcp/'); ?>">Collega il tuo assistente AI</a></h3>
+                <p>Collega Claude o ChatGPT al tuo account e fagli leggere, in sola lettura, allenamenti, carichi e record.</p>
+            </li>
         </ul>
 
+<?php if (!empty($articles)): ?>
         <h2>Articoli</h2>
-<?php if (empty($articles)): ?>
-        <p class="empty-state">Nessun articolo pubblicato al momento.</p>
-<?php else: ?>
         <ul class="post-list">
 <?php foreach ($articles as $article): ?>
 <?php
