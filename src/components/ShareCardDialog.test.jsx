@@ -34,6 +34,11 @@ describe('nomi accessibili', () => {
     expect(screen.getByRole('dialog', { name: 'Condividi' })).toBeTruthy();
   });
 
+  it('il titolo del dialogo è un\'intestazione di livello 2, come negli altri dialoghi', async () => {
+    await mount();
+    expect(screen.getByRole('heading', { level: 2, name: 'Condividi' })).toBeTruthy();
+  });
+
   it('l\'anteprima è un\'immagine che dice cosa riporta la card', async () => {
     await mount();
     const card = screen.getByRole('img', { name: /Anteprima della card/ });

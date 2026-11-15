@@ -1,18 +1,26 @@
 // Registrazione in due passaggi: il primo controlla l'account (anche con check_availability.php),
 // il secondo chiede il profilo. La fetch è il confine.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, waitFor, act } from '@testing-library/react';
+import { format, subYears, subDays, startOfToday } from 'date-fns';
 import { MemoryRouter } from 'react-router-dom';
 import Register from './Register';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import i18n from '../i18n';
 import { describedBy } from '../test/accessibleNames';
 import { mockPointer } from '../test/pointer';
+import { pinLocalClock } from '../test/timeZone';
+import { birthFieldChange } from '../test/birthFieldSpy';
 
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
 vi.mock('../context/AuthContext', () => ({
   useAuth: () => ({ user: null, isLoggedIn: false, loading: false, login: () => {} }),
 }));
+
+// Il campo data vero, con l'onChange della data di nascita a portata di test (vedi src/test/birthFieldSpy.js)
+vi.mock('../components/LabeledDatePicker', async (importOriginal) => (
+  (await import('../test/birthFieldSpy')).spyOnBirthField(await importOriginal())
+));
 
 const availability = (body) => vi.fn(() => Promise.resolve({ ok: true, status: 200, json: async () => ({ success: true, ...body }) }));
 
@@ -123,6 +131,15 @@ describe('errori annunciati e focus sul primo campo sbagliato (WCAG 3.3.1, 4.1.3
     await screen.findByText('Il tuo profilo');
   };
 
+  // Sesso e termini, poi invio: la data di nascita la mette il test
+  const submitStep2 = () => {
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Sesso/ }));
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: /Maschio/ }));
+    fireEvent.click(screen.getByRole('checkbox'));
+    fetch.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'Registrati' }));
+  };
+
   it('primo passo: email non valida, errore collegato al campo e focus lì (non su "Avanti")', async () => {
     renderRegister();
     fillStep1();
@@ -167,6 +184,64 @@ describe('errori annunciati e focus sul primo campo sbagliato (WCAG 3.3.1, 4.1.3
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  it.each(['21/07/0085', '21/07/1900'])('secondo passo: una data di nascita oltre i 100 anni (%s) dà un errore sul campo, senza chiamare il server', async (value) => {
+    await goToStep2();
+    fetch.mockClear();
+    fireEvent.change(screen.getByLabelText(/^Data di nascita/), { target: { value } });
+    fireEvent.click(screen.getByRole('button', { name: 'Registrati' }));
+    const birth = screen.getByLabelText(/^Data di nascita/);
+    expect(birth.getAttribute('aria-invalid')).toBe('true');
+    expect(describedBy(birth)).toBe('Inserisci una data di nascita valida');
+    expect(document.activeElement).toBe(birth);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  // Il server accetta esattamente 100 anni (rifiuta birth < oggi - 100 anni): oggi di 100 anni fa passa, il giorno prima no
+  describe.each(['UTC', 'Europe/Rome', 'America/Los_Angeles', 'Asia/Tokyo'])('confine dei 100 anni (%s)', (zone) => {
+    // Fuso e orologio a mezzogiorno di quel fuso (una corsa a cavallo della mezzanotte non cambia «oggi»)
+    beforeEach(() => pinLocalClock(zone, 2026, 10, 15, 12, 0));
+    afterEach(() => vi.useRealTimers());
+
+    // La data si calcola dopo il fuso: «oggi» dipende da lì
+    const submitWith = async (dateFor) => {
+      await goToStep2();
+      fireEvent.change(screen.getByLabelText(/^Data di nascita/), { target: { value: format(dateFor(), 'dd/MM/yyyy') } });
+      submitStep2();
+    };
+
+    it('esattamente 100 anni fa oggi: la richiesta parte', async () => {
+      await submitWith(() => subYears(startOfToday(), 100));
+      await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+      expect(JSON.parse(fetch.mock.calls[0][1].body).birth_date).toBe(format(subYears(startOfToday(), 100), 'yyyy-MM-dd'));
+      expect(screen.getByLabelText(/^Data di nascita/).getAttribute('aria-invalid')).not.toBe('true');
+    });
+
+    it('un giorno prima: errore sul campo, nessuna richiesta', async () => {
+      await submitWith(() => subDays(subYears(startOfToday(), 100), 1));
+      expect(screen.getByLabelText(/^Data di nascita/).getAttribute('aria-invalid')).toBe('true');
+      expect(describedBy(screen.getByLabelText(/^Data di nascita/))).toBe('Inserisci una data di nascita valida');
+      expect(fetch).not.toHaveBeenCalled();
+    });
+  });
+
+  it('secondo passo: un Invalid Date (campo scritto a metà) è una data non valida: errore sul campo, fuoco, nessuna richiesta', async () => {
+    await goToStep2();
+    act(() => birthFieldChange.current(new Date(NaN)));
+    submitStep2();
+    const birth = screen.getByLabelText(/^Data di nascita/);
+    expect(birth.getAttribute('aria-invalid')).toBe('true');
+    expect(describedBy(birth)).toBe('Inserisci una data di nascita valida');
+    expect(document.activeElement).toBe(birth);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('secondo passo: la data di nascita dichiara a cosa serve (autocomplete bday), le altre date no', async () => {
+    await goToStep2();
+    expect(screen.getByLabelText(/^Data di nascita/).getAttribute('autocomplete')).toBe('bday');
+    expect(screen.getByLabelText(/^Mese inizio allenamento/).getAttribute('autocomplete')).not.toBe('bday');
+  });
+
   it('secondo passo: con la data giusta il primo errore è il sesso e il focus va sul suo campo', async () => {
     await goToStep2();
     fireEvent.change(screen.getByLabelText(/^Data di nascita/), { target: { value: '01/01/1990' } });
@@ -178,11 +253,8 @@ describe('errori annunciati e focus sul primo campo sbagliato (WCAG 3.3.1, 4.1.3
   it('un errore del server resta un avviso generico con role="alert"', async () => {
     await goToStep2();
     fireEvent.change(screen.getByLabelText(/^Data di nascita/), { target: { value: '01/01/1990' } });
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Sesso/ }));
-    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: /Maschio/ }));
-    fireEvent.click(screen.getByRole('checkbox'));
     vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: false, status: 500, json: async () => ({ message: 'Server in manutenzione' }) })));
-    fireEvent.click(screen.getByRole('button', { name: 'Registrati' }));
+    submitStep2();
     expect((await screen.findByRole('alert')).textContent).toBe('Server in manutenzione');
   });
 

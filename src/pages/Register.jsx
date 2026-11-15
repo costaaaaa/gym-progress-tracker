@@ -20,6 +20,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import LabeledDatePicker from '../components/LabeledDatePicker';
+import { oldestBirthDate, youngestBirthDate, isInvalidBirthDate } from '../utils/birthDate';
 import { format, subYears, startOfToday } from 'date-fns';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
@@ -158,7 +159,8 @@ const Register = () => {
     // Un errore sotto ogni campo sbagliato, il focus sul primo
     const errors = {
       birthDate: !birthDate ? t('register.error.birth_date_required')
-        : birthDate > subYears(startOfToday(), 14) ? t('register.error.min_age') : '',
+        : isInvalidBirthDate(birthDate) ? t('birth_date.error_invalid')
+          : birthDate > youngestBirthDate() ? t('register.error.min_age') : '',
       gender: gender ? '' : t('register.error.gender_required'),
       terms: acceptTerms ? '' : t('register.error.terms_required'),
     };
@@ -338,8 +340,8 @@ const Register = () => {
                 label={t('register.birth_date')}
                 value={birthDate}
                 onChange={(newValue) => { setBirthDate(newValue); clearError('birthDate'); }}
-                minDate={subYears(startOfToday(), 100)}
-                maxDate={subYears(startOfToday(), 14)}
+                minDate={oldestBirthDate()}
+                maxDate={youngestBirthDate()}
                 // Se la data non è ancora scelta si apre sulla vista anni, centrata su 30 anni fa (altrimenti
                 // sul mese di oggi - 14 anni); poi mese e giorno. Con una data scelta si apre sul suo mese.
                 views={['year', 'month', 'day']}
@@ -354,6 +356,8 @@ const Register = () => {
                     error: Boolean(fieldErrors.birthDate),
                     helperText: fieldErrors.birthDate || t('register.birth_date_help'),
                     inputRef: fieldRef('birthDate'),
+                    // MUI X ignora autoComplete di textField e lo mette a "off": passa solo da inputProps
+                    inputProps: { autoComplete: 'bday' },
                     id: "birthDate",
                     name: "birthDate"
                   }

@@ -319,7 +319,7 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
     <Dialog open={open} onClose={onClose} fullScreen={fullScreen} maxWidth="xs" fullWidth aria-labelledby="share-dialog-title"
       PaperProps={{ sx: { borderRadius: fullScreen ? 0 : radius.xxl } }}>
       <Box sx={{ display: 'flex', alignItems: 'center', px: 2, pt: 1.5 }}>
-        <Typography id="share-dialog-title" variant="h6" sx={{ flex: 1, fontWeight: 700 }}>{t('share.title')}</Typography>
+        <Typography id="share-dialog-title" variant="h6" component="h2" sx={{ flex: 1, fontWeight: 700 }}>{t('share.title')}</Typography>
         <IconButton onClick={onClose} aria-label={t('share.close')}><CloseIcon /></IconButton>
       </Box>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, pt: 1 }}>
