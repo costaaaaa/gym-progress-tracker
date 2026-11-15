@@ -981,5 +981,6 @@
   "record.technique_aria": "Tecnica, {{exercise}}, serie {{n}}",
   "history.row_action_aria": "{{action}}, {{date}}",
   "focus.rest_over": "Recupero finito: puoi fare la serie successiva",
-  "body.error.range": "Il valore deve essere tra 0 e {{max}}, estremi inclusi."
+  "body.error.range": "Il valore deve essere tra 0 e {{max}}, estremi inclusi.",
+  "body.error.date": "Inserisci una data valida."
 }

@@ -28,7 +28,7 @@ import {
 import { API_BASE_URL } from '../config';
 import LabeledDatePicker from '../i18n/LabeledDatePicker';
 import { useTranslation } from 'react-i18next';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import i18n from '../i18n';
 import DateLocalization from '../i18n/DateLocalization';
 import { formatDate, formatNumber } from '../i18n/format';
@@ -197,6 +197,9 @@ const HistoryList = ({ rows, empty, onDelete }) => {
   );
 };
 
+// Campi del modulo nell'ordine in cui compaiono (il primo con un errore riceve il focus)
+const FORM_FIELDS = ['date', ...Object.keys(BODY_LIMITS)];
+
 const numberFieldSx = {
   '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': { display: 'none' },
   '& input[type=number]': { MozAppearance: 'textfield' },
@@ -268,7 +271,7 @@ const BodyStats = ({ isEmbedded = false }) => {
 
   const showFieldErrors = (errors) => {
     setFieldErrors(errors);
-    focusField(Object.keys(BODY_LIMITS).find((name) => errors[name]));
+    focusField(FORM_FIELDS.find((name) => errors[name]));
   };
 
   const openDialog = () => {
@@ -278,10 +281,13 @@ const BodyStats = ({ isEmbedded = false }) => {
 
   const handleDateChange = (date) => {
     setFormData({ ...formData, date });
+    if (fieldErrors.date) setFieldErrors(({ date: _removed, ...others }) => others);
   };
 
   const handleSubmit = async () => {
     const errors = {};
+    // Data cancellata o incompleta (si digita con il puntatore preciso): arriva null o una data non valida
+    if (!isValid(formData.date)) errors.date = t('body.error.date');
     Object.entries(BODY_LIMITS).forEach(([name, max]) => {
       if (isValueOutOfRange(formData[name], max)) errors[name] = t('body.error.range', { max });
     });
@@ -543,7 +549,8 @@ const BodyStats = ({ isEmbedded = false }) => {
               label={t('body.field.date')}
               value={formData.date}
               onChange={handleDateChange}
-              slotProps={{ textField: { fullWidth: true, sx: { mb: 3, mt: 1 } } }}
+              // L'errore proprio del selettore (data digitata non valida) resta; il nostro compare solo dopo "Salva"
+              slotProps={{ textField: { fullWidth: true, sx: { mb: 3, mt: 1 }, inputRef: fieldRef('date'), ...(fieldErrors.date && { error: true, helperText: fieldErrors.date }) } }}
             />
           </DateLocalization>
 
