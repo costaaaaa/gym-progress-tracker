@@ -1339,7 +1339,7 @@ describe('Focus: struttura della pagina e annunci (WCAG 1.3.1, 2.4.6, 4.1.3)', (
   };
   const toRest = async () => { await startDay('Push'); doSet(); };
   const toSummary = async () => { await toRest(); click('Salta timer'); doSet(); };
-  const live = () => document.querySelector('[role="status"][aria-live="polite"]');
+  const live = () => screen.getByRole('status');
 
   it.each([
     ['scelta del giorno', async () => { await mount(); }, 'Focus mode'],
@@ -1375,14 +1375,22 @@ describe('Focus: struttura della pagina e annunci (WCAG 1.3.1, 2.4.6, 4.1.3)', (
     expect(document.activeElement).toBe(document.body);
   });
 
-  it('al cambio di fase il focus va sul titolo della nuova fase, anche se il pulsante premuto sparisce', async () => {
+  it('al cambio di fase il focus va sul titolo della nuova fase se si perde; se un campo lo prende da solo (autoFocus) resta lì', async () => {
     await startDay('Push');
-    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1, name: 'Panca piana' }));
+    expect(document.activeElement).toBe(screen.getByLabelText('Peso (kg)'));
     doSet();
     expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1, name: 'Recupero' }));
     click('Salta timer');
-    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1, name: 'Panca piana' }));
+    expect(document.activeElement).toBe(screen.getByLabelText('Peso (kg)'));
     doSet();
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1, name: 'Riepilogo' }));
+  });
+
+  it('dopo il salvataggio il pulsante sparisce: il focus va sul titolo, non su body', async () => {
+    await toSummary();
+    act(() => screen.getByRole('button', { name: 'Salva allenamento' }).focus());
+    await act(async () => { click('Salva allenamento'); });
+    await advance(0);
     expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1, name: 'Riepilogo' }));
   });
 

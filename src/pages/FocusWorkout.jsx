@@ -34,15 +34,21 @@ const FocusWorkout = () => {
   const { colors, isDarkMode } = useFocusColors();
   const { loading, phase, resumePrompt, selectDay, restTimer, workout, summary, picker, premiumDialog, snackbar } = useFocusSession();
 
-  // Al cambio di fase il pulsante premuto sparisce e il focus finirebbe sul <body>: va sul titolo della nuova fase.
+  // Al cambio di fase (e dopo il salvataggio) il pulsante premuto sparisce e il focus finirebbe sul <body>: va sul
+  // titolo, ma solo se si è perso. Se un campo l'ha preso da solo (autoFocus del peso) resta lì.
   // Non alla prima schermata (nessun campo da sostituire) e non mentre carica.
   const mainRef = useRef(null);
-  const lastPhase = useRef(null);
+  const lastStep = useRef(null);
+  const step = `${phase}${summary.savedResult ? ':saved' : ''}`;
   useEffect(() => {
     if (loading) return;
-    if (lastPhase.current && lastPhase.current !== phase) mainRef.current?.querySelector('h1')?.focus();
-    lastPhase.current = phase;
-  }, [loading, phase]);
+    if (lastStep.current && lastStep.current !== step) {
+      const main = mainRef.current;
+      const active = document.activeElement;
+      if (!active || active === document.body || !main?.contains(active)) main?.querySelector('h1')?.focus();
+    }
+    lastStep.current = step;
+  }, [loading, step]);
   // Fine del recupero: l'unico annuncio, niente conto alla rovescia a voce
   const restOver = phase === 'rest_timer' && restTimer.timerDuration > 0 && restTimer.timerRemaining === 0;
 
