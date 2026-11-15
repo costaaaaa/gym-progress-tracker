@@ -170,6 +170,7 @@ function blog_styles()
   --text-secondary: #6b6663;
   --divider: #ececea;
   --field-border: #8c8885;
+  --error-text: #d50000;
   --toggle-bg: #f7f6f5;
   --toggle-bg-hover: #ececea;
   --radius: 16px;
@@ -183,6 +184,7 @@ function blog_styles()
   --text-secondary: #a0a0a2;
   --divider: rgba(255, 255, 255, 0.08);
   --field-border: #6e6e70;
+  --error-text: #ff5252;
   --toggle-bg: rgba(255, 255, 255, 0.06);
   --toggle-bg-hover: rgba(255, 255, 255, 0.12);
 }
@@ -383,7 +385,7 @@ thead th { color: var(--text-secondary); font-weight: 600; }
   margin-bottom: 2.5rem;
 }
 .calc-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; }
-.calc-field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 140px; }
+.calc-field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 140px; align-self: flex-start; }
 .calc-field label { font-size: 0.9rem; font-weight: 600; }
 .calc-field input, .calc-field select {
   font: inherit;
@@ -395,6 +397,9 @@ thead th { color: var(--text-secondary); font-weight: 600; }
 }
 .calc-field input:focus, .calc-field select:focus { outline: 2px solid var(--primary-main); outline-offset: 1px; }
 .calc-field-unit { flex: 0 0 auto; }
+/* Il campo sbagliato e il suo messaggio: --error-text e' il rosso leggibile come testo nei due temi (come primary.text nell'app). */
+.calc-field input[aria-invalid="true"] { border-color: var(--error-text); }
+.calc-error { margin: 0; color: var(--error-text); font-size: 0.88rem; line-height: 1.4; }
 /* Il select non segue line-height: stessa altezza degli input (riga, padding e bordo). */
 .calc-field select { height: calc(1.7em + 20px); }
 .calc-submit { border: 0; font-family: inherit; cursor: pointer; }
