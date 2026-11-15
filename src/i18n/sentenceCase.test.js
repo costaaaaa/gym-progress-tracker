@@ -7,7 +7,7 @@ import en from './en.json';
 const NOMI_PROPRI = new Set([
   'LiftIndex', 'Focus', 'Premium', 'Apple', 'Salute', 'Health', 'Connect', 'Google', 'iPhone', 'Android', 'iOS',
   'Epley', 'English', 'Italian', 'Monday', 'Wednesday', 'Sunday', 'I',
-  'PR', 'PRs', '1RM', 'RPE', 'XP', 'ID', 'JSON',
+  'PR', 'PRs', '1RM', 'RPE', 'XP', 'ID', 'JSON', 'AI',
 ]);
 
 // Fuori ticket: testo del cartoncino (canvas) e segnaposto del codice gruppo.

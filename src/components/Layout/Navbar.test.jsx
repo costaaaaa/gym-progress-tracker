@@ -121,3 +121,14 @@ describe('barra in alto: altezza pubblicata', () => {
     expect(value()).toBe('');
   });
 });
+
+// Bersaglio tocco (2.5.8): il bottone del tema accanto al marchio è almeno 40 x 40 px, non i 30 px di size="small"
+describe('barra in alto: bottone del tema', () => {
+  it('è almeno 40 x 40 px', () => {
+    render(<MemoryRouter><ThemeModeProvider><Navbar /></ThemeModeProvider></MemoryRouter>);
+    const button = screen.getByRole('button', { name: 'Modalità scura' });
+    const style = mediaStyle(button, null);
+    expect(parseInt(style.width, 10)).toBeGreaterThanOrEqual(40);
+    expect(parseInt(style.height, 10)).toBeGreaterThanOrEqual(40);
+  });
+});

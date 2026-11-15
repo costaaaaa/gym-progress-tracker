@@ -24,7 +24,8 @@ describe.each(['privacy', 'termini', '404'])('public/%s.html', (name) => {
   });
 
   it('il link sta fuori dallo schermo finché non ha il focus', () => {
-    const css = doc.querySelector('style').textContent;
+    // Le regole del link stanno nel foglio comune delle pagine statiche
+    const css = readFileSync(join(publicDir, 'pagine.css'), 'utf8');
     expect(css).toMatch(/\.skip\{[^}]*transform:translateY\(-200%\)/);
     expect(css).toMatch(/\.skip:focus\{[^}]*transform:none/);
   });

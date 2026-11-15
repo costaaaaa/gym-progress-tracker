@@ -91,6 +91,29 @@ confronta() {
     [[ "$alt_ok" -eq 1 ]] && ok "$nome: alternate it, en e x-default in entrambe le pagine"
 }
 
+# tema PAGINA: stessa regola dell'app e del blog (themeMode, altrimenti il sistema), stesso foglio di stile
+tema() {
+    local f="$ROOT/public/$1"
+    if [[ ! -f "$f" ]]; then ko "tema $1: file presente"; return; fi
+    grep -q '<script src="/tema.js"></script>' "$f" && ok "tema $1: script esterno /tema.js" || ko "tema $1: manca <script src=\"/tema.js\">"
+    grep -q '<link rel="stylesheet" href="/pagine.css">' "$f" && ok "tema $1: foglio /pagine.css" || ko "tema $1: manca /pagine.css"
+    # script prima del foglio di stile, cosi' il tema c'e' prima del disegno
+    [[ "$(grep -n 'tema.js' "$f" | head -1 | cut -d: -f1)" -lt "$(grep -n 'pagine.css' "$f" | head -1 | cut -d: -f1)" ]] 2>/dev/null && ok "tema $1: lo script precede il foglio" || ko "tema $1: ordine script/foglio"
+    grep -q 'prefers-color-scheme' "$f" && ko "tema $1: ha ancora una regola prefers-color-scheme" || ok "tema $1: nessun prefers-color-scheme"
+    grep -q '<script>' "$f" && ko "tema $1: script inline (la CSP non li ammette)" || ok "tema $1: nessuno script inline"
+}
+
+echo "tema"
+for p in privacy.html termini.html en/privacy.html en/terms.html 404.html; do tema "$p"; done
+for f in tema.js pagine.css; do
+    [[ -f "$ROOT/public/$f" ]] && ok "public/$f presente" || ko "public/$f mancante"
+done
+# senza JS il tema segue il sistema: la regola scura vale solo se tema.js non ha messo data-theme
+css="$ROOT/public/pagine.css"
+grep -q 'prefers-color-scheme' "$css" 2>/dev/null && ok "pagine.css: ha il ripiego per il sistema scuro" || ko "pagine.css: manca il ripiego prefers-color-scheme"
+if grep -o 'prefers-color-scheme[^{]*{[^{]*{' "$css" | grep -q ':root:not(\[data-theme\])'; then ok "pagine.css: il ripiego vale solo senza data-theme"; else ko "pagine.css: il ripiego non è limitato a :root:not([data-theme])"; fi
+grep -q "html\[data-theme=\"dark\"\]" "$ROOT/public/pagine.css" 2>/dev/null && ok "pagine.css: scuro da data-theme" || ko "pagine.css: manca html[data-theme=\"dark\"]"
+
 echo "privacy"
 confronta privacy.html privacy.html "privacy"
 echo "termini"

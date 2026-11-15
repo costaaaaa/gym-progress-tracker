@@ -38,6 +38,12 @@
     <link rel="manifest" href="/manifest.json" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="LiftIndex" />
+    <!-- Tema scelto (o del sistema) prima che parta React: /tema.js mette data-theme su <html>, lo sfondo segue -->
+    <script src="/tema.js"></script>
+    <style>
+      /* #0a0a0b = background.default scuro di ThemeModeContext.jsx: vanno cambiati insieme */
+      html[data-theme="dark"] { background: #0a0a0b; color-scheme: dark; }
+    </style>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",

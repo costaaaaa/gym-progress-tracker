@@ -1,11 +1,12 @@
 // Font dei chip, uguale all'app: Lexend 500 su quelli che si premono, i badge restano Inter.
 // Titolo di pagina: Lexend 800 a 28px, un <h1>. Bottone pieno di errore: rosso del marchio #d50000 con testo bianco,
 // anche in scuro; disabilitato resta grigio (scuro: fondo bianco al 12%, testo bianco al 30%).
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
+import { StrictMode } from 'react';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import { useTheme } from '@mui/material/styles';
 import { BottomNavigation, BottomNavigationAction, Button, CardActionArea, Chip, CircularProgress, CssBaseline, IconButton, Link, MenuItem, Slider, Switch, Tab, Tabs, TextField, Typography } from '@mui/material';
-import { ThemeModeProvider } from './ThemeModeContext';
+import { ThemeModeProvider, useThemeMode } from './ThemeModeContext';
 
 const RED = 'rgb(213, 0, 0)';
 const WHITE = 'rgb(255, 255, 255)';
@@ -335,5 +336,88 @@ describe('tema: indicatori di caricamento', () => {
   it('il nome scelto dal componente prevale su quello del tema', () => {
     render(<ThemeModeProvider><CircularProgress aria-label="Avanzamento" /></ThemeModeProvider>);
     expect(screen.getByRole('progressbar', { name: 'Avanzamento' })).toBeTruthy();
+  });
+});
+
+// Modo iniziale: la scelta salvata (themeMode) vince; senza scelta vale la preferenza del sistema, letta una volta sola.
+describe('tema: modo iniziale', () => {
+  const realMatchMedia = window.matchMedia;
+  afterEach(() => {
+    window.matchMedia = realMatchMedia;
+    vi.restoreAllMocks();
+  });
+  const system = (dark) => {
+    window.matchMedia = (query) => ({ ...realMatchMedia(query), matches: dark && query === '(prefers-color-scheme: dark)' });
+  };
+  const Probe = () => {
+    const { mode, toggleThemeMode } = useThemeMode();
+    return <button type="button" onClick={toggleThemeMode}>{mode}</button>;
+  };
+  const mount = () => render(<ThemeModeProvider><Probe /></ThemeModeProvider>);
+
+  it('senza scelta salvata e sistema scuro parte scuro', () => {
+    system(true);
+    mount();
+    expect(screen.getByRole('button').textContent).toBe('dark');
+  });
+
+  it('senza scelta salvata e sistema chiaro parte chiaro', () => {
+    system(false);
+    mount();
+    expect(screen.getByRole('button').textContent).toBe('light');
+  });
+
+  it('la scelta salvata vince sul sistema', () => {
+    system(true);
+    localStorage.setItem('themeMode', 'light');
+    mount();
+    expect(screen.getByRole('button').textContent).toBe('light');
+  });
+
+  it('<html> segue il tema (data-theme), anche dopo il bottone: lo sfondo prima di React non resta indietro', () => {
+    system(true);
+    mount();
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    fireEvent.click(screen.getByRole('button'));
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+  });
+
+  it('con lo storage bloccato segue il sistema', () => {
+    system(true);
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('bloccato'); });
+    mount();
+    expect(screen.getByRole('button').textContent).toBe('dark');
+  });
+
+  it('senza matchMedia parte chiaro', () => {
+    window.matchMedia = undefined;
+    mount();
+    expect(screen.getByRole('button').textContent).toBe('light');
+  });
+
+  it('il bottone funziona anche con lo storage che rifiuta le scritture', () => {
+    system(false);
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('pieno'); });
+    mount();
+    fireEvent.click(screen.getByRole('button'));
+    expect(screen.getByRole('button').textContent).toBe('dark');
+  });
+
+  it('in StrictMode il caricamento non scrive themeMode e un clic lo scrive una volta sola', () => {
+    system(true);
+    const set = vi.spyOn(Storage.prototype, 'setItem');
+    render(<StrictMode><ThemeModeProvider><Probe /></ThemeModeProvider></StrictMode>);
+    expect(set).not.toHaveBeenCalledWith('themeMode', expect.anything());
+    fireEvent.click(screen.getByRole('button'));
+    expect(set.mock.calls.filter(([key]) => key === 'themeMode')).toEqual([['themeMode', 'light']]);
+  });
+
+  it('il bottone salva la scelta, il solo caricamento no', () => {
+    system(true);
+    mount();
+    expect(localStorage.getItem('themeMode')).toBeNull();
+    fireEvent.click(screen.getByRole('button'));
+    expect(screen.getByRole('button').textContent).toBe('light');
+    expect(localStorage.getItem('themeMode')).toBe('light');
   });
 });

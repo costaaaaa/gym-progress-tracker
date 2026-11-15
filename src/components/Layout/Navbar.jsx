@@ -179,6 +179,9 @@ const Navbar = () => {
               onClick={toggleThemeMode}
               size="small"
               sx={{
+                width: 40,
+                height: 40,
+                ml: 1,
                 color: 'text.secondary',
                 bgcolor: 'navToggle.bg',
                 '&:hover': { bgcolor: 'navToggle.hover' },

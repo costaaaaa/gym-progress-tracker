@@ -25,6 +25,12 @@ export const legalPaths = (lang) =>
     ? { privacy: '/en/privacy.html', terms: '/en/terms.html' }
     : { privacy: '/privacy.html', terms: '/termini.html' };
 
+// Pagine PHP del blog (fuori dalla SPA): calcolatore 1RM e guida MCP nella lingua corrente.
+export const blogPaths = (lang) =>
+  lang === 'en'
+    ? { calculator: '/en/blog/1rm-calculator/', mcp: '/en/blog/mcp/' }
+    : { calculator: '/blog/calcolatore-1rm/', mcp: '/blog/mcp/' };
+
 // Link tra pagine pubbliche: chi è su /en/ resta su /en/.
 export function useLocalizedPath() {
   const { pathname } = useLocation();

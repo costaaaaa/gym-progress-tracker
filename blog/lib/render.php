@@ -6,8 +6,8 @@
  * Layout dell'app (src/context/ThemeModeContext.jsx, src/components/Layout/,
  * marchio da src/components/LogoMark.jsx) — vanno tenuti in sync a mano se
  * l'app cambia. Il tema chiaro/scuro e' quello scelto nell'app (themeMode in
- * localStorage, stessa origine), chiaro di default: lo applica assets/tema.js,
- * che gestisce anche il toggle nell'header.
+ * localStorage, stessa origine), altrimenti la preferenza del sistema: lo decide /tema.js (come nelle pagine statiche),
+ * assets/tema.js gestisce il toggle nell'header.
  */
 
 /**
@@ -48,11 +48,10 @@ function blog_render_page(array $opts)
     $lang = isset($opts['lang']) && $opts['lang'] === 'en' ? 'en' : 'it';
     $alternates = isset($opts['alternates']) ? $opts['alternates'] : array();
 
-    // In inglese il marchio porta alla landing /en/ (il blog e' solo in italiano),
-    // accesso e registrazione alle pagine /en/ dell'app.
+    // Il marchio porta alla landing (in inglese /en/), come accesso e registrazione alle pagine dell'app.
     $ui = array(
-        'it' => array('locale' => 'it_IT', 'home' => BLOG_BASE_URL . '/', 'app' => BLOG_APP_URL, 'login' => 'Accedi', 'register' => 'Registrati', 'terms' => "Termini d'uso", 'privacyPath' => 'privacy.html', 'termsPath' => 'termini.html'),
-        'en' => array('locale' => 'en_US', 'home' => BLOG_APP_URL . 'en/', 'app' => BLOG_APP_URL . 'en/', 'login' => 'Log in', 'register' => 'Sign up', 'terms' => 'Terms of use', 'privacyPath' => 'en/privacy.html', 'termsPath' => 'en/terms.html'),
+        'it' => array('locale' => 'it_IT', 'app' => BLOG_APP_URL, 'login' => 'Accedi', 'register' => 'Registrati', 'terms' => "Termini d'uso", 'privacyPath' => 'privacy.html', 'termsPath' => 'termini.html'),
+        'en' => array('locale' => 'en_US', 'app' => BLOG_APP_URL . 'en/', 'login' => 'Log in', 'register' => 'Sign up', 'terms' => 'Terms of use', 'privacyPath' => 'en/privacy.html', 'termsPath' => 'en/terms.html'),
     );
     $ui = $ui[$lang];
     $languageNames = array('it' => 'Italiano', 'en' => 'English');
@@ -74,6 +73,7 @@ function blog_render_page(array $opts)
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="/tema.js"></script>
     <script src="/blog/assets/tema.js"></script>
     <title><?php echo blog_e($fullTitle); ?></title>
     <meta name="description" content="<?php echo blog_e($description); ?>">
@@ -116,7 +116,7 @@ function blog_render_page(array $opts)
     <a class="skip-link" href="#main-content"><?php echo blog_e($skipText); ?></a>
     <header class="site-header">
         <div class="header-inner">
-            <a class="brand" href="<?php echo blog_e($ui['home']); ?>">
+            <a class="brand" href="<?php echo blog_e($ui['app']); ?>">
                 <span class="brand-mark" aria-hidden="true">
                     <svg viewBox="0 0 160 122" width="20" height="15.25" fill="none" stroke="currentColor" stroke-width="22" stroke-linecap="round"><line x1="11" y1="37" x2="11" y2="85"/><line x1="45.5" y1="11" x2="45.5" y2="111"/><line x1="114.5" y1="11" x2="114.5" y2="111"/><line x1="149" y1="37" x2="149" y2="85"/></svg>
                 </span>
