@@ -301,6 +301,9 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
     { key: 'delete', label: t('history.delete_aria'), icon: <DeleteIcon fontSize="small" />, run: (e) => handleDeleteClick(workout, e) },
   ];
 
+  const workoutDay = (workout) => formatDate(workout.date, { weekday: 'long', day: 'numeric', month: 'long' });
+  const rowActionName = (label, workout) => t('history.row_action_aria', { action: label, date: workoutDay(workout) });
+
   const handleCloseEditDateDialog = () => {
     setOpenEditDateDialog(false);
     setWorkoutToEdit(null);
@@ -468,13 +471,13 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                           <ListItem component="div" ContainerComponent="div" disablePadding sx={{ '& > .MuiListItemButton-root': { pr: isPhone ? 10 : 19 } }} secondaryAction={
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
                               {isPhone ? (
-                                <IconButton onClick={(e) => setRowMenu({ anchor: e.currentTarget, workout })} size="small" sx={{ color: 'text.secondary' }} aria-label={t('history.more_actions_aria')}><MoreVertIcon fontSize="small" /></IconButton>
+                                <IconButton onClick={(e) => setRowMenu({ anchor: e.currentTarget, workout })} size="small" sx={{ color: 'text.secondary' }} aria-label={rowActionName(t('history.more_actions_aria'), workout)}><MoreVertIcon fontSize="small" /></IconButton>
                               ) : rowActions(workout).map((action) => (action.disabled ? (
                                 <Tooltip key={action.key} title={action.disabledHint}>
-                                  <span><IconButton disabled size="small" aria-label={action.label}>{action.icon}</IconButton></span>
+                                  <span><IconButton disabled size="small" aria-label={rowActionName(action.label, workout)}>{action.icon}</IconButton></span>
                                 </Tooltip>
                               ) : (
-                                <IconButton key={action.key} onClick={action.run} size="small" sx={{ color: 'text.secondary' }} aria-label={action.label}>{action.icon}</IconButton>
+                                <IconButton key={action.key} onClick={action.run} size="small" sx={{ color: 'text.secondary' }} aria-label={rowActionName(action.label, workout)}>{action.icon}</IconButton>
                               )))}
                               {/* Indicatore: per tastiera e lettori di schermo il comando è la card */}
                               <Box component="span" aria-hidden onClick={() => toggleWorkoutExpansion(workout.id)}
@@ -489,7 +492,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                               aria-controls={rowPanelId}
                             >
                               <ListItemText
-                                primary={<Typography sx={{ fontWeight: 600, fontSize: 16 }}>{formatDate(workout.date, { weekday: 'long', day: 'numeric', month: 'long' })}</Typography>}
+                                primary={<Typography sx={{ fontWeight: 600, fontSize: 16 }}>{workoutDay(workout)}</Typography>}
                                 secondaryTypographyProps={{ component: 'div' }}
                                 secondary={(
                                   <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, mt: 0.25 }}>
@@ -547,7 +550,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
           <Button onClick={handleConfirmDelete} color="error" variant="contained">{t('history.delete.confirm')}</Button>
         </DialogActions>
       </Dialog>
-      <Menu anchorEl={rowMenu?.anchor} open={!!rowMenu} onClose={() => setRowMenu(null)} MenuListProps={{ 'aria-label': t('history.more_actions_aria') }}>
+      <Menu anchorEl={rowMenu?.anchor} open={!!rowMenu} onClose={() => setRowMenu(null)} MenuListProps={{ 'aria-label': rowMenu && rowActionName(t('history.more_actions_aria'), rowMenu.workout) }}>
         {rowMenu && rowActions(rowMenu.workout).map((action) => (
           <MenuItem
             key={action.key}

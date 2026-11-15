@@ -161,7 +161,7 @@ describe('nomi accessibili', () => {
   it('la select del giorno e quelle della tecnica di ogni riga hanno un\'etichetta', () => {
     open();
     expect(screen.getByRole('combobox', { name: /^Seleziona giorno/ })).toBeTruthy();
-    expect(screen.getAllByRole('combobox', { name: /^Tecnica/ })).toHaveLength(4);
+    [1, 2, 3, 4].forEach((n) => expect(screen.getByRole('combobox', { name: `Tecnica, Squat, serie ${n}` })).toBeTruthy());
   });
 });
 

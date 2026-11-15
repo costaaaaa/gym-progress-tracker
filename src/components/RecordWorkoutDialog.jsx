@@ -339,10 +339,9 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                           size="small"
                         />
                         <FormControl fullWidth size="small">
-                          <InputLabel id={`record-technique-${exercise.id}-${setIndex}-label`}>{t('record.technique')}</InputLabel>
+                          <InputLabel>{t('record.technique')}</InputLabel>
                           <Select
-                            labelId={`record-technique-${exercise.id}-${setIndex}-label`}
-                            id={`record-technique-${exercise.id}-${setIndex}`}
+                            SelectDisplayProps={{ 'aria-labelledby': undefined, 'aria-label': t('record.technique_aria', { exercise: exercise.exercise_name, n: setIndex + 1 }) }}
                             disabled={!!row.is_warmup}
                             value={row.is_warmup ? '' : (row.intensity_technique || '')}
                             label={t('record.technique')}

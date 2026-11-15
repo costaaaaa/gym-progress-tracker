@@ -98,10 +98,10 @@ describe('intestazioni e testi', () => {
 describe('azioni della riga su desktop', () => {
   it('condividi, cambia data ed elimina restano icone; il menu "Altre azioni" non c\'è', async () => {
     await mount();
-    expect(await screen.findByRole('button', { name: 'Condividi allenamento' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Modifica data' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Elimina allenamento' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Altre azioni' })).toBeNull();
+    expect(await screen.findByRole('button', { name: /^Condividi allenamento/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Modifica data/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Elimina allenamento/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /^Altre azioni/ })).toBeNull();
   });
 });
 
@@ -110,22 +110,22 @@ describe('azioni della riga su telefono', () => {
 
   it('le tre icone lasciano il posto a un menu "Altre azioni" con condividi, cambia data ed elimina', async () => {
     await mount();
-    expect(screen.queryByRole('button', { name: 'Condividi allenamento' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Elimina allenamento' })).toBeNull();
-    fireEvent.click(await screen.findByRole('button', { name: 'Altre azioni' }));
+    expect(screen.queryByRole('button', { name: /^Condividi allenamento/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Elimina allenamento/ })).toBeNull();
+    fireEvent.click(await screen.findByRole('button', { name: /^Altre azioni/ }));
     const menu = screen.getByRole('menu');
     expect(within(menu).getAllByRole('menuitem').map((v) => v.textContent)).toEqual(['Condividi allenamento', 'Modifica data', 'Elimina allenamento']);
   });
 
   it('il menu delle azioni ha il nome «Altre azioni»', async () => {
     await mount();
-    fireEvent.click(await screen.findByRole('button', { name: 'Altre azioni' }));
-    expect(screen.getByRole('menu', { name: 'Altre azioni' })).toBeTruthy();
+    fireEvent.click(await screen.findByRole('button', { name: /^Altre azioni/ }));
+    expect(screen.getByRole('menu', { name: 'Altre azioni, domenica 18 ottobre' })).toBeTruthy();
   });
 
   it('"Elimina allenamento" dal menu apre la conferma', async () => {
     await mount();
-    fireEvent.click(await screen.findByRole('button', { name: 'Altre azioni' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Altre azioni/ }));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Elimina allenamento' }));
     expect(await screen.findByText('Conferma eliminazione')).toBeTruthy();
     expect(screen.getByText('Sei sicuro di voler eliminare questo allenamento?')).toBeTruthy();
@@ -140,7 +140,7 @@ describe('azioni della riga su telefono', () => {
     )));
     await mount();
     fireEvent.click(screen.getByText('Agosto 2026'));
-    fireEvent.click(screen.getByRole('button', { name: 'Altre azioni' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Altre azioni/ }));
     const voce = within(screen.getByRole('menu')).getByRole('menuitem', { name: /Modifica data/ });
     expect(voce.getAttribute('aria-disabled')).toBe('true');
     expect(within(voce).getByText('Si possono spostare solo gli allenamenti degli ultimi 30 giorni')).toBeTruthy();
@@ -164,7 +164,7 @@ describe('eliminazione con «Annulla»', () => {
   // Dopo la conferma i timer dell'app (il conto dei 10 secondi) sono finti, così il test li fa scorrere
   const confermaEliminazione = async () => {
     await mount();
-    fireEvent.click(await screen.findByRole('button', { name: 'Elimina allenamento' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Elimina allenamento/ }));
     await screen.findByText('Conferma eliminazione');
     vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
     vi.setSystemTime(new Date(2026, 9, 20, 12, 0));
@@ -221,13 +221,13 @@ describe('eliminazione con «Annulla»', () => {
             : json({ success: true }),
     )));
     await mount();
-    fireEvent.click((await screen.findAllByRole('button', { name: 'Elimina allenamento' }))[0]);
+    fireEvent.click((await screen.findAllByRole('button', { name: /^Elimina allenamento/ }))[0]);
     await screen.findByText('Conferma eliminazione');
     vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
     vi.setSystemTime(new Date(2026, 9, 20, 12, 0));
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Elimina' }));
     await passano(500);
-    fireEvent.click(screen.getAllByRole('button', { name: 'Elimina allenamento' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: /^Elimina allenamento/ })[0]);
     await passano(0);
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Elimina' }));
     await passano(500);
@@ -249,14 +249,14 @@ describe('avvisi su Salute del telefono', () => {
   it('eliminando un allenamento che è in Salute il dialog lo dice', async () => {
     serveWorkout({ ...workout, health_written: true });
     await mount();
-    fireEvent.click(await screen.findByRole('button', { name: 'Elimina allenamento' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Elimina allenamento/ }));
     expect(await screen.findByText(AVVISO_ELIMINA)).toBeTruthy();
   });
 
   it('eliminando un allenamento che non è in Salute il dialog non ne parla', async () => {
     serveWorkout({ ...workout, health_written: false });
     await mount();
-    fireEvent.click(await screen.findByRole('button', { name: 'Elimina allenamento' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Elimina allenamento/ }));
     await screen.findByText('Conferma eliminazione');
     expect(screen.queryByText(AVVISO_ELIMINA)).toBeNull();
   });
@@ -325,6 +325,21 @@ describe('serie di riscaldamento (#66): visibili ma escluse dal conteggio', () =
     const pancaBox = screen.getByText('Panca piana').closest('div').parentElement;
     expect(within(pancaBox).getByText('Risc.')).toBeTruthy();
     expect(within(pancaBox).getByText('1 serie')).toBeTruthy();
+  });
+});
+
+describe('nomi che distinguono le righe', () => {
+  it('su desktop le tre icone dicono di quale allenamento sono', async () => {
+    await mount();
+    ['Condividi allenamento', 'Modifica data', 'Elimina allenamento'].forEach((azione) => {
+      expect(screen.getByRole('button', { name: `${azione}, domenica 18 ottobre` })).toBeTruthy();
+    });
+  });
+
+  it('su telefono il pulsante «Altre azioni» dice di quale allenamento è', async () => {
+    simulaTelefono();
+    await mount();
+    expect(screen.getByRole('button', { name: 'Altre azioni, domenica 18 ottobre' })).toBeTruthy();
   });
 });
 

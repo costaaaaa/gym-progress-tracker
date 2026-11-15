@@ -976,5 +976,7 @@
   "admin.meta.description": "Area di amministrazione di LiftIndex.",
   "body.weight_chart_aria": "Grafico: {{title}}. Ultimo valore: {{value}}.",
   "body.history_aria": "Storico delle misure",
-  "progress.chart_aria": "Grafico: {{kind}} di {{name}} nel tempo. I valori sono nella cronologia."
+  "progress.chart_aria": "Grafico: {{kind}} di {{name}} nel tempo. I valori sono nella cronologia.",
+  "record.technique_aria": "Tecnica, {{exercise}}, serie {{n}}",
+  "history.row_action_aria": "{{action}}, {{date}}"
 }

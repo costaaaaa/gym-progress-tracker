@@ -976,5 +976,7 @@
   "admin.meta.description": "LiftIndex administration area.",
   "body.weight_chart_aria": "Chart: {{title}}. Latest value: {{value}}.",
   "body.history_aria": "Measurement history",
-  "progress.chart_aria": "Chart: {{kind}} for {{name}} over time. The values are in the history."
+  "progress.chart_aria": "Chart: {{kind}} for {{name}} over time. The values are in the history.",
+  "record.technique_aria": "Technique, {{exercise}}, set {{n}}",
+  "history.row_action_aria": "{{action}}, {{date}}"
 }
