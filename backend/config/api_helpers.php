@@ -421,7 +421,7 @@ function birth_date_error($birth_date)
 {
     $birth = is_string($birth_date) ? DateTime::createFromFormat('!Y-m-d', $birth_date) : false;
     if (!$birth || $birth->format('Y-m-d') !== $birth_date || $birth > user_today()
-        || $birth < (clone user_today())->modify('-100 years')) {
+        || $birth < user_today()->modify('-100 years')) {
         return t_server('birth.invalid');
     }
     if ($birth->diff(user_today())->y < 14) {
