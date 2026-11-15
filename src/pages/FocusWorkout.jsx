@@ -16,6 +16,7 @@ import { Lock as LockIcon } from '@mui/icons-material';
 import { visuallyHidden } from '@mui/utils';
 import FocusExercisePicker from '../components/FocusExercisePicker';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { focusedElement } from '../utils/focus';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './focus/useFocusColors';
 import useFocusSession from './focus/useFocusSession';
@@ -38,17 +39,17 @@ const FocusWorkout = () => {
   // titolo, ma solo se si è perso. Se un campo l'ha preso da solo (autoFocus del peso) resta lì.
   // Non alla prima schermata (nessun campo da sostituire) e non mentre carica.
   const mainRef = useRef(null);
-  const lastStep = useRef(null);
-  const step = `${phase}${summary.savedResult ? ':saved' : ''}`;
+  const lastScreen = useRef(null);
+  const saved = Boolean(summary.savedResult);
   useEffect(() => {
     if (loading) return;
-    if (lastStep.current && lastStep.current !== step) {
+    const last = lastScreen.current;
+    if (last && (last.phase !== phase || last.saved !== saved)) {
       const main = mainRef.current;
-      const active = document.activeElement;
-      if (!active || active === document.body || !main?.contains(active)) main?.querySelector('h1')?.focus();
+      if (!main?.contains(focusedElement())) main?.querySelector('h1')?.focus();
     }
-    lastStep.current = step;
-  }, [loading, step]);
+    lastScreen.current = { phase, saved };
+  }, [loading, phase, saved]);
   // Fine del recupero: l'unico annuncio, niente conto alla rovescia a voce
   const restOver = phase === 'rest_timer' && restTimer.timerDuration > 0 && restTimer.timerRemaining === 0;
 

@@ -45,6 +45,7 @@ import ShareCardDialog from '../components/ShareCardDialog';
 import useUndoableDelete from '../hooks/useUndoableDelete';
 import { buildShareStats, historyRecords, muscleGroupsTitle } from '../utils/shareCard';
 import { track } from '../utils/analytics';
+import { focusedElement } from '../utils/focus';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import { radius } from '../theme/radius';
@@ -271,8 +272,8 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
     previousPendingId.current = pendingId;
     if (pendingId !== null) { undoButtonRef.current?.focus(); return; }
     if (previous === null) return;
-    const active = document.activeElement;
-    if (active && active !== document.body && !undoButtonRef.current?.contains(active)) return;
+    const active = focusedElement();
+    if (active && !undoButtonRef.current?.contains(active)) return;
     const root = contentRef.current;
     const target = (!hiddenIds.includes(previous) && root?.querySelector(`[data-workout-row="${previous}"]`))
       || root?.querySelector('[data-month-header]') || root;

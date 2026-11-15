@@ -8,3 +8,10 @@ export const isKeyboardFocus = (element) => {
     return true;
   }
 };
+
+// L'elemento che ha davvero il fuoco, o null se non ce l'ha nessuno (il browser lo lascia sul <body>
+// quando l'elemento che l'aveva sparisce).
+export const focusedElement = () => {
+  const active = document.activeElement;
+  return active && active !== document.body ? active : null;
+};

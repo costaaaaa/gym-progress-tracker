@@ -8,9 +8,10 @@ import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { json } from '../test/dom';
 import { setBrowserTimeZone } from '../test/timeZone';
 import { strayListChildren } from '../test/accessibleNames';
-import { isKeyboardFocus } from '../utils/keyboardFocus';
+import { isKeyboardFocus } from '../utils/focus';
 
-vi.mock('../utils/keyboardFocus', () => ({ isKeyboardFocus: vi.fn(() => true) }));
+// jsdom dà :focus-visible a ogni focus: la distinzione tastiera/mouse si sostituisce (il resto del modulo resta vero)
+vi.mock('../utils/focus', async (importOriginal) => ({ ...(await importOriginal()), isKeyboardFocus: vi.fn(() => true) }));
 vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ isLoggedIn: true, loading: false }) }));
 
 const GREY = 'rgb(107, 102, 99)';
@@ -259,15 +260,11 @@ describe('eliminazione con «Annulla»', () => {
     });
 
     it('se il fuoco su «Annulla» non viene dalla tastiera (mouse, tocco) il conto parte subito e la richiesta parte', async () => {
-      isKeyboardFocus.mockReturnValue(false);
-      try {
-        await confermaEliminazione();
-        expect(document.activeElement).toBe(annulla());
-        await passano(RESTO);
-        expect(eliminazioni()).toHaveLength(1);
-      } finally {
-        isKeyboardFocus.mockReturnValue(true);
-      }
+      isKeyboardFocus.mockReturnValueOnce(false);
+      await confermaEliminazione();
+      expect(document.activeElement).toBe(annulla());
+      await passano(RESTO);
+      expect(eliminazioni()).toHaveLength(1);
     });
 
     it('con il fuoco da tastiera su «Annulla» i 10 secondi non scadono: la richiesta non parte', async () => {
