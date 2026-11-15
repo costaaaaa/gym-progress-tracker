@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import {
   Box,
   Button,
@@ -12,6 +13,7 @@ import {
   GlobalStyles
 } from '@mui/material';
 import { Lock as LockIcon } from '@mui/icons-material';
+import { visuallyHidden } from '@mui/utils';
 import FocusExercisePicker from '../components/FocusExercisePicker';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { useTranslation } from 'react-i18next';
@@ -31,6 +33,18 @@ const FocusWorkout = () => {
 
   const { colors, isDarkMode } = useFocusColors();
   const { loading, phase, resumePrompt, selectDay, restTimer, workout, summary, picker, premiumDialog, snackbar } = useFocusSession();
+
+  // Al cambio di fase il pulsante premuto sparisce e il focus finirebbe sul <body>: va sul titolo della nuova fase.
+  // Non alla prima schermata (nessun campo da sostituire) e non mentre carica.
+  const mainRef = useRef(null);
+  const lastPhase = useRef(null);
+  useEffect(() => {
+    if (loading) return;
+    if (lastPhase.current && lastPhase.current !== phase) mainRef.current?.querySelector('h1')?.focus();
+    lastPhase.current = phase;
+  }, [loading, phase]);
+  // Fine del recupero: l'unico annuncio, niente conto alla rovescia a voce
+  const restOver = phase === 'rest_timer' && restTimer.timerDuration > 0 && restTimer.timerRemaining === 0;
 
   // ================================================
   // RENDER — CONTENUTO IN BASE ALLA FASE
@@ -93,7 +107,10 @@ const FocusWorkout = () => {
         color: 'inherit',
       }
     }} />
-    {renderContent()}
+    <Box component="main" ref={mainRef} sx={{ '& h1:focus': { outline: 'none' } }}>
+      {renderContent()}
+    </Box>
+    <Box role="status" aria-live="polite" sx={visuallyHidden}>{restOver ? t('focus.rest_over') : ''}</Box>
       <FocusExercisePicker {...picker} />
       <Dialog open={premiumDialog.open} onClose={premiumDialog.onClose}
         PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: radius.xxl } }}>

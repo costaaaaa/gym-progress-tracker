@@ -978,5 +978,6 @@
   "body.history_aria": "Measurement history",
   "progress.chart_aria": "Chart: {{kind}} for {{name}} over time. The values are in the history.",
   "record.technique_aria": "Technique, {{exercise}}, set {{n}}",
-  "history.row_action_aria": "{{action}}, {{date}}"
+  "history.row_action_aria": "{{action}}, {{date}}",
+  "focus.rest_over": "Rest over: you can do the next set"
 }

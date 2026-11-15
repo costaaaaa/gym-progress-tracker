@@ -49,7 +49,7 @@ export default function WorkoutPhase({
         <Container maxWidth="sm" sx={{ py: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
           <Box sx={{ textAlign: 'center', mb: 3 }}>
             <Chip label={muscleLabel(currentExercise.muscle_group)} size="small" sx={{ bgcolor: colors.bgElevated, color: colors.textSecondary, mb: 1, fontWeight: 500 }} />
-            <Typography variant="h4" sx={{ fontWeight: 700, color: colors.text, lineHeight: 1.2 }}>{currentExercise.exercise_name}</Typography>
+            <Typography variant="h4" component="h1" tabIndex={-1} sx={{ fontWeight: 700, color: colors.text, lineHeight: 1.2 }}>{currentExercise.exercise_name}</Typography>
             {currentExercise.notes && (
               <Alert severity="info" icon={<InfoIcon />}
                 sx={{ mt: 2, bgcolor: colors.bgElevated, color: colors.textSecondary, '& .MuiAlert-icon': { color: colors.textSecondary }, border: `1px solid ${colors.border}`, borderRadius: radius.sm }}>
@@ -80,7 +80,7 @@ export default function WorkoutPhase({
             })}
           </Box>
 
-          <Typography variant="subtitle2" sx={{ textAlign: 'center', color: colors.textSecondary, mb: 3 }}>
+          <Typography variant="subtitle2" component="p" sx={{ textAlign: 'center', color: colors.textSecondary, mb: 3 }}>
             {slotLabel(t, currentSlot, 'of')}
           </Typography>
 
@@ -212,7 +212,7 @@ export default function WorkoutPhase({
           {currentExerciseSets.length > 0 && (
             <Paper sx={{ bgcolor: colors.bgCard, overflow: 'hidden', border: `1px solid ${colors.border}` }}>
               <Box sx={{ px: 2, py: 1.5, bgcolor: colors.bgElevated }}>
-                <Typography variant="subtitle2" sx={{ color: colors.textSecondary }}>{t('focus.sets_done')}</Typography>
+                <Typography variant="subtitle2" component="h2" sx={{ color: colors.textSecondary }}>{t('focus.sets_done')}</Typography>
               </Box>
               {currentExerciseSets.map((set, idx) => (
                 <Box key={set.setNumber} sx={{

@@ -36,13 +36,13 @@ export default function ResumePromptPhase({ draftToResume, timeZone, retroDateIn
         boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
       }}>
         <HistoryIcon sx={{ fontSize: 64, color: colors.warning, mb: 2 }} />
-        <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
+        <Typography variant="h5" component="h1" tabIndex={-1} sx={{ fontWeight: 700, mb: 2 }}>
           {t('focus.draft_title')}
         </Typography>
         <Typography variant="body1" sx={{ color: colors.textSecondary, mb: 1 }}>
           {t('focus.draft_text')}
         </Typography>
-        <Typography variant="h6" sx={{ color: colors.text, fontWeight: 600, mb: 1 }}>
+        <Typography variant="h6" component="h2" sx={{ color: colors.text, fontWeight: 600, mb: 1 }}>
           {draftToResume.selectedDay?.name}
         </Typography>
         <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 3 }}>

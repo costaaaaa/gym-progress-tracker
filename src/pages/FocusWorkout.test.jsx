@@ -817,6 +817,8 @@ describe('colori di Focus: rosso solo per ciò che è distruttivo', () => {
 
   it('il campo con il focus ha il bordo in inchiostro, non rosso', async () => {
     await startDay('Push');
+    // All'ingresso il focus va sul titolo della fase: il campo lo prende con un Tab
+    act(() => { screen.getByLabelText('Peso (kg)').focus(); });
     const fieldset = screen.getByLabelText('Peso (kg)').closest('.MuiOutlinedInput-root').querySelector('fieldset');
     expect(getComputedStyle(fieldset).borderColor).toBe(INK);
   });
@@ -1324,5 +1326,82 @@ describe('nomi accessibili', () => {
     expect(screen.getByRole('dialog', { name: 'Cambia esercizio' })).toBeTruthy();
     expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Chiudi' })).toBeTruthy();
     expect(unnamedControls()).toEqual([]);
+  });
+});
+
+describe('Focus: struttura della pagina e annunci (WCAG 1.3.1, 2.4.6, 4.1.3)', () => {
+  // Livelli dei titoli nell'ordine del documento: il primo è 1 e non si salta mai un livello scendendo
+  const headingLevels = () => screen.getAllByRole('heading').map((h) => Number(h.tagName[1]));
+  const expectOrderedOutline = () => {
+    const levels = headingLevels();
+    expect(levels[0]).toBe(1);
+    levels.forEach((level, i) => { if (i > 0) expect(level - levels[i - 1]).toBeLessThanOrEqual(1); });
+  };
+  const toRest = async () => { await startDay('Push'); doSet(); };
+  const toSummary = async () => { await toRest(); click('Salta timer'); doSet(); };
+  const live = () => document.querySelector('[role="status"][aria-live="polite"]');
+
+  it.each([
+    ['scelta del giorno', async () => { await mount(); }, 'Focus mode'],
+    ['allenamento', async () => { await startDay('Push'); }, 'Panca piana'],
+    ['recupero', toRest, 'Recupero'],
+    ['riepilogo', toSummary, 'Riepilogo'],
+  ])('%s: un solo <main>, un solo h1 con il nome della fase e livelli in ordine', async (_, go, title) => {
+    await go();
+    expect(screen.getAllByRole('main')).toHaveLength(1);
+    const h1s = screen.getAllByRole('heading', { level: 1 });
+    expect(h1s.map((h) => h.textContent)).toEqual([title]);
+    expect(h1s[0].getAttribute('tabindex')).toBe('-1');
+    expectOrderedOutline();
+  });
+
+  it('riepilogo dopo il salvataggio: ancora un solo h1 e livelli in ordine', async () => {
+    await toSummary();
+    await act(async () => { click('Salva allenamento'); });
+    await advance(0);
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expectOrderedOutline();
+  });
+
+  it('invito a riprendere la bozza: un h1 e livelli in ordine', async () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(savedDraft));
+    await mount();
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expectOrderedOutline();
+  });
+
+  it('la prima apertura non sposta il focus', async () => {
+    await mount();
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it('al cambio di fase il focus va sul titolo della nuova fase, anche se il pulsante premuto sparisce', async () => {
+    await startDay('Push');
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1, name: 'Panca piana' }));
+    doSet();
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1, name: 'Recupero' }));
+    click('Salta timer');
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1, name: 'Panca piana' }));
+    doSet();
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1, name: 'Riepilogo' }));
+  });
+
+  it('la regione live c\'è già alla prima schermata ed è vuota', async () => {
+    await mount();
+    expect(live()).toBeTruthy();
+    expect(live().textContent).toBe('');
+  });
+
+  it('a fine recupero la stessa regione live annuncia la fine, una volta sola; prima resta vuota', async () => {
+    await toRest();
+    const region = live();
+    expect(region.textContent).toBe('');
+    await advance(89);
+    expect(region.textContent).toBe('');
+    await advance(1);
+    expect(region.textContent).toBe('Recupero finito: puoi fare la serie successiva');
+    expect(live()).toBe(region);
+    click('Salta timer');
+    expect(live().textContent).toBe('');
   });
 });

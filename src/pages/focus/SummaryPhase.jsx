@@ -32,7 +32,7 @@ function SummaryStat({ value, label, valueSx }) {
   const labelId = useId();
   return (
     <Box role="group" aria-labelledby={labelId} sx={{ textAlign: 'center' }}>
-      <Typography variant="h4" sx={{ ...valueSx, fontWeight: 700, color: colors.text }}>{value}</Typography>
+      <Typography variant="h4" component="div" sx={{ ...valueSx, fontWeight: 700, color: colors.text }}>{value}</Typography>
       <Typography id={labelId} variant="caption" sx={{ color: colors.textSecondary }}>{label}</Typography>
     </Box>
   );
@@ -60,12 +60,12 @@ export default function SummaryPhase({
     <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text }}>
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1, borderBottom: `1px solid ${colors.border}` }}>
         <IconButton onClick={onQuit} aria-label={t('focus.quit_aria')} sx={{ color: colors.textSecondary }}><ArrowBackIcon /></IconButton>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>{t('focus.summary')}</Typography>
+        <Typography variant="h6" component="h1" tabIndex={-1} sx={{ fontWeight: 700 }}>{t('focus.summary')}</Typography>
       </Box>
 
       <Container maxWidth="sm" sx={{ py: 3 }}>
         <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>{t('focus.completed')}</Typography>
+          <Typography variant="h5" component="h2" sx={{ fontWeight: 700, mb: 1 }}>{t('focus.completed')}</Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mt: 2 }}>
             <SummaryStat value={exercisesCompleted} label={t('focus.exercises')} />
             <SummaryStat value={totalSets} label={t('focus.sets')} />
@@ -75,7 +75,7 @@ export default function SummaryPhase({
 
         <Paper sx={{ bgcolor: colors.bgCard, overflow: 'hidden', mb: 3, border: `1px solid ${colors.border}` }}>
           <Box sx={{ px: 2, py: 1.5 }}>
-            <Typography variant="subtitle2" sx={{ color: colors.textSecondary }}>{t('focus.detail')}</Typography>
+            <Typography variant="subtitle2" component="h2" sx={{ color: colors.textSecondary }}>{t('focus.detail')}</Typography>
           </Box>
           {selectedDay?.exercises?.map((exercise) => {
             const sets = completedSets[exercise.id];
@@ -89,7 +89,7 @@ export default function SummaryPhase({
             return (
               <Box key={exercise.id} sx={{ px: 2, py: 2, borderBottom: `1px solid ${colors.border}` }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, mb: 1 }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: colors.text }}>{exercise.exercise_name}</Typography>
+                  <Typography variant="subtitle1" component="h3" sx={{ fontWeight: 600, color: colors.text }}>{exercise.exercise_name}</Typography>
                   {exercise.replaces && (
                     <Typography variant="caption" sx={{ color: colors.textSecondary }}>{t('focus.replaces', { name: exercise.replaces })}</Typography>
                   )}
@@ -137,7 +137,7 @@ export default function SummaryPhase({
                 p: 2.5, mb: 3, textAlign: 'center'
               }}>
                 <FireIcon sx={{ fontSize: 40, color: colors.warning, mb: 0.5 }} />
-                <Typography variant="h6" sx={{ fontWeight: 700, color: colors.text }}>
+                <Typography variant="h6" component="h2" sx={{ fontWeight: 700, color: colors.text }}>
                   {savedResult.new_longest
                     ? t('focus.streak_new_longest', { weeks: savedResult.current_streak_weeks })
                     : savedResult.streak_milestone && savedResult.current_streak_weeks > 1
@@ -185,7 +185,7 @@ export default function SummaryPhase({
 
               return (
                 <Paper sx={{ bgcolor: colors.bgCard, border: `1px solid ${colors.border}`, p: 2.5, mb: 3 }}>
-                  <Typography variant="subtitle2" sx={{ color: colors.textSecondary, mb: 1.5 }}>
+                  <Typography variant="subtitle2" component="h2" sx={{ color: colors.textSecondary, mb: 1.5 }}>
                     {t('focus.session_summary')}
                   </Typography>
                   <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 0.5 }}>

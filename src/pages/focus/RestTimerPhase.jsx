@@ -29,8 +29,8 @@ export default function RestTimerPhase({
         <CircularProgress variant="determinate" value={100} size={220} thickness={4} aria-hidden
           sx={{ color: colors.border, position: 'absolute', left: 0, zIndex: 0 }} />
         <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-          <Typography variant="h2" sx={{ ...TABULAR, fontWeight: 700, color: colors.text }}>{formatTime(timerRemaining)}</Typography>
-          <Typography variant="caption" sx={{ color: colors.textSecondary, mt: 0.5 }}>{t('focus.rest')}</Typography>
+          <Typography variant="h2" component="div" sx={{ ...TABULAR, fontWeight: 700, color: colors.text }}>{formatTime(timerRemaining)}</Typography>
+          <Typography variant="caption" component="h1" tabIndex={-1} sx={{ color: colors.textSecondary, mt: 0.5 }}>{t('focus.rest')}</Typography>
         </Box>
       </Box>
       <Typography variant="body1" sx={{ color: colors.textSecondary, mb: 1 }}>{currentExerciseName}</Typography>
