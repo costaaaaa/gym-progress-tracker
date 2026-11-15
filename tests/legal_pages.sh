@@ -91,6 +91,26 @@ confronta() {
     [[ "$alt_ok" -eq 1 ]] && ok "$nome: alternate it, en e x-default in entrambe le pagine"
 }
 
+# tema PAGINA: stessa regola dell'app e del blog (themeMode, chiaro se assente), stesso foglio di stile
+tema() {
+    local f="$ROOT/public/$1"
+    if [[ ! -f "$f" ]]; then ko "tema $1: file presente"; return; fi
+    grep -q '<script src="/tema.js"></script>' "$f" && ok "tema $1: script esterno /tema.js" || ko "tema $1: manca <script src=\"/tema.js\">"
+    grep -q '<link rel="stylesheet" href="/pagine.css">' "$f" && ok "tema $1: foglio /pagine.css" || ko "tema $1: manca /pagine.css"
+    # script prima del foglio di stile, cosi' il tema c'e' prima del disegno
+    [[ "$(grep -n 'tema.js' "$f" | head -1 | cut -d: -f1)" -lt "$(grep -n 'pagine.css' "$f" | head -1 | cut -d: -f1)" ]] 2>/dev/null && ok "tema $1: lo script precede il foglio" || ko "tema $1: ordine script/foglio"
+    grep -q 'prefers-color-scheme' "$f" && ko "tema $1: ha ancora una regola prefers-color-scheme" || ok "tema $1: nessun prefers-color-scheme"
+    grep -q '<script>' "$f" && ko "tema $1: script inline (la CSP non li ammette)" || ok "tema $1: nessuno script inline"
+}
+
+echo "tema"
+for p in privacy.html termini.html en/privacy.html en/terms.html 404.html; do tema "$p"; done
+for f in tema.js pagine.css; do
+    [[ -f "$ROOT/public/$f" ]] && ok "public/$f presente" || ko "public/$f mancante"
+done
+grep -q 'prefers-color-scheme' "$ROOT/public/pagine.css" 2>/dev/null && ko "pagine.css: ha ancora prefers-color-scheme" || ok "pagine.css: nessun prefers-color-scheme"
+grep -q "html\[data-theme=\"dark\"\]" "$ROOT/public/pagine.css" 2>/dev/null && ok "pagine.css: scuro da data-theme" || ko "pagine.css: manca html[data-theme=\"dark\"]"
+
 echo "privacy"
 confronta privacy.html privacy.html "privacy"
 echo "termini"
