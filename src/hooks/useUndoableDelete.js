@@ -1,14 +1,17 @@
-import { useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo } from 'react';
 
 export const UNDO_DELAY_MS = 10000;
 
 // Eliminazione con «Annulla»: schedule(id) nasconde l'elemento subito e chiama commit(id) solo allo scadere.
 // Un solo elemento in attesa alla volta: eliminarne un secondo fa partire subito la richiesta del primo.
+// Il conto dei 10 secondi si ferma finché il messaggio ha il puntatore o il fuoco (WCAG 2.2.1): holdProps va
+// passato al Snackbar. Quando l'ultimo dei due esce, il conto riparte da 10 secondi pieni.
 // Se commit fallisce l'elemento torna visibile e onError(errore, id) lo segnala (non più se la pagina è già smontata).
 const useUndoableDelete = ({ commit, onError }) => {
   const [hiddenIds, setHiddenIds] = useState([]);
   const [pendingId, setPendingId] = useState(null);
   const pending = useRef(null); // { id, timer }
+  const holds = useRef({ pointer: false, focus: false });
   const latest = useRef({ commit, onError });
   const mounted = useRef(true);
   useLayoutEffect(() => { latest.current = { commit, onError }; });
@@ -29,6 +32,7 @@ const useUndoableDelete = ({ commit, onError }) => {
     if (!current) return null;
     clearTimeout(current.timer);
     pending.current = null;
+    holds.current = { pointer: false, focus: false };
     setPendingId(null);
     return current;
   }, []);
@@ -45,6 +49,21 @@ const useUndoableDelete = ({ commit, onError }) => {
     pending.current = { id, timer: setTimeout(flush, UNDO_DELAY_MS) };
   }, [flush]);
 
+  const hold = useCallback((kind, on) => {
+    const current = pending.current;
+    if (!current) return;
+    holds.current[kind] = on;
+    clearTimeout(current.timer);
+    current.timer = holds.current.pointer || holds.current.focus ? null : setTimeout(flush, UNDO_DELAY_MS);
+  }, [flush]);
+
+  const holdProps = useMemo(() => ({
+    onMouseEnter: () => hold('pointer', true),
+    onMouseLeave: () => hold('pointer', false),
+    onFocus: () => hold('focus', true),
+    onBlur: () => hold('focus', false),
+  }), [hold]);
+
   const undo = useCallback(() => {
     const current = takePending();
     if (current) setHiddenIds((ids) => ids.filter((x) => x !== current.id));
@@ -58,7 +77,7 @@ const useUndoableDelete = ({ commit, onError }) => {
     };
   }, [flush]);
 
-  return { hiddenIds, pendingId, schedule, undo };
+  return { hiddenIds, pendingId, schedule, undo, holdProps };
 };
 
 export default useUndoableDelete;

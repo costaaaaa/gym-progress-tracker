@@ -173,6 +173,8 @@ describe('eliminazione con «Annulla»', () => {
     await passano(500); // il dialog finisce di chiudersi e il resto della pagina torna accessibile
   };
   const passano = (ms) => act(async () => { vi.advanceTimersByTime(ms); });
+  // Il fuoco sta su «Annulla» e ferma il conto: i test sullo scadere lo lasciano prima
+  const rilasciaFuoco = () => act(() => document.activeElement.blur());
   const RESTO = 10000 - 500; // dei 10 secondi dell'«Annulla» ne sono passati 500 mentre il dialog si chiudeva
 
   it('dopo la conferma la riga sparisce subito, compare «Allenamento eliminato» con «Annulla» e il server non è ancora chiamato', async () => {
@@ -186,7 +188,8 @@ describe('eliminazione con «Annulla»', () => {
 
   it('allo scadere dei 10 secondi parte la richiesta di eliminazione', async () => {
     await confermaEliminazione();
-    await passano(RESTO);
+    rilasciaFuoco();
+    await passano(10000);
     expect(eliminazioni()).toHaveLength(1);
     expect(JSON.parse(eliminazioni()[0][1].body)).toEqual({ id: 7 });
     expect(screen.queryByText(RIGA)).toBeNull();
@@ -208,7 +211,8 @@ describe('eliminazione con «Annulla»', () => {
             : json({ success: true }),
     )));
     await confermaEliminazione();
-    await passano(RESTO);
+    rilasciaFuoco();
+    await passano(10000);
     expect(screen.getByText(RIGA)).toBeTruthy();
     expect(screen.getByText('Allenamento bloccato')).toBeTruthy();
   });
@@ -236,6 +240,78 @@ describe('eliminazione con «Annulla»', () => {
     const errore = screen.getByText('Allenamento bloccato').closest('.MuiSnackbar-root');
     const annulla = screen.getByText('Allenamento eliminato').closest('.MuiSnackbar-root');
     expect(getComputedStyle(errore).bottom).not.toBe(getComputedStyle(annulla).bottom);
+  });
+
+  // 2.4.3 e 2.2.1: la tastiera arriva subito a «Annulla», il conto si ferma finché lo si usa, il fuoco non finisce su body
+  describe('tastiera e fuoco', () => {
+    const annulla = () => within(screen.getByRole('alert')).getByRole('button', { name: 'Annulla' });
+    const altro = { ...workout, id: 8, date: '2026-10-17 02:00:00', exercises: workout.exercises.slice(0, 2) };
+    const serve = (records) => vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
+      url.includes('read_plans.php') ? json({ records: [plan] })
+        : url.includes('workout_history/read.php') ? json({ records }) : json({ success: true }),
+    )));
+
+    it('quando il messaggio compare il fuoco è su «Annulla»', async () => {
+      await confermaEliminazione();
+      expect(document.activeElement).toBe(annulla());
+    });
+
+    it('con il fuoco su «Annulla» i 10 secondi non scadono: la richiesta non parte', async () => {
+      await confermaEliminazione();
+      await passano(RESTO * 3);
+      expect(eliminazioni()).toHaveLength(0);
+      expect(screen.getByText('Allenamento eliminato')).toBeTruthy();
+    });
+
+    it('con il puntatore sul messaggio il conto si ferma, e quando esce riparte', async () => {
+      await confermaEliminazione();
+      act(() => annulla().blur());
+      fireEvent.mouseEnter(screen.getByText('Allenamento eliminato').closest('.MuiSnackbar-root'));
+      await passano(RESTO * 3);
+      expect(eliminazioni()).toHaveLength(0);
+      fireEvent.mouseLeave(screen.getByText('Allenamento eliminato').closest('.MuiSnackbar-root'));
+      await passano(10000);
+      expect(eliminazioni()).toHaveLength(1);
+    });
+
+    it('dopo «Annulla» il fuoco va alla riga ripristinata, non a body', async () => {
+      await confermaEliminazione();
+      fireEvent.click(annulla());
+      await passano(0);
+      expect(document.activeElement).toBe(screen.getByText(RIGA).closest('[aria-expanded]'));
+    });
+
+    it('allo scadere il fuoco resta nella lista (intestazione del mese), non su body', async () => {
+      serve([workout, altro]);
+      await mount();
+      fireEvent.click((await screen.findAllByRole('button', { name: /^Elimina allenamento/ }))[0]);
+      await screen.findByText('Conferma eliminazione');
+      vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
+      vi.setSystemTime(new Date(2026, 9, 20, 12, 0));
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Elimina' }));
+      await passano(500);
+      act(() => annulla().blur());
+      await passano(10000);
+      await passano(1000);
+      expect(document.activeElement).not.toBe(document.body);
+      expect(document.activeElement.getAttribute('aria-controls')).toMatch(/^month-panel-/);
+    });
+
+    it('se l\'utente ha spostato il fuoco altrove, la scadenza non glielo porta via', async () => {
+      serve([workout, altro]);
+      await mount();
+      fireEvent.click((await screen.findAllByRole('button', { name: /^Elimina allenamento/ }))[0]);
+      await screen.findByText('Conferma eliminazione');
+      vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
+      vi.setSystemTime(new Date(2026, 9, 20, 12, 0));
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Elimina' }));
+      await passano(500);
+      const riga = screen.getByText('02:00 · 2 esercizi').closest('[aria-expanded]');
+      act(() => riga.focus());
+      await passano(10000);
+      await passano(1000);
+      expect(document.activeElement).toBe(riga);
+    });
   });
 });
 
