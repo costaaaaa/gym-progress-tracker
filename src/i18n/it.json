@@ -973,5 +973,8 @@
   "dashboard.tabs_aria": "Sezioni della dashboard",
   "profile.tabs_aria": "Sezioni del profilo",
   "admin.meta.title": "Amministrazione",
-  "admin.meta.description": "Area di amministrazione di LiftIndex."
+  "admin.meta.description": "Area di amministrazione di LiftIndex.",
+  "body.weight_chart_aria": "Grafico: {{title}}. Ultimo valore: {{value}}.",
+  "body.history_aria": "Storico delle misure",
+  "progress.chart_aria": "Grafico: {{kind}} di {{name}} nel tempo. I valori sono nella cronologia."
 }

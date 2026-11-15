@@ -341,6 +341,9 @@ const BodyStats = ({ isEmbedded = false }) => {
   const weightPoints = chartData
     .filter(d => d.weight !== null && d.weight !== undefined)
     .map(d => ({ x: d.day, value: d.weight }));
+  const weightRows = chartData
+    .filter(d => d.weight !== null && d.weight !== undefined)
+    .map(d => [formatDate(d.date), `${formatNumber(d.weight, { maximumFractionDigits: 2 })} kg`]);
   const lastWeight = lastValueOf(chartData, 'weight');
   const weightDelta = periodWeightDelta(periodRows);
   const trend = weightTrend(weightDelta);
@@ -403,6 +406,8 @@ const BodyStats = ({ isEmbedded = false }) => {
                   valueLabel={lastWeight !== null ? `${lastWeight} kg` : '—'}
                   trend={trend}
                   deltaText={deltaText}
+                  ariaLabel={t('body.weight_chart_aria', { title: t('body.weight_trend'), value: lastWeight !== null ? `${lastWeight} kg` : '—' })}
+                  table={{ head: [t('body.col.date'), t('body.col.weight')], rows: weightRows }}
                 />
               </Grid>
 
@@ -424,7 +429,7 @@ const BodyStats = ({ isEmbedded = false }) => {
               {isPhone ? (
                 <HistoryList rows={history.rows} empty={stats.length === 0} onDelete={handleDelete} />
               ) : (
-                <Table size="small">
+                <Table size="small" aria-label={t('body.history_aria')}>
                   <TableHead>
                     <TableRow>
                       <TableCell sx={headCellSx}>{t('body.col.date')}</TableCell>
