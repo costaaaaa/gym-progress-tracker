@@ -1,6 +1,6 @@
 import { expect } from 'vitest';
 
-// Helper comuni dei test di pagina: risposta della fetch finta e colore calcolato di un elemento.
+// Helper comuni dei test di pagina: risposta della fetch finta, colore calcolato di un elemento e controllo che la pagina non apra un Container annidato.
 export const json = (data, status = 200) => ({ ok: status < 400, status, json: async () => data, text: async () => '' });
 
 // Layout avvolge già ogni pagina in un Container: una pagina che ne apre un secondo sposta il contenuto.

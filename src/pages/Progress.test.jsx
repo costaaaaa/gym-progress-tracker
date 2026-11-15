@@ -67,13 +67,15 @@ const stat = (label) => {
   return { label: labelEl, number: labelEl.parentElement.firstElementChild };
 };
 
-describe('riepilogo', () => {
+describe('contenitore', () => {
   it('non incorporata, la pagina non apre un Container dentro quello del Layout', async () => {
     render(<ThemeModeProvider><Progress /></ThemeModeProvider>);
     await screen.findByText('Ultimi 60 giorni');
     expectNoNestedContainer();
   });
+});
 
+describe('riepilogo', () => {
   it('i numeri sono nello stile numero grande: Lexend 700, 22px, cifre tabulari', async () => {
     await mount();
     const { number } = stat('In crescita');
