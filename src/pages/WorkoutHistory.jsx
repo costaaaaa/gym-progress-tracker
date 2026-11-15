@@ -275,7 +275,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
     if (active && active !== document.body && !undoButtonRef.current?.contains(active)) return;
     const root = contentRef.current;
     const target = (!hiddenIds.includes(previous) && root?.querySelector(`[data-workout-row="${previous}"]`))
-      || root?.querySelector('[aria-controls^="month-panel-"]') || root;
+      || root?.querySelector('[data-month-header]') || root;
     target?.focus();
   }, [pendingId, hiddenIds]);
 
@@ -470,6 +470,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                 onClick={() => toggleMonthExpansion(monthYear)}
                 aria-expanded={isExpanded}
                 aria-controls={monthPanelId}
+                data-month-header
                 sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.75, py: 0.5, borderRadius: radius.xxl, textAlign: 'left' }}
               >
                 <Typography component="span" variant="cardTitle">
