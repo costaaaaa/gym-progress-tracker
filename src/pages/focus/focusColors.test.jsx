@@ -47,6 +47,12 @@ describe.each(['light', 'dark'])('colori di Focus in tema %s', (mode) => {
     expect(contrast(colors.primaryText, colors.bgCard)).toBeGreaterThanOrEqual(4.5);
   });
 
+  it('il testo su verde pieno (Conferma serie, spunta) arriva a 4,5:1 sul verde del tema', () => {
+    renderIn(mode, <Probe />);
+    expect(colors.onSuccess).toBe(mode === 'light' ? '#ffffff' : '#0a0a0b');
+    expect(contrast(colors.onSuccess, colors.success)).toBeGreaterThanOrEqual(4.5);
+  });
+
   // 1.4.3: l'arancio come testo o icona (etichetta «Risc.», record, fiamma) ha il suo colore; warning.main resta lo
   // sfondo pieno di chip e bottoni. Fondi chiari reali: bianco, fondo pagina e il grigio delle righe del riepilogo.
   it('l\'arancio come testo arriva a 4.5:1 su tutti i fondi di quel tema, anche sul chip dei record', () => {

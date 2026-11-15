@@ -838,6 +838,18 @@ describe('colori di Focus: rosso solo per ciò che è distruttivo', () => {
     expect(button.querySelector('[data-testid="CheckIcon"]')).not.toBeNull();
   });
 
+  it.each([
+    ['light', GREEN, 'rgb(255, 255, 255)'],
+    ['dark', 'rgb(34, 197, 94)', 'rgb(10, 10, 11)'],
+  ])('"Conferma serie" in %s: verde del tema con testo a 4,5:1 (bianco su verde scuro, quasi nero su verde chiaro)', async (mode, bg, fg) => {
+    localStorage.setItem('themeMode', mode);
+    await startDay('Push');
+    fireEvent.change(screen.getByLabelText('Peso (kg)'), { target: { value: '60' } });
+    fireEvent.change(screen.getByLabelText('Ripetizioni'), { target: { value: '8' } });
+    const button = getComputedStyle(screen.getByRole('button', { name: 'Conferma serie' }));
+    expect([button.backgroundColor, button.color]).toEqual([bg, fg]);
+  });
+
   it('il cerchio della serie attiva ha bordo e numero in inchiostro, non rossi', async () => {
     await startDay('Push');
     const circle = screen.getByText('1');
@@ -868,8 +880,8 @@ describe('colori di Focus: rosso solo per ciò che è distruttivo', () => {
     const sets = [{ weight: 60, reps: '8' }, { weight: 55, reps: '10' }];
     responses['workout_history/read.php'] = () => json({ records: [{ id: 1, date: '2026-10-13', exercises: [{ exercise_id: 3, name: 'Panca piana', sets }] }] });
     await startDay('Push');
-    const current = screen.getByText('60kg×8').parentElement;
-    const other = screen.getByText('55kg×10').parentElement;
+    const current = screen.getByText('60 kg × 8').parentElement;
+    const other = screen.getByText('55 kg × 10').parentElement;
     expect(getComputedStyle(current).borderColor).toBe(INK);
     expect(getComputedStyle(other).borderColor).not.toBe(RED);
     expect(getComputedStyle(other).borderColor).not.toBe(INK);
@@ -982,7 +994,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     expect(screen.queryByText('Tecnica di intensità')).toBeNull();
     // Le chip sono le sole serie allenanti dell'ultima volta e nessuna è quella in corso
     expect(screen.queryAllByRole('listitem', { current: true })).toHaveLength(0);
-    expect(screen.queryByText('40kg×8')).toBeNull();
+    expect(screen.queryByText('40 kg × 8')).toBeNull();
   });
 
   it('dopo una serie di riscaldamento parte il recupero della scheda, saltabile', async () => {
@@ -1008,7 +1020,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     expect(screen.getAllByText('Tecnica di intensità').length).toBeGreaterThan(0);
     // La tecnica è della seconda serie allenante, non della prima
     expect(shownTechnique()).not.toContain('Rest Pause');
-    expect(screen.getByRole('listitem', { current: true }).textContent).toBe('100kg×5');
+    expect(screen.getByRole('listitem', { current: true }).textContent).toBe('100\u00a0kg\u00a0×\u00a05');
     // Saltare la prima serie allenante equivale a saltare l'esercizio; "Salta riscaldamento" non c'è più
     expect(screen.queryByRole('button', { name: 'Salta serie' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Salta riscaldamento' })).toBeNull();
@@ -1134,7 +1146,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     doSet('100', '5');
     click('Salta timer');
     doSet('100', '4');
-    expect(within(screen.getByText('20kg×10')).getByText('Risc.')).toBeTruthy();
+    expect(within(screen.getByText('20 kg × 10')).getByText('Risc.')).toBeTruthy();
     expect(within(screen.getByRole('group', { name: 'Serie' })).getByText('2')).toBeTruthy();
   });
 

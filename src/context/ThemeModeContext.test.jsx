@@ -4,7 +4,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import { useTheme } from '@mui/material/styles';
-import { Button, CardActionArea, Chip, CircularProgress, CssBaseline, IconButton, Link, MenuItem, Slider, Switch, Tab, Tabs, TextField, Typography } from '@mui/material';
+import { BottomNavigation, BottomNavigationAction, Button, CardActionArea, Chip, CircularProgress, CssBaseline, IconButton, Link, MenuItem, Slider, Switch, Tab, Tabs, TextField, Typography } from '@mui/material';
 import { ThemeModeProvider } from './ThemeModeContext';
 
 const RED = 'rgb(213, 0, 0)';
@@ -206,6 +206,17 @@ describe('tema: rosso come testo in scuro (1.4.3)', () => {
     localStorage.setItem('themeMode', 'dark');
     render(<ThemeModeProvider><Probe /></ThemeModeProvider>);
     expect(captured.text).toBe('#ff5252');
+  });
+
+  it('la voce selezionata di BottomNavigationAction è rossa come testo: in scuro ha almeno 4,5:1', () => {
+    const selectedColor = (mode) => {
+      renderThemed(mode, <BottomNavigation value={0}><BottomNavigationAction label="Home" /></BottomNavigation>);
+      const color = getComputedStyle(screen.getByRole('button', { name: 'Home' })).color;
+      cleanup();
+      return color;
+    };
+    expect(contrast(selectedColor('dark'), PAPER.dark)).toBeGreaterThanOrEqual(4.5);
+    expect(selectedColor('light')).toBe(RED);
   });
 
   it('l\'etichetta del campo a fuoco in scuro ha almeno 4,5:1; in chiaro resta rossa', () => {

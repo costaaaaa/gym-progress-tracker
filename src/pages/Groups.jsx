@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
-  Alert, Box, Button, Card, CardActionArea, Chip, CircularProgress, Container, Dialog, DialogActions,
+  Alert, Box, Button, Card, CardActionArea, Chip, CircularProgress, Dialog, DialogActions,
   DialogContent, DialogTitle, Grid, MenuItem, TextField, Typography,
 } from '@mui/material';
 import GroupsOutlined from '@mui/icons-material/GroupsOutlined';
@@ -92,7 +92,7 @@ const GroupsContent = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 3 }}>
+    <Box sx={{ py: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', mb: 3 }}>
         <Typography variant="pageTitle">
           {t('groups.title')}
@@ -157,7 +157,7 @@ const GroupsContent = () => {
         onClose={() => setCreateOpen(false)}
         onCreated={(group) => navigate(`/gruppi/${group.id}`)}
       />
-    </Container>
+    </Box>
   );
 };
 

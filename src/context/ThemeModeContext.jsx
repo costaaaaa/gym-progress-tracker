@@ -45,6 +45,8 @@ export const ThemeModeProvider = ({ children }) => {
 
   const theme = useMemo(
     () => {
+      // Il rosso del marchio quando è un testo: lo usano il token primary.text e le voci selezionate del tema
+      const primaryText = mode === 'light' ? BRAND : ERROR_ON_DARK;
       // Contorno del focus da tastiera: colore del testo del tema, staccato di 2px dal controllo
       const focusRing = {
         outline: `2px solid ${TEXT_PRIMARY[mode]}`,
@@ -59,7 +61,7 @@ export const ThemeModeProvider = ({ children }) => {
             dark: BRAND_DARK,
             // Rosso quando è il colore di un testo o di un'icona: in scuro il rosso del marchio
             // dà 3.35 : 1 su #141416 (serve 4.5 : 1), qui il rosso chiaro degli errori.
-            text: mode === 'light' ? BRAND : ERROR_ON_DARK,
+            text: primaryText,
           },
           secondary: {
             main: mode === 'light' ? grey[900] : grey[300],
@@ -83,6 +85,8 @@ export const ThemeModeProvider = ({ children }) => {
           divider: mode === 'light' ? '#ececea' : 'rgba(255, 255, 255, 0.08)',
           success: {
             main: mode === 'light' ? '#15803d' : '#22c55e',
+            // Testo sul verde pieno: bianco su #15803d è 5.0 : 1; su #22c55e il bianco darebbe 2.3 : 1, il quasi nero 8.7 : 1
+            contrastText: mode === 'light' ? '#ffffff' : '#0a0a0b',
             // Pillola "scheda attiva" in WorkoutPlans
             muted: mode === 'light' ? '#e8f3ec' : 'rgba(34, 197, 94, 0.15)',
             title: mode === 'light' ? '#166534' : '#86efac',
@@ -403,7 +407,7 @@ export const ThemeModeProvider = ({ children }) => {
               root: {
                 color: mode === 'light' ? grey[600] : grey[500],
                 '&.Mui-selected': {
-                  color: BRAND,
+                  color: primaryText,
                 }
               }
             }

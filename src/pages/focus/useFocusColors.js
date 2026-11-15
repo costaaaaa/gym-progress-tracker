@@ -18,11 +18,12 @@ export function useFocusColors() {
     text: theme.palette.text.primary,
     textSecondary: theme.palette.text.secondary,
     success: theme.palette.success.main,
+    // Testo e spunta sul verde pieno
+    onSuccess: theme.palette.success.contrastText,
     // Arancio come colore di un testo o di un'icona (4.5 : 1 sui fondi del tema)
     warningText: theme.palette.warning.text,
     border: theme.palette.divider,
     fieldBorder: theme.palette.fieldBorder,
-    white: theme.palette.common.white,
   };
   return { colors, isDarkMode };
 }

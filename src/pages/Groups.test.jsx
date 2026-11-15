@@ -10,7 +10,7 @@ import GroupDetail from './GroupDetail';
 import JoinGroup from './JoinGroup';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { textBelow } from '../test/minText';
-import { json, colorOf } from '../test/dom';
+import { json, colorOf, expectNoNestedContainer } from '../test/dom';
 
 vi.mock('../context/AuthContext', () => {
   const auth = { user: { id: 1, username: 'mario88' }, isLoggedIn: true, loading: false };
@@ -84,6 +84,11 @@ describe('elenco dei gruppi', () => {
     expect(getComputedStyle(screen.getByRole('button', { name: 'Crea gruppo' })).backgroundColor).toBe(RED);
   });
 
+  it('non apre un Container dentro quello del Layout', async () => {
+    await mount();
+    expectNoNestedContainer();
+  });
+
   it('i testi sono almeno 16px', async () => {
     await mount();
     expect(small()).toEqual([]);
@@ -91,14 +96,33 @@ describe('elenco dei gruppi', () => {
 });
 
 describe('dettaglio del gruppo', () => {
-  const mount = async () => {
+  // failing: l'API risponde con un errore e la pagina mostra l'avviso
+  const mount = async ({ failing = false } = {}) => {
+    if (failing) vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(json({ success: false, message: 'no' }, 404))));
     render(
       <MemoryRouter initialEntries={['/gruppi/7']}>
         <ThemeModeProvider><Routes><Route path="/gruppi/:id" element={<GroupDetail />} /></Routes></ThemeModeProvider>
       </MemoryRouter>,
     );
-    await screen.findByText('Classifica');
+    if (failing) await screen.findByRole('alert');
+    else await screen.findByText('Classifica');
   };
+
+  it('non apre un Container dentro quello del Layout', async () => {
+    await mount();
+    expectNoNestedContainer();
+  });
+
+  it('anche con l\'errore di caricamento non apre un Container', async () => {
+    await mount({ failing: true });
+    expectNoNestedContainer();
+  });
+
+  it('le tab della classifica non hanno flex-basis 0, che si scontra con il flex-grow di INK_TABS', async () => {
+    await mount();
+    const tab = screen.getAllByRole('tab')[0];
+    expect(getComputedStyle(tab).flexBasis).not.toBe('0px');
+  });
 
   it('l\'interruttore «Inviti aperti» acceso è verde, non rosso del marchio', async () => {
     await mount();

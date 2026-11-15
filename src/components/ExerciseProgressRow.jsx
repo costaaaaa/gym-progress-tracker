@@ -3,7 +3,7 @@ import { Box, CardActionArea, IconButton, Typography } from '@mui/material';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import { useTranslation } from 'react-i18next';
-import { formatNumber } from '../i18n/format';
+import { formatNumber, formatWeightText } from '../i18n/format';
 import { muscleLabel } from '../i18n/labels';
 import { buildPoints } from './ChartCard';
 import { dayTime } from '../utils/calendarDay';
@@ -18,7 +18,7 @@ export const formatDaysAgo = (t, days) => {
 
 export const formatValue = (t, mode, value) =>
   mode === 'oneRM'
-    ? `${formatNumber(value, { maximumFractionDigits: 1 })} kg`
+    ? formatWeightText(value, { maxDecimals: 1 })
     : `${formatNumber(value)} ${t('progress.unit.reps')}`;
 
 const SPARK_W = 120;

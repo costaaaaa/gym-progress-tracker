@@ -7,7 +7,7 @@ import Progress from './Progress';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { textBelow } from '../test/minText';
 import { mediaStyle } from '../test/mediaStyle';
-import { json } from '../test/dom';
+import { json, expectNoNestedContainer } from '../test/dom';
 import { format } from 'date-fns';
 
 const INK = 'rgb(26, 24, 22)';
@@ -66,6 +66,14 @@ const stat = (label) => {
   const labelEl = screen.getByText(label, { selector: 'p' });
   return { label: labelEl, number: labelEl.parentElement.firstElementChild };
 };
+
+describe('contenitore', () => {
+  it('non incorporata, la pagina non apre un Container dentro quello del Layout', async () => {
+    render(<ThemeModeProvider><Progress /></ThemeModeProvider>);
+    await screen.findByText('Ultimi 60 giorni');
+    expectNoNestedContainer();
+  });
+});
 
 describe('riepilogo', () => {
   it('i numeri sono nello stile numero grande: Lexend 700, 22px, cifre tabulari', async () => {

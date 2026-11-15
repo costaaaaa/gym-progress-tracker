@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useDeferredValue } from 'react';
 import {
-  Container,
   Typography,
   Grid,
   Box,
@@ -244,7 +243,7 @@ const Progress = ({ isEmbedded = false }) => {
       {isEmbedded ? (
         <Box sx={{ py: 2 }}>{renderContent()}</Box>
       ) : (
-        <Container maxWidth="lg" sx={{ py: 4 }}>{renderContent()}</Container>
+        <Box sx={{ py: 4 }}>{renderContent()}</Box>
       )}
 
       <ExerciseDetailDialog

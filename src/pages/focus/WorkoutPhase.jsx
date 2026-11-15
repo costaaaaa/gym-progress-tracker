@@ -14,6 +14,7 @@ import ElapsedClock from './ElapsedClock';
 import QuitDialog from './QuitDialog';
 import { slotLabel } from './slotLabel';
 import { MAX_WEIGHT, isValidWeight, isValidReps, plannedSetAt, slotTarget, lastSessionSets, setStatus, setSlot } from '../../utils/focusSession';
+import { intlLocale, formatSetText } from '../../i18n/format';
 import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, muscleLabel, techniqueLabel } from '../../i18n/labels';
 import { radius } from '../../theme/radius';
 import PremiumButton from './PremiumButton';
@@ -72,7 +73,7 @@ export default function WorkoutPhase({
                   width: size, height: size, alignSelf: 'center', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   border: `2px ${status === 'skipped' ? 'dashed' : 'solid'} ${status === 'done' ? colors.success : status === 'active' ? colors.text : colors.border}`,
                   bgcolor: status === 'done' ? colors.success : status === 'skipped' ? colors.bgElevated : 'transparent',
-                  color: status === 'done' ? colors.white : status === 'active' ? colors.text : colors.textSecondary,
+                  color: status === 'done' ? colors.onSuccess : status === 'active' ? colors.text : colors.textSecondary,
                   fontWeight: 700, fontSize: slot.isWarmup ? '0.75rem' : '0.875rem', transition: 'all 0.3s ease'
                 }}>
                   {status === 'done' ? <CheckIcon sx={{ fontSize: 18 }} /> : status === 'skipped' ? <RemoveIcon sx={{ fontSize: 18 }} /> : slotLabel(t, slot, 'dot')}
@@ -86,7 +87,7 @@ export default function WorkoutPhase({
           </Typography>
 
           {(() => {
-            const lastSets = lastSessionSets(lastSession);
+            const lastSets = lastSessionSets(lastSession, intlLocale(), (reps) => t('focus.last_reps', { count: reps }));
             if (lastSets.length === 0) return null;
             return (
               <Box sx={{
@@ -107,7 +108,7 @@ export default function WorkoutPhase({
                           px: 1, py: 0.5, borderRadius: '6px', bgcolor: colors.bgCard,
                           border: `1px solid ${isCurrent ? colors.text : colors.border}`,
                         }}>
-                          <Typography variant="body2" sx={{ color: isCurrent ? colors.text : colors.textSecondary, fontWeight: isCurrent ? 700 : 600, lineHeight: 1.3 }}>
+                          <Typography variant="body2" sx={{ color: isCurrent ? colors.text : colors.textSecondary, fontWeight: isCurrent ? 700 : 600, lineHeight: 1.3, fontVariantNumeric: 'tabular-nums' }}>
                             {set.label}
                           </Typography>
                           {set.technique && (
@@ -168,7 +169,7 @@ export default function WorkoutPhase({
           )}
 
           <Button variant="contained" fullWidth size="large" startIcon={<CheckIcon />} onClick={onConfirmSet} disabled={!isValidWeight(weightInput) || !isValidReps(repsInput)}
-            sx={{ py: 2.5, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.success, color: colors.white, borderRadius: radius.xl,
+            sx={{ py: 2.5, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.success, color: colors.onSuccess, borderRadius: radius.xl,
               boxShadow: 'none', '&:hover': { bgcolor: 'success.dark', boxShadow: 'none' },
               '&:disabled': { bgcolor: colors.bgElevated, color: colors.textSecondary }, mb: 2, transition: 'all 0.3s ease' }}>
             {t('focus.confirm_set')}
@@ -222,7 +223,7 @@ export default function WorkoutPhase({
                     {slotLabel(t, setSlot(currentExercise, set.setNumber - 1), 'name')}
                   </Typography>
                   <Box sx={{ textAlign: 'right' }}>
-                    <Typography variant="body2" sx={{ color: colors.text, fontWeight: 600 }}>{set.weight} kg × {set.reps}</Typography>
+                    <Typography variant="body2" sx={{ color: colors.text, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{formatSetText(set.weight, set.reps)}</Typography>
                     {set.intensity_technique && (
                       <Typography variant="caption" sx={{ color: colors.textSecondary, display: 'block' }}>{techniqueLabel(set.intensity_technique)}</Typography>
                     )}
