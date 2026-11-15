@@ -1,7 +1,7 @@
 // Misure corporee visto dall'utente: selettore del periodo, variazione del peso, stato vuoto e storico a pagine.
 // La fetch è il confine; "oggi" è fissato al 20/10/2026.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, act, waitFor } from '@testing-library/react';
 import BodyStats from './BodyStats';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { formatDate } from '../i18n/format';
@@ -438,5 +438,72 @@ describe('grafico del peso: alternativa testuale', () => {
     await mount();
     const { width, height, overflow } = getComputedStyle(screen.getByRole('table', { name: 'Andamento peso (kg)' }));
     expect({ width, height, overflow }).toEqual({ width: '1px', height: '1px', overflow: 'hidden' });
+  });
+});
+
+describe('nuova misura: errori dei valori (WCAG 3.3.1, 4.1.3)', () => {
+  beforeEach(() => { records = [row('2026-10-15', '80.0')]; });
+  const field = (label) => screen.getByRole('spinbutton', { name: label });
+  const type = (label, value) => fireEvent.change(field(label), { target: { value } });
+  const posts = () => fetch.mock.calls.filter(([, init]) => init?.method === 'POST');
+  const describedBy = (label) => field(label).getAttribute('aria-describedby')?.split(' ').map((id) => document.getElementById(id)?.textContent).join(' ');
+  const open = async () => {
+    await mount();
+    fireEvent.click(screen.getByRole('button', { name: 'Nuova misurazione' }));
+    await screen.findByRole('dialog');
+  };
+  const save = () => fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Salva' }));
+
+  it('un peso oltre il tetto non parte: l\'errore sta sotto il campo, collegato, e il focus va lì', async () => {
+    await open();
+    type('Peso (kg)', '600');
+    save();
+    expect(posts()).toHaveLength(0);
+    expect(field('Peso (kg)').getAttribute('aria-invalid')).toBe('true');
+    expect(describedBy('Peso (kg)')).toBe('Inserisci un numero da 0 a 500.');
+    expect(document.activeElement).toBe(field('Peso (kg)'));
+  });
+
+  it('con più campi sbagliati li segna tutti e porta il focus sul primo della scheda', async () => {
+    await open();
+    type('Gamba (cm)', '999');
+    type('Grasso (%)', '-3');
+    save();
+    expect(describedBy('Grasso (%)')).toBe('Inserisci un numero da 0 a 100.');
+    expect(describedBy('Gamba (cm)')).toBe('Inserisci un numero da 0 a 200.');
+    expect(field('Peso (kg)').getAttribute('aria-invalid')).not.toBe('true');
+    expect(document.activeElement).toBe(field('Grasso (%)'));
+  });
+
+  it('correggere un campo toglie il suo errore; salvare un valore buono parte e chiude', async () => {
+    await open();
+    type('Peso (kg)', '600');
+    save();
+    type('Peso (kg)', '80');
+    expect(field('Peso (kg)').getAttribute('aria-invalid')).not.toBe('true');
+    expect(describedBy('Peso (kg)')).toBeUndefined();
+    save();
+    expect(posts()).toHaveLength(1);
+  });
+
+  it('un errore del server su un campo (con "field") finisce sotto quel campo, col messaggio del server', async () => {
+    await open();
+    type('Vita (cm)', '90');
+    fetch.mockImplementation((url, init) => Promise.resolve(init?.method === 'POST'
+      ? { ok: false, status: 400, json: async () => ({ message: 'Valore non valido per vita: inserisci un numero da 0 a 80.', field: 'waist_size', max: 80 }) }
+      : { ok: true, json: async () => ({ records }) }));
+    await act(async () => { save(); });
+    expect(describedBy('Vita (cm)')).toBe('Valore non valido per vita: inserisci un numero da 0 a 80.');
+    expect(document.activeElement).toBe(field('Vita (cm)'));
+  });
+
+  it('riaprendo il dialogo gli errori sono spariti', async () => {
+    await open();
+    type('Peso (kg)', '600');
+    save();
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Annulla' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    fireEvent.click(screen.getByRole('button', { name: 'Nuova misurazione' }));
+    expect(field('Peso (kg)').getAttribute('aria-invalid')).not.toBe('true');
   });
 });

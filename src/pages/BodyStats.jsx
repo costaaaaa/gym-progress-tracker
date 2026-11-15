@@ -1,4 +1,4 @@
-import { Fragment, useState, useEffect } from 'react';
+import { Fragment, useState, useEffect, useRef } from 'react';
 import {
   Container,
   Typography,
@@ -195,6 +195,13 @@ const HistoryList = ({ rows, empty, onDelete }) => {
   );
 };
 
+// Tetti dei valori: gli stessi del server (backend/lib/stats_rules.php), nell'ordine del modulo
+const BODY_LIMITS = {
+  weight: 500, body_fat_percentage: 100, muscle_mass_percentage: 100,
+  chest_size: 300, arm_size: 150, waist_size: 300, leg_size: 200,
+};
+const isValueOutOfRange = (value, max) => value !== '' && !(Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= max);
+
 const numberFieldSx = {
   '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': { display: 'none' },
   '& input[type=number]': { MozAppearance: 'textfield' },
@@ -212,6 +219,9 @@ const BodyStats = ({ isEmbedded = false }) => {
   // true se il consenso era stato dato a una versione precedente del testo
   const [consentUpdated, setConsentUpdated] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  // Messaggio d'errore sotto ogni campo sbagliato; fieldRefs serve a portare il focus sul primo
+  const [fieldErrors, setFieldErrors] = useState({});
+  const fieldRefs = useRef({});
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
 
   const [formData, setFormData] = useState({
@@ -223,6 +233,12 @@ const BodyStats = ({ isEmbedded = false }) => {
     arm_size: '',
     waist_size: '',
     leg_size: '',
+  });
+
+  // Proprietà comuni dei sette campi numerici del modulo; l'errore passa da error + helperText (aria-describedby)
+  const numberField = (name, labelKey) => ({
+    label: t(labelKey), name, type: 'number', fullWidth: true, value: formData[name], onChange: handleInputChange, sx: numberFieldSx,
+    error: !!fieldErrors[name], helperText: fieldErrors[name], inputRef: (el) => { fieldRefs.current[name] = el; },
   });
 
   const fetchStats = async () => {
@@ -252,6 +268,17 @@ const BodyStats = ({ isEmbedded = false }) => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    if (fieldErrors[name]) setFieldErrors(({ [name]: _removed, ...others }) => others);
+  };
+
+  const showFieldErrors = (errors) => {
+    setFieldErrors(errors);
+    fieldRefs.current[Object.keys(BODY_LIMITS).find((name) => errors[name])]?.focus();
+  };
+
+  const openDialog = () => {
+    setFieldErrors({});
+    setIsDialogOpen(true);
   };
 
   const handleDateChange = (date) => {
@@ -259,6 +286,14 @@ const BodyStats = ({ isEmbedded = false }) => {
   };
 
   const handleSubmit = async () => {
+    const errors = {};
+    Object.entries(BODY_LIMITS).forEach(([name, max]) => {
+      if (isValueOutOfRange(formData[name], max)) errors[name] = t('body.error.range', { max });
+    });
+    if (Object.keys(errors).length > 0) {
+      showFieldErrors(errors);
+      return;
+    }
     try {
       const formattedData = {
         ...formData,
@@ -294,6 +329,8 @@ const BodyStats = ({ isEmbedded = false }) => {
           leg_size: '',
         });
         fetchStats();
+      } else if (BODY_LIMITS[result.field]) {
+        showFieldErrors({ [result.field]: result.message });
       } else {
         setSnackbar({ open: true, message: result.message || t('body.error.save'), severity: 'error' });
       }
@@ -364,7 +401,7 @@ const BodyStats = ({ isEmbedded = false }) => {
             {t('body.title')}
           </Typography>
         )}
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsDialogOpen(true)} sx={{ fontSize: 16 }}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={openDialog} sx={{ fontSize: 16 }}>
           {t('body.new')}
         </Button>
       </Box>
@@ -516,25 +553,25 @@ const BodyStats = ({ isEmbedded = false }) => {
 
           <Grid container spacing={2}>
             <Grid item xs={12} sm={4}>
-              <TextField label={t('body.field.weight')} name="weight" type="number" fullWidth value={formData.weight} onChange={handleInputChange} sx={numberFieldSx} />
+              <TextField {...numberField('weight', 'body.field.weight')} />
             </Grid>
             <Grid item xs={12} sm={4}>
-              <TextField label={t('body.field.fat')} name="body_fat_percentage" type="number" fullWidth value={formData.body_fat_percentage} onChange={handleInputChange} sx={numberFieldSx} />
+              <TextField {...numberField('body_fat_percentage', 'body.field.fat')} />
             </Grid>
             <Grid item xs={12} sm={4}>
-              <TextField label={t('body.field.muscle')} name="muscle_mass_percentage" type="number" fullWidth value={formData.muscle_mass_percentage} onChange={handleInputChange} sx={numberFieldSx} />
+              <TextField {...numberField('muscle_mass_percentage', 'body.field.muscle')} />
             </Grid>
             <Grid item xs={12} sm={3}>
-              <TextField label={t('body.field.chest')} name="chest_size" type="number" fullWidth value={formData.chest_size} onChange={handleInputChange} sx={numberFieldSx} />
+              <TextField {...numberField('chest_size', 'body.field.chest')} />
             </Grid>
             <Grid item xs={12} sm={3}>
-              <TextField label={t('body.field.arm')} name="arm_size" type="number" fullWidth value={formData.arm_size} onChange={handleInputChange} sx={numberFieldSx} />
+              <TextField {...numberField('arm_size', 'body.field.arm')} />
             </Grid>
             <Grid item xs={12} sm={3}>
-              <TextField label={t('body.field.waist')} name="waist_size" type="number" fullWidth value={formData.waist_size} onChange={handleInputChange} sx={numberFieldSx} />
+              <TextField {...numberField('waist_size', 'body.field.waist')} />
             </Grid>
             <Grid item xs={12} sm={3}>
-              <TextField label={t('body.field.leg')} name="leg_size" type="number" fullWidth value={formData.leg_size} onChange={handleInputChange} sx={numberFieldSx} />
+              <TextField {...numberField('leg_size', 'body.field.leg')} />
             </Grid>
           </Grid>
         </DialogContent>

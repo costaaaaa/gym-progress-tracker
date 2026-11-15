@@ -19,6 +19,7 @@ include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/Consent.php';
 include_once '../../models/UserStat.php';
+include_once '../../lib/stats_rules.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -106,7 +107,7 @@ try {
         }
         // Un campione assurdo (una bilancia che segna 900 kg) non deve bloccare gli altri giorni
         if ($invalid !== null) {
-            $errors[] = array("date" => $date, "message" => t_server('stats.value_invalid', array('field' => $invalid)));
+            $errors[] = array("date" => $date, "message" => stats_invalid_value($invalid)['message']);
             continue;
         }
         if (!$values) {

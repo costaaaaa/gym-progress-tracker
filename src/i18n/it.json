@@ -979,5 +979,6 @@
   "progress.chart_aria": "Grafico: {{kind}} di {{name}} nel tempo. I valori sono nella cronologia.",
   "record.technique_aria": "Tecnica, {{exercise}}, serie {{n}}",
   "history.row_action_aria": "{{action}}, {{date}}",
-  "focus.rest_over": "Recupero finito: puoi fare la serie successiva"
+  "focus.rest_over": "Recupero finito: puoi fare la serie successiva",
+  "body.error.range": "Inserisci un numero da 0 a {{max}}."
 }
