@@ -25,7 +25,7 @@ function stats_invalid_field($data)
 function stats_invalid_value($field, $locale = null)
 {
     $max = STATS_LIMITS[$field];
-    // In una variabile: scripts/i18n-check.mjs prenderebbe il prefisso scritto dentro la chiamata per una chiave intera
+    // La chiave dipende dal campo: ce n'è una per ogni campo di STATS_LIMITS, in entrambe le lingue (lo controlla tests/stats_rules_test.php)
     $label_key = 'stats.field.' . $field;
     return array(
         'message' => t_server('stats.value_invalid', array(
