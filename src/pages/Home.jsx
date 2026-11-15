@@ -57,19 +57,17 @@ const Home = () => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [lastWorkout, setLastWorkout] = useState(null);
   const [activePlan, setActivePlan] = useState(null);
-  // Veri solo se la risposta è arrivata: un errore di rete non deve far passare un utente per nuovo
-  const [historyLoaded, setHistoryLoaded] = useState(false);
-  const [plansLoaded, setPlansLoaded] = useState(false);
-  // Risposta arrivata o fallita: il saluto aspetta lo storico, il bottone anche le schede
-  const [historyDone, setHistoryDone] = useState(false);
-  const [plansDone, setPlansDone] = useState(false);
+  // Stato di ogni richiesta: 'pending' | 'ok' | 'failed'. Un errore di rete non deve far passare un utente per nuovo
+  const [historyStatus, setHistoryStatus] = useState('pending');
+  const [plansStatus, setPlansStatus] = useState('pending');
   const [hasPlans, setHasPlans] = useState(false);
   const [dashboardStats, setDashboardStats] = useState(null);
   // weekly_goal è l'obiettivo effettivo; plan_days_total resta per i server più vecchi
   const weeklyGoal = dashboardStats?.weekly_goal ?? dashboardStats?.plan_days_total;
   const weeklySets = totalSets(dashboardStats?.weekly_sets?.week);
-  // Per un utente loggato il primo render è già il caricamento: niente card dei dati prima della fetch
-  const [loading, setLoading] = useState(isLoggedIn);
+  // Il primo render è già il caricamento: niente card dei dati prima della fetch. Parte a true anche
+  // se isLoggedIn è ancora false: dopo un ricaricamento la sessione si conferma senza rimontare Home
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -86,12 +84,12 @@ const Home = () => {
       });
       if (historyResponse.ok) {
         const historyData = await historyResponse.json();
-        setHistoryLoaded(true);
+        setHistoryStatus('ok');
         if (historyData.records && historyData.records.length > 0) {
           setLastWorkout(historyData.records[0]);
         }
       }
-      setHistoryDone(true);
+      setHistoryStatus((status) => (status === 'pending' ? 'failed' : status));
 
       // Fetch plans for the active plan
       const plansResponse = await fetch(`${API_BASE_URL}api/workout/read_plans.php`, {
@@ -99,14 +97,14 @@ const Home = () => {
       });
       if (plansResponse.ok) {
         const plansData = await plansResponse.json();
-        setPlansLoaded(true);
+        setPlansStatus('ok');
         if (plansData.records) {
           setHasPlans(plansData.records.length > 0);
           const active = plansData.records.find(plan => plan.is_active);
           setActivePlan(active || null);
         }
       }
-      setPlansDone(true);
+      setPlansStatus((status) => (status === 'pending' ? 'failed' : status));
 
       // Fetch dashboard stats
       const statsResponse = await fetch(`${API_BASE_URL}api/workout_stats/dashboard.php`, {
@@ -130,8 +128,8 @@ const Home = () => {
       console.error('Error fetching dashboard data:', error);
     } finally {
       // Una richiesta fallita mostra la Home completa (saluto e bottone compaiono comunque)
-      setHistoryDone(true);
-      setPlansDone(true);
+      setHistoryStatus((status) => (status === 'pending' ? 'failed' : status));
+      setPlansStatus((status) => (status === 'pending' ? 'failed' : status));
       setLoading(false);
     }
   };
@@ -139,10 +137,11 @@ const Home = () => {
   const formatDate = (dateString) =>
     formatLocalDate(dateString, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-  const isNewUser = historyLoaded && !lastWorkout;
+  const historyDone = historyStatus !== 'pending';
+  const heroReady = historyDone && plansStatus !== 'pending';
+  const isNewUser = historyStatus === 'ok' && !lastWorkout;
   // Nuovo = nessun allenamento e nessuna scheda (nemmeno inattiva): la Home propone una sola azione
-  const showStartHere = isNewUser && plansLoaded && !hasPlans;
-  const heroButtonVisible = historyDone && plansDone && !showStartHere;
+  const showStartHere = isNewUser && plansStatus === 'ok' && !hasPlans;
 
   if (!isLoggedIn) {
     return (
@@ -152,7 +151,7 @@ const Home = () => {
     );
   }
 
-  // Riepilogo settimanale: è l'unica card che resta alla Home del nuovo utente
+  // Riepilogo settimanale: con "Inizia da qui" è tutto ciò che resta alla Home del nuovo utente
   const weeklySummary = (
     <Grid item xs={12} md={6}>
       <Card sx={{ height: '100%', p: '22px' }}>
@@ -207,7 +206,7 @@ const Home = () => {
 
   return (
     <>
-      <Box sx={{ mb: 4 }}>
+      <Box sx={{ mb: 4 }} aria-busy={!heroReady}>
         <Typography variant="h1" sx={{ fontSize: { xs: '1.75rem', md: '2.25rem' }, mb: 1.5 }}>
           {historyDone
             ? t(isNewUser ? 'home.hero.welcome_new' : 'home.hero.welcome', { username: user?.username || '' })
@@ -216,15 +215,17 @@ const Home = () => {
         <Typography sx={{ fontSize: 16, color: 'text.secondary', mb: 3, maxWidth: 560, lineHeight: 1.6 }}>
           {t('home.hero.sub_user')}
         </Typography>
-        {/* Sempre nel DOM ma invisibile finché non si sa se serve: l'altezza dell'intestazione non cambia */}
+        {/* Invisibile (ma con il suo spazio) finché le richieste non sono finite: per un utente nuovo sparisce
+            nello stesso render in cui compare la card "Inizia da qui", senza altri spostamenti */}
         <Button
           variant="contained"
           component={RouterLink}
           to="/focus"
           startIcon={<PlayArrowIcon />}
-          aria-hidden={!heroButtonVisible || undefined}
-          tabIndex={heroButtonVisible ? undefined : -1}
-          sx={{ borderRadius: radius.lg, px: 3, py: 1.25, fontWeight: 700, ...(!heroButtonVisible && { visibility: 'hidden' }), ...(showStartHere && { display: 'none' }) }}
+          sx={{
+            borderRadius: radius.lg, px: 3, py: 1.25, fontWeight: 700,
+            ...(showStartHere ? { display: 'none' } : !heroReady && { visibility: 'hidden' }),
+          }}
         >
           {t('home.hero.start_workout')}
         </Button>

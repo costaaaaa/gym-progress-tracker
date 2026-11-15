@@ -203,7 +203,7 @@ export default function WorkoutPhase({
               <PremiumButton key={pickerMode} locked={!canEditSession} label={label} startIcon={icon}
                 onClick={() => onOpenPicker(pickerMode)}
                 wrapperSx={{ flex: 1, minWidth: 0 }}
-                sx={{ opacity: pickerMode === 'swap' && !canSwap ? 0.45 : 1 }} />
+                faded={pickerMode === 'swap' && !canSwap} />
             ))}
           </Box>
 

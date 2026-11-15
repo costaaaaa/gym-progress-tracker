@@ -923,6 +923,7 @@ describe('riepilogo', () => {
     expect(getComputedStyle(header).color).toBe(GREY);
     expect(['', 'rgba(0, 0, 0, 0)', 'transparent']).toContain(getComputedStyle(header.parentElement).backgroundColor);
   });
+
   it('il nuovo record di streak con 1 settimana dice "1 settimana consecutiva" (singolare)', async () => {
     responses['record_workout.php'] = () => json({ success: true, id: 77, new_longest: true, current_streak_weeks: 1 });
     localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...savedDraft, selectedDay: pushDay, selectedDayId: 1, phase: 'summary' }));

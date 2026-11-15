@@ -5,8 +5,8 @@ import { radius } from '../../theme/radius';
 
 // Bottone outlined di Focus per le funzioni Premium. Se `locked`, sul bordo in alto a sinistra c'è l'etichetta
 // "Premium" (con lo sfondo della pagina a coprire la linea) e il nome accessibile la ripete. L'etichetta sta
-// accanto al bottone, non dentro: l'opacità di `sx` non la tocca.
-const PremiumButton = ({ locked, label, startIcon, onClick, sx, wrapperSx }) => {
+// accanto al bottone, non dentro: l'opacità di `faded` non la tocca.
+const PremiumButton = ({ locked, label, startIcon, onClick, faded, wrapperSx }) => {
   const { t } = useTranslation();
   const { colors } = useFocusColors();
   return (
@@ -14,7 +14,7 @@ const PremiumButton = ({ locked, label, startIcon, onClick, sx, wrapperSx }) => 
       <Button variant="outlined" fullWidth startIcon={startIcon} onClick={onClick}
         aria-label={locked ? t('focus.premium_aria', { label }) : undefined}
         sx={{ py: 1.25, color: colors.textSecondary, borderColor: colors.border, borderRadius: radius.lg,
-          '&:hover': { borderColor: colors.text, color: colors.text }, ...sx }}>
+          '&:hover': { borderColor: colors.text, color: colors.text }, ...(faded && { opacity: 0.45 }) }}>
         {label}
       </Button>
       {locked && (

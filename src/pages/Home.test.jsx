@@ -47,18 +47,20 @@ const responses = {
   'groups/list.php': { success: true, groups: [{ id: 1, name: 'Palestra Roma', members_count: 3 }] },
 };
 
-const fakeFetch = vi.fn((url) => {
-  const key = Object.keys(responses).find((k) => String(url).includes(k));
-  const body = key ? responses[key] : { success: false };
-  return Promise.resolve({
-    ok: Boolean(key),
-    status: key ? 200 : 404,
-    json: async () => body,
-    text: async () => JSON.stringify(body),
-  });
+const jsonResponse = (body, ok = true) => ({
+  ok,
+  status: ok ? 200 : 404,
+  json: async () => body,
+  text: async () => JSON.stringify(body),
 });
 
-const renderHome = () => render(<MemoryRouter><ThemeModeProvider><Home /></ThemeModeProvider></MemoryRouter>);
+const fakeFetch = vi.fn((url) => {
+  const key = Object.keys(responses).find((k) => String(url).includes(k));
+  return Promise.resolve(jsonResponse(key ? responses[key] : { success: false }, Boolean(key)));
+});
+
+const homeTree = () => <MemoryRouter><ThemeModeProvider><Home /></ThemeModeProvider></MemoryRouter>;
+const renderHome = () => render(homeTree());
 
 const original = { ...responses };
 
@@ -117,13 +119,6 @@ describe('primo accesso', () => {
     expect(screen.queryByText('Inizia da qui')).toBeNull();
   });
 
-  it('il riepilogo settimanale senza scheda attiva parla di traguardo, non di piano', async () => {
-    responses['workout/read_plans.php'] = { success: true, records: [] };
-    renderHome();
-    expect(await screen.findByText('Ti manca 1 sessione per il traguardo settimanale.')).toBeTruthy();
-    expect(screen.queryByText(/per completare il piano/)).toBeNull();
-  });
-
   it('mentre i dati si caricano non ci sono né saluto, né bottone, né card "Inizia da qui"', async () => {
     vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
     renderHome();
@@ -134,14 +129,12 @@ describe('primo accesso', () => {
   });
 
   it('arrivato lo storico vuoto compare "Benvenuto", ma né bottone né card finché non arrivano le schede', async () => {
+    newUser();
     let plansArrive;
     const plans = new Promise((resolve) => { plansArrive = resolve; });
-    vi.stubGlobal('fetch', vi.fn((url) => {
-      const reply = (body) => Promise.resolve({ ok: true, status: 200, json: async () => body, text: async () => JSON.stringify(body) });
-      if (String(url).includes('workout_history/read.php')) return reply({ success: true, records: [] });
-      if (String(url).includes('workout/read_plans.php')) return plans.then(() => reply({ success: true, records: [] }));
-      return reply({ success: false });
-    }));
+    vi.stubGlobal('fetch', vi.fn((url) => (
+      String(url).includes('workout/read_plans.php') ? plans.then(() => fakeFetch(url)) : fakeFetch(url)
+    )));
     renderHome();
     expect(await screen.findByText('Benvenuto, mario88')).toBeTruthy();
     expect(screen.queryByRole('link', { name: 'Inizia allenamento' })).toBeNull();
@@ -159,14 +152,17 @@ describe('primo accesso', () => {
   });
 
   it('al primo render di un utente loggato la Home è già in caricamento: nessuna card dei dati', () => {
-    const html = renderToString(<MemoryRouter><ThemeModeProvider><Home /></ThemeModeProvider></MemoryRouter>);
+    const html = renderToString(homeTree());
     expect(html).toContain('role="progressbar"');
     expect(html).not.toContain('Riepilogo settimanale');
     expect(html).not.toContain('Bentornato');
   });
 
-  it('il riepilogo settimanale con sole schede inattive parla di traguardo, non di piano', async () => {
-    responses['workout/read_plans.php'] = { success: true, records: [{ id: 2, name: 'Vecchia', is_active: false }] };
+  it.each([
+    ['senza schede', []],
+    ['con sole schede inattive', [{ id: 2, name: 'Vecchia', is_active: false }]],
+  ])('il riepilogo settimanale %s parla di traguardo, non di piano', async (_nome, records) => {
+    responses['workout/read_plans.php'] = { success: true, records };
     renderHome();
     expect(await screen.findByText('Ti manca 1 sessione per il traguardo settimanale.')).toBeTruthy();
     expect(screen.queryByText(/per completare il piano/)).toBeNull();
