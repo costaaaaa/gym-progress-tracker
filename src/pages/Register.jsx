@@ -32,6 +32,9 @@ import DateLocalization from '../i18n/DateLocalization';
 import { useLocalizedPath, legalPaths } from '../i18n/paths';
 import AuthLayout from '../components/Auth/AuthLayout';
 import useFocusField from '../hooks/useFocusField';
+import { useSearchParams } from 'react-router-dom';
+import PrototypeSwitcher, { parseVariant } from '../components/PrototypeSwitcher';
+import { confirmHelper } from './RegisterPrototype';
 
 // Username: stessa regola di register.php. Email: solo un primo filtro, il server usa FILTER_VALIDATE_EMAIL
 const USERNAME_RE = /^[a-zA-Z0-9]{3,50}$/;
@@ -64,6 +67,8 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const { fieldRef, focusField } = useFocusField();
   const [showPassword, setShowPassword] = useState(false);
+  const [sp] = useSearchParams();
+  const variant = parseVariant(sp.get('variant'));
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleTogglePasswordVisibility = () => {
@@ -244,6 +249,8 @@ const Register = () => {
   );
 
   return (
+    <>
+    <PrototypeSwitcher current={variant} />
     <AuthLayout title={t('register.title')} side={{ title: t('home.landing.hero.title'), text: t('register.side.text') }}>
       <Typography sx={{ color: 'text.secondary', mb: 1 }}>{t('register.step', { n: step })}</Typography>
 
@@ -320,9 +327,8 @@ const Register = () => {
               autoComplete="new-password"
               value={confirmPassword}
               onChange={edit(setConfirmPassword, 'confirmPassword')}
-              onBlur={checkConfirm}
-              error={Boolean(fieldErrors.confirmPassword)}
-              helperText={fieldErrors.confirmPassword}
+              onBlur={variant === 'A' || variant === 'B' ? checkConfirm : undefined}
+              {...confirmHelper(variant, password, confirmPassword, fieldErrors.confirmPassword)}
               InputProps={{ endAdornment: passwordAdornment(showConfirmPassword, handleToggleConfirmPasswordVisibility, t('password.show_confirm')) }}
             />
             <Button type="submit" fullWidth variant="contained" size="large" sx={{ mt: 3, mb: 2 }} disabled={loading}>
@@ -442,6 +448,7 @@ const Register = () => {
         </Box>
       </Box>
     </AuthLayout>
+    </>
   );
 };
 
