@@ -2,6 +2,7 @@
 // che riporta ciò che la card mostra. Il disegno vero non gira in jsdom: si prova solo il testo.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
+import i18n from '../i18n';
 import ShareCardDialog from './ShareCardDialog';
 import { buildShareStats } from '../utils/shareCard';
 import { setBrowserTimeZone } from '../test/timeZone';
@@ -36,7 +37,20 @@ describe('nomi accessibili', () => {
     await mount();
     const card = screen.getByRole('img', { name: /Anteprima della card/ });
     expect(card.tagName).toBe('CANVAS');
-    const name = card.getAttribute('aria-label');
-    ['DOMENICA 18 OTTOBRE', 'Petto', '1h 00m', '2, SERIE', '800 kg'].forEach((text) => expect(name).toContain(text));
+    ['DOMENICA 18 OTTOBRE', 'Petto', '1h 00m', '2', 'SERIE', '800 kg'].forEach((text) => {
+      expect(screen.getByRole('img', { name: new RegExp(text) })).toBe(card);
+    });
+  });
+
+  it('cambiando lingua a dialogo aperto il testo dell\'anteprima segue la lingua', async () => {
+    await mount();
+    await act(async () => { await i18n.changeLanguage('en'); });
+    try {
+      const card = screen.getByRole('img', { name: /^Card preview/ });
+      expect(card.getAttribute('aria-label')).toMatch(/OCTOBER/i);
+      expect(card.getAttribute('aria-label')).not.toMatch(/OTTOBRE/i);
+    } finally {
+      await act(async () => { await i18n.changeLanguage('it'); });
+    }
   });
 });

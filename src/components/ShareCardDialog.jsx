@@ -52,7 +52,7 @@ const CHECKERBOARD = {
  * browser: si disegna sul canvas e non viene mai inviata al server.
  */
 const ShareCardDialog = ({ open, onClose, stats }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const bgLabel = (bg) => t(`share.bg.${bg.id}`, { defaultValue: bg.label });
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
@@ -107,7 +107,8 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   // l'utente si ferma, perché costa più del disegno.
   const layout = useMemo(
     () => (stats ? layoutShareCard(stats, template, { hasPhoto: !!photo, photoBackground, format, preset, blocks: customBlocks || undefined, hideWeights, showBestVolume, strings: shareCardStrings() }) : null),
-    [stats, template, photo, photoBackground, format, preset, customBlocks, hideWeights, showBestVolume],
+    // shareCardStrings() legge la lingua attiva: serve nelle dipendenze per rifare il testo al cambio lingua.
+    [stats, template, photo, photoBackground, format, preset, customBlocks, hideWeights, showBestVolume, i18n.language], // eslint-disable-line react-hooks/exhaustive-deps
   );
   const cardText = layout ? layout.elements.filter((el) => el.type === 'text').map((el) => el.text).join(', ') : '';
 
