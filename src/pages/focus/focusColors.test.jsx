@@ -47,7 +47,7 @@ describe.each(['light', 'dark'])('colori di Focus in tema %s', (mode) => {
     expect(contrast(colors.primaryText, colors.bgCard)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('il testo su verde pieno (Conferma serie, spunta) arriva a 4.5:1 sul verde del tema', () => {
+  it('il testo su verde pieno (Conferma serie, spunta) arriva a 4,5:1 sul verde del tema', () => {
     renderIn(mode, <Probe />);
     expect(colors.onSuccess).toBe(mode === 'light' ? '#ffffff' : '#0a0a0b');
     expect(contrast(colors.onSuccess, colors.success)).toBeGreaterThanOrEqual(4.5);
