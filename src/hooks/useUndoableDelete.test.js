@@ -3,10 +3,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import process from 'node:process';
 import useUndoableDelete, { UNDO_DELAY_MS } from './useUndoableDelete';
-import { isKeyboardFocus } from '../utils/keyboardFocus';
+import { isKeyboardFocus } from '../utils/focus';
 
-// jsdom dà :focus-visible a ogni focus: la distinzione tastiera/mouse si sostituisce
-vi.mock('../utils/keyboardFocus', () => ({ isKeyboardFocus: vi.fn(() => true) }));
+// jsdom dà :focus-visible a ogni focus: la distinzione tastiera/mouse si sostituisce (il resto del modulo resta vero)
+vi.mock('../utils/focus', async (importOriginal) => ({ ...(await importOriginal()), isKeyboardFocus: vi.fn(() => true) }));
 
 beforeEach(() => { vi.useFakeTimers(); });
 afterEach(() => { vi.useRealTimers(); });
@@ -114,7 +114,7 @@ describe('useUndoableDelete', () => {
       const { result, commit } = setup();
       act(() => { result.current.schedule(7); });
       await act(async () => { vi.advanceTimersByTime(UNDO_DELAY_MS - 1000); });
-      act(() => { result.current.holdProps.onFocus(); });
+      act(() => { result.current.holdProps.onFocus({ target: document.body }); });
       await act(async () => { vi.advanceTimersByTime(UNDO_DELAY_MS * 3); });
       expect(commit).not.toHaveBeenCalled();
       expect(result.current.pendingId).toBe(7);
@@ -148,7 +148,7 @@ describe('useUndoableDelete', () => {
     it('con fuoco e puntatore insieme, uscire da uno solo non fa ripartire il conto', async () => {
       const { result, commit } = setup();
       act(() => { result.current.schedule(7); });
-      act(() => { result.current.holdProps.onFocus(); result.current.holdProps.onMouseEnter(); });
+      act(() => { result.current.holdProps.onFocus({ target: document.body }); result.current.holdProps.onMouseEnter(); });
       act(() => { result.current.holdProps.onMouseLeave(); });
       await act(async () => { vi.advanceTimersByTime(UNDO_DELAY_MS * 3); });
       expect(commit).not.toHaveBeenCalled();
@@ -160,7 +160,7 @@ describe('useUndoableDelete', () => {
     it('«Annulla» durante la pausa ripristina l\'elemento e dopo non parte nessuna richiesta', async () => {
       const { result, commit } = setup();
       act(() => { result.current.schedule(7); });
-      act(() => { result.current.holdProps.onFocus(); });
+      act(() => { result.current.holdProps.onFocus({ target: document.body }); });
       act(() => { result.current.undo(); });
       act(() => { result.current.holdProps.onBlur(); });
       await act(async () => { vi.advanceTimersByTime(UNDO_DELAY_MS * 3); });
