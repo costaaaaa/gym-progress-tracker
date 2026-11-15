@@ -7,6 +7,7 @@ import Register from './Register';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import i18n from '../i18n';
 import { describedBy } from '../test/accessibleNames';
+import { mockPointer } from '../test/pointer';
 
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
 vi.mock('../context/AuthContext', () => ({
@@ -114,11 +115,9 @@ describe('registrazione in due passaggi', () => {
 
 describe('errori annunciati e focus sul primo campo sbagliato (WCAG 3.3.1, 4.1.3)', () => {
   // Con il puntatore preciso il selettore di date è il campo da digitare (in jsdom, senza, sarebbe di sola lettura)
-  const realMatchMedia = window.matchMedia;
-  beforeEach(() => {
-    window.matchMedia = (query) => ({ ...realMatchMedia(query), matches: query.includes('pointer: fine') });
-  });
-  afterEach(() => { window.matchMedia = realMatchMedia; });
+  let restorePointer;
+  beforeEach(() => { restorePointer = mockPointer(true); });
+  afterEach(() => restorePointer());
   const goToStep2 = async () => {
     renderRegister();
     fillStep1();

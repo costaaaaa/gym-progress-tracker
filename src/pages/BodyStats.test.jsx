@@ -9,6 +9,7 @@ import { polylineX } from '../test/polyline';
 import { setBrowserTimeZone } from '../test/timeZone';
 import { textBelow } from '../test/minText';
 import { describedBy } from '../test/accessibleNames';
+import { mockPointer } from '../test/pointer';
 
 const row = (date, weight, extra = {}) => ({ id: date, date, weight, ...extra });
 
@@ -524,9 +525,9 @@ describe('nuova misura: errori dei valori (WCAG 3.3.1, 4.1.3)', () => {
 
   // Con il puntatore preciso il selettore di date si digita (in jsdom, senza, è di sola lettura)
   describe('data cancellata o incompleta (puntatore preciso)', () => {
-    const realMatchMedia = window.matchMedia;
-    beforeEach(() => { window.matchMedia = (query) => ({ ...realMatchMedia(query), matches: query.includes('pointer: fine') }); });
-    afterEach(() => { window.matchMedia = realMatchMedia; });
+    let restorePointer;
+    beforeEach(() => { restorePointer = mockPointer(true); });
+    afterEach(() => restorePointer());
     const dateField = () => within(screen.getByRole('dialog')).getByRole('textbox', { name: /^Data/ });
 
     it.each([['cancellata', ''], ['inesistente', '31/02/2026']])('data %s: non parte nulla, l\'errore sta sotto il campo data e il focus va lì', async (_, typed) => {
