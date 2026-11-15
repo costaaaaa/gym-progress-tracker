@@ -8,3 +8,9 @@ const NAMED_ROLES = ['button', 'link', 'checkbox', 'radio', 'switch', 'combobox'
 export const unnamedControls = (roles = NAMED_ROLES) => roles.flatMap((role) => (
   screen.queryAllByRole(role, { name: '' }).map((el) => `${role}: ${el.outerHTML.slice(0, 120)}`)
 ));
+
+// Figli diretti di un elenco che non sono voci <li> semplici (un <div> o un <hr> tra le voci, o un ruolo
+// esplicito, rompono la struttura letta dagli screen reader): l'elenco vuoto è il risultato atteso.
+export const strayListChildren = (list) => [...list.children]
+  .filter((child) => child.tagName !== 'LI' || child.hasAttribute('role'))
+  .map((child) => child.outerHTML.slice(0, 80));

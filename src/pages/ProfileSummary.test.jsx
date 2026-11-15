@@ -6,6 +6,7 @@ import ProfileSummary from './ProfileSummary';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import i18n from '../i18n';
 import { textBelow } from '../test/minText';
+import { unnamedControls } from '../test/accessibleNames';
 import { mediaStyle } from '../test/mediaStyle';
 
 const INK = 'rgb(26, 24, 22)';
@@ -50,12 +51,10 @@ const style = (el) => getComputedStyle(el);
 describe('nomi accessibili', () => {
   it('ogni barra di avanzamento dice di cosa è l\'avanzamento', async () => {
     await mount();
-    const names = screen.getAllByRole('progressbar').map((bar) => bar.getAttribute('aria-label'));
-    expect(names.slice(0, 3)).toEqual([
-      'Avanzamento verso il livello 8', 'Punti esperienza in Panca piana', 'Punti esperienza in Rematore con bilanciere',
-    ]);
-    expect(names.slice(3).every((name) => name.startsWith('Avanzamento verso '))).toBe(true);
-    expect(names.slice(3).length).toBeGreaterThan(0);
+    ['Avanzamento verso il livello 8', 'Punti esperienza in Panca piana', 'Punti esperienza in Rematore con bilanciere']
+      .forEach((name) => expect(screen.getByRole('progressbar', { name })).toBeTruthy());
+    expect(screen.getAllByRole('progressbar', { name: /^Avanzamento verso / }).length).toBeGreaterThan(1);
+    expect(unnamedControls(['progressbar'])).toEqual([]);
   });
 });
 

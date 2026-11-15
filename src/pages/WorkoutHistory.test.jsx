@@ -7,6 +7,7 @@ import WorkoutHistory from './WorkoutHistory';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { json } from '../test/dom';
 import { setBrowserTimeZone } from '../test/timeZone';
+import { strayListChildren } from '../test/accessibleNames';
 
 vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ isLoggedIn: true, loading: false }) }));
 
@@ -353,9 +354,8 @@ describe('struttura accessibile', () => {
     )));
     render(<ThemeModeProvider><MemoryRouter><WorkoutHistory isEmbedded /></MemoryRouter></ThemeModeProvider>);
     await screen.findByText('02:00 · 3 esercizi');
-    const list = document.querySelector('ul.MuiList-root');
-    const children = [...list.children];
-    expect(children).toHaveLength(2);
-    expect(children.every((c) => c.tagName === 'LI' && !c.hasAttribute('role'))).toBe(true);
+    const list = screen.getByRole('list');
+    expect(list.children).toHaveLength(2);
+    expect(strayListChildren(list)).toEqual([]);
   });
 });

@@ -314,7 +314,7 @@ describe('testi', () => {
   it.each([['da tablet', () => {}], ['sul telefono', phone]])('nessun testo %s è sotto i 16px, salvo le pillole del periodo', async (_, setup) => {
     setup();
     await mount(themed);
-    expect(textBelow(document.body, 16, '.MuiChip-root, table[aria-label="Andamento peso (kg)"]')).toEqual([]);
+    expect(textBelow(document.body, 16, '.MuiChip-root, .MuiCard-root > table')).toEqual([]);
   });
 });
 

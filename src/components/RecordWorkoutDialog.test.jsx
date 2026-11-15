@@ -4,6 +4,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import RecordWorkoutDialog from './RecordWorkoutDialog';
 import { json } from '../test/dom';
 import { plannedSets } from '../test/plannedSets';
+import { strayListChildren } from '../test/accessibleNames';
 
 vi.mock('../utils/analytics', () => ({ track: vi.fn() }));
 
@@ -169,7 +170,8 @@ describe('struttura accessibile', () => {
   it('l\'elenco degli esercizi ha solo voci <li>: il separatore sta dentro la voce', () => {
     const row = { ...squat, id: 12, exercise_id: 6, exercise_name: 'Stacco' };
     open({ ...basePlan, days: [{ id: 3, name: 'Gambe', exercises: [squat, row] }] });
-    const list = document.querySelector('ul.MuiList-root');
-    expect([...list.children].map((c) => c.tagName)).toEqual(['LI', 'LI']);
+    const list = screen.getByRole('list');
+    expect(list.children).toHaveLength(2);
+    expect(strayListChildren(list)).toEqual([]);
   });
 });
