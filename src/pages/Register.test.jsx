@@ -9,7 +9,7 @@ import { ThemeModeProvider } from '../context/ThemeModeContext';
 import i18n from '../i18n';
 import { describedBy } from '../test/accessibleNames';
 import { mockPointer } from '../test/pointer';
-import { setBrowserTimeZone } from '../test/timeZone';
+import { pinLocalClock } from '../test/timeZone';
 import { birthFieldChange } from '../test/birthFieldSpy';
 
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
@@ -18,7 +18,9 @@ vi.mock('../context/AuthContext', () => ({
 }));
 
 // Il campo data vero, con l'onChange della data di nascita a portata di test (vedi src/test/birthFieldSpy.js)
-vi.mock('../components/LabeledDatePicker', async (importOriginal) => (await import('../test/birthFieldSpy')).spyOnBirthField(await importOriginal()));
+vi.mock('../components/LabeledDatePicker', async (importOriginal) => (
+  (await import('../test/birthFieldSpy')).spyOnBirthField(await importOriginal())
+));
 
 const availability = (body) => vi.fn(() => Promise.resolve({ ok: true, status: 200, json: async () => ({ success: true, ...body }) }));
 
@@ -196,14 +198,12 @@ describe('errori annunciati e focus sul primo campo sbagliato (WCAG 3.3.1, 4.1.3
 
   // Il server accetta esattamente 100 anni (rifiuta birth < oggi - 100 anni): oggi di 100 anni fa passa, il giorno prima no
   describe.each(['UTC', 'Europe/Rome', 'America/Los_Angeles', 'Asia/Tokyo'])('confine dei 100 anni (%s)', (zone) => {
+    // Fuso e orologio a mezzogiorno di quel fuso (una corsa a cavallo della mezzanotte non cambia «oggi»)
+    beforeEach(() => pinLocalClock(zone, 2026, 10, 15, 12, 0));
     afterEach(() => vi.useRealTimers());
 
-    // Cambia fuso e fissa l'orologio a mezzogiorno di quel fuso (una corsa a cavallo della mezzanotte non cambia «oggi»);
-    // la data si calcola dopo, perché «oggi» dipende da lì
+    // La data si calcola dopo il fuso: «oggi» dipende da lì
     const submitWith = async (dateFor) => {
-      setBrowserTimeZone(zone);
-      vi.useFakeTimers({ toFake: ['Date'] });
-      vi.setSystemTime(new Date(2026, 10, 15, 12, 0));
       await goToStep2();
       fireEvent.change(screen.getByLabelText(/^Data di nascita/), { target: { value: format(dateFor(), 'dd/MM/yyyy') } });
       submitStep2();

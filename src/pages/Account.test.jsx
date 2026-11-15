@@ -13,13 +13,15 @@ import { ThemeModeProvider } from '../context/ThemeModeContext';
 import i18n from '../i18n';
 import { textBelow } from '../test/minText';
 import { json } from '../test/dom';
-import { setBrowserTimeZone } from '../test/timeZone';
+import { pinLocalClock } from '../test/timeZone';
 import { birthFieldChange } from '../test/birthFieldSpy';
 import { describedBy } from '../test/accessibleNames';
 import { mockPointer } from '../test/pointer';
 
 // Il campo data vero, con l'onChange della data di nascita a portata di test (vedi src/test/birthFieldSpy.js)
-vi.mock('../components/LabeledDatePicker', async (importOriginal) => (await import('../test/birthFieldSpy')).spyOnBirthField(await importOriginal()));
+vi.mock('../components/LabeledDatePicker', async (importOriginal) => (
+  (await import('../test/birthFieldSpy')).spyOnBirthField(await importOriginal())
+));
 
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
 // Lo stesso oggetto a ogni render: la pagina ricarica i dati quando `user` cambia identità.
@@ -331,14 +333,12 @@ describe('data di nascita', () => {
 
   // Il server accetta esattamente 100 anni (rifiuta birth < oggi - 100 anni): oggi di 100 anni fa passa, il giorno prima no
   describe.each(['UTC', 'Europe/Rome', 'America/Los_Angeles', 'Asia/Tokyo'])('confine dei 100 anni (%s)', (zone) => {
+    // Fuso e orologio a mezzogiorno di quel fuso (una corsa a cavallo della mezzanotte non cambia «oggi»)
+    beforeEach(() => pinLocalClock(zone, 2026, 10, 15, 12, 0));
     afterEach(() => vi.useRealTimers());
 
-    // Cambia fuso e fissa l'orologio a mezzogiorno di quel fuso (una corsa a cavallo della mezzanotte non cambia «oggi»);
-    // la data si calcola dopo, perché «oggi» dipende da lì
+    // La data si calcola dopo il fuso: «oggi» dipende da lì
     const saveWith = async (dateFor) => {
-      setBrowserTimeZone(zone);
-      vi.useFakeTimers({ toFake: ['Date'] });
-      vi.setSystemTime(new Date(2026, 10, 15, 12, 0));
       const birth = await apriModifica();
       fireEvent.change(birth, { target: { value: format(dateFor(), 'dd/MM/yyyy') } });
       fetch.mockClear();
@@ -372,10 +372,8 @@ describe('esporta i dati', () => {
 
   // 00:30 a Roma è ancora ieri in UTC; 23:30 a New York è già domani in UTC
   it.each([['Europe/Rome', 0, 30], ['America/New_York', 23, 30]])('il file porta il giorno locale (%s, %i:%i), non quello UTC', async (zone, hour, minute) => {
-    setBrowserTimeZone(zone);
+    pinLocalClock(zone, 2026, 9, 20, hour, minute);
     await mount();
-    vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date(2026, 9, 20, hour, minute));
     URL.createObjectURL = vi.fn(() => 'blob:x');
     URL.revokeObjectURL = vi.fn();
     const names = [];
