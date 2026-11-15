@@ -39,6 +39,11 @@ const mount = async () => {
 };
 
 describe('shell di Allenamenti', () => {
+  it('Layout ha già il Container: la pagina non ne apre un secondo', async () => {
+    await mount();
+    expect(document.querySelector('.MuiContainer-root')).toBeNull();
+  });
+
   it('un solo h1 "Allenamenti" nello stile titolo di pagina, sopra i tab', async () => {
     await mount();
     const h1s = screen.getAllByRole('heading', { level: 1 });

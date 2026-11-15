@@ -56,6 +56,11 @@ const mount = async () => {
   render(<ThemeModeProvider><Progress isEmbedded /></ThemeModeProvider>);
   await screen.findByText('Ultimi 60 giorni');
 };
+it('non incorporata, la pagina non apre un Container dentro quello del Layout', async () => {
+  render(<ThemeModeProvider><Progress /></ThemeModeProvider>);
+  await screen.findByText('Ultimi 60 giorni');
+  expect(document.querySelector('.MuiContainer-root')).toBeNull();
+});
 const mountOpen = async () => {
   await mount();
   ['Petto', 'Quadricipiti', 'Spalle', 'Schiena'].forEach(openSection);

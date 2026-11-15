@@ -36,6 +36,14 @@ const pill = (name) => screen.getByRole('button', { name });
 const history = () => screen.getByRole('table', { name: 'Storico delle misure' });
 const tableRows = () => within(history()).getAllByRole('row').slice(1);
 
+describe('contenitore', () => {
+  it('non incorporata, la pagina non apre un Container dentro quello del Layout', async () => {
+    records = [row('2026-10-15', '80.0')];
+    await mount();
+    expect(document.querySelector('.MuiContainer-root')).toBeNull();
+  });
+});
+
 describe('periodo e variazione del peso', () => {
   beforeEach(() => {
     records = [

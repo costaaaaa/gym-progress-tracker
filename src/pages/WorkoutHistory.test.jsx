@@ -64,6 +64,16 @@ const mount = async () => {
 };
 
 describe('intestazioni e testi', () => {
+  it('non incorporata, la pagina non apre un Container dentro quello del Layout', async () => {
+    render(
+      <ThemeModeProvider>
+        <MemoryRouter><WorkoutHistory /></MemoryRouter>
+      </ThemeModeProvider>,
+    );
+    await screen.findByText('02:00 · 3 esercizi');
+    expect(document.querySelector('.MuiContainer-root')).toBeNull();
+  });
+
   it('il titolo del mese è nello stile titolo di card, senza sottolineatura rossa', async () => {
     await mount();
     const mese = screen.getByText('Ottobre 2026');

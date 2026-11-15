@@ -84,6 +84,11 @@ describe('elenco dei gruppi', () => {
     expect(getComputedStyle(screen.getByRole('button', { name: 'Crea gruppo' })).backgroundColor).toBe(RED);
   });
 
+  it('non apre un Container dentro quello del Layout', async () => {
+    await mount();
+    expect(document.querySelector('.MuiContainer-root')).toBeNull();
+  });
+
   it('i testi sono almeno 16px', async () => {
     await mount();
     expect(small()).toEqual([]);
@@ -100,10 +105,25 @@ describe('dettaglio del gruppo', () => {
     await screen.findByText('Classifica');
   };
 
-  it('le tab della classifica non hanno variant fullWidth (flex-basis 0 contro il flex-grow di INK_TABS)', async () => {
+  it('non apre un Container dentro quello del Layout', async () => {
+    await mount();
+    expect(document.querySelector('.MuiContainer-root')).toBeNull();
+  });
+
+  it('anche con l\'errore di caricamento non apre un Container', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(json({ success: false, message: 'no' }, 404))));
+    render(
+      <MemoryRouter initialEntries={['/gruppi/7']}>
+        <ThemeModeProvider><Routes><Route path="/gruppi/:id" element={<GroupDetail />} /></Routes></ThemeModeProvider>
+      </MemoryRouter>,
+    );
+    await screen.findByRole('alert');
+    expect(document.querySelector('.MuiContainer-root')).toBeNull();
+  });
+
+  it('le tab della classifica non hanno flex-basis 0, che si scontra con il flex-grow di INK_TABS', async () => {
     await mount();
     const tab = screen.getAllByRole('tab')[0];
-    expect(tab.classList.contains('MuiTab-fullWidth')).toBe(false);
     expect(getComputedStyle(tab).flexBasis).not.toBe('0px');
   });
 
