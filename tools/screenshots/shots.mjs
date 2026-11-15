@@ -294,7 +294,8 @@ async function attempt(tag, name, fn) {
   }
 }
 
-const viewports = [{ w: 390, h: 844 }, { w: 1440, h: 900 }];
+// SHOTS_WIDTHS="320,390" sostituisce le larghezze di base (altezza 844 per tutte tranne 1440, alta 900)
+const viewports = (process.env.SHOTS_WIDTHS || '390,1440').split(',').map(Number).map((w) => ({ w, h: w >= 1440 ? 900 : 844 }));
 const themes = ['light', 'dark'];
 
 async function openPage(vp, theme, opts, tag) {

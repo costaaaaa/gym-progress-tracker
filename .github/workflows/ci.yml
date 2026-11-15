@@ -1,7 +1,7 @@
 name: CI
 
 # Lint, test, traduzioni e build del frontend a ogni push su main e su ogni PR.
-# Le immagini si costruiscono in gym-infra (build-images.yml), che ripete lint e traduzioni.
+# Le immagini si costruiscono nel repo dell'infrastruttura (build-images.yml), che ripete lint e traduzioni.
 
 on:
   push:

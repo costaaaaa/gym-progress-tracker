@@ -7,7 +7,7 @@
 #
 # Avvia mysql:9.7 senza rete (docker run, nome univoco, rimosso a fine test anche se fallisce), ci crea
 # gym_workout_exercises com'era prima della 34 (senza chiavi esterne verso giorni ed esercizi), inserisce
-# righe fixture generiche, esegue la sezione 34 estratta come fa gym-infra/bin/db-upgrade.sh e confronta
+# righe fixture generiche, esegue la sezione 34 estratta come fa lo script di aggiornamento del database e confronta
 # il risultato con i valori scritti qui a mano. MYSQL_IMAGE sceglie l'immagine (default mysql:9.7).
 #
 # Nei valori attesi ogni serie è una parola: "w" riscaldamento, "12-12" numero, "8-10" intervallo,

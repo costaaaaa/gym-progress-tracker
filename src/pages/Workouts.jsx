@@ -1,6 +1,6 @@
 import { Suspense, lazy } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Box, Tabs, Tab, CircularProgress, Container, Typography } from '@mui/material';
+import { Box, Tabs, Tab, CircularProgress, Typography } from '@mui/material';
 import { useLocation } from 'react-router-dom';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
@@ -21,7 +21,7 @@ const Workouts = () => {
   const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS, { title: t('workouts.title'), description: t('workouts.meta.description') });
 
   return (
-    <Container maxWidth="lg" sx={{ py: 3 }}>
+    <Box sx={{ py: 3 }}>
       <Box sx={{ width: '100%' }}>
         <Typography variant="pageTitle" gutterBottom>
           {t('workouts.title')}
@@ -80,7 +80,7 @@ const Workouts = () => {
           </Suspense>
         </Box>
       </Box>
-    </Container>
+    </Box>
   );
 };
 

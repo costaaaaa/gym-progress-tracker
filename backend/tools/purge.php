@@ -1,6 +1,6 @@
 <?php
 // Pulizia periodica dei dati che non servono piu' (limitazione della conservazione, art. 5.1.e GDPR).
-// Da lanciare una volta al giorno dal cron del server (vedi gym-infra):
+// Da lanciare una volta al giorno dal cron del server (vedi il repo dell'infrastruttura):
 //
 //   php backend/tools/purge.php             esegue
 //   php backend/tools/purge.php --dry-run   conta soltanto

@@ -1,5 +1,5 @@
 {
-  "_doc": "Record personali di un esercizio: storico (sessioni precedenti, null = mai fatto) e serie della sessione. Letti da tests/gamification_rules_test.php (PHP, record che danno XP) e dal test Jest del mobile (detectPersonalRecords). Copia identica in gym-progress-tracker-mobile/__tests__/fixtures/pr_cases.json. volume = miglior volume di sessione, solo lato client.",
+  "_doc": "Record personali di un esercizio: storico (sessioni precedenti, null = mai fatto) e serie della sessione. Letti da tests/gamification_rules_test.php (PHP, record che danno XP) e dal test dell'altro client (detectPersonalRecords). Copia identica nell'altro client. volume = miglior volume di sessione, solo lato client.",
   "cases": [
     {
       "name": "prima volta: nessun record",

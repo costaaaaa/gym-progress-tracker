@@ -17,6 +17,7 @@ Il kit è separato dall'app: ha un suo `package.json` e non tocca quello di `gym
   (dominio `example.com`, nomi `atleta_*`).
 - `shots.mjs <cartella> <porta> <nomi>`: con un terzo parametro (nomi separati da virgola, es. `allenamenti-piani,focus-scelta-giorno`) scatta solo i flussi che producono quelle schermate (un flusso, come il Focus o l'editor dei piani, scatta tutte le sue immagini).
   Le schermate `allenamenti-piani-ricche*` e `focus-scelta-giorno-un-giorno|vuoto` usano schede con più giorni e giorni vuoti.
+- `SHOTS_WIDTHS=320,390` (variabile d'ambiente, anche dentro `docker run -e`): sostituisce le larghezze di base 390 e 1440; il nome dei file usa la larghezza scelta.
 - `compare.mjs [A=before] [B=after]`: confronto con pixelmatch (soglia 0). Le differenze finiscono in `diff/`.
   Esce con 1 se c'è almeno una differenza o un file mancante.
 
