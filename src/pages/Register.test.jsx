@@ -167,6 +167,24 @@ describe('errori annunciati e focus sul primo campo sbagliato (WCAG 3.3.1, 4.1.3
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  it.each(['21/07/0085', '21/07/1900'])('secondo passo: una data di nascita oltre i 100 anni (%s) dà un errore sul campo, senza chiamare il server', async (value) => {
+    await goToStep2();
+    fetch.mockClear();
+    fireEvent.change(screen.getByLabelText(/^Data di nascita/), { target: { value } });
+    fireEvent.click(screen.getByRole('button', { name: 'Registrati' }));
+    const birth = screen.getByLabelText(/^Data di nascita/);
+    expect(birth.getAttribute('aria-invalid')).toBe('true');
+    expect(describedBy(birth)).toBe('Inserisci una data di nascita valida');
+    expect(document.activeElement).toBe(birth);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('secondo passo: la data di nascita dichiara a cosa serve (autocomplete bday), le altre date no', async () => {
+    await goToStep2();
+    expect(screen.getByLabelText(/^Data di nascita/).getAttribute('autocomplete')).toBe('bday');
+    expect(screen.getByLabelText(/^Mese inizio allenamento/).getAttribute('autocomplete')).not.toBe('bday');
+  });
+
   it('secondo passo: con la data giusta il primo errore è il sesso e il focus va sul suo campo', async () => {
     await goToStep2();
     fireEvent.change(screen.getByLabelText(/^Data di nascita/), { target: { value: '01/01/1990' } });

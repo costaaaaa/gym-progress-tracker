@@ -41,6 +41,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const STEP1_FIELDS = ['username', 'email', 'password', 'confirmPassword'];
 const STEP2_FIELDS = ['birthDate', 'gender', 'terms'];
 
+// Il server rifiuta una data di nascita più vecchia di 100 anni
+const oldestBirthDate = () => subYears(startOfToday(), 100);
+
 const Register = () => {
   const { t, i18n } = useTranslation();
   const localizedPath = useLocalizedPath();
@@ -158,7 +161,8 @@ const Register = () => {
     // Un errore sotto ogni campo sbagliato, il focus sul primo
     const errors = {
       birthDate: !birthDate ? t('register.error.birth_date_required')
-        : birthDate > subYears(startOfToday(), 14) ? t('register.error.min_age') : '',
+        : birthDate > subYears(startOfToday(), 14) ? t('register.error.min_age')
+          : birthDate < oldestBirthDate() ? t('register.error.birth_date_invalid') : '',
       gender: gender ? '' : t('register.error.gender_required'),
       terms: acceptTerms ? '' : t('register.error.terms_required'),
     };
@@ -338,7 +342,7 @@ const Register = () => {
                 label={t('register.birth_date')}
                 value={birthDate}
                 onChange={(newValue) => { setBirthDate(newValue); clearError('birthDate'); }}
-                minDate={subYears(startOfToday(), 100)}
+                minDate={oldestBirthDate()}
                 maxDate={subYears(startOfToday(), 14)}
                 // Se la data non è ancora scelta si apre sulla vista anni, centrata su 30 anni fa (altrimenti
                 // sul mese di oggi - 14 anni); poi mese e giorno. Con una data scelta si apre sul suo mese.
@@ -354,6 +358,8 @@ const Register = () => {
                     error: Boolean(fieldErrors.birthDate),
                     helperText: fieldErrors.birthDate || t('register.birth_date_help'),
                     inputRef: fieldRef('birthDate'),
+                    // MUI X ignora autoComplete di textField e lo mette a "off": passa solo da inputProps
+                    inputProps: { autoComplete: 'bday' },
                     id: "birthDate",
                     name: "birthDate"
                   }

@@ -13,6 +13,8 @@ import i18n from '../i18n';
 import { textBelow } from '../test/minText';
 import { json } from '../test/dom';
 import { setBrowserTimeZone } from '../test/timeZone';
+import { describedBy } from '../test/accessibleNames';
+import { mockPointer } from '../test/pointer';
 
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
 // Lo stesso oggetto a ogni render: la pagina ricarica i dati quando `user` cambia identità.
@@ -266,6 +268,49 @@ describe('campi data su telefono', () => {
     fireEvent.click(screen.getAllByRole('button', { name: /^Modifica/ })[0]);
     expect(screen.getByRole('textbox', { name: /^Data di nascita/ })).toBeTruthy();
     expect(screen.getByRole('textbox', { name: /^Mese inizio allenamento/ })).toBeTruthy();
+  });
+});
+
+describe('data di nascita', () => {
+  // Con il puntatore preciso il campo si scrive da tastiera; su telefono è di sola lettura
+  const apriModifica = async () => {
+    mockPointer(true);
+    await mount();
+    fireEvent.click(screen.getAllByRole('button', { name: /^Modifica/ })[0]);
+    return screen.getByRole('textbox', { name: /^Data di nascita/ });
+  };
+
+  it('dichiara a cosa serve (autocomplete bday), il mese di inizio allenamento no', async () => {
+    const birth = await apriModifica();
+    expect(birth.getAttribute('autocomplete')).toBe('bday');
+    expect(screen.getByRole('textbox', { name: /^Mese inizio allenamento/ }).getAttribute('autocomplete')).not.toBe('bday');
+  });
+
+  it('oltre i 100 anni: errore sul campo, focus, nessuna richiesta di salvataggio', async () => {
+    const birth = await apriModifica();
+    fireEvent.change(birth, { target: { value: '21/07/0085' } });
+    fetch.mockClear();
+    fireEvent.click(button('Salva profilo'));
+    await waitFor(() => expect(birth.getAttribute('aria-invalid')).toBe('true'));
+    expect(describedBy(birth)).toBe('Inserisci una data di nascita valida');
+    expect(document.activeElement).toBe(birth);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('cambiando la data l\'errore sparisce', async () => {
+    const birth = await apriModifica();
+    fireEvent.change(birth, { target: { value: '21/07/0085' } });
+    fireEvent.click(button('Salva profilo'));
+    await waitFor(() => expect(birth.getAttribute('aria-invalid')).toBe('true'));
+    fireEvent.change(birth, { target: { value: '' } });
+    expect(birth.getAttribute('aria-invalid')).not.toBe('true');
+  });
+
+  it('una data valida si salva', async () => {
+    const birth = await apriModifica();
+    fireEvent.change(birth, { target: { value: '21/07/1985' } });
+    fireEvent.click(button('Salva profilo'));
+    await waitFor(() => expect(fetch.mock.calls.some(([url, init]) => url.includes('update_settings.php') && JSON.parse(init.body).birth_date === '1985-07-21')).toBe(true));
   });
 });
 

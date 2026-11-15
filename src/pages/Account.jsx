@@ -53,9 +53,13 @@ import { validatePassword } from '../utils/passwordPolicy';
 import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
 import { NEUTRAL_OUTLINED } from '../utils/buttonStyles';
 import { getConsents, setConsent } from '../utils/consent';
+import useFocusField from '../hooks/useFocusField';
 import { loginWithNext } from '../utils/safeNext';
 import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
 import ButtonSpinner from '../components/ButtonSpinner';
+
+// Il server rifiuta una data di nascita più vecchia di 100 anni
+const oldestBirthDate = () => subYears(startOfToday(), 100);
 
 const Account = ({ isEmbedded = false }) => {
   const { user, logout, isLoggedIn, updateUser, loading: authLoading } = useAuth();
@@ -84,6 +88,8 @@ const Account = ({ isEmbedded = false }) => {
   const [gender, setGender] = useState('');
   const [experienceYears, setExperienceYears] = useState('');
   const [birthDate, setBirthDate] = useState(null);
+  const [birthDateError, setBirthDateError] = useState('');
+  const { fieldRef, focusField } = useFocusField();
   const [trainingStartDate, setTrainingStartDate] = useState(null);
   const [updatingProfile, setUpdatingProfile] = useState(false);
 
@@ -411,6 +417,12 @@ const Account = ({ isEmbedded = false }) => {
   }, [user, fetchUserData]);
 
   const handleUpdateProfile = async () => {
+    // Il server rifiuta una data di nascita più vecchia di 100 anni
+    if (birthDate && birthDate < oldestBirthDate()) {
+      setBirthDateError(t('register.error.birth_date_invalid'));
+      focusField('birthDate');
+      return;
+    }
     setUpdatingProfile(true);
     try {
       const response = await fetch(`${API_BASE_URL}api/user/update_settings.php`, {
@@ -620,14 +632,18 @@ const Account = ({ isEmbedded = false }) => {
                     <LabeledDatePicker
                       label={t('account.birth_date')}
                       value={birthDate}
-                      onChange={(newValue) => setBirthDate(newValue)}
-                      minDate={subYears(startOfToday(), 100)}
+                      onChange={(newValue) => { setBirthDate(newValue); setBirthDateError(''); }}
+                      minDate={oldestBirthDate()}
                       maxDate={subYears(startOfToday(), 14)}
                       slotProps={{
                         textField: {
                           fullWidth: true,
                           size: 'small',
-                          helperText: age ? t('account.age_current', { age }) : t('account.age_auto')
+                          error: Boolean(birthDateError),
+                          inputRef: fieldRef('birthDate'),
+                          // MUI X ignora autoComplete di textField e lo mette a "off": passa solo da inputProps
+                          inputProps: { autoComplete: 'bday' },
+                          helperText: birthDateError || (age ? t('account.age_current', { age }) : t('account.age_auto'))
                         }
                       }}
                     />
