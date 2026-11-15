@@ -1,15 +1,16 @@
 // Tema chiaro/scuro del blog: la stessa scelta dell'app (chiave themeMode in
-// localStorage, stessa origine), chiaro se non c'e', come nell'app. Caricato in
+// localStorage, stessa origine); se non c'e', la preferenza del sistema, come nell'app. Caricato in
 // <head> senza defer, cosi' la pagina non compare prima nel tema sbagliato;
 // inline non si puo' (CSP script-src 'self'). Senza JS il blog resta chiaro.
 (function () {
   'use strict';
 
   var root = document.documentElement;
-  var mode = 'light';
+  var mode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   try {
-    if (localStorage.getItem('themeMode') === 'dark') mode = 'dark';
-  } catch (e) { /* storage bloccato: resta chiaro */ }
+    var saved = localStorage.getItem('themeMode');
+    if (saved === 'light' || saved === 'dark') mode = saved;
+  } catch (e) { /* storage bloccato: vale il sistema */ }
   root.setAttribute('data-theme', mode);
 
   document.addEventListener('DOMContentLoaded', function () {

@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useMemo, useEffect } from 'react';
+import { createContext, useState, useContext, useMemo } from 'react';
 import { ThemeProvider, createTheme, alpha } from '@mui/material/styles';
 import { grey } from '@mui/material/colors';
 import { GlobalStyles } from '@mui/material';
@@ -28,16 +28,17 @@ export const useThemeMode = () => useContext(ThemeModeContext);
 
 export const ThemeModeProvider = ({ children }) => {
   const [mode, setMode] = useState(() => {
+    // Scelta salvata; senza, la preferenza del sistema (letta una volta sola, senza ascoltarla)
     const savedMode = localStorage.getItem('themeMode');
-    return savedMode || 'light';
+    if (savedMode === 'light' || savedMode === 'dark') return savedMode;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
 
-  useEffect(() => {
-    localStorage.setItem('themeMode', mode);
-  }, [mode]);
-
+  // Solo il bottone salva la scelta: finché non lo si preme, vale il sistema
   const toggleThemeMode = () => {
-    setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
+    const next = mode === 'light' ? 'dark' : 'light';
+    localStorage.setItem('themeMode', next);
+    setMode(next);
   };
 
   const { i18n } = useTranslation();

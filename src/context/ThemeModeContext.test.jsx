@@ -5,7 +5,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import { useTheme } from '@mui/material/styles';
 import { BottomNavigation, BottomNavigationAction, Button, CardActionArea, Chip, CircularProgress, CssBaseline, IconButton, Link, MenuItem, Slider, Switch, Tab, Tabs, TextField, Typography } from '@mui/material';
-import { ThemeModeProvider } from './ThemeModeContext';
+import { ThemeModeProvider, useThemeMode } from './ThemeModeContext';
 
 const RED = 'rgb(213, 0, 0)';
 const WHITE = 'rgb(255, 255, 255)';
@@ -335,5 +335,47 @@ describe('tema: indicatori di caricamento', () => {
   it('il nome scelto dal componente prevale su quello del tema', () => {
     render(<ThemeModeProvider><CircularProgress aria-label="Avanzamento" /></ThemeModeProvider>);
     expect(screen.getByRole('progressbar', { name: 'Avanzamento' })).toBeTruthy();
+  });
+});
+
+// Modo iniziale: la scelta salvata (themeMode) vince; senza scelta vale la preferenza del sistema, letta una volta sola.
+describe('tema: modo iniziale', () => {
+  const realMatchMedia = window.matchMedia;
+  afterEach(() => { window.matchMedia = realMatchMedia; });
+  const system = (dark) => {
+    window.matchMedia = (query) => ({ ...realMatchMedia(query), matches: dark && query === '(prefers-color-scheme: dark)' });
+  };
+  const Probe = () => {
+    const { mode, toggleThemeMode } = useThemeMode();
+    return <button type="button" onClick={toggleThemeMode}>{mode}</button>;
+  };
+  const mount = () => render(<ThemeModeProvider><Probe /></ThemeModeProvider>);
+
+  it('senza scelta salvata e sistema scuro parte scuro', () => {
+    system(true);
+    mount();
+    expect(screen.getByRole('button').textContent).toBe('dark');
+  });
+
+  it('senza scelta salvata e sistema chiaro parte chiaro', () => {
+    system(false);
+    mount();
+    expect(screen.getByRole('button').textContent).toBe('light');
+  });
+
+  it('la scelta salvata vince sul sistema', () => {
+    system(true);
+    localStorage.setItem('themeMode', 'light');
+    mount();
+    expect(screen.getByRole('button').textContent).toBe('light');
+  });
+
+  it('il bottone salva la scelta, il solo caricamento no', () => {
+    system(true);
+    mount();
+    expect(localStorage.getItem('themeMode')).toBeNull();
+    fireEvent.click(screen.getByRole('button'));
+    expect(screen.getByRole('button').textContent).toBe('light');
+    expect(localStorage.getItem('themeMode')).toBe('light');
   });
 });

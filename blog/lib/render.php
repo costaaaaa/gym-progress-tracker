@@ -6,7 +6,7 @@
  * Layout dell'app (src/context/ThemeModeContext.jsx, src/components/Layout/,
  * marchio da src/components/LogoMark.jsx) — vanno tenuti in sync a mano se
  * l'app cambia. Il tema chiaro/scuro e' quello scelto nell'app (themeMode in
- * localStorage, stessa origine), chiaro di default: lo applica assets/tema.js,
+ * localStorage, stessa origine), altrimenti la preferenza del sistema: lo applica assets/tema.js,
  * che gestisce anche il toggle nell'header.
  */
 
