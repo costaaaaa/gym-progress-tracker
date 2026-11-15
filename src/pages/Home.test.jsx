@@ -1,6 +1,6 @@
 // Home dopo il login: i dati arrivano dalla fetch (confine), l'utente vede link, testi e intestazioni.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Home from './Home';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
@@ -75,15 +75,52 @@ const newUser = () => {
 };
 
 describe('primo accesso', () => {
-  it('senza allenamenti il titolo è "Benvenuto", con lo storico "Bentornato"', async () => {
+  it('senza allenamenti il titolo è "Benvenuto"', async () => {
     newUser();
     renderHome();
     expect(await screen.findByRole('heading', { level: 1, name: 'Benvenuto, mario88' })).toBeTruthy();
-    cleanup();
-    Object.assign(responses, original);
+  });
+
+  it('con lo storico il titolo è "Bentornato"', async () => {
     renderHome();
     expect(await screen.findByRole('heading', { level: 1, name: 'Bentornato, mario88' })).toBeTruthy();
     expect(screen.queryByText('Benvenuto, mario88')).toBeNull();
+  });
+
+  it('per un utente nuovo la Home mostra solo titolo, "Inizia da qui" e riepilogo settimanale', async () => {
+    newUser();
+    renderHome();
+    await screen.findByText('Inizia da qui');
+    expect(screen.getByText('Riepilogo settimanale')).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Inizia allenamento' })).toBeNull();
+    expect(screen.queryByText('Piano attivo')).toBeNull();
+    expect(screen.queryByText('Ultimo allenamento')).toBeNull();
+    expect(screen.queryByText('I tuoi gruppi')).toBeNull();
+    expect(screen.queryByText(/tornare/)).toBeNull();
+  });
+
+  it('con una scheda o uno storico la Home mostra tutte le card e il bottone "Inizia allenamento"', async () => {
+    renderHome();
+    expect(await screen.findByRole('link', { name: 'Inizia allenamento' })).toBeTruthy();
+    expect(await screen.findByText('Piano attivo')).toBeTruthy();
+    expect(screen.getByText('Ultimo allenamento')).toBeTruthy();
+    expect(await screen.findByText('I tuoi gruppi')).toBeTruthy();
+    expect(screen.queryByText('Inizia da qui')).toBeNull();
+  });
+
+  it('"Inizia da qui" non c\'è se esistono schede, anche tutte inattive, e nessun allenamento', async () => {
+    responses['workout_history/read.php'] = { success: true, records: [] };
+    responses['workout/read_plans.php'] = { success: true, records: [{ id: 2, name: 'Vecchia', is_active: false }] };
+    renderHome();
+    await screen.findByRole('link', { name: 'Inizia allenamento' });
+    expect(screen.queryByText('Inizia da qui')).toBeNull();
+  });
+
+  it('il riepilogo settimanale senza scheda attiva parla di traguardo, non di piano', async () => {
+    responses['workout/read_plans.php'] = { success: true, records: [] };
+    renderHome();
+    expect(await screen.findByText('Ti manca 1 sessione per il traguardo settimanale.')).toBeTruthy();
+    expect(screen.queryByText(/per completare il piano/)).toBeNull();
   });
 
   it('mentre lo storico si carica non compare "Benvenuto"', async () => {

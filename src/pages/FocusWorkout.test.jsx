@@ -299,6 +299,16 @@ describe('fuso dell\'allenamento', () => {
     expect(saveBody().time_zone).toBe('America/New_York');
   });
 
+  it('il nuovo record di streak con 1 settimana dice "1 settimana consecutiva" (singolare)', async () => {
+    responses['record_workout.php'] = () => json({ success: true, id: 77, new_longest: true, current_streak_weeks: 1 });
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...savedDraft, selectedDay: pushDay, selectedDayId: 1, phase: 'summary' }));
+    await mount();
+    click('Riprendi allenamento');
+    await act(async () => { click('Salva allenamento'); });
+    await advance(0);
+    expect(screen.getByText('Nuovo record! 🏆 1 settimana consecutiva')).toBeTruthy();
+  });
+
   it('una bozza senza fuso (salvata da una versione vecchia) usa quello attuale del dispositivo', async () => {
     currentTimeZone.mockReturnValue('Asia/Tokyo');
     localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...savedDraft, selectedDay: pushDay, selectedDayId: 1, phase: 'summary' }));

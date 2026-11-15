@@ -54,6 +54,8 @@
   "home.weekly.goal_reached": "Weekly goal reached! Great job.",
   "home.weekly.missing_one": "{{count}} session to go to complete your plan.",
   "home.weekly.missing_other": "{{count}} sessions to go to complete your plan.",
+  "home.weekly.missing_goal_one": "{{count}} session to go to reach your weekly goal.",
+  "home.weekly.missing_goal_other": "{{count}} sessions to go to reach your weekly goal.",
   "home.weekly.volume": "Total volume",
   "home.weekly.sets": "Training sets",
   "home.recovery_link": "Sets and recovery by muscle ›",

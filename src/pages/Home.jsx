@@ -60,6 +60,7 @@ const Home = () => {
   // Veri solo se la risposta è arrivata: un errore di rete non deve far passare un utente per nuovo
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [plansLoaded, setPlansLoaded] = useState(false);
+  const [hasPlans, setHasPlans] = useState(false);
   const [dashboardStats, setDashboardStats] = useState(null);
   // weekly_goal è l'obiettivo effettivo; plan_days_total resta per i server più vecchi
   const weeklyGoal = dashboardStats?.weekly_goal ?? dashboardStats?.plan_days_total;
@@ -95,6 +96,7 @@ const Home = () => {
         const plansData = await plansResponse.json();
         setPlansLoaded(true);
         if (plansData.records) {
+          setHasPlans(plansData.records.length > 0);
           const active = plansData.records.find(plan => plan.is_active);
           setActivePlan(active || null);
         }
@@ -129,7 +131,8 @@ const Home = () => {
     formatLocalDate(dateString, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   const isNewUser = historyLoaded && !lastWorkout;
-  const showStartHere = isNewUser && plansLoaded && !activePlan;
+  // Nuovo = nessun allenamento e nessuna scheda (nemmeno inattiva): la Home propone una sola azione
+  const showStartHere = isNewUser && plansLoaded && !hasPlans;
 
   if (!isLoggedIn) {
     return (
@@ -148,15 +151,17 @@ const Home = () => {
         <Typography sx={{ fontSize: 16, color: 'text.secondary', mb: 3, maxWidth: 560, lineHeight: 1.6 }}>
           {t('home.hero.sub_user')}
         </Typography>
-        <Button
-          variant="contained"
-          component={RouterLink}
-          to="/focus"
-          startIcon={<PlayArrowIcon />}
-          sx={{ borderRadius: radius.lg, px: 3, py: 1.25, fontWeight: 700 }}
-        >
-          {t('home.hero.start_workout')}
-        </Button>
+        {!showStartHere && (
+          <Button
+            variant="contained"
+            component={RouterLink}
+            to="/focus"
+            startIcon={<PlayArrowIcon />}
+            sx={{ borderRadius: radius.lg, px: 3, py: 1.25, fontWeight: 700 }}
+          >
+            {t('home.hero.start_workout')}
+          </Button>
+        )}
       </Box>
 
       {showStartHere && (
@@ -178,6 +183,7 @@ const Home = () => {
           </Grid>
         ) : (
           <>
+            {!showStartHere && (<>
             {/* Streak / Livello */}
             <Grid item xs={12} md={6}>
               <StreakCard />
@@ -185,6 +191,7 @@ const Home = () => {
             <Grid item xs={12} md={6}>
               <LevelCard />
             </Grid>
+            </>)}
 
             {/* Riepilogo Settimanale */}
             <Grid item xs={12} md={6}>
@@ -211,7 +218,7 @@ const Home = () => {
                 <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 1, mb: 2.5 }}>
                   {dashboardStats?.weekly_workouts >= weeklyGoal
                     ? t('home.weekly.goal_reached')
-                    : t('home.weekly.missing', { count: Math.max(0, (weeklyGoal || 0) - (dashboardStats?.weekly_workouts || 0)) })}
+                    : t(activePlan ? 'home.weekly.missing' : 'home.weekly.missing_goal', { count: Math.max(0, (weeklyGoal || 0) - (dashboardStats?.weekly_workouts || 0)) })}
                 </Typography>
 
                 <Box sx={{ display: 'flex', gap: 1.5 }}>
@@ -237,6 +244,7 @@ const Home = () => {
               </Card>
             </Grid>
 
+            {!showStartHere && (<>
             {/* Stato Muscolare */}
             <Grid item xs={12} md={6}>
               <Card sx={{ height: '100%', p: '22px' }}>
@@ -331,6 +339,7 @@ const Home = () => {
                 <QuickActionPill to="/profilo?tab=settings" icon={<HealthAndSafetyOutlined />} label={t('home.quick.settings')} />
               </Box>
             </Grid>
+            </>)}
           </>
         )}
       </Grid>

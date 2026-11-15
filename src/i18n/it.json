@@ -54,6 +54,8 @@
   "home.weekly.goal_reached": "Obiettivo settimanale raggiunto! Ottimo lavoro.",
   "home.weekly.missing_one": "Ti manca {{count}} sessione per completare il piano.",
   "home.weekly.missing_other": "Ti mancano {{count}} sessioni per completare il piano.",
+  "home.weekly.missing_goal_one": "Ti manca {{count}} sessione per il traguardo settimanale.",
+  "home.weekly.missing_goal_other": "Ti mancano {{count}} sessioni per il traguardo settimanale.",
   "home.weekly.volume": "Volume totale",
   "home.weekly.sets": "Serie allenanti",
   "home.recovery_link": "Serie e recupero per muscolo ›",
