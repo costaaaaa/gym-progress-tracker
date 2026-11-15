@@ -1,18 +1,29 @@
 // Registrazione in due passaggi: il primo controlla l'account (anche con check_availability.php),
 // il secondo chiede il profilo. La fetch è il confine.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, waitFor, act } from '@testing-library/react';
+import { format, subYears, subDays, startOfToday } from 'date-fns';
 import { MemoryRouter } from 'react-router-dom';
 import Register from './Register';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import i18n from '../i18n';
 import { describedBy } from '../test/accessibleNames';
 import { mockPointer } from '../test/pointer';
+import { setBrowserTimeZone } from '../test/timeZone';
 
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
 vi.mock('../context/AuthContext', () => ({
   useAuth: () => ({ user: null, isLoggedIn: false, loading: false, login: () => {} }),
 }));
+
+// jsdom non sa scrivere un campo data «a metà» (MUI X lo sa fare solo con la tastiera vera): il campo vero resta, ma
+// ne tengo l'onChange per consegnargli un Invalid Date, come fa MUI X quando una sezione è vuota o impossibile.
+const birthFieldChange = { current: null };
+vi.mock('../components/LabeledDatePicker', async (importOriginal) => {
+  const { createElement } = await import('react');
+  const Real = (await importOriginal()).default;
+  return { default: (props) => { if (props.label === 'Data di nascita') birthFieldChange.current = props.onChange; return createElement(Real, props); } };
+});
 
 const availability = (body) => vi.fn(() => Promise.resolve({ ok: true, status: 200, json: async () => ({ success: true, ...body }) }));
 
@@ -177,6 +188,50 @@ describe('errori annunciati e focus sul primo campo sbagliato (WCAG 3.3.1, 4.1.3
     expect(describedBy(birth)).toBe('Inserisci una data di nascita valida');
     expect(document.activeElement).toBe(birth);
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  // Il server accetta esattamente 100 anni (rifiuta birth < oggi - 100 anni): oggi di 100 anni fa passa, il giorno prima no
+  describe.each(['UTC', 'Europe/Rome', 'America/Los_Angeles', 'Asia/Tokyo'])('confine dei 100 anni (%s)', (zone) => {
+    // La data si calcola dopo aver cambiato fuso: «oggi» dipende da lì
+    const submitWith = async (dateFor) => {
+      setBrowserTimeZone(zone);
+      await goToStep2();
+      fireEvent.change(screen.getByLabelText(/^Data di nascita/), { target: { value: format(dateFor(), 'dd/MM/yyyy') } });
+      fireEvent.mouseDown(screen.getByRole('combobox', { name: /Sesso/ }));
+      fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: /Maschio/ }));
+      fireEvent.click(screen.getByRole('checkbox'));
+      fetch.mockClear();
+      fireEvent.click(screen.getByRole('button', { name: 'Registrati' }));
+    };
+
+    it('esattamente 100 anni fa oggi: la richiesta parte', async () => {
+      await submitWith(() => subYears(startOfToday(), 100));
+      await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+      expect(screen.getByLabelText(/^Data di nascita/).getAttribute('aria-invalid')).not.toBe('true');
+    });
+
+    it('un giorno prima: errore sul campo, nessuna richiesta', async () => {
+      await submitWith(() => subDays(subYears(startOfToday(), 100), 1));
+      expect(screen.getByLabelText(/^Data di nascita/).getAttribute('aria-invalid')).toBe('true');
+      expect(describedBy(screen.getByLabelText(/^Data di nascita/))).toBe('Inserisci una data di nascita valida');
+      expect(fetch).not.toHaveBeenCalled();
+    });
+  });
+
+  it('secondo passo: un Invalid Date (campo scritto a metà) è una data non valida: errore sul campo, fuoco, nessuna richiesta', async () => {
+    await goToStep2();
+    act(() => birthFieldChange.current(new Date(NaN)));
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Sesso/ }));
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: /Maschio/ }));
+    fireEvent.click(screen.getByRole('checkbox'));
+    fetch.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'Registrati' }));
+    const birth = screen.getByLabelText(/^Data di nascita/);
+    expect(birth.getAttribute('aria-invalid')).toBe('true');
+    expect(describedBy(birth)).toBe('Inserisci una data di nascita valida');
+    expect(document.activeElement).toBe(birth);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('secondo passo: la data di nascita dichiara a cosa serve (autocomplete bday), le altre date no', async () => {

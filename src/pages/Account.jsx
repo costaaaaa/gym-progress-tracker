@@ -42,7 +42,8 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import LabeledDatePicker from '../components/LabeledDatePicker';
-import { format, parseISO, subYears, startOfToday, formatDistanceToNow } from 'date-fns';
+import { oldestBirthDate, youngestBirthDate, isInvalidBirthDate } from '../utils/birthDate';
+import { format, parseISO, startOfToday, formatDistanceToNow } from 'date-fns';
 import { useTranslation, Trans } from 'react-i18next';
 import DateLocalization from '../i18n/DateLocalization';
 import { dateFnsLocale } from '../i18n/format';
@@ -57,9 +58,6 @@ import useFocusField from '../hooks/useFocusField';
 import { loginWithNext } from '../utils/safeNext';
 import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
 import ButtonSpinner from '../components/ButtonSpinner';
-
-// Il server rifiuta una data di nascita più vecchia di 100 anni
-const oldestBirthDate = () => subYears(startOfToday(), 100);
 
 const Account = ({ isEmbedded = false }) => {
   const { user, logout, isLoggedIn, updateUser, loading: authLoading } = useAuth();
@@ -417,9 +415,8 @@ const Account = ({ isEmbedded = false }) => {
   }, [user, fetchUserData]);
 
   const handleUpdateProfile = async () => {
-    // Il server rifiuta una data di nascita più vecchia di 100 anni
-    if (birthDate && birthDate < oldestBirthDate()) {
-      setBirthDateError(t('register.error.birth_date_invalid'));
+    if (birthDate && isInvalidBirthDate(birthDate)) {
+      setBirthDateError(t('birth_date.error_invalid'));
       focusField('birthDate');
       return;
     }
@@ -634,12 +631,13 @@ const Account = ({ isEmbedded = false }) => {
                       value={birthDate}
                       onChange={(newValue) => { setBirthDate(newValue); setBirthDateError(''); }}
                       minDate={oldestBirthDate()}
-                      maxDate={subYears(startOfToday(), 14)}
+                      maxDate={youngestBirthDate()}
                       slotProps={{
                         textField: {
                           fullWidth: true,
                           size: 'small',
-                          error: Boolean(birthDateError),
+                          // undefined (non false) lascia a MUI X il suo errore di validazione (data fuori da minDate/maxDate)
+                          error: birthDateError ? true : undefined,
                           inputRef: fieldRef('birthDate'),
                           // MUI X ignora autoComplete di textField e lo mette a "off": passa solo da inputProps
                           inputProps: { autoComplete: 'bday' },

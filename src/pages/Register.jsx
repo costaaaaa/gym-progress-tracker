@@ -20,6 +20,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import LabeledDatePicker from '../components/LabeledDatePicker';
+import { oldestBirthDate, youngestBirthDate, isInvalidBirthDate } from '../utils/birthDate';
 import { format, subYears, startOfToday } from 'date-fns';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
@@ -40,9 +41,6 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Ordine dei campi di ogni passo (il primo con un errore riceve il focus)
 const STEP1_FIELDS = ['username', 'email', 'password', 'confirmPassword'];
 const STEP2_FIELDS = ['birthDate', 'gender', 'terms'];
-
-// Il server rifiuta una data di nascita più vecchia di 100 anni
-const oldestBirthDate = () => subYears(startOfToday(), 100);
 
 const Register = () => {
   const { t, i18n } = useTranslation();
@@ -161,8 +159,8 @@ const Register = () => {
     // Un errore sotto ogni campo sbagliato, il focus sul primo
     const errors = {
       birthDate: !birthDate ? t('register.error.birth_date_required')
-        : birthDate > subYears(startOfToday(), 14) ? t('register.error.min_age')
-          : birthDate < oldestBirthDate() ? t('register.error.birth_date_invalid') : '',
+        : isInvalidBirthDate(birthDate) ? t('birth_date.error_invalid')
+          : birthDate > youngestBirthDate() ? t('register.error.min_age') : '',
       gender: gender ? '' : t('register.error.gender_required'),
       terms: acceptTerms ? '' : t('register.error.terms_required'),
     };
@@ -343,7 +341,7 @@ const Register = () => {
                 value={birthDate}
                 onChange={(newValue) => { setBirthDate(newValue); clearError('birthDate'); }}
                 minDate={oldestBirthDate()}
-                maxDate={subYears(startOfToday(), 14)}
+                maxDate={youngestBirthDate()}
                 // Se la data non è ancora scelta si apre sulla vista anni, centrata su 30 anni fa (altrimenti
                 // sul mese di oggi - 14 anni); poi mese e giorno. Con una data scelta si apre sul suo mese.
                 views={['year', 'month', 'day']}

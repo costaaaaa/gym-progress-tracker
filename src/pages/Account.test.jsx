@@ -5,8 +5,9 @@
 // error.title #ff9e9e; bottoni pieni di errore #d50000 con testo bianco.
 // La fetch è il confine. Le impostazioni sono chiuse in un Collapse, che le tiene comunque montate.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, within, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { format, subYears, subDays, startOfToday } from 'date-fns';
 import Account from './Account';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import i18n from '../i18n';
@@ -15,6 +16,15 @@ import { json } from '../test/dom';
 import { setBrowserTimeZone } from '../test/timeZone';
 import { describedBy } from '../test/accessibleNames';
 import { mockPointer } from '../test/pointer';
+
+// jsdom non sa scrivere un campo data «a metà» (MUI X lo sa fare solo con la tastiera vera): il campo vero resta, ma
+// ne tengo l'onChange per consegnargli un Invalid Date, come fa MUI X quando una sezione è vuota o impossibile.
+const birthFieldChange = { current: null };
+vi.mock('../components/LabeledDatePicker', async (importOriginal) => {
+  const { createElement } = await import('react');
+  const Real = (await importOriginal()).default;
+  return { default: (props) => { if (props.label === 'Data di nascita') birthFieldChange.current = props.onChange; return createElement(Real, props); } };
+});
 
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
 // Lo stesso oggetto a ogni render: la pagina ricarica i dati quando `user` cambia identità.
@@ -304,6 +314,49 @@ describe('data di nascita', () => {
     await waitFor(() => expect(birth.getAttribute('aria-invalid')).toBe('true'));
     fireEvent.change(birth, { target: { value: '' } });
     expect(birth.getAttribute('aria-invalid')).not.toBe('true');
+  });
+
+  it('una data fuori dai limiti (meno di 14 anni) è già rossa prima di salvare, come il resto dei campi data', async () => {
+    const birth = await apriModifica();
+    fireEvent.change(birth, { target: { value: format(startOfToday(), 'dd/MM/yyyy') } });
+    expect(birth.getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('un Invalid Date (campo scritto a metà) è una data non valida: errore sul campo, fuoco, nessuna richiesta', async () => {
+    const birth = await apriModifica();
+    act(() => birthFieldChange.current(new Date(NaN)));
+    fetch.mockClear();
+    fireEvent.click(button('Salva profilo'));
+    await waitFor(() => expect(describedBy(birth)).toBe('Inserisci una data di nascita valida'));
+    expect(birth.getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(birth);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(screen.queryByText('Errore nel salvataggio del profilo')).toBeNull();
+  });
+
+  // Il server accetta esattamente 100 anni (rifiuta birth < oggi - 100 anni): oggi di 100 anni fa passa, il giorno prima no
+  describe.each(['UTC', 'Europe/Rome', 'America/Los_Angeles', 'Asia/Tokyo'])('confine dei 100 anni (%s)', (zone) => {
+    // La data si calcola dopo aver cambiato fuso: «oggi» dipende da lì
+    const saveWith = async (dateFor) => {
+      setBrowserTimeZone(zone);
+      const birth = await apriModifica();
+      fireEvent.change(birth, { target: { value: format(dateFor(), 'dd/MM/yyyy') } });
+      fetch.mockClear();
+      fireEvent.click(button('Salva profilo'));
+      return birth;
+    };
+
+    it('esattamente 100 anni fa oggi: il salvataggio parte', async () => {
+      await saveWith(() => subYears(startOfToday(), 100));
+      await waitFor(() => expect(fetch.mock.calls.some(([url, init]) => url.includes('update_settings.php') && JSON.parse(init.body).birth_date === format(subYears(startOfToday(), 100), 'yyyy-MM-dd'))).toBe(true));
+    });
+
+    it('un giorno prima: errore sul campo, nessuna richiesta', async () => {
+      const birth = await saveWith(() => subDays(subYears(startOfToday(), 100), 1));
+      await waitFor(() => expect(birth.getAttribute('aria-invalid')).toBe('true'));
+      expect(describedBy(birth)).toBe('Inserisci una data di nascita valida');
+      expect(fetch).not.toHaveBeenCalled();
+    });
   });
 
   it('una data valida si salva', async () => {
