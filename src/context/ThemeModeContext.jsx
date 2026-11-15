@@ -403,7 +403,7 @@ export const ThemeModeProvider = ({ children }) => {
               root: {
                 color: mode === 'light' ? grey[600] : grey[500],
                 '&.Mui-selected': {
-                  color: BRAND,
+                  color: mode === 'light' ? BRAND : ERROR_ON_DARK,
                 }
               }
             }

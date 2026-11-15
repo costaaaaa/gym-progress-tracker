@@ -439,7 +439,7 @@ const BodyStats = ({ isEmbedded = false }) => {
                   title={t('body.weight_trend')}
                   points={weightPoints}
                   domain={chartDomain}
-                  color="primary.main"
+                  color="text.primary"
                   valueLabel={weightLabel}
                   trend={trend}
                   deltaText={deltaText}

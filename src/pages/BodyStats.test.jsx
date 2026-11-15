@@ -416,6 +416,20 @@ describe('giorno della nuova misura', () => {
   });
 });
 
+describe('grafico del peso: colore', () => {
+  beforeEach(() => { records = measured(); });
+
+  it.each([
+    ['light', 'rgb(26, 24, 22)'],
+    ['dark', 'rgb(255, 255, 255)'],
+  ])('la linea del peso è neutra (colore del testo) in %s, non rossa', async (mode, ink) => {
+    localStorage.setItem('themeMode', mode);
+    await mount(themed);
+    const line = screen.getByRole('img', { name: /Andamento peso/ });
+    expect(style(line).color).toBe(ink);
+  });
+});
+
 describe('grafico del peso: alternativa testuale', () => {
   beforeEach(() => {
     records = [row('2026-08-10', '82.0'), row('2026-09-25', '81.5'), row('2026-10-15', '80.0')];
