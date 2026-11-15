@@ -59,8 +59,9 @@ describe('nomi accessibili', () => {
 // è un elemento a parte, raggiungibile con Tab, che non intercetta il puntatore.
 describe('foto: spostamento da tastiera', () => {
   const lastTransform = () => renderCardToCanvas.mock.calls.at(-1)[3];
-  const withPhoto = async () => {
-    loadPhoto.mockResolvedValue({ width: 3000, height: 1000 });
+  // Foto larga per default; (1000, 3000) è alta
+  const withPhoto = async (width = 3000, height = 1000) => {
+    loadPhoto.mockResolvedValue({ width, height });
     await mount();
     const input = document.querySelector('input[type="file"]');
     await act(async () => { fireEvent.change(input, { target: { files: [new File(['x'], 'foto.jpg', { type: 'image/jpeg' })] } }); });
@@ -98,11 +99,7 @@ describe('foto: spostamento da tastiera', () => {
   });
 
   it('su e giù muovono la foto in verticale', async () => {
-    loadPhoto.mockResolvedValue({ width: 1000, height: 3000 });
-    await mount();
-    const input = document.querySelector('input[type="file"]');
-    await act(async () => { fireEvent.change(input, { target: { files: [new File(['x'], 'foto.jpg', { type: 'image/jpeg' })] } }); });
-    const surface = screen.getByRole('application', { name: 'Posizione della foto' });
+    const surface = await withPhoto(1000, 3000);
     const y0 = lastTransform().dy;
     fireEvent.keyDown(surface, { key: 'ArrowDown' });
     expect(lastTransform().dy).toBeGreaterThan(y0);
