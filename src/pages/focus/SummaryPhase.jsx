@@ -17,7 +17,7 @@ import WarmupBadge from '../../components/WarmupBadge';
 import { track } from '../../utils/analytics';
 import { techniqueLabel } from '../../i18n/labels';
 import { radius } from '../../theme/radius';
-import PremiumBadge from './PremiumBadge';
+import PremiumButton from './PremiumButton';
 import ButtonSpinner from '../../components/ButtonSpinner';
 
 const XP_WITHHELD_KEYS = {
@@ -239,16 +239,8 @@ export default function SummaryPhase({
         ) : (
           <>
             {/* Esercizio dimenticato: si aggiunge in coda e si torna ad allenarsi */}
-            <Box sx={{ position: 'relative', mb: 3 }}>
-              <Button variant="outlined" fullWidth startIcon={<AddIcon />}
-                aria-label={canEditSession ? undefined : `${t('focus.add_exercise')} ${t('common.premium')}`}
-                onClick={onAddExercise}
-                sx={{ py: 1.25, color: colors.textSecondary, borderColor: colors.border, borderRadius: radius.lg,
-                  '&:hover': { borderColor: colors.text, color: colors.text } }}>
-                {t('focus.add_exercise')}
-              </Button>
-              {!canEditSession && <PremiumBadge />}
-            </Box>
+            <PremiumButton locked={!canEditSession} label={t('focus.add_exercise')} startIcon={<AddIcon />}
+              onClick={onAddExercise} wrapperSx={{ mb: 3 }} />
 
             <TextField label={t('focus.notes_label')} multiline rows={3} value={workoutNotes}
               onChange={(e) => onNotesChange(e.target.value)} fullWidth placeholder={t('focus.notes_placeholder')}

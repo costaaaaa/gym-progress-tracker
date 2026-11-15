@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { groupRecovery } from './recoveryGroups';
+import { groupRecovery, isNeverTrained } from './recoveryGroups';
 import { setBrowserTimeZone } from '../test/timeZone';
 
 describe('groupRecovery', () => {
@@ -90,5 +90,14 @@ describe('groupRecovery', () => {
       resting: [],
       noData: ['petto', 'schiena', 'spalle', 'bicipiti', 'tricipiti', 'addome', 'quadricipiti', 'femorali', 'glutei', 'adduttori', 'abduttori', 'polpacci'],
     });
+  });
+});
+
+describe('isNeverTrained', () => {
+  it('è vero solo con last_trained null: una data, un campo assente o nessun dato non bastano', () => {
+    expect(isNeverTrained({ status: 'PRONTO', last_trained: null })).toBe(true);
+    expect(isNeverTrained({ status: 'PRONTO', last_trained: '2026-10-10 18:00:00' })).toBe(false);
+    expect(isNeverTrained({ status: 'PRONTO' })).toBe(false);
+    expect(isNeverTrained(undefined)).toBe(false);
   });
 });

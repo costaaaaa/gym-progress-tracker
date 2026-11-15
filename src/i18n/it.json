@@ -832,6 +832,7 @@
   "focus.premium_title": "Funzione Premium",
   "focus.premium_body": "Con Premium puoi cambiare un esercizio al volo (es. cavi occupati, passi ai manubri) o aggiungerne uno durante l'allenamento, anche per recuperare quello che hai saltato l'ultima volta. Nel frattempo puoi aggiungere l'esercizio alla tua scheda dalla sezione schede.",
   "focus.premium_ok": "Ho capito",
+  "focus.premium_aria": "{{label}} (Premium)",
   "focus.discard_title": "Scartare l'allenamento?",
   "focus.discard_text": "Hai completato {{count}} serie. I dati non verranno salvati.",
   "focus.discard_stay": "Rimani",

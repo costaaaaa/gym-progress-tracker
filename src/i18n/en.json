@@ -832,6 +832,7 @@
   "focus.premium_title": "Premium feature",
   "focus.premium_body": "With Premium you can swap an exercise on the fly (e.g. cables are taken, switch to dumbbells) or add one during the workout, even to make up one you skipped last time. In the meantime you can add the exercise to your plan from the plans section.",
   "focus.premium_ok": "Got it",
+  "focus.premium_aria": "{{label}} (Premium)",
   "focus.discard_title": "Discard the workout?",
   "focus.discard_text": "You completed {{count}} sets. Data will not be saved.",
   "focus.discard_stay": "Stay",

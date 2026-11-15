@@ -163,9 +163,10 @@ const user = ({ admin }) => ({
   rest_timer_enabled: true, locale: 'it', language: 'it', features: [], is_admin: admin,
 });
 
-// Utenti dei dati finti: `attivo` è l'utente di tutte le pagine; gli altri cambiano solo ciò che li distingue.
-// `nuovo` risponde come un account vuoto (livello 1, nessuna streak, nessun gruppo, muscoli mai allenati).
-// `un-allenamento`: un solo allenamento fatto, quindi ogni esercizio è "Nuovo" nei Progressi.
+// Utenti dei dati finti: `attivo` è l'utente di tutte le pagine, `un-allenamento` cambia solo lo storico
+// (un solo allenamento: ogni esercizio è "Nuovo" nei Progressi). `nuovo` risponde come un account vuoto
+// (livello 1, nessuna streak, nessun gruppo, muscoli mai allenati) e non ha nulla in comune con `attivo`,
+// quindi è scritto per esteso.
 const PROFILE_ATTIVO = {
   success: true, level: 7, total_xp: 3140, xp_into_level: 340, xp_for_next_level: 600,
   lifetime_volume_kg: 184250, total_sessions: 58, longest_streak: 5,
