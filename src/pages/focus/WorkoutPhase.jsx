@@ -34,7 +34,7 @@ export default function WorkoutPhase({
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text, display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${colors.border}` }}>
-        <IconButton onClick={onQuit} sx={{ color: colors.textSecondary }}><CloseIcon /></IconButton>
+        <IconButton onClick={onQuit} aria-label={t('focus.quit_aria')} sx={{ color: colors.textSecondary }}><CloseIcon /></IconButton>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <AccessTimeIcon sx={{ fontSize: 16, color: colors.textSecondary }} />
           <Typography variant="caption" sx={{ ...TABULAR, color: colors.textSecondary }}>{finishedClock ?? <ElapsedClock startTime={clockStart} />}</Typography>
@@ -42,7 +42,7 @@ export default function WorkoutPhase({
         <Typography variant="caption" sx={{ color: colors.textSecondary }}>{currentExerciseIndex + 1}/{totalExercises}</Typography>
       </Box>
 
-      <LinearProgress variant="determinate" value={((currentExerciseIndex) / totalExercises) * 100}
+      <LinearProgress variant="determinate" value={((currentExerciseIndex) / totalExercises) * 100} aria-label={t('focus.progress_aria')}
         sx={{ height: 3, bgcolor: colors.border, '& .MuiLinearProgress-bar': { bgcolor: colors.text } }} />
 
       <Fade in={exerciseTransition} timeout={300}>
@@ -126,13 +126,13 @@ export default function WorkoutPhase({
           <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
             <TextField label={t('record.weight')} type="number" value={weightInput} onChange={(e) => onWeightChange(e.target.value)}
               fullWidth autoFocus inputProps={{ step: 0.5, min: 0, max: MAX_WEIGHT, inputMode: 'decimal' }}
-              sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.text }, '&.Mui-focused fieldset': { borderColor: colors.text } }, '& .MuiOutlinedInput-input': FOCUS_FIELD_PADDING, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.text } }} />
+              sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.fieldBorder, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.text }, '&.Mui-focused fieldset': { borderColor: colors.text } }, '& .MuiOutlinedInput-input': FOCUS_FIELD_PADDING, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.text } }} />
             {/* Vuoto a ogni serie: la scheda in grigio è solo un suggerimento, va scritta */}
             <TextField label={t('record.reps')} value={repsInput} onChange={(e) => onRepsChange(e.target.value)}
               placeholder={target}
               onFocus={(e) => e.target.select()}
               fullWidth inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
-              sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.border, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.text }, '&.Mui-focused fieldset': { borderColor: colors.text } }, '& .MuiOutlinedInput-input': FOCUS_FIELD_PADDING, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.text }, ...(failureTarget && { '& input::placeholder': { fontSize: '0.85rem', fontWeight: 500 } }) }} />
+              sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.fieldBorder, borderWidth: 2 }, '&:hover fieldset': { borderColor: colors.text }, '&.Mui-focused fieldset': { borderColor: colors.text } }, '& .MuiOutlinedInput-input': FOCUS_FIELD_PADDING, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.text }, ...(failureTarget && { '& input::placeholder': { fontSize: '0.85rem', fontWeight: 500 } }) }} />
           </Box>
 
           {/* Il riscaldamento non ha tecnica di intensità */}
@@ -141,7 +141,7 @@ export default function WorkoutPhase({
               mb: 3,
               '& .MuiOutlinedInput-root': {
                 color: colors.text,
-                '& fieldset': { borderColor: colors.border, borderWidth: 2 },
+                '& fieldset': { borderColor: colors.fieldBorder, borderWidth: 2 },
                 '&:hover fieldset': { borderColor: colors.text },
                 '&.Mui-focused fieldset': { borderColor: colors.text },
               },
@@ -150,8 +150,10 @@ export default function WorkoutPhase({
               '& .MuiInputLabel-root.Mui-focused': { color: colors.text },
               '& .MuiSvgIcon-root': { color: colors.textSecondary },
             }}>
-              <InputLabel>{t('focus.technique')}</InputLabel>
+              <InputLabel id="focus-technique-label">{t('focus.technique')}</InputLabel>
               <Select
+                labelId="focus-technique-label"
+                id="focus-technique"
                 value={intensityTechniqueInput}
                 label={t('focus.technique')}
                 onChange={(e) => onIntensityChange(e.target.value)}

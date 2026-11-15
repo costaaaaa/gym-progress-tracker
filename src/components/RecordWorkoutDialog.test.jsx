@@ -4,6 +4,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import RecordWorkoutDialog from './RecordWorkoutDialog';
 import { json } from '../test/dom';
 import { plannedSets } from '../test/plannedSets';
+import { strayListChildren } from '../test/accessibleNames';
 
 vi.mock('../utils/analytics', () => ({ track: vi.fn() }));
 
@@ -154,5 +155,35 @@ describe('ripetizioni insolite', () => {
     fill(1, '100', '45');
     await trySave();
     expect(saved()).toBe(true);
+  });
+});
+
+describe('nomi accessibili', () => {
+  it('la select del giorno e quelle della tecnica di ogni riga hanno un\'etichetta', () => {
+    open();
+    expect(screen.getByRole('combobox', { name: /^Seleziona giorno/ })).toBeTruthy();
+    [1, 2, 3, 4].forEach((n) => expect(screen.getByRole('combobox', { name: `Tecnica, Squat, serie ${n}` })).toBeTruthy());
+  });
+
+  it('la lista aperta della tecnica ha lo stesso nome della sua riga', () => {
+    open();
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Tecnica, Squat, serie 4' }));
+    expect(screen.getByRole('listbox', { name: 'Tecnica, Squat, serie 4' })).toBeTruthy();
+  });
+
+  it('la lista aperta del giorno ha un nome', () => {
+    render(<RecordWorkoutDialog open onClose={() => {}} activePlan={basePlan} />);
+    fireEvent.mouseDown(screen.getByRole('combobox'));
+    expect(screen.getByRole('listbox', { name: /^Seleziona giorno/ })).toBeTruthy();
+  });
+});
+
+describe('struttura accessibile', () => {
+  it('l\'elenco degli esercizi ha solo voci <li>: il separatore sta dentro la voce', () => {
+    const row = { ...squat, id: 12, exercise_id: 6, exercise_name: 'Stacco' };
+    open({ ...basePlan, days: [{ id: 3, name: 'Gambe', exercises: [squat, row] }] });
+    const list = screen.getByRole('list');
+    expect(list.children).toHaveLength(2);
+    expect(strayListChildren(list)).toEqual([]);
   });
 });

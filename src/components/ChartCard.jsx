@@ -1,4 +1,5 @@
-import { Box, Card, Typography } from '@mui/material';
+import { Box, Card, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
+import { visuallyHidden } from '@mui/utils';
 
 const VIEWBOX_WIDTH = 220;
 const VIEWBOX_HEIGHT = 72;
@@ -38,6 +39,8 @@ export function buildPoints(points, [start, end], width = VIEWBOX_WIDTH, height 
  * - valueLabel: valore corrente mostrato in grande (stringa già formattata)
  * - trend: 'up' = ▲, 'down' = ▼, 'flat' = nessuna freccia; il delta è sempre grigio (il peso non ha una direzione buona)
  * - deltaText: testo del delta (es. "12% vs mese scorso"); se assente il delta non è renderizzato
+ * - ariaLabel: testo alternativo del grafico
+ * - table: { head: [intestazione data, intestazione valore], rows: [[data, valore]] } già formattati; gli stessi punti come tabella, nascosta solo alla vista
  */
 const TREND_STYLE = {
   up: { color: 'text.secondary', arrow: '▲ ' },
@@ -45,7 +48,7 @@ const TREND_STYLE = {
   flat: { color: 'text.secondary', arrow: '' },
 };
 
-const ChartCard = ({ title, points, domain, color = 'primary.main', valueLabel, trend = 'up', deltaText }) => {
+const ChartCard = ({ title, points, domain, color = 'primary.main', valueLabel, trend = 'up', deltaText, ariaLabel, table }) => {
   const polyline = buildPoints(points, domain);
 
   return (
@@ -60,7 +63,7 @@ const ChartCard = ({ title, points, domain, color = 'primary.main', valueLabel, 
     >
       <Typography variant="cardTitle">{title}</Typography>
 
-      <Box sx={{ width: '100%', height: 72, color }}>
+      <Box sx={{ width: '100%', height: 72, color }} {...(polyline && { role: 'img', 'aria-label': ariaLabel })}>
         {polyline && (
           <svg
             viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
@@ -80,6 +83,19 @@ const ChartCard = ({ title, points, domain, color = 'primary.main', valueLabel, 
           </svg>
         )}
       </Box>
+
+      {polyline && table && (
+        <Table aria-label={title} sx={visuallyHidden}>
+          <TableHead>
+            <TableRow>{table.head.map((label) => <TableCell key={label}>{label}</TableCell>)}</TableRow>
+          </TableHead>
+          <TableBody>
+            {table.rows.map((cells, row) => (
+              <TableRow key={row}>{cells.map((cell, i) => <TableCell key={table.head[i]}>{cell}</TableCell>)}</TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
 
       <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
         <Typography variant="statNumber">{valueLabel}</Typography>

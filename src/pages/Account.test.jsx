@@ -214,6 +214,44 @@ describe('interruttori e scelte', () => {
   });
 });
 
+describe('nomi accessibili', () => {
+  it('l\'interruttore del timer di recupero è legato al suo titolo', async () => {
+    await mount();
+    fireEvent.click(button('Modifica'));
+    expect(screen.getByRole('checkbox', { name: 'Timer di recupero' })).toBeTruthy();
+  });
+});
+
+describe('password e dati personali', () => {
+  const apriCambioPassword = async () => {
+    await mount();
+    fireEvent.click(button('Cambia password'));
+    return screen.findByRole('dialog');
+  };
+
+  it('i campi del cambio password dichiarano a cosa servono (autocomplete)', async () => {
+    const dialog = await apriCambioPassword();
+    expect(within(dialog).getByLabelText(/^Password attuale/).getAttribute('autocomplete')).toBe('current-password');
+    expect(within(dialog).getByLabelText(/^Nuova password/).getAttribute('autocomplete')).toBe('new-password');
+    expect(within(dialog).getByLabelText(/^Conferma nuova password/).getAttribute('autocomplete')).toBe('new-password');
+  });
+
+  it('i tre occhi hanno un nome in italiano che distingue i campi', async () => {
+    const dialog = await apriCambioPassword();
+    expect(within(dialog).getByRole('button', { name: 'Mostra o nascondi la password attuale' })).toBeTruthy();
+    expect(within(dialog).getByRole('button', { name: 'Mostra o nascondi la nuova password' })).toBeTruthy();
+    expect(within(dialog).getByRole('button', { name: 'Mostra o nascondi la conferma della password' })).toBeTruthy();
+  });
+
+  it('l\'eliminazione dell\'account chiede la password attuale, con un occhio nominato', async () => {
+    await mount();
+    fireEvent.click(within(screen.getByText('Zona pericolosa', { selector: 'p' }).closest('.MuiCard-root')).getByRole('button', { name: 'Elimina account' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByLabelText(/^Password/).getAttribute('autocomplete')).toBe('current-password');
+    expect(within(dialog).getByRole('button', { name: 'Mostra o nascondi la password' })).toBeTruthy();
+  });
+});
+
 describe('testi', () => {
   it('nessun testo della pagina è sotto i 16px (escluse le etichette dei campi, che MUI rimpicciolisce)', async () => {
     await mount();

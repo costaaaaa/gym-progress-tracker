@@ -4,19 +4,20 @@ import { INK_TABS } from '../utils/inkTabs';
 import { Box, Tabs, Tab, CircularProgress, Typography } from '@mui/material';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { usePageMeta } from '../hooks/usePageMeta';
 import { useTabbedPage } from '../hooks/useTabbedPage';
 
 // Lazy loading dei componenti tab
 const ProfileSummary = lazy(() => import('./ProfileSummary'));
 const Account = lazy(() => import('./Account'));
 
-const TABS = ['summary', 'settings'];
+const TABS = [
+  { id: 'summary', label: 'profile.tab_summary' },
+  { id: 'settings', label: 'profile.tab_settings' },
+];
 
 const Profile = () => {
   const { t } = useTranslation();
-  usePageMeta(t('profile.meta.title'), t('profile.meta.description'));
-  const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS);
+  const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS, { title: t('profile.title'), description: t('profile.meta.description') });
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -25,7 +26,7 @@ const Profile = () => {
         <Tabs
           value={tabIndex}
           onChange={handleTabChange}
-          aria-label="profile hub tabs"
+          aria-label={t('profile.tabs_aria')}
           {...INK_TABS}
         >
           <Tab

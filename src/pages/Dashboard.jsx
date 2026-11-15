@@ -3,7 +3,6 @@ import { Box, Tabs, Tab, CircularProgress, Typography } from '@mui/material';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
 import StraightenIcon from '@mui/icons-material/Straighten';
-import { usePageMeta } from '../hooks/usePageMeta';
 import { useTabbedPage } from '../hooks/useTabbedPage';
 import { useTranslation } from 'react-i18next';
 import { INK_TABS } from '../utils/inkTabs';
@@ -13,12 +12,15 @@ const Progress = lazy(() => import('./Progress'));
 const Muscles = lazy(() => import('./Muscles'));
 const BodyStats = lazy(() => import('./BodyStats'));
 
-const TABS = ['progress', 'muscles', 'body'];
+const TABS = [
+  { id: 'progress', label: 'dashboard.tab.progress' },
+  { id: 'muscles', label: 'dashboard.tab.muscles' },
+  { id: 'body', label: 'dashboard.tab.body' },
+];
 
 const Dashboard = () => {
   const { t } = useTranslation();
-  usePageMeta(t('dashboard.meta.title'), t('dashboard.meta.description'));
-  const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS);
+  const { currentTab, tabIndex, handleTabChange, visitedTabs } = useTabbedPage(TABS, { title: t('dashboard.title'), description: t('dashboard.meta.description') });
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -27,7 +29,7 @@ const Dashboard = () => {
         <Tabs
           value={tabIndex}
           onChange={handleTabChange}
-          aria-label="dashboard hub tabs"
+          aria-label={t('dashboard.tabs_aria')}
           {...INK_TABS}
         >
           <Tab

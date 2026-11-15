@@ -4,6 +4,7 @@
 // Esce con 1 se un controllo fallisce.
 
 require __DIR__ . '/../blog/lib/calculator.php';
+require __DIR__ . '/../blog/lib/render.php';
 
 $fails = 0;
 $checks = 0;
@@ -74,6 +75,62 @@ check('lb: massimo 1100 nel campo peso', preg_match('/id="calc-weight"[^>]*max="
 
 $html = render('en/1rm-calculator/index.php', array('weight' => '2000', 'reps' => '5', 'unit' => 'lb'));
 check('lb: peso oltre il massimo portato a 1100', strpos($html, 'value="1100"') !== false);
+
+echo "Campi del calcolatore (contrasto del bordo, WCAG 1.4.11)\n";
+/** Luminanza relativa di un colore #rrggbb. */
+function css_luminance($hex)
+{
+    $rgb = array_map(function ($v) {
+        $c = hexdec($v) / 255;
+        return $c <= 0.03928 ? $c / 12.92 : pow(($c + 0.055) / 1.055, 2.4);
+    }, str_split(ltrim($hex, '#'), 2));
+    return 0.2126 * $rgb[0] + 0.7152 * $rgb[1] + 0.0722 * $rgb[2];
+}
+function css_contrast($a, $b)
+{
+    $la = css_luminance($a);
+    $lb = css_luminance($b);
+    return (max($la, $lb) + 0.05) / (min($la, $lb) + 0.05);
+}
+/** Variabili colore di un blocco `:root` (o `:root[data-theme="dark"]`), vuoto se il blocco non esiste. */
+function css_block_vars($css, $selector)
+{
+    if (!preg_match('/' . preg_quote($selector, '/') . '\s*\{([^}]*)\}/', $css, $block)) {
+        return array();
+    }
+    preg_match_all('/--([a-z-]+):\s*(#[0-9a-f]{6})\s*;/i', $block[1], $all, PREG_SET_ORDER);
+    $vars = array();
+    foreach ($all as $v) {
+        $vars[$v[1]] = $v[2];
+    }
+    return $vars;
+}
+/** Variabili del tema chiaro, o del scuro sopra a quelle del chiaro. */
+function css_vars($css, $dark)
+{
+    $light = css_block_vars($css, ':root');
+    return $dark ? array_merge($light, css_block_vars($css, ':root[data-theme="dark"]')) : $light;
+}
+$css = blog_styles();
+check('il bordo di input e select usa --field-border', preg_match('/\.calc-field input, \.calc-field select \{[^}]*border: 1px solid var\(--field-border\);/', $css) === 1);
+check('i blocchi :root chiaro e scuro esistono e hanno --field-border', isset(css_block_vars($css, ':root')['field-border']) && isset(css_block_vars($css, ':root[data-theme="dark"]')['field-border']));
+foreach (array('chiaro' => false, 'scuro' => true) as $name => $dark) {
+    $vars = css_vars($css, $dark);
+    check("tema $name: bordo almeno 3:1 sullo sfondo del campo", css_contrast($vars['field-border'], $vars['bg-default']) >= 3.0);
+    check("tema $name: bordo almeno 3:1 sulla card", css_contrast($vars['field-border'], $vars['bg-paper']) >= 3.0);
+}
+
+echo "Salta al contenuto (WCAG 2.4.1)\n";
+$pages = array(
+    'it' => array(render('calcolatore-1rm/index.php'), 'Salta al contenuto'),
+    'en' => array(render('en/1rm-calculator/index.php'), 'Skip to main content'),
+);
+foreach ($pages as $lang => $page) {
+    list($html, $text) = $page;
+    check("$lang: il primo link del body è «{$text}» verso il main", preg_match('/<body>\s*<a class="skip-link" href="#main-content">' . preg_quote($text, '/') . '<\/a>/', $html) === 1);
+    check("$lang: il main è raggiungibile dal link e dal programma", strpos($html, '<main class="wrap" id="main-content" tabindex="-1">') !== false);
+}
+check('il link sta fuori dallo schermo finché non ha il focus', preg_match('/\.skip-link \{[^}]*transform: translateY\(-200%\)/', $css) === 1 && preg_match('/\.skip-link:focus \{[^}]*transform: none/', $css) === 1);
 
 echo "\n" . ($checks - $fails) . "/$checks controlli riusciti\n";
 exit($fails > 0 ? 1 : 0);

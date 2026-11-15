@@ -55,6 +55,7 @@ import { NEUTRAL_OUTLINED } from '../utils/buttonStyles';
 import { getConsents, setConsent } from '../utils/consent';
 import { loginWithNext } from '../utils/safeNext';
 import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
+import ButtonSpinner from '../components/ButtonSpinner';
 
 const Account = ({ isEmbedded = false }) => {
   const { user, logout, isLoggedIn, updateUser, loading: authLoading } = useAuth();
@@ -680,13 +681,14 @@ const Account = ({ isEmbedded = false }) => {
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
               <Box>
-                <Typography sx={{ fontSize: 16, fontWeight: 700 }}>{t('account.rest_timer')}</Typography>
+                <Typography id="rest-timer-label" sx={{ fontSize: 16, fontWeight: 700 }}>{t('account.rest_timer')}</Typography>
                 <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
                   {t('account.rest_timer_help')}
                 </Typography>
               </Box>
               <Switch
                 checked={restTimerEnabled}
+                inputProps={{ 'aria-labelledby': 'rest-timer-label' }}
                 onChange={async (e) => {
                   const newValue = e.target.checked;
                   setRestTimerEnabled(newValue);
@@ -820,7 +822,7 @@ const Account = ({ isEmbedded = false }) => {
           </Box>
           <Button
             variant="outlined"
-            startIcon={exportLoading ? <CircularProgress size={16} /> : <DownloadIcon />}
+            startIcon={exportLoading ? <ButtonSpinner size={16} /> : <DownloadIcon />}
             onClick={handleDownloadData}
             disabled={exportLoading}
             sx={NEUTRAL_OUTLINED}
@@ -915,7 +917,7 @@ const Account = ({ isEmbedded = false }) => {
           </DialogContentText>
           <Button
             variant="outlined"
-            startIcon={exportLoading ? <CircularProgress size={16} /> : <DownloadIcon />}
+            startIcon={exportLoading ? <ButtonSpinner size={16} /> : <DownloadIcon />}
             onClick={handleDownloadData}
             disabled={exportLoading || consentBusy}
             sx={{ fontSize: 16 }}
@@ -948,6 +950,7 @@ const Account = ({ isEmbedded = false }) => {
             margin="dense"
             label={t('account.password.current')}
             type={showCurrentPassword ? "text" : "password"}
+            autoComplete="current-password"
             fullWidth
             variant="outlined"
             value={currentPassword}
@@ -959,7 +962,7 @@ const Account = ({ isEmbedded = false }) => {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
-                    aria-label="toggle current password visibility"
+                    aria-label={t('account.password.show_current')}
                     onClick={handleToggleCurrentPasswordVisibility}
                     edge="end"
                     disabled={changingPassword}
@@ -975,6 +978,7 @@ const Account = ({ isEmbedded = false }) => {
             margin="dense"
             label={t('account.password.new')}
             type={showNewPassword ? "text" : "password"}
+            autoComplete="new-password"
             fullWidth
             variant="outlined"
             value={newPassword}
@@ -986,7 +990,7 @@ const Account = ({ isEmbedded = false }) => {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
-                    aria-label="toggle new password visibility"
+                    aria-label={t('account.password.show_new')}
                     onClick={handleToggleNewPasswordVisibility}
                     edge="end"
                     disabled={changingPassword}
@@ -1002,6 +1006,7 @@ const Account = ({ isEmbedded = false }) => {
             margin="dense"
             label={t('account.password.confirm')}
             type={showConfirmPassword ? "text" : "password"}
+            autoComplete="new-password"
             fullWidth
             variant="outlined"
             value={confirmPassword}
@@ -1012,7 +1017,7 @@ const Account = ({ isEmbedded = false }) => {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
-                    aria-label="toggle confirm password visibility"
+                    aria-label={t('password.show_confirm')}
                     onClick={handleToggleConfirmPasswordVisibility}
                     edge="end"
                     disabled={changingPassword}
@@ -1074,6 +1079,7 @@ const Account = ({ isEmbedded = false }) => {
             margin="dense"
             label={t('account.password.title')}
             type={showDeletePassword ? "text" : "password"}
+            autoComplete="current-password"
             fullWidth
             variant="outlined"
             value={deletePassword}
@@ -1085,7 +1091,7 @@ const Account = ({ isEmbedded = false }) => {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
-                    aria-label="toggle password visibility"
+                    aria-label={t('password.show')}
                     onClick={handleToggleDeletePasswordVisibility}
                     edge="end"
                     disabled={deletingAccount}

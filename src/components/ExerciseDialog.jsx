@@ -25,6 +25,7 @@ import { primaryMuscleOptions } from '../utils/muscleRules';
 import { useTranslation } from 'react-i18next';
 import { muscleLabel } from '../i18n/labels';
 import PlannedSetsEditor from './PlannedSetsEditor';
+import ButtonSpinner from './ButtonSpinner';
 
 // Helper per rendere maiuscola la prima lettera
 const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
@@ -225,8 +226,9 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
           <FormControl fullWidth>
-            <InputLabel>{t('exercise_dialog.muscle_group')}</InputLabel>
+            <InputLabel id="exercise-muscle-group-label">{t('exercise_dialog.muscle_group')}</InputLabel>
             <Select
+              labelId="exercise-muscle-group-label"
               name="muscleGroup"
               value={exercise.muscleGroup}
               label={t('exercise_dialog.muscle_group')}
@@ -315,7 +317,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
                 />
                 <Button
                   variant="outlined"
-                  startIcon={creating ? <CircularProgress size={16} /> : <AddIcon />}
+                  startIcon={creating ? <ButtonSpinner size={16} /> : <AddIcon />}
                   onClick={handleCreate}
                   disabled={!canCreate}
                 >
@@ -324,8 +326,9 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
               </Box>
               {requiresPrimaryMuscle && (
                 <FormControl fullWidth size="small" sx={{ mt: 1 }}>
-                  <InputLabel>{t('exercise_dialog.primary_muscle')}</InputLabel>
+                  <InputLabel id="exercise-primary-muscle-label">{t('exercise_dialog.primary_muscle')}</InputLabel>
                   <Select
+                    labelId="exercise-primary-muscle-label"
                     name="primaryMuscle"
                     value={newPrimaryMuscle}
                     label={t('exercise_dialog.primary_muscle')}

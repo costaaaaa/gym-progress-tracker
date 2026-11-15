@@ -1,7 +1,7 @@
 // Pagina Dashboard vista dall'utente: titolo unico sopra i tab, tab attivo in inchiostro come in Allenamenti.
 // Colori del tema chiaro scritti a mano: text.primary #1a1816, text.secondary #6b6663.
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Dashboard from './Dashboard';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
@@ -101,5 +101,19 @@ describe('tab Muscoli', () => {
     expect(tab.getAttribute('aria-selected')).toBe('true');
     await screen.findByText(/serie allenanti/); // la scheda Muscoli ha caricato i suoi dati
     expect(screen.getByText('Petto').closest('li').textContent).toContain('3');
+  });
+});
+
+describe('nomi accessibili', () => {
+  it('l\'elenco dei tab ha un nome in italiano', async () => {
+    await mount();
+    expect(screen.getByRole('tablist', { name: 'Sezioni della dashboard' })).toBeTruthy();
+  });
+
+  it('il titolo del documento segue il tab: «tab · Dashboard | LiftIndex»', async () => {
+    await mount();
+    expect(document.title).toBe('Esercizi · Dashboard | LiftIndex');
+    fireEvent.click(screen.getByRole('tab', { name: 'Muscoli' }));
+    await waitFor(() => expect(document.title).toBe('Muscoli · Dashboard | LiftIndex'));
   });
 });

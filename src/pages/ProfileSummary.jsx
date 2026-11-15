@@ -7,6 +7,7 @@ import { API_BASE_URL } from '../config';
 import { xpIntoLevel, xpForNextLevel } from '../utils/gamificationLevels';
 import { formatDate, formatNumber } from '../i18n/format';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
+import { ELLIPSIS_FROM_390 } from '../theme/narrowScreens';
 import { radius } from '../theme/radius';
 
 // Solo queste tre categorie hanno una griglia dedicata: "strength" è esclusa perché il suo
@@ -57,7 +58,7 @@ const AchievementCard = ({ achievement, isNext, progress }) => {
       )}
       {isNext && (
         <Box sx={{ width: '100%', mt: 'auto', pt: 1 }}>
-          <LinearProgress variant="determinate" value={progress.pct} sx={{ ...solidBar(6, 'text.primary'), mb: 0.75 }} />
+          <LinearProgress variant="determinate" value={progress.pct} aria-label={t('profile.achievement_progress_aria', { label })} sx={{ ...solidBar(6, 'text.primary'), mb: 0.75 }} />
           <Typography sx={{ fontSize: 16, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>{progress.label}</Typography>
         </Box>
       )}
@@ -136,14 +137,14 @@ const ProfileSummary = () => {
               {t('profile.xp_to_next', { xp: xp_for_next_level, level: level + 1 })}
             </Typography>
           </Box>
-          <LinearProgress variant="determinate" value={progress} sx={solidBar(9)} />
+          <LinearProgress variant="determinate" value={progress} aria-label={t('level.progress_aria', { level: level + 1 })} sx={solidBar(9)} />
         </Box>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', justifyContent: 'start', columnGap: { xs: 3, md: 5 } }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', justifyContent: 'start', columnGap: { xs: 2, sm: 3, md: 5 } }}>
           {statTiles.map((stat) => (
-            <Box key={stat.label}>
+            <Box key={stat.label} sx={{ minWidth: 0 }}>
               <Typography variant="statNumber">{stat.value}</Typography>
-              <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5, whiteSpace: 'nowrap' }}>{stat.label}</Typography>
+              <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5, overflowWrap: 'anywhere' }}>{stat.label}</Typography>
             </Box>
           ))}
         </Box>
@@ -160,7 +161,7 @@ const ProfileSummary = () => {
               <Grid item xs={12} sm={6} key={ex.exercise_id}>
                 <Card sx={{ ...BORDERED, borderRadius: radius.xl, p: '18px' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.25 }}>
-                    <Typography sx={{ fontSize: 16, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <Typography sx={{ fontSize: 16, fontWeight: 600, minWidth: 0, ...ELLIPSIS_FROM_390 }}>
                       {ex.name}
                     </Typography>
                     <Box data-level-chip sx={{
@@ -177,7 +178,7 @@ const ProfileSummary = () => {
                       {t('profile.exercise_level', { level: ex.level })}
                     </Box>
                   </Box>
-                  <LinearProgress variant="determinate" value={exProgressPct(ex.xp)} sx={{ ...solidBar(6), mb: 0.75 }} />
+                  <LinearProgress variant="determinate" value={exProgressPct(ex.xp)} aria-label={t('profile.exercise_xp_aria', { name: ex.name })} sx={{ ...solidBar(6), mb: 0.75 }} />
                   <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{t('profile.xp_current', { xp: ex.xp })}</Typography>
                 </Card>
               </Grid>

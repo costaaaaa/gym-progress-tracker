@@ -7,7 +7,6 @@ import {
   DialogActions,
   Button,
   TextField,
-  CircularProgress,
   Box,
   Typography
 } from '@mui/material';
@@ -17,6 +16,7 @@ import { formatDate } from '../i18n/format';
 import { isClockString, clockDay } from '../utils/calendarDay';
 import { isoClock, differentZone, zoneCity } from '../utils/workoutTime';
 import { achievementCatalog } from '../utils/gamificationLevels';
+import ButtonSpinner from './ButtonSpinner';
 
 const achievementLabel = (key) => achievementCatalog.find(a => a.key === key)?.label ?? key;
 
@@ -188,7 +188,7 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
           onClick={handleSubmit} 
           variant="contained" 
           disabled={loading || !newDate}
-          startIcon={loading ? <CircularProgress size={20} /> : null}
+          startIcon={loading ? <ButtonSpinner /> : null}
         >
           {loading ? t('history.date.saving') : t('common.save')}
         </Button>

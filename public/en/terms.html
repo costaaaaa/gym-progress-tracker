@@ -23,11 +23,15 @@
     .meta{color:var(--muted);font-size:.9rem;margin:0 0 24px}
     mark{background:var(--mark);color:inherit;padding:0 3px;border-radius:3px}
     nav{margin-bottom:20px;font-size:.92rem}
+    .skip{position:absolute;left:8px;top:8px;z-index:10;padding:8px 16px;border:1px solid var(--ink);border-radius:8px;background:var(--bg);color:var(--ink);font-weight:600;text-decoration:none;transform:translateY(-200%)}
+    .skip:focus{transform:none;outline:2px solid var(--ink);outline-offset:2px}
+    main:focus{outline:none}
     .notice{color:var(--muted);font-size:.9rem;border-left:3px solid var(--line);padding:2px 0 2px 12px;margin:0 0 20px;max-width:70ch}
   </style>
 </head>
 <body>
-<main>
+<a class="skip" href="#contenuto">Skip to content</a>
+<main id="contenuto" tabindex="-1">
   <nav><a href="/en/">← Back to LiftIndex</a> · <a href="/en/privacy.html">Privacy policy</a> · <a href="/termini.html" hreflang="it" lang="it">Italiano</a></nav>
   <div class="notice">This is a translation. If the two versions differ, the <a href="/termini.html" hreflang="it" lang="it">Italian version</a> prevails.</div>
   <h1>Terms of use</h1>

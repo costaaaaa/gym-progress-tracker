@@ -14,7 +14,7 @@ export default function QuitDialog({ open, onClose, onConfirm, title, text, stay
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} sx={{ color: colors.textSecondary }}>{stayLabel}</Button>
-        <Button onClick={onConfirm} sx={{ color: destructive ? colors.primary : colors.text }}>{exitLabel}</Button>
+        <Button onClick={onConfirm} sx={{ color: destructive ? colors.primaryText : colors.text }}>{exitLabel}</Button>
       </DialogActions>
     </Dialog>
   );
