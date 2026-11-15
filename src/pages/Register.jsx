@@ -37,8 +37,9 @@ import useFocusField from '../hooks/useFocusField';
 const USERNAME_RE = /^[a-zA-Z0-9]{3,50}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Ordine dei campi del primo passo (il primo con un errore riceve il focus)
+// Ordine dei campi di ogni passo (il primo con un errore riceve il focus)
 const STEP1_FIELDS = ['username', 'email', 'password', 'confirmPassword'];
+const STEP2_FIELDS = ['birthDate', 'gender', 'terms'];
 
 const Register = () => {
   const { t, i18n } = useTranslation();
@@ -91,12 +92,12 @@ const Register = () => {
 
   // L'errore di un campo sparisce mentre si scrive; uscendo dal campo può solo comparire. Se sparisse
   // all'uscita, il clic su "Avanti" sposterebbe il bottone sotto il dito e andrebbe perso.
+  const clearError = (field) => setFieldErrors((prev) => (prev[field] ? { ...prev, [field]: '' } : prev));
+
   const edit = (setter, field) => (e) => {
     setter(e.target.value);
-    if (fieldErrors[field]) setFieldErrors((prev) => ({ ...prev, [field]: '' }));
+    clearError(field);
   };
-
-  const clearError = (field) => setFieldErrors((prev) => (prev[field] ? { ...prev, [field]: '' } : prev));
 
   const checkConfirm = () => {
     if (confirmPassword && confirmPassword !== password) {
@@ -161,7 +162,7 @@ const Register = () => {
     };
     setFieldErrors(errors);
     if (Object.values(errors).some(Boolean)) {
-      focusField(['birthDate', 'gender', 'terms'].find((field) => errors[field]));
+      focusField(STEP2_FIELDS.find((field) => errors[field]));
       return;
     }
 
@@ -245,7 +246,7 @@ const Register = () => {
       <Typography sx={{ color: 'text.secondary', mb: 1 }}>{t('register.step', { n: step })}</Typography>
 
       {error && (
-        <Alert severity="error" role="alert" sx={{ mb: 2 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
@@ -350,11 +351,11 @@ const Register = () => {
                   }
                 }}
               />
-              <FormControl fullWidth required margin="normal" error={Boolean(fieldErrors.gender)}
-                ref={(el) => fieldRef('gender')(el?.querySelector('[role="combobox"]'))}>
+              <FormControl fullWidth required margin="normal" error={Boolean(fieldErrors.gender)}>
                 <InputLabel id="gender-label">{t('register.gender')}</InputLabel>
                 <Select
                   labelId="gender-label"
+                  inputRef={fieldRef('gender')}
                   value={gender}
                   label={t('register.gender')}
                   onChange={(e) => { setGender(e.target.value); clearError('gender'); }}

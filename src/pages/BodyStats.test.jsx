@@ -8,6 +8,7 @@ import { formatDate } from '../i18n/format';
 import { polylineX } from '../test/polyline';
 import { setBrowserTimeZone } from '../test/timeZone';
 import { textBelow } from '../test/minText';
+import { describedBy } from '../test/accessibleNames';
 
 const row = (date, weight, extra = {}) => ({ id: date, date, weight, ...extra });
 
@@ -446,7 +447,6 @@ describe('nuova misura: errori dei valori (WCAG 3.3.1, 4.1.3)', () => {
   const field = (label) => screen.getByRole('spinbutton', { name: label });
   const type = (label, value) => fireEvent.change(field(label), { target: { value } });
   const posts = () => fetch.mock.calls.filter(([, init]) => init?.method === 'POST');
-  const describedBy = (label) => field(label).getAttribute('aria-describedby')?.split(' ').map((id) => document.getElementById(id)?.textContent).join(' ');
   const open = async () => {
     await mount();
     fireEvent.click(screen.getByRole('button', { name: 'Nuova misurazione' }));
@@ -460,7 +460,7 @@ describe('nuova misura: errori dei valori (WCAG 3.3.1, 4.1.3)', () => {
     save();
     expect(posts()).toHaveLength(0);
     expect(field('Peso (kg)').getAttribute('aria-invalid')).toBe('true');
-    expect(describedBy('Peso (kg)')).toBe('Il valore deve essere tra 0 e 500, estremi inclusi.');
+    expect(describedBy(field('Peso (kg)'))).toBe('Il valore deve essere tra 0 e 500, estremi inclusi.');
     expect(document.activeElement).toBe(field('Peso (kg)'));
   });
 
@@ -469,8 +469,8 @@ describe('nuova misura: errori dei valori (WCAG 3.3.1, 4.1.3)', () => {
     type('Gamba (cm)', '999');
     type('Grasso (%)', '-3');
     save();
-    expect(describedBy('Grasso (%)')).toBe('Il valore deve essere tra 0 e 100, estremi inclusi.');
-    expect(describedBy('Gamba (cm)')).toBe('Il valore deve essere tra 0 e 200, estremi inclusi.');
+    expect(describedBy(field('Grasso (%)'))).toBe('Il valore deve essere tra 0 e 100, estremi inclusi.');
+    expect(describedBy(field('Gamba (cm)'))).toBe('Il valore deve essere tra 0 e 200, estremi inclusi.');
     expect(field('Peso (kg)').getAttribute('aria-invalid')).not.toBe('true');
     expect(document.activeElement).toBe(field('Grasso (%)'));
   });
@@ -481,7 +481,7 @@ describe('nuova misura: errori dei valori (WCAG 3.3.1, 4.1.3)', () => {
     save();
     type('Peso (kg)', '80');
     expect(field('Peso (kg)').getAttribute('aria-invalid')).not.toBe('true');
-    expect(describedBy('Peso (kg)')).toBeUndefined();
+    expect(describedBy(field('Peso (kg)'))).toBeUndefined();
     save();
     expect(posts()).toHaveLength(1);
   });
@@ -495,7 +495,7 @@ describe('nuova misura: errori dei valori (WCAG 3.3.1, 4.1.3)', () => {
     type('Vita (cm)', '90');
     rejectWith({ message: 'Vita: il valore deve essere tra 0 e 80, estremi inclusi.', field: 'waist_size', max: 80 });
     await act(async () => { save(); });
-    expect(describedBy('Vita (cm)')).toBe('Il valore deve essere tra 0 e 80, estremi inclusi.');
+    expect(describedBy(field('Vita (cm)'))).toBe('Il valore deve essere tra 0 e 80, estremi inclusi.');
     expect(document.activeElement).toBe(field('Vita (cm)'));
   });
 
@@ -504,7 +504,7 @@ describe('nuova misura: errori dei valori (WCAG 3.3.1, 4.1.3)', () => {
     type('Vita (cm)', '90');
     rejectWith({ message: 'Messaggio del server', field: 'waist_size' });
     await act(async () => { save(); });
-    expect(describedBy('Vita (cm)')).toBe('Messaggio del server');
+    expect(describedBy(field('Vita (cm)'))).toBe('Messaggio del server');
   });
 
   it('un errore del server senza campo resta un avviso con il suo messaggio', async () => {

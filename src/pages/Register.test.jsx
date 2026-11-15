@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router-dom';
 import Register from './Register';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import i18n from '../i18n';
+import { describedBy } from '../test/accessibleNames';
 
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
 vi.mock('../context/AuthContext', () => ({
@@ -118,7 +119,6 @@ describe('errori annunciati e focus sul primo campo sbagliato (WCAG 3.3.1, 4.1.3
     window.matchMedia = (query) => ({ ...realMatchMedia(query), matches: query.includes('pointer: fine') });
   });
   afterEach(() => { window.matchMedia = realMatchMedia; });
-  const described = (el) => el.getAttribute('aria-describedby')?.split(' ').map((id) => document.getElementById(id)?.textContent).join(' ');
   const goToStep2 = async () => {
     renderRegister();
     fillStep1();
@@ -133,7 +133,7 @@ describe('errori annunciati e focus sul primo campo sbagliato (WCAG 3.3.1, 4.1.3
     fireEvent.click(screen.getByRole('button', { name: 'Avanti' }));
     const email = screen.getByLabelText(/^Email/);
     expect(email.getAttribute('aria-invalid')).toBe('true');
-    expect(described(email)).toBe('Inserisci un\'email valida');
+    expect(describedBy(email)).toBe('Inserisci un\'email valida');
     expect(document.activeElement).toBe(email);
   });
 
@@ -160,12 +160,12 @@ describe('errori annunciati e focus sul primo campo sbagliato (WCAG 3.3.1, 4.1.3
     fireEvent.click(screen.getByRole('button', { name: 'Registrati' }));
     const birth = screen.getByLabelText(/^Data di nascita/);
     expect(birth.getAttribute('aria-invalid')).toBe('true');
-    expect(described(birth)).toBe('Inserisci la data di nascita');
+    expect(describedBy(birth)).toBe('Inserisci la data di nascita');
     const gender = screen.getByRole('combobox', { name: /Sesso/ });
     expect(gender.getAttribute('aria-invalid')).toBe('true');
-    expect(described(gender)).toBe('Seleziona il sesso');
+    expect(describedBy(gender)).toBe('Seleziona il sesso');
     const terms = screen.getByRole('checkbox');
-    expect(described(terms)).toBe('Per registrarti devi accettare i termini d\'uso e l\'informativa privacy');
+    expect(describedBy(terms)).toBe('Per registrarti devi accettare i termini d\'uso e l\'informativa privacy');
     expect(document.activeElement).toBe(birth);
     expect(screen.queryByRole('alert')).toBeNull();
   });
@@ -193,6 +193,6 @@ describe('errori annunciati e focus sul primo campo sbagliato (WCAG 3.3.1, 4.1.3
     await goToStep2();
     fireEvent.click(screen.getByRole('button', { name: 'Registrati' }));
     fireEvent.click(screen.getByRole('checkbox'));
-    expect(described(screen.getByRole('checkbox'))).toBeUndefined();
+    expect(describedBy(screen.getByRole('checkbox'))).toBeUndefined();
   });
 });
