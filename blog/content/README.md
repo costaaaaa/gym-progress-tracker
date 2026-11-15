@@ -26,7 +26,7 @@ pubblicata.
 
 **Dove stanno:** nel repo privato `gym-content`, cartella `blog/articoli/`
 (con piano editoriale, brief e regole di scrittura). La build delle immagini in
-`gym-infra` li copia qui dentro l'immagine: per pubblicare un articolo si fa il
+Il repo dell'infrastruttura li copia qui dentro l'immagine: per pubblicare un articolo si fa il
 commit in `gym-content`, poi build e deploy.
 
 **Conseguenze pratiche:**

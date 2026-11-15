@@ -3,7 +3,7 @@
 // Funzioni pure, senza React: statistiche, testi e posizione di ogni elemento.
 // Il web le disegna su <canvas> (renderShareCard.js), il mobile con
 // react-native-svg (ShareCardSvg.jsx): la grafica è definita solo qui.
-// Copia identica in gym-progress-tracker-mobile/src/domain/shareCard.js.
+// Copia identica nell'altro client.
 // ============================================================================
 
 import { isClockString, localDate } from './calendarDay';

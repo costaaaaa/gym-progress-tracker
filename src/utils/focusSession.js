@@ -1,7 +1,7 @@
 // Funzioni pure del Focus Mode per la sessione in corso: riferimento "ultima
 // volta" con le tecniche, serie saltate e lista esercizi modificabile (cambio e
 // aggiunta valgono solo per questa sessione, la scheda non cambia).
-// Stessa logica di src/screens/Focus/focusHelpers.js nell'app mobile.
+// Stessa logica nell'altro client.
 
 import { isWorkingSet } from './workoutMetrics';
 import { MAX_WORKING, fromCompact, parseRowTarget, plannedOf, plannedTarget, plannedTechnique, toInt, workingOf } from './plannedSets';
@@ -133,7 +133,7 @@ export const skipWarmup = (exercise, slotIndex) => {
 // Chiave contro i doppi invii di record_workout.php: nasce con la sessione, resta nella bozza
 // e torna uguale a ogni tentativo di salvataggio, così se la risposta si perde il secondo
 // invio non duplica l'allenamento. Il backend accetta 8-64 caratteri [A-Za-z0-9_-].
-// Copia identica in gym-progress-tracker-mobile/src/screens/Focus/focusHelpers.js.
+// Copia identica nell'altro client.
 export const newIdempotencyKey = () =>
   `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}${Math.random().toString(36).slice(2, 12)}`;
 
