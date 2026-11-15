@@ -2,6 +2,7 @@
 // finestre basse titolo, passi e card verrebbero tagliati dal palco (1.4.4, 1.4.10).
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { render, act } from '@testing-library/react';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useScrollScene, stageSx } from './useScrollScene';
 
 const mockScreen = ({ reduced, tall }) => {
@@ -126,5 +127,41 @@ describe('scena a scorrimento: testo che non entra nel palco', () => {
     rects.text = { top: 100, bottom: 640.6 };
     resize();
     expect(live).toBe(true);
+  });
+
+  // Una scena che passa a statica cambia l'altezza della sua sezione: le altre, più in basso, hanno ancora le posizioni
+  // di prima e la loro timeline andrebbe sfasata. GSAP ricalcola da solo solo su resize e load.
+  describe('posizioni delle altre scene', () => {
+    it('quando una scena diventa statica, ScrollTrigger ricalcola dopo che il layout è aggiornato', () => {
+      const refresh = vi.spyOn(ScrollTrigger, 'refresh').mockImplementation(() => {
+        refreshedWhileStatic = document.querySelector('[data-testid="stage"]').dataset.static;
+      });
+      let refreshedWhileStatic;
+      const StaticAware = () => {
+        const scene = useScrollScene(build);
+        return (
+          <div ref={scene.ref}>
+            <div ref={scene.stageRef} data-testid="stage" data-static={String(!scene.live)}>
+              <div ref={scene.textRef} data-testid="text" />
+            </div>
+          </div>
+        );
+      };
+      render(<StaticAware />);
+      expect(refresh).not.toHaveBeenCalled();
+      rects.text = { top: 100, bottom: 700 };
+      resize();
+      expect(refresh).toHaveBeenCalledTimes(1);
+      expect(refreshedWhileStatic).toBe('true');
+    });
+
+    it('la scena che resta animata, o nasce statica, non ricalcola nulla', () => {
+      const refresh = vi.spyOn(ScrollTrigger, 'refresh');
+      render(<Probe />);
+      resize();
+      mockScreen({ reduced: true, tall: true });
+      render(<Probe />);
+      expect(refresh).not.toHaveBeenCalled();
+    });
   });
 });

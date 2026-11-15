@@ -25,7 +25,7 @@ const tallScreen = () => typeof window !== 'undefined' && window.matchMedia(TALL
 // Spaziatura del testo WCAG 1.4.12 (interlinea 1,5, spazio fra i paragrafi, lettere e parole): si applica a pagina
 // caricata e il testo può non entrare più nel palco. Un pixel di scarto è arrotondamento, non testo tagliato.
 const CLIP_TOLERANCE = 1;
-export const textIsClipped = (text, stage) => text.top < stage.top - CLIP_TOLERANCE || text.bottom > stage.bottom + CLIP_TOLERANCE;
+const textIsClipped = (text, stage) => text.top < stage.top - CLIP_TOLERANCE || text.bottom > stage.bottom + CLIP_TOLERANCE;
 
 // Scena a scorrimento: la sezione è alta (hold + 1) schermate, il palco `sticky` resta fermo per `hold`
 // schermate e una timeline GSAP avanza con lo scroll nativo (nessuna cattura della rotella).
@@ -46,6 +46,14 @@ export function useScrollScene(build) {
     observer.observe(textRef.current);
     observer.observe(stageRef.current);
     return () => observer.disconnect();
+  }, [live]);
+
+  // La sezione passa da (hold + 1) schermate ad altezza automatica: le scene sotto hanno ancora le posizioni di prima.
+  // GSAP le ricalcola da solo solo su resize e load, quindi lo si chiede qui, a layout già aggiornato.
+  const wasLive = useRef(live);
+  useLayoutEffect(() => {
+    if (wasLive.current && !live) ScrollTrigger.refresh();
+    wasLive.current = live;
   }, [live]);
 
   useLayoutEffect(() => {
