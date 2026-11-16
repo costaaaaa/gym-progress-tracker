@@ -1008,5 +1008,7 @@
   "history.row_action_aria": "{{action}}, {{date}}",
   "focus.rest_over": "Recupero finito: puoi fare la serie successiva",
   "body.error.range": "Il valore deve essere tra 0 e {{max}}, estremi inclusi.",
-  "body.error.date": "Inserisci una data valida."
+  "body.error.date": "Inserisci una data valida.",
+  "plans.label_plus": "Plus",
+  "plans.compare": "Confronta i piani"
 }

@@ -31,6 +31,9 @@ export const blogPaths = (lang) =>
     ? { calculator: '/en/blog/1rm-calculator/', mcp: '/en/blog/mcp/' }
     : { calculator: '/blog/calcolatore-1rm/', mcp: '/blog/mcp/' };
 
+// Confronto dei piani Gratis / Plus / Pro: pagina pubblica fuori dalla SPA (link a pagina intera).
+export const plansPath = (lang) => (lang === 'en' ? '/en/plans' : '/piani');
+
 // Link tra pagine pubbliche: chi è su /en/ resta su /en/.
 export function useLocalizedPath() {
   const { pathname } = useLocation();
