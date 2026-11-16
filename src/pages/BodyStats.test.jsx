@@ -228,7 +228,7 @@ describe('titoli, peso e variazione', () => {
 
   it('i titoli delle card sono nello stile titolo di card, non maiuscoli', async () => {
     await mount(themed);
-    ['Andamento peso (kg)', 'Composizione corporea', 'Circonferenze'].forEach((title) => {
+    ['Andamento peso (kg)', 'Composizione corporea (%)', 'Circonferenze (cm)'].forEach((title) => {
       const s = style(screen.getByText(title));
       expect(s.textTransform).not.toBe('uppercase');
       expect(s.fontFamily).toBe('"Lexend", sans-serif');
@@ -274,8 +274,8 @@ describe('composizione e circonferenze', () => {
 
   it('le righe stanno nella card giusta, senza i dati nel titolo', async () => {
     await mount(themed);
-    const composition = screen.getByText('Composizione corporea').closest('.MuiCard-root');
-    const circumferences = screen.getByText('Circonferenze').closest('.MuiCard-root');
+    const composition = screen.getByText('Composizione corporea (%)').closest('.MuiCard-root');
+    const circumferences = screen.getByText('Circonferenze (cm)').closest('.MuiCard-root');
     expect(composition.querySelectorAll('[data-measure-row]')).toHaveLength(2);
     expect(circumferences.querySelectorAll('[data-measure-row]')).toHaveLength(4);
     expect(within(composition).getByText('Grasso')).toBeTruthy();
