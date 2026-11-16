@@ -106,7 +106,7 @@ check('create_days: i 3 giorni sono salvati', dayCount($conn, $thirdId) === 3);
 [$code, $failedDays] = call('POST', '/api/workout/create_days.php', $token, ['plan_id' => $firstId, 'days' => [
     ['name' => 'Giorno 1'], ['name' => str_repeat('x', 101)], ['name' => 'Giorno 3'],
 ]]);
-check('create_days con un giorno che fallisce a metà: errore 503 days_create_failed', $code === 503, "codice $code: " . substr(json_encode($failedDays), 0, 200));
+check('create_days con un giorno che fallisce a metà: errore 503', $code === 503, "codice $code: " . substr(json_encode($failedDays), 0, 200));
 check('create_days con un giorno che fallisce a metà: nessun giorno salvato', dayCount($conn, $firstId) === 0, 'giorni salvati: ' . dayCount($conn, $firstId));
 
 [$code, $retry] = call('POST', '/api/workout/create_days.php', $token, ['plan_id' => $firstId, 'days' => $days]);

@@ -45,16 +45,10 @@ if (!empty($data->plan_id) && !empty($data->days) && is_array($data->days)) {
             }
         }
 
-        if (count($created_days) === count($data->days)) {
-            $db->commit();
-        } else {
-            $db->rollBack();
-        }
+        $db->commit();
     } catch (PDOException $e) {
-        if ($db->inTransaction()) {
-            $db->rollBack();
-        }
-        error_log("Create days error: " . $e->getMessage());
+        $db->rollBack();
+        api_log_exception('create_days', $e);
         $created_days = array();
     }
 
