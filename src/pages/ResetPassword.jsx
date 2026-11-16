@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
-import { TextField, Button, Box, Alert, Link, InputAdornment, IconButton } from '@mui/material';
+import { TextField, Button, Box, Alert, Link } from '@mui/material';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { useTranslation } from 'react-i18next';
 import { useLocalizedPath } from '../i18n/paths';
 import { validatePassword } from '../utils/passwordPolicy';
 import AuthLayout from '../components/Auth/AuthLayout';
+import PasswordToggle from '../components/Auth/PasswordToggle';
 import ConfirmPasswordField from '../components/Auth/ConfirmPasswordField';
 import useConfirmPassword from '../hooks/useConfirmPassword';
 import useFocusField from '../hooks/useFocusField';
@@ -109,17 +108,7 @@ const ResetPassword = () => {
                 onChange={(e) => { setPassword(e.target.value); pair.edit(); }}
                 InputProps={{
                   endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        aria-label={t('password.show')}
-                        onClick={() => setShowPassword(!showPassword)}
-                        // Il clic sull'occhio non toglie il focus al campo: non è un'uscita
-                        onMouseDown={(e) => e.preventDefault()}
-                        edge="end"
-                      >
-                        {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                      </IconButton>
-                    </InputAdornment>
+                    <PasswordToggle shown={showPassword} onToggle={() => setShowPassword(!showPassword)} label={t('password.show')} />
                   ),
                 }}
               />

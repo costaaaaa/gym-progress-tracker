@@ -378,6 +378,32 @@ describe('password e dati personali', () => {
     });
   });
 
+  it.each([
+    ['password attuale', /^Password attuale/, 'Mostra o nascondi la password attuale'],
+    ['nuova password', /^Nuova password/, 'Mostra o nascondi la nuova password'],
+    ['conferma', /^Conferma nuova password/, 'Mostra o nascondi la conferma della password'],
+  ])('occhio di «%s»: il mouseDown è annullato e il clic alterna password e testo', async (_n, label, name) => {
+    const dialog = await apriCambioPassword();
+    const eye = within(dialog).getByRole('button', { name });
+    expect(fireEvent.mouseDown(eye)).toBe(false);
+    expect(within(dialog).getByLabelText(label).getAttribute('type')).toBe('password');
+    fireEvent.click(eye);
+    expect(within(dialog).getByLabelText(label).getAttribute('type')).toBe('text');
+    fireEvent.click(eye);
+    expect(within(dialog).getByLabelText(label).getAttribute('type')).toBe('password');
+  });
+
+  it('occhio di «elimina account»: il mouseDown è annullato e il clic alterna password e testo', async () => {
+    await mount();
+    fireEvent.click(within(screen.getByText('Zona pericolosa', { selector: 'p' }).closest('.MuiCard-root')).getByRole('button', { name: 'Elimina account' }));
+    const dialog = await screen.findByRole('dialog');
+    const eye = within(dialog).getByRole('button', { name: 'Mostra o nascondi la password' });
+    expect(fireEvent.mouseDown(eye)).toBe(false);
+    expect(within(dialog).getByLabelText(/^Password/).getAttribute('type')).toBe('password');
+    fireEvent.click(eye);
+    expect(within(dialog).getByLabelText(/^Password/).getAttribute('type')).toBe('text');
+  });
+
   it('l\'eliminazione dell\'account chiede la password attuale, con un occhio nominato', async () => {
     await mount();
     fireEvent.click(within(screen.getByText('Zona pericolosa', { selector: 'p' }).closest('.MuiCard-root')).getByRole('button', { name: 'Elimina account' }));
