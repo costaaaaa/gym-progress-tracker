@@ -27,6 +27,12 @@ Pagine (file `<nome>_<390|1440>_<light|dark>.png`): `landing` (ospite), `home`, 
 `allenamenti-piani-modifica-lista`, `allenamenti-cronologia`, `admin` (utente con `is_admin`),
 `focus-scelta-giorno`, `focus-allenamento`, `focus-recupero`, `focus-riscaldamento`, `focus-riepilogo`.
 
+Piano Gratis (account finto con `tier: free`, tetti di 2 schede e 3 giorni, risposta `dashboard` ridotta):
+`home-gratis`, `muscoli-gratis`, `allenamenti-piani-sola-lettura-schede`, `allenamenti-piani-sola-lettura-giorni`,
+`allenamenti-piani-limite`, `allenamenti-piani-nuova-gratis`, `allenamenti-piani-elimina-giorno`,
+`focus-plus-allenamento`, `focus-plus-dialogo`. Tutte le altre pagine usano un account senza tetti
+(`tier: pro`, `dashboard` completo). Per scattare solo le nuove: terzo parametro con i loro nomi e cartella `after-gratis`.
+
 ## Prerequisiti
 
 - Node.js e Docker.
