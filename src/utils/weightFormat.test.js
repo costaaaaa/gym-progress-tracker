@@ -63,3 +63,22 @@ describe('formatSet', () => {
     expect(formatSet(0, 8, 'it-IT')).toBe(`0${NB}kg${NB}×${NB}8`);
   });
 });
+
+describe('formatWeight, segno scritto a mano', () => {
+  it('il "+" non dipende da signDisplay (Hermes può ignorarlo)', () => {
+    const original = Number.prototype.toLocaleString;
+    Number.prototype.toLocaleString = function toLocaleStringSenzaSegno(locale, options) {
+      const rest = { ...options };
+      delete rest.signDisplay;
+      return original.call(this, locale, rest);
+    };
+    try {
+      expect(formatWeight(2.1, 'it-IT', { signed: true })).toBe(`+2,1${NB}kg`);
+      expect(formatWeight(-2.1, 'it-IT', { signed: true })).toBe(`-2,1${NB}kg`);
+      expect(formatWeight(0.04, 'it-IT', { signed: true, maxDecimals: 1 })).toBe(`0${NB}kg`);
+      expect(formatWeight(0.05, 'it-IT', { signed: true, maxDecimals: 1 })).toBe(`+0,1${NB}kg`);
+    } finally {
+      Number.prototype.toLocaleString = original;
+    }
+  });
+});
