@@ -81,24 +81,24 @@ $conn->prepare("INSERT INTO gym_api_tokens (user_id, token_hash, expires_at) VAL
 echo "create_plan e update_plan\n";
 [$code, $first] = call('POST', '/api/workout/create_plan.php', $token, ['name' => 'Prima', 'description' => 'd']);
 $firstId = (int)($first['plan']['id'] ?? 0);
-check('create_plan: la prima scheda nasce attiva (201)', $code === 201 && ($first['plan']['is_active'] ?? null) === 1 && activePlans($conn, $userId) === [$firstId], "codice $code: " . json_encode($first));
+check('create_plan: la prima scheda nasce attiva (201)', $code === 201 && (int)($first['plan']['is_active'] ?? -1) === 1 && activePlans($conn, $userId) === [$firstId], "codice $code: " . json_encode($first));
 
 [$code, $upd] = call('POST', '/api/workout/update_plan.php', $token, ['plan_id' => $firstId, 'name' => 'Prima bis']);
-check('update_plan senza is_active: 200 e la scheda resta attiva', $code === 200 && ($upd['plan']['is_active'] ?? null) === 1 && ($upd['plan']['name'] ?? '') === 'Prima bis' && activePlans($conn, $userId) === [$firstId], "codice $code: " . json_encode($upd));
+check('update_plan senza is_active: 200 e la scheda resta attiva', $code === 200 && (int)($upd['plan']['is_active'] ?? -1) === 1 && ($upd['plan']['name'] ?? '') === 'Prima bis' && activePlans($conn, $userId) === [$firstId], "codice $code: " . json_encode($upd));
 
 [$code, $second] = call('POST', '/api/workout/create_plan.php', $token, ['name' => 'Seconda', 'is_active' => 1]);
 $secondId = (int)($second['plan']['id'] ?? 0);
-check('create_plan con is_active=1: 201 e resta attiva solo la nuova', $code === 201 && ($second['plan']['is_active'] ?? null) === 1 && activePlans($conn, $userId) === [$secondId], "codice $code: " . json_encode($second) . ' attive: ' . json_encode(activePlans($conn, $userId)));
+check('create_plan con is_active=1: 201 e resta attiva solo la nuova', $code === 201 && (int)($second['plan']['is_active'] ?? -1) === 1 && activePlans($conn, $userId) === [$secondId], "codice $code: " . json_encode($second) . ' attive: ' . json_encode(activePlans($conn, $userId)));
 
 [$code, $third] = call('POST', '/api/workout/create_plan.php', $token, ['name' => 'Terza']);
 $thirdId = (int)($third['plan']['id'] ?? 0);
-check('create_plan senza is_active con una scheda attiva: 201, nasce non attiva, l\'attiva non cambia', $code === 201 && ($third['plan']['is_active'] ?? null) === 0 && activePlans($conn, $userId) === [$secondId], "codice $code: " . json_encode($third));
+check('create_plan senza is_active con una scheda attiva: 201, nasce non attiva, l\'attiva non cambia', $code === 201 && (int)($third['plan']['is_active'] ?? -1) === 0 && activePlans($conn, $userId) === [$secondId], "codice $code: " . json_encode($third));
 
 echo "create_days\n";
 $days = [['name' => 'Giorno 1'], ['name' => 'Giorno 2'], ['name' => 'Giorno 3']];
 [$code, $created] = call('POST', '/api/workout/create_days.php', $token, ['plan_id' => $thirdId, 'days' => $days]);
 check('create_days: 201 con id, nome e day_order di ogni giorno', $code === 201 && count($created['days'] ?? []) === 3
-    && $created['days'][2]['name'] === 'Giorno 3' && $created['days'][2]['day_order'] === 3 && isset($created['days'][0]['id']), "codice $code: " . json_encode($created));
+    && $created['days'][2]['name'] === 'Giorno 3' && (int)$created['days'][2]['day_order'] === 3 && isset($created['days'][0]['id']), "codice $code: " . json_encode($created));
 check('create_days: i 3 giorni sono salvati', dayCount($conn, $thirdId) === 3);
 
 // Un inserimento che fallisce davvero a metà: il nome di 101 caratteri supera varchar(100) e MySQL
@@ -110,11 +110,11 @@ check('create_days con un giorno che fallisce a metà: errore (5xx)', $code >= 5
 check('create_days con un giorno che fallisce a metà: nessun giorno salvato', dayCount($conn, $firstId) === 0, 'giorni salvati: ' . dayCount($conn, $firstId));
 
 [$code, $retry] = call('POST', '/api/workout/create_days.php', $token, ['plan_id' => $firstId, 'days' => $days]);
-check('create_days: dopo il fallimento la stessa scheda accetta i giorni (201, day_order da 1)', $code === 201 && ($retry['days'][0]['day_order'] ?? null) === 1 && dayCount($conn, $firstId) === 3, "codice $code: " . json_encode($retry));
+check('create_days: dopo il fallimento la stessa scheda accetta i giorni (201, day_order da 1)', $code === 201 && (int)($retry['days'][0]['day_order'] ?? 0) === 1 && dayCount($conn, $firstId) === 3, "codice $code: " . json_encode($retry));
 
 $tooMany = array_map(fn($n) => ['name' => "G$n"], range(1, 12));
 [$code, $over] = call('POST', '/api/workout/create_days.php', $token, ['plan_id' => $firstId, 'days' => $tooMany]);
-check('create_days oltre il tetto: 409 too_many_days e nessun giorno in più', $code === 409 && ($over['error'] ?? '') === 'too_many_days' && dayCount($conn, $firstId) === 3, "codice $code: " . json_encode($over));
+check('create_days oltre il tetto: 409 too_many_days e nessun giorno in più', $code === 409 && ($over['code'] ?? '') === 'too_many_days' && dayCount($conn, $firstId) === 3, "codice $code: " . json_encode($over));
 
 [$code] = call('POST', '/api/workout/create_days.php', $token, ['plan_id' => $firstId, 'days' => []]);
 check('create_days senza giorni: 400', $code === 400, "codice $code");
