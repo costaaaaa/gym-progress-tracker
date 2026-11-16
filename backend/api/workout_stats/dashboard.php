@@ -14,6 +14,7 @@ require_once '../../lib/weekly_stats.php';
 require_once '../../lib/muscle_rules.php';
 require_once '../../lib/weekly_sets.php';
 require_once '../../lib/recovery_rules.php';
+require_once '../../lib/tier_limits.php';
 include_once '../../models/WorkoutHistory.php';
 include_once '../../models/WorkoutSet.php';
 include_once '../../models/WorkoutPlan.php';
@@ -131,10 +132,19 @@ try {
     ]);
     $weekly_sets = weeklySetsBuckets($stmt_weekly_sets->fetchAll(PDO::FETCH_ASSOC), $monday, $now);
 
+    // Stato muscolare e serie per muscolo completi solo con le funzioni che li abilitano (user_features);
+    // senza, stato ridotto e solo il totale delle serie (lib/tier_limits.php)
+    // (un solo user_features: una sola lettura del livello, al posto di due user_has_feature)
+    $features = user_features($db, $user_id);
+    $status_full = in_array('muscle_status_full', $features, true);
+    $sets_full = in_array('weekly_sets_by_muscle', $features, true);
+    $detail = dashboardDetail($status_full, $sets_full);
+
     if (ob_get_length()) ob_clean();
     header('Content-Type: application/json');
     echo json_encode([
         'success' => true,
+        'detail' => $detail,
         'weekly_workouts' => $weekly_workouts,
         'plan_days_total' => $plan_days_total,
         'weekly_goal' => weekly_goals($db, [$user_id])[$user_id],
@@ -142,8 +152,8 @@ try {
             'total_weight' => round($total_weight, 2),
             'total_reps' => $total_reps
         ],
-        'recovery' => $recovery_status,
-        'weekly_sets' => $weekly_sets,
+        'recovery' => recoveryForDetail($recovery_status, $status_full),
+        'weekly_sets' => weeklySetsForDetail($weekly_sets, $sets_full),
         'user_level' => $level
     ]);
 

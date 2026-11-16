@@ -8,11 +8,16 @@
 #
 # Registra un account usa e getta e lo cancella alla fine. Non va lanciato in produzione: crea
 # account veri. Richiede curl e jq. Esce con 1 se un controllo fallisce.
+#
+# Serve DB_SQL_CMD (comando che legge SQL da stdin sul database dell'istanza, vedi tests/lib/tier.sh):
+# gli account di prova sono portati a Plus, perché il dashboard completo (serie per muscolo, stato muscolare) è quello di Plus e Pro.
 
 set -uo pipefail
 
 BASE="${1:?uso: $(basename "$0") <url del backend, es. http://localhost:8080/backend/>}"
 [[ "$BASE" == */ ]] || BASE="$BASE/"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/tier.sh"
+need_db_sql_cmd
 
 PASS='Prova!Muscle2026'
 SUFFIX="$(date +%s | tail -c 7)$RANDOM"
@@ -49,6 +54,7 @@ register_and_login() {
 
 A="$(register_and_login "pmA$SUFFIX")"
 [[ -n "$A" ]] || { echo "registrazione o login falliti (limite di registrazioni per IP?)" >&2; exit 1; }
+plus_account "pmA$SUFFIX"
 
 cleanup() {
     call POST api/user/delete.php "$A" "$(jq -nc --arg p "$PASS" '{password:$p}')" >/dev/null

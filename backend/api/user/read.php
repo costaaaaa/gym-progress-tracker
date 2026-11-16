@@ -34,6 +34,8 @@ try {
             'experience_years' => $user->experience_years,
             'password_changed_at' => server_time_iso($user->password_changed_at),
             'is_admin' => user_is_admin($db, $user_id),
+            'tier' => user_tier($db, $user_id),
+            'limits' => user_limits($db, $user_id),
             'features' => user_features($db, $user_id)
         ) + weekly_goal_settings($db, $user_id));
     } else {

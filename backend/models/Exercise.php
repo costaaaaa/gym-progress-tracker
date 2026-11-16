@@ -5,8 +5,6 @@ class Exercise
     private $conn;
     private $table_name = "gym_exercises";
 
-    // Esercizi personali non ancora approvati che un utente può avere
-    const MAX_PERSONAL = 30;
     const STATUSES = array('pending', 'approved', 'rejected');
     // Attrezzi ammessi in gym_exercises.equipment (slug: le etichette le mettono i client)
     const EQUIPMENT = array('bilanciere', 'manubri', 'cavi', 'macchina', 'multipower', 'corpo_libero', 'kettlebell');
@@ -204,10 +202,11 @@ class Exercise
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Esercizi personali non approvati dell'utente (per il tetto MAX_PERSONAL)
+    // Esercizi personali non approvati dell'utente (per il tetto del livello, lib/tier_limits.php).
+    // I doppioni uniti dall'admin (merged_into valorizzato) non contano: l'utente non li vede e non può toglierli.
     public function countPersonal($user_id)
     {
-        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM " . $this->table_name . " WHERE created_by = ? AND status <> 'approved'");
+        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM " . $this->table_name . " WHERE created_by = ? AND status <> 'approved' AND merged_into IS NULL");
         $stmt->execute([(int)$user_id]);
         return (int)$stmt->fetchColumn();
     }

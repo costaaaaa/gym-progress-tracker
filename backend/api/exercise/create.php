@@ -54,9 +54,7 @@ try {
         ), 409);
     }
 
-    if ($exercise->countPersonal($user_id) >= Exercise::MAX_PERSONAL) {
-        api_error(409, 'too_many_exercises', t_server('exercise.too_many', array('max' => Exercise::MAX_PERSONAL)));
-    }
+    enforce_tier_limit($db, $user_id, 'personal_exercises', $exercise->countPersonal($user_id), 'too_many_exercises', 'exercise.too_many');
 
     enforce_rate_limit($db, 'exercise_create_user', 'exercise:create:user:' . $user_id);
 

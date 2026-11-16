@@ -10,11 +10,16 @@
 # Non va lanciato in produzione: crea account veri.
 #
 # Richiede curl, jq e date GNU. Esce con 1 se un controllo fallisce.
+#
+# Serve DB_SQL_CMD (comando che legge SQL da stdin sul database dell'istanza, vedi tests/lib/tier.sh):
+# gli account di prova sono portati a Plus, perché il dashboard completo (ready_at con l'offset) è quello di Plus e Pro.
 
 set -uo pipefail
 
 BASE="${1:?uso: $(basename "$0") <url del backend, es. http://localhost:8080/backend/>}"
 [[ "$BASE" == */ ]] || BASE="$BASE/"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/tier.sh"
+need_db_sql_cmd
 
 PASS='Prova!Fuso2026'
 SUFFIX="$(date +%s | tail -c 7)$RANDOM"
@@ -56,6 +61,7 @@ make_user() { # nome → imposta T e DAY (account nuovo, con una scheda), lo ric
         | cut -d' ' -f2- | jq -r '.token // empty')"
     [[ -n "$T" ]] || { echo "registrazione o login falliti (limite di registrazioni per IP?)" >&2; exit 1; }
     TOKENS+=("$T")
+    plus_account "$name"
     E1="$(call GET api/exercise/read_all.php "$T" | cut -d' ' -f2- | jq -r '.records[0].id')"
     plan="$(call POST api/workout/create_plan.php "$T" '{"name":"Scheda fuso"}' | cut -d' ' -f2- | jq -r '.plan.id')"
     DAY="$(call POST api/workout/create_days.php "$T" "{\"plan_id\":$plan,\"days\":[{\"name\":\"Giorno 1\"}]}" | cut -d' ' -f2- | jq -r '.days[0].id')"

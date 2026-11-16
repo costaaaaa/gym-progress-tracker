@@ -3,6 +3,7 @@
 include_once __DIR__ . '/../models/ApiToken.php';
 include_once __DIR__ . '/../lib/plan_sets_rules.php';
 include_once __DIR__ . '/../lib/tier_rules.php';
+include_once __DIR__ . '/../lib/tier_limits.php';
 include_once __DIR__ . '/../lib/web_session.php';
 
 // Token Bearer in chiaro dall'header Authorization, o null.
@@ -376,6 +377,21 @@ function workout_plan_belongs_to_user($db, $plan_id, $user_id)
     return $stmt->fetch(PDO::FETCH_ASSOC) !== false;
 }
 
+function workout_day_belongs_to_user($db, $day_id, $user_id)
+{
+    $query = "SELECT wd.id
+              FROM gym_workout_days wd
+              INNER JOIN gym_workout_plans wp ON wd.plan_id = wp.id
+              WHERE wd.id = ? AND wp.user_id = ?
+              LIMIT 1";
+    $stmt = $db->prepare($query);
+    $stmt->bindParam(1, $day_id);
+    $stmt->bindParam(2, $user_id);
+    $stmt->execute();
+
+    return $stmt->fetch(PDO::FETCH_ASSOC) !== false;
+}
+
 function workout_exercise_belongs_to_user($db, $workout_exercise_id, $day_id, $user_id)
 {
     $query = "SELECT we.id
@@ -458,13 +474,14 @@ function exercise_params_error($data)
 // ── Gruppi ──────────────────────────────────────────────────────────────────
 
 // Errore con un codice stabile, così web e mobile mostrano lo stesso messaggio
-function api_error($status_code, $code, $message)
+// $extra: campi in più nel corpo (es. 'limit' nei rifiuti per tetto)
+function api_error($status_code, $code, $message, array $extra = [])
 {
     api_json_response([
         'success' => false,
         'code' => $code,
         'message' => $message
-    ], $status_code);
+    ] + $extra, $status_code);
 }
 
 // Riga di appartenenza (role, share_level, joined_at) dell'utente al gruppo, o null
@@ -613,9 +630,74 @@ function user_features($db, $user_id)
 {
     if (in_array(user_tier($db, $user_id), ['plus', 'pro'], true)) {
         // focus_session_edit: cambiare o aggiungere esercizi durante il Focus Mode
-        return ['focus_session_edit'];
+        // muscle_status_full: stato muscolare con percentuale e giorni mancanti (dashboard, detail full)
+        // weekly_sets_by_muscle: serie della settimana per muscolo e confronto (dashboard, detail full)
+        return ['focus_session_edit', 'muscle_status_full', 'weekly_sets_by_muscle'];
     }
     return [];
+}
+
+// Tetti del livello in vigore (lib/tier_limits.php)
+function user_limits($db, $user_id)
+{
+    return tierLimits(user_tier($db, $user_id));
+}
+
+// Rifiuto per tetto: 409 con $code e il campo limit se $count + $adding supera il limite $limit_key del
+// livello in vigore (lib/tier_limits.php). $message_key è la chiave del testo ({max} = il limite); per il
+// Gratis si usa la variante "<chiave>_free", che dice anche che con Plus o Pro il limite è più alto.
+// I tetti sono un argine all'abuso, non una regola di prodotto: sotto richieste contemporanee due
+// richieste possono superare il tetto di uno (limite accettato, senza transazioni né lock). Vale anche
+// per il tetto WorkoutExercise::MAX_PER_DAY.
+function enforce_tier_limit($db, $user_id, $limit_key, $count, $code, $message_key, $adding = 1)
+{
+    $tier = user_tier($db, $user_id);
+    $max = tierLimits($tier)[$limit_key];
+    if ($count + $adding > $max) {
+        api_error(409, $code, tier_limit_message($tier, $message_key, $max), array('limit' => $max));
+    }
+}
+
+// Testo del rifiuto per tetto o sola lettura nella lingua dell'utente: la chiave base, o "<chiave>_free" per il Gratis.
+function tier_limit_message($tier, $key, $max)
+{
+    return t_server($key . ($tier === 'free' ? '_free' : ''), array('max' => $max));
+}
+
+// Rifiuta con 409 plan_read_only se la scheda è in sola lettura: più schede del limite del livello
+// (tutte) o questa scheda con più giorni del limite (lib/tier_limits.php, planReadOnlyReason). Si chiama
+// dopo il controllo di proprietà, dagli endpoint che cambiano giorni, esercizi o serie pianificate.
+// Non va chiamata da update_plan, activate_plan, delete_plan, delete_day né da record_workout.
+function require_plan_writable($db, $user_id, $plan_id)
+{
+    $tier = user_tier($db, $user_id);
+    $limits = tierLimits($tier);
+    $stmt = $db->prepare("SELECT COUNT(*) FROM gym_workout_plans WHERE user_id = ?");
+    $stmt->execute([(int)$user_id]);
+    $plan_count = (int)$stmt->fetchColumn();
+    $stmt = $db->prepare("SELECT COUNT(*) FROM gym_workout_days WHERE plan_id = ?");
+    $stmt->execute([(int)$plan_id]);
+    $day_count = (int)$stmt->fetchColumn();
+
+    $reason = planReadOnlyReason($plan_count, $day_count, $limits);
+    if ($reason === null) {
+        return;
+    }
+    list($limit_key, $message_key) = PLAN_READ_ONLY_REASONS[$reason];
+    $limit = $limits[$limit_key];
+    $extra = array('reason' => $reason, 'limit' => $limit);
+    api_error(409, 'plan_read_only', tier_limit_message($tier, $message_key, $limit), $extra);
+}
+
+// Come require_plan_writable, partendo da un giorno (dopo il controllo di proprietà del giorno o dell'esercizio)
+function require_day_plan_writable($db, $user_id, $day_id)
+{
+    $stmt = $db->prepare("SELECT plan_id FROM gym_workout_days WHERE id = ? LIMIT 1");
+    $stmt->execute([(int)$day_id]);
+    $plan_id = $stmt->fetchColumn();
+    if ($plan_id !== false) {
+        require_plan_writable($db, $user_id, $plan_id);
+    }
 }
 
 function user_has_feature($db, $user_id, $feature)

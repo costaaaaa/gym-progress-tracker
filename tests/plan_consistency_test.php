@@ -71,7 +71,8 @@ function dayCount($conn, $planId)
     return (int)$stmt->fetchColumn();
 }
 
-$conn->prepare("INSERT INTO gym_users (username, email, password) VALUES (?, ?, ?)")
+// Account su Plus: le prove creano tre schede e arrivano al tetto dei giorni, oltre i limiti del piano Gratis
+$conn->prepare("INSERT INTO gym_users (username, email, password, tier) VALUES (?, ?, ?, 'plus')")
     ->execute(['schede', 'schede@example.test', password_hash('Prova!Schede2026', PASSWORD_DEFAULT)]);
 $userId = (int)$conn->lastInsertId();
 $token = bin2hex(random_bytes(16));

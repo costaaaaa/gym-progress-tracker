@@ -4,9 +4,6 @@ class WorkoutDay {
     private $conn;
     private $table_name = "gym_workout_days";
 
-    // Giorni che una scheda può avere (stesso discorso di WorkoutPlan::MAX_PER_USER sulla concorrenza)
-    const MAX_PER_PLAN = 14;
-
     // Object properties
     public $id;
     public $plan_id;
@@ -53,7 +50,7 @@ class WorkoutDay {
         return false;
     }
 
-    // Numero di giorni della scheda (per il tetto MAX_PER_PLAN)
+    // Numero di giorni della scheda (per il tetto del livello, lib/tier_limits.php)
     public function countByPlan($plan_id) {
         $stmt = $this->conn->prepare("SELECT COUNT(*) FROM " . $this->table_name . " WHERE plan_id = ?");
         $stmt->execute([(int)$plan_id]);
@@ -124,25 +121,54 @@ class WorkoutDay {
         return false;
     }
 
-    // Delete workout day
+    // Elimina il giorno ($this->id) con i suoi esercizi e le serie pianificate, e rinumera i giorni
+    // rimasti (day_order 1..n, ordine conservato). In una transazione, con cancellazioni esplicite dal
+    // basso (serie pianificate, esercizi, giorno): su MySQL 9.7 le cascate lunghe possono lasciare righe
+    // orfane (WorkoutPlan::deleteDaysAndExercises fa lo stesso per esercizi e giorni di una scheda).
+    // I giorni della scheda sono bloccati (FOR UPDATE): controllo dell'ultimo giorno e rinumerazione non
+    // si accavallano con un'altra eliminazione. Ritorna 'deleted', 'last_day' (l'ultimo giorno di una scheda
+    // non si elimina) o 'not_found' (già eliminato); su errore annulla tutto e rilancia l'eccezione.
     public function delete() {
-        // Query to delete record
-        $query = "DELETE FROM " . $this->table_name . " WHERE id = ?";
+        $id = (int)$this->id;
+        $this->conn->beginTransaction();
+        try {
+            $stmt = $this->conn->prepare("SELECT plan_id FROM " . $this->table_name . " WHERE id = ? FOR UPDATE");
+            $stmt->execute([$id]);
+            $plan_id = $stmt->fetchColumn();
+            if ($plan_id === false) {
+                $this->conn->rollBack();
+                return 'not_found';
+            }
 
-        // Prepare query
-        $stmt = $this->conn->prepare($query);
+            $stmt = $this->conn->prepare("SELECT id FROM " . $this->table_name . " WHERE plan_id = ? ORDER BY day_order, id FOR UPDATE");
+            $stmt->execute([(int)$plan_id]);
+            $day_ids = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+            if (count($day_ids) <= 1) {
+                $this->conn->rollBack();
+                return 'last_day';
+            }
 
-        // Sanitize inputs
-        $this->id = htmlspecialchars(strip_tags($this->id));
+            $this->conn->prepare("DELETE ps FROM gym_workout_plan_sets ps
+                                  JOIN gym_workout_exercises e ON e.id = ps.workout_exercise_id
+                                  WHERE e.day_id = ?")->execute([$id]);
+            $this->conn->prepare("DELETE FROM gym_workout_exercises WHERE day_id = ?")->execute([$id]);
+            $this->conn->prepare("DELETE FROM " . $this->table_name . " WHERE id = ?")->execute([$id]);
 
-        // Bind values
-        $stmt->bindParam(1, $this->id);
+            $update = $this->conn->prepare("UPDATE " . $this->table_name . " SET day_order = ? WHERE id = ?");
+            $order = 0;
+            foreach ($day_ids as $day_id) {
+                if ($day_id !== $id) {
+                    $update->execute([++$order, $day_id]);
+                }
+            }
 
-        // Execute query
-        if ($stmt->execute()) {
-            return true;
+            $this->conn->commit();
+            return 'deleted';
+        } catch (Exception $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+            throw $e;
         }
-
-        return false;
     }
 }
