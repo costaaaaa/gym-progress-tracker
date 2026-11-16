@@ -6,8 +6,6 @@ import {
   Box,
   Alert,
   Link,
-  InputAdornment,
-  IconButton,
   FormControl,
   InputLabel,
   Select,
@@ -16,8 +14,6 @@ import {
   FormControlLabel,
   FormHelperText
 } from '@mui/material';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import LabeledDatePicker from '../components/LabeledDatePicker';
 import { oldestBirthDate, youngestBirthDate, isInvalidBirthDate } from '../utils/birthDate';
@@ -32,6 +28,7 @@ import { useTranslation, Trans } from 'react-i18next';
 import DateLocalization from '../i18n/DateLocalization';
 import { useLocalizedPath, legalPaths } from '../i18n/paths';
 import AuthLayout from '../components/Auth/AuthLayout';
+import PasswordToggle from '../components/Auth/PasswordToggle';
 import ConfirmPasswordField from '../components/Auth/ConfirmPasswordField';
 import useConfirmPassword from '../hooks/useConfirmPassword';
 import useFocusField from '../hooks/useFocusField';
@@ -245,15 +242,6 @@ const Register = () => {
   // l'errore («Le password non coincidono») nella stessa riga, finché non si scrive
   const emptyConfirmError = confirmPassword ? '' : fieldErrors.confirmPassword;
 
-  const passwordAdornment = (shown, toggle, label) => (
-    <InputAdornment position="end">
-      {/* Il clic sull'occhio non toglie il focus al campo: non è un'uscita (in Safari il pulsante non prende il focus) */}
-      <IconButton aria-label={label} onClick={toggle} onMouseDown={(e) => e.preventDefault()} edge="end">
-        {shown ? <VisibilityOffIcon /> : <VisibilityIcon />}
-      </IconButton>
-    </InputAdornment>
-  );
-
   return (
     <AuthLayout title={t('register.title')} side={{ title: t('home.landing.hero.title'), text: t('register.side.text') }}>
       <Typography sx={{ color: 'text.secondary', mb: 1 }}>{t('register.step', { n: step })}</Typography>
@@ -318,7 +306,7 @@ const Register = () => {
                 onChange={editPair(setPassword, 'password')}
                 error={Boolean(fieldErrors.password)}
                 helperText={fieldErrors.password}
-                InputProps={{ endAdornment: passwordAdornment(showPassword, handleTogglePasswordVisibility, t('password.show')) }}
+                InputProps={{ endAdornment: <PasswordToggle shown={showPassword} onToggle={handleTogglePasswordVisibility} label={t('password.show')} /> }}
               />
             </Box>
             <ConfirmPasswordField
@@ -335,7 +323,7 @@ const Register = () => {
               autoComplete="new-password"
               value={confirmPassword}
               onChange={editPair(setConfirmPassword, 'confirmPassword')}
-              InputProps={{ endAdornment: passwordAdornment(showConfirmPassword, handleToggleConfirmPasswordVisibility, t('password.show_confirm')) }}
+              InputProps={{ endAdornment: <PasswordToggle shown={showConfirmPassword} onToggle={handleToggleConfirmPasswordVisibility} label={t('password.show_confirm')} /> }}
             />
             <Button type="submit" fullWidth variant="contained" size="large" sx={{ mt: 3, mb: 2 }} disabled={loading}>
               {loading ? t('register.checking') : t('register.next')}

@@ -6,7 +6,6 @@ import {
   Avatar,
   TextField,
   Button,
-  IconButton,
   Snackbar,
   Alert,
   Dialog,
@@ -14,7 +13,6 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  InputAdornment,
   Checkbox,
   FormControlLabel,
   CircularProgress,
@@ -33,8 +31,6 @@ import {
   Lock as LockIcon,
   Save as SaveIcon,
   Cancel as CancelIcon,
-  Visibility as VisibilityIcon,
-  VisibilityOff as VisibilityOffIcon,
   DeleteForever as DeleteForeverIcon,
   Download as DownloadIcon,
   Edit as EditIcon,
@@ -59,6 +55,7 @@ import useConfirmPassword from '../hooks/useConfirmPassword';
 import ConfirmPasswordField from '../components/Auth/ConfirmPasswordField';
 import { loginWithNext } from '../utils/safeNext';
 import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
+import PasswordToggle from '../components/Auth/PasswordToggle';
 import ButtonSpinner from '../components/ButtonSpinner';
 
 const Account = ({ isEmbedded = false }) => {
@@ -160,24 +157,6 @@ const Account = ({ isEmbedded = false }) => {
     } finally {
       setSavingSettings(false);
     }
-  };
-
-  // Funzioni per gestire la visibilità delle password
-  const handleToggleCurrentPasswordVisibility = () => {
-    setShowCurrentPassword(!showCurrentPassword);
-  };
-
-  const handleToggleNewPasswordVisibility = () => {
-    setShowNewPassword(!showNewPassword);
-  };
-
-  const handleToggleConfirmPasswordVisibility = () => {
-    setShowConfirmPassword(!showConfirmPassword);
-  };
-
-  // Funzione per gestire la visibilità della password per l'eliminazione dell'account
-  const handleToggleDeletePasswordVisibility = () => {
-    setShowDeletePassword(!showDeletePassword);
   };
 
   // Funzioni per la gestione dell'eliminazione dell'account
@@ -981,16 +960,7 @@ const Account = ({ isEmbedded = false }) => {
             sx={{ mb: 2 }}
             InputProps={{
               endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label={t('account.password.show_current')}
-                    onClick={handleToggleCurrentPasswordVisibility}
-                    edge="end"
-                    disabled={changingPassword}
-                  >
-                    {showCurrentPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                  </IconButton>
-                </InputAdornment>
+                <PasswordToggle shown={showCurrentPassword} onToggle={() => setShowCurrentPassword(!showCurrentPassword)} label={t('account.password.show_current')} disabled={changingPassword} />
               ),
             }}
           />
@@ -1010,19 +980,8 @@ const Account = ({ isEmbedded = false }) => {
               sx={{ mb: 2 }}
               InputProps={{
                 endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      aria-label={t('account.password.show_new')}
-                      onClick={handleToggleNewPasswordVisibility}
-                      // Il clic sull'occhio non toglie il focus al campo: non è un'uscita
-                      onMouseDown={(e) => e.preventDefault()}
-                      edge="end"
-                      disabled={changingPassword}
-                    >
-                      {showNewPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
+                <PasswordToggle shown={showNewPassword} onToggle={() => setShowNewPassword(!showNewPassword)} label={t('account.password.show_new')} disabled={changingPassword} />
+              ),
               }}
             />
           </Box>
@@ -1042,18 +1001,7 @@ const Account = ({ isEmbedded = false }) => {
             disabled={changingPassword}
             InputProps={{
               endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label={t('password.show_confirm')}
-                    onClick={handleToggleConfirmPasswordVisibility}
-                    // Il clic sull'occhio non toglie il focus al campo: non è un'uscita
-                    onMouseDown={(e) => e.preventDefault()}
-                    edge="end"
-                    disabled={changingPassword}
-                  >
-                    {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                  </IconButton>
-                </InputAdornment>
+                <PasswordToggle shown={showConfirmPassword} onToggle={() => setShowConfirmPassword(!showConfirmPassword)} label={t('password.show_confirm')} disabled={changingPassword} />
               ),
             }}
           />
@@ -1118,16 +1066,7 @@ const Account = ({ isEmbedded = false }) => {
             sx={{ mb: 2 }}
             InputProps={{
               endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label={t('password.show')}
-                    onClick={handleToggleDeletePasswordVisibility}
-                    edge="end"
-                    disabled={deletingAccount}
-                  >
-                    {showDeletePassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                  </IconButton>
-                </InputAdornment>
+                <PasswordToggle shown={showDeletePassword} onToggle={() => setShowDeletePassword(!showDeletePassword)} label={t('password.show')} disabled={deletingAccount} />
               ),
             }}
           />
