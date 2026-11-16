@@ -97,6 +97,9 @@ function dayIdsOfPlan($conn, $planId)
 // dalla tabella delle schede: conta anche i figli rimasti dopo che la scheda e i giorni non ci sono più.
 function dayChainCounts($conn, array $dayIds)
 {
+    if (!$dayIds) {
+        return ['gym_workout_days' => 0, 'gym_workout_exercises' => 0, 'gym_workout_plan_sets' => 0];
+    }
     $ids = implode(',', array_map('intval', $dayIds));
     return [
         'gym_workout_days' => (int)$conn->query("SELECT COUNT(*) FROM gym_workout_days WHERE id IN ($ids)")->fetchColumn(),
@@ -187,10 +190,11 @@ if ($phase === 'cases') {
     $plans = array_map('intval', $conn->query("SELECT id FROM gym_workout_plans WHERE user_id = $u1 ORDER BY id")->fetchAll(PDO::FETCH_COLUMN));
     $victim = $plans[1];
     $others = [$plans[0], $plans[2]];
-    $before = array_map(fn($p) => dayChainCounts($conn, dayIdsOfPlan($conn, $p)), $others);
+    $otherPlansCounts = fn() => array_map(fn($p) => dayChainCounts($conn, dayIdsOfPlan($conn, $p)), $others);
+    $othersBefore = $otherPlansCounts();
     $victimDays = dayIdsOfPlan($conn, $victim);
+    $victimBefore = dayChainCounts($conn, $victimDays);
     $plan = new WorkoutPlan($conn);
-    $beforeOutside = dayChainCounts($conn, $victimDays);
     $thrown = false;
     try {
         $plan->deleteDaysAndExercises($u1, $victim);
@@ -198,14 +202,14 @@ if ($phase === 'cases') {
         $thrown = true;
     }
     check("deleteDaysAndExercises() fuori da una transazione lancia LogicException e non cancella nulla",
-        $thrown && $beforeOutside === dayChainCounts($conn, $victimDays) && 0 < array_sum($beforeOutside));
+        $thrown && $victimBefore === dayChainCounts($conn, $victimDays) && 0 < array_sum($victimBefore));
     $plan->id = $victim;
     $plan->user_id = $u1;
     check("delete() risponde true", $plan->delete() === true);
     check("la scheda non c'è più", (int)$conn->query("SELECT COUNT(*) FROM gym_workout_plans WHERE id = $victim")->fetchColumn() === 0);
     $victimLeft = dayChainCounts($conn, $victimDays);
     check("sono spariti i suoi giorni, esercizi e serie pianificate", 0 === array_sum($victimLeft), json_encode($victimLeft));
-    check("le altre due schede dello stesso utente sono intatte", $before === array_map(fn($p) => dayChainCounts($conn, dayIdsOfPlan($conn, $p)), $others));
+    check("le altre due schede dello stesso utente sono intatte", $othersBefore === $otherPlansCounts());
     checkNoOrphans($conn, 'dopo il caso 1');
     $after1 = counts($conn, $u1);
     check("allenamenti e gruppo dell'utente intatti",
