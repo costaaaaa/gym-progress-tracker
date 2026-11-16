@@ -352,10 +352,8 @@ const Register = () => {
                 value={confirmPassword}
                 onChange={editPair(setConfirmPassword, 'confirmPassword')}
                 error={confirmError}
-                // minHeight 1.66em: l'interlinea del testo d'aiuto di MUI. Senza, la riga è alta 20,3 px invece di 23,2 e il modulo
-                // si accorcia di 2,9 px; con la spunta o il testo ingrandito la riga cresce, non si taglia.
                 helperText={
-                  <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minHeight: '1.66em', color: state === 'match' ? 'success.main' : undefined }}>
+                  <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: state === 'match' ? 'success.main' : undefined }}>
                     {state === 'match' && <CheckCircleOutlineIcon aria-hidden fontSize="inherit" sx={{ fontSize: '1.2em' }} />}
                     {emptyConfirmError || confirmText}
                   </Box>

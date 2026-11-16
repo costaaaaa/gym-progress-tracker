@@ -418,6 +418,7 @@ describe('conferma password: riga riservata', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Avanti' }));
     expect(row()).toBe('Le password non corrispondono');
     expect(confirmField().getAttribute('aria-invalid')).toBe('true');
+    expect(live()).toBe('');
     typeConfirm('S');
     expect(row()).toBe('Riscrivi la stessa password');
     expect(confirmField().getAttribute('aria-invalid')).toBe('false');
