@@ -1,15 +1,14 @@
 import { useState } from 'react';
-import { Typography, TextField, Button, Box, Alert, Link, InputAdornment, IconButton, Checkbox, FormControlLabel } from '@mui/material';
+import { Typography, TextField, Button, Box, Alert, Link, Checkbox, FormControlLabel } from '@mui/material';
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { safeNext } from '../utils/safeNext';
 import { useTranslation } from 'react-i18next';
 import { useLocalizedPath } from '../i18n/paths';
 import AuthLayout from '../components/Auth/AuthLayout';
+import PasswordToggle from '../components/Auth/PasswordToggle';
 
 const Login = () => {
   const { t } = useTranslation();
@@ -104,15 +103,7 @@ const Login = () => {
           onChange={(e) => setPassword(e.target.value)}
           InputProps={{
             endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  aria-label={t('login.toggle_password')}
-                  onClick={handleTogglePasswordVisibility}
-                  edge="end"
-                >
-                  {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                </IconButton>
-              </InputAdornment>
+              <PasswordToggle shown={showPassword} onToggle={handleTogglePasswordVisibility} label={t('login.toggle_password')} />
             ),
           }}
         />

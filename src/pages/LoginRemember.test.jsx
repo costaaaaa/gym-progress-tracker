@@ -62,3 +62,18 @@ describe('Login: Resta collegato', () => {
     await i18n.changeLanguage('it');
   });
 });
+
+describe('Login: occhio della password', () => {
+  beforeEach(async () => { await i18n.changeLanguage('it'); });
+
+  it('il clic sull\'occhio non toglie il focus al campo e mostra la password', () => {
+    renderLogin();
+    const eye = screen.getByRole('button', { name: 'Mostra o nascondi la password' });
+    expect(fireEvent.mouseDown(eye)).toBe(false);
+    expect(screen.getByLabelText(/^Password/).getAttribute('type')).toBe('password');
+    fireEvent.click(eye);
+    expect(screen.getByLabelText(/^Password/).getAttribute('type')).toBe('text');
+    fireEvent.click(eye);
+    expect(screen.getByLabelText(/^Password/).getAttribute('type')).toBe('password');
+  });
+});

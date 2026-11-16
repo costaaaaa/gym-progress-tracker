@@ -398,6 +398,7 @@ describe('conferma password: riga riservata', () => {
     expect(row()).toBe('Riscrivi la stessa password');
     // Il clic non deve togliere il focus al campo: il mouseDown dell'occhio è annullato (fireEvent restituisce false)
     expect(fireEvent.mouseDown(eye)).toBe(false);
+    expect(fireEvent.mouseDown(screen.getByRole('button', { name: 'Mostra o nascondi la password' }))).toBe(false);
     fireEvent.click(eye);
     expect(row()).toBe('Riscrivi la stessa password');
     fireEvent.blur(eye, { relatedTarget: document.body });
