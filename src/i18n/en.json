@@ -1005,7 +1005,7 @@
   "body.error.range": "The value must be between 0 and {{max}}, inclusive.",
   "body.error.date": "Enter a valid date.",
   "plans.label_plus": "Plus",
-  "plans.compare": "Compare plans",
+  "plans.compare": "Compare Free, Plus and Pro",
   "recovery.locked": "Recovery percentage and days left",
   "recovery.basic_resting": "Recovering",
   "muscles.locked_sets": "Sets per muscle and comparison with last week",
@@ -1024,5 +1024,7 @@
   "plans.msg.day_deleted": "Day deleted successfully",
   "plans.msg.delete_day_error": "Error deleting the day",
   "plans.locked_days": "More than {{max}} days per workout plan",
-  "plans.locked_plans": "You have {{used}} of {{max}} workout plans"
+  "plans.locked_plans": "You have {{used}} of {{max}} workout plans",
+  "plans.read_only_plans_generic": "You have more workout plans than allowed: they are read-only until you delete some.",
+  "plans.read_only_days_generic": "This workout plan has more days than allowed: it is read-only until you delete some."
 }

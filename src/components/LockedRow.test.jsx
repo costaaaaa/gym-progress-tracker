@@ -30,7 +30,7 @@ describe('riga con lucchetto', () => {
   it('in inglese il link va a /en/plans e il testo è in inglese', async () => {
     await i18n.changeLanguage('en');
     mount();
-    expect(screen.getByRole('link', { name: 'Compare plans' }).getAttribute('href')).toBe('/en/plans');
+    expect(screen.getByRole('link', { name: 'Compare Free, Plus and Pro' }).getAttribute('href')).toBe('/en/plans');
   });
 
   it('plansPath dà il percorso nella lingua', () => {

@@ -42,9 +42,14 @@ import { TITLE_FONT_FAMILY } from '../utils/fonts';
 import { radius } from '../theme/radius';
 import ButtonSpinner from '../components/ButtonSpinner';
 import LockedRow from '../components/LockedRow';
-import { DRAFT_STORAGE_KEY } from './focus/useFocusSession';
+import { savedDraftDayId } from './focus/useFocusSession';
 
 const MAX_DAY_OPTIONS = 7; // giorni offerti al massimo nella nuova scheda
+// Motivo di sola lettura → testo con il numero (limite in account.limits), testo senza numero, chiave del limite
+const READ_ONLY_NOTICE = {
+  plans_over_limit: { key: 'plans.read_only_plans', genericKey: 'plans.read_only_plans_generic', limit: 'plans' },
+  days_over_limit: { key: 'plans.read_only_days', genericKey: 'plans.read_only_days_generic', limit: 'days_per_plan' },
+};
 const MAX_EXERCISE_ROWS = 4; // esercizi mostrati per giorno nella card aperta
 const DAY_LINK_SX = { fontSize: 12, fontWeight: 600, textTransform: 'none', minWidth: 0, p: 0 };
 
@@ -103,8 +108,9 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
   const [dayToDelete, setDayToDelete] = useState(null);
   const [deleteDayLoading, setDeleteDayLoading] = useState(false);
 
-  // Livello e limiti dell'utente (user/read.php). Senza (server vecchio o errore) nessun limite da mostrare.
-  const [account, setAccount] = useState({ tier: null, limits: null });
+  // Livello, limiti e funzioni dell'utente (user/read.php). Se la lettura fallisce restano senza valori: nessun
+  // tetto lato client, decide il server (limite accettato).
+  const [account, setAccount] = useState({ loaded: false, tier: null, limits: null, features: [] });
 
   useEffect(() => {
     fetchWorkoutPlans();
@@ -115,9 +121,14 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
     try {
       const response = await fetch(`${API_BASE_URL}api/user/read.php`, { credentials: 'include' });
       const user = response.ok ? await response.json() : null;
-      if (user?.limits) setAccount({ tier: user.tier ?? null, limits: user.limits });
+      setAccount({
+        loaded: true,
+        tier: user?.tier ?? null,
+        limits: user?.limits ?? null,
+        features: Array.isArray(user?.features) ? user.features : [],
+      });
     } catch {
-      // senza limiti la pagina funziona come prima: il server rifiuta comunque ciò che non è ammesso
+      setAccount((prev) => ({ ...prev, loaded: true }));
     }
   };
 
@@ -352,16 +363,6 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
         message: error.message || t('plans.msg.add_exercise_error'),
         severity: 'error'
       });
-    }
-  };
-
-  // Un allenamento Focus salvato sul browser su questo giorno non si potrebbe più registrare (gli esercizi
-  // non ci sono più): si elimina il giorno solo dopo averlo salvato o scartato.
-  const focusDraftOnDay = (dayId) => {
-    try {
-      return String(JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY))?.selectedDayId) === String(dayId);
-    } catch {
-      return false;
     }
   };
 
@@ -784,6 +785,12 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
 
   const isFree = account.tier === 'free';
   const maxDays = Math.min(MAX_DAY_OPTIONS, account.limits?.days_per_plan ?? MAX_DAY_OPTIONS);
+  // Senza focus_session_edit (piano Gratis) un allenamento Focus salvato su questo browser su un giorno eliminato non
+  // si potrebbe più registrare: si elimina il giorno solo dopo averlo salvato o scartato. Plus e Pro lo salvano
+  // comunque. Una sessione in corso su un altro dispositivo da qui non si vede: limite accettato.
+  const draftDayId = savedDraftDayId();
+  const draftBlocksDelete = !!dayToDelete && !account.features.includes('focus_session_edit')
+    && draftDayId !== null && String(draftDayId) === String(dayToDelete.id);
   const atPlanLimit = isFree && !!account.limits && workoutPlans.length >= account.limits.plans;
 
   return (
@@ -804,7 +811,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
           variant="contained"
           startIcon={<AddIcon sx={{ color: "white" }} fontSize="small" />}
           onClick={() => setOpenDialog(true)}
-          disabled={atPlanLimit}
+          disabled={!account.loaded || atPlanLimit}
           sx={{ fontSize: 16, fontWeight: 600 }}
         >
           {t('plans.new')}
@@ -867,14 +874,16 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                     </Box>
                   </Box>
 
-                  {plan.read_only && account.limits && (
-                    <Alert severity="info" sx={{ mb: 1.5 }}>
-                      {t(plan.read_only_reason === 'days_over_limit' ? 'plans.read_only_days' : 'plans.read_only_plans', {
-                        max: plan.read_only_reason === 'days_over_limit' ? account.limits.days_per_plan : account.limits.plans,
-                      })}
-                      {isFree && ` ${t('plans.read_only_raise')}`}
-                    </Alert>
-                  )}
+                  {plan.read_only && (() => {
+                    const notice = READ_ONLY_NOTICE[plan.read_only_reason] || READ_ONLY_NOTICE.plans_over_limit;
+                    const max = account.limits?.[notice.limit];
+                    return (
+                      <Alert severity="info" sx={{ mb: 1.5 }}>
+                        {max === undefined ? t(notice.genericKey) : t(notice.key, { max })}
+                        {isFree && ` ${t('plans.read_only_raise')}`}
+                      </Alert>
+                    );
+                  })()}
                   {!isExpanded && summary.splitNames && (
                     <Box sx={{ display: 'flex', mb: 0.75, fontSize: 16, fontWeight: 600, color: 'text.primary' }}>
                       <FitNames names={summary.splitNames} sepSx={{ color: 'text.secondary' }} />
@@ -1192,7 +1201,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
         <DialogTitle id="delete-day-title">{t('plans.delete_day.title')}</DialogTitle>
         <DialogContent>
           <DialogContentText id="delete-day-description" component="div">
-            {dayToDelete && focusDraftOnDay(dayToDelete.id) ? t('plans.delete_day.in_progress') : (
+            {draftBlocksDelete ? t('plans.delete_day.in_progress') : (
               <>
                 {t('plans.delete_day.text')}
                 <Box sx={{ mt: 1.5 }}>{t('plans.delete_plan.history_kept')}</Box>
@@ -1209,7 +1218,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
             onClick={handleConfirmDeleteDay}
             color="error"
             variant="contained"
-            disabled={deleteDayLoading || (!!dayToDelete && focusDraftOnDay(dayToDelete.id))}
+            disabled={deleteDayLoading || draftBlocksDelete}
             startIcon={deleteDayLoading ? <ButtonSpinner /> : <DeleteIcon />}
           >
             {deleteDayLoading ? t('plans.deleting') : t('common.delete')}

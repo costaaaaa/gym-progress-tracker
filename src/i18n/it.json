@@ -1024,5 +1024,7 @@
   "plans.msg.day_deleted": "Giorno eliminato con successo",
   "plans.msg.delete_day_error": "Errore nell'eliminazione del giorno",
   "plans.locked_days": "Più di {{max}} giorni per scheda",
-  "plans.locked_plans": "Hai {{used}} schede su {{max}}"
+  "plans.locked_plans": "Hai {{used}} schede su {{max}}",
+  "plans.read_only_plans_generic": "Hai più schede del limite consentito: sono in sola lettura finché non ne elimini alcune.",
+  "plans.read_only_days_generic": "Questa scheda ha più giorni del limite consentito: è in sola lettura finché non ne elimini alcuni."
 }

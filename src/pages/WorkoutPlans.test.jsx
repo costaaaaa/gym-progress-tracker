@@ -396,6 +396,16 @@ describe('limiti del piano Gratis', () => {
       expect(screen.getAllByRole('button', { name: /^Elimina giorno/ })).toHaveLength(days);
     });
 
+    it.each([
+      ['plans_over_limit', /Hai più schede del limite consentito: sono in sola lettura/],
+      ['days_over_limit', /Questa scheda ha più giorni del limite consentito: è in sola lettura/],
+    ])('(%s) senza i limiti dell\'account l\'avviso c\'è comunque, senza numero', async (reason, notice) => {
+      await mount([readOnly(reason, 5)], { success: false });
+      expect(screen.getAllByText(notice)).toHaveLength(1);
+      expect(screen.queryByText(/Con Plus o Pro/)).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Aggiungi esercizio' })).toBeNull();
+    });
+
     it('la scheda in sola lettura non ancora attiva si può attivare', async () => {
       await mount([mk(2, { read_only: true, read_only_reason: 'plans_over_limit' })]);
       expect(screen.getByRole('button', { name: 'Attiva scheda' })).toBeTruthy();
@@ -436,6 +446,27 @@ describe('limiti del piano Gratis', () => {
       openAll();
       fireEvent.click(screen.getByRole('button', { name: 'Sposta giù A' }));
       expect((await screen.findByRole('alert')).textContent).toContain(MSG);
+    });
+
+    it('aggiungere un esercizio mostra il messaggio come errore', async () => {
+      await mount([mk(1)]);
+      handlers['add_exercise.php'] = refuse;
+      handlers['exercise/read_all.php'] = () => json({ records: [{ id: 7, name: 'Panca Piana', muscle_group: 'petto', equipment: 'bilanciere' }] });
+      openAll();
+      fireEvent.click(screen.getAllByRole('button', { name: 'Aggiungi esercizio' })[0]);
+      const dialog = await screen.findByRole('dialog');
+      await act(async () => {});
+      fireEvent.mouseDown(document.getElementById('mui-component-select-muscleGroup'));
+      fireEvent.click(screen.getByRole('option', { name: 'Petto' }));
+      fireEvent.change(within(dialog).getByLabelText('Nome esercizio'), { target: { value: 'Panca' } });
+      await act(async () => {});
+      fireEvent.click(screen.getByRole('option', { name: 'Panca Piana' }));
+      fireEvent.change(within(dialog).getByLabelText('Serie'), { target: { value: '3' } });
+      fireEvent.change(within(dialog).getByLabelText('Ripetizioni'), { target: { value: '8-10' } });
+      fireEvent.change(within(dialog).getByLabelText(/Recupero \(s\)/), { target: { value: '90' } });
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Aggiungi' }));
+      await waitFor(() => expect(calls('add_exercise.php')).toHaveLength(1));
+      await waitFor(() => expect(screen.getAllByRole('alert').some((a) => a.textContent.includes(MSG))).toBe(true));
     });
 
     it('modificare un esercizio mostra il messaggio come errore', async () => {
@@ -494,6 +525,16 @@ describe('limiti del piano Gratis', () => {
         expect(calls('delete_day.php')).toHaveLength(0);
       });
 
+      it('a chi ha la funzione focus_session_edit (Plus, Pro) il salvataggio riuscirebbe: l\'eliminazione resta possibile', async () => {
+        localStorage.setItem('gym_focus_workout_draft', JSON.stringify({ selectedDayId: 102, selectedDay: day(102), startTime: '2026-11-16T10:00:00Z' }));
+        await mount([mk(1)], PRO);
+        openAll();
+        fireEvent.click(screen.getByRole('button', { name: 'Elimina giorno Giorno 102' }));
+        const dialog = await screen.findByRole('dialog');
+        expect(within(dialog).queryByText(/allenamento in corso/)).toBeNull();
+        expect(within(dialog).getByRole('button', { name: 'Elimina' }).disabled).toBe(false);
+      });
+
       it('un allenamento in corso su un altro giorno non blocca nulla', async () => {
         localStorage.setItem('gym_focus_workout_draft', JSON.stringify({ selectedDayId: 101, selectedDay: day(101), startTime: '2026-11-16T10:00:00Z' }));
         await mount([mk(1)]);
@@ -535,6 +576,18 @@ describe('limiti del piano Gratis', () => {
       expect(screen.getByRole('button', { name: 'Nuova scheda' }).disabled).toBe(true);
       expect(screen.getByText('Hai 2 schede su 2')).toBeTruthy();
       expect(screen.getByRole('link', { name: 'Confronta i piani' }).getAttribute('href')).toBe('/piani');
+    });
+
+    it('finché user/read.php non ha risposto il comando è disattivato; se la lettura fallisce si attiva', async () => {
+      let rispondi;
+      vi.stubGlobal('fetch', vi.fn((url) => (String(url).includes('user/read.php')
+        ? new Promise((resolve) => { rispondi = () => resolve(json({ success: false }, 500)); })
+        : Promise.resolve(json({ records: [mk(1)] })))));
+      render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
+      await screen.findByText('Scheda 1');
+      expect(screen.getByRole('button', { name: 'Nuova scheda' }).disabled).toBe(true);
+      await act(async () => { rispondi(); });
+      expect(screen.getByRole('button', { name: 'Nuova scheda' }).disabled).toBe(false);
     });
 
     it('sotto il limite il comando è attivo e senza riga', async () => {
