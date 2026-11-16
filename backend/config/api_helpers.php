@@ -658,6 +658,7 @@ function enforce_tier_limit($db, $user_id, $limit_key, $count, $code, $message_k
     }
 }
 
+// Testo del rifiuto per tetto o sola lettura nella lingua dell'utente: la chiave base, o "<chiave>_free" per il Gratis.
 function tier_limit_message($tier, $key, $max)
 {
     return t_server($key . ($tier === 'free' ? '_free' : ''), array('max' => $max));
@@ -682,12 +683,7 @@ function require_plan_writable($db, $user_id, $plan_id)
     if ($reason === null) {
         return;
     }
-    // motivo → (chiave del limite, chiave del messaggio)
-    $by_reason = array(
-        'plans_over_limit' => array('plans', 'workout.plan_read_only_plans'),
-        'days_over_limit' => array('days_per_plan', 'workout.plan_read_only_days'),
-    );
-    list($limit_key, $message_key) = $by_reason[$reason];
+    list($limit_key, $message_key) = PLAN_READ_ONLY_REASONS[$reason];
     $limit = $limits[$limit_key];
     api_error(409, 'plan_read_only', tier_limit_message($tier, $message_key, $limit), array('reason' => $reason, 'limit' => $limit));
 }

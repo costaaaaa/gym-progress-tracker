@@ -3,11 +3,12 @@
 // Argomenti: cartella backend da provare.
 //
 // Avvia il server integrato di PHP sul backend e chiama gli endpoint veri con un token Bearer:
-// limiti del livello Gratis (2 schede, 4 giorni, 10 esercizi personali), sola lettura dopo una
-// discesa da Plus, delete_day.php, tier/limits/features di user/read.php, forma del dashboard.
+// limiti del piano Gratis (2 schede, 4 giorni, 10 esercizi personali), sola lettura passando
+// da Plus a un piano inferiore, delete_day.php, tier/limits/features di user/read.php, forma del dashboard.
 $backend = $argv[1];
 require $backend . '/config/database.php';
 require_once $backend . '/lib/muscle_rules.php';
+require_once $backend . '/lib/recovery_rules.php';
 
 require __DIR__ . '/lib/http_test.php';
 
@@ -201,6 +202,21 @@ $dayO = (int)$r['days'][0]['id'];
 [$c, $r] = addExercise($tO, $dayO, $E1);
 $weO = (int)$r['workout_exercise']['id'];
 $sets = [['set_number' => 1, 'kind' => 'working', 'reps_min' => 8, 'reps_max' => 8]];
+// Tutto il contenuto della scheda altrui, per confrontarlo prima e dopo
+function planSnapshot($planId)
+{
+    global $conn;
+    $stmt = $conn->prepare("SELECT d.id AS day_id, d.name AS day_name, d.day_order, e.id AS we_id, e.exercise_id, e.position, e.rest, e.notes,
+                                   ps.set_number, ps.kind, ps.reps_min, ps.reps_max, ps.to_failure, ps.intensity_technique
+                            FROM gym_workout_days d
+                            LEFT JOIN gym_workout_exercises e ON e.day_id = d.id
+                            LEFT JOIN gym_workout_plan_sets ps ON ps.workout_exercise_id = e.id
+                            WHERE d.plan_id = ? ORDER BY d.day_order, d.id, e.position, e.id, ps.set_number");
+    $stmt->execute([$planId]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+$snapshotO = planSnapshot($planO);
+check('la scheda altrui ha giorno, esercizio e serie pianificate', count($snapshotO) === 1 && $snapshotO[0]['set_number'] !== null);
 $foreign = [
     ['create_days', ['plan_id' => $planO, 'days' => [['name' => 'Intruso']]]],
     ['add_exercise', ['day_id' => $dayO, 'exercise_id' => $E1, 'rest' => 60, 'planned_sets' => $sets]],
@@ -212,7 +228,7 @@ foreach ($foreign as [$endpoint, $body]) {
     [$c, $r] = call('POST', "/api/workout/$endpoint.php", $tD, $body);
     check("$endpoint su risorsa altrui con l'account in sola lettura: 404, non plan_read_only", $c === 404 && ($r['code'] ?? '') !== 'plan_read_only', "codice $c: " . json_encode($r));
 }
-check('la scheda altrui è intatta (1 giorno, 1 esercizio)', (int)scalar("SELECT COUNT(*) FROM gym_workout_days WHERE plan_id = ?", [$planO]) === 1 && (int)scalar("SELECT COUNT(*) FROM gym_workout_exercises WHERE day_id = ?", [$dayO]) === 1);
+check('la scheda altrui è identica a prima (giorni, ordine, riposo, note, serie pianificate)', planSnapshot($planO) === $snapshotO, json_encode(planSnapshot($planO)));
 check('nulla è cambiato: 2 esercizi nel giorno di Y, riposo 60', (int)scalar("SELECT COUNT(*) FROM gym_workout_exercises WHERE day_id = ?", [$dayY]) === 2 && (int)scalar("SELECT rest FROM gym_workout_exercises WHERE id = ?", [$weY1]) === 60);
 check('nessun giorno aggiunto a Z', (int)scalar("SELECT COUNT(*) FROM gym_workout_days WHERE plan_id = ?", [$planIds['Z']]) === 0);
 
@@ -319,8 +335,8 @@ $statuses = array_values(array_unique(array_column($rec, 'status')));
 sort($statuses);
 check('Gratis: solo stati PRONTO / IN RECUPERO, entrambi presenti (uno allenato, gli altri no)', $statuses === ['IN RECUPERO', 'PRONTO'], json_encode($statuses));
 check('Gratis: il muscolo allenato è IN RECUPERO', ($rec[$muscle1]['status'] ?? '') === 'IN RECUPERO', json_encode($rec[$muscle1] ?? null));
-check('Gratis: nessun percent né ready_at in nessun muscolo', count(array_filter($rec, fn($m) => array_key_exists('percent', $m) || array_key_exists('ready_at', $m))) === 0 && count($rec) === count(COUNTED_MUSCLES));
-check('Gratis: last_trained c\'è per l\'allenato e null per gli altri', ($rec[$muscle1]['last_trained'] ?? null) !== null && count(array_filter($rec, fn($m) => $m['last_trained'] === null)) === count(COUNTED_MUSCLES) - 1);
+check('Gratis: nessun percent né ready_at in nessun muscolo', count(array_filter($rec, fn($m) => array_key_exists('percent', $m) || array_key_exists('ready_at', $m))) === 0 && count($rec) === count(RECOVERY_BASE_HOURS));
+check('Gratis: last_trained c\'è per l\'allenato e null per gli altri', ($rec[$muscle1]['last_trained'] ?? null) !== null && count(array_filter($rec, fn($m) => $m['last_trained'] === null)) === count(RECOVERY_BASE_HOURS) - 1);
 check('il resto del dashboard è intatto (weekly_workouts, weekly_volume, user_level)', ($d['weekly_workouts'] ?? null) === 1 && isset($d['weekly_volume']['total_weight']) && isset($d['user_level']));
 
 setTier($uH, 'plus');
@@ -329,7 +345,6 @@ check('Plus: detail full', ($d['detail'] ?? '') === 'full');
 check('Plus: weekly_sets ha week, previous_to_date, previous_total e total 2', isset($d['weekly_sets']['week'], $d['weekly_sets']['previous_to_date'], $d['weekly_sets']['previous_total']) && ($d['weekly_sets']['total'] ?? null) === 2 && ($d['weekly_sets']['week'][$muscle1] ?? null) === 2, json_encode($d['weekly_sets'] ?? null));
 $m = $d['recovery'][$muscle1] ?? [];
 check('Plus: il muscolo allenato ha percent, status, last_trained e ready_at', isset($m['percent'], $m['status'], $m['last_trained'], $m['ready_at']), json_encode($m));
-check('Plus: un muscolo mai allenato ha percent 100 e PRONTO', count(array_filter($d['recovery'], fn($x) => $x['status'] === 'PRONTO' && $x['percent'] === 100 && $x['last_trained'] === null)) === count(COUNTED_MUSCLES) - 1);
+check('Plus: un muscolo mai allenato ha percent 100 e PRONTO', count(array_filter($d['recovery'], fn($x) => $x['status'] === 'PRONTO' && $x['percent'] === 100 && $x['last_trained'] === null)) === count(RECOVERY_BASE_HOURS) - 1);
 
-echo "\nCONTROLLI $checks FALLITI $fails\n";
-exit($fails > 0 ? 1 : 0);
+finishTest();

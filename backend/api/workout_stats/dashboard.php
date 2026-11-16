@@ -134,6 +134,7 @@ try {
 
     // Stato muscolare e serie per muscolo completi solo con le funzioni che li abilitano (user_features);
     // senza, stato ridotto e solo il totale delle serie (lib/tier_limits.php)
+    // (un solo user_features: una sola lettura del livello, al posto di due user_has_feature)
     $features = user_features($db, $user_id);
     $status_full = in_array('muscle_status_full', $features, true);
     $sets_full = in_array('weekly_sets_by_muscle', $features, true);

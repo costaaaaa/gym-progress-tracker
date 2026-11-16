@@ -2,7 +2,7 @@
 // Aiuti comuni dei test PHP con database e server (da includere con require, non da eseguire): check(),
 // startTestServer() e call(). Usato da schema_avanzi_test.php e free_limits_test.php, lanciati dai
 // rispettivi .sh con MySQL usa e getta (tests/lib/throwaway_mysql.sh). Alla fine il test stampa
-// «CONTROLLI <n> FALLITI <m>» e esce con 1 se $fails > 0.
+// «CONTROLLI <n> FALLITI <m>» (finishTest()) e esce con 1 se un controllo è fallito.
 
 $fails = 0;
 $checks = 0;
@@ -54,4 +54,12 @@ function call($method, $path, $token, $body = null)
         $code = (int)$m[1];
     }
     return [$code, json_decode((string)$raw, true), (string)$raw];
+}
+
+// Chiusura del test: stampa la riga che tm_php_phase (tests/lib/throwaway_mysql.sh) somma, ed esce
+function finishTest()
+{
+    global $checks, $fails;
+    echo "\nCONTROLLI $checks FALLITI $fails\n";
+    exit($fails > 0 ? 1 : 0);
 }

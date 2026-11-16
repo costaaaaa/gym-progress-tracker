@@ -15,16 +15,23 @@ function tierLimits(string $tier): array
     return ['plans' => 2, 'days_per_plan' => 4, 'personal_exercises' => 10];
 }
 
+// Motivi di sola lettura, in ordine di precedenza: motivo → [chiave del limite in tierLimits(), chiave del
+// messaggio del server]. È l'unico punto che lega un motivo al suo limite: un nuovo motivo si aggiunge qui.
+const PLAN_READ_ONLY_REASONS = [
+    'plans_over_limit' => ['plans', 'workout.plan_read_only_plans'],
+    'days_over_limit' => ['days_per_plan', 'workout.plan_read_only_days'],
+];
+
 // Motivo per cui una scheda è in sola lettura, o null se si può modificare. Con più schede del limite
 // sono tutte in sola lettura (plans_over_limit); altrimenti lo è la scheda con più giorni del limite
 // (days_over_limit). $planCount: schede dell'utente; $planDays: giorni di questa scheda.
 function planReadOnlyReason(int $planCount, int $planDays, array $limits): ?string
 {
-    if ($planCount > $limits['plans']) {
-        return 'plans_over_limit';
-    }
-    if ($planDays > $limits['days_per_plan']) {
-        return 'days_over_limit';
+    $counts = ['plans' => $planCount, 'days_per_plan' => $planDays];
+    foreach (PLAN_READ_ONLY_REASONS as $reason => [$limitKey]) {
+        if ($counts[$limitKey] > $limits[$limitKey]) {
+            return $reason;
+        }
     }
     return null;
 }

@@ -165,5 +165,4 @@ check('User::deleteAccount cancella l\'account', $user->deleteAccount('Prova!Ava
 $left = (int)$conn->query("SELECT (SELECT COUNT(*) FROM gym_users WHERE id = $userId) + (SELECT COUNT(*) FROM gym_workout_history WHERE user_id = $userId)")->fetchColumn();
 check('utente e allenamenti sono spariti', $left === 0, "righe rimaste: $left");
 
-echo "\nCONTROLLI $checks FALLITI $fails\n";
-exit($fails > 0 ? 1 : 0);
+finishTest();
