@@ -12,6 +12,7 @@ export const VARIANTS = {
   B: 'Riga riservata',
   C: 'Errore solo su «Avanti»',
   D: 'Controllo mentre si scrive',
+  E: 'mentre scrivi, gentile',
 };
 const KEYS = Object.keys(VARIANTS);
 

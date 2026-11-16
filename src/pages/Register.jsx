@@ -34,7 +34,7 @@ import AuthLayout from '../components/Auth/AuthLayout';
 import useFocusField from '../hooks/useFocusField';
 import { useSearchParams } from 'react-router-dom';
 import PrototypeSwitcher, { parseVariant } from '../components/PrototypeSwitcher';
-import { confirmHelper } from './RegisterPrototype';
+import { confirmHelper, confirmPropsE, useConfirmE, liveRegionSx } from './RegisterPrototype';
 
 // Username: stessa regola di register.php. Email: solo un primo filtro, il server usa FILTER_VALIDATE_EMAIL
 const USERNAME_RE = /^[a-zA-Z0-9]{3,50}$/;
@@ -70,6 +70,8 @@ const Register = () => {
   const [sp] = useSearchParams();
   const variant = parseVariant(sp.get('variant'));
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const ce = useConfirmE(password, confirmPassword);
+  const isE = variant === 'E';
 
   const handleTogglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -113,6 +115,7 @@ const Register = () => {
   };
 
   const handleNext = async () => {
+    ce.finish();
     setError('');
     const errors = {
       username: USERNAME_RE.test(username) ? '' : t('register.username_help'),
@@ -310,7 +313,8 @@ const Register = () => {
               inputRef={fieldRef('password')}
               autoComplete="new-password"
               value={password}
-              onChange={edit(setPassword, 'password')}
+              onChange={(e) => { edit(setPassword, 'password')(e); ce.typedPassword(); }}
+              onBlur={ce.finish}
               error={Boolean(fieldErrors.password)}
               helperText={fieldErrors.password}
               InputProps={{ endAdornment: passwordAdornment(showPassword, handleTogglePasswordVisibility, t('password.show')) }}
@@ -326,11 +330,12 @@ const Register = () => {
               inputRef={fieldRef('confirmPassword')}
               autoComplete="new-password"
               value={confirmPassword}
-              onChange={edit(setConfirmPassword, 'confirmPassword')}
-              onBlur={variant === 'A' || variant === 'B' ? checkConfirm : undefined}
-              {...confirmHelper(variant, password, confirmPassword, fieldErrors.confirmPassword)}
+              onChange={(e) => { edit(setConfirmPassword, 'confirmPassword')(e); ce.typedConfirm(); }}
+              onBlur={variant === 'A' || variant === 'B' ? checkConfirm : isE ? ce.finish : undefined}
+              {...(isE ? confirmPropsE(ce.state, !confirmPassword && fieldErrors.confirmPassword) : confirmHelper(variant, password, confirmPassword, fieldErrors.confirmPassword))}
               InputProps={{ endAdornment: passwordAdornment(showConfirmPassword, handleToggleConfirmPasswordVisibility, t('password.show_confirm')) }}
             />
+            {isE && <Box aria-live="polite" role="status" sx={liveRegionSx}>{ce.announce}</Box>}
             <Button type="submit" fullWidth variant="contained" size="large" sx={{ mt: 3, mb: 2 }} disabled={loading}>
               {loading ? t('register.checking') : t('register.next')}
             </Button>
