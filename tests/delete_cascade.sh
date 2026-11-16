@@ -19,64 +19,14 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PHP_IMAGE="${PHP_IMAGE:-$(docker image ls --format '{{.Repository}}:{{.Tag}}' | grep '^ghcr.io/costaaaaa/liftindex-web:' | sort -V | tail -n 1)}"
-MYSQL_IMAGE="${MYSQL_IMAGE:-mysql:9.7}"
-[[ -n "$PHP_IMAGE" ]] || { echo "Nessuna immagine PHP: imposta PHP_IMAGE" >&2; exit 2; }
-
-RUN="dc$RANDOM$RANDOM"
-NET="$RUN-net"
-DB="$RUN-mysql"
-CAT="$RUN-cat"
-PHP="$RUN-php"
-DBPASS="pw$RANDOM$RANDOM"
-TMP="$(mktemp -d)"
 MIGRATIONS="$ROOT/backend/database/schema_alter_migrations.sql"
 SECTION=36
 
-cleanup() {
-    docker rm -f "$DB" "$CAT" "$PHP" >/dev/null 2>&1
-    docker network rm "$NET" >/dev/null 2>&1
-    rm -rf "$TMP"
-}
-trap cleanup EXIT
+# Preparazione comune (MySQL usa e getta, PHP dell'immagine web): tests/lib/throwaway_mysql.sh
+source "$ROOT/tests/lib/throwaway_mysql.sh"
+tm_setup dc
 
-die() { echo "$1" >&2; exit 2; }
-
-# Il repo non ha config/database.php (è ignorato): si usa quello dell'immagine web, che legge l'ambiente.
-cp -r "$ROOT/backend" "$TMP/backend" || exit 2
-docker run --rm --name "$CAT" --entrypoint cat "$PHP_IMAGE" /var/www/app/backend/config/database.php >"$TMP/backend/config/database.php" \
-    || die "database.php non trovato nell'immagine"
-
-docker network create "$NET" >/dev/null || exit 2
-docker run -d --name "$DB" --network "$NET" --memory 900m --tmpfs /var/lib/mysql -e MYSQL_ROOT_PASSWORD="$DBPASS" "$MYSQL_IMAGE" >/dev/null || exit 2
-
-echo "Avvio MySQL..."
-ready=0
-for _ in $(seq 1 90); do
-    if docker exec -e MYSQL_PWD="$DBPASS" "$DB" mysql -uroot -h 127.0.0.1 -e 'SELECT 1' >/dev/null 2>&1; then ready=1; break; fi
-    sleep 1
-done
-[[ "$ready" == 1 ]] || die "MySQL non è partito"
-# Basta lo schema completo: secondo DB_UPGRADE_README.md contiene già tutto; le sezioni di
-# schema_alter_migrations.sql servono solo ai database già esistenti (qui si prova solo la 36, più sotto).
-docker exec -i -e MYSQL_PWD="$DBPASS" "$DB" mysql -uroot <"$ROOT/backend/database/gym_progress_tracker.sql" \
-    || die "schema non caricato"
-
-total=0
-failed=0
-run_phase() { # fase
-    local out rc
-    out="$(docker run --rm --name "$PHP" --network "$NET" -v "$TMP:/w:ro" -v "$ROOT/tests:/t:ro" \
-        -e DB_HOST="$DB" -e DB_NAME=gym_progress_tracker -e DB_USER=root -e DB_PASSWORD="$DBPASS" \
-        --entrypoint php "$PHP_IMAGE" /t/delete_cascade_test.php /w/backend "$1")"
-    rc=$?
-    echo "$out" | grep -v '^CONTROLLI '
-    [[ "$rc" -le 1 ]] || die "la fase $1 è andata in errore (codice $rc)"
-    local line
-    line="$(echo "$out" | grep '^CONTROLLI ' | tail -n 1)"
-    total=$((total + $(echo "$line" | awk '{print $2}')))
-    failed=$((failed + $(echo "$line" | awk '{print $4}')))
-}
+run_phase() { tm_php_phase delete_cascade_test.php "$1"; } # fase
 
 run_phase cases
 
@@ -86,7 +36,7 @@ run_phase seed-orphans
 section_sql="$(awk -v n="$SECTION" '/^-- [0-9]+\. /{ split($2, a, "."); cur = a[1] } cur == n' "$MIGRATIONS")"
 [[ -n "$section_sql" ]] || { echo "Sezione $SECTION assente in $MIGRATIONS" >&2; failed=$((failed + 1)); }
 for pass in 1 2; do
-    if ! out="$(printf '%s\n' "$section_sql" | docker exec -i -e MYSQL_PWD="$DBPASS" "$DB" mysql -uroot gym_progress_tracker 2>&1)"; then
+    if ! out="$(printf '%s\n' "$section_sql" | tm_sql 2>&1)"; then
         echo "Errore nella sezione $SECTION (esecuzione $pass): $out" >&2
         failed=$((failed + 1))
     fi
