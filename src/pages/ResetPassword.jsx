@@ -36,21 +36,24 @@ const ResetPassword = () => {
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(false);
   const confirmRef = useRef(null);
-  const pair = useConfirmPassword({ password, confirm, mismatchText: t('reset.error.mismatch') });
+  const pair = useConfirmPassword({ password, confirm })
+  // «Salva» a conferma vuota: l'errore sta nella riga, finché non si scrive nel campo
+  const [emptyConfirm, setEmptyConfirm] = useState(false);;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     pair.submit();
+    setEmptyConfirm(false);
     const policyError = validatePassword(password);
     if (policyError) {
       setError(policyError);
       return;
     }
     if (password !== confirm) {
-      // Conferma scritta: l'errore sta nella riga sotto il campo; conferma vuota: nell'avviso in alto
-      if (confirm) confirmRef.current?.focus();
-      else setError(t('reset.error.mismatch'));
+      // L'errore sta nella riga sotto il campo, non nell'avviso in alto
+      setEmptyConfirm(!confirm);
+      confirmRef.current?.focus();
       return;
     }
     setLoading(true);
@@ -122,6 +125,7 @@ const ResetPassword = () => {
             </Box>
             <ConfirmPasswordField
               pair={pair}
+              errorText={emptyConfirm ? t('password.confirm_mismatch') : ''}
               margin="normal"
               required
               fullWidth
@@ -132,7 +136,7 @@ const ResetPassword = () => {
               inputRef={confirmRef}
               autoComplete="new-password"
               value={confirm}
-              onChange={(e) => { setConfirm(e.target.value); pair.edit(); }}
+              onChange={(e) => { setConfirm(e.target.value); setEmptyConfirm(false); pair.edit(); }}
             />
             <Button type="submit" fullWidth variant="contained" sx={{ mt: 2, mb: 1 }} disabled={loading}>
               {loading ? t('reset.submitting') : t('reset.submit')}

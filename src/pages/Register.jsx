@@ -68,7 +68,7 @@ const Register = () => {
   const { fieldRef, focusField } = useFocusField();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const pair = useConfirmPassword({ password, confirm: confirmPassword, mismatchText: t('register.error.password_mismatch') });
+  const pair = useConfirmPassword({ password, confirm: confirmPassword });
 
   const handleTogglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -118,7 +118,7 @@ const Register = () => {
       username: USERNAME_RE.test(username) ? '' : t('register.username_help'),
       email: EMAIL_RE.test(email.trim()) ? '' : t('register.error.email_format'),
       password: validatePassword(password) || '',
-      confirmPassword: password === confirmPassword ? '' : t('register.error.password_mismatch'),
+      confirmPassword: password === confirmPassword ? '' : t('password.confirm_mismatch'),
     };
     setFieldErrors(errors);
     if (Object.values(errors).some(Boolean)) {

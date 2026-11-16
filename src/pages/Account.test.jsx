@@ -274,9 +274,9 @@ describe('password e dati personali', () => {
       expect(describedBy(confirmField(dialog))).toBe('Riscrivi la stessa password');
       expect(confirmField(dialog).getAttribute('aria-invalid')).toBe('false');
       fireEvent.blur(confirmField(dialog));
-      expect(describedBy(confirmField(dialog))).toBe('Le nuove password non corrispondono');
+      expect(describedBy(confirmField(dialog))).toBe('Le password non coincidono');
       expect(confirmField(dialog).getAttribute('aria-invalid')).toBe('true');
-      expect(within(dialog).getByRole('status').textContent).toBe('Le nuove password non corrispondono');
+      expect(within(dialog).getByRole('status').textContent).toBe('Le password non coincidono');
     });
 
     it('l\'occhio della conferma non è un\'uscita dal campo', async () => {
@@ -293,7 +293,7 @@ describe('password e dati personali', () => {
       fill(dialog, { confirm: 'Nuova!Pass' });
       const calls = fetch.mock.calls.length;
       save(dialog);
-      expect(describedBy(confirmField(dialog))).toBe('Le nuove password non corrispondono');
+      expect(describedBy(confirmField(dialog))).toBe('Le password non coincidono');
       expect(confirmField(dialog).getAttribute('aria-invalid')).toBe('true');
       expect(document.activeElement).toBe(confirmField(dialog));
       expect(within(dialog).queryByRole('alert')).toBeNull();
@@ -317,7 +317,7 @@ describe('password e dati personali', () => {
       fireEvent.change(confirmField(dialog), { target: { value: 'Nuova!Pass' } });
       save(dialog);
       expect(within(dialog).queryByRole('alert')).toBeNull();
-      expect(describedBy(confirmField(dialog))).toBe('Le nuove password non corrispondono');
+      expect(describedBy(confirmField(dialog))).toBe('Le password non coincidono');
     });
 
     it('le altre regole restano nell\'avviso in alto: password fuori regola, uguale all\'attuale', async () => {

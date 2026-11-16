@@ -103,7 +103,7 @@ const Account = ({ isEmbedded = false }) => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const confirmPair = useConfirmPassword({ password: newPassword, confirm: confirmPassword, mismatchText: t('account.password.mismatch') });
+  const confirmPair = useConfirmPassword({ password: newPassword, confirm: confirmPassword });
 
   // Stati per l'eliminazione dell'account
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);

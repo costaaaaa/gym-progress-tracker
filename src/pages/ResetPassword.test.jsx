@@ -77,9 +77,9 @@ describe('ResetPassword: conferma con riga riservata', () => {
     typePassword(NEW_PASSWORD);
     typeConfirm('Nuova!Pass');
     fireEvent.blur(field());
-    expect(row()).toBe('Le due password non coincidono.');
+    expect(row()).toBe('Le password non coincidono');
     expect(field().getAttribute('aria-invalid')).toBe('true');
-    expect(live()).toBe('Le due password non coincidono.');
+    expect(live()).toBe('Le password non coincidono');
     typeConfirm('Nuova!Pass2');
     expect(row()).toBe('Riscrivi la stessa password');
     expect(field().getAttribute('aria-invalid')).toBe('false');
@@ -98,7 +98,7 @@ describe('ResetPassword: conferma con riga riservata', () => {
     expect(field().getAttribute('type')).toBe('text');
     expect(row()).toBe('Riscrivi la stessa password');
     fireEvent.blur(eye, { relatedTarget: field() });
-    expect(row()).toBe('Le due password non coincidono.');
+    expect(row()).toBe('Le password non coincidono');
   });
 
   it('cambiando la password: uguali, spunta subito; diverse, suggerimento e poi rosso all\'uscita', () => {
@@ -110,7 +110,7 @@ describe('ResetPassword: conferma con riga riservata', () => {
     typePassword(NEW_PASSWORD);
     expect(row()).toBe('Riscrivi la stessa password');
     fireEvent.blur(screen.getByLabelText(/^Nuova password/));
-    expect(row()).toBe('Le due password non coincidono.');
+    expect(row()).toBe('Le password non coincidono');
   });
 
   it('l\'invio con conferma diversa: riga rossa, focus sul campo, niente avviso in alto, niente chiamata', () => {
@@ -118,21 +118,26 @@ describe('ResetPassword: conferma con riga riservata', () => {
     typePassword(NEW_PASSWORD);
     typeConfirm('Nuova!Pass');
     submit();
-    expect(row()).toBe('Le due password non coincidono.');
+    expect(row()).toBe('Le password non coincidono');
     expect(field().getAttribute('aria-invalid')).toBe('true');
     expect(document.activeElement).toBe(field());
     expect(screen.queryByRole('alert')).toBeNull();
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it('l\'invio con conferma vuota: avviso in alto come prima, la riga resta il suggerimento', () => {
+  it('l\'invio con conferma vuota: errore nella riga come in registrazione, focus sul campo, niente avviso in alto, sparisce al primo tasto', () => {
     renderReset();
     typePassword(NEW_PASSWORD);
     submit();
-    expect(screen.getByRole('alert').textContent).toBe('Le due password non coincidono.');
+    expect(row()).toBe('Le password non coincidono');
+    expect(field().getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(field());
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(live()).toBe('');
+    expect(fetch).not.toHaveBeenCalled();
+    typeConfirm('N');
     expect(row()).toBe('Riscrivi la stessa password');
     expect(field().getAttribute('aria-invalid')).toBe('false');
-    expect(fetch).not.toHaveBeenCalled();
   });
 
   it('una password fuori regola resta nell\'avviso in alto, prima del controllo sulla conferma', () => {
@@ -154,6 +159,6 @@ describe('ResetPassword: conferma con riga riservata', () => {
     expect(describedBy(confirm)).toBe('Passwords match');
     fireEvent.change(confirm, { target: { value: 'Nuova!Pass' } });
     fireEvent.blur(confirm);
-    expect(describedBy(confirm)).toBe("The two passwords don't match.");
+    expect(describedBy(confirm)).toBe("Passwords don't match");
   });
 });
