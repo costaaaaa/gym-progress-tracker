@@ -27,19 +27,29 @@ if (!empty($data->plan_id) && !empty($data->days) && is_array($data->days)) {
 
     $created_days = array();
 
-    foreach ($data->days as $index => $day) {
-        $workout_day->plan_id = $data->plan_id;
-        $workout_day->name = $day->name;
-        $workout_day->day_order = $index + 1;
+    // Tutti i giorni o nessuno: un errore a metà annulla anche quelli già inseriti
+    $db->beginTransaction();
+    try {
+        foreach ($data->days as $index => $day) {
+            $workout_day->plan_id = $data->plan_id;
+            $workout_day->name = $day->name;
+            $workout_day->day_order = $index + 1;
 
-        // Create the workout day
-        if ($workout_day->create()) {
-            $created_days[] = array(
-                "id" => $workout_day->id,
-                "name" => $workout_day->name,
-                "day_order" => $workout_day->day_order
-            );
+            // Create the workout day
+            if ($workout_day->create()) {
+                $created_days[] = array(
+                    "id" => $workout_day->id,
+                    "name" => $workout_day->name,
+                    "day_order" => $workout_day->day_order
+                );
+            }
         }
+
+        $db->commit();
+    } catch (PDOException $e) {
+        $db->rollBack();
+        api_log_exception('create_days', $e);
+        $created_days = array();
     }
 
     if (count($created_days) === count($data->days)) {
