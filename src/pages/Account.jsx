@@ -980,8 +980,8 @@ const Account = ({ isEmbedded = false }) => {
               sx={{ mb: 2 }}
               InputProps={{
                 endAdornment: (
-                <PasswordToggle shown={showNewPassword} onToggle={() => setShowNewPassword(!showNewPassword)} label={t('account.password.show_new')} disabled={changingPassword} />
-              ),
+                  <PasswordToggle shown={showNewPassword} onToggle={() => setShowNewPassword(!showNewPassword)} label={t('account.password.show_new')} disabled={changingPassword} />
+                ),
               }}
             />
           </Box>
