@@ -108,3 +108,38 @@ describe('card Stato muscolare', () => {
     expect(textBelow(container, 13)).toEqual([]);
   });
 });
+
+// Piano Gratis (detail "basic"): il server manda solo PRONTO / IN RECUPERO e last_trained, senza percent né ready_at.
+describe('card Stato muscolare con detail "basic"', () => {
+  const basic = {
+    petto: { status: 'PRONTO', last_trained: '2026-10-18 10:00:00' },
+    glutei: { status: 'PRONTO', last_trained: null },
+    schiena: { status: 'IN RECUPERO', last_trained: '2026-10-20 10:00:00' },
+    bicipiti: { status: 'IN RECUPERO', last_trained: '2026-10-21 10:00:00' },
+  };
+  const mountBasic = (recoveryData = basic) => render(
+    <ThemeModeProvider><BodyVisualizer recoveryData={recoveryData} detail="basic" /></ThemeModeProvider>,
+  );
+
+  it('due soli stati, "Puoi allenare" e "In recupero", senza barre né giorni mancanti', () => {
+    mountBasic();
+    expect(within(block('Puoi allenare')).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Petto']);
+    expect(within(block('In recupero')).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Schiena', 'Bicipiti']);
+    expect(screen.queryByRole('progressbar')).toBeNull();
+    expect(screen.queryByText(/pronto (oggi|domani|tra)/)).toBeNull();
+    expect(screen.queryByText('A riposo')).toBeNull();
+  });
+
+  it('in cima la riga con lucchetto che porta ai piani; i mai allenati restano fra i senza dati', () => {
+    mountBasic();
+    expect(screen.getByText('Percentuale di recupero e giorni mancanti')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Confronta i piani' }).getAttribute('href')).toBe('/piani');
+    expect(screen.getByText(/^Nessun dato: .*Glutei/)).toBeTruthy();
+  });
+
+  it('con detail "full" (o senza) niente riga con lucchetto', () => {
+    mount(data);
+    expect(screen.queryByText('Percentuale di recupero e giorni mancanti')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Confronta i piani' })).toBeNull();
+  });
+});

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { muscleLabel } from '../i18n/labels';
 import { groupRecovery } from '../utils/recoveryGroups';
 import { STATUS_COLOR, readyLabel } from '../utils/recoveryStatus';
+import LockedRow from './LockedRow';
 
 // Una riga: nome, barra di avanzamento del recupero, scritta a destra.
 // Larghezze fisse: 104 px per "Quadricipiti", 112 px per "pronto tra N giorni" / "ready in N days".
@@ -40,20 +41,30 @@ const Block = ({ title, children }) => {
   );
 };
 
-const BodyVisualizer = ({ recoveryData }) => {
+// Piano Gratis (detail "basic"): solo il nome del muscolo, il titolo del blocco dice se è pronto o in recupero.
+const BasicRow = ({ group }) => (
+  <Box component="li">
+    <Typography noWrap sx={{ fontSize: 15, color: 'text.primary' }}>{muscleLabel(group)}</Typography>
+  </Box>
+);
+
+// detail: "full" (percentuale e giorni mancanti, com'è sempre stato) o "basic" (solo pronto / in recupero).
+const BodyVisualizer = ({ recoveryData, detail = 'full' }) => {
   const { t } = useTranslation();
   const { canTrain, resting, noData } = groupRecovery(recoveryData);
+  const basic = detail === 'basic';
 
   return (
     <Box sx={{ width: '100%' }}>
       <Typography variant="cardTitle" sx={{ mb: 2 }}>
         {t('recovery.title')}
       </Typography>
+      {basic && <LockedRow>{t('recovery.locked')}</LockedRow>}
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
         {canTrain.length > 0 && (
           <Block title={t('recovery.can_train')}>
-            {canTrain.map((group) => (
+            {canTrain.map((group) => basic ? <BasicRow key={group} group={group} /> : (
               <MuscleRow key={group} group={group} status="PRONTO" percent={100}>
                 <Typography sx={{ fontSize: 15, fontWeight: 600, color: 'recovery.ready' }}>{t('recovery.ready')}</Typography>
               </MuscleRow>
@@ -61,8 +72,8 @@ const BodyVisualizer = ({ recoveryData }) => {
           </Block>
         )}
         {resting.length > 0 && (
-          <Block title={t('recovery.resting')}>
-            {resting.map(({ group, status, percent, days }) => (
+          <Block title={t(basic ? 'recovery.recovering' : 'recovery.resting')}>
+            {resting.map(({ group, status, percent, days }) => basic ? <BasicRow key={group} group={group} /> : (
               <MuscleRow key={group} group={group} status={status} percent={percent}>
                 {days !== null && <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{readyLabel(t, days)}</Typography>}
               </MuscleRow>

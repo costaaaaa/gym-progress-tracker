@@ -1010,5 +1010,7 @@
   "body.error.range": "The value must be between 0 and {{max}}, inclusive.",
   "body.error.date": "Enter a valid date.",
   "plans.label_plus": "Plus",
-  "plans.compare": "Compare plans"
+  "plans.compare": "Compare plans",
+  "recovery.locked": "Recovery percentage and days left",
+  "recovery.recovering": "Recovering"
 }

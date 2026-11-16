@@ -64,7 +64,8 @@ const Home = () => {
   const [dashboardStats, setDashboardStats] = useState(null);
   // weekly_goal è l'obiettivo effettivo; plan_days_total resta per i server più vecchi
   const weeklyGoal = dashboardStats?.weekly_goal ?? dashboardStats?.plan_days_total;
-  const weeklySets = totalSets(dashboardStats?.weekly_sets?.week);
+  // Piano Gratis: il server manda solo weekly_sets.total (detail "basic")
+  const weeklySets = dashboardStats?.weekly_sets?.total ?? totalSets(dashboardStats?.weekly_sets?.week);
   // Il primo render è già il caricamento: niente card dei dati prima della fetch. Parte a true anche
   // se isLoggedIn è ancora false: dopo un ricaricamento la sessione si conferma senza rimontare Home
   const [loading, setLoading] = useState(true);
@@ -269,7 +270,7 @@ const Home = () => {
             {/* Stato Muscolare */}
             <Grid item xs={12} md={6}>
               <Card sx={{ height: '100%', p: '22px' }}>
-                <BodyVisualizer recoveryData={dashboardStats?.recovery} />
+                <BodyVisualizer recoveryData={dashboardStats?.recovery} detail={dashboardStats?.detail} />
                 <Button component={RouterLink} to="/dashboard?tab=muscles" size="small" sx={{ mt: 1.5, px: 0 }}>
                   {t('home.recovery_link')}
                 </Button>
