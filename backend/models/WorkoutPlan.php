@@ -237,23 +237,47 @@ class WorkoutPlan
         // Query to delete record
         $query = "DELETE FROM " . $this->table_name . " WHERE id = ? AND user_id = ?";
 
-        // Prepare query
-        $stmt = $this->conn->prepare($query);
-
         // Sanitize inputs
         $this->id = htmlspecialchars(strip_tags($this->id));
         $this->user_id = htmlspecialchars(strip_tags($this->user_id));
 
-        // Bind values
-        $stmt->bindParam(1, $this->id);
-        $stmt->bindParam(2, $this->user_id);
+        // Con MySQL 9.7 la cascata scheda > giorni > esercizi > serie pianificate (quattro livelli)
+        // si ferma a metà e lascia righe orfane: esercizi e giorni della scheda si cancellano qui,
+        // nella stessa transazione della scheda.
+        $this->conn->beginTransaction();
+        try {
+            $stmt = $this->conn->prepare("DELETE e FROM gym_workout_exercises e
+                JOIN gym_workout_days d ON d.id = e.day_id
+                JOIN " . $this->table_name . " p ON p.id = d.plan_id
+                WHERE p.id = ? AND p.user_id = ?");
+            $stmt->execute([$this->id, $this->user_id]);
 
-        // Execute query
-        if ($stmt->execute()) {
-            return true;
+            $stmt = $this->conn->prepare("DELETE d FROM gym_workout_days d
+                JOIN " . $this->table_name . " p ON p.id = d.plan_id
+                WHERE p.id = ? AND p.user_id = ?");
+            $stmt->execute([$this->id, $this->user_id]);
+
+            // Prepare query
+            $stmt = $this->conn->prepare($query);
+
+            // Bind values
+            $stmt->bindParam(1, $this->id);
+            $stmt->bindParam(2, $this->user_id);
+
+            // Execute query
+            if ($stmt->execute()) {
+                $this->conn->commit();
+                return true;
+            }
+
+            $this->conn->rollBack();
+            return false;
+        } catch (Exception $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+            throw $e;
         }
-
-        return false;
     }
 
     // Get active workout plan
