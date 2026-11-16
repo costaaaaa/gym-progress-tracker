@@ -7,8 +7,9 @@ import { MUSCLE_GROUPS, isNeverTrained } from '../utils/recoveryGroups';
 import { readyInDays } from '../utils/recoveryDay';
 import { STATUS_COLOR, readyLabel } from '../utils/recoveryStatus';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
-import { totalSets } from '../utils/weeklySets';
+import { totalSets, weeklyTotal } from '../utils/weeklySets';
 import LockedRow from '../components/LockedRow';
+import BasicMuscleRow from '../components/BasicMuscleRow';
 
 // Variazione contro la settimana scorsa allo stesso punto: ▲ in verde, ▼ e = in grigio (qui più serie è
 // un buon segno; il delta di ChartCard invece resta sempre grigio). Usata dall'intestazione e da ogni riga.
@@ -92,20 +93,8 @@ const MuscleRow = ({ muscle, week, prev, status, days, max }) => {
   );
 };
 
-// Piano Gratis: nome e stato (Puoi allenare / In recupero), senza serie, barra, variazione né giorni.
-const BasicMuscleRow = ({ muscle, status }) => {
-  const { t } = useTranslation();
-  const label = status === 'PRONTO' ? t('recovery.can_train') : status ? t('recovery.basic_resting') : t('muscles.row.no_data');
-  return (
-    <Box component="li" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      <Box sx={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, bgcolor: status ? STATUS_COLOR[status] : 'divider' }} />
-      <Typography noWrap sx={{ fontSize: 15, flex: 1, color: 'text.primary' }}>{muscleLabel(muscle)}</Typography>
-      <Typography sx={{ fontSize: 13, fontWeight: status === 'PRONTO' ? 600 : 400, color: status === 'PRONTO' ? 'recovery.ready' : 'text.secondary' }}>
-        {label}
-      </Typography>
-    </Box>
-  );
-};
+// Etichetta di stato del piano Gratis: Puoi allenare / In recupero / nessun dato.
+const basicLabel = (t, status) => (status === 'PRONTO' ? t('recovery.can_train') : status ? t('recovery.basic_resting') : t('muscles.row.no_data'));
 
 const Muscles = () => {
   const { t } = useTranslation();
@@ -139,8 +128,7 @@ const Muscles = () => {
 
   const sets = data.weekly_sets || { week: {}, previous_to_date: {}, previous_total: 0 };
   const basic = data.detail === 'basic';
-  // Piano Gratis: il server manda solo { total }
-  const weekTotal = sets.total ?? totalSets(sets.week);
+  const weekSets = weeklyTotal(sets);
   const prevToDateTotal = totalSets(sets.previous_to_date);
   const max = Math.max(1, ...MUSCLE_GROUPS.map((m) => sets.week?.[m] || 0));
 
@@ -152,14 +140,14 @@ const Muscles = () => {
           <LockedRow>{t('recovery.locked')}</LockedRow>
         </>
       )}
-      <Header weekTotal={weekTotal} prevToDateTotal={prevToDateTotal} prevTotal={sets.previous_total || 0} compare={!basic} />
+      <Header weekTotal={weekSets} prevToDateTotal={prevToDateTotal} prevTotal={sets.previous_total || 0} compare={!basic} />
       <Box component="ul" aria-label={t('dashboard.tab.muscles')} sx={{ listStyle: 'none', p: 0, m: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
         {MUSCLE_GROUPS.map((muscle) => {
           const week = sets.week?.[muscle] || 0;
           const prev = sets.previous_to_date?.[muscle] || 0;
           const recovery = data.recovery?.[muscle];
           const status = isNeverTrained(recovery) ? null : recovery?.status || null;
-          if (basic) return <BasicMuscleRow key={muscle} muscle={muscle} status={status} />;
+          if (basic) return <BasicMuscleRow key={muscle} muscle={muscle} status={status} label={basicLabel(t, status)} />;
           const days = recovery?.ready_at ? readyInDays(recovery.ready_at) : null;
           return <MuscleRow key={muscle} muscle={muscle} week={week} prev={prev} status={status} days={days} max={max} />;
         })}

@@ -16,7 +16,7 @@ import { API_BASE_URL } from '../config';
 import { useTranslation, Trans } from 'react-i18next';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { formatDate as formatLocalDate, formatNumber } from '../i18n/format';
-import { totalSets } from '../utils/weeklySets';
+import { weeklyTotal } from '../utils/weeklySets';
 import { radius } from '../theme/radius';
 
 // Landing per gli ospiti: carica GSAP solo per chi non ha fatto il login.
@@ -64,8 +64,7 @@ const Home = () => {
   const [dashboardStats, setDashboardStats] = useState(null);
   // weekly_goal è l'obiettivo effettivo; plan_days_total resta per i server più vecchi
   const weeklyGoal = dashboardStats?.weekly_goal ?? dashboardStats?.plan_days_total;
-  // Piano Gratis: il server manda solo weekly_sets.total (detail "basic")
-  const weeklySets = dashboardStats?.weekly_sets?.total ?? totalSets(dashboardStats?.weekly_sets?.week);
+  const weeklySets = weeklyTotal(dashboardStats?.weekly_sets);
   // Il primo render è già il caricamento: niente card dei dati prima della fetch. Parte a true anche
   // se isLoggedIn è ancora false: dopo un ricaricamento la sessione si conferma senza rimontare Home
   const [loading, setLoading] = useState(true);
