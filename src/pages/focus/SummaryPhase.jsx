@@ -18,7 +18,7 @@ import { track } from '../../utils/analytics';
 import { techniqueLabel } from '../../i18n/labels';
 import { formatSetText } from '../../i18n/format';
 import { radius } from '../../theme/radius';
-import PremiumButton from './PremiumButton';
+import LockedButton from './LockedButton';
 import ButtonSpinner from '../../components/ButtonSpinner';
 
 const XP_WITHHELD_KEYS = {
@@ -240,7 +240,7 @@ export default function SummaryPhase({
         ) : (
           <>
             {/* Esercizio dimenticato: si aggiunge in coda e si torna ad allenarsi */}
-            <PremiumButton locked={!canEditSession} label={t('focus.add_exercise')} startIcon={<AddIcon />}
+            <LockedButton locked={!canEditSession} label={t('focus.add_exercise')} startIcon={<AddIcon />}
               onClick={onAddExercise} wrapperSx={{ mb: 3 }} />
 
             <TextField label={t('focus.notes_label')} multiline rows={3} value={workoutNotes}

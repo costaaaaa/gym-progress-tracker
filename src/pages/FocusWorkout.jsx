@@ -35,7 +35,7 @@ const FocusWorkout = () => {
   usePageMeta(t('focus.meta.title'), t('focus.meta.description'));
 
   const { colors, isDarkMode } = useFocusColors();
-  const { loading, phase, resumePrompt, selectDay, restTimer, workout, summary, picker, premiumDialog, snackbar } = useFocusSession();
+  const { loading, phase, resumePrompt, selectDay, restTimer, workout, summary, picker, lockedDialog, snackbar } = useFocusSession();
 
   // Al cambio di fase (e dopo il salvataggio) il pulsante premuto sparisce e il focus finirebbe sul <body>: va sul
   // titolo, ma solo se si è perso. Se un campo l'ha preso da solo (autoFocus del peso) resta lì.
@@ -121,7 +121,7 @@ const FocusWorkout = () => {
     </Box>
     <Box role="status" aria-live="polite" sx={visuallyHidden}>{restOver ? t('focus.rest_over') : ''}</Box>
       <FocusExercisePicker {...picker} />
-      <Dialog open={premiumDialog.open} onClose={premiumDialog.onClose}
+      <Dialog open={lockedDialog.open} onClose={lockedDialog.onClose}
         PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: radius.xxl } }}>
         <DialogTitle sx={{ color: colors.text, display: 'flex', alignItems: 'center', gap: 1 }}>
           <LockIcon sx={{ color: colors.warningText }} /> {t('focus.plus_title')}
@@ -135,7 +135,7 @@ const FocusWorkout = () => {
           </Link>
         </DialogContent>
         <DialogActions>
-          <Button onClick={premiumDialog.onClose} sx={{ color: colors.text }}>{t('focus.plus_ok')}</Button>
+          <Button onClick={lockedDialog.onClose} sx={{ color: colors.text }}>{t('focus.plus_ok')}</Button>
         </DialogActions>
       </Dialog>
       <Snackbar

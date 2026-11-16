@@ -6,7 +6,7 @@ import { radius } from '../../theme/radius';
 // Bottone outlined di Focus per le funzioni Plus. Se `locked`, sul bordo in alto a sinistra c'è l'etichetta
 // "Plus" (con lo sfondo della pagina a coprire la linea) e il nome accessibile la ripete. L'etichetta sta
 // accanto al bottone, non dentro: l'opacità di `faded` non la tocca.
-const PremiumButton = ({ locked, label, startIcon, onClick, faded, wrapperSx }) => {
+const LockedButton = ({ locked, label, startIcon, onClick, faded, wrapperSx }) => {
   const { t } = useTranslation();
   const { colors } = useFocusColors();
   return (
@@ -30,4 +30,4 @@ const PremiumButton = ({ locked, label, startIcon, onClick, faded, wrapperSx }) 
   );
 };
 
-export default PremiumButton;
+export default LockedButton;

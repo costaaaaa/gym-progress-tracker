@@ -48,12 +48,12 @@ export default function useFocusSession() {
   const [skippedExercises, setSkippedExercises] = useState([]);
   // Serie saltate per voce di sessione: { [ex.id]: [indice serie, ...] }
   const [skippedSets, setSkippedSets] = useState({});
-  // Funzioni premium abilitate (user/read.php → features): qui solo per mostrare i comandi,
+  // Funzioni Plus e Pro abilitate (user/read.php → features): qui solo per mostrare i comandi,
   // il salvataggio lo controlla record_workout.php
   const [features, setFeatures] = useState([]);
   // Picker esercizi: null = chiuso, altrimenti { mode: 'swap' | 'add', from: 'workout' | 'summary' }
   const [picker, setPicker] = useState(null);
-  const [premiumDialog, setPremiumDialog] = useState(false);
+  const [lockedDialog, setLockedDialog] = useState(false);
 
   // Timer state
   const [timerDuration, setTimerDuration] = useState(0);
@@ -520,13 +520,13 @@ export default function useFocusSession() {
   };
 
   // ================================================
-  // CAMBIO / AGGIUNTA ESERCIZIO (premium, solo per questa sessione)
+  // CAMBIO / AGGIUNTA ESERCIZIO (Plus e Pro, solo per questa sessione)
   // ================================================
   // Le modifiche vanno in selectedDay.exercises: bozza, salvataggio, riepilogo e
   // barra di avanzamento le vedono senza altro codice.
   const openPicker = (pickerMode, from = 'workout') => {
     if (!canEditSession) {
-      setPremiumDialog(true);
+      setLockedDialog(true);
       return;
     }
     if (pickerMode === 'swap' && !canSwap) {
@@ -894,7 +894,7 @@ export default function useFocusSession() {
       onClose: () => setPicker(null),
       onPick: handlePickExercise,
     },
-    premiumDialog: { open: premiumDialog, onClose: () => setPremiumDialog(false) },
+    lockedDialog: { open: lockedDialog, onClose: () => setLockedDialog(false) },
     snackbar: { ...snackbar, onClose: () => setSnackbar({ ...snackbar, open: false }) },
   };
 }

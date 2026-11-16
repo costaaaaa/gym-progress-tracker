@@ -747,7 +747,7 @@ describe('salti e uscita', () => {
   });
 });
 
-describe('errori e premium', () => {
+describe('errori e funzioni bloccate', () => {
   it('un errore nel caricamento delle schede si vede nello snackbar', async () => {
     responses['read_plans.php'] = () => ({ ok: false, status: 500, json: async () => { throw new Error('non json'); }, text: async () => '' });
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -762,7 +762,7 @@ describe('errori e premium', () => {
     expect(screen.getByText('Nessuna scheda attiva')).toBeTruthy();
   });
 
-  it('senza la funzione premium i bottoni in allenamento hanno l\'etichetta "Plus" e il nome accessibile "… (Plus)"', async () => {
+  it('senza la funzione Plus i bottoni in allenamento hanno l\'etichetta "Plus" e il nome accessibile "… (Plus)"', async () => {
     await startDay('Push');
     expect(screen.getByRole('button', { name: 'Cambia esercizio (Plus)' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Aggiungi esercizio (Plus)' })).toBeTruthy();
@@ -789,21 +789,21 @@ describe('errori e premium', () => {
     expect(screen.queryByTestId('LockIcon')).toBeNull();
   });
 
-  it('con la funzione premium non c\'è nessuna etichetta "Plus"', async () => {
+  it('con la funzione Plus non c\'è nessuna etichetta "Plus"', async () => {
     responses['user/read.php'] = () => json({ rest_timer_enabled: true, features: ['focus_session_edit'] });
     await startDay('Push');
     expect(screen.queryByText('Plus')).toBeNull();
     expect(screen.getByRole('button', { name: 'Cambia esercizio' })).toBeTruthy();
   });
 
-  it('senza la funzione premium anche "Aggiungi esercizio" del riepilogo mostra "Plus"', async () => {
+  it('senza la funzione Plus anche "Aggiungi esercizio" del riepilogo mostra "Plus"', async () => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...savedDraft, selectedDay: pushDay, selectedDayId: 1, phase: 'summary' }));
     await mount();
     click('Riprendi allenamento');
     expect(screen.getByRole('button', { name: 'Aggiungi esercizio (Plus)' })).toBeTruthy();
   });
 
-  it('senza la funzione premium, cambiare esercizio apre il dialog Plus con il link ai piani', async () => {
+  it('senza la funzione Plus, cambiare esercizio apre il dialog Plus con il link ai piani', async () => {
     await startDay('Push');
     click('Cambia esercizio (Plus)');
     expect(screen.getByText('Funzione Plus')).toBeTruthy();
@@ -913,7 +913,7 @@ describe('colori di Focus: rosso solo per ciò che è distruttivo', () => {
     expect(red).toEqual(['Scarta ed esci']);
   });
 
-  it('il dialogo premium ha il bottone "Ho capito" non rosso', async () => {
+  it('il dialogo Plus ha il bottone "Ho capito" non rosso', async () => {
     await startDay('Push');
     click('Cambia esercizio (Plus)');
     expect(getComputedStyle(screen.getByRole('button', { name: 'Ho capito' })).color).not.toBe(RED);
@@ -951,7 +951,7 @@ describe('riepilogo', () => {
     expect(screen.getByText('Nuovo record! 🏆 1 settimana consecutiva')).toBeTruthy();
   });
 
-  it('con la funzione premium "Aggiungi esercizio" del riepilogo non ha l\'etichetta "Plus" e il nome è semplice', async () => {
+  it('con la funzione Plus "Aggiungi esercizio" del riepilogo non ha l\'etichetta "Plus" e il nome è semplice', async () => {
     responses['user/read.php'] = () => json({ rest_timer_enabled: true, features: ['focus_session_edit'] });
     await toSummary();
     expect(screen.getByRole('button', { name: 'Aggiungi esercizio' })).toBeTruthy();
