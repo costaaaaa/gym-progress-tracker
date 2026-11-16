@@ -295,42 +295,6 @@ class WorkoutPlan
         }
     }
 
-    // Get active workout plan
-    public function getActive()
-    {
-        // Query to read single record
-        $query = "SELECT id, user_id, name, description, created_at, updated_at
-                FROM " . $this->table_name . "
-                WHERE user_id = ? AND is_active = 1
-                LIMIT 0,1";
-
-        // Prepare query statement
-        $stmt = $this->conn->prepare($query);
-
-        // Bind user ID
-        $stmt->bindParam(1, $this->user_id);
-
-        // Execute query
-        $stmt->execute();
-
-        // Get retrieved row
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($row) {
-            // Set values to object properties
-            $this->id = $row['id'];
-            $this->user_id = $row['user_id'];
-            $this->name = $row['name'];
-            $this->description = $row['description'];
-            $this->is_active = 1;
-            $this->created_at = $row['created_at'];
-            $this->updated_at = $row['updated_at'];
-            return true;
-        }
-
-        return false;
-    }
-
     // Deactivate all workout plans for a user
     public function deactivateAllPlans()
     {
