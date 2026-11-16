@@ -220,15 +220,17 @@ describe('tema: rosso come testo in scuro (1.4.3)', () => {
     expect(selectedColor('light')).toBe(RED);
   });
 
-  it('l\'etichetta del campo a fuoco in scuro ha almeno 4,5:1; in chiaro resta rossa', () => {
+  it('l\'etichetta del campo a fuoco è del colore del testo principale, con almeno 4,5:1 di contrasto', () => {
     const labelColor = (mode) => {
       renderThemed(mode, <TextField label="Utente" focused />);
       const color = getComputedStyle(screen.getByText('Utente', { selector: 'label' })).color;
       cleanup();
       return color;
     };
+    expect(labelColor('light')).toBe('rgb(26, 24, 22)');
+    expect(labelColor('dark')).toBe(WHITE);
+    expect(contrast(labelColor('light'), PAPER.light)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(labelColor('dark'), PAPER.dark)).toBeGreaterThanOrEqual(4.5);
-    expect(labelColor('light')).toBe(RED);
   });
 
   it('in scuro l\'etichetta del campo in errore e a fuoco ha almeno 4,5:1 di contrasto', () => {
@@ -237,10 +239,35 @@ describe('tema: rosso come testo in scuro (1.4.3)', () => {
     expect(contrast(color, PAPER.dark)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('il colore dell\'etichetta a fuoco esclude il campo in errore (la regola ha la guardia :not(.Mui-error))', () => {
-    renderThemed('light', <TextField label="Utente" focused />);
+  it.each([
+    ['light', '#1a1816'],
+    ['dark', '#ffffff'],
+  ])('il bordo a fuoco è del colore del testo principale, escluso il campo in errore (%s)', (mode, text) => {
+    renderThemed(mode, <TextField label="Utente" focused />);
     const css = [...document.querySelectorAll('style')].map((s) => s.textContent).join('');
-    expect(css).toMatch(/\.Mui-focused:not\(\.Mui-error\)\{[^}]*color:#d50000/);
+    expect(css).toMatch(new RegExp(`\\.Mui-focused:not\\(\\.Mui-error\\) \\.MuiOutlinedInput-notchedOutline\\{[^}]*border-color:${text}`));
+    expect(css).toMatch(new RegExp(`\\.Mui-focused:not\\(\\.Mui-error\\)\\{[^}]*color:${text}`));
+  });
+
+  it('a fuoco e in errore etichetta e bordo restano del colore dell\'errore', () => {
+    renderThemed('light', <TextField label="Utente" focused error />);
+    expect(getComputedStyle(screen.getByText('Utente', { selector: 'label' })).color).toBe(RED);
+    const css = [...document.querySelectorAll('style')].map((s) => s.textContent).join('');
+    expect(css).toMatch(/\.Mui-error \.MuiOutlinedInput-notchedOutline\{border-color:#d50000/);
+  });
+
+  it.each([
+    ['light', RED],
+    ['dark', 'rgb(255, 82, 82)'],
+  ])('il cursore di scrittura di input e textarea è il rosso del marchio (%s), anche in errore', (mode, red) => {
+    renderThemed(mode, <>
+      <TextField label="A" />
+      <TextField label="B" multiline rows={2} error />
+    </>);
+    const [input] = screen.getAllByRole('textbox', { name: 'A' });
+    expect(getComputedStyle(input).caretColor).toBe(red);
+    const area = document.querySelector('textarea:not([aria-hidden])');
+    expect(getComputedStyle(area).caretColor).toBe(red);
   });
 
   it.each([

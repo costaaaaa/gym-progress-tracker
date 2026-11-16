@@ -236,8 +236,13 @@ export const ThemeModeProvider = ({ children }) => {
                 '&:hover:not(.Mui-focused):not(.Mui-error):not(.Mui-disabled) .MuiOutlinedInput-notchedOutline': {
                   '@media (hover: none)': { borderColor: FIELD_BORDER[mode] },
                 },
+                // Campo attivo neutro: il rosso del marchio è uguale a quello dell'errore, quindi a fuoco il bordo
+                // ha il colore del testo; in errore resta quello dell'errore (la guardia :not(.Mui-error)).
+                '&.Mui-focused:not(.Mui-error) .MuiOutlinedInput-notchedOutline': { borderColor: TEXT_PRIMARY[mode] },
               },
               input: {
+                // Il cursore di scrittura tiene il rosso del marchio, anche in errore
+                caretColor: mode === 'light' ? BRAND : ERROR_ON_DARK,
                 paddingTop: FIELD_INPUT_PADDING_Y,
                 paddingBottom: FIELD_INPUT_PADDING_Y,
               },
@@ -302,12 +307,12 @@ export const ThemeModeProvider = ({ children }) => {
               'button:not(.MuiButtonBase-root):focus-visible': focusRing,
             }
           },
-          // Etichetta a fuoco: rosso come testo (primary.text), non il rosso del marchio. In errore resta il colore dell'errore (la guardia :not(.Mui-error)).
+          // Etichetta a fuoco: colore del testo principale, come il bordo. In errore resta il colore dell'errore (la guardia :not(.Mui-error)).
           MuiFormLabel: {
             styleOverrides: {
-              root: ({ theme }) => ({
-                '&.Mui-focused:not(.Mui-error)': { color: theme.palette.primary.text },
-              }),
+              root: {
+                '&.Mui-focused:not(.Mui-error)': { color: TEXT_PRIMARY[mode] },
+              },
             },
           },
           // Focus da tastiera su ogni controllo basato su ButtonBase (bottoni, icone, chip, voci di menu e di
