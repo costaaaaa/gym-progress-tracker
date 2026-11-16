@@ -171,3 +171,17 @@ describe('AdminExercises · etichette attrezzo', () => {
     expect(screen.queryByText('Corpo libero')).toBeNull();
   });
 });
+
+describe('AdminExercises · select Attrezzo del form', () => {
+  it('le voci seguono la lingua', async () => {
+    await i18n.changeLanguage('en');
+    fetchMock.mockImplementation(() => Promise.resolve(
+      json({ success: true, exercises: [], muscle_groups: MUSCLE_GROUPS, equipment: ['corpo_libero', 'bilanciere'] }),
+    ));
+    await apri();
+    fireEvent.mouseDown(within(screen.getByRole('dialog')).getByRole('combobox', { name: /^Attrezzo/ }));
+    expect(screen.getByRole('option', { name: 'Bodyweight' })).toBeTruthy();
+    expect(screen.getByRole('option', { name: 'Barbell' })).toBeTruthy();
+    expect(screen.queryByRole('option', { name: 'Corpo libero' })).toBeNull();
+  });
+});

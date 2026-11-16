@@ -176,7 +176,7 @@ describe('dialogo di eliminazione di una scheda', () => {
     return clickDeleteOf('Forza A');
   };
 
-  it('dice sempre che lo storico resta', async () => {
+  it('dice sempre che la cronologia resta', async () => {
     const dialog = await apriEliminaScheda([inactive], {});
     expect(within(dialog).getByText(CRONOLOGIA)).toBeTruthy();
   });
@@ -232,11 +232,15 @@ describe('dialogo di eliminazione di una scheda', () => {
 });
 
 describe('nuova scheda', () => {
-  it('di base ha un solo giorno, anche dopo averne creata una', async () => {
+  it.each([
+    ['it', 'Nuova scheda', '1 giorno', 'Nome scheda', 'Crea', 'Giorno 1'],
+    ['en', 'New plan', '1 day', 'Plan name', 'Create', 'Day 1'],
+  ])('(%s) di base ha un solo giorno, col nome nella lingua, anche dopo averne creata una', async (lang, apri, uno, nome, crea, giorno) => {
+    await i18n.changeLanguage(lang);
     const creaScheda = async () => {
-      fireEvent.click(screen.getAllByRole('button', { name: 'Nuova scheda' })[0]);
+      fireEvent.click(screen.getAllByRole('button', { name: apri })[0]);
       const dialog = await screen.findByRole('dialog');
-      expect(within(dialog).getByRole('combobox').textContent).toBe('1 giorno');
+      expect(within(dialog).getByRole('combobox').textContent).toBe(uno);
       return dialog;
     };
     render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
@@ -246,32 +250,14 @@ describe('nuova scheda', () => {
     ));
 
     const dialog = await creaScheda();
-    fireEvent.change(within(dialog).getByLabelText('Nome scheda'), { target: { value: 'Nuova' } });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Crea' }));
+    fireEvent.change(within(dialog).getByLabelText(nome), { target: { value: 'Nuova' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: crea }));
     await waitFor(() => expect(fetch.mock.calls.some(([url]) => String(url).includes('create_days.php'))).toBe(true));
     const call = fetch.mock.calls.find(([url]) => String(url).includes('create_days.php'));
-    expect(JSON.parse(call[1].body).days).toEqual([{ name: 'Giorno 1', exercises: [] }]);
+    expect(JSON.parse(call[1].body).days).toEqual([{ name: giorno, exercises: [] }]);
 
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    await creaScheda(); // riaperto dopo la creazione: mostra di nuovo "1 giorno" (lo controlla creaScheda)
-  });
-});
-
-describe('nuova scheda in inglese', () => {
-  it('i giorni creati si chiamano "Day 1", non "Giorno 1"', async () => {
-    await i18n.changeLanguage('en');
-    render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
-    await screen.findByText('Forza A');
-    fetch.mockImplementation((url) => Promise.resolve(
-      String(url).includes('create_plan.php') ? json({ plan: { id: 9 } }, 201) : json({ records: [plan] }),
-    ));
-    fireEvent.click(screen.getAllByRole('button', { name: 'New plan' })[0]);
-    const dialog = await screen.findByRole('dialog');
-    fireEvent.change(within(dialog).getByLabelText('Plan name'), { target: { value: 'Nuova' } });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
-    await waitFor(() => expect(fetch.mock.calls.some(([url]) => String(url).includes('create_days.php'))).toBe(true));
-    const call = fetch.mock.calls.find(([url]) => String(url).includes('create_days.php'));
-    expect(JSON.parse(call[1].body).days).toEqual([{ name: 'Day 1', exercises: [] }]);
+    await creaScheda(); // riaperto dopo la creazione: mostra di nuovo un solo giorno (lo controlla creaScheda)
   });
 });
 

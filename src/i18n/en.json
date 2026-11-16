@@ -761,7 +761,7 @@
   "focus.save_error": "Error while saving",
   "focus.already_saved": "Workout already saved",
   "focus.level_reached": "Level {{level}} reached! 🎉",
-  "focus.achievements": "Achievement: {{labels}}",
+  "focus.achievements": "Achievements: {{labels}}",
   "focus.draft_title": "Workout in progress",
   "focus.draft_text": "You have an unsaved workout for:",
   "focus.draft_started": "Started on {{date}}",
