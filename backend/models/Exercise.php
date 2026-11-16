@@ -34,27 +34,6 @@ class Exercise
         $this->conn = $db;
     }
 
-    // Read exercises by muscle group
-    public function readByMuscleGroup()
-    {
-        // Query to read records by muscle group
-        $query = "SELECT id, name, muscle_group, created_at, updated_at
-                FROM " . $this->table_name . "
-                WHERE muscle_group = ?
-                ORDER BY name ASC";
-
-        // Prepare query statement
-        $stmt = $this->conn->prepare($query);
-
-        // Bind muscle group
-        $stmt->bindParam(1, $this->muscle_group);
-
-        // Execute query
-        $stmt->execute();
-
-        return $stmt;
-    }
-
     // Read one exercise
     public function readOne()
     {

@@ -14,9 +14,6 @@ export const FORMAT_STORIA = { id: 'storia', label: 'Storia', width: 1080, heigh
 export const FORMAT_QUADRATO = { id: 'quadrato', label: 'Quadrato', width: 1080, height: 1080 };
 export const FORMATS = [FORMAT_STORIA, FORMAT_QUADRATO];
 
-export const CARD_WIDTH = FORMAT_STORIA.width;
-export const CARD_HEIGHT = FORMAT_STORIA.height;
-
 const MARGIN = 90;
 
 // Tutti i testi della card. Chi disegna la card in un'altra lingua passa un oggetto con le

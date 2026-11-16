@@ -82,31 +82,6 @@ class WorkoutExercise
         }
     }
 
-    // Read all exercises for a workout day, each with its planned_sets
-    public function readByDay()
-    {
-        // Query to read all records with exercise details
-        $query = "SELECT we.id, we.day_id, we.exercise_id, we.rest, we.notes,
-                    we.created_at, we.updated_at, " . exercise_name_sql() . " as exercise_name, e.muscle_group
-                FROM " . $this->table_name . " we
-                LEFT JOIN gym_exercises e ON we.exercise_id = e.id
-                WHERE we.day_id = ?
-                ORDER BY we.position ASC, we.id ASC";
-
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(1, $this->day_id);
-        $stmt->execute();
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        $sets_by_exercise = self::plannedSetsByExercises($this->conn, array_column($rows, 'id'));
-        foreach ($rows as &$row) {
-            $row['planned_sets'] = $sets_by_exercise[$row['id']] ?? array();
-        }
-        unset($row);
-
-        return $rows;
-    }
-
     // Read one workout exercise
     public function readOne()
     {

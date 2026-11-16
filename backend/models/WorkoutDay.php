@@ -57,26 +57,6 @@ class WorkoutDay {
         return (int)$stmt->fetchColumn();
     }
 
-    // Read all workout days for a plan
-    public function readAllByPlan() {
-        // Query to read all records
-        $query = "SELECT id, name, day_order, created_at, updated_at
-                FROM " . $this->table_name . "
-                WHERE plan_id = ?
-                ORDER BY day_order ASC";
-
-        // Prepare query statement
-        $stmt = $this->conn->prepare($query);
-
-        // Bind plan ID
-        $stmt->bindParam(1, $this->plan_id);
-
-        // Execute query
-        $stmt->execute();
-
-        return $stmt;
-    }
-
     // Read one workout day
     public function readOne() {
         // Query to read single record
