@@ -131,6 +131,8 @@
   "register.error.username_taken": "This username is already taken",
   "register.error.email_taken": "This email is already registered: <login>log in</login> or <forgot>reset your password</forgot>.",
   "register.error.password_mismatch": "Passwords do not match",
+  "register.confirm_hint": "Type the same password again",
+  "register.confirm_match": "Passwords match",
   "register.error.birth_date_required": "Enter your date of birth",
   "birth_date.error_invalid": "Enter a valid date of birth",
   "register.error.min_age": "You must be at least 14 years old to use LiftIndex",

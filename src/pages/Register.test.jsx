@@ -332,3 +332,101 @@ describe('calendario della data di nascita: apertura su un anno sensato', () => 
     expect(within(dialog).getByRole('gridcell', { name: '10', selected: true })).toBeTruthy();
   });
 });
+
+describe('conferma password: riga riservata', () => {
+  const confirmField = () => screen.getByLabelText(/^Conferma password/);
+  const typeConfirm = (value) => fireEvent.change(confirmField(), { target: { value } });
+  const typePassword = (value) => fireEvent.change(screen.getByLabelText(/^Password/), { target: { value } });
+  const live = () => document.querySelector('[role="status"]').textContent;
+  const row = () => describedBy(confirmField());
+
+  const setUp = () => {
+    renderRegister();
+    typePassword('Segreta!2026');
+  };
+
+  it('a campo vuoto c\'è il suggerimento grigio, collegato al campo', () => {
+    setUp();
+    expect(row()).toBe('Riscrivi la stessa password');
+    expect(confirmField().getAttribute('aria-invalid')).toBe('false');
+    expect(live()).toBe('');
+  });
+
+  it('mentre si scrive diverso resta il suggerimento: niente rosso, niente annuncio', () => {
+    setUp();
+    typeConfirm('Segreta!20');
+    typeConfirm('Segreta!2027');
+    expect(row()).toBe('Riscrivi la stessa password');
+    expect(confirmField().getAttribute('aria-invalid')).toBe('false');
+    expect(live()).toBe('');
+  });
+
+  it('appena uguali compare la spunta con le parole, e si annuncia', () => {
+    setUp();
+    typeConfirm('Segreta!2026');
+    expect(row()).toBe('Le password coincidono');
+    expect(live()).toBe('Le password coincidono');
+    expect(confirmField().getAttribute('aria-invalid')).toBe('false');
+  });
+
+  it('uscendo dal campo con password diverse compare il rosso, e si annuncia', () => {
+    setUp();
+    typeConfirm('Segreta!20');
+    fireEvent.blur(confirmField());
+    expect(row()).toBe('Le password non corrispondono');
+    expect(confirmField().getAttribute('aria-invalid')).toBe('true');
+    expect(live()).toBe('Le password non corrispondono');
+  });
+
+  it('dopo il rosso il primo tasto riporta al suggerimento e svuota l\'annuncio', () => {
+    setUp();
+    typeConfirm('Segreta!20');
+    fireEvent.blur(confirmField());
+    typeConfirm('Segreta!202');
+    expect(row()).toBe('Riscrivi la stessa password');
+    expect(confirmField().getAttribute('aria-invalid')).toBe('false');
+    expect(live()).toBe('');
+  });
+
+  it('il pulsante occhio non è un\'uscita dal campo: né clic né Tab', () => {
+    setUp();
+    typeConfirm('Segreta!20');
+    const eye = screen.getByRole('button', { name: 'Mostra o nascondi la conferma della password' });
+    fireEvent.blur(confirmField(), { relatedTarget: eye });
+    expect(row()).toBe('Riscrivi la stessa password');
+    fireEvent.mouseDown(eye);
+    fireEvent.click(eye);
+    expect(row()).toBe('Riscrivi la stessa password');
+    fireEvent.blur(eye, { relatedTarget: document.body });
+    expect(row()).toBe('Le password non corrispondono');
+  });
+
+  it('«Avanti» con la conferma diversa mostra il rosso e non cambia il pulsante', () => {
+    setUp();
+    typeConfirm('Segreta!20');
+    fireEvent.click(screen.getByRole('button', { name: 'Avanti' }));
+    expect(row()).toBe('Le password non corrispondono');
+    expect(confirmField().getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('cambiando la password: uguali, spunta subito; diverse, suggerimento e poi rosso all\'uscita dal campo', () => {
+    setUp();
+    typeConfirm('Segreta!2027');
+    typePassword('Segreta!2027');
+    expect(row()).toBe('Le password coincidono');
+    typePassword('Segreta!20');
+    expect(row()).toBe('Riscrivi la stessa password');
+    fireEvent.blur(screen.getByLabelText(/^Password/));
+    expect(row()).toBe('Le password non corrispondono');
+  });
+
+  it('il suggerimento e l\'esito in inglese', async () => {
+    await i18n.changeLanguage('en');
+    renderRegister();
+    fireEvent.change(screen.getByLabelText(/^Password/), { target: { value: 'Segreta!2026' } });
+    const field = screen.getByLabelText(/^Confirm password/);
+    expect(describedBy(field)).toBe('Type the same password again');
+    fireEvent.change(field, { target: { value: 'Segreta!2026' } });
+    expect(describedBy(field)).toBe('Passwords match');
+  });
+});
