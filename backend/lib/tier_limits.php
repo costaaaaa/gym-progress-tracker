@@ -1,9 +1,10 @@
 <?php
 // Limiti del livello (Gratis, Plus, Pro), regola di sola lettura delle schede e riduzione delle
 // risposte del dashboard per il Gratis. Zero dipendenze DB: sono le regole pure usate da
-// api_helpers.php (tier_limits_for_user, require_plan_writable), dagli endpoint workout/, exercise/create.php,
-// user/read.php e workout_stats/dashboard.php. Il livello in vigore arriva da user_tier()
-// (lib/tier_rules.php).
+// api_helpers.php (user_limits, enforce_tier_limit, require_plan_writable), dagli endpoint workout/,
+// exercise/create.php, user/read.php e workout_stats/dashboard.php. Il livello in vigore arriva da
+// user_tier() (lib/tier_rules.php); le funzioni abilitate da user_features() (api_helpers.php), l'unico
+// punto che lega il livello alle funzioni.
 
 // Tetti per livello: Plus e Pro hanno quelli massimi del servizio. Un livello non noto vale Gratis.
 function tierLimits(string $tier): array
@@ -28,17 +29,18 @@ function planReadOnlyReason(int $planCount, int $planDays, array $limits): ?stri
     return null;
 }
 
-// 'full' per Plus e Pro, 'basic' per il Gratis: quanto dettaglio mostra il dashboard.
-function dashboardDetail(string $tier): string
+// 'full' se l'utente ha sia muscle_status_full sia weekly_sets_by_muscle (user_features), altrimenti 'basic':
+// il campo detail del dashboard.
+function dashboardDetail(bool $statusFull, bool $setsFull): string
 {
-    return ($tier === 'plus' || $tier === 'pro') ? 'full' : 'basic';
+    return ($statusFull && $setsFull) ? 'full' : 'basic';
 }
 
-// Stato muscolare (output di recoveryStatus) per il dettaglio dato. 'basic': solo PRONTO / IN RECUPERO
+// Stato muscolare (output di recoveryStatus). Con $full tutto com'è. Senza: solo PRONTO / IN RECUPERO
 // (AFFATICATO diventa IN RECUPERO), senza percent e senza ready_at; last_trained resta (null = mai allenato).
-function recoveryForDetail(array $recovery, string $detail): array
+function recoveryForDetail(array $recovery, bool $full): array
 {
-    if ($detail === 'full') {
+    if ($full) {
         return $recovery;
     }
     $basic = [];
@@ -51,12 +53,12 @@ function recoveryForDetail(array $recovery, string $detail): array
     return $basic;
 }
 
-// weekly_sets (output di weeklySetsBuckets) per il dettaglio dato. 'basic': solo { total } (serie della
-// settimana). 'full': la forma completa più total.
-function weeklySetsForDetail(array $weeklySets, string $detail): array
+// weekly_sets (output di weeklySetsBuckets). Con $full la forma completa più total; senza: solo { total }
+// (serie della settimana, riscaldamento escluso a monte).
+function weeklySetsForDetail(array $weeklySets, bool $full): array
 {
     $total = array_sum($weeklySets['week']);
-    if ($detail === 'basic') {
+    if (!$full) {
         return ['total' => $total];
     }
     return $weeklySets + ['total' => $total];

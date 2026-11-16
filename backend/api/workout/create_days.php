@@ -23,10 +23,7 @@ if (!empty($data->plan_id) && !empty($data->days) && is_array($data->days)) {
     $workout_day = new WorkoutDay($db);
 
     // Tutta la richiesta o niente: giorni già presenti + nuovi non superano il tetto del livello
-    $max_days = user_limits($db, $user_id)['days_per_plan'];
-    if ($workout_day->countByPlan($data->plan_id) + count($data->days) > $max_days) {
-        api_error(409, 'too_many_days', limit_message($db, $user_id, 'workout.too_many_days', $max_days), array('limit' => $max_days));
-    }
+    enforce_tier_limit($db, $user_id, 'days_per_plan', $workout_day->countByPlan($data->plan_id), 'too_many_days', 'workout.too_many_days', count($data->days));
 
     $created_days = array();
 

@@ -36,9 +36,10 @@ check('plus: 51 schede: sola lettura', planReadOnlyReason(51, 1, tierLimits('plu
 check('plus: 15 giorni: sola lettura', planReadOnlyReason(1, 15, tierLimits('plus')) === 'days_over_limit');
 
 echo "Dettaglio del dashboard\n";
-check('free: basic', dashboardDetail('free') === 'basic');
-check('plus: full', dashboardDetail('plus') === 'full');
-check('pro: full', dashboardDetail('pro') === 'full');
+check('entrambe le funzioni: full', dashboardDetail(true, true) === 'full');
+check('nessuna funzione: basic', dashboardDetail(false, false) === 'basic');
+check('solo lo stato completo: basic', dashboardDetail(true, false) === 'basic');
+check('solo le serie complete: basic', dashboardDetail(false, true) === 'basic');
 
 $recovery = [
     'petto' => ['percent' => 100, 'status' => 'PRONTO', 'last_trained' => null],
@@ -46,8 +47,8 @@ $recovery = [
     'spalle' => ['percent' => 70, 'status' => 'IN RECUPERO', 'last_trained' => '2026-11-15 11:00:00', 'ready_at' => '2026-11-16T22:00:00+01:00'],
     'bicipiti' => ['percent' => 100, 'status' => 'PRONTO', 'last_trained' => '2026-11-10 09:00:00', 'ready_at' => '2026-11-11T09:00:00+01:00'],
 ];
-check('full: lo stato resta identico', recoveryForDetail($recovery, 'full') === $recovery);
-$basic = recoveryForDetail($recovery, 'basic');
+check('full: lo stato resta identico', recoveryForDetail($recovery, true) === $recovery);
+$basic = recoveryForDetail($recovery, false);
 check('basic: stesse chiavi (muscoli)', array_keys($basic) === array_keys($recovery));
 check('basic: PRONTO resta PRONTO', $basic['petto']['status'] === 'PRONTO' && $basic['bicipiti']['status'] === 'PRONTO');
 check('basic: AFFATICATO diventa IN RECUPERO', $basic['schiena']['status'] === 'IN RECUPERO');
@@ -57,11 +58,11 @@ check('basic: last_trained invariato (anche null)', $basic['schiena']['last_trai
 check('basic: solo le chiavi status e last_trained', array_keys($basic['schiena']) === ['status', 'last_trained']);
 
 $weekly = ['week' => ['petto' => 3, 'schiena' => 4], 'previous_to_date' => ['petto' => 1, 'schiena' => 1], 'previous_total' => 9];
-check('basic: weekly_sets è solo il totale', weeklySetsForDetail($weekly, 'basic') === ['total' => 7]);
-$full = weeklySetsForDetail($weekly, 'full');
+check('basic: weekly_sets è solo il totale', weeklySetsForDetail($weekly, false) === ['total' => 7]);
+$full = weeklySetsForDetail($weekly, true);
 check('full: forma di oggi più total', $full === $weekly + ['total' => 7]);
 check('full: nessuna chiave persa', $full['week'] === $weekly['week'] && $full['previous_total'] === 9);
-check('totale a zero', weeklySetsForDetail(['week' => ['petto' => 0], 'previous_to_date' => [], 'previous_total' => 0], 'basic') === ['total' => 0]);
+check('totale a zero', weeklySetsForDetail(['week' => ['petto' => 0], 'previous_to_date' => [], 'previous_total' => 0], false) === ['total' => 0]);
 
 echo "\nCONTROLLI $checks FALLITI $fails\n";
 exit($fails > 0 ? 1 : 0);

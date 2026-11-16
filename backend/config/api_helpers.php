@@ -643,12 +643,24 @@ function user_limits($db, $user_id)
     return tierLimits(user_tier($db, $user_id));
 }
 
-// Messaggio di un rifiuto per tetto: per il Gratis la variante "<chiave>_free", che dice anche che con
-// Plus o Pro il limite è più alto; per gli altri livelli la chiave base.
-function limit_message($db, $user_id, $key, $max)
+// Rifiuto per tetto: 409 con $code e il campo limit se $count + $adding supera il limite $limit_key del
+// livello in vigore (lib/tier_limits.php). $message_key è la chiave del testo ({max} = il limite); per il
+// Gratis si usa la variante "<chiave>_free", che dice anche che con Plus o Pro il limite è più alto.
+// I tetti sono un argine all'abuso, non una regola di prodotto: sotto richieste contemporanee due
+// richieste possono superare il tetto di uno (limite accettato, senza transazioni né lock). Vale anche
+// per il tetto WorkoutExercise::MAX_PER_DAY.
+function enforce_tier_limit($db, $user_id, $limit_key, $count, $code, $message_key, $adding = 1)
 {
-    $suffix = user_tier($db, $user_id) === 'free' ? '_free' : '';
-    return t_server($key . $suffix, array('max' => $max));
+    $tier = user_tier($db, $user_id);
+    $max = tierLimits($tier)[$limit_key];
+    if ($count + $adding > $max) {
+        api_error(409, $code, tier_limit_message($tier, $message_key, $max), array('limit' => $max));
+    }
+}
+
+function tier_limit_message($tier, $key, $max)
+{
+    return t_server($key . ($tier === 'free' ? '_free' : ''), array('max' => $max));
 }
 
 // Rifiuta con 409 plan_read_only se la scheda è in sola lettura: più schede del limite del livello
@@ -657,7 +669,8 @@ function limit_message($db, $user_id, $key, $max)
 // Non va chiamata da update_plan, activate_plan, delete_plan, delete_day né da record_workout.
 function require_plan_writable($db, $user_id, $plan_id)
 {
-    $limits = user_limits($db, $user_id);
+    $tier = user_tier($db, $user_id);
+    $limits = tierLimits($tier);
     $stmt = $db->prepare("SELECT COUNT(*) FROM gym_workout_plans WHERE user_id = ?");
     $stmt->execute([(int)$user_id]);
     $plan_count = (int)$stmt->fetchColumn();
@@ -669,9 +682,14 @@ function require_plan_writable($db, $user_id, $plan_id)
     if ($reason === null) {
         return;
     }
-    $limit = $reason === 'plans_over_limit' ? $limits['plans'] : $limits['days_per_plan'];
-    api_error(409, 'plan_read_only', limit_message($db, $user_id, $reason === 'plans_over_limit' ? 'workout.plan_read_only_plans' : 'workout.plan_read_only_days', $limit),
-        ['reason' => $reason, 'limit' => $limit]);
+    // motivo → (chiave del limite, chiave del messaggio)
+    $by_reason = array(
+        'plans_over_limit' => array('plans', 'workout.plan_read_only_plans'),
+        'days_over_limit' => array('days_per_plan', 'workout.plan_read_only_days'),
+    );
+    list($limit_key, $message_key) = $by_reason[$reason];
+    $limit = $limits[$limit_key];
+    api_error(409, 'plan_read_only', tier_limit_message($tier, $message_key, $limit), array('reason' => $reason, 'limit' => $limit));
 }
 
 // Come require_plan_writable, partendo da un giorno (dopo il controllo di proprietà del giorno o dell'esercizio)

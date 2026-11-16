@@ -15,10 +15,7 @@ $workout_plan = new WorkoutPlan($db);
 $data = json_decode(file_get_contents("php://input"));
 
 if (!empty($data->name)) {
-    $max_plans = user_limits($db, $user_id)['plans'];
-    if ($workout_plan->countByUser($user_id) >= $max_plans) {
-        api_error(409, 'too_many_plans', limit_message($db, $user_id, 'workout.too_many_plans', $max_plans), array('limit' => $max_plans));
-    }
+    enforce_tier_limit($db, $user_id, 'plans', $workout_plan->countByUser($user_id), 'too_many_plans', 'workout.too_many_plans');
 
     $workout_plan->user_id = $user_id;
     $workout_plan->name = $data->name;

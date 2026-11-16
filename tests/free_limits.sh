@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# free_limits.sh — controlla i limiti del livello Gratis (2 schede, 4 giorni per scheda, 10 esercizi
-# personali) e quelli di Plus e Pro, la sola lettura delle schede dopo una discesa di livello,
+# free_limits.sh — controlla i limiti del piano Gratis (2 schede, 4 giorni per scheda, 10 esercizi
+# personali) e quelli di Plus e Pro, la sola lettura delle schede passando a un piano inferiore,
 # workout/delete_day.php, tier/limits/features di user/read.php e la forma ridotta del dashboard.
 #
 #   tests/free_limits.sh

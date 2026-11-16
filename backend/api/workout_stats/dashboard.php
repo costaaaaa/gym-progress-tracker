@@ -132,8 +132,12 @@ try {
     ]);
     $weekly_sets = weeklySetsBuckets($stmt_weekly_sets->fetchAll(PDO::FETCH_ASSOC), $monday, $now);
 
-    // Il Gratis vede stato muscolare ridotto e solo il totale delle serie (lib/tier_limits.php)
-    $detail = dashboardDetail(user_tier($db, $user_id));
+    // Stato muscolare e serie per muscolo completi solo con le funzioni che li abilitano (user_features);
+    // senza, stato ridotto e solo il totale delle serie (lib/tier_limits.php)
+    $features = user_features($db, $user_id);
+    $status_full = in_array('muscle_status_full', $features, true);
+    $sets_full = in_array('weekly_sets_by_muscle', $features, true);
+    $detail = dashboardDetail($status_full, $sets_full);
 
     if (ob_get_length()) ob_clean();
     header('Content-Type: application/json');
@@ -147,8 +151,8 @@ try {
             'total_weight' => round($total_weight, 2),
             'total_reps' => $total_reps
         ],
-        'recovery' => recoveryForDetail($recovery_status, $detail),
-        'weekly_sets' => weeklySetsForDetail($weekly_sets, $detail),
+        'recovery' => recoveryForDetail($recovery_status, $status_full),
+        'weekly_sets' => weeklySetsForDetail($weekly_sets, $sets_full),
         'user_level' => $level
     ]);
 

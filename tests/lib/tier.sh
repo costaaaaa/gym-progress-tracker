@@ -10,7 +10,7 @@
 # Esce con 2 e un errore chiaro se DB_SQL_CMD manca: da chiamare prima di creare account
 need_db_sql_cmd() {
     if [[ -z "${DB_SQL_CMD:-}" ]]; then
-        echo "Questo test porta gli account di prova a Plus (limiti del livello Gratis): imposta DB_SQL_CMD" >&2
+        echo "Questo test porta gli account di prova a Plus (limiti del piano Gratis): imposta DB_SQL_CMD" >&2
         echo "  (comando che legge SQL da stdin sul database dell'istanza, vedi tests/lib/tier.sh)." >&2
         exit 2
     fi
