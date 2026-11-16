@@ -101,29 +101,6 @@ class WorkoutSet
         return $stmt;
     }
 
-    // Read all sets for a specific workout
-    public function readByWorkoutId()
-    {
-        // Query to read sets with exercise info
-        $query = "SELECT ws.id, ws.workout_history_id, ws.exercise_id, ws.set_number, ws.weight, ws.reps, ws.intensity_technique, ws.is_warmup,
-                       " . exercise_name_sql() . " as exercise_name, e.muscle_group
-                FROM " . $this->table_name . " ws
-                LEFT JOIN gym_exercises e ON ws.exercise_id = e.id
-                WHERE ws.workout_history_id = ?
-                ORDER BY ws.id ASC";
-
-        // Prepare query statement
-        $stmt = $this->conn->prepare($query);
-
-        // Bind workout ID
-        $stmt->bindParam(1, $this->workout_history_id);
-
-        // Execute query
-        $stmt->execute();
-
-        return $stmt;
-    }
-
     // Update a workout set
     public function update()
     {
