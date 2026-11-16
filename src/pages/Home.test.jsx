@@ -192,8 +192,8 @@ describe('primo accesso', () => {
   });
 
   it.each([
-    ['lo storico fallisce e le schede non ci sono', 'workout_history/read.php', 'workout/read_plans.php', { success: true, records: [] }, 'Bentornato, mario88'],
-    ['lo storico è vuoto e le schede falliscono', 'workout/read_plans.php', 'workout_history/read.php', { success: true, records: [] }, 'Benvenuto, mario88'],
+    ['la cronologia fallisce e le schede non ci sono', 'workout_history/read.php', 'workout/read_plans.php', { success: true, records: [] }, 'Bentornato, mario88'],
+    ['la cronologia è vuota e le schede falliscono', 'workout/read_plans.php', 'workout_history/read.php', { success: true, records: [] }, 'Benvenuto, mario88'],
   ])('se %s la Home è completa, con il bottone e senza "Inizia da qui"', async (_nome, failing, emptied, emptyBody, greeting) => {
     responses[emptied] = emptyBody;
     vi.stubGlobal('fetch', vi.fn((url) => (
