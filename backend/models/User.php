@@ -1,4 +1,7 @@
 <?php
+// deleteAccount() usa WorkoutPlan::deleteDaysAndExercises()
+require_once __DIR__ . '/WorkoutPlan.php';
+
 class User
 {
     // Database connection and table name
@@ -448,8 +451,10 @@ class User
 
         try {
             // Iniziamo una transazione per garantire l'integrità dei dati.
-            // I dati correlati sono rimossi dai vincoli ON DELETE CASCADE.
+            // I dati correlati sono rimossi dai vincoli ON DELETE CASCADE, tranne giorni ed esercizi delle schede.
             $this->conn->beginTransaction();
+
+            (new WorkoutPlan($this->conn))->deleteDaysAndExercises($this->id);
 
             // Gli esercizi personali non approvati sono dati suoi e li vede solo lui: si cancellano.
             // Quelli approvati restano nel catalogo di tutti (created_by diventa NULL).

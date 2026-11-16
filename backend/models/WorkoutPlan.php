@@ -231,29 +231,68 @@ class WorkoutPlan
         return false;
     }
 
+    // Cancella giorni ed esercizi delle schede di un utente (tutte, o solo $plan_id), senza aprire
+    // transazioni: le apre il chiamante. Serve perché con MySQL 9.7 la cascata a quattro livelli
+    // (schede > giorni > esercizi > serie pianificate) si ferma a metà e lascia righe orfane; le
+    // serie pianificate seguono gli esercizi con la cascata a un livello.
+    public function deleteDaysAndExercises($user_id, $plan_id = null)
+    {
+        if (!$this->conn->inTransaction()) {
+            throw new LogicException("deleteDaysAndExercises() va chiamato dentro una transazione aperta dal chiamante");
+        }
+
+        $where = "WHERE p.user_id = ?" . ($plan_id === null ? "" : " AND p.id = ?");
+        $params = $plan_id === null ? [$user_id] : [$user_id, $plan_id];
+
+        $stmt = $this->conn->prepare("DELETE e FROM gym_workout_exercises e
+            JOIN gym_workout_days d ON d.id = e.day_id
+            JOIN " . $this->table_name . " p ON p.id = d.plan_id
+            $where");
+        $stmt->execute($params);
+
+        $stmt = $this->conn->prepare("DELETE d FROM gym_workout_days d
+            JOIN " . $this->table_name . " p ON p.id = d.plan_id
+            $where");
+        $stmt->execute($params);
+    }
+
     // Delete workout plan
     public function delete()
     {
         // Query to delete record
         $query = "DELETE FROM " . $this->table_name . " WHERE id = ? AND user_id = ?";
 
-        // Prepare query
-        $stmt = $this->conn->prepare($query);
-
         // Sanitize inputs
         $this->id = htmlspecialchars(strip_tags($this->id));
         $this->user_id = htmlspecialchars(strip_tags($this->user_id));
 
-        // Bind values
-        $stmt->bindParam(1, $this->id);
-        $stmt->bindParam(2, $this->user_id);
+        // Giorni ed esercizi si cancellano a mano (vedi deleteDaysAndExercises), nella stessa transazione della scheda
+        $this->conn->beginTransaction();
+        try {
+            $this->deleteDaysAndExercises($this->user_id, $this->id);
 
-        // Execute query
-        if ($stmt->execute()) {
-            return true;
+            // Prepare query
+            $stmt = $this->conn->prepare($query);
+
+            // Bind values
+            $stmt->bindParam(1, $this->id);
+            $stmt->bindParam(2, $this->user_id);
+
+            // Execute query
+            if ($stmt->execute()) {
+                $this->conn->commit();
+                return true;
+            }
+
+            $this->conn->rollBack();
+            return false;
+        } catch (Exception $e) {
+            // Su errore si annulla tutto e si rilancia l'eccezione: com'era prima della transazione
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+            throw $e;
         }
-
-        return false;
     }
 
     // Get active workout plan

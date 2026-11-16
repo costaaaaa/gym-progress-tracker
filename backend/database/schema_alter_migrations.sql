@@ -884,3 +884,37 @@ DROP TEMPORARY TABLE IF EXISTS `tmp_set_numbers`;
 ALTER TABLE `gym_users`
   ADD COLUMN `tier` ENUM('free','plus','pro') NOT NULL DEFAULT 'free' AFTER `is_admin`,
   ADD COLUMN `tier_until` DATETIME NULL DEFAULT NULL AFTER `tier`;
+
+-- ------------------------------------------------------------------------------
+-- 36. Pulizia delle righe orfane lasciate dalla cascata di cancellazione. Con MySQL 9.7 un
+--     ON DELETE CASCADE che attraversa quattro tabelle (utenti > schede > giorni > esercizi >
+--     serie pianificate) si ferma a metà: cancellando un utente con più schede o una scheda con
+--     più giorni restavano giorni, esercizi e serie pianificate senza genitore. Il codice ora
+--     cancella in modo esplicito; qui si tolgono quelli già rimasti, dal basso verso l'alto e
+--     togliendo le serie prima degli esercizi (e gli esercizi prima dei giorni) perché la
+--     cascata non va data per buona. Solo DELETE di righe senza genitore: idempotente, e il
+--     rollback del codice resta possibile.
+-- ------------------------------------------------------------------------------
+
+-- Serie pianificate degli esercizi che stanno per essere tolti (senza giorno, o con un giorno senza scheda)
+DELETE s FROM `gym_workout_plan_sets` s
+JOIN `gym_workout_exercises` e ON e.`id` = s.`workout_exercise_id`
+LEFT JOIN `gym_workout_days` d ON d.`id` = e.`day_id`
+LEFT JOIN `gym_workout_plans` p ON p.`id` = d.`plan_id`
+WHERE p.`id` IS NULL;
+
+-- Esercizi di scheda senza giorno, o con un giorno senza scheda
+DELETE e FROM `gym_workout_exercises` e
+LEFT JOIN `gym_workout_days` d ON d.`id` = e.`day_id`
+LEFT JOIN `gym_workout_plans` p ON p.`id` = d.`plan_id`
+WHERE p.`id` IS NULL;
+
+-- Giorni senza scheda (i loro esercizi sono già stati tolti)
+DELETE d FROM `gym_workout_days` d
+LEFT JOIN `gym_workout_plans` p ON p.`id` = d.`plan_id`
+WHERE p.`id` IS NULL;
+
+-- Serie pianificate senza esercizio
+DELETE s FROM `gym_workout_plan_sets` s
+LEFT JOIN `gym_workout_exercises` e ON e.`id` = s.`workout_exercise_id`
+WHERE e.`id` IS NULL;
