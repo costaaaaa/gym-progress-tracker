@@ -1,4 +1,5 @@
 <?php
+// deleteAccount() usa WorkoutPlan::deleteDaysAndExercises()
 require_once __DIR__ . '/WorkoutPlan.php';
 
 class User

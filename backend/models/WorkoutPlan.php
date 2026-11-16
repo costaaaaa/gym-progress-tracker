@@ -237,6 +237,10 @@ class WorkoutPlan
     // serie pianificate seguono gli esercizi con la cascata a un livello.
     public function deleteDaysAndExercises($user_id, $plan_id = null)
     {
+        if (!$this->conn->inTransaction()) {
+            throw new LogicException("deleteDaysAndExercises() va chiamato dentro una transazione aperta dal chiamante");
+        }
+
         $where = "WHERE p.user_id = ?" . ($plan_id === null ? "" : " AND p.id = ?");
         $params = $plan_id === null ? [$user_id] : [$user_id, $plan_id];
 
