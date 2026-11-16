@@ -58,7 +58,7 @@ try {
         }
         if (!isset($record->exercise_id) || empty($record->exercise_id)) continue;
         // L'identificatore convertito sostituisce quello grezzo: visibilità, controllo premium, serie
-        // salvate, gamification e JSON di `exercises` usano tutti lo stesso valore.
+        // salvate, gamification usano tutti lo stesso valore.
         $record->exercise_id = parse_positive_id($record->exercise_id);
         if ($record->exercise_id === null) {
             api_json_response(['success' => false, 'message' => t_server('workout.record_invalid')], 400);
@@ -210,7 +210,6 @@ try {
         $workout_history->time_zone = $time_zone;
         $workout_history->duration_seconds = $duration_seconds;
         $workout_history->notes = isset($data->notes) ? $data->notes : '';
-        $workout_history->exercises = json_encode($data->workout_records);
         $workout_history->idempotency_key = $idempotency_key;
 
         if (!$workout_history->create()) {

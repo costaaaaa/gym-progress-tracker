@@ -123,7 +123,7 @@ CREATE TABLE IF NOT EXISTS `gym_workout_plan_sets` (
   CONSTRAINT `gym_workout_plan_sets_working_target` CHECK (`kind` = 'warmup' OR (`to_failure` = 1 AND `reps_max` IS NULL) OR (`to_failure` = 0 AND `reps_min` IS NOT NULL AND `reps_max` IS NOT NULL))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Progress tracking table
+-- Progress tracking table: non più usata da nessun codice, da eliminare in un rilascio successivo
 CREATE TABLE IF NOT EXISTS `gym_progress` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -165,7 +165,7 @@ CREATE TABLE IF NOT EXISTS `gym_user_stats` (
 CREATE TABLE IF NOT EXISTS `gym_workout_history` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
-  `exercises` text NOT NULL, -- Keep for compatibility with legacy code
+  `exercises` text DEFAULT NULL, -- copia JSON dell'allenamento: non più scritta né letta (migrazione 37), da eliminare in un rilascio successivo
   `date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `duration_seconds` int unsigned DEFAULT NULL,
   `notes` text DEFAULT NULL,

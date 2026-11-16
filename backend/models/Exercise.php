@@ -267,15 +267,14 @@ class Exercise
 
     // ── Admin ───────────────────────────────────────────────────────────────
 
-    // Esercizi con un certo stato, con il creatore e quante volte sono usati (schede, set, progressi)
+    // Esercizi con un certo stato, con il creatore e quante volte sono usati (schede e set)
     public function adminList($status)
     {
         $stmt = $this->conn->prepare("SELECT e.id, e.name, e.name_en, e.muscle_group, e.primary_muscle, e.equipment, e.status, e.created_at, e.reviewed_at,
                        e.merged_into, m.name AS merged_into_name,
                        u.username AS created_by_username,
                        (SELECT COUNT(*) FROM gym_workout_exercises we WHERE we.exercise_id = e.id)
-                     + (SELECT COUNT(*) FROM gym_workout_sets ws WHERE ws.exercise_id = e.id)
-                     + (SELECT COUNT(*) FROM gym_progress p WHERE p.exercise_id = e.id) AS uses
+                     + (SELECT COUNT(*) FROM gym_workout_sets ws WHERE ws.exercise_id = e.id) AS uses
                 FROM " . $this->table_name . " e
                 LEFT JOIN gym_users u ON u.id = e.created_by
                 LEFT JOIN " . $this->table_name . " m ON m.id = e.merged_into
@@ -325,14 +324,13 @@ class Exercise
         $stmt->execute([$name, $name_en, $muscle_group, $primary_muscle, $equipment, (int)$id]);
     }
 
-    // Quante volte è usato in schede, set e progressi (qualsiasi utente)
+    // Quante volte è usato in schede e set (qualsiasi utente)
     public function usageCount($id)
     {
         $stmt = $this->conn->prepare("SELECT
                 (SELECT COUNT(*) FROM gym_workout_exercises WHERE exercise_id = ?)
-              + (SELECT COUNT(*) FROM gym_workout_sets WHERE exercise_id = ?)
-              + (SELECT COUNT(*) FROM gym_progress WHERE exercise_id = ?)");
-        $stmt->execute([(int)$id, (int)$id, (int)$id]);
+              + (SELECT COUNT(*) FROM gym_workout_sets WHERE exercise_id = ?)");
+        $stmt->execute([(int)$id, (int)$id]);
         return (int)$stmt->fetchColumn();
     }
 

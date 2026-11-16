@@ -150,7 +150,7 @@ function seedUser($conn, $name, $exerciseIds)
         }
     }
     for ($h = 0; $h < 3; $h++) {
-        $conn->prepare("INSERT INTO gym_workout_history (user_id, exercises) VALUES (?, '[]')")->execute([$u]);
+        $conn->prepare("INSERT INTO gym_workout_history (user_id) VALUES (?)")->execute([$u]);
         $hist = (int)$conn->lastInsertId();
         foreach ([1, 2] as $n) {
             $conn->prepare("INSERT INTO gym_workout_sets (workout_history_id, exercise_id, set_number, weight, reps) VALUES (?, ?, ?, 50, '10')")
