@@ -8,7 +8,6 @@ class WorkoutHistory
     // Object properties
     public $id;
     public $user_id;
-    public $exercises;
     public $date;
     public $time_zone = null;
     public $duration_seconds = null;
@@ -29,7 +28,6 @@ class WorkoutHistory
             $this->user_id = htmlspecialchars(strip_tags($this->user_id));
             // Niente htmlspecialchars: l'escape lo fa chi mostra il testo (vedi Exercise::create)
             $this->notes = trim((string)$this->notes);
-            // Non sanifichiamo $this->exercises perché è un JSON che deve essere preservato
 
             // La colonna idempotency_key entra nella query solo se c'è la chiave: le app vecchie
             // salvano anche se l'immagine nuova arriva prima della migrazione 20.
@@ -40,7 +38,6 @@ class WorkoutHistory
             $query = "INSERT INTO " . $this->table_name . "
                     SET
                         user_id = :user_id,
-                        exercises = :exercises,
                         date = :date,
                         duration_seconds = :duration_seconds,
                         notes = :notes,
@@ -51,7 +48,6 @@ class WorkoutHistory
 
             // Bind values
             $stmt->bindParam(":user_id", $this->user_id);
-            $stmt->bindParam(":exercises", $this->exercises);
             $stmt->bindParam(":date", $this->date);
             $stmt->bindParam(":time_zone", $this->time_zone);
             $stmt->bindValue(":duration_seconds", $this->duration_seconds, $this->duration_seconds === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
@@ -86,7 +82,7 @@ class WorkoutHistory
     public function readAllByUser()
     {
         // Query to read all records
-        $query = "SELECT id, exercises, date, time_zone, duration_seconds, notes, health_written_at
+        $query = "SELECT id, date, time_zone, duration_seconds, notes, health_written_at
                 FROM " . $this->table_name . "
                 WHERE user_id = ?
                 ORDER BY date DESC";
@@ -107,7 +103,7 @@ class WorkoutHistory
     public function readOne()
     {
         // Query to read single record
-        $query = "SELECT id, user_id, exercises, date, notes
+        $query = "SELECT id, user_id, date, notes
                 FROM " . $this->table_name . "
                 WHERE id = ? AND user_id = ?
                 LIMIT 0,1";
@@ -129,7 +125,6 @@ class WorkoutHistory
             // Set values to object properties
             $this->id = $row['id'];
             $this->user_id = $row['user_id'];
-            $this->exercises = $row['exercises'];
             $this->date = $row['date'];
             $this->notes = $row['notes'];
             return true;
@@ -145,12 +140,10 @@ class WorkoutHistory
         $this->id = htmlspecialchars(strip_tags($this->id));
         $this->user_id = htmlspecialchars(strip_tags($this->user_id));
         $this->notes = trim((string)$this->notes);
-        // Non sanifichiamo $this->exercises perché è un JSON che deve essere preservato
 
         // Query to update record
         $query = "UPDATE " . $this->table_name . "
                 SET
-                    exercises = :exercises,
                     date = :date,
                     notes = :notes
                 WHERE id = :id AND user_id = :user_id";
@@ -159,7 +152,6 @@ class WorkoutHistory
         $stmt = $this->conn->prepare($query);
 
         // Bind values
-        $stmt->bindParam(":exercises", $this->exercises);
         $stmt->bindParam(":date", $this->date);
         $stmt->bindParam(":notes", $this->notes);
         $stmt->bindParam(":id", $this->id);

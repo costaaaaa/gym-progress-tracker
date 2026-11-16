@@ -918,3 +918,17 @@ WHERE p.`id` IS NULL;
 DELETE s FROM `gym_workout_plan_sets` s
 LEFT JOIN `gym_workout_exercises` e ON e.`id` = s.`workout_exercise_id`
 WHERE e.`id` IS NULL;
+
+-- ------------------------------------------------------------------------------
+-- 37. gym_workout_history.exercises diventa facoltativa. La colonna era una copia JSON
+--     dell'allenamento, scritta a ogni salvataggio, ma le serie vere stanno in
+--     gym_workout_sets e il codice non la legge né la scrive più; la colonna e la tabella
+--     gym_progress (anch'essa non più usata) saranno eliminate in un rilascio successivo.
+--     Solo MODIFY, nessun dato toccato: idempotente. Il rollback del codice resta possibile:
+--     il codice vecchio con la colonna facoltativa scrive ancora il JSON; sulle righe nuove,
+--     con `exercises` NULL, l'esportazione dei dati riporta null e il cambio data rilegge NULL
+--     e lo riscrive NULL, senza errori.
+-- ------------------------------------------------------------------------------
+
+ALTER TABLE `gym_workout_history`
+  MODIFY COLUMN `exercises` TEXT NULL DEFAULT NULL;

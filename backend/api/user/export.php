@@ -93,7 +93,7 @@ try {
 
     // Storico allenamenti con le serie
     $history = export_rows($db,
-        "SELECT id, date, time_zone, duration_seconds, notes, exercises FROM gym_workout_history WHERE user_id = ? ORDER BY date, id",
+        "SELECT id, date, time_zone, duration_seconds, notes FROM gym_workout_history WHERE user_id = ? ORDER BY date, id",
         array($user_id));
     $sets = export_rows($db,
         "SELECT s.workout_history_id, e.name AS exercise, s.set_number, s.weight, s.reps, s.intensity_technique, s.is_warmup, s.seconds_from_start
@@ -115,7 +115,6 @@ try {
             'started_at' => workout_started_at($h['date'], $h['time_zone']),
             'duration_seconds' => $h['duration_seconds'] !== null ? (int)$h['duration_seconds'] : null,
             'notes' => $h['notes'],
-            'exercises' => $h['exercises'],
             'sets' => isset($setsByHistory[$h['id']]) ? $setsByHistory[$h['id']] : array(),
         );
     }
@@ -130,9 +129,6 @@ try {
             "SELECT date, weight, body_fat_percentage, muscle_mass_percentage, chest_size, arm_size, waist_size, leg_size,
                     health_fields AS from_health, created_at
              FROM gym_user_stats WHERE user_id = ? ORDER BY date", array($user_id)),
-        'exercise_progress' => export_rows($db,
-            "SELECT e.name AS exercise, p.weight, p.date FROM gym_progress p
-             JOIN gym_exercises e ON e.id = p.exercise_id WHERE p.user_id = ? ORDER BY p.date", array($user_id)),
         'gamification' => array(
             'profile' => export_rows($db,
                 "SELECT current_streak_weeks, longest_streak_weeks, last_completed_week, total_xp, level, lifetime_volume_kg
