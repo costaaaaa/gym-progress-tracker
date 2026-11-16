@@ -1012,5 +1012,17 @@
   "focus.plus_title": "Funzione Plus",
   "focus.plus_body": "Con Plus o Pro puoi cambiare o aggiungere esercizi durante l'allenamento.",
   "focus.plus_ok": "Ho capito",
-  "focus.plus_aria": "{{label}} (Plus)"
+  "focus.plus_aria": "{{label}} (Plus)",
+  "plans.read_only_plans": "Hai più di {{max}} schede: sono in sola lettura finché non ne elimini alcune.",
+  "plans.read_only_days": "Questa scheda ha più di {{max}} giorni: è in sola lettura finché non ne elimini alcuni.",
+  "plans.read_only_raise": "Con Plus o Pro il limite è più alto.",
+  "plans.delete_day.aria": "Elimina giorno {{name}}",
+  "plans.delete_day.title": "Conferma eliminazione giorno",
+  "plans.delete_day.text": "Gli esercizi di questo giorno verranno eliminati. L'azione è irreversibile.",
+  "plans.delete_day.name": "Giorno: {{name}}",
+  "plans.delete_day.in_progress": "Hai un allenamento in corso su questo giorno: salvalo o scartalo prima di eliminare il giorno.",
+  "plans.msg.day_deleted": "Giorno eliminato con successo",
+  "plans.msg.delete_day_error": "Errore nell'eliminazione del giorno",
+  "plans.locked_days": "Più di {{max}} giorni per scheda",
+  "plans.locked_plans": "Hai {{used}} schede su {{max}}"
 }

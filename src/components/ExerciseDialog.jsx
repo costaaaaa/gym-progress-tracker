@@ -15,7 +15,8 @@ import {
   Autocomplete,
   Typography,
   Chip,
-  Alert
+  Alert,
+  Link
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { API_BASE_URL } from '../config';
@@ -26,12 +27,14 @@ import { useTranslation } from 'react-i18next';
 import { muscleLabel, equipmentName } from '../i18n/labels';
 import PlannedSetsEditor from './PlannedSetsEditor';
 import ButtonSpinner from './ButtonSpinner';
+import { plansPath } from '../i18n/paths';
 
 // Helper per rendere maiuscola la prima lettera
 const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
 
-const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
-  const { t } = useTranslation();
+// plansLink: piano Gratis, il rifiuto per il limite degli esercizi personali porta anche al confronto dei piani
+const ExerciseDialog = ({ open, onClose, onAdd, dayIndex, plansLink = false }) => {
+  const { t, i18n } = useTranslation();
   const [exercise, setExercise] = useState({
     name: '',
     rest: '90',
@@ -51,6 +54,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
   const [newPrimaryMuscle, setNewPrimaryMuscle] = useState('');
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
+  const [createErrorCode, setCreateErrorCode] = useState('');
   const [suggestions, setSuggestions] = useState([]);
 
   // Carica tutti gli esercizi quando il dialog viene aperto per estrarre i gruppi muscolari
@@ -165,6 +169,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
     // 409 duplicate: esiste già (anche con maiuscole diverse o in un altro gruppo), lo si seleziona
     if (!created || !(res.ok || res.data?.code === 'duplicate')) {
       setCreateError(errorMessage(res));
+      setCreateErrorCode(res.data?.code || '');
       return;
     }
     setAllExercises(prev => prev.some(ex => ex.id === created.id) ? prev : [...prev, created]);
@@ -360,7 +365,17 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
               </Typography>
             </Box>
           )}
-          {createError && <Alert severity="error">{createError}</Alert>}
+          {createError && (
+            <Alert severity="error">
+              {createError}
+              {plansLink && createErrorCode === 'too_many_exercises' && (
+                <Link href={plansPath(i18n.language)} color="inherit" underline="always"
+                  sx={{ display: 'flex', alignItems: 'center', minHeight: 44, fontWeight: 600 }}>
+                  {t('plans.compare')}
+                </Link>
+              )}
+            </Alert>
+          )}
           
           <PlannedSetsEditor onChange={setPlannedSets} />
 

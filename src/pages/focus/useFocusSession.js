@@ -16,7 +16,7 @@ import { track } from '../../utils/analytics';
 import { currentTimeZone, moveToZoneDay, zoneClock } from '../../utils/workoutTime';
 import i18n from '../../i18n';
 
-const DRAFT_STORAGE_KEY = 'gym_focus_workout_draft';
+export const DRAFT_STORAGE_KEY = 'gym_focus_workout_draft';
 
 // Stato e transizioni di Focus Mode (loading -> select_day o resume_prompt -> workout <-> rest_timer -> summary).
 // Restituisce le props di ogni fase, come useFocusSession del mobile.

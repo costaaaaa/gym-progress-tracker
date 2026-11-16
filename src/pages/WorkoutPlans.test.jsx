@@ -199,10 +199,15 @@ describe('dialogo di eliminazione di una scheda', () => {
   });
 
   it('con una scheda non attiva non ne parla e non chiede l\'obiettivo al server', async () => {
-    const dialog = await apriEliminaScheda([inactive], { weekly_goal: null, weekly_goal_default: 1, weekly_goal_without_plan: 3 });
+    const prima = () => fetch.mock.calls.filter(([url]) => url.includes('user/read.php')).length;
+    stubFetch([inactive], () => json({ weekly_goal: null, weekly_goal_default: 1, weekly_goal_without_plan: 3 }));
+    render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
+    await screen.findByText('Forza A');
+    await waitFor(() => expect(prima()).toBe(1)); // la pagina legge da sola livello e limiti
+    const dialog = await clickDeleteOf('Forza A');
     await within(dialog).findByText(CRONOLOGIA);
     expect(within(dialog).queryByText(obiettivo(3))).toBeNull();
-    expect(fetch.mock.calls.some(([url]) => url.includes('user/read.php'))).toBe(false);
+    expect(prima()).toBe(1); // l'apertura del dialogo non chiede l'obiettivo
   });
 
   it('la risposta tardiva per una scheda attiva non finisce nel dialogo di un\'altra scheda', async () => {
@@ -334,5 +339,214 @@ describe('nomi accessibili', () => {
       expect(screen.getByRole('button', { name: `Sposta su ${name}` })).toBeTruthy();
       expect(screen.getByRole('button', { name: `Sposta giù ${name}` })).toBeTruthy();
     }
+  });
+});
+
+// Piano Gratis: sola lettura, elimina giorno, selettore dei giorni, "Nuova scheda" al limite.
+describe('limiti del piano Gratis', () => {
+  const FREE = { success: true, tier: 'free', limits: { plans: 2, days_per_plan: 4, personal_exercises: 10 }, features: [] };
+  const PRO = { success: true, tier: 'pro', limits: { plans: 50, days_per_plan: 14, personal_exercises: 30 }, features: ['focus_session_edit'] };
+  const ex = (id, name) => ({ id, exercise_name: name, muscle_group: 'petto', planned_sets: plannedSets(0, times(3, { min: 8, max: 10 })), rest: 90, notes: '' });
+  const day = (id, name = `Giorno ${id}`) => ({ id, name, exercises: [ex(id * 10, `Esercizio ${id}`)] });
+  const mk = (id, over = {}) => ({
+    id, name: `Scheda ${id}`, description: '', is_active: id === 1 ? 1 : 0,
+    days: [day(id * 100 + 1), day(id * 100 + 2)], read_only: false, read_only_reason: null, ...over,
+  });
+
+  let handlers;
+  const calls = (part) => fetch.mock.calls.filter(([url]) => String(url).includes(part));
+  const mount = async (records, user = FREE) => {
+    handlers = {};
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      const key = Object.keys(handlers).find((k) => String(url).includes(k));
+      if (key) return Promise.resolve(handlers[key]());
+      if (String(url).includes('user/read.php')) return Promise.resolve(json(user));
+      return Promise.resolve(json({ records }));
+    }));
+    render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
+    await screen.findByText(records[0].name);
+    await waitFor(() => expect(calls('user/read.php')).toHaveLength(1));
+    await act(async () => {});
+  };
+  const openAll = () => {
+    fireEvent.click(screen.getAllByRole('button', { name: 'Mostra giorni' })[0]);
+    for (const b of screen.getAllByRole('button', { name: 'Dettagli' })) fireEvent.click(b);
+  };
+
+  describe('scheda in sola lettura', () => {
+    const readOnly = (reason, days = 2) => mk(1, {
+      read_only: true, read_only_reason: reason, days: Array.from({ length: days }, (_, i) => day(101 + i)),
+    });
+
+    it.each([
+      ['plans_over_limit', 2, /Hai più di 2 schede: sono in sola lettura finché non ne elimini alcune/],
+      ['days_over_limit', 5, /Questa scheda ha più di 4 giorni: è in sola lettura finché non ne elimini alcuni/],
+    ])('(%s) avvisa col numero del server, nasconde i comandi bloccati e lascia gli altri', async (reason, days, notice) => {
+      await mount([readOnly(reason, days), mk(2)]);
+      expect(screen.getAllByText(notice)).toHaveLength(1);
+      expect(screen.getByText(/Con Plus o Pro il limite è più alto/)).toBeTruthy();
+      openAll();
+      expect(screen.queryByRole('button', { name: 'Aggiungi esercizio' })).toBeNull();
+      for (const re of [/^Modifica esercizio/, /^Elimina esercizio/, /^Sposta su/, /^Sposta giù/]) {
+        // le card non in sola lettura (Scheda 2) restano chiuse: qui non c'è nessun comando bloccato
+        expect(screen.queryAllByRole('button', { name: re })).toHaveLength(0);
+      }
+      expect(screen.getByRole('button', { name: 'Modifica scheda Scheda 1' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Elimina scheda Scheda 1' })).toBeTruthy();
+      expect(screen.getAllByRole('button', { name: /^Elimina giorno/ })).toHaveLength(days);
+    });
+
+    it('la scheda in sola lettura non ancora attiva si può attivare', async () => {
+      await mount([mk(2, { read_only: true, read_only_reason: 'plans_over_limit' })]);
+      expect(screen.getByRole('button', { name: 'Attiva scheda' })).toBeTruthy();
+    });
+
+    it('per Plus e Pro il messaggio non cita il livello superiore', async () => {
+      await mount([readOnly('plans_over_limit')], { ...PRO, limits: { plans: 2, days_per_plan: 4, personal_exercises: 30 } });
+      expect(screen.getByText(/Hai più di 2 schede/)).toBeTruthy();
+      expect(screen.queryByText(/Con Plus o Pro/)).toBeNull();
+    });
+
+    it('una scheda modificabile ha tutti i comandi e nessun avviso', async () => {
+      await mount([mk(1)]);
+      openAll();
+      expect(screen.queryByText(/sola lettura/)).toBeNull();
+      expect(screen.getAllByRole('button', { name: 'Aggiungi esercizio' })).toHaveLength(2);
+      expect(screen.getAllByRole('button', { name: /^Modifica esercizio/ })).toHaveLength(2);
+      expect(screen.getAllByRole('button', { name: /^Sposta su/ })).toHaveLength(2);
+    });
+  });
+
+  describe('rifiuto plan_read_only dal server', () => {
+    const MSG = 'Hai più di 2 schede: sono in sola lettura finché non ne elimini alcune.';
+    const refuse = () => json({ success: false, code: 'plan_read_only', message: MSG, reason: 'plans_over_limit', limit: 2 }, 409);
+
+    it('eliminare un esercizio mostra il messaggio come errore', async () => {
+      await mount([mk(1)]);
+      handlers['delete_exercise.php'] = refuse;
+      openAll();
+      fireEvent.click(screen.getAllByRole('button', { name: /^Elimina esercizio/ })[0]);
+      fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Elimina' }));
+      expect((await screen.findByRole('alert')).textContent).toContain(MSG);
+    });
+
+    it('spostare un esercizio mostra il messaggio come errore', async () => {
+      await mount([mk(1, { days: [{ ...day(101), exercises: [ex(1, 'A'), ex(2, 'B')] }, day(102)] })]);
+      handlers['reorder_exercise.php'] = refuse;
+      openAll();
+      fireEvent.click(screen.getByRole('button', { name: 'Sposta giù A' }));
+      expect((await screen.findByRole('alert')).textContent).toContain(MSG);
+    });
+
+    it('modificare un esercizio mostra il messaggio come errore', async () => {
+      await mount([mk(1)]);
+      handlers['update_exercise.php'] = refuse;
+      openAll();
+      fireEvent.click(screen.getAllByRole('button', { name: /^Modifica esercizio/ })[0]);
+      const dialog = await screen.findByRole('dialog');
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Salva modifiche' }));
+      await waitFor(() => expect(screen.getAllByRole('alert').some((a) => a.textContent.includes(MSG))).toBe(true));
+    });
+  });
+
+  describe('elimina giorno', () => {
+    it('chiede conferma (si perdono gli esercizi, non gli allenamenti registrati) e chiama delete_day.php', async () => {
+      await mount([mk(1)]);
+      handlers['delete_day.php'] = () => json({ success: true, message: 'Giorno eliminato' });
+      openAll();
+      fireEvent.click(screen.getByRole('button', { name: 'Elimina giorno Giorno 102' }));
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).getByText(/Gli esercizi di questo giorno verranno eliminati/)).toBeTruthy();
+      expect(within(dialog).getByText('Gli allenamenti già fatti restano nella cronologia.')).toBeTruthy();
+      expect(calls('delete_day.php')).toHaveLength(0);
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Elimina' }));
+      await waitFor(() => expect(calls('delete_day.php')).toHaveLength(1));
+      expect(JSON.parse(calls('delete_day.php')[0][1].body)).toEqual({ day_id: 102 });
+      await waitFor(() => expect(calls('read_plans.php').length).toBeGreaterThan(1));
+    });
+
+    it('con un solo giorno il comando non c\'è', async () => {
+      await mount([mk(1, { days: [day(101)] })]);
+      openAll();
+      expect(screen.queryByRole('button', { name: /^Elimina giorno/ })).toBeNull();
+    });
+
+    it('un rifiuto del server si vede come errore', async () => {
+      await mount([mk(1)]);
+      handlers['delete_day.php'] = () => json({ success: false, code: 'last_day', message: 'Non puoi eliminare l\'ultimo giorno.' }, 409);
+      openAll();
+      fireEvent.click(screen.getByRole('button', { name: 'Elimina giorno Giorno 101' }));
+      fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Elimina' }));
+      expect((await screen.findByRole('alert')).textContent).toContain('Non puoi eliminare l\'ultimo giorno.');
+    });
+
+    describe('con un allenamento Focus in corso su quel giorno', () => {
+      afterEach(() => localStorage.removeItem('gym_focus_workout_draft'));
+
+      it('spiega di salvarlo o scartarlo prima e non lascia confermare', async () => {
+        localStorage.setItem('gym_focus_workout_draft', JSON.stringify({ selectedDayId: 102, selectedDay: day(102), startTime: '2026-11-16T10:00:00Z' }));
+        await mount([mk(1)]);
+        openAll();
+        fireEvent.click(screen.getByRole('button', { name: 'Elimina giorno Giorno 102' }));
+        const dialog = await screen.findByRole('dialog');
+        expect(within(dialog).getByText(/allenamento in corso su questo giorno/)).toBeTruthy();
+        expect(within(dialog).getByRole('button', { name: 'Elimina' }).disabled).toBe(true);
+        expect(calls('delete_day.php')).toHaveLength(0);
+      });
+
+      it('un allenamento in corso su un altro giorno non blocca nulla', async () => {
+        localStorage.setItem('gym_focus_workout_draft', JSON.stringify({ selectedDayId: 101, selectedDay: day(101), startTime: '2026-11-16T10:00:00Z' }));
+        await mount([mk(1)]);
+        openAll();
+        fireEvent.click(screen.getByRole('button', { name: 'Elimina giorno Giorno 102' }));
+        const dialog = await screen.findByRole('dialog');
+        expect(within(dialog).getByRole('button', { name: 'Elimina' }).disabled).toBe(false);
+      });
+    });
+  });
+
+  describe('nuova scheda', () => {
+    const openNew = () => {
+      fireEvent.click(screen.getAllByRole('button', { name: 'Nuova scheda' })[0]);
+      return screen.findByRole('dialog');
+    };
+    const dayOptions = async (dialog) => {
+      fireEvent.mouseDown(within(dialog).getByRole('combobox'));
+      return screen.getAllByRole('option').map((o) => o.textContent);
+    };
+
+    it('il selettore dei giorni si ferma al limite del piano Gratis e mostra la riga con lucchetto', async () => {
+      await mount([mk(1)]);
+      const dialog = await openNew();
+      expect(await dayOptions(dialog)).toEqual(['1 giorno', '2 giorni', '3 giorni', '4 giorni']);
+      expect(within(dialog).getByText('Più di 4 giorni per scheda')).toBeTruthy();
+      expect(within(dialog).getByRole('link', { name: 'Confronta i piani', hidden: true }).getAttribute('href')).toBe('/piani');
+    });
+
+    it('con limite alto il selettore arriva a 7 e non c\'è la riga con lucchetto', async () => {
+      await mount([mk(1)], PRO);
+      const dialog = await openNew();
+      expect(await dayOptions(dialog)).toHaveLength(7);
+      expect(within(dialog).queryByText(/Più di/)).toBeNull();
+    });
+
+    it('con il piano Gratis al limite delle schede il comando è disattivato e c\'è la riga con lucchetto', async () => {
+      await mount([mk(1), mk(2)]);
+      expect(screen.getByRole('button', { name: 'Nuova scheda' }).disabled).toBe(true);
+      expect(screen.getByText('Hai 2 schede su 2')).toBeTruthy();
+      expect(screen.getByRole('link', { name: 'Confronta i piani' }).getAttribute('href')).toBe('/piani');
+    });
+
+    it('sotto il limite il comando è attivo e senza riga', async () => {
+      await mount([mk(1)]);
+      expect(screen.getByRole('button', { name: 'Nuova scheda' }).disabled).toBe(false);
+      expect(screen.queryByText(/Hai \d+ schede su/)).toBeNull();
+    });
+
+    it('per Plus e Pro al limite il comando resta attivo (risponde il server)', async () => {
+      await mount([mk(1), mk(2)], { ...PRO, limits: { plans: 2, days_per_plan: 14, personal_exercises: 30 } });
+      expect(screen.getByRole('button', { name: 'Nuova scheda' }).disabled).toBe(false);
+      expect(screen.queryByText(/Hai \d+ schede su/)).toBeNull();
+    });
   });
 });

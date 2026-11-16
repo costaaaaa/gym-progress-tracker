@@ -1012,5 +1012,17 @@
   "focus.plus_title": "Plus feature",
   "focus.plus_body": "With Plus or Pro you can swap or add exercises during the workout.",
   "focus.plus_ok": "Got it",
-  "focus.plus_aria": "{{label}} (Plus)"
+  "focus.plus_aria": "{{label}} (Plus)",
+  "plans.read_only_plans": "You have more than {{max}} workout plans: they are read-only until you delete some.",
+  "plans.read_only_days": "This workout plan has more than {{max}} days: it is read-only until you delete some.",
+  "plans.read_only_raise": "With Plus or Pro the limit is higher.",
+  "plans.delete_day.aria": "Delete day {{name}}",
+  "plans.delete_day.title": "Confirm day deletion",
+  "plans.delete_day.text": "The exercises of this day will be deleted. This cannot be undone.",
+  "plans.delete_day.name": "Day: {{name}}",
+  "plans.delete_day.in_progress": "You have a workout in progress on this day: save or discard it before deleting the day.",
+  "plans.msg.day_deleted": "Day deleted successfully",
+  "plans.msg.delete_day_error": "Error deleting the day",
+  "plans.locked_days": "More than {{max}} days per workout plan",
+  "plans.locked_plans": "You have {{used}} of {{max}} workout plans"
 }
