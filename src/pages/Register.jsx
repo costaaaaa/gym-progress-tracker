@@ -18,8 +18,6 @@ import {
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import { visuallyHidden } from '@mui/utils';
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import LabeledDatePicker from '../components/LabeledDatePicker';
 import { oldestBirthDate, youngestBirthDate, isInvalidBirthDate } from '../utils/birthDate';
@@ -27,7 +25,6 @@ import { format, subYears, startOfToday } from 'date-fns';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import { validatePassword } from '../utils/passwordPolicy';
-import { confirmState } from '../utils/confirmPassword';
 import { safeNext } from '../utils/safeNext';
 import { track } from '../utils/analytics';
 import { usePageMeta } from '../hooks/usePageMeta';
@@ -35,6 +32,8 @@ import { useTranslation, Trans } from 'react-i18next';
 import DateLocalization from '../i18n/DateLocalization';
 import { useLocalizedPath, legalPaths } from '../i18n/paths';
 import AuthLayout from '../components/Auth/AuthLayout';
+import ConfirmPasswordField from '../components/Auth/ConfirmPasswordField';
+import useConfirmPassword from '../hooks/useConfirmPassword';
 import useFocusField from '../hooks/useFocusField';
 
 // Username: stessa regola di register.php. Email: solo un primo filtro, il server usa FILTER_VALIDATE_EMAIL
@@ -69,17 +68,7 @@ const Register = () => {
   const { fieldRef, focusField } = useFocusField();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  // L'utente è uscito da «Password» o «Conferma password», o ha premuto «Avanti», dopo l'ultima modifica a uno dei due
-  const [confirmChecked, setConfirmChecked] = useState(false);
-  const state = confirmState({ password, confirm: confirmPassword, checked: confirmChecked });
-  // Il testo di ogni stato, per la riga sotto il campo e per l'annuncio
-  const confirmText = {
-    hint: t('register.confirm_hint'),
-    match: t('register.confirm_match'),
-    mismatch: t('register.error.password_mismatch'),
-  }[state];
-  // Annuncio per il lettore di schermo: solo in match o mismatch, mai per il suggerimento
-  const announce = state === 'hint' ? '' : confirmText;
+  const pair = useConfirmPassword({ password, confirm: confirmPassword });
 
   const handleTogglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -119,22 +108,17 @@ const Register = () => {
   // Password e conferma si controllano insieme: ogni modifica rimette il suggerimento, il rosso torna solo a un'uscita o a «Avanti»
   const editPair = (setter, field) => (e) => {
     edit(setter, field)(e);
-    setConfirmChecked(false);
-  };
-
-  // Uscire dal campo include il suo pulsante occhio: spostare il focus dall'uno all'altro non conta
-  const leavePair = (e) => {
-    if (!e.currentTarget.contains(e.relatedTarget)) setConfirmChecked(true);
+    pair.edit();
   };
 
   const handleNext = async () => {
     setError('');
-    setConfirmChecked(true);
+    pair.submit();
     const errors = {
       username: USERNAME_RE.test(username) ? '' : t('register.username_help'),
       email: EMAIL_RE.test(email.trim()) ? '' : t('register.error.email_format'),
       password: validatePassword(password) || '',
-      confirmPassword: password === confirmPassword ? '' : t('register.error.password_mismatch'),
+      confirmPassword: password === confirmPassword ? '' : t('password.confirm_mismatch'),
     };
     setFieldErrors(errors);
     if (Object.values(errors).some(Boolean)) {
@@ -258,9 +242,8 @@ const Register = () => {
   };
 
   // «Avanti» a conferma vuota con la password scritta: lo stato sarebbe hint, ma come su main il campo mostra
-  // l'errore («Le password non corrispondono») nella stessa riga, finché non si scrive
+  // l'errore («Le password non coincidono») nella stessa riga, finché non si scrive
   const emptyConfirmError = confirmPassword ? '' : fieldErrors.confirmPassword;
-  const confirmError = state === 'mismatch' || Boolean(emptyConfirmError);
 
   const passwordAdornment = (shown, toggle, label) => (
     <InputAdornment position="end">
@@ -320,7 +303,7 @@ const Register = () => {
               error={Boolean(fieldErrors.email)}
               helperText={fieldErrors.email}
             />
-            <Box onBlur={leavePair}>
+            <Box onBlur={pair.leave}>
               <TextField
                 margin="normal"
                 required
@@ -338,35 +321,22 @@ const Register = () => {
                 InputProps={{ endAdornment: passwordAdornment(showPassword, handleTogglePasswordVisibility, t('password.show')) }}
               />
             </Box>
-            <Box onBlur={leavePair}>
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                name="confirmPassword"
-                label={t('register.confirm_password')}
-                type={showConfirmPassword ? "text" : "password"}
-                id="confirmPassword"
-                inputRef={fieldRef('confirmPassword')}
-                autoComplete="new-password"
-                value={confirmPassword}
-                onChange={editPair(setConfirmPassword, 'confirmPassword')}
-                error={confirmError}
-                helperText={
-                  <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: state === 'match' ? 'success.main' : undefined }}>
-                    {state === 'match' && <CheckCircleOutlineIcon aria-hidden fontSize="inherit" sx={{ fontSize: '1.2em' }} />}
-                    {emptyConfirmError || confirmText}
-                  </Box>
-                }
-                // Il campo attivo ha bordo ed etichetta neutri: il rosso del marchio, sotto una scritta verde o grigia, sembrerebbe un errore
-                sx={{
-                  '& .MuiOutlinedInput-root.Mui-focused:not(.Mui-error) .MuiOutlinedInput-notchedOutline': { borderColor: 'text.primary' },
-                  '& .MuiFormLabel-root.Mui-focused:not(.Mui-error)': { color: 'text.primary' },
-                }}
-                InputProps={{ endAdornment: passwordAdornment(showConfirmPassword, handleToggleConfirmPasswordVisibility, t('password.show_confirm')) }}
-              />
-            </Box>
-            <Box role="status" aria-live="polite" sx={visuallyHidden}>{announce}</Box>
+            <ConfirmPasswordField
+              pair={pair}
+              errorText={emptyConfirmError}
+              margin="normal"
+              required
+              fullWidth
+              name="confirmPassword"
+              label={t('register.confirm_password')}
+              type={showConfirmPassword ? "text" : "password"}
+              id="confirmPassword"
+              inputRef={fieldRef('confirmPassword')}
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={editPair(setConfirmPassword, 'confirmPassword')}
+              InputProps={{ endAdornment: passwordAdornment(showConfirmPassword, handleToggleConfirmPasswordVisibility, t('password.show_confirm')) }}
+            />
             <Button type="submit" fullWidth variant="contained" size="large" sx={{ mt: 3, mb: 2 }} disabled={loading}>
               {loading ? t('register.checking') : t('register.next')}
             </Button>

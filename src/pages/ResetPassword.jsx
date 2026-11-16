@@ -9,6 +9,9 @@ import { useTranslation } from 'react-i18next';
 import { useLocalizedPath } from '../i18n/paths';
 import { validatePassword } from '../utils/passwordPolicy';
 import AuthLayout from '../components/Auth/AuthLayout';
+import ConfirmPasswordField from '../components/Auth/ConfirmPasswordField';
+import useConfirmPassword from '../hooks/useConfirmPassword';
+import useFocusField from '../hooks/useFocusField';
 
 const ResetPassword = () => {
   const { t } = useTranslation();
@@ -33,17 +36,25 @@ const ResetPassword = () => {
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { fieldRef, focusField } = useFocusField();
+  const pair = useConfirmPassword({ password, confirm });
+  // «Salva» a conferma vuota: l'errore sta nella riga, finché non si scrive nel campo
+  const [emptyConfirm, setEmptyConfirm] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    pair.submit();
+    setEmptyConfirm(false);
     const policyError = validatePassword(password);
     if (policyError) {
       setError(policyError);
       return;
     }
     if (password !== confirm) {
-      setError(t('reset.error.mismatch'));
+      // L'errore sta nella riga sotto il campo, non nell'avviso in alto
+      setEmptyConfirm(!confirm);
+      focusField('confirm');
       return;
     }
     setLoading(true);
@@ -83,33 +94,39 @@ const ResetPassword = () => {
         <>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <Box component="form" onSubmit={handleSubmit} noValidate>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label={t('reset.new_password')}
-              type={showPassword ? 'text' : 'password'}
-              id="password"
-              autoComplete="new-password"
-              autoFocus
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      aria-label={t('password.show')}
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                    >
-                      {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <TextField
+            <Box onBlur={pair.leave}>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                name="password"
+                label={t('reset.new_password')}
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                autoComplete="new-password"
+                autoFocus
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); pair.edit(); }}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label={t('password.show')}
+                        onClick={() => setShowPassword(!showPassword)}
+                        // Il clic sull'occhio non toglie il focus al campo: non è un'uscita
+                        onMouseDown={(e) => e.preventDefault()}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Box>
+            <ConfirmPasswordField
+              pair={pair}
+              errorText={emptyConfirm ? t('password.confirm_mismatch') : ''}
               margin="normal"
               required
               fullWidth
@@ -117,9 +134,10 @@ const ResetPassword = () => {
               label={t('reset.repeat_password')}
               type={showPassword ? 'text' : 'password'}
               id="confirm"
+              inputRef={fieldRef('confirm')}
               autoComplete="new-password"
               value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
+              onChange={(e) => { setConfirm(e.target.value); setEmptyConfirm(false); pair.edit(); }}
             />
             <Button type="submit" fullWidth variant="contained" sx={{ mt: 2, mb: 1 }} disabled={loading}>
               {loading ? t('reset.submitting') : t('reset.submit')}

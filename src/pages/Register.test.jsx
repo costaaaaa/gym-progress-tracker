@@ -71,8 +71,8 @@ describe('registrazione in due passaggi', () => {
     fillStep1({ confirm: 'Diversa!2026' });
     fireEvent.click(screen.getByRole('button', { name: 'Avanti' }));
     // La riga collegata al campo e, a parte, la regione di annuncio
-    await waitFor(() => expect(describedBy(screen.getByLabelText(/^Conferma password/))).toBe('Le password non corrispondono'));
-    expect(screen.getByRole('status').textContent).toBe('Le password non corrispondono');
+    await waitFor(() => expect(describedBy(screen.getByLabelText(/^Conferma password/))).toBe('Le password non coincidono'));
+    expect(screen.getByRole('status').textContent).toBe('Le password non coincidono');
     expect(fetch).not.toHaveBeenCalled();
     expect(screen.getByText('Passo 1 di 2')).toBeTruthy();
   });
@@ -108,9 +108,9 @@ describe('registrazione in due passaggi', () => {
     renderRegister();
     fillStep1({ confirm: 'Diversa!2026' });
     fireEvent.blur(screen.getByLabelText(/^Conferma password/));
-    expect(describedBy(screen.getByLabelText(/^Conferma password/))).toBe('Le password non corrispondono');
+    expect(describedBy(screen.getByLabelText(/^Conferma password/))).toBe('Le password non coincidono');
     fireEvent.change(screen.getByLabelText(/^Conferma password/), { target: { value: 'Segreta!2026' } });
-    expect(screen.queryByText('Le password non corrispondono')).toBeNull();
+    expect(screen.queryByText('Le password non coincidono')).toBeNull();
   });
 
   it('tornando indietro i dati del primo passo restano', async () => {
@@ -375,9 +375,9 @@ describe('conferma password: riga riservata', () => {
     setUp();
     typeConfirm('Segreta!20');
     fireEvent.blur(confirmField());
-    expect(row()).toBe('Le password non corrispondono');
+    expect(row()).toBe('Le password non coincidono');
     expect(confirmField().getAttribute('aria-invalid')).toBe('true');
-    expect(live()).toBe('Le password non corrispondono');
+    expect(live()).toBe('Le password non coincidono');
   });
 
   it('dopo il rosso il primo tasto riporta al suggerimento e svuota l\'annuncio', () => {
@@ -401,14 +401,14 @@ describe('conferma password: riga riservata', () => {
     fireEvent.click(eye);
     expect(row()).toBe('Riscrivi la stessa password');
     fireEvent.blur(eye, { relatedTarget: document.body });
-    expect(row()).toBe('Le password non corrispondono');
+    expect(row()).toBe('Le password non coincidono');
   });
 
   it('«Avanti» con la conferma diversa mostra il rosso, senza chiamare il server', () => {
     setUp();
     typeConfirm('Segreta!20');
     fireEvent.click(screen.getByRole('button', { name: 'Avanti' }));
-    expect(row()).toBe('Le password non corrispondono');
+    expect(row()).toBe('Le password non coincidono');
     expect(confirmField().getAttribute('aria-invalid')).toBe('true');
     expect(fetch).not.toHaveBeenCalled();
   });
@@ -416,7 +416,7 @@ describe('conferma password: riga riservata', () => {
   it('«Avanti» con la conferma vuota: errore rosso nella stessa riga, che sparisce al primo tasto', () => {
     setUp();
     fireEvent.click(screen.getByRole('button', { name: 'Avanti' }));
-    expect(row()).toBe('Le password non corrispondono');
+    expect(row()).toBe('Le password non coincidono');
     expect(confirmField().getAttribute('aria-invalid')).toBe('true');
     expect(live()).toBe('');
     typeConfirm('S');
@@ -432,7 +432,7 @@ describe('conferma password: riga riservata', () => {
     typePassword('Segreta!20');
     expect(row()).toBe('Riscrivi la stessa password');
     fireEvent.blur(screen.getByLabelText(/^Password/));
-    expect(row()).toBe('Le password non corrispondono');
+    expect(row()).toBe('Le password non coincidono');
   });
 
   it('il suggerimento e l\'esito in inglese', async () => {
@@ -446,8 +446,8 @@ describe('conferma password: riga riservata', () => {
     expect(screen.getByRole('status').textContent).toBe('Passwords match');
     fireEvent.change(field, { target: { value: 'Segreta!20' } });
     fireEvent.blur(field);
-    expect(describedBy(field)).toBe('Passwords do not match');
+    expect(describedBy(field)).toBe("Passwords don't match");
     expect(field.getAttribute('aria-invalid')).toBe('true');
-    expect(screen.getByRole('status').textContent).toBe('Passwords do not match');
+    expect(screen.getByRole('status').textContent).toBe("Passwords don't match");
   });
 });
