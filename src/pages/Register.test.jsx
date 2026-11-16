@@ -70,9 +70,9 @@ describe('registrazione in due passaggi', () => {
     renderRegister();
     fillStep1({ confirm: 'Diversa!2026' });
     fireEvent.click(screen.getByRole('button', { name: 'Avanti' }));
-    // Il testo compare due volte: nella riga sotto il campo e nella regione di annuncio
-    expect((await screen.findAllByText('Le password non corrispondono')).length).toBe(2);
-    expect(describedBy(screen.getByLabelText(/^Conferma password/))).toBe('Le password non corrispondono');
+    // La riga collegata al campo e, a parte, la regione di annuncio
+    await waitFor(() => expect(describedBy(screen.getByLabelText(/^Conferma password/))).toBe('Le password non corrispondono'));
+    expect(screen.getByRole('status').textContent).toBe('Le password non corrispondono');
     expect(fetch).not.toHaveBeenCalled();
     expect(screen.getByText('Passo 1 di 2')).toBeTruthy();
   });
@@ -339,7 +339,7 @@ describe('conferma password: riga riservata', () => {
   const confirmField = () => screen.getByLabelText(/^Conferma password/);
   const typeConfirm = (value) => fireEvent.change(confirmField(), { target: { value } });
   const typePassword = (value) => fireEvent.change(screen.getByLabelText(/^Password/), { target: { value } });
-  const live = () => document.querySelector('[role="status"]').textContent;
+  const live = () => screen.getByRole('status').textContent;
   const row = () => describedBy(confirmField());
 
   const setUp = () => {
@@ -396,19 +396,31 @@ describe('conferma password: riga riservata', () => {
     const eye = screen.getByRole('button', { name: 'Mostra o nascondi la conferma della password' });
     fireEvent.blur(confirmField(), { relatedTarget: eye });
     expect(row()).toBe('Riscrivi la stessa password');
-    fireEvent.mouseDown(eye);
+    // Il clic non deve togliere il focus al campo: il mouseDown dell'occhio è annullato (fireEvent restituisce false)
+    expect(fireEvent.mouseDown(eye)).toBe(false);
     fireEvent.click(eye);
     expect(row()).toBe('Riscrivi la stessa password');
     fireEvent.blur(eye, { relatedTarget: document.body });
     expect(row()).toBe('Le password non corrispondono');
   });
 
-  it('«Avanti» con la conferma diversa mostra il rosso e non cambia il pulsante', () => {
+  it('«Avanti» con la conferma diversa mostra il rosso, senza chiamare il server', () => {
     setUp();
     typeConfirm('Segreta!20');
     fireEvent.click(screen.getByRole('button', { name: 'Avanti' }));
     expect(row()).toBe('Le password non corrispondono');
     expect(confirmField().getAttribute('aria-invalid')).toBe('true');
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('«Avanti» con la conferma vuota: errore rosso nella stessa riga, che sparisce al primo tasto', () => {
+    setUp();
+    fireEvent.click(screen.getByRole('button', { name: 'Avanti' }));
+    expect(row()).toBe('Le password non corrispondono');
+    expect(confirmField().getAttribute('aria-invalid')).toBe('true');
+    typeConfirm('S');
+    expect(row()).toBe('Riscrivi la stessa password');
+    expect(confirmField().getAttribute('aria-invalid')).toBe('false');
   });
 
   it('cambiando la password: uguali, spunta subito; diverse, suggerimento e poi rosso all\'uscita dal campo', () => {
@@ -430,5 +442,11 @@ describe('conferma password: riga riservata', () => {
     expect(describedBy(field)).toBe('Type the same password again');
     fireEvent.change(field, { target: { value: 'Segreta!2026' } });
     expect(describedBy(field)).toBe('Passwords match');
+    expect(screen.getByRole('status').textContent).toBe('Passwords match');
+    fireEvent.change(field, { target: { value: 'Segreta!20' } });
+    fireEvent.blur(field);
+    expect(describedBy(field)).toBe('Passwords do not match');
+    expect(field.getAttribute('aria-invalid')).toBe('true');
+    expect(screen.getByRole('status').textContent).toBe('Passwords do not match');
   });
 });

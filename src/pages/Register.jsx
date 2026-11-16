@@ -72,13 +72,14 @@ const Register = () => {
   // L'utente è uscito da «Password» o «Conferma password», o ha premuto «Avanti», dopo l'ultima modifica a uno dei due
   const [confirmChecked, setConfirmChecked] = useState(false);
   const state = confirmState({ password, confirm: confirmPassword, checked: confirmChecked });
-  // Annuncio per il lettore di schermo: solo quando lo stato entra in match o mismatch, mai per il suggerimento
-  const [prevState, setPrevState] = useState(state);
-  const [announce, setAnnounce] = useState('');
-  if (state !== prevState) {
-    setPrevState(state);
-    setAnnounce(state === 'match' ? t('register.confirm_match') : state === 'mismatch' ? t('register.error.password_mismatch') : '');
-  }
+  // Il testo di ogni stato, per la riga sotto il campo e per l'annuncio
+  const confirmText = {
+    hint: t('register.confirm_hint'),
+    match: t('register.confirm_match'),
+    mismatch: t('register.error.password_mismatch'),
+  }[state];
+  // Annuncio per il lettore di schermo: solo in match o mismatch, mai per il suggerimento
+  const announce = state === 'hint' ? '' : confirmText;
 
   const handleTogglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -256,9 +257,10 @@ const Register = () => {
     else handleSubmit();
   };
 
-  // Errore di campo obbligatorio / «Avanti» a conferma vuota: resta nella stessa riga finché non si scrive
-  const requiredError = confirmPassword ? '' : fieldErrors.confirmPassword;
-  const confirmError = state === 'mismatch' || Boolean(requiredError);
+  // «Avanti» a conferma vuota con la password scritta: lo stato sarebbe hint, ma come su main il campo mostra
+  // l'errore («Le password non corrispondono») nella stessa riga, finché non si scrive
+  const emptyConfirmError = confirmPassword ? '' : fieldErrors.confirmPassword;
+  const confirmError = state === 'mismatch' || Boolean(emptyConfirmError);
 
   const passwordAdornment = (shown, toggle, label) => (
     <InputAdornment position="end">
@@ -319,51 +321,52 @@ const Register = () => {
               helperText={fieldErrors.email}
             />
             <Box onBlur={leavePair}>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label={t('register.password')}
-              type={showPassword ? "text" : "password"}
-              id="password"
-              inputRef={fieldRef('password')}
-              autoComplete="new-password"
-              value={password}
-              onChange={editPair(setPassword, 'password')}
-              error={Boolean(fieldErrors.password)}
-              helperText={fieldErrors.password}
-              InputProps={{ endAdornment: passwordAdornment(showPassword, handleTogglePasswordVisibility, t('password.show')) }}
-            />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                name="password"
+                label={t('register.password')}
+                type={showPassword ? "text" : "password"}
+                id="password"
+                inputRef={fieldRef('password')}
+                autoComplete="new-password"
+                value={password}
+                onChange={editPair(setPassword, 'password')}
+                error={Boolean(fieldErrors.password)}
+                helperText={fieldErrors.password}
+                InputProps={{ endAdornment: passwordAdornment(showPassword, handleTogglePasswordVisibility, t('password.show')) }}
+              />
             </Box>
             <Box onBlur={leavePair}>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="confirmPassword"
-              label={t('register.confirm_password')}
-              type={showConfirmPassword ? "text" : "password"}
-              id="confirmPassword"
-              inputRef={fieldRef('confirmPassword')}
-              autoComplete="new-password"
-              value={confirmPassword}
-              onChange={editPair(setConfirmPassword, 'confirmPassword')}
-              error={confirmError}
-              helperText={
-                <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minHeight: '1.66em' }}>
-                  {state === 'match' && <CheckCircleOutlineIcon aria-hidden fontSize="inherit" sx={{ fontSize: '1.2em' }} />}
-                  {requiredError || (state === 'mismatch' ? t('register.error.password_mismatch') : state === 'match' ? t('register.confirm_match') : t('register.confirm_hint'))}
-                </Box>
-              }
-              FormHelperTextProps={state === 'match' ? { sx: { color: 'success.main' } } : undefined}
-              // Il campo attivo ha bordo ed etichetta neutri: il rosso del marchio, sotto una scritta verde o grigia, sembrerebbe un errore
-              sx={{
-                '& .MuiOutlinedInput-root.Mui-focused:not(.Mui-error) .MuiOutlinedInput-notchedOutline': { borderColor: 'text.primary' },
-                '& .MuiFormLabel-root.Mui-focused:not(.Mui-error)': { color: 'text.primary' },
-              }}
-              InputProps={{ endAdornment: passwordAdornment(showConfirmPassword, handleToggleConfirmPasswordVisibility, t('password.show_confirm')) }}
-            />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                name="confirmPassword"
+                label={t('register.confirm_password')}
+                type={showConfirmPassword ? "text" : "password"}
+                id="confirmPassword"
+                inputRef={fieldRef('confirmPassword')}
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={editPair(setConfirmPassword, 'confirmPassword')}
+                error={confirmError}
+                // minHeight 1.66em: l'interlinea del testo d'aiuto di MUI. Senza, la riga è alta 20,3 px invece di 23,2 e il modulo
+                // si accorcia di 2,9 px; con la spunta o il testo ingrandito la riga cresce, non si taglia.
+                helperText={
+                  <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minHeight: '1.66em', color: state === 'match' ? 'success.main' : undefined }}>
+                    {state === 'match' && <CheckCircleOutlineIcon aria-hidden fontSize="inherit" sx={{ fontSize: '1.2em' }} />}
+                    {emptyConfirmError || confirmText}
+                  </Box>
+                }
+                // Il campo attivo ha bordo ed etichetta neutri: il rosso del marchio, sotto una scritta verde o grigia, sembrerebbe un errore
+                sx={{
+                  '& .MuiOutlinedInput-root.Mui-focused:not(.Mui-error) .MuiOutlinedInput-notchedOutline': { borderColor: 'text.primary' },
+                  '& .MuiFormLabel-root.Mui-focused:not(.Mui-error)': { color: 'text.primary' },
+                }}
+                InputProps={{ endAdornment: passwordAdornment(showConfirmPassword, handleToggleConfirmPasswordVisibility, t('password.show_confirm')) }}
+              />
             </Box>
             <Box role="status" aria-live="polite" sx={visuallyHidden}>{announce}</Box>
             <Button type="submit" fullWidth variant="contained" size="large" sx={{ mt: 3, mb: 2 }} disabled={loading}>
