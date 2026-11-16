@@ -70,7 +70,9 @@ describe('registrazione in due passaggi', () => {
     renderRegister();
     fillStep1({ confirm: 'Diversa!2026' });
     fireEvent.click(screen.getByRole('button', { name: 'Avanti' }));
-    expect(await screen.findByText('Le password non corrispondono')).toBeTruthy();
+    // Il testo compare due volte: nella riga sotto il campo e nella regione di annuncio
+    expect((await screen.findAllByText('Le password non corrispondono')).length).toBe(2);
+    expect(describedBy(screen.getByLabelText(/^Conferma password/))).toBe('Le password non corrispondono');
     expect(fetch).not.toHaveBeenCalled();
     expect(screen.getByText('Passo 1 di 2')).toBeTruthy();
   });
@@ -106,7 +108,7 @@ describe('registrazione in due passaggi', () => {
     renderRegister();
     fillStep1({ confirm: 'Diversa!2026' });
     fireEvent.blur(screen.getByLabelText(/^Conferma password/));
-    expect(await screen.findByText('Le password non corrispondono')).toBeTruthy();
+    expect(describedBy(screen.getByLabelText(/^Conferma password/))).toBe('Le password non corrispondono');
     fireEvent.change(screen.getByLabelText(/^Conferma password/), { target: { value: 'Segreta!2026' } });
     expect(screen.queryByText('Le password non corrispondono')).toBeNull();
   });
