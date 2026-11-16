@@ -20,10 +20,10 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import { API_BASE_URL } from '../config';
 import { createExercise, errorMessage, findSimilarExercises, personalLabel } from '../api/exercises';
-import { equipmentLabel, rankExerciseMatches } from '../utils/exerciseCatalog';
+import { rankExerciseMatches } from '../utils/exerciseCatalog';
 import { primaryMuscleOptions } from '../utils/muscleRules';
 import { useTranslation } from 'react-i18next';
-import { muscleLabel } from '../i18n/labels';
+import { muscleLabel, equipmentName } from '../i18n/labels';
 import PlannedSetsEditor from './PlannedSetsEditor';
 import ButtonSpinner from './ButtonSpinner';
 
@@ -253,7 +253,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex }) => {
               {groupEquipment.map(eq => (
                 <Chip
                   key={eq}
-                  label={equipmentLabel(eq) || eq}
+                  label={equipmentName(eq)}
                   size="small"
                   color={equipmentFilter === eq ? 'primary' : 'default'}
                   onClick={() => setEquipmentFilter(eq)}

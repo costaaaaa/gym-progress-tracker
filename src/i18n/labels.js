@@ -30,3 +30,6 @@ export const muscleLabel = (group) => {
   const fallback = group.charAt(0).toUpperCase() + group.slice(1);
   return i18n.t(`muscle.${group.toLowerCase()}`, { defaultValue: fallback });
 };
+
+// Lo slug dell'attrezzo (es. 'corpo_libero') nella lingua corrente; se manca la traduzione resta lo slug.
+export const equipmentName = (slug) => (slug ? i18n.t(`equipment.${slug}`, { defaultValue: slug }) : '');

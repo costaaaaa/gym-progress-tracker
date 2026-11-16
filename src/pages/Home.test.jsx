@@ -97,7 +97,7 @@ describe('primo accesso', () => {
     await screen.findByText('Inizia da qui');
     expect(screen.getByText('Riepilogo settimanale')).toBeTruthy();
     expect(screen.queryByRole('link', { name: 'Inizia allenamento' })).toBeNull();
-    expect(screen.queryByText('Piano attivo')).toBeNull();
+    expect(screen.queryByText('Scheda attiva')).toBeNull();
     expect(screen.queryByText('Ultimo allenamento')).toBeNull();
     expect(screen.queryByText('I tuoi gruppi')).toBeNull();
     expect(screen.queryByText('Nessun allenamento recente. È ora di tornare in palestra!')).toBeNull();
@@ -106,7 +106,7 @@ describe('primo accesso', () => {
   it('con una scheda attiva e uno storico la Home mostra tutte le card e il bottone "Inizia allenamento"', async () => {
     renderHome();
     expect(await screen.findByRole('link', { name: 'Inizia allenamento' })).toBeTruthy();
-    expect(await screen.findByText('Piano attivo')).toBeTruthy();
+    expect(await screen.findByText('Scheda attiva')).toBeTruthy();
     expect(screen.getByText('Ultimo allenamento')).toBeTruthy();
     expect(await screen.findByText('I tuoi gruppi')).toBeTruthy();
     expect(screen.queryByText('Inizia da qui')).toBeNull();
@@ -162,11 +162,11 @@ describe('primo accesso', () => {
   it.each([
     ['senza schede', []],
     ['con sole schede inattive', [{ id: 2, name: 'Vecchia', is_active: false }]],
-  ])('il riepilogo settimanale %s parla di traguardo, non di piano', async (_nome, records) => {
+  ])('il riepilogo settimanale %s parla di traguardo, non di scheda', async (_nome, records) => {
     responses['workout/read_plans.php'] = { success: true, records };
     renderHome();
     expect(await screen.findByText('Ti manca 1 sessione per il traguardo settimanale.')).toBeTruthy();
-    expect(screen.queryByText(/per completare il piano/)).toBeNull();
+    expect(screen.queryByText(/per completare la scheda/)).toBeNull();
   });
 
   it('senza scheda e senza allenamenti c\'è "Inizia da qui" con il link a "Crea la tua prima scheda"', async () => {
@@ -180,7 +180,7 @@ describe('primo accesso', () => {
   it('"Inizia da qui" non c\'è se c\'è una scheda attiva', async () => {
     responses['workout_history/read.php'] = { success: true, records: [] };
     renderHome();
-    await screen.findByRole('link', { name: /Piano attivo/ });
+    await screen.findByRole('link', { name: /Scheda attiva/ });
     expect(screen.queryByText('Inizia da qui')).toBeNull();
   });
 
@@ -254,9 +254,9 @@ describe('home dopo il login', () => {
     expect(link.textContent).toContain('Squat');
   });
 
-  it('Piano attivo porta ai piani e mostra il nome', async () => {
+  it('Scheda attiva porta alle schede e mostra il nome', async () => {
     renderHome();
-    const link = await screen.findByRole('link', { name: /Piano attivo/ });
+    const link = await screen.findByRole('link', { name: /Scheda attiva/ });
     expect(link.getAttribute('href')).toBe('/workouts?tab=plans');
     expect(link.textContent).toContain('Push Pull Legs');
   });
@@ -266,7 +266,7 @@ describe('home dopo il login', () => {
     expect(await screen.findByText('2 / 3')).toBeTruthy();
   });
 
-  it.each(['Riepilogo settimanale', 'Ultimo allenamento', 'Piano attivo', 'I tuoi gruppi'])(
+  it.each(['Riepilogo settimanale', 'Ultimo allenamento', 'Scheda attiva', 'I tuoi gruppi'])(
     'la card "%s" ha un\'intestazione',
     async (name) => {
       renderHome();

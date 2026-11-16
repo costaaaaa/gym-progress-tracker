@@ -3,6 +3,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import ExerciseDialog from './ExerciseDialog';
+import i18n from '../i18n';
 import { json } from '../test/dom';
 
 const RECORDS = [
@@ -190,5 +191,16 @@ describe('ExerciseDialog · nomi accessibili', () => {
     await act(async () => {});
     fireEvent.mouseDown(screen.getByRole('combobox', { name: /^Muscolo principale/ }));
     expect(screen.getByRole('listbox', { name: /^Muscolo principale/ })).toBeTruthy();
+  });
+});
+
+describe('ExerciseDialog · etichette attrezzo', () => {
+  it('i filtri per attrezzo seguono la lingua', async () => {
+    await i18n.changeLanguage('en');
+    await apri();
+    await scegliGruppo('Chest');
+    expect(screen.getByText('Barbell')).toBeTruthy();
+    expect(screen.getByText('Cables')).toBeTruthy();
+    expect(screen.queryByText('Bilanciere')).toBeNull();
   });
 });

@@ -22,7 +22,7 @@ import { rankExerciseMatches } from '../utils/exerciseCatalog';
 import { API_BASE_URL } from '../config';
 import { personalLabel } from '../api/exercises';
 import { Trans, useTranslation } from 'react-i18next';
-import { muscleLabel } from '../i18n/labels';
+import { muscleLabel, equipmentName } from '../i18n/labels';
 import { compactForm, plannedOf, targetLabel } from '../utils/plannedSets';
 import { addedPlannedSets } from '../utils/focusSession';
 import { radius } from '../theme/radius';
@@ -125,7 +125,7 @@ const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true
           <Box>
             <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{selected.name}</Typography>
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              {[muscleLabel(selected.muscle_group), selected.equipment].filter(Boolean).join(' · ')}
+              {[muscleLabel(selected.muscle_group), equipmentName(selected.equipment)].filter(Boolean).join(' · ')}
             </Typography>
             <Box sx={{ display: 'flex', gap: 1.5, mt: 2 }}>
               <TextField label={t('picker.sets')} value={sets} onChange={(e) => setSets(e.target.value)}
@@ -170,7 +170,7 @@ const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true
                   <ListItemButton key={ex.id} onClick={() => handleSelect(ex)} sx={{ borderRadius: radius.sm }}>
                     <ListItemText
                       primary={ex.name}
-                      secondary={[muscleLabel(ex.muscle_group), ex.equipment, personalLabel(ex)].filter(Boolean).join(' · ')}
+                      secondary={[muscleLabel(ex.muscle_group), equipmentName(ex.equipment), personalLabel(ex)].filter(Boolean).join(' · ')}
                     />
                   </ListItemButton>
                 ))}

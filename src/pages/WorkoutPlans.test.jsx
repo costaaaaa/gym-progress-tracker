@@ -8,6 +8,7 @@ import WorkoutPlans from './WorkoutPlans';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { json, colorOf } from '../test/dom';
 import { plannedSets, times } from '../test/plannedSets';
+import i18n from '../i18n';
 import { unnamedControls } from '../test/accessibleNames';
 
 const INK = 'rgb(26, 24, 22)';
@@ -156,7 +157,7 @@ describe('dialogo di eliminazione di un esercizio', () => {
 });
 
 describe('dialogo di eliminazione di una scheda', () => {
-  const STORICO = 'Gli allenamenti già fatti restano nello storico.';
+  const CRONOLOGIA = 'Gli allenamenti già fatti restano nella cronologia.';
   const obiettivo = (n) => `L'obiettivo della settimana tornerà a quello predefinito (${n} allenamenti).`;
   const inactive = { ...plan, is_active: 0 };
   const other = { ...inactive, id: 2, name: 'Forza B' };
@@ -177,7 +178,7 @@ describe('dialogo di eliminazione di una scheda', () => {
 
   it('dice sempre che lo storico resta', async () => {
     const dialog = await apriEliminaScheda([inactive], {});
-    expect(within(dialog).getByText(STORICO)).toBeTruthy();
+    expect(within(dialog).getByText(CRONOLOGIA)).toBeTruthy();
   });
 
   it('con la scheda attiva e nessun obiettivo scelto avvisa che l\'obiettivo torna a quello senza scheda, col numero del server', async () => {
@@ -187,19 +188,19 @@ describe('dialogo di eliminazione di una scheda', () => {
 
   it('se l\'utente ha scelto un obiettivo non ne parla', async () => {
     const dialog = await apriEliminaScheda([plan], { weekly_goal: 2, weekly_goal_default: 1, weekly_goal_without_plan: 3 });
-    await within(dialog).findByText(STORICO);
+    await within(dialog).findByText(CRONOLOGIA);
     expect(within(dialog).queryByText(obiettivo(3))).toBeNull();
   });
 
   it('se l\'obiettivo predefinito è già quello senza scheda non c\'è nulla da avvisare', async () => {
     const dialog = await apriEliminaScheda([plan], { weekly_goal: null, weekly_goal_default: 5, weekly_goal_without_plan: 5 });
-    await within(dialog).findByText(STORICO);
+    await within(dialog).findByText(CRONOLOGIA);
     expect(within(dialog).queryByText(obiettivo(5))).toBeNull();
   });
 
   it('con una scheda non attiva non ne parla e non chiede l\'obiettivo al server', async () => {
     const dialog = await apriEliminaScheda([inactive], { weekly_goal: null, weekly_goal_default: 1, weekly_goal_without_plan: 3 });
-    await within(dialog).findByText(STORICO);
+    await within(dialog).findByText(CRONOLOGIA);
     expect(within(dialog).queryByText(obiettivo(3))).toBeNull();
     expect(fetch.mock.calls.some(([url]) => url.includes('user/read.php'))).toBe(false);
   });
@@ -213,7 +214,7 @@ describe('dialogo di eliminazione di una scheda', () => {
     await waitForElementToBeRemoved(() => screen.queryByRole('dialog'));
     const secondo = await clickDeleteOf('Forza B');
     await act(async () => { rispondi(); });
-    await within(secondo).findByText(STORICO);
+    await within(secondo).findByText(CRONOLOGIA);
     expect(within(secondo).queryByText(obiettivo(3))).toBeNull();
   });
 
@@ -253,6 +254,24 @@ describe('nuova scheda', () => {
 
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     await creaScheda(); // riaperto dopo la creazione: mostra di nuovo "1 giorno" (lo controlla creaScheda)
+  });
+});
+
+describe('nuova scheda in inglese', () => {
+  it('i giorni creati si chiamano "Day 1", non "Giorno 1"', async () => {
+    await i18n.changeLanguage('en');
+    render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
+    await screen.findByText('Forza A');
+    fetch.mockImplementation((url) => Promise.resolve(
+      String(url).includes('create_plan.php') ? json({ plan: { id: 9 } }, 201) : json({ records: [plan] }),
+    ));
+    fireEvent.click(screen.getAllByRole('button', { name: 'New plan' })[0]);
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText('Plan name'), { target: { value: 'Nuova' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
+    await waitFor(() => expect(fetch.mock.calls.some(([url]) => String(url).includes('create_days.php'))).toBe(true));
+    const call = fetch.mock.calls.find(([url]) => String(url).includes('create_days.php'));
+    expect(JSON.parse(call[1].body).days).toEqual([{ name: 'Day 1', exercises: [] }]);
   });
 });
 

@@ -752,14 +752,14 @@ describe('errori e premium', () => {
     responses['read_plans.php'] = () => ({ ok: false, status: 500, json: async () => { throw new Error('non json'); }, text: async () => '' });
     vi.spyOn(console, 'error').mockImplementation(() => {});
     await mount();
-    expect(screen.getByText('Errore nel caricamento dei dati: Errore caricamento piani (500)')).toBeTruthy();
+    expect(screen.getByText('Errore nel caricamento dei dati: Errore caricamento schede (500)')).toBeTruthy();
   });
 
   it('senza piano attivo avvisa e mostra la schermata senza piano', async () => {
     responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Push Pull', is_active: false, days: [pushDay] }] });
     await mount();
-    expect(screen.getByText('Nessun piano attivo trovato. Attiva un piano dalle schede.')).toBeTruthy();
-    expect(screen.getByText('Nessun piano attivo')).toBeTruthy();
+    expect(screen.getByText('Nessuna scheda attiva trovata. Attivane una dalle schede.')).toBeTruthy();
+    expect(screen.getByText('Nessuna scheda attiva')).toBeTruthy();
   });
 
   it('senza la funzione premium i bottoni in allenamento hanno l\'etichetta "Premium" e il nome accessibile "… (Premium)"', async () => {
