@@ -16,11 +16,16 @@
 # se la parte admin fallisce a metà.
 #
 # Richiede curl e jq. Esce con 1 se un controllo fallisce.
+#
+# Serve DB_SQL_CMD (comando che legge SQL da stdin sul database dell'istanza, vedi tests/lib/tier.sh):
+# gli account di prova sono portati a Plus, perché B crea 12 esercizi per arrivare al limite di frequenza (429): il Gratis si fermerebbe prima, a 10.
 
 set -uo pipefail
 
 BASE="${1:?uso: $(basename "$0") <url del backend, es. http://localhost:8080/backend/>}"
 [[ "$BASE" == */ ]] || BASE="$BASE/"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/tier.sh"
+need_db_sql_cmd
 
 PASS='Prova!Esercizi2026'
 SUFFIX="$(date +%s | tail -c 7)$RANDOM"
@@ -70,6 +75,7 @@ echo "Account di prova: $A_USER $B_USER"
 A="$(register_and_login "$A_USER")"
 B="$(register_and_login "$B_USER")"
 [[ -n "$A" && -n "$B" ]] || { echo "registrazione o login falliti (limite di registrazioni per IP?)" >&2; exit 1; }
+plus_account "$B_USER"
 
 cleanup() {
     for t in "$A" "$B"; do

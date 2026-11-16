@@ -36,6 +36,8 @@ try {
     $plans = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $num = count($plans);
 
+    $limits = user_limits($db, $user_id);
+
     $plans_arr = array();
     $plans_arr["records"] = array();
 
@@ -113,6 +115,13 @@ try {
                 );
             }
         }
+        // Sola lettura (lib/tier_limits.php): per scheda, così i client nascondono i comandi bloccati
+        foreach ($plans_arr["records"] as &$plan_item) {
+            $reason = planReadOnlyReason($num, count($plan_item["days"]), $limits);
+            $plan_item["read_only"] = $reason !== null;
+            $plan_item["read_only_reason"] = $reason;
+        }
+        unset($plan_item);
         http_response_code(200);
     } else {
         http_response_code(200);

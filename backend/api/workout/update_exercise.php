@@ -30,6 +30,7 @@ if (
     if (!workout_exercise_belongs_to_user($db, $data->exercise_id, $data->day_id, $user_id)) {
         api_not_found(t_server('workout.exercise_not_found'));
     }
+    require_day_plan_writable($db, $user_id, $data->day_id);
 
     // Il controllo di proprietà ha già verificato che la riga esista: exercise_id è l'id della riga
     // in gym_workout_exercises (non l'id dell'esercizio del catalogo)

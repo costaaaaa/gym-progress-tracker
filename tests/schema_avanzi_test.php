@@ -18,54 +18,11 @@ require $backend . '/config/database.php';
 require_once $backend . '/models/User.php';
 require_once $backend . '/models/Exercise.php';
 
-$fails = 0;
-$checks = 0;
-function check($desc, $cond, $detail = '')
-{
-    global $fails, $checks;
-    $checks++;
-    if ($cond) {
-        echo "  \033[32m✓\033[0m $desc\n";
-    } else {
-        $fails++;
-        echo "  \033[31m✗\033[0m $desc\n";
-        if ($detail !== '') {
-            echo "      $detail\n";
-        }
-    }
-}
+require __DIR__ . '/lib/http_test.php';
 
 $conn = (new Database())->getConnection();
 
-// Server integrato nello stesso container: figlio di questo processo, ne eredita l'ambiente (DB_*)
-$port = 8099;
-$server = proc_open(['php', '-S', "127.0.0.1:$port", '-t', $backend], [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['file', '/tmp/server.log', 'w']], $pipes);
-register_shutdown_function(function () use ($server) {
-    proc_terminate($server);
-});
-for ($i = 0; $i < 50; $i++) {
-    $sock = @fsockopen('127.0.0.1', $port);
-    if ($sock) { fclose($sock); break; }
-    usleep(100000);
-}
-
-// Chiamata HTTP: ritorna [codice, JSON decodificato come array, corpo grezzo]
-function call($method, $path, $token, $body = null)
-{
-    global $port;
-    $headers = "Authorization: Bearer $token\r\nContent-Type: application/json\r\n";
-    $context = stream_context_create(['http' => [
-        'method' => $method, 'header' => $headers, 'ignore_errors' => true, 'timeout' => 30,
-        'content' => $body === null ? '' : json_encode($body),
-    ]]);
-    $raw = file_get_contents("http://127.0.0.1:$port$path", false, $context);
-    $code = 0;
-    $responseHeaders = function_exists('http_get_last_response_headers') ? http_get_last_response_headers() : ($http_response_header ?? []);
-    if (isset($responseHeaders[0]) && preg_match('/ (\d{3})/', $responseHeaders[0], $m)) {
-        $code = (int)$m[1];
-    }
-    return [$code, json_decode((string)$raw, true), (string)$raw];
-}
+startTestServer($backend);
 
 function columnExists($conn, $table, $column)
 {
@@ -208,5 +165,4 @@ check('User::deleteAccount cancella l\'account', $user->deleteAccount('Prova!Ava
 $left = (int)$conn->query("SELECT (SELECT COUNT(*) FROM gym_users WHERE id = $userId) + (SELECT COUNT(*) FROM gym_workout_history WHERE user_id = $userId)")->fetchColumn();
 check('utente e allenamenti sono spariti', $left === 0, "righe rimaste: $left");
 
-echo "\nCONTROLLI $checks FALLITI $fails\n";
-exit($fails > 0 ? 1 : 0);
+finishTest();

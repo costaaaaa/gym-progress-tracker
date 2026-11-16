@@ -7,7 +7,7 @@ class WorkoutExercise
     private $conn;
     private $table_name = "gym_workout_exercises";
 
-    // Esercizi che un giorno di scheda può avere (stesso discorso di WorkoutPlan::MAX_PER_USER sulla concorrenza)
+    // Esercizi che un giorno di scheda può avere (stesso discorso sulla concorrenza di enforce_tier_limit in config/api_helpers.php)
     const MAX_PER_DAY = 30;
 
     // Object properties

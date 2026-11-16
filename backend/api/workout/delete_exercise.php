@@ -22,7 +22,8 @@ if (!empty($data->exercise_id) && !empty($data->day_id)) {
     if (!workout_exercise_belongs_to_user($db, $data->exercise_id, $data->day_id, $user_id)) {
         api_not_found();
     }
-    
+    require_day_plan_writable($db, $user_id, $data->day_id);
+
     // Delete the exercise
     if ($workout_exercise->delete()) {
         http_response_code(200);

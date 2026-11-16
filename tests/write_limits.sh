@@ -12,6 +12,9 @@
 # backend/config/rate_limiter.php: se l'istanza lo cambia, passa lo stesso valore allo script.
 #
 # Richiede curl e jq. Esce con 1 se un controllo fallisce.
+#
+# Serve DB_SQL_CMD (comando che legge SQL da stdin sul database dell'istanza, vedi tests/lib/tier.sh):
+# gli account di prova sono portati a Plus, perché i limiti di 50 schede e 14 giorni sono quelli di Plus e Pro (il Gratis ne ha 2 e 4).
 
 # I filtri jq stanno fra apici semplici di proposito: $status è una variabile di jq
 # shellcheck disable=SC2016
@@ -19,6 +22,8 @@ set -uo pipefail
 
 BASE="${1:?uso: $(basename "$0") <url del backend, es. http://localhost:8080/backend/>}"
 [[ "$BASE" == */ ]] || BASE="$BASE/"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/tier.sh"
+need_db_sql_cmd
 
 PASS='Prova!Limiti2026'
 SUFFIX="$(date +%s | tail -c 7)$RANDOM"
@@ -77,6 +82,7 @@ new_account "wlP$SUFFIX"; PL="$TOKEN"  # schede
 new_account "wlD$SUFFIX"; DY="$TOKEN"  # giorni ed esercizi
 new_account "wlS$SUFFIX"; SV="$TOKEN"  # salvataggi (raggiunge il limite)
 new_account "wlO$SUFFIX"; OT="$TOKEN"  # salvataggi: l'altro utente
+plus_account "wlP$SUFFIX" "wlD$SUFFIX"
 
 CAT="$(call GET api/exercise/read_all.php "$PL")"
 E1="$(echo "${CAT#* }" | jq -r '.records[0].id')"

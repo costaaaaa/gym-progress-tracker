@@ -18,28 +18,38 @@ if (!empty($data->plan_id) && !empty($data->days) && is_array($data->days)) {
         api_not_found();
     }
 
+    require_plan_writable($db, $user_id, $data->plan_id);
+
     $workout_day = new WorkoutDay($db);
 
-    // Tutta la richiesta o niente: giorni già presenti + nuovi non superano il tetto
-    if ($workout_day->countByPlan($data->plan_id) + count($data->days) > WorkoutDay::MAX_PER_PLAN) {
-        api_error(409, 'too_many_days', t_server('workout.too_many_days', array('max' => WorkoutDay::MAX_PER_PLAN)));
-    }
+    // Tutta la richiesta o niente: giorni già presenti + nuovi non superano il tetto del livello
+    enforce_tier_limit($db, $user_id, 'days_per_plan', $workout_day->countByPlan($data->plan_id), 'too_many_days', 'workout.too_many_days', count($data->days));
 
     $created_days = array();
 
-    foreach ($data->days as $index => $day) {
-        $workout_day->plan_id = $data->plan_id;
-        $workout_day->name = $day->name;
-        $workout_day->day_order = $index + 1;
+    // Tutti i giorni o nessuno: un errore a metà annulla anche quelli già inseriti
+    $db->beginTransaction();
+    try {
+        foreach ($data->days as $index => $day) {
+            $workout_day->plan_id = $data->plan_id;
+            $workout_day->name = $day->name;
+            $workout_day->day_order = $index + 1;
 
-        // Create the workout day
-        if ($workout_day->create()) {
-            $created_days[] = array(
-                "id" => $workout_day->id,
-                "name" => $workout_day->name,
-                "day_order" => $workout_day->day_order
-            );
+            // Create the workout day
+            if ($workout_day->create()) {
+                $created_days[] = array(
+                    "id" => $workout_day->id,
+                    "name" => $workout_day->name,
+                    "day_order" => $workout_day->day_order
+                );
+            }
         }
+
+        $db->commit();
+    } catch (PDOException $e) {
+        $db->rollBack();
+        api_log_exception('create_days', $e);
+        $created_days = array();
     }
 
     if (count($created_days) === count($data->days)) {
