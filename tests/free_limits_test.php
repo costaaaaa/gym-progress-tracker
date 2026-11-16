@@ -7,54 +7,13 @@
 // discesa da Plus, delete_day.php, tier/limits/features di user/read.php, forma del dashboard.
 $backend = $argv[1];
 require $backend . '/config/database.php';
+require_once $backend . '/lib/muscle_rules.php';
 
-$fails = 0;
-$checks = 0;
-function check($desc, $cond, $detail = '')
-{
-    global $fails, $checks;
-    $checks++;
-    if ($cond) {
-        echo "  \033[32m✓\033[0m $desc\n";
-    } else {
-        $fails++;
-        echo "  \033[31m✗\033[0m $desc\n";
-        if ($detail !== '') {
-            echo "      $detail\n";
-        }
-    }
-}
+require __DIR__ . '/lib/http_test.php';
 
 $conn = (new Database())->getConnection();
 
-$port = 8099;
-$server = proc_open(['php', '-S', "127.0.0.1:$port", '-t', $backend], [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['file', '/tmp/server.log', 'w']], $pipes);
-register_shutdown_function(function () use ($server) {
-    proc_terminate($server);
-});
-for ($i = 0; $i < 50; $i++) {
-    $sock = @fsockopen('127.0.0.1', $port);
-    if ($sock) { fclose($sock); break; }
-    usleep(100000);
-}
-
-// Chiamata HTTP: ritorna [codice, JSON decodificato come array, corpo grezzo]
-function call($method, $path, $token, $body = null)
-{
-    global $port;
-    $headers = "Authorization: Bearer $token\r\nContent-Type: application/json\r\n";
-    $context = stream_context_create(['http' => [
-        'method' => $method, 'header' => $headers, 'ignore_errors' => true, 'timeout' => 30,
-        'content' => $body === null ? '' : json_encode($body),
-    ]]);
-    $raw = file_get_contents("http://127.0.0.1:$port$path", false, $context);
-    $code = 0;
-    $responseHeaders = function_exists('http_get_last_response_headers') ? http_get_last_response_headers() : ($http_response_header ?? []);
-    if (isset($responseHeaders[0]) && preg_match('/ (\d{3})/', $responseHeaders[0], $m)) {
-        $code = (int)$m[1];
-    }
-    return [$code, json_decode((string)$raw, true), (string)$raw];
-}
+startTestServer($backend);
 
 // Utente di prova con token Bearer, livello free
 function newUser($name)
@@ -233,6 +192,27 @@ $ro('add_exercise: 409 plan_read_only', '/api/workout/add_exercise.php', ['day_i
 $ro('update_exercise: 409 plan_read_only', '/api/workout/update_exercise.php', ['day_id' => $dayY, 'exercise_id' => $weY1, 'rest' => 90, 'planned_sets' => [['set_number' => 1, 'kind' => 'working', 'reps_min' => 8, 'reps_max' => 8]]]);
 $ro('reorder_exercise: 409 plan_read_only', '/api/workout/reorder_exercise.php', ['day_id' => $dayY, 'exercise_id' => $weY2, 'direction' => 'up']);
 $ro('delete_exercise: 409 plan_read_only', '/api/workout/delete_exercise.php', ['day_id' => $dayY, 'exercise_id' => $weY2]);
+// Risorse di un altro utente, con l'account in sola lettura: la risposta resta quella di sempre (404), non plan_read_only
+[$uO, $tO] = newUser('fl_o');
+[$c, $r] = newPlan($tO, 'Altrui');
+$planO = (int)$r['plan']['id'];
+[$c, $r] = newDays($tO, $planO, 1);
+$dayO = (int)$r['days'][0]['id'];
+[$c, $r] = addExercise($tO, $dayO, $E1);
+$weO = (int)$r['workout_exercise']['id'];
+$sets = [['set_number' => 1, 'kind' => 'working', 'reps_min' => 8, 'reps_max' => 8]];
+$foreign = [
+    ['create_days', ['plan_id' => $planO, 'days' => [['name' => 'Intruso']]]],
+    ['add_exercise', ['day_id' => $dayO, 'exercise_id' => $E1, 'rest' => 60, 'planned_sets' => $sets]],
+    ['update_exercise', ['day_id' => $dayO, 'exercise_id' => $weO, 'rest' => 90, 'planned_sets' => $sets]],
+    ['reorder_exercise', ['day_id' => $dayO, 'exercise_id' => $weO, 'direction' => 'up']],
+    ['delete_exercise', ['day_id' => $dayO, 'exercise_id' => $weO]],
+];
+foreach ($foreign as [$endpoint, $body]) {
+    [$c, $r] = call('POST', "/api/workout/$endpoint.php", $tD, $body);
+    check("$endpoint su risorsa altrui con l'account in sola lettura: 404, non plan_read_only", $c === 404 && ($r['code'] ?? '') !== 'plan_read_only', "codice $c: " . json_encode($r));
+}
+check('la scheda altrui è intatta (1 giorno, 1 esercizio)', (int)scalar("SELECT COUNT(*) FROM gym_workout_days WHERE plan_id = ?", [$planO]) === 1 && (int)scalar("SELECT COUNT(*) FROM gym_workout_exercises WHERE day_id = ?", [$dayO]) === 1);
 check('nulla è cambiato: 2 esercizi nel giorno di Y, riposo 60', (int)scalar("SELECT COUNT(*) FROM gym_workout_exercises WHERE day_id = ?", [$dayY]) === 2 && (int)scalar("SELECT rest FROM gym_workout_exercises WHERE id = ?", [$weY1]) === 60);
 check('nessun giorno aggiunto a Z', (int)scalar("SELECT COUNT(*) FROM gym_workout_days WHERE plan_id = ?", [$planIds['Z']]) === 0);
 
@@ -335,12 +315,12 @@ check('allenamento salvato (2 serie allenanti + 1 riscaldamento)', $c === 201, "
 check('Gratis: detail basic', $c === 200 && ($d['detail'] ?? '') === 'basic', "codice $c");
 check('Gratis: weekly_sets è solo {total: 2} (riscaldamento escluso)', ($d['weekly_sets'] ?? null) === ['total' => 2], json_encode($d['weekly_sets'] ?? null));
 $rec = $d['recovery'] ?? [];
-$statuses = array_unique(array_column($rec, 'status'));
+$statuses = array_values(array_unique(array_column($rec, 'status')));
 sort($statuses);
-check('Gratis: solo stati PRONTO / IN RECUPERO', $statuses === ['IN RECUPERO', 'PRONTO'] || $statuses === ['IN RECUPERO'] || $statuses === ['PRONTO'], json_encode($statuses));
+check('Gratis: solo stati PRONTO / IN RECUPERO, entrambi presenti (uno allenato, gli altri no)', $statuses === ['IN RECUPERO', 'PRONTO'], json_encode($statuses));
 check('Gratis: il muscolo allenato è IN RECUPERO', ($rec[$muscle1]['status'] ?? '') === 'IN RECUPERO', json_encode($rec[$muscle1] ?? null));
-check('Gratis: nessun percent né ready_at in nessun muscolo', count(array_filter($rec, fn($m) => array_key_exists('percent', $m) || array_key_exists('ready_at', $m))) === 0 && count($rec) === 12);
-check('Gratis: last_trained c\'è per l\'allenato e null per gli altri', ($rec[$muscle1]['last_trained'] ?? null) !== null && count(array_filter($rec, fn($m) => $m['last_trained'] === null)) === 11);
+check('Gratis: nessun percent né ready_at in nessun muscolo', count(array_filter($rec, fn($m) => array_key_exists('percent', $m) || array_key_exists('ready_at', $m))) === 0 && count($rec) === count(COUNTED_MUSCLES));
+check('Gratis: last_trained c\'è per l\'allenato e null per gli altri', ($rec[$muscle1]['last_trained'] ?? null) !== null && count(array_filter($rec, fn($m) => $m['last_trained'] === null)) === count(COUNTED_MUSCLES) - 1);
 check('il resto del dashboard è intatto (weekly_workouts, weekly_volume, user_level)', ($d['weekly_workouts'] ?? null) === 1 && isset($d['weekly_volume']['total_weight']) && isset($d['user_level']));
 
 setTier($uH, 'plus');
@@ -349,7 +329,7 @@ check('Plus: detail full', ($d['detail'] ?? '') === 'full');
 check('Plus: weekly_sets ha week, previous_to_date, previous_total e total 2', isset($d['weekly_sets']['week'], $d['weekly_sets']['previous_to_date'], $d['weekly_sets']['previous_total']) && ($d['weekly_sets']['total'] ?? null) === 2 && ($d['weekly_sets']['week'][$muscle1] ?? null) === 2, json_encode($d['weekly_sets'] ?? null));
 $m = $d['recovery'][$muscle1] ?? [];
 check('Plus: il muscolo allenato ha percent, status, last_trained e ready_at', isset($m['percent'], $m['status'], $m['last_trained'], $m['ready_at']), json_encode($m));
-check('Plus: un muscolo mai allenato ha percent 100 e PRONTO', count(array_filter($d['recovery'], fn($x) => $x['status'] === 'PRONTO' && $x['percent'] === 100 && $x['last_trained'] === null)) === 11);
+check('Plus: un muscolo mai allenato ha percent 100 e PRONTO', count(array_filter($d['recovery'], fn($x) => $x['status'] === 'PRONTO' && $x['percent'] === 100 && $x['last_trained'] === null)) === count(COUNTED_MUSCLES) - 1);
 
 echo "\nCONTROLLI $checks FALLITI $fails\n";
 exit($fails > 0 ? 1 : 0);
