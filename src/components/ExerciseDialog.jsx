@@ -53,8 +53,8 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex, plansLink = false }) =
   const [newName, setNewName] = useState('');
   const [newPrimaryMuscle, setNewPrimaryMuscle] = useState('');
   const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState('');
-  const [createErrorCode, setCreateErrorCode] = useState('');
+  // Rifiuto della creazione: messaggio del server e suo codice, sempre insieme (null = nessun errore)
+  const [createError, setCreateError] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
 
   // Carica tutti gli esercizi quando il dialog viene aperto per estrarre i gruppi muscolari
@@ -132,7 +132,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex, plansLink = false }) =
     setEquipmentFilter('');
     setNewName('');
     setNewPrimaryMuscle('');
-    setCreateError('');
+    setCreateError(null);
   };
 
   // Gestione dell'autocomplete per il nome dell'esercizio
@@ -151,7 +151,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex, plansLink = false }) =
     setInputValue(newInputValue);
     // Quello che si cerca precompila "Non lo trovi? Crealo"
     if (reason === 'input') setNewName(newInputValue);
-    setCreateError('');
+    setCreateError(null);
   };
 
   // Esercizio personale nel gruppo scelto. Se esiste già (409 duplicate) si seleziona quello.
@@ -162,14 +162,13 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex, plansLink = false }) =
 
   const handleCreate = async () => {
     setCreating(true);
-    setCreateError('');
+    setCreateError(null);
     const res = await createExercise(typedName, exercise.muscleGroup, requiresPrimaryMuscle ? newPrimaryMuscle : undefined);
     setCreating(false);
     const created = res.data?.exercise;
     // 409 duplicate: esiste già (anche con maiuscole diverse o in un altro gruppo), lo si seleziona
     if (!created || !(res.ok || res.data?.code === 'duplicate')) {
-      setCreateError(errorMessage(res));
-      setCreateErrorCode(res.data?.code || '');
+      setCreateError({ message: errorMessage(res), code: res.data?.code || '' });
       return;
     }
     setAllExercises(prev => prev.some(ex => ex.id === created.id) ? prev : [...prev, created]);
@@ -198,7 +197,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex, plansLink = false }) =
     setInputValue(chosen.name);
     setNewName('');
     setNewPrimaryMuscle('');
-    setCreateError('');
+    setCreateError(null);
   };
 
   const handleSubmit = () => {
@@ -213,7 +212,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex, plansLink = false }) =
     setInputValue('');
     setNewName('');
     setNewPrimaryMuscle('');
-    setCreateError('');
+    setCreateError(null);
     onClose();
   };
 
@@ -315,7 +314,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex, plansLink = false }) =
                   size="small"
                   fullWidth
                   value={newName}
-                  onChange={(e) => { setNewName(e.target.value); setCreateError(''); }}
+                  onChange={(e) => { setNewName(e.target.value); setCreateError(null); }}
                   onKeyDown={(e) => { if (e.key === 'Enter' && canCreate) handleCreate(); }}
                   placeholder={t('exercise_dialog.new_placeholder', { group: muscleLabel(exercise.muscleGroup).toLowerCase() })}
                   inputProps={{ maxLength: 60 }}
@@ -337,7 +336,7 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex, plansLink = false }) =
                     name="primaryMuscle"
                     value={newPrimaryMuscle}
                     label={t('exercise_dialog.primary_muscle')}
-                    onChange={(e) => { setNewPrimaryMuscle(e.target.value); setCreateError(''); }}
+                    onChange={(e) => { setNewPrimaryMuscle(e.target.value); setCreateError(null); }}
                   >
                     {primaryMuscleOptions(exercise.muscleGroup).map((m) => (
                       <MenuItem key={m} value={m}>{muscleLabel(m)}</MenuItem>
@@ -367,8 +366,8 @@ const ExerciseDialog = ({ open, onClose, onAdd, dayIndex, plansLink = false }) =
           )}
           {createError && (
             <Alert severity="error">
-              {createError}
-              {plansLink && createErrorCode === 'too_many_exercises' && (
+              {createError.message}
+              {plansLink && createError.code === 'too_many_exercises' && (
                 <Link href={plansPath(i18n.language)} color="inherit" underline="always"
                   sx={{ display: 'flex', alignItems: 'center', minHeight: 44, fontWeight: 600 }}>
                   {t('plans.compare')}
