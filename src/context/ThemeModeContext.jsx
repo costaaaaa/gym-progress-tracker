@@ -59,7 +59,7 @@ export const ThemeModeProvider = ({ children }) => {
 
   const theme = useMemo(
     () => {
-      // Il rosso del marchio quando è un testo: lo usano il token primary.text e le voci selezionate del tema e il cursore di scrittura dei campi
+      // Il rosso del marchio quando è un testo: lo usano il token primary.text, le voci selezionate del tema e il cursore di scrittura dei campi
       const primaryText = mode === 'light' ? BRAND : ERROR_ON_DARK;
       // Contorno del focus da tastiera: colore del testo del tema, staccato di 2px dal controllo
       const focusRing = {
