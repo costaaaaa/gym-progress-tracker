@@ -30,3 +30,7 @@ export const muscleLabel = (group) => {
   const fallback = group.charAt(0).toUpperCase() + group.slice(1);
   return i18n.t(`muscle.${group.toLowerCase()}`, { defaultValue: fallback });
 };
+
+// Etichetta tradotta di uno slug di attrezzo (es. 'corpo_libero'). equipmentLabel in utils/exerciseCatalog.js resta la mappa
+// italiana fissa, perché quel file è condiviso byte per byte con un altro client. Uno slug sconosciuto si mostra com'è.
+export const equipmentName = (slug) => (slug ? i18n.t(`equipment.${slug}`, { defaultValue: slug }) : '');

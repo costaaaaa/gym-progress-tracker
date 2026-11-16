@@ -219,7 +219,7 @@ describe('bozza e ripresa', () => {
     expect(screen.getByRole('button', { name: 'Inizia allenamento' }).disabled).toBe(false);
   });
 
-  it('scartare la bozza prima che arrivino i piani: quando arrivano il giorno unico è già scelto', async () => {
+  it('scartare la bozza prima che arrivino le schede: quando arrivano il giorno unico è già scelto', async () => {
     const { arrivano } = pianiInRitardo(fullDay);
     localStorage.setItem(DRAFT_KEY, JSON.stringify(savedDraft));
     await mount();
@@ -229,7 +229,7 @@ describe('bozza e ripresa', () => {
     expect(screen.getByRole('combobox').textContent).toBe('Push completo');
   });
 
-  it('riprendere la bozza prima che arrivino i piani: il giorno unico del piano non sostituisce quello della bozza', async () => {
+  it('riprendere la bozza prima che arrivino le schede: il giorno unico della scheda non sostituisce quello della bozza', async () => {
     const { arrivano } = pianiInRitardo(pushDay);
     const draftDay = { id: 2, name: 'Push completo', exercises: [fly] };
     localStorage.setItem(DRAFT_KEY, JSON.stringify({
@@ -748,18 +748,18 @@ describe('salti e uscita', () => {
 });
 
 describe('errori e premium', () => {
-  it('un errore nel caricamento dei piani si vede nello snackbar', async () => {
+  it('un errore nel caricamento delle schede si vede nello snackbar', async () => {
     responses['read_plans.php'] = () => ({ ok: false, status: 500, json: async () => { throw new Error('non json'); }, text: async () => '' });
     vi.spyOn(console, 'error').mockImplementation(() => {});
     await mount();
-    expect(screen.getByText('Errore nel caricamento dei dati: Errore caricamento piani (500)')).toBeTruthy();
+    expect(screen.getByText('Errore nel caricamento dei dati: Errore caricamento schede (500)')).toBeTruthy();
   });
 
-  it('senza piano attivo avvisa e mostra la schermata senza piano', async () => {
+  it('senza scheda attiva avvisa e mostra la schermata senza scheda', async () => {
     responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Push Pull', is_active: false, days: [pushDay] }] });
     await mount();
-    expect(screen.getByText('Nessun piano attivo trovato. Attiva un piano dalle schede.')).toBeTruthy();
-    expect(screen.getByText('Nessun piano attivo')).toBeTruthy();
+    expect(screen.getByText('Nessuna scheda attiva trovata. Attivane una dalle schede.')).toBeTruthy();
+    expect(screen.getByText('Nessuna scheda attiva')).toBeTruthy();
   });
 
   it('senza la funzione premium i bottoni in allenamento hanno l\'etichetta "Premium" e il nome accessibile "… (Premium)"', async () => {

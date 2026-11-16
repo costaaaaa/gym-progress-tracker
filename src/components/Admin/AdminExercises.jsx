@@ -5,7 +5,8 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { adminExerciseAction, errorMessage, listAdminExercises } from '../../api/exercises';
-import { equipmentLabel, rankExerciseMatches } from '../../utils/exerciseCatalog';
+import { rankExerciseMatches } from '../../utils/exerciseCatalog';
+import { equipmentName } from '../../i18n/labels';
 import { primaryMuscleOptions } from '../../utils/muscleRules';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 
@@ -102,7 +103,7 @@ const ExerciseFormDialog = ({ open, exercise, muscleGroups, equipment, onClose, 
           <TextField select label="Attrezzo" value={equipmentValue} onChange={(e) => setEquipmentValue(e.target.value)}
             fullWidth margin="dense">
             <MenuItem value=""><em>Nessuno</em></MenuItem>
-            {equipment.map((q) => <MenuItem key={q} value={q}>{equipmentLabel(q) || q}</MenuItem>)}
+            {equipment.map((q) => <MenuItem key={q} value={q}>{equipmentName(q)}</MenuItem>)}
           </TextField>
           {!exercise && (
             <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 1.5 }}>
@@ -199,7 +200,7 @@ const AdminExercises = () => {
                 )}
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap', mt: 0.5 }}>
                   <Chip label={capitalize(e.muscle_group)} size="small" />
-                  {e.equipment && <Chip label={equipmentLabel(e.equipment) || e.equipment} size="small" variant="outlined" />}
+                  {e.equipment && <Chip label={equipmentName(e.equipment)} size="small" variant="outlined" />}
                   <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
                     {e.merged_into ? `unito in «${e.merged_into_name}»` : e.created_by_username ? `da ${e.created_by_username}` : 'catalogo'} · usato {e.uses} {e.uses === 1 ? 'volta' : 'volte'}
                   </Typography>
