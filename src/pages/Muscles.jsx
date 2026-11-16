@@ -95,7 +95,7 @@ const MuscleRow = ({ muscle, week, prev, status, days, max }) => {
 // Piano Gratis: nome e stato (Puoi allenare / In recupero), senza serie, barra, variazione né giorni.
 const BasicMuscleRow = ({ muscle, status }) => {
   const { t } = useTranslation();
-  const label = status === 'PRONTO' ? t('recovery.can_train') : status ? t('recovery.recovering') : t('muscles.row.no_data');
+  const label = status === 'PRONTO' ? t('recovery.can_train') : status ? t('recovery.basic_resting') : t('muscles.row.no_data');
   return (
     <Box component="li" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
       <Box sx={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, bgcolor: status ? STATUS_COLOR[status] : 'divider' }} />

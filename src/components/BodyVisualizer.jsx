@@ -72,7 +72,7 @@ const BodyVisualizer = ({ recoveryData, detail = 'full' }) => {
           </Block>
         )}
         {resting.length > 0 && (
-          <Block title={t(basic ? 'recovery.recovering' : 'recovery.resting')}>
+          <Block title={t(basic ? 'recovery.basic_resting' : 'recovery.resting')}>
             {resting.map(({ group, status, percent, days }) => basic ? <BasicRow key={group} group={group} /> : (
               <MuscleRow key={group} group={group} status={status} percent={percent}>
                 {days !== null && <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{readyLabel(t, days)}</Typography>}

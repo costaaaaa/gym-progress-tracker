@@ -342,7 +342,6 @@
   "body.field.waist": "Waist (cm)",
   "body.field.leg": "Leg (cm)",
   "common.cancel": "Cancel",
-  "common.premium": "Premium",
   "common.save": "Save",
   "health_consent.title": "Body measurements are health data",
   "health_consent.updated": "We've updated the consent: it now also covers Apple Health and Health Connect. Your measurements are safe and will be visible again as soon as you confirm.",
@@ -847,10 +846,6 @@
   "focus.notes_placeholder": "How did you feel? Anything to remember?",
   "focus.saving": "Saving...",
   "focus.save": "Save workout",
-  "focus.premium_title": "Premium feature",
-  "focus.premium_body": "With Premium you can swap an exercise on the fly (e.g. cables are taken, switch to dumbbells) or add one during the workout, even to make up one you skipped last time. In the meantime you can add the exercise to your plan from the plans section.",
-  "focus.premium_ok": "Got it",
-  "focus.premium_aria": "{{label}} (Premium)",
   "focus.discard_title": "Discard the workout?",
   "focus.discard_text": "You completed {{count}} sets. Data will not be saved.",
   "focus.discard_stay": "Stay",
@@ -1012,6 +1007,10 @@
   "plans.label_plus": "Plus",
   "plans.compare": "Compare plans",
   "recovery.locked": "Recovery percentage and days left",
-  "recovery.recovering": "Recovering",
-  "muscles.locked_sets": "Sets per muscle and comparison with last week"
+  "recovery.basic_resting": "Recovering",
+  "muscles.locked_sets": "Sets per muscle and comparison with last week",
+  "focus.plus_title": "Plus feature",
+  "focus.plus_body": "With Plus or Pro you can swap or add exercises during the workout.",
+  "focus.plus_ok": "Got it",
+  "focus.plus_aria": "{{label}} (Plus)"
 }

@@ -10,7 +10,8 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  GlobalStyles
+  GlobalStyles,
+  Link
 } from '@mui/material';
 import { Lock as LockIcon } from '@mui/icons-material';
 import { visuallyHidden } from '@mui/utils';
@@ -26,10 +27,11 @@ import RestTimerPhase from './focus/RestTimerPhase';
 import WorkoutPhase from './focus/WorkoutPhase';
 import SummaryPhase from './focus/SummaryPhase';
 import { radius } from '../theme/radius';
+import { plansPath } from '../i18n/paths';
 
 // Focus Mode: switch tra le fasi; stato e transizioni stanno in useFocusSession, la UI di ogni fase in src/pages/focus
 const FocusWorkout = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   usePageMeta(t('focus.meta.title'), t('focus.meta.description'));
 
   const { colors, isDarkMode } = useFocusColors();
@@ -122,15 +124,18 @@ const FocusWorkout = () => {
       <Dialog open={premiumDialog.open} onClose={premiumDialog.onClose}
         PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: radius.xxl } }}>
         <DialogTitle sx={{ color: colors.text, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <LockIcon sx={{ color: colors.warningText }} /> {t('focus.premium_title')}
+          <LockIcon sx={{ color: colors.warningText }} /> {t('focus.plus_title')}
         </DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ color: colors.textSecondary }}>
-            {t('focus.premium_body')}
+            {t('focus.plus_body')}
           </DialogContentText>
+          <Link href={plansPath(i18n.language)} sx={{ color: colors.text, fontWeight: 600, display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>
+            {t('plans.compare')}
+          </Link>
         </DialogContent>
         <DialogActions>
-          <Button onClick={premiumDialog.onClose} sx={{ color: colors.text }}>{t('focus.premium_ok')}</Button>
+          <Button onClick={premiumDialog.onClose} sx={{ color: colors.text }}>{t('focus.plus_ok')}</Button>
         </DialogActions>
       </Dialog>
       <Snackbar

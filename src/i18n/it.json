@@ -342,7 +342,6 @@
   "body.field.waist": "Vita (cm)",
   "body.field.leg": "Gamba (cm)",
   "common.cancel": "Annulla",
-  "common.premium": "Premium",
   "common.save": "Salva",
   "health_consent.title": "Le misure corporee sono dati sulla salute",
   "health_consent.updated": "Abbiamo aggiornato il consenso: ora comprende anche Apple Salute e Health Connect. Le tue misure sono al sicuro e tornano visibili appena lo confermi.",
@@ -847,10 +846,6 @@
   "focus.notes_placeholder": "Come ti sei sentito? Qualcosa da ricordare?",
   "focus.saving": "Salvataggio...",
   "focus.save": "Salva allenamento",
-  "focus.premium_title": "Funzione Premium",
-  "focus.premium_body": "Con Premium puoi cambiare un esercizio al volo (es. cavi occupati, passi ai manubri) o aggiungerne uno durante l'allenamento, anche per recuperare quello che hai saltato l'ultima volta. Nel frattempo puoi aggiungere l'esercizio alla tua scheda dalla sezione schede.",
-  "focus.premium_ok": "Ho capito",
-  "focus.premium_aria": "{{label}} (Premium)",
   "focus.discard_title": "Scartare l'allenamento?",
   "focus.discard_text": "Hai completato {{count}} serie. I dati non verranno salvati.",
   "focus.discard_stay": "Rimani",
@@ -1012,6 +1007,10 @@
   "plans.label_plus": "Plus",
   "plans.compare": "Confronta i piani",
   "recovery.locked": "Percentuale di recupero e giorni mancanti",
-  "recovery.recovering": "In recupero",
-  "muscles.locked_sets": "Serie per muscolo e confronto con la settimana scorsa"
+  "recovery.basic_resting": "In recupero",
+  "muscles.locked_sets": "Serie per muscolo e confronto con la settimana scorsa",
+  "focus.plus_title": "Funzione Plus",
+  "focus.plus_body": "Con Plus o Pro puoi cambiare o aggiungere esercizi durante l'allenamento.",
+  "focus.plus_ok": "Ho capito",
+  "focus.plus_aria": "{{label}} (Plus)"
 }
