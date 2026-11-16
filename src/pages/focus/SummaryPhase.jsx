@@ -245,7 +245,7 @@ export default function SummaryPhase({
 
             <TextField label={t('focus.notes_label')} multiline rows={3} value={workoutNotes}
               onChange={(e) => onNotesChange(e.target.value)} fullWidth placeholder={t('focus.notes_placeholder')}
-              sx={{ mb: 3, '& .MuiOutlinedInput-root': { color: colors.text, '& fieldset': { borderColor: colors.fieldBorder }, '&:hover fieldset': { borderColor: colors.primary }, '&.Mui-focused fieldset': { borderColor: colors.primary } }, '& .MuiInputLabel-root': { color: colors.textSecondary }, '& .MuiInputLabel-root.Mui-focused': { color: colors.primaryText } }} />
+              sx={{ mb: 3, '& .MuiOutlinedInput-root': { color: colors.text, '& fieldset': { borderColor: colors.fieldBorder }, '&:hover fieldset': { borderColor: colors.text } }, '& .MuiInputLabel-root': { color: colors.textSecondary } }} />
 
             <Button variant="contained" fullWidth size="large"
               startIcon={saving ? <ButtonSpinner sx={{ color: colors.primaryContrast }} /> : <SaveIcon />}

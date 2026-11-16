@@ -19,11 +19,6 @@ const ConfirmPasswordField = ({ pair, errorText, ...props }) => {
               {errorText || text}
             </Box>
           }
-          // Il campo attivo ha bordo ed etichetta neutri: il rosso del marchio, sotto una scritta verde o grigia, sembrerebbe un errore
-          sx={{
-            '& .MuiOutlinedInput-root.Mui-focused:not(.Mui-error) .MuiOutlinedInput-notchedOutline': { borderColor: 'text.primary' },
-            '& .MuiFormLabel-root.Mui-focused:not(.Mui-error)': { color: 'text.primary' },
-          }}
         />
       </Box>
       <Box role="status" aria-live="polite" sx={visuallyHidden}>{announce}</Box>
