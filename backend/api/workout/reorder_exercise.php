@@ -36,6 +36,7 @@ try {
         if (!workout_exercise_belongs_to_user($db, $data->exercise_id, $data->day_id, $user_id)) {
             api_not_found(t_server('workout.exercise_not_found'));
         }
+        require_day_plan_writable($db, $user_id, $data->day_id);
 
         // Verifica che l'esercizio esista
         if (!$workoutExercise->readOne()) {

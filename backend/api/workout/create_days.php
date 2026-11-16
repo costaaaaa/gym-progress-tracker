@@ -18,11 +18,14 @@ if (!empty($data->plan_id) && !empty($data->days) && is_array($data->days)) {
         api_not_found();
     }
 
+    require_plan_writable($db, $user_id, $data->plan_id);
+
     $workout_day = new WorkoutDay($db);
 
-    // Tutta la richiesta o niente: giorni già presenti + nuovi non superano il tetto
-    if ($workout_day->countByPlan($data->plan_id) + count($data->days) > WorkoutDay::MAX_PER_PLAN) {
-        api_error(409, 'too_many_days', t_server('workout.too_many_days', array('max' => WorkoutDay::MAX_PER_PLAN)));
+    // Tutta la richiesta o niente: giorni già presenti + nuovi non superano il tetto del livello
+    $max_days = user_limits($db, $user_id)['days_per_plan'];
+    if ($workout_day->countByPlan($data->plan_id) + count($data->days) > $max_days) {
+        api_error(409, 'too_many_days', limit_message($db, $user_id, 'workout.too_many_days', $max_days), array('limit' => $max_days));
     }
 
     $created_days = array();

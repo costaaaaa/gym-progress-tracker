@@ -3,6 +3,7 @@
 include_once __DIR__ . '/../models/ApiToken.php';
 include_once __DIR__ . '/../lib/plan_sets_rules.php';
 include_once __DIR__ . '/../lib/tier_rules.php';
+include_once __DIR__ . '/../lib/tier_limits.php';
 include_once __DIR__ . '/../lib/web_session.php';
 
 // Token Bearer in chiaro dall'header Authorization, o null.
@@ -473,13 +474,14 @@ function exercise_params_error($data)
 // ── Gruppi ──────────────────────────────────────────────────────────────────
 
 // Errore con un codice stabile, così web e mobile mostrano lo stesso messaggio
-function api_error($status_code, $code, $message)
+// $extra: campi in più nel corpo (es. 'limit' nei rifiuti per tetto)
+function api_error($status_code, $code, $message, array $extra = [])
 {
     api_json_response([
         'success' => false,
         'code' => $code,
         'message' => $message
-    ], $status_code);
+    ] + $extra, $status_code);
 }
 
 // Riga di appartenenza (role, share_level, joined_at) dell'utente al gruppo, o null
@@ -628,9 +630,59 @@ function user_features($db, $user_id)
 {
     if (in_array(user_tier($db, $user_id), ['plus', 'pro'], true)) {
         // focus_session_edit: cambiare o aggiungere esercizi durante il Focus Mode
-        return ['focus_session_edit'];
+        // muscle_status_full: stato muscolare con percentuale e giorni mancanti (dashboard, detail full)
+        // weekly_sets_by_muscle: serie della settimana per muscolo e confronto (dashboard, detail full)
+        return ['focus_session_edit', 'muscle_status_full', 'weekly_sets_by_muscle'];
     }
     return [];
+}
+
+// Tetti del livello in vigore (lib/tier_limits.php)
+function user_limits($db, $user_id)
+{
+    return tierLimits(user_tier($db, $user_id));
+}
+
+// Messaggio di un rifiuto per tetto: per il Gratis la variante "<chiave>_free", che dice anche che con
+// Plus o Pro il limite è più alto; per gli altri livelli la chiave base.
+function limit_message($db, $user_id, $key, $max)
+{
+    $suffix = user_tier($db, $user_id) === 'free' ? '_free' : '';
+    return t_server($key . $suffix, array('max' => $max));
+}
+
+// Rifiuta con 409 plan_read_only se la scheda è in sola lettura: più schede del limite del livello
+// (tutte) o questa scheda con più giorni del limite (lib/tier_limits.php, planReadOnlyReason). Si chiama
+// dopo il controllo di proprietà, dagli endpoint che cambiano giorni, esercizi o serie pianificate.
+// Non va chiamata da update_plan, activate_plan, delete_plan, delete_day né da record_workout.
+function require_plan_writable($db, $user_id, $plan_id)
+{
+    $limits = user_limits($db, $user_id);
+    $stmt = $db->prepare("SELECT COUNT(*) FROM gym_workout_plans WHERE user_id = ?");
+    $stmt->execute([(int)$user_id]);
+    $plan_count = (int)$stmt->fetchColumn();
+    $stmt = $db->prepare("SELECT COUNT(*) FROM gym_workout_days WHERE plan_id = ?");
+    $stmt->execute([(int)$plan_id]);
+    $day_count = (int)$stmt->fetchColumn();
+
+    $reason = planReadOnlyReason($plan_count, $day_count, $limits);
+    if ($reason === null) {
+        return;
+    }
+    $limit = $reason === 'plans_over_limit' ? $limits['plans'] : $limits['days_per_plan'];
+    api_error(409, 'plan_read_only', limit_message($db, $user_id, $reason === 'plans_over_limit' ? 'workout.plan_read_only_plans' : 'workout.plan_read_only_days', $limit),
+        ['reason' => $reason, 'limit' => $limit]);
+}
+
+// Come require_plan_writable, partendo da un giorno (dopo il controllo di proprietà del giorno o dell'esercizio)
+function require_day_plan_writable($db, $user_id, $day_id)
+{
+    $stmt = $db->prepare("SELECT plan_id FROM gym_workout_days WHERE id = ? LIMIT 1");
+    $stmt->execute([(int)$day_id]);
+    $plan_id = $stmt->fetchColumn();
+    if ($plan_id !== false) {
+        require_plan_writable($db, $user_id, $plan_id);
+    }
 }
 
 function user_has_feature($db, $user_id, $feature)

@@ -39,6 +39,8 @@ if (
         $workout_plan->user_id = $user_id;
 
         if ($workout_plan->readOne()) {
+            require_plan_writable($db, $user_id, $workout_day->plan_id);
+
             // Solo esercizi approvati o creati dall'utente: quelli in attesa degli altri non si usano
             if (!Exercise::isVisibleTo($db, $exercise_id, $user_id)) {
                 api_not_found(t_server('workout.exercise_not_found'));

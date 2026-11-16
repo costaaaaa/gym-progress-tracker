@@ -5,10 +5,6 @@ class WorkoutPlan
     private $conn;
     private $table_name = "gym_workout_plans";
 
-    // Schede che un utente può avere (argine all'abuso, non una regola di prodotto: sotto richieste
-    // contemporanee il tetto può essere superato di poco, senza transazioni né lock)
-    const MAX_PER_USER = 50;
-
     // Object properties
     public $id;
     public $user_id;
@@ -132,7 +128,7 @@ class WorkoutPlan
         });
     }
 
-    // Numero di schede dell'utente (per il tetto MAX_PER_USER)
+    // Numero di schede dell'utente (per il tetto del livello, lib/tier_limits.php)
     public function countByUser($user_id)
     {
         $stmt = $this->conn->prepare("SELECT COUNT(*) FROM " . $this->table_name . " WHERE user_id = ?");

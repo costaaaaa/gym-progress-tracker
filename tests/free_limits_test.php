@@ -251,7 +251,8 @@ check('delete_day sotto il limite di schede non sblocca (3 schede)', (planById($
 [$c, $r] = call('POST', '/api/workout/delete_plan.php', $tD, ['plan_id' => $planIds['Z']]);
 check('delete_plan funziona in sola lettura (200)', $c === 200);
 $plans = plansOf($tD);
-check('con 2 schede: Y è modificabile (read_only false, motivo null)', (planById($tD, $planIds['Y'])['read_only'] ?? null) === false && (planById($tD, $planIds['Y'])['read_only_reason'] ?? 'x') === null);
+$y = planById($tD, $planIds['Y']);
+check('con 2 schede: Y è modificabile (read_only false, motivo null)', ($y['read_only'] ?? null) === false && array_key_exists('read_only_reason', $y) && $y['read_only_reason'] === null, json_encode($y));
 $x = planById($tD, $planIds['X']);
 check('con 2 schede: X (5 giorni) è read_only con days_over_limit', ($x['read_only'] ?? null) === true && ($x['read_only_reason'] ?? null) === 'days_over_limit', json_encode([$x['read_only'] ?? '-', $x['read_only_reason'] ?? '-']));
 [$c, $r] = call('POST', '/api/workout/add_exercise.php', $tD, ['day_id' => $dayX[0], 'exercise_id' => $E2, 'rest' => 60, 'planned_sets' => [['set_number' => 1, 'kind' => 'working', 'reps_min' => 8, 'reps_max' => 8]]]);
@@ -304,7 +305,7 @@ check('nessun esercizio di scheda orfano', (int)scalar("SELECT COUNT(*) FROM gym
 check('l\'esercizio di un altro giorno è intatto', (int)scalar("SELECT COUNT(*) FROM gym_workout_exercises WHERE id = ?", [$weKeep]) === 1);
 $orders = $conn->prepare("SELECT day_order FROM gym_workout_days WHERE plan_id = ? ORDER BY day_order");
 $orders->execute([$planF]);
-check('i giorni rimasti sono rinumerati 1, 2, 3', $orders->fetchAll(PDO::FETCH_COLUMN) === ['1', '2', '3'] || $orders->fetchAll(PDO::FETCH_COLUMN) === [1, 2, 3]);
+check('i giorni rimasti sono rinumerati 1, 2, 3', array_map('intval', $orders->fetchAll(PDO::FETCH_COLUMN)) === [1, 2, 3]);
 $order = $conn->prepare("SELECT id FROM gym_workout_days WHERE plan_id = ? ORDER BY day_order");
 $order->execute([$planF]);
 check('l\'ordine relativo è conservato', array_map('intval', $order->fetchAll(PDO::FETCH_COLUMN)) === [$daysF[0], $daysF[2], $daysF[3]]);
