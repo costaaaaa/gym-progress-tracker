@@ -69,29 +69,40 @@ function checkNoOrphans($conn, $when)
         json_encode(array_filter($found)));
 }
 
-// Righe della catena schede > giorni > esercizi > serie pianificate: di tutte le schede di un utente ($userId,
-// parte dalla tabella delle schede) oppure di una scheda ($planId, parte dai giorni: così vale anche se la riga
-// della scheda non c'è più e non passa mai dalla tabella delle schede).
-function planChainCounts($conn, $userId = null, $planId = null)
+// Righe della catena schede > giorni > esercizi > serie pianificate di tutte le schede di un utente
+function planChainCounts($conn, $userId)
 {
-    if ($planId !== null) {
-        $from = "FROM gym_workout_days d";
-        $where = "WHERE d.plan_id = " . (int)$planId;
-        $out = [];
-    } else {
-        $from = "FROM gym_workout_plans p JOIN gym_workout_days d ON d.plan_id = p.id";
-        $where = "WHERE p.user_id = " . (int)$userId;
-        $out = ['gym_workout_plans' => (int)$conn->query("SELECT COUNT(*) FROM gym_workout_plans p $where")->fetchColumn()];
-    }
+    $userId = (int)$userId;
+    $from = "FROM gym_workout_plans p JOIN gym_workout_days d ON d.plan_id = p.id";
     $q = [
-        'gym_workout_days' => "SELECT COUNT(*) $from $where",
-        'gym_workout_exercises' => "SELECT COUNT(*) $from JOIN gym_workout_exercises e ON e.day_id = d.id $where",
-        'gym_workout_plan_sets' => "SELECT COUNT(*) $from JOIN gym_workout_exercises e ON e.day_id = d.id JOIN gym_workout_plan_sets s ON s.workout_exercise_id = e.id $where",
+        'gym_workout_plans' => "SELECT COUNT(*) FROM gym_workout_plans p WHERE p.user_id = $userId",
+        'gym_workout_days' => "SELECT COUNT(*) $from WHERE p.user_id = $userId",
+        'gym_workout_exercises' => "SELECT COUNT(*) $from JOIN gym_workout_exercises e ON e.day_id = d.id WHERE p.user_id = $userId",
+        'gym_workout_plan_sets' => "SELECT COUNT(*) $from JOIN gym_workout_exercises e ON e.day_id = d.id JOIN gym_workout_plan_sets s ON s.workout_exercise_id = e.id WHERE p.user_id = $userId",
     ];
+    $out = [];
     foreach ($q as $table => $sql) {
         $out[$table] = (int)$conn->query($sql)->fetchColumn();
     }
     return $out;
+}
+
+// Id dei giorni di una scheda: si leggono prima di cancellarla, per poter contare dopo che cosa resta sotto
+function dayIdsOfPlan($conn, $planId)
+{
+    return array_map('intval', $conn->query("SELECT id FROM gym_workout_days WHERE plan_id = " . (int)$planId . " ORDER BY id")->fetchAll(PDO::FETCH_COLUMN));
+}
+
+// Righe sotto un elenco di giorni (i giorni stessi, i loro esercizi, le serie di quegli esercizi), senza passare
+// dalla tabella delle schede: conta anche i figli rimasti dopo che la scheda e i giorni non ci sono più.
+function dayChainCounts($conn, array $dayIds)
+{
+    $ids = implode(',', array_map('intval', $dayIds));
+    return [
+        'gym_workout_days' => (int)$conn->query("SELECT COUNT(*) FROM gym_workout_days WHERE id IN ($ids)")->fetchColumn(),
+        'gym_workout_exercises' => (int)$conn->query("SELECT COUNT(*) FROM gym_workout_exercises WHERE day_id IN ($ids)")->fetchColumn(),
+        'gym_workout_plan_sets' => (int)$conn->query("SELECT COUNT(*) FROM gym_workout_plan_sets s JOIN gym_workout_exercises e ON e.id = s.workout_exercise_id WHERE e.day_id IN ($ids)")->fetchColumn(),
+    ];
 }
 
 // Numero di righe dei dati di un utente, per tabella
@@ -176,9 +187,10 @@ if ($phase === 'cases') {
     $plans = array_map('intval', $conn->query("SELECT id FROM gym_workout_plans WHERE user_id = $u1 ORDER BY id")->fetchAll(PDO::FETCH_COLUMN));
     $victim = $plans[1];
     $others = [$plans[0], $plans[2]];
-    $before = array_map(fn($p) => planChainCounts($conn, null, $p), $others);
+    $before = array_map(fn($p) => dayChainCounts($conn, dayIdsOfPlan($conn, $p)), $others);
+    $victimDays = dayIdsOfPlan($conn, $victim);
     $plan = new WorkoutPlan($conn);
-    $beforeOutside = planChainCounts($conn, null, $victim);
+    $beforeOutside = dayChainCounts($conn, $victimDays);
     $thrown = false;
     try {
         $plan->deleteDaysAndExercises($u1, $victim);
@@ -186,14 +198,14 @@ if ($phase === 'cases') {
         $thrown = true;
     }
     check("deleteDaysAndExercises() fuori da una transazione lancia LogicException e non cancella nulla",
-        $thrown && $beforeOutside === planChainCounts($conn, null, $victim) && 0 < array_sum($beforeOutside));
+        $thrown && $beforeOutside === dayChainCounts($conn, $victimDays) && 0 < array_sum($beforeOutside));
     $plan->id = $victim;
     $plan->user_id = $u1;
     check("delete() risponde true", $plan->delete() === true);
     check("la scheda non c'è più", (int)$conn->query("SELECT COUNT(*) FROM gym_workout_plans WHERE id = $victim")->fetchColumn() === 0);
-    $victimLeft = planChainCounts($conn, null, $victim);
+    $victimLeft = dayChainCounts($conn, $victimDays);
     check("sono spariti i suoi giorni, esercizi e serie pianificate", 0 === array_sum($victimLeft), json_encode($victimLeft));
-    check("le altre due schede dello stesso utente sono intatte", $before === array_map(fn($p) => planChainCounts($conn, null, $p), $others));
+    check("le altre due schede dello stesso utente sono intatte", $before === array_map(fn($p) => dayChainCounts($conn, dayIdsOfPlan($conn, $p)), $others));
     checkNoOrphans($conn, 'dopo il caso 1');
     $after1 = counts($conn, $u1);
     check("allenamenti e gruppo dell'utente intatti",
