@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/WorkoutPlan.php';
+
 class User
 {
     // Database connection and table name
@@ -448,21 +450,10 @@ class User
 
         try {
             // Iniziamo una transazione per garantire l'integrità dei dati.
-            // I dati correlati sono rimossi dai vincoli ON DELETE CASCADE, tranne la catena
-            // schede > giorni > esercizi > serie pianificate: con MySQL 9.7 la cascata a quattro
-            // livelli si ferma a metà e lascia righe orfane, quindi esercizi e giorni si cancellano qui.
+            // I dati correlati sono rimossi dai vincoli ON DELETE CASCADE, tranne giorni ed esercizi delle schede.
             $this->conn->beginTransaction();
 
-            $stmt = $this->conn->prepare("DELETE e FROM gym_workout_exercises e
-                JOIN gym_workout_days d ON d.id = e.day_id
-                JOIN gym_workout_plans p ON p.id = d.plan_id
-                WHERE p.user_id = ?");
-            $stmt->execute([$this->id]);
-
-            $stmt = $this->conn->prepare("DELETE d FROM gym_workout_days d
-                JOIN gym_workout_plans p ON p.id = d.plan_id
-                WHERE p.user_id = ?");
-            $stmt->execute([$this->id]);
+            (new WorkoutPlan($this->conn))->deleteDaysAndExercises($this->id);
 
             // Gli esercizi personali non approvati sono dati suoi e li vede solo lui: si cancellano.
             // Quelli approvati restano nel catalogo di tutti (created_by diventa NULL).

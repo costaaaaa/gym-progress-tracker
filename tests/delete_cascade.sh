@@ -57,6 +57,8 @@ for _ in $(seq 1 90); do
     sleep 1
 done
 [[ "$ready" == 1 ]] || die "MySQL non è partito"
+# Basta lo schema completo: secondo DB_UPGRADE_README.md contiene già tutto; le sezioni di
+# schema_alter_migrations.sql servono solo ai database già esistenti (qui si prova solo la 36, più sotto).
 docker exec -i -e MYSQL_PWD="$DBPASS" "$DB" mysql -uroot <"$ROOT/backend/database/gym_progress_tracker.sql" \
     || die "schema non caricato"
 
