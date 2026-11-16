@@ -131,6 +131,8 @@
   "register.error.username_taken": "Questo username è già preso",
   "register.error.email_taken": "Questa email è già registrata: <login>accedi</login> o <forgot>recupera la password</forgot>.",
   "register.error.password_mismatch": "Le password non corrispondono",
+  "register.confirm_hint": "Riscrivi la stessa password",
+  "register.confirm_match": "Le password coincidono",
   "register.error.birth_date_required": "Inserisci la data di nascita",
   "birth_date.error_invalid": "Inserisci una data di nascita valida",
   "register.error.min_age": "Devi avere almeno 14 anni per usare LiftIndex",
