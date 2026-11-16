@@ -685,7 +685,8 @@ function require_plan_writable($db, $user_id, $plan_id)
     }
     list($limit_key, $message_key) = PLAN_READ_ONLY_REASONS[$reason];
     $limit = $limits[$limit_key];
-    api_error(409, 'plan_read_only', tier_limit_message($tier, $message_key, $limit), array('reason' => $reason, 'limit' => $limit));
+    $extra = array('reason' => $reason, 'limit' => $limit);
+    api_error(409, 'plan_read_only', tier_limit_message($tier, $message_key, $limit), $extra);
 }
 
 // Come require_plan_writable, partendo da un giorno (dopo il controllo di proprietà del giorno o dell'esercizio)
