@@ -55,6 +55,8 @@ import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
 import { NEUTRAL_OUTLINED } from '../utils/buttonStyles';
 import { getConsents, setConsent } from '../utils/consent';
 import useFocusField from '../hooks/useFocusField';
+import useConfirmPassword from '../hooks/useConfirmPassword';
+import ConfirmPasswordField from '../components/Auth/ConfirmPasswordField';
 import { loginWithNext } from '../utils/safeNext';
 import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
 import ButtonSpinner from '../components/ButtonSpinner';
@@ -101,6 +103,7 @@ const Account = ({ isEmbedded = false }) => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const confirmPair = useConfirmPassword({ password: newPassword, confirm: confirmPassword, mismatchText: t('account.password.mismatch') });
 
   // Stati per l'eliminazione dell'account
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -466,6 +469,7 @@ const Account = ({ isEmbedded = false }) => {
     setNewPassword('');
     setConfirmPassword('');
     setPasswordError('');
+    confirmPair.reset();
   };
 
   const handleClosePasswordDialog = () => {
@@ -473,6 +477,7 @@ const Account = ({ isEmbedded = false }) => {
   };
 
   const handleChangePassword = async () => {
+    confirmPair.submit();
     // Validazione
     if (!currentPassword || !newPassword || !confirmPassword) {
       setPasswordError(t('account.password.all_required'));
@@ -480,7 +485,9 @@ const Account = ({ isEmbedded = false }) => {
     }
 
     if (newPassword !== confirmPassword) {
-      setPasswordError(t('account.password.mismatch'));
+      // L'errore sta nella riga sotto «Conferma»: niente avviso in alto, il focus va al campo
+      setPasswordError('');
+      focusField('confirmPassword');
       return;
     }
 
@@ -988,35 +995,40 @@ const Account = ({ isEmbedded = false }) => {
             }}
           />
 
-          <TextField
-            margin="dense"
-            label={t('account.password.new')}
-            type={showNewPassword ? "text" : "password"}
-            autoComplete="new-password"
-            fullWidth
-            variant="outlined"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            required
-            disabled={changingPassword}
-            sx={{ mb: 2 }}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label={t('account.password.show_new')}
-                    onClick={handleToggleNewPasswordVisibility}
-                    edge="end"
-                    disabled={changingPassword}
-                  >
-                    {showNewPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
+          <Box onBlur={confirmPair.leave}>
+            <TextField
+              margin="dense"
+              label={t('account.password.new')}
+              type={showNewPassword ? "text" : "password"}
+              autoComplete="new-password"
+              fullWidth
+              variant="outlined"
+              value={newPassword}
+              onChange={(e) => { setNewPassword(e.target.value); confirmPair.edit(); }}
+              required
+              disabled={changingPassword}
+              sx={{ mb: 2 }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label={t('account.password.show_new')}
+                      onClick={handleToggleNewPasswordVisibility}
+                      // Il clic sull'occhio non toglie il focus al campo: non è un'uscita
+                      onMouseDown={(e) => e.preventDefault()}
+                      edge="end"
+                      disabled={changingPassword}
+                    >
+                      {showNewPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Box>
 
-          <TextField
+          <ConfirmPasswordField
+            pair={confirmPair}
             margin="dense"
             label={t('account.password.confirm')}
             type={showConfirmPassword ? "text" : "password"}
@@ -1024,7 +1036,8 @@ const Account = ({ isEmbedded = false }) => {
             fullWidth
             variant="outlined"
             value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            onChange={(e) => { setConfirmPassword(e.target.value); confirmPair.edit(); }}
+            inputRef={fieldRef('confirmPassword')}
             required
             disabled={changingPassword}
             InputProps={{
@@ -1033,6 +1046,8 @@ const Account = ({ isEmbedded = false }) => {
                   <IconButton
                     aria-label={t('password.show_confirm')}
                     onClick={handleToggleConfirmPasswordVisibility}
+                    // Il clic sull'occhio non toglie il focus al campo: non è un'uscita
+                    onMouseDown={(e) => e.preventDefault()}
                     edge="end"
                     disabled={changingPassword}
                   >
