@@ -1012,5 +1012,6 @@
   "plans.label_plus": "Plus",
   "plans.compare": "Compare plans",
   "recovery.locked": "Recovery percentage and days left",
-  "recovery.recovering": "Recovering"
+  "recovery.recovering": "Recovering",
+  "muscles.locked_sets": "Sets per muscle and comparison with last week"
 }

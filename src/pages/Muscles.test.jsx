@@ -161,6 +161,54 @@ describe('sicurezza verso un backend precedente', () => {
   });
 });
 
+// Piano Gratis (detail "basic"): solo il totale della settimana e due stati, con le righe con lucchetto.
+describe('piano Gratis (detail "basic")', () => {
+  const basicStats = {
+    success: true,
+    detail: 'basic',
+    weekly_sets: { total: 53 },
+    recovery: {
+      petto: { status: 'PRONTO', last_trained: '2026-10-20 18:00:00' },
+      schiena: { status: 'IN RECUPERO', last_trained: '2026-10-28 18:00:00' },
+      spalle: { status: 'PRONTO', last_trained: null },
+    },
+  };
+
+  it('mostra solo il totale della settimana: niente confronto, niente serie né variazione per muscolo', async () => {
+    await mount(basicStats);
+    expect(screen.getByText('53')).toBeTruthy();
+    expect(screen.queryByText(/Settimana scorsa/)).toBeNull();
+    expect(screen.queryByText(/intera/)).toBeNull();
+    expect(screen.queryByRole('progressbar')).toBeNull();
+    expect(screen.queryByText(/[▲▼]/)).toBeNull();
+    expect(within(row('Petto')).queryByText('0')).toBeNull();
+  });
+
+  it('le due righe con lucchetto stanno in cima e portano ai piani', async () => {
+    await mount(basicStats);
+    expect(screen.getByText('Serie per muscolo e confronto con la settimana scorsa')).toBeTruthy();
+    expect(screen.getByText('Percentuale di recupero e giorni mancanti')).toBeTruthy();
+    const links = screen.getAllByRole('link', { name: 'Confronta i piani' });
+    expect(links).toHaveLength(2);
+    for (const link of links) expect(link.getAttribute('href')).toBe('/piani');
+  });
+
+  it('ogni muscolo ha solo "Puoi allenare" o "In recupero" ("nessun dato" se mai allenato)', async () => {
+    await mount(basicStats);
+    expect(within(row('Petto')).getByText('Puoi allenare')).toBeTruthy();
+    expect(within(row('Schiena')).getByText('In recupero')).toBeTruthy();
+    expect(within(row('Spalle')).getByText('nessun dato')).toBeTruthy();
+    expect(within(row('Abduttori')).getByText('nessun dato')).toBeTruthy();
+    expect(screen.queryByText(/pronto (oggi|domani|tra)/)).toBeNull();
+    expect(screen.getAllByRole('listitem')).toHaveLength(12);
+  });
+
+  it('con detail "full" non c\'è nessuna riga con lucchetto', async () => {
+    await mount();
+    expect(screen.queryByRole('link', { name: 'Confronta i piani' })).toBeNull();
+  });
+});
+
 describe('caricamento ed errore', () => {
   it('mostra un indicatore di caricamento prima che arrivino i dati', () => {
     vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
