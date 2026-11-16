@@ -123,7 +123,7 @@ CREATE TABLE IF NOT EXISTS `gym_workout_plan_sets` (
   CONSTRAINT `gym_workout_plan_sets_working_target` CHECK (`kind` = 'warmup' OR (`to_failure` = 1 AND `reps_max` IS NULL) OR (`to_failure` = 0 AND `reps_min` IS NOT NULL AND `reps_max` IS NOT NULL))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Progress tracking table: non più usata da nessun codice, da eliminare in un rilascio successivo
+-- Progress tracking table: no longer used by any code, to be dropped in a later release
 CREATE TABLE IF NOT EXISTS `gym_progress` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,

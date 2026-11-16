@@ -9,7 +9,11 @@
 //                allenamento salvato la lascia NULL.
 //   dropped:     colonna e tabella gym_progress non esistono più: tutto deve funzionare uguale.
 $backend = $argv[1];
-$phase = $argv[2] ?? 'with-column';
+$phase = $argv[2] ?? '';
+if (!in_array($phase, ['with-column', 'dropped'], true)) {
+    fwrite(STDERR, "Fase sconosciuta: '$phase' (with-column | dropped)\n");
+    exit(2);
+}
 require $backend . '/config/database.php';
 require_once $backend . '/models/User.php';
 require_once $backend . '/models/Exercise.php';
@@ -107,8 +111,8 @@ $conn->prepare("INSERT INTO gym_api_tokens (user_id, token_hash, expires_at) VAL
 
 // Salvataggio, come lo manda un client (anche vecchio): exercise_name e day_id in ogni record
 $records = [
-    ['exercise_id' => $exerciseIds[0], 'exercise_name' => 'Esercizio A', 'day_id' => $dayId, 'set_number' => 1, 'weight' => 40, 'reps' => '10'],
-    ['exercise_id' => $exerciseIds[0], 'exercise_name' => 'Esercizio A', 'day_id' => $dayId, 'set_number' => 2, 'weight' => 42.5, 'reps' => 8],
+    ['exercise_id' => $exerciseIds[0], 'exercise_name' => 'Esercizio A', 'day_id' => $dayId, 'set_number' => 1, 'weight' => 40, 'reps' => '10', 'is_warmup' => true, 'seconds_from_start' => 30],
+    ['exercise_id' => $exerciseIds[0], 'exercise_name' => 'Esercizio A', 'day_id' => $dayId, 'set_number' => 2, 'weight' => 42.5, 'reps' => 8, 'intensity_technique' => 'dropset', 'seconds_from_start' => 240],
     ['exercise_id' => $exerciseIds[1], 'exercise_name' => 'Esercizio B', 'day_id' => $dayId, 'set_number' => 1, 'weight' => 20, 'reps' => '12'],
 ];
 [$code, $saved] = call('POST', '/api/workout/record_workout.php', $token, ['workout_records' => $records, 'notes' => 'prova']);
@@ -145,14 +149,23 @@ if ($withColumn) {
 [$code, $export] = call('GET', '/api/user/export.php', $token);
 check('user/export.php risponde', $code === 200 && ($export['success'] ?? false) === true, "codice $code: " . substr(json_encode($export), 0, 300));
 $workout = $export['workouts'][0] ?? [];
-$expectedSets = [
-    ['set_number' => 1, 'weight' => 40.0, 'reps' => '10'],
-    ['set_number' => 2, 'weight' => 42.5, 'reps' => '8'],
-    ['set_number' => 1, 'weight' => 20.0, 'reps' => '12'],
+$names = [];
+foreach ($conn->query("SELECT id, name FROM gym_exercises WHERE id IN ({$exerciseIds[0]}, {$exerciseIds[1]})") as $r) {
+    $names[(int)$r['id']] = $r['name'];
+}
+// Tutte le voci di ogni serie esportata, nell'ordine dell'export (esercizio, poi id della serie)
+$normalize = fn($s) => [
+    'exercise' => $s['exercise'], 'set_number' => (int)$s['set_number'], 'weight' => (float)$s['weight'], 'reps' => (string)$s['reps'],
+    'intensity_technique' => $s['intensity_technique'], 'is_warmup' => (bool)(int)$s['is_warmup'],
+    'seconds_from_start' => $s['seconds_from_start'] === null ? null : (int)$s['seconds_from_start'],
 ];
-$gotSets = array_map(fn($s) => ['set_number' => (int)$s['set_number'], 'weight' => (float)$s['weight'], 'reps' => (string)$s['reps']], $workout['sets'] ?? []);
-$wantSets = array_map(fn($s) => ['set_number' => $s['set_number'], 'weight' => $s['weight'], 'reps' => $s['reps']], $expectedSets);
-check('l\'export ha le 3 serie dell\'allenamento', $gotSets === $wantSets, json_encode($workout['sets'] ?? null));
+$wantSets = [
+    ['exercise' => $names[$exerciseIds[0]], 'set_number' => 1, 'weight' => 40.0, 'reps' => '10', 'intensity_technique' => null, 'is_warmup' => true, 'seconds_from_start' => 30],
+    ['exercise' => $names[$exerciseIds[0]], 'set_number' => 2, 'weight' => 42.5, 'reps' => '8', 'intensity_technique' => 'dropset', 'is_warmup' => false, 'seconds_from_start' => 240],
+    ['exercise' => $names[$exerciseIds[1]], 'set_number' => 1, 'weight' => 20.0, 'reps' => '12', 'intensity_technique' => null, 'is_warmup' => false, 'seconds_from_start' => null],
+];
+$gotSets = array_map($normalize, $workout['sets'] ?? []);
+check('l\'export ha le 3 serie con tutte le voci (esercizio, numero, peso, ripetizioni, tecnica, riscaldamento, secondi)', $gotSets === $wantSets, json_encode($workout['sets'] ?? null));
 check('l\'export conserva note, data e fuso dell\'allenamento', ($workout['notes'] ?? null) === 'prova' && isset($workout['date'], $workout['time_zone'], $workout['started_at']));
 check('l\'export non ha più la voce exercises negli allenamenti', !array_key_exists('exercises', $workout));
 check('l\'export non ha più exercise_progress', !array_key_exists('exercise_progress', $export));

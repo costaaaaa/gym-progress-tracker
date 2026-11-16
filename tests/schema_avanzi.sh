@@ -28,24 +28,16 @@ source "$ROOT/tests/lib/throwaway_mysql.sh"
 tm_setup av
 
 # Come un database di produzione prima della sezione 37: colonna obbligatoria
-tm_sql -e 'ALTER TABLE gym_workout_history MODIFY `exercises` text NOT NULL' || die "colonna non preparata"
+tm_sql -e 'ALTER TABLE gym_workout_history MODIFY `exercises` text NOT NULL' || tm_die "colonna non preparata"
 
 echo
 echo "Sezione $SECTION (due esecuzioni) e percorsi con la colonna facoltativa"
-section_sql="$(awk -v n="$SECTION" '/^-- [0-9]+\. /{ split($2, a, "."); cur = a[1] } cur == n' "$MIGRATIONS")"
-[[ -n "$section_sql" ]] || { echo "Sezione $SECTION assente in $MIGRATIONS" >&2; failed=$((failed + 1)); }
-for pass in 1 2; do
-    if ! out="$(printf '%s\n' "$section_sql" | tm_sql 2>&1)"; then
-        echo "Errore nella sezione $SECTION (esecuzione $pass): $out" >&2
-        failed=$((failed + 1))
-    fi
-done
-total=$((total + 1))
+tm_run_section "$SECTION"
 tm_php_phase schema_avanzi_test.php with-column
 
 echo
 echo "Colonna exercises e tabella gym_progress eliminate"
-tm_sql -e 'ALTER TABLE gym_workout_history DROP COLUMN `exercises`; DROP TABLE gym_progress' || die "eliminazione non riuscita"
+tm_sql -e 'ALTER TABLE gym_workout_history DROP COLUMN `exercises`; DROP TABLE gym_progress' || tm_die "eliminazione non riuscita"
 tm_php_phase schema_avanzi_test.php dropped
 
 echo

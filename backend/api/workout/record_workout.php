@@ -58,7 +58,7 @@ try {
         }
         if (!isset($record->exercise_id) || empty($record->exercise_id)) continue;
         // L'identificatore convertito sostituisce quello grezzo: visibilità, controllo premium, serie
-        // salvate, gamification usano tutti lo stesso valore.
+        // salvate e gamification usano tutti lo stesso valore.
         $record->exercise_id = parse_positive_id($record->exercise_id);
         if ($record->exercise_id === null) {
             api_json_response(['success' => false, 'message' => t_server('workout.record_invalid')], 400);

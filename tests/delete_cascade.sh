@@ -33,15 +33,7 @@ run_phase cases
 echo
 echo "Sezione $SECTION su orfani già presenti"
 run_phase seed-orphans
-section_sql="$(awk -v n="$SECTION" '/^-- [0-9]+\. /{ split($2, a, "."); cur = a[1] } cur == n' "$MIGRATIONS")"
-[[ -n "$section_sql" ]] || { echo "Sezione $SECTION assente in $MIGRATIONS" >&2; failed=$((failed + 1)); }
-for pass in 1 2; do
-    if ! out="$(printf '%s\n' "$section_sql" | tm_sql 2>&1)"; then
-        echo "Errore nella sezione $SECTION (esecuzione $pass): $out" >&2
-        failed=$((failed + 1))
-    fi
-done
-total=$((total + 1))
+tm_run_section "$SECTION"
 run_phase check-orphans
 
 echo
