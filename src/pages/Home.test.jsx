@@ -85,7 +85,7 @@ describe('primo accesso', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Benvenuto, mario88' })).toBeTruthy();
   });
 
-  it('con lo storico il titolo è "Bentornato"', async () => {
+  it('con la cronologia il titolo è "Bentornato"', async () => {
     renderHome();
     expect(await screen.findByRole('heading', { level: 1, name: 'Bentornato, mario88' })).toBeTruthy();
     expect(screen.queryByText('Benvenuto, mario88')).toBeNull();
@@ -97,16 +97,16 @@ describe('primo accesso', () => {
     await screen.findByText('Inizia da qui');
     expect(screen.getByText('Riepilogo settimanale')).toBeTruthy();
     expect(screen.queryByRole('link', { name: 'Inizia allenamento' })).toBeNull();
-    expect(screen.queryByText('Piano attivo')).toBeNull();
+    expect(screen.queryByText('Scheda attiva')).toBeNull();
     expect(screen.queryByText('Ultimo allenamento')).toBeNull();
     expect(screen.queryByText('I tuoi gruppi')).toBeNull();
     expect(screen.queryByText('Nessun allenamento recente. È ora di tornare in palestra!')).toBeNull();
   });
 
-  it('con una scheda attiva e uno storico la Home mostra tutte le card e il bottone "Inizia allenamento"', async () => {
+  it('con una scheda attiva e una cronologia la Home mostra tutte le card e il bottone "Inizia allenamento"', async () => {
     renderHome();
     expect(await screen.findByRole('link', { name: 'Inizia allenamento' })).toBeTruthy();
-    expect(await screen.findByText('Piano attivo')).toBeTruthy();
+    expect(await screen.findByText('Scheda attiva')).toBeTruthy();
     expect(screen.getByText('Ultimo allenamento')).toBeTruthy();
     expect(await screen.findByText('I tuoi gruppi')).toBeTruthy();
     expect(screen.queryByText('Inizia da qui')).toBeNull();
@@ -129,7 +129,7 @@ describe('primo accesso', () => {
     expect(screen.queryByText('Inizia da qui')).toBeNull();
   });
 
-  it('arrivato lo storico vuoto compare "Benvenuto", ma né bottone né card finché non arrivano le schede', async () => {
+  it('arrivata la cronologia vuota compare "Benvenuto", ma né bottone né card finché non arrivano le schede', async () => {
     newUser();
     let plansArrive;
     const plans = new Promise((resolve) => { plansArrive = resolve; });
@@ -145,7 +145,7 @@ describe('primo accesso', () => {
     expect(screen.queryByRole('link', { name: 'Inizia allenamento' })).toBeNull();
   });
 
-  it('un utente con lo storico vede "Bentornato" e il bottone, mai "Benvenuto"', async () => {
+  it('un utente con la cronologia vede "Bentornato" e il bottone, mai "Benvenuto"', async () => {
     renderHome();
     expect(await screen.findByText('Bentornato, mario88')).toBeTruthy();
     expect(await screen.findByRole('link', { name: 'Inizia allenamento' })).toBeTruthy();
@@ -162,11 +162,11 @@ describe('primo accesso', () => {
   it.each([
     ['senza schede', []],
     ['con sole schede inattive', [{ id: 2, name: 'Vecchia', is_active: false }]],
-  ])('il riepilogo settimanale %s parla di traguardo, non di piano', async (_nome, records) => {
+  ])('il riepilogo settimanale %s parla di traguardo, non di scheda', async (_nome, records) => {
     responses['workout/read_plans.php'] = { success: true, records };
     renderHome();
     expect(await screen.findByText('Ti manca 1 sessione per il traguardo settimanale.')).toBeTruthy();
-    expect(screen.queryByText(/per completare il piano/)).toBeNull();
+    expect(screen.queryByText(/per completare la scheda/)).toBeNull();
   });
 
   it('senza scheda e senza allenamenti c\'è "Inizia da qui" con il link a "Crea la tua prima scheda"', async () => {
@@ -180,11 +180,11 @@ describe('primo accesso', () => {
   it('"Inizia da qui" non c\'è se c\'è una scheda attiva', async () => {
     responses['workout_history/read.php'] = { success: true, records: [] };
     renderHome();
-    await screen.findByRole('link', { name: /Piano attivo/ });
+    await screen.findByRole('link', { name: /Scheda attiva/ });
     expect(screen.queryByText('Inizia da qui')).toBeNull();
   });
 
-  it('"Inizia da qui" non c\'è se c\'è uno storico, anche senza scheda attiva', async () => {
+  it('"Inizia da qui" non c\'è se c\'è una cronologia, anche senza scheda attiva', async () => {
     responses['workout/read_plans.php'] = { success: true, records: [] };
     renderHome();
     await screen.findByRole('link', { name: /Ultimo allenamento/ });
@@ -192,8 +192,8 @@ describe('primo accesso', () => {
   });
 
   it.each([
-    ['lo storico fallisce e le schede non ci sono', 'workout_history/read.php', 'workout/read_plans.php', { success: true, records: [] }, 'Bentornato, mario88'],
-    ['lo storico è vuoto e le schede falliscono', 'workout/read_plans.php', 'workout_history/read.php', { success: true, records: [] }, 'Benvenuto, mario88'],
+    ['la cronologia fallisce e le schede non ci sono', 'workout_history/read.php', 'workout/read_plans.php', { success: true, records: [] }, 'Bentornato, mario88'],
+    ['la cronologia è vuota e le schede falliscono', 'workout/read_plans.php', 'workout_history/read.php', { success: true, records: [] }, 'Benvenuto, mario88'],
   ])('se %s la Home è completa, con il bottone e senza "Inizia da qui"', async (_nome, failing, emptied, emptyBody, greeting) => {
     responses[emptied] = emptyBody;
     vi.stubGlobal('fetch', vi.fn((url) => (
@@ -215,7 +215,7 @@ describe('primo accesso', () => {
     expect(hero.getAttribute('aria-busy')).toBe('false');
   });
 
-  it('dopo un ricaricamento la sessione si conferma senza rimontare Home: le card dei dati non partono prima di storico e schede', () => {
+  it('dopo un ricaricamento la sessione si conferma senza rimontare Home: le card dei dati non partono prima di cronologia e schede', () => {
     auth.isLoggedIn = false;
     const fetchSpy = vi.fn(() => new Promise(() => {}));
     vi.stubGlobal('fetch', fetchSpy);
@@ -254,9 +254,9 @@ describe('home dopo il login', () => {
     expect(link.textContent).toContain('Squat');
   });
 
-  it('Piano attivo porta ai piani e mostra il nome', async () => {
+  it('Scheda attiva porta alle schede e mostra il nome', async () => {
     renderHome();
-    const link = await screen.findByRole('link', { name: /Piano attivo/ });
+    const link = await screen.findByRole('link', { name: /Scheda attiva/ });
     expect(link.getAttribute('href')).toBe('/workouts?tab=plans');
     expect(link.textContent).toContain('Push Pull Legs');
   });
@@ -266,7 +266,7 @@ describe('home dopo il login', () => {
     expect(await screen.findByText('2 / 3')).toBeTruthy();
   });
 
-  it.each(['Riepilogo settimanale', 'Ultimo allenamento', 'Piano attivo', 'I tuoi gruppi'])(
+  it.each(['Riepilogo settimanale', 'Ultimo allenamento', 'Scheda attiva', 'I tuoi gruppi'])(
     'la card "%s" ha un\'intestazione',
     async (name) => {
       renderHome();

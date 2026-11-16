@@ -154,7 +154,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       }
 
       const daysToCreate = Array.from({ length: numDays }, (_, i) => ({
-        name: `Giorno ${i + 1}`,
+        name: t('plans.day_default', { n: i + 1 }),
         exercises: []
       }));
 

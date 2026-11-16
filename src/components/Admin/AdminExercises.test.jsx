@@ -4,6 +4,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act, within } from '@testing-library/react';
 import AdminExercises from './AdminExercises';
+import i18n from '../../i18n';
 import { json } from '../../test/dom';
 
 const MUSCLE_GROUPS = ['petto', 'glutei', 'gambe', 'spalle'];
@@ -157,5 +158,30 @@ describe('AdminExercises · ricerca per pertinenza', () => {
 
     expect(screen.getAllByText(/panca/i).map((el) => el.textContent)).toEqual(['Panca Piana', 'Croci Panca Piana (Cavi)']);
     expect(screen.queryByText('Squat')).toBeNull();
+  });
+});
+
+describe('AdminExercises · etichette attrezzo', () => {
+  it('il chip dell\'attrezzo nella lista segue la lingua', async () => {
+    exercisesFixture = [{ id: 5, name: 'Plank', muscle_group: 'addome', equipment: 'corpo_libero', status: 'approved' }];
+    await i18n.changeLanguage('en');
+    render(<AdminExercises />);
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    expect(screen.getByText('Bodyweight')).toBeTruthy();
+    expect(screen.queryByText('Corpo libero')).toBeNull();
+  });
+});
+
+describe('AdminExercises · select Attrezzo del form', () => {
+  it('le voci seguono la lingua', async () => {
+    await i18n.changeLanguage('en');
+    fetchMock.mockImplementation(() => Promise.resolve(
+      json({ success: true, exercises: [], muscle_groups: MUSCLE_GROUPS, equipment: ['corpo_libero', 'bilanciere'] }),
+    ));
+    await apri();
+    fireEvent.mouseDown(within(screen.getByRole('dialog')).getByRole('combobox', { name: /^Attrezzo/ }));
+    expect(screen.getByRole('option', { name: 'Bodyweight' })).toBeTruthy();
+    expect(screen.getByRole('option', { name: 'Barbell' })).toBeTruthy();
+    expect(screen.queryByRole('option', { name: 'Corpo libero' })).toBeNull();
   });
 });
