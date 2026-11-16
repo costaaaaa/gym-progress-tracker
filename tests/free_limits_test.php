@@ -217,7 +217,7 @@ function planSnapshot($planId)
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 $snapshotO = planSnapshot($planO);
-check('la scheda altrui ha un giorno, due esercizi e le serie pianificate', count($snapshotO) === 2 && $snapshotO[0]['we_id'] !== $snapshotO[1]['we_id']
+check('la scheda altrui ha un giorno, due esercizi e le serie pianificate', count($snapshotO) === 2 && $snapshotO[0]['day_id'] === $snapshotO[1]['day_id'] && $snapshotO[0]['we_id'] !== $snapshotO[1]['we_id']
     && $snapshotO[0]['set_number'] !== null && $snapshotO[1]['set_number'] !== null);
 $foreign = [
     ['create_days', ['plan_id' => $planO, 'days' => [['name' => 'Intruso']]]],
