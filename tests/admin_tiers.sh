@@ -129,7 +129,7 @@ else
         expect "plus con data: 200" 200 "$res"
         check "risponde con la riga aggiornata" "$res" ".user.id == $A_ID and .user.tier == \"plus\" and .user.last_day == \"$FUTURE\" and .user.effective_tier == \"plus\" and (.user.email | ascii_downcase) == \"${A_USER,,}@example.com\""
         check "la ricerca la conferma" "$(tiers "$A_USER")" ".users[0].tier == \"plus\" and .users[0].last_day == \"$FUTURE\""
-        if [[ "$(features)" == '["focus_session_edit"]' ]]; then ok "A ha le funzioni del livello plus"; else ko "A ha le funzioni del livello plus" "features: $(features)"; fi
+        if [[ "$(features)" == '["focus_session_edit","muscle_status_full","weekly_sets_by_muscle"]' ]]; then ok "A ha le funzioni del livello plus"; else ko "A ha le funzioni del livello plus" "features: $(features)"; fi
         TODAY="$(TZ=Europe/Rome date +%F)"
         check "oggi (ora italiana) come ultimo giorno è valido" "$(set_tier "$(set_json pro "$TODAY")")" ".user.tier == \"pro\" and .user.last_day == \"$TODAY\" and .user.effective_tier == \"pro\""
         res="$(set_tier "$(set_json pro)")"
