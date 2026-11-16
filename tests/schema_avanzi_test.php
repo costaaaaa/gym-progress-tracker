@@ -153,7 +153,7 @@ $names = [];
 foreach ($conn->query("SELECT id, name FROM gym_exercises WHERE id IN ({$exerciseIds[0]}, {$exerciseIds[1]})") as $r) {
     $names[(int)$r['id']] = $r['name'];
 }
-// Tutte le voci di ogni serie esportata, nell'ordine dell'export (esercizio, poi id della serie)
+// Tutte le voci di ogni serie esportata, nell'ordine dell'export (id della serie)
 $normalize = fn($s) => [
     'exercise' => $s['exercise'], 'set_number' => (int)$s['set_number'], 'weight' => (float)$s['weight'], 'reps' => (string)$s['reps'],
     'intensity_technique' => $s['intensity_technique'], 'is_warmup' => (bool)(int)$s['is_warmup'],
@@ -164,6 +164,14 @@ $wantSets = [
     ['exercise' => $names[$exerciseIds[0]], 'set_number' => 2, 'weight' => 42.5, 'reps' => '8', 'intensity_technique' => 'dropset', 'is_warmup' => false, 'seconds_from_start' => 240],
     ['exercise' => $names[$exerciseIds[1]], 'set_number' => 1, 'weight' => 20.0, 'reps' => '12', 'intensity_technique' => null, 'is_warmup' => false, 'seconds_from_start' => null],
 ];
+// Né una voce in più né una in meno: $normalize da solo leggerebbe come null una voce mancante
+$sortedKeys = function ($set) {
+    $keys = array_keys($set);
+    sort($keys);
+    return $keys;
+};
+$setsWithOtherKeys = array_filter($workout['sets'] ?? [], fn($s) => $sortedKeys($s) !== $sortedKeys($wantSets[0]));
+check('ogni serie esportata ha esattamente quelle voci', $setsWithOtherKeys === [], json_encode($setsWithOtherKeys));
 $gotSets = array_map($normalize, $workout['sets'] ?? []);
 check('l\'export ha le 3 serie con tutte le voci (esercizio, numero, peso, ripetizioni, tecnica, riscaldamento, secondi)', $gotSets === $wantSets, json_encode($workout['sets'] ?? null));
 check('l\'export conserva note, data e fuso dell\'allenamento', ($workout['notes'] ?? null) === 'prova' && isset($workout['date'], $workout['time_zone'], $workout['started_at']));
