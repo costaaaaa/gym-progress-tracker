@@ -75,12 +75,9 @@ export default function SelectDayPhase({
                 '& .MuiOutlinedInput-root': {
                   color: colors.text,
                   '& fieldset': { borderColor: colors.fieldBorder },
-                  '&:hover fieldset': { borderColor: colors.primary },
-                  '&.Mui-focused fieldset': { borderColor: colors.primary },
                 },
                 '& .MuiOutlinedInput-input': FOCUS_FIELD_PADDING,
                 '& .MuiInputLabel-root': { color: colors.textSecondary },
-                '& .MuiInputLabel-root.Mui-focused': { color: colors.primaryText },
                 '& .MuiSvgIcon-root': { color: colors.textSecondary },
               }}>
                 <InputLabel id="focus-day-label">{t('record.select_day')}</InputLabel>
