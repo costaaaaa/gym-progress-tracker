@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { formatWeight, formatSet } from './weightFormat';
 
 const NB = '\u00a0';
@@ -67,18 +67,29 @@ describe('formatSet', () => {
 describe('formatWeight, segno scritto a mano', () => {
   it('il "+" non dipende da signDisplay (Hermes può ignorarlo)', () => {
     const original = Number.prototype.toLocaleString;
-    Number.prototype.toLocaleString = function toLocaleStringSenzaSegno(locale, options) {
+    const spy = vi.spyOn(Number.prototype, 'toLocaleString').mockImplementation(function senzaSegno(locale, options) {
       const rest = { ...options };
       delete rest.signDisplay;
       return original.call(this, locale, rest);
-    };
+    });
     try {
       expect(formatWeight(2.1, 'it-IT', { signed: true })).toBe(`+2,1${NB}kg`);
       expect(formatWeight(-2.1, 'it-IT', { signed: true })).toBe(`-2,1${NB}kg`);
       expect(formatWeight(0.04, 'it-IT', { signed: true, maxDecimals: 1 })).toBe(`0${NB}kg`);
       expect(formatWeight(0.05, 'it-IT', { signed: true, maxDecimals: 1 })).toBe(`+0,1${NB}kg`);
     } finally {
-      Number.prototype.toLocaleString = original;
+      spy.mockRestore();
     }
+  });
+
+  it('con cifre non latine (en-US-u-nu-arab) il segno resta', () => {
+    expect(formatWeight(-2.1, 'en-US-u-nu-arab', { signed: true })).toBe(`-٢٫١${NB}kg`);
+    expect(formatWeight(2.1, 'en-US-u-nu-arab', { signed: true })).toBe(`+٢٫١${NB}kg`);
+    expect(formatWeight(-2.1, 'en-US-u-nu-arab')).toBe(`-٢٫١${NB}kg`);
+    expect(formatWeight(0.04, 'en-US-u-nu-arab', { signed: true, maxDecimals: 1 })).toBe(`٠${NB}kg`);
+  });
+
+  it('un negativo che arrotonda a 0 non ha segno', () => {
+    expect(formatWeight(-0.04, 'it-IT', { maxDecimals: 1 })).toBe(`0${NB}kg`);
   });
 });

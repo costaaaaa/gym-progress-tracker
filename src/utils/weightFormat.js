@@ -12,12 +12,12 @@ const toNumber = (value) => {
 // 79.30 → "79,3 kg" (it) / "79.3 kg" (en): niente zeri finali e spazio non separabile prima di kg.
 // Senza un valore valido: "—". Opzioni: maxDecimals (default 2), signed (segno anche per i positivi),
 // unit: false (solo il numero). Il segno è scritto a mano (non con signDisplay, che alcuni motori
-// JavaScript ignorano) e si decide sul valore arrotondato: ciò che si arrotonda a 0 non ha segno.
+// JavaScript ignorano) e si decide sul numero arrotondato (non sul testo, che può avere cifre non latine): ciò che si arrotonda a 0 non ha segno.
 export function formatWeight(value, locale, { signed = false, unit = true, maxDecimals = 2 } = {}) {
   const n = toNumber(value);
   if (n === null) return '—';
   const digits = Math.abs(n).toLocaleString(locale, { maximumFractionDigits: maxDecimals });
-  const isZero = !/[1-9]/.test(digits);
+  const isZero = Number(Math.abs(n).toFixed(maxDecimals)) === 0;
   const sign = isZero ? '' : n < 0 ? '-' : signed ? '+' : '';
   return `${sign}${digits}${unit ? `${NBSP}kg` : ''}`;
 }
