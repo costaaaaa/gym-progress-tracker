@@ -16,7 +16,7 @@ function tierLimits(string $tier): array
 }
 
 // Motivi di sola lettura, in ordine di precedenza: motivo → [chiave del limite in tierLimits(), chiave del
-// messaggio del server]. I conteggi corrispondenti non stanno qui: li passa chi chiama planReadOnlyReason().
+// messaggio del server]. I conteggi li passa chi chiama planReadOnlyReason(), che li lega alle chiavi in $counts.
 const PLAN_READ_ONLY_REASONS = [
     'plans_over_limit' => ['plans', 'workout.plan_read_only_plans'],
     'days_over_limit' => ['days_per_plan', 'workout.plan_read_only_days'],

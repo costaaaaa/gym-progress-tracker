@@ -155,8 +155,8 @@ setTier($uP, 'pro');
 check('Pro: tier pro e stesse features', ($re['tier'] ?? '') === 'pro' && count($re['features'] ?? []) === 3);
 setTier($uP, 'plus');
 
-// ── Passando da Plus a un piano inferiore: sola lettura ─────────────────────────────────────────────
-echo "Passando da Plus a un piano inferiore: 3 schede e una da 5 giorni\n";
+// ── Da Plus a un piano inferiore: sola lettura ────────────────────────────────
+echo "Da Plus a un piano inferiore: 3 schede e una da 5 giorni\n";
 [$uD, $tD] = newUser('fl_d');
 setTier($uD, 'plus');
 $planIds = [];
@@ -217,7 +217,8 @@ function planSnapshot($planId)
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 $snapshotO = planSnapshot($planO);
-check('la scheda altrui ha un giorno, due esercizi e le serie pianificate', count($snapshotO) === 2 && $snapshotO[0]['set_number'] !== null && $snapshotO[1]['set_number'] !== null);
+check('la scheda altrui ha un giorno, due esercizi e le serie pianificate', count($snapshotO) === 2 && $snapshotO[0]['we_id'] !== $snapshotO[1]['we_id']
+    && $snapshotO[0]['set_number'] !== null && $snapshotO[1]['set_number'] !== null);
 $foreign = [
     ['create_days', ['plan_id' => $planO, 'days' => [['name' => 'Intruso']]]],
     ['add_exercise', ['day_id' => $dayO, 'exercise_id' => $E1, 'rest' => 60, 'planned_sets' => $sets]],
