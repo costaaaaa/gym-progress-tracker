@@ -242,7 +242,7 @@ const Register = () => {
   };
 
   // «Avanti» a conferma vuota con la password scritta: lo stato sarebbe hint, ma come su main il campo mostra
-  // l'errore («Le password non corrispondono») nella stessa riga, finché non si scrive
+  // l'errore («Le password non coincidono») nella stessa riga, finché non si scrive
   const emptyConfirmError = confirmPassword ? '' : fieldErrors.confirmPassword;
 
   const passwordAdornment = (shown, toggle, label) => (

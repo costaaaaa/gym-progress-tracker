@@ -72,7 +72,7 @@ describe('ResetPassword: conferma con riga riservata', () => {
     expect(field().getAttribute('aria-invalid')).toBe('false');
   });
 
-  it('uscendo dal campo con password diverse compare il rosso con il testo di questo modulo, e si annuncia', () => {
+  it('uscendo dal campo con password diverse compare il rosso, e si annuncia', () => {
     renderReset();
     typePassword(NEW_PASSWORD);
     typeConfirm('Nuova!Pass');

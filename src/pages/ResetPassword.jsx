@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TextField, Button, Box, Alert, Link, InputAdornment, IconButton } from '@mui/material';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
@@ -11,6 +11,7 @@ import { validatePassword } from '../utils/passwordPolicy';
 import AuthLayout from '../components/Auth/AuthLayout';
 import ConfirmPasswordField from '../components/Auth/ConfirmPasswordField';
 import useConfirmPassword from '../hooks/useConfirmPassword';
+import useFocusField from '../hooks/useFocusField';
 
 const ResetPassword = () => {
   const { t } = useTranslation();
@@ -35,10 +36,10 @@ const ResetPassword = () => {
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(false);
-  const confirmRef = useRef(null);
-  const pair = useConfirmPassword({ password, confirm })
+  const { fieldRef, focusField } = useFocusField();
+  const pair = useConfirmPassword({ password, confirm });
   // «Salva» a conferma vuota: l'errore sta nella riga, finché non si scrive nel campo
-  const [emptyConfirm, setEmptyConfirm] = useState(false);;
+  const [emptyConfirm, setEmptyConfirm] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -53,7 +54,7 @@ const ResetPassword = () => {
     if (password !== confirm) {
       // L'errore sta nella riga sotto il campo, non nell'avviso in alto
       setEmptyConfirm(!confirm);
-      confirmRef.current?.focus();
+      focusField('confirm');
       return;
     }
     setLoading(true);
@@ -133,7 +134,7 @@ const ResetPassword = () => {
               label={t('reset.repeat_password')}
               type={showPassword ? 'text' : 'password'}
               id="confirm"
-              inputRef={confirmRef}
+              inputRef={fieldRef('confirm')}
               autoComplete="new-password"
               value={confirm}
               onChange={(e) => { setConfirm(e.target.value); setEmptyConfirm(false); pair.edit(); }}

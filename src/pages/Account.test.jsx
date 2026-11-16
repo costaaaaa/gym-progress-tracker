@@ -330,6 +330,39 @@ describe('password e dati personali', () => {
       expect(within(dialog).getByRole('alert').textContent).toBe('La nuova password deve essere diversa da quella attuale');
     });
 
+    it('uscire da «Nuova password» con la conferma scritta e diversa mostra il rosso', async () => {
+      const dialog = await apriCambioPassword();
+      fill(dialog, { confirm: 'Nuova!Pass' });
+      expect(confirmField(dialog).getAttribute('aria-invalid')).toBe('false');
+      fireEvent.blur(within(dialog).getByLabelText(/^Nuova password/));
+      expect(confirmField(dialog).getAttribute('aria-invalid')).toBe('true');
+      expect(describedBy(confirmField(dialog))).toBe('Le password non coincidono');
+    });
+
+    it('uscire da «Password attuale» non mostra il rosso: non fa parte della coppia', async () => {
+      const dialog = await apriCambioPassword();
+      fill(dialog, { confirm: 'Nuova!Pass' });
+      fireEvent.blur(within(dialog).getByLabelText(/^Password attuale/));
+      expect(confirmField(dialog).getAttribute('aria-invalid')).toBe('false');
+      expect(describedBy(confirmField(dialog))).toBe('Riscrivi la stessa password');
+    });
+
+    it('dopo il rosso, modificare «Nuova password» (restando diversa) riporta il suggerimento', async () => {
+      const dialog = await apriCambioPassword();
+      fill(dialog, { confirm: 'Nuova!Pass' });
+      fireEvent.blur(confirmField(dialog));
+      expect(confirmField(dialog).getAttribute('aria-invalid')).toBe('true');
+      fireEvent.change(within(dialog).getByLabelText(/^Nuova password/), { target: { value: 'Nuova!Pass2027' } });
+      expect(confirmField(dialog).getAttribute('aria-invalid')).toBe('false');
+      expect(describedBy(confirmField(dialog))).toBe('Riscrivi la stessa password');
+    });
+
+    it('il clic sull\'occhio di «Nuova password» non toglie il focus al campo', async () => {
+      const dialog = await apriCambioPassword();
+      const eye = within(dialog).getByRole('button', { name: 'Mostra o nascondi la nuova password' });
+      expect(fireEvent.mouseDown(eye)).toBe(false);
+    });
+
     it('alla riapertura niente rosso rimasto dalla volta prima', async () => {
       const dialog = await apriCambioPassword();
       fill(dialog, { confirm: 'Nuova!Pass' });

@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { confirmState } from '../utils/confirmPassword';
 
 // Stato della riga sotto «Conferma password», uguale in registrazione, recupero e cambio password.
-// Il rosso (mismatch) compare solo dopo un'uscita dalla
-// coppia di campi o un invio, mai mentre si scrive: ogni modifica a uno dei due campi rimette il suggerimento.
+// Il rosso (mismatch) compare solo dopo un'uscita dalla coppia di campi o un invio, mai mentre si scrive:
+// ogni modifica a uno dei due campi rimette il suggerimento.
 //   edit()   da chiamare nell'onChange di Password e di Conferma
 //   leave    onBlur di ciò che contiene il campo (occhio compreso): spostare il focus dentro non è un'uscita
 //   submit() da chiamare all'invio, prima dei controlli
