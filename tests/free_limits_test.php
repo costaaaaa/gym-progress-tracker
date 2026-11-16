@@ -7,7 +7,6 @@
 // da Plus a un piano inferiore, delete_day.php, tier/limits/features di user/read.php, forma del dashboard.
 $backend = $argv[1];
 require $backend . '/config/database.php';
-require_once $backend . '/lib/muscle_rules.php';
 require_once $backend . '/lib/recovery_rules.php';
 
 require __DIR__ . '/lib/http_test.php';
@@ -156,8 +155,8 @@ setTier($uP, 'pro');
 check('Pro: tier pro e stesse features', ($re['tier'] ?? '') === 'pro' && count($re['features'] ?? []) === 3);
 setTier($uP, 'plus');
 
-// ── Discesa da Plus: sola lettura ─────────────────────────────────────────────
-echo "Discesa da Plus: 3 schede e una da 5 giorni\n";
+// ── Passando da Plus a un piano inferiore: sola lettura ─────────────────────────────────────────────
+echo "Passando da Plus a un piano inferiore: 3 schede e una da 5 giorni\n";
 [$uD, $tD] = newUser('fl_d');
 setTier($uD, 'plus');
 $planIds = [];
@@ -201,6 +200,8 @@ $planO = (int)$r['plan']['id'];
 $dayO = (int)$r['days'][0]['id'];
 [$c, $r] = addExercise($tO, $dayO, $E1);
 $weO = (int)$r['workout_exercise']['id'];
+[$c, $r] = addExercise($tO, $dayO, $E2);
+$weO2 = (int)$r['workout_exercise']['id'];
 $sets = [['set_number' => 1, 'kind' => 'working', 'reps_min' => 8, 'reps_max' => 8]];
 // Tutto il contenuto della scheda altrui, per confrontarlo prima e dopo
 function planSnapshot($planId)
@@ -216,12 +217,12 @@ function planSnapshot($planId)
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 $snapshotO = planSnapshot($planO);
-check('la scheda altrui ha giorno, esercizio e serie pianificate', count($snapshotO) === 1 && $snapshotO[0]['set_number'] !== null);
+check('la scheda altrui ha un giorno, due esercizi e le serie pianificate', count($snapshotO) === 2 && $snapshotO[0]['set_number'] !== null && $snapshotO[1]['set_number'] !== null);
 $foreign = [
     ['create_days', ['plan_id' => $planO, 'days' => [['name' => 'Intruso']]]],
     ['add_exercise', ['day_id' => $dayO, 'exercise_id' => $E1, 'rest' => 60, 'planned_sets' => $sets]],
     ['update_exercise', ['day_id' => $dayO, 'exercise_id' => $weO, 'rest' => 90, 'planned_sets' => $sets]],
-    ['reorder_exercise', ['day_id' => $dayO, 'exercise_id' => $weO, 'direction' => 'up']],
+    ['reorder_exercise', ['day_id' => $dayO, 'exercise_id' => $weO2, 'direction' => 'up']],
     ['delete_exercise', ['day_id' => $dayO, 'exercise_id' => $weO]],
 ];
 foreach ($foreign as [$endpoint, $body]) {
