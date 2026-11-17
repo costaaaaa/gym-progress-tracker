@@ -128,18 +128,21 @@ const Register = () => {
     }
 
     setLoading(true);
+    const sent = signup.toSend;
     try {
       const response = await fetch(`${API_BASE_URL}api/user/check_availability.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(signup.toSend ? { username, email, signup_code: signup.toSend } : { username, email }),
+        body: JSON.stringify(sent ? { username, email, signup_code: sent } : { username, email }),
       });
       const data = await response.json().catch(() => ({}));
+      // Il codice è stato cambiato mentre si controllava: la risposta non vale più, si riparte da «Avanti»
+      if (!signup.isCurrent(sent)) return;
       if (!response.ok && data.field === 'signup_code') {
         signup.fail(data.message);
         return;
       }
-      signup.accept(signup.toSend, response.ok ? data.signup_code : null);
+      signup.accept(sent, response.ok ? data.signup_code : null);
       if (response.status === 429) {
         setError(data.message || t('register.error.generic'));
         return;
@@ -343,7 +346,7 @@ const Register = () => {
               onChange={editPair(setConfirmPassword, 'confirmPassword')}
               InputProps={{ endAdornment: <PasswordToggle shown={showConfirmPassword} onToggle={handleToggleConfirmPasswordVisibility} label={t('password.show_confirm')} /> }}
             />
-            <SignupCodeField signup={signup} fieldRef={fieldRef} />
+            <SignupCodeField signup={signup} fieldRef={fieldRef} disabled={loading} />
             <Button type="submit" fullWidth variant="contained" size="large" sx={{ mt: 3, mb: 2 }} disabled={loading}>
               {loading ? t('register.checking') : t('register.next')}
             </Button>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { tierName } from '../utils/tiers';
 
@@ -16,6 +16,9 @@ export default function useSignupCode({ search, focusField }) {
   const [info, setInfo] = useState(null);
 
   const toSend = value.trim();
+  // Il codice di adesso, anche per chi ha una chiusura vecchia (un controllo in volo)
+  const latest = useRef(toSend);
+  latest.current = toSend;
   const note = info && info.code === toSend
     ? (info.days === null
       ? t('register.code_ok_forever', { tier: info.tier })
@@ -44,6 +47,8 @@ export default function useSignupCode({ search, focusField }) {
       setError('');
     },
     clearError: () => setError(''),
+    // Una risposta vale solo se il codice scritto è ancora quello spedito
+    isCurrent: (sent) => latest.current === sent,
     // Risposta del controllo anticipato per `code`: la nota solo se il codice è utilizzabile
     accept: (code, signupCode) => {
       setInfo(code && signupCode?.usable ? { code, tier: tierName(signupCode.tier), days: signupCode.duration_days ?? null } : null);

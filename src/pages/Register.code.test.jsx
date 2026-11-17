@@ -288,6 +288,38 @@ describe('codice non utilizzabile al controllo anticipato', () => {
   });
 });
 
+describe('controllo in corso', () => {
+  const hold = () => {
+    let release;
+    responses.check = () => new Promise((resolve) => { release = resolve; });
+    return (reply) => release(reply);
+  };
+
+  it('«Hai un codice?» è disabilitato finché il controllo è in corso', async () => {
+    const release = hold();
+    renderAt('/register?code=amici');
+    fillStep1();
+    next();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Hai un codice?' }).hasAttribute('disabled')).toBe(true));
+    release(answer({ success: true, username_taken: false, email_taken: false }));
+    await screen.findByText('Il tuo profilo');
+  });
+
+  it('se il codice cambia mentre si controlla, la risposta (anche un rifiuto) non tocca il campo', async () => {
+    const release = hold();
+    renderAt('/register?code=amici');
+    fillStep1();
+    next();
+    await screen.findByRole('button', { name: i18n.t('register.checking') });
+    fireEvent.change(codeField(), { target: { value: 'altro' } });
+    release(fail(400, 'signup_code_invalid', 'Il codice di registrazione non è valido.'));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Avanti' })).toBeTruthy());
+    expect(codeField().value).toBe('altro');
+    expect(describedBy(codeField()) ?? '').not.toMatch(/valido/);
+    expect(screen.getByText('Passo 1 di 2')).toBeTruthy();
+  });
+});
+
 describe('errore del codice senza messaggio dal server', () => {
   it('vale il testo d\'errore generico già esistente', async () => {
     responses.check = () => answer({ success: false, field: 'signup_code' }, 400);

@@ -3,12 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { LINK_BUTTON } from '../../utils/buttonStyles';
 
 // Riga «Hai un codice?» e, aperta, il campo «Codice di registrazione». Lo stato è di useSignupCode.
-const SignupCodeField = ({ signup, fieldRef }) => {
+const SignupCodeField = ({ signup, fieldRef, disabled = false }) => {
   const { t } = useTranslation();
   return (
     <>
       <Button
         onClick={signup.toggle}
+        disabled={disabled}
         aria-expanded={signup.open}
         aria-controls={signup.open ? 'signupCode' : undefined}
         sx={{ ...LINK_BUTTON, mt: 1 }}
