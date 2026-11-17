@@ -51,7 +51,9 @@ const Navbar = () => {
   }, []);
 
   // Utilizziamo il context invece della logica locale
-  const { isLoggedIn, user, loading } = useAuth();
+  const { isLoggedIn, user, loading, emailState } = useAuth();
+  // Con l'app bloccata dalla conferma dell'email le voci porterebbero a pagine che rispondono 403
+  const showAppNav = isLoggedIn && emailState?.blocked !== true;
 
   // Accedi e Registrati conservano la pagina a cui tornare: il ?next= già presente
   // su login e registrazione, oppure il link di invito che si sta guardando.
@@ -144,7 +146,7 @@ const Navbar = () => {
         {/* Centro: nav desktop, nascosta su mobile (su mobile la navigazione è in BottomNav) */}
         {!isMobile && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, justifySelf: 'center' }}>
-            {authVerified && isLoggedIn && navItems.map((item) => (
+            {authVerified && showAppNav && navItems.map((item) => (
               <Button
                 key={item.path}
                 component={RouterLink}
@@ -191,7 +193,7 @@ const Navbar = () => {
             </IconButton>
           </Tooltip>
 
-          {authVerified && isLoggedIn && (
+          {authVerified && showAppNav && (
             <Tooltip title={t('nav.profile')}>
               <IconButton
                 component={RouterLink}

@@ -13,8 +13,6 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Checkbox,
-  FormControlLabel,
   CircularProgress,
   FormControl,
   InputLabel,
@@ -35,6 +33,8 @@ import {
   Download as DownloadIcon,
   Edit as EditIcon,
   Logout as LogoutIcon,
+  CheckCircleOutline as CheckCircleOutlineIcon,
+  ErrorOutline as ErrorOutlineIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import LabeledDatePicker from '../components/LabeledDatePicker';
@@ -48,7 +48,8 @@ import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import { validatePassword } from '../utils/passwordPolicy';
 import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
-import { NEUTRAL_OUTLINED } from '../utils/buttonStyles';
+import { NEUTRAL_OUTLINED, LINK_BUTTON } from '../utils/buttonStyles';
+import useAccountDeleted from '../hooks/useAccountDeleted';
 import { getConsents, setConsent } from '../utils/consent';
 import useFocusField from '../hooks/useFocusField';
 import useConfirmPassword from '../hooks/useConfirmPassword';
@@ -57,9 +58,13 @@ import { loginWithNext } from '../utils/safeNext';
 import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
 import PasswordToggle from '../components/Auth/PasswordToggle';
 import ButtonSpinner from '../components/ButtonSpinner';
+import DeleteAccountDialog from '../components/Account/DeleteAccountDialog';
+import useDataExport from '../hooks/useDataExport';
+import ChangeEmailDialog from '../components/EmailVerification/ChangeEmailDialog';
+import { cancelEmailChange } from '../api/emailVerification';
 
 const Account = ({ isEmbedded = false }) => {
-  const { user, logout, isLoggedIn, updateUser, loading: authLoading } = useAuth();
+  const { user, logout, isLoggedIn, updateUser, loading: authLoading, emailState, openEmailDialog, refreshEmailState } = useAuth();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -102,16 +107,12 @@ const Account = ({ isEmbedded = false }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const confirmPair = useConfirmPassword({ password: newPassword, confirm: confirmPassword });
 
-  // Stati per l'eliminazione dell'account
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [deletePassword, setDeletePassword] = useState('');
-  const [showDeletePassword, setShowDeletePassword] = useState(false);
-  const [deleteConfirmed, setDeleteConfirmed] = useState(false);
-  const [deletingAccount, setDeletingAccount] = useState(false);
-  const [deleteError, setDeleteError] = useState('');
+  // Cambio di indirizzo email: la finestra è ChangeEmailDialog, il codice si scrive nella finestra comune (contesto)
+  const [changeEmailOpen, setChangeEmailOpen] = useState(false);
+  const [cancellingChange, setCancellingChange] = useState(false);
 
-  // Stato per l'esportazione dei dati (client-side, nessun endpoint dedicato)
-  const [exportLoading, setExportLoading] = useState(false);
+  // Eliminazione dell'account: la finestra (con password e conferma) è DeleteAccountDialog
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
 
   // Stato per le impostazioni allenamento
   const [restTimerEnabled, setRestTimerEnabled] = useState(true);
@@ -159,113 +160,14 @@ const Account = ({ isEmbedded = false }) => {
     }
   };
 
-  // Funzioni per la gestione dell'eliminazione dell'account
-  const handleOpenDeleteDialog = () => {
-    setOpenDeleteDialog(true);
-    setDeletePassword('');
-    setDeleteConfirmed(false);
-    setDeleteError('');
-  };
+  // Eliminazione riuscita: l'esito e, dopo un breve delay, logout e home
+  const handleAccountDeleted = useAccountDeleted((message, severity) => setSnackbar({ open: true, message, severity }));
 
-  const handleCloseDeleteDialog = () => {
-    setOpenDeleteDialog(false);
-  };
-
-  const handleDeleteAccount = async () => {
-    // Validazione
-    if (!deletePassword) {
-      setDeleteError(t('account.delete.password_required'));
-      return;
-    }
-
-    if (!deleteConfirmed) {
-      setDeleteError(t('account.delete.confirm_required'));
-      return;
-    }
-
-    setDeletingAccount(true);
-    setDeleteError('');
-
-    try {
-      // Password inviata in chiaro su HTTPS; la verifica avviene lato server
-      const response = await fetch(`${API_BASE_URL}api/user/delete.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          password: deletePassword
-        }),
-        credentials: 'include'
-      });
-
-      // Analisi della risposta
-      const data = await response.json();
-
-      if (!response.ok) {
-        const failure = new Error(data.message || t('account.delete.error'));
-        failure.status = response.status;
-        throw failure;
-      }
-
-      // Chiudiamo il dialog e mostriamo il messaggio di successo
-      handleCloseDeleteDialog();
-      setSnackbar({
-        open: true,
-        message: t('account.delete.done'),
-        severity: 'success'
-      });
-
-      // Logout e redirect alla home dopo un breve delay
-      setTimeout(() => {
-        logout();
-        navigate('/');
-      }, 2000);
-    } catch (error) {
-      console.error('Errore durante l\'eliminazione dell\'account:', error);
-
-      // Gestione dei diversi tipi di errore
-      if (error.status === 401) {
-        setDeleteError(t('account.session_expired'));
-      } else {
-        setDeleteError(error.message || t('account.delete.error_retry'));
-      }
-    } finally {
-      setDeletingAccount(false);
-    }
-  };
-
-  // Esportazione dati: scarica un JSON completo generato dal server (profilo, schede, storico e
-  // serie, misure, gamification, dispositivi e consensi). Ritorna true se il download e' partito.
-  const handleDownloadData = async () => {
-    setExportLoading(true);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}api/user/export.php`, { method: 'GET', credentials: 'include' });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.message || t('account.export.failed'));
-
-      const { success, ...dataToExport } = data; // eslint-disable-line no-unused-vars
-      const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `dati_liftindex_${userData?.username || 'utente'}_${format(new Date(), 'yyyy-MM-dd')}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      setSnackbar({ open: true, message: t('account.export.done'), severity: 'success' });
-      return true;
-    } catch (error) {
-      console.error('Errore nell\'esportazione dei dati:', error);
-      setSnackbar({ open: true, message: t('account.export.error'), severity: 'error' });
-      return false;
-    } finally {
-      setExportLoading(false);
-    }
-  };
+  // Esportazione dati: scarica un JSON completo generato dal server (vedi useDataExport)
+  const { exporting: exportLoading, download: handleDownloadData } = useDataExport(
+    userData?.username,
+    (message, severity) => setSnackbar({ open: true, message, severity })
+  );
 
   // Consenso per le misure corporee (dati sulla salute): concessione e revoca. La revoca
   // cancella le misure, quindi chiede conferma e propone prima l'export.
@@ -533,6 +435,18 @@ const Account = ({ isEmbedded = false }) => {
     }
   };
 
+  const handleCancelEmailChange = async () => {
+    setCancellingChange(true);
+    const res = await cancelEmailChange();
+    setCancellingChange(false);
+    if (res.ok) {
+      await refreshEmailState();
+      setSnackbar({ open: true, message: t('emailstatus.cancelled'), severity: 'success' });
+    } else {
+      setSnackbar({ open: true, message: res.status === 0 ? t('emailconfirm.error_network') : (res.data?.message || t('emailconfirm.error_generic')), severity: 'error' });
+    }
+  };
+
   // Chiusura dello snackbar
   const handleCloseSnackbar = () => {
     setSnackbar({
@@ -569,7 +483,7 @@ const Account = ({ isEmbedded = false }) => {
 
       {/* Card profilo */}
       <Card sx={{ p: '24px' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: emailState?.pendingEmail ? 'flex-start' : 'center', gap: 2 }}>
           <Avatar sx={{
             width: 64, height: 64,
             bgcolor: 'ink',
@@ -587,22 +501,69 @@ const Account = ({ isEmbedded = false }) => {
               {userData?.username || t('account.user_fallback')}
             </Typography>
             <Typography sx={{ fontSize: 16, color: 'text.secondary', overflowWrap: 'anywhere' }}>
-              {userData?.email || t('account.email_unavailable')}
+              {emailState?.email || userData?.email || t('account.email_unavailable')}
             </Typography>
+            {emailState && (
+              <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', columnGap: 2, mt: 0.5 }}>
+                {emailState.verified ? (
+                  <Typography sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, fontSize: 16, fontWeight: 600, color: 'success.main' }}>
+                    <CheckCircleOutlineIcon aria-hidden="true" fontSize="small" />
+                    {t('emailstatus.confirmed')}
+                  </Typography>
+                ) : (
+                  <>
+                    <Typography sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, fontSize: 16, fontWeight: 600, color: 'warning.text' }}>
+                      <ErrorOutlineIcon aria-hidden="true" fontSize="small" />
+                      {t('emailstatus.unconfirmed')}
+                    </Typography>
+                    <Button onClick={openEmailDialog} sx={LINK_BUTTON}>
+                      {t('emailstatus.enter_code')}
+                    </Button>
+                  </>
+                )}
+              </Box>
+            )}
+            {emailState?.pendingEmail && (
+              <Box sx={{ mt: 0.5 }}>
+                <Typography sx={{ fontSize: 16, overflowWrap: 'anywhere' }}>
+                  {t('emailstatus.pending', { email: emailState.pendingEmail })}
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 3 }}>
+                  <Button onClick={openEmailDialog} sx={LINK_BUTTON}>
+                    {t('emailstatus.enter_code')}
+                  </Button>
+                  <Button
+                    onClick={handleCancelEmailChange}
+                    disabled={cancellingChange}
+                    aria-label={t('emailstatus.cancel_aria')}
+                    sx={LINK_BUTTON}
+                  >
+                    {t('common.cancel')}
+                  </Button>
+                </Box>
+              </Box>
+            )}
             <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
               {t('account.member_since', { date: joinDate ? format(joinDate, 'MMMM yyyy', { locale: dateFnsLocale() }) : t('account.date_unavailable') })}
             </Typography>
           </Box>
         </Box>
 
-        <Button
-          variant="outlined"
-          startIcon={<EditIcon />}
-          onClick={() => setEditOpen(o => !o)}
-          sx={{ ...NEUTRAL_OUTLINED, mt: 2 }}
-        >
-          {t('account.edit')}
-        </Button>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mt: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<EditIcon />}
+            onClick={() => setEditOpen(o => !o)}
+            sx={NEUTRAL_OUTLINED}
+          >
+            {t('account.edit')}
+          </Button>
+          {emailState && (
+            <Button variant="outlined" onClick={() => setChangeEmailOpen(true)} sx={{ ...NEUTRAL_OUTLINED, minHeight: 44 }}>
+              {t('emailchange.open')}
+            </Button>
+          )}
+        </Box>
 
         {/* Card "Profilo fisico" e "Allenamento": fuori dal design, restano collassate */}
         <Collapse in={editOpen}>
@@ -900,7 +861,7 @@ const Account = ({ isEmbedded = false }) => {
             variant="contained"
             color="error"
             startIcon={<DeleteForeverIcon />}
-            onClick={handleOpenDeleteDialog}
+            onClick={() => setOpenDeleteDialog(true)}
             sx={{ fontSize: 16 }}
           >
             {t('account.delete.title')}
@@ -1027,84 +988,9 @@ const Account = ({ isEmbedded = false }) => {
         </DialogActions>
       </Dialog>
 
-      {/* Dialog per eliminazione account */}
-      <Dialog open={openDeleteDialog} onClose={handleCloseDeleteDialog} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ color: 'error.main', display: 'flex', alignItems: 'center' }}>
-          <DeleteForeverIcon sx={{ mr: 1 }} /> {t('account.delete.title')}
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ mb: 2 }}>
-            {t('account.delete.intro')}
-          </DialogContentText>
+      <ChangeEmailDialog open={changeEmailOpen} onClose={() => setChangeEmailOpen(false)} onChanged={() => openEmailDialog()} />
 
-          <Alert severity="warning" sx={{ mb: 3 }}>
-            <Typography variant="subtitle2" fontWeight="bold">
-              {t('account.delete.warning_title')}
-            </Typography>
-            <Typography variant="body2">
-              {t('account.delete.warning_text')}
-            </Typography>
-          </Alert>
-
-          {deleteError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {deleteError}
-            </Alert>
-          )}
-
-          <TextField
-            margin="dense"
-            label={t('account.password.title')}
-            type={showDeletePassword ? "text" : "password"}
-            autoComplete="current-password"
-            fullWidth
-            variant="outlined"
-            value={deletePassword}
-            onChange={(e) => setDeletePassword(e.target.value)}
-            required
-            disabled={deletingAccount}
-            sx={{ mb: 2 }}
-            InputProps={{
-              endAdornment: (
-                <PasswordToggle shown={showDeletePassword} onToggle={() => setShowDeletePassword(!showDeletePassword)} label={t('password.show')} disabled={deletingAccount} />
-              ),
-            }}
-          />
-
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={deleteConfirmed}
-                onChange={(e) => setDeleteConfirmed(e.target.checked)}
-                disabled={deletingAccount}
-                color="error"
-              />
-            }
-            label={t('account.delete.confirm_label')}
-            sx={{ mt: 1 }}
-          />
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button
-            onClick={handleCloseDeleteDialog}
-            startIcon={<CancelIcon />}
-            disabled={deletingAccount}
-            sx={{ fontSize: 16 }}
-          >
-            {t('common.cancel')}
-          </Button>
-          <Button
-            onClick={handleDeleteAccount}
-            variant="contained"
-            color="error"
-            startIcon={<DeleteForeverIcon />}
-            disabled={deletingAccount || !deleteConfirmed}
-            sx={{ fontSize: 16 }}
-          >
-            {deletingAccount ? t('account.delete.in_progress') : t('account.delete.title')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <DeleteAccountDialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)} onDeleted={handleAccountDeleted} />
 
       {/* Snackbar per notifiche */}
       <Snackbar

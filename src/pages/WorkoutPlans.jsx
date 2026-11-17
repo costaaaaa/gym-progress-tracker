@@ -42,7 +42,7 @@ import { TITLE_FONT_FAMILY } from '../utils/fonts';
 import { radius } from '../theme/radius';
 import ButtonSpinner from '../components/ButtonSpinner';
 import LockedRow from '../components/LockedRow';
-import { savedDraftDayId } from './focus/useFocusSession';
+import { savedDraftDayId } from '../utils/focusDraft';
 
 const MAX_DAY_OPTIONS = 7; // giorni offerti al massimo nella nuova scheda
 const MAX_EXERCISE_ROWS = 4; // esercizi mostrati per giorno nella card aperta

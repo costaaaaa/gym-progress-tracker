@@ -78,7 +78,7 @@ const Register = () => {
   const location = useLocation();
   // Dove tornare dopo la registrazione, per esempio un link di invito a un gruppo
   const next = safeNext(location.search);
-  const { login } = useAuth();
+  const { login, openEmailDialog } = useAuth();
 
   const withNext = (path) => (next === '/' ? localizedPath(path) : `${localizedPath(path)}?next=${encodeURIComponent(next)}`);
 
@@ -220,6 +220,8 @@ const Register = () => {
 
       if (loginResponse.ok && loginData.user) {
         login(loginData.user);
+        // Il codice è già partito per email: la finestra si apre subito, con «Più tardi», e non frena la navigazione
+        openEmailDialog();
         navigate(next);
       } else {
         setSuccess(t('register.success_login'));

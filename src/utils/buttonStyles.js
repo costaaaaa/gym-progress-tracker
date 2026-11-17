@@ -17,6 +17,19 @@ export const NEUTRAL_TEXT = {
   color: 'text.primary',
 };
 
+// Comando in forma di link sottolineato (es. «Scrivi il codice»): senza rientro, allineato al testo che lo precede
+export const LINK_BUTTON = {
+  minHeight: 44,
+  minWidth: 44,
+  px: 0,
+  justifyContent: 'flex-start',
+  fontSize: 16,
+  fontWeight: 600,
+  color: 'text.primary',
+  textDecoration: 'underline',
+  '&:hover': { textDecoration: 'underline', bgcolor: 'transparent' },
+};
+
 // Bottone di testo per un'azione che non si annulla: rosso, come nell'app
 export const DANGER_TEXT = {
   ...TEXT_BUTTON,

@@ -9,6 +9,7 @@ import Layout from './components/Layout';
 // Import Auth Provider
 import { AuthProvider } from './context/AuthContext';
 import LocaleSync from './i18n/LocaleSync';
+import EmailBlockGuard from './components/EmailVerification/EmailBlockGuard';
 
 // Lazy load Pages
 const Home = lazy(() => import('./pages/Home'));
@@ -40,7 +41,7 @@ function App() {
         <Suspense fallback={<PageLoader />}>
           <Routes>
               {/* Focus mode — full-screen senza Navbar */}
-              <Route path="/focus" element={<FocusWorkout />} />
+              <Route path="/focus" element={<EmailBlockGuard><FocusWorkout /></EmailBlockGuard>} />
               
               {/* Tutte le altre pagine con Layout (Navbar + Container) */}
               <Route element={<Layout />}>
