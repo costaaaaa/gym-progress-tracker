@@ -94,7 +94,7 @@ return array(
     'email.confirmed' => 'Email confermata.',
     'email.confirmed_code_applied_until' => 'Email confermata. Hai il livello {tier} fino al {date}.',
     'email.confirmed_code_applied_forever' => 'Email confermata. Hai il livello {tier}, senza scadenza.',
-    'email.confirmed_code_missed' => "Email confermata. Il codice di registrazione non si può più usare (posti esauriti o codice non più valido): l'account resta Gratis.",
+    'email.confirmed_code_missed' => 'Email confermata. Il codice di registrazione non è più valido e non è stato applicato.',
     'email.changed' => "L'indirizzo email dell'account è cambiato.",
     'email.change_same' => "Questo è già l'indirizzo email del tuo account.",
     'email.change_taken' => 'Questa email è già registrata.',

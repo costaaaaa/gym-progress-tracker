@@ -1,4 +1,8 @@
 <?php
+// GET: profilo dell'utente. signup_code = l'uso del codice di registrazione (null senza) {status, tier,
+// duration_days}: tier e duration_days sono quelli del CODICE (servono per «Plus in attesa» finché è pending),
+// non quelli dell'account; l'account è in tier, tier_until e tier_last_day. In confirm_email.php, invece, con
+// applied signup_code.tier e tier_last_day descrivono l'account dopo la conferma.
 include_once '../../config/cors_headers.php';
 
 include_once '../../config/database.php';

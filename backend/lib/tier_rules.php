@@ -62,7 +62,6 @@ function tierUntilFromDay(string $lastDay, string $now): array
     return ['until' => $until];
 }
 
-
 // Inverso di tierSetUntil: ultimo giorno valido (AAAA-MM-GG, ora italiana) di un tier_until (UTC), o null
 // se non scade. tier_until è il primo istante senza livello: l'ultimo giorno è quello del secondo prima.
 function tierLastDay(?string $until): ?string

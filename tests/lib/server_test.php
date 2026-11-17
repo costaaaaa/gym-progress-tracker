@@ -1,7 +1,7 @@
 <?php
 // Helper condivisi dai test che avviano il server integrato di PHP sul backend e chiamano gli endpoint veri.
-// Si include dopo aver aperto la connessione in $conn (global) e, per api(), dopo aver definito la costante
-// API_DEFAULT_PORT (la porta usata quando api() non ne riceve una).
+// Nessuna costante né variabile globale: porta e connessione si passano ai parametri (chi usa questi helper
+// definisce le sue scorciatoie, per esempio api() = httpApi(PORT_A, ...)).
 
 // Avvia `php -S` sul backend: $port, file di log dello stderr (qui finiscono anche le email con MAIL_DRIVER=log)
 // e variabili d'ambiente aggiuntive. Il server si ferma alla fine dello script.
@@ -19,26 +19,25 @@ function startServer($backend, $port, $log, array $env)
     }
 }
 
-function sql($query, $params = [])
+// Query sulla connessione $conn (PDO) passata esplicitamente
+function dbSql($conn, $query, $params = [])
 {
-    global $conn;
     $stmt = $conn->prepare($query);
     $stmt->execute($params);
     return $stmt;
 }
-function scalar($query, $params = [])
+function dbScalar($conn, $query, $params = [])
 {
-    return sql($query, $params)->fetchColumn();
+    return dbSql($conn, $query, $params)->fetchColumn();
 }
-function rows($query, $params = [])
+function dbRows($conn, $query, $params = [])
 {
-    return sql($query, $params)->fetchAll(PDO::FETCH_ASSOC);
+    return dbSql($conn, $query, $params)->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// Chiamata HTTP: ritorna [status, JSON decodificato, corpo grezzo, intestazioni]
-function api($method, $path, $auth = null, $body = null, $port = null, $extra = [])
+// Chiamata HTTP alla porta $port: ritorna [status, JSON decodificato, corpo grezzo, intestazioni]
+function httpApi($port, $method, $path, $auth = null, $body = null, $extra = [])
 {
-    $port = $port ?? API_DEFAULT_PORT;
     $headers = "Content-Type: application/json\r\n";
     if ($auth && isset($auth['bearer'])) $headers .= "Authorization: Bearer {$auth['bearer']}\r\n";
     foreach ($extra as $h) $headers .= "$h\r\n";

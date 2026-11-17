@@ -137,8 +137,8 @@ class SignupCode
             $tier = $r['tier'];
             $lastDay = tierLastDay($r['until']);
         }
-        $conn->prepare("UPDATE gym_signup_code_uses SET status = ?, applied_at = " . ($outcome === 'applied' ? "NOW()" : "NULL") . " WHERE id = ?")
-            ->execute([$outcome, (int)$use['id']]);
+        $conn->prepare("UPDATE gym_signup_code_uses SET status = ?, applied_at = " . ($outcome === 'applied' ? "FROM_UNIXTIME(?)" : "NULL") . " WHERE id = ?")
+            ->execute($outcome === 'applied' ? [$outcome, $now, (int)$use['id']] : [$outcome, (int)$use['id']]);
         return array('status' => $outcome, 'tier' => $tier, 'tier_last_day' => $lastDay);
     }
 

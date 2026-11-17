@@ -94,7 +94,7 @@ return array(
     'email.confirmed' => 'Email confirmed.',
     'email.confirmed_code_applied_until' => 'Email confirmed. You have the {tier} plan until {date}.',
     'email.confirmed_code_applied_forever' => 'Email confirmed. You have the {tier} plan, with no end date.',
-    'email.confirmed_code_missed' => 'Email confirmed. The sign-up code can no longer be used (no places left or the code is no longer valid): the account stays on Free.',
+    'email.confirmed_code_missed' => 'Email confirmed. The sign-up code is no longer valid and was not applied.',
     'email.changed' => "The account's email address has changed.",
     'email.change_same' => "That is already your account's email address.",
     'email.change_taken' => 'This email is already registered.',

@@ -14,7 +14,6 @@ require $backend . '/lib/signup_code_rules.php';
 const PASSWORD = 'Prova!Codici2026';
 const PORT_A = 8097;  // limiti per IP alti, 4 processi
 const PORT_B = 8096;  // al massimo 3 codici non utilizzabili all'ora per IP
-const API_DEFAULT_PORT = PORT_A;
 const LOG_A = '/tmp/sc-a.log';
 const LOG_B = '/tmp/sc-b.log';
 
@@ -28,6 +27,26 @@ startServer($backend, PORT_A, LOG_A, ['PHP_CLI_SERVER_WORKERS' => '4']);
 startServer($backend, PORT_B, LOG_B, ['RL_SIGNUP_CODE_IP_MAX' => '3']);
 
 $conn = (new Database())->getConnection();
+
+function sql($query, $params = [])
+{
+    global $conn;
+    return dbSql($conn, $query, $params);
+}
+function scalar($query, $params = [])
+{
+    global $conn;
+    return dbScalar($conn, $query, $params);
+}
+function rows($query, $params = [])
+{
+    global $conn;
+    return dbRows($conn, $query, $params);
+}
+function api($method, $path, $auth = null, $body = null, $port = PORT_A, $extra = [])
+{
+    return httpApi($port, $method, $path, $auth, $body, $extra);
+}
 
 function regBody($name, $signupCode = null, $email = null, $locale = 'it')
 {
@@ -413,7 +432,7 @@ admPost(['action' => 'update', 'id' => codeId('si-spegne'), 'enabled' => false])
 $r = confirm('scoff1', $off1Auth);
 check('spento nel frattempo: missed, l\'email risulta confermata, tier_last_day null', $r[0] === 200 && $r[1]['email_verified'] === true && $r[1]['signup_code']['status'] === 'missed'
     && $r[1]['signup_code']['tier'] === 'plus' && $r[1]['signup_code']['tier_last_day'] === null, $r[2]);
-check('il messaggio dice che il codice non si può più usare', strpos($r[1]['message'], 'resta Gratis') !== false, $r[2]);
+check('il messaggio dice che il codice non è stato applicato (senza dire che l\'account resta Gratis)', $r[1]['message'] === 'Email confermata. Il codice di registrazione non è più valido e non è stato applicato.', $r[2]);
 check('resta Gratis, uso missed senza applied_at', tierRow($off1)['tier'] === 'free' && useRow($off1)['status'] === 'missed' && useRow($off1)['applied_at'] === null);
 $read = api('GET', '/api/user/read.php', $off1Auth);
 check('read.php: signup_code missed', $read[1]['signup_code']['status'] === 'missed' && $read[1]['tier'] === 'free', $read[2]);
