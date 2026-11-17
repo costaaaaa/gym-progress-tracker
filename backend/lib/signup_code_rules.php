@@ -81,7 +81,7 @@ function signupCodeRegistrationCheck(?array $code, int $seatsTaken, string $nowU
     return 'ok';
 }
 
-// Esito alla conferma dell'email di un uso 'pending': 'applied' o 'missed' (resta Gratis).
+// Esito alla conferma dell'email di un uso 'pending': 'applied' o 'missed' (il codice non si applica: l'account resta com'è).
 // Entro i 7 giorni dalla registrazione il posto è garantito: conta solo che il codice sia ancora acceso.
 // Dopo servono codice acceso, non scaduto e un posto libero ($seatsTaken esclude questo uso, che dopo i 7
 // giorni non occupa più nulla). $now è il timestamp della conferma.
