@@ -7,7 +7,7 @@ import { isWorkingSet } from './workoutMetrics';
 import { formatSet } from './weightFormat';
 import { MAX_WORKING, fromCompact, parseRowTarget, plannedOf, plannedTarget, plannedTechnique, toInt, workingOf } from './plannedSets';
 
-// Funzione premium che sblocca cambio e aggiunta (vedi user_features() nel backend)
+// Funzione Plus e Pro che sblocca cambio e aggiunta (vedi user_features() nel backend)
 export const FEATURE_SESSION_EDIT = 'focus_session_edit';
 
 // Peso massimo accettato dal backend (colonna decimal(5,2))

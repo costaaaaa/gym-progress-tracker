@@ -7,7 +7,9 @@ import { MUSCLE_GROUPS, isNeverTrained } from '../utils/recoveryGroups';
 import { readyInDays } from '../utils/recoveryDay';
 import { STATUS_COLOR, readyLabel } from '../utils/recoveryStatus';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
-import { totalSets } from '../utils/weeklySets';
+import { totalSets, weeklyTotal } from '../utils/weeklySets';
+import LockedRow from '../components/LockedRow';
+import BasicMuscleRow from '../components/BasicMuscleRow';
 
 // Variazione contro la settimana scorsa allo stesso punto: ▲ in verde, ▼ e = in grigio (qui più serie è
 // un buon segno; il delta di ChartCard invece resta sempre grigio). Usata dall'intestazione e da ogni riga.
@@ -20,17 +22,20 @@ const Delta = ({ value }) => {
   );
 };
 
-// Totale della settimana + confronto con la settimana scorsa allo stesso punto (intera solo come riferimento).
-const Header = ({ weekTotal, prevToDateTotal, prevTotal }) => {
+// Totale della settimana + confronto con la settimana scorsa allo stesso punto (intera solo come riferimento);
+// senza il confronto (piano Gratis, `compare` falso) solo il totale.
+const Header = ({ weekTotal, prevToDateTotal, prevTotal, compare = true }) => {
   const { t } = useTranslation();
   return (
     <Box sx={{ mb: 2.5 }}>
       <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 32, lineHeight: 1.1 }}>
         {weekTotal} <Box component="span" sx={{ fontSize: 15, fontWeight: 600 }}>{t('muscles.header.sets_label')}</Box>
       </Typography>
-      <Typography sx={{ fontSize: 14, color: 'text.secondary', mt: 0.5 }}>
-        {t('muscles.header.previous_at', { count: prevToDateTotal })} <Delta value={weekTotal - prevToDateTotal} /> · {t('muscles.header.previous_total', { count: prevTotal })}
-      </Typography>
+      {compare && (
+        <Typography sx={{ fontSize: 14, color: 'text.secondary', mt: 0.5 }}>
+          {t('muscles.header.previous_at', { count: prevToDateTotal })} <Delta value={weekTotal - prevToDateTotal} /> · {t('muscles.header.previous_total', { count: prevTotal })}
+        </Typography>
+      )}
     </Box>
   );
 };
@@ -88,6 +93,9 @@ const MuscleRow = ({ muscle, week, prev, status, days, max }) => {
   );
 };
 
+// Etichetta di stato del piano Gratis: Puoi allenare / In recupero / nessun dato.
+const basicLabel = (t, status) => (status === 'PRONTO' ? t('recovery.can_train') : status ? t('recovery.basic_resting') : t('muscles.row.no_data'));
+
 const Muscles = () => {
   const { t } = useTranslation();
   const [data, setData] = useState(null);
@@ -119,19 +127,26 @@ const Muscles = () => {
   }
 
   const sets = data.weekly_sets || { week: {}, previous_to_date: {}, previous_total: 0 };
-  const weekTotal = totalSets(sets.week);
+  const basic = data.detail === 'basic';
   const prevToDateTotal = totalSets(sets.previous_to_date);
   const max = Math.max(1, ...MUSCLE_GROUPS.map((m) => sets.week?.[m] || 0));
 
   return (
     <Card sx={{ p: '20px 22px', maxWidth: 720 }}>
-      <Header weekTotal={weekTotal} prevToDateTotal={prevToDateTotal} prevTotal={sets.previous_total || 0} />
+      {basic && (
+        <>
+          <LockedRow sx={{ mb: 1 }} compare={false}>{t('muscles.locked_sets')}</LockedRow>
+          <LockedRow>{t('recovery.locked')}</LockedRow>
+        </>
+      )}
+      <Header weekTotal={weeklyTotal(sets)} prevToDateTotal={prevToDateTotal} prevTotal={sets.previous_total || 0} compare={!basic} />
       <Box component="ul" aria-label={t('dashboard.tab.muscles')} sx={{ listStyle: 'none', p: 0, m: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
         {MUSCLE_GROUPS.map((muscle) => {
           const week = sets.week?.[muscle] || 0;
           const prev = sets.previous_to_date?.[muscle] || 0;
           const recovery = data.recovery?.[muscle];
           const status = isNeverTrained(recovery) ? null : recovery?.status || null;
+          if (basic) return <BasicMuscleRow key={muscle} muscle={muscle} status={status} label={basicLabel(t, status)} />;
           const days = recovery?.ready_at ? readyInDays(recovery.ready_at) : null;
           return <MuscleRow key={muscle} muscle={muscle} week={week} prev={prev} status={status} days={days} max={max} />;
         })}

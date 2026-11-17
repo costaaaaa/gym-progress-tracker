@@ -100,10 +100,26 @@ const richPlans = [
 ];
 // Scheda attiva con un giorno solo: con esercizi (preselezionato) o ancora vuoto (appena creata)
 const oneDayPlan = (exercises) => [{ id: 5, name: 'La mia scheda', description: '', is_active: true, days: [day(1, 'Giorno 1', exercises)] }];
+// Schede del piano Gratis (limiti: 2 schede, 4 giorni per scheda). `read_only` come lo manda read_plans.php
+const gratisPlan = (id, name, days, extra = {}) => ({ id, name, description: '', is_active: id === 1, days, read_only: false, ...extra });
+const gratisDays = (base, n) => Array.from({ length: n }, (_, i) => day(base + i, `Giorno ${i + 1}`, [ex('Panca piana', std), ex('Squat', std, 'quadricipiti')]));
+const PLAN_SETS_GRATIS = {
+  schede: [
+    // come le manda il server: con troppe schede sono tutte in sola lettura
+    gratisPlan(1, 'Push Pull', gratisDays(10, 2), { read_only: true, read_only_reason: 'plans_over_limit' }),
+    gratisPlan(2, 'Full body', gratisDays(20, 1), { read_only: true, read_only_reason: 'plans_over_limit' }),
+    gratisPlan(3, 'Upper Lower', gratisDays(30, 2), { read_only: true, read_only_reason: 'plans_over_limit' }),
+  ],
+  giorni: [gratisPlan(1, 'PPL x2', gratisDays(10, 6), { read_only: true, read_only_reason: 'days_over_limit' })],
+  limite: [gratisPlan(1, 'Push Pull', gratisDays(10, 2)), gratisPlan(2, 'Full body', gratisDays(20, 1))],
+  nuova: [gratisPlan(1, 'Push Pull', gratisDays(10, 2))],
+  elimina: [gratisPlan(1, 'Push Pull', gratisDays(10, 3))],
+};
 const PLAN_SETS = {
   ricche: richPlans,
   'un-giorno': oneDayPlan([ex('Panca piana', std), ex('Squat', std, 'quadricipiti')]),
   'un-giorno-vuoto': oneDayPlan([]),
+  ...Object.fromEntries(Object.entries(PLAN_SETS_GRATIS).map(([k, v]) => [`gratis-${k}`, v])),
 };
 
 const CATALOG = [
@@ -156,11 +172,17 @@ const GROUP_ROWS = [
   { rank: 3, username: 'atleta_3', is_me: false, workouts: 1, goal: 3, volume_kg: 1980, adherence: 0.33 },
 ];
 
-const user = ({ admin }) => ({
+// Piano dell'account: `pro` (default, come Plus/Pro: nessun tetto) o `gratis` (tetti del piano Gratis)
+const LIMITS = {
+  pro: { plans: 50, days_per_plan: 7, personal_exercises: 30 },
+  gratis: { plans: 2, days_per_plan: 4, personal_exercises: 10 },
+};
+const user = ({ admin, gratis }) => ({
   success: true, id: 1, username: 'atleta_demo', email: 'atleta@example.com',
   created_at: stamp(-900, '10:00:00'), password_changed_at: stamp(-140, '09:00:00'),
   age: 34, gender: 'm', experience_years: 4, birth_date: '1992-05-14', training_start_date: '2022-01-10',
   rest_timer_enabled: true, locale: 'it', language: 'it', features: [], is_admin: admin,
+  tier: gratis ? 'free' : 'pro', limits: gratis ? LIMITS.gratis : LIMITS.pro,
 });
 
 // Utenti dei dati finti: `attivo` è l'utente di tutte le pagine, `un-allenamento` cambia solo lo storico
@@ -221,8 +243,13 @@ const fixtures = [
   ['user/consent.php', () => ({ success: true, consents: { terms: { granted: true }, health_data: { granted: true } } })],
   ['workout_history/read.php', ({ u }) => ({ success: true, records: u.history })],
   ['workout/read_plans.php', ({ plans, u }) => ({ success: true, records: plans ? PLAN_SETS[plans] : u.plans })],
-  ['workout_stats/dashboard.php', ({ u }) => ({
-    success: true, weekly_workouts: u.weekly.workouts, weekly_goal: 3,
+  ['workout_stats/dashboard.php', ({ u, gratis }) => gratis ? ({
+    // Piano Gratis: solo il totale delle serie e lo stato pronto / in recupero, senza percentuali né date
+    success: true, detail: 'basic', weekly_workouts: u.weekly.workouts, weekly_goal: 3,
+    weekly_volume: { total_weight: u.weekly.kg, total_reps: u.weekly.reps }, weekly_sets: { total: 14 },
+    recovery: Object.fromEntries(Object.entries(u.recovery).map(([group, r]) => [group, { status: r.status === 'PRONTO' ? 'PRONTO' : 'IN RECUPERO', last_trained: stamp(-3, '18:00:00') }])),
+  }) : ({
+    success: true, detail: 'full', weekly_workouts: u.weekly.workouts, weekly_goal: 3,
     weekly_volume: { total_weight: u.weekly.kg, total_reps: u.weekly.reps }, recovery: u.recovery,
   })],
   ['gamification/streak.php', ({ u }) => ({ success: true, ...u.streak })],
@@ -320,7 +347,7 @@ async function openPage(vp, theme, opts, tag) {
   await ctx.route('**/backend/**', (route) => {
     const url = route.request().url();
     const hit = fixtures.find(([key]) => url.includes(key));
-    const body = hit ? hit[1]({ admin: opts.admin === true, plans: opts.plans, u: UTENTI[opts.utente ?? 'attivo'] }) : fallback;
+    const body = hit ? hit[1]({ admin: opts.admin === true, gratis: opts.gratis === true, plans: opts.plans, u: UTENTI[opts.utente ?? 'attivo'] }) : fallback;
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
   });
   const page = await ctx.newPage();
@@ -480,6 +507,81 @@ for (const vp of viewports) {
         await page.getByRole('button', { name: 'Modifica esercizio' }).nth(2).click();
         await page.getByRole('group', { name: 'Serie 3' }).waitFor();
         await snapDialog(PLAN_EDITOR_SHOTS.modificaLista);
+      } finally {
+        await ctx.close();
+      }
+    });
+
+    // Piano Gratis: schermate con i limiti, le righe con lucchetto e la sola lettura (account `gratis`)
+    for (const [name, url] of [['home-gratis', '/'], ['muscoli-gratis', '/dashboard?tab=muscles']]) {
+      if (!want(name)) continue;
+      await attempt(tag, name, async () => {
+        const { ctx, page } = await openPage(vp, theme, { loggedIn: true, gratis: true }, tag);
+        try {
+          await page.goto(`${base}${url}`, { waitUntil: 'domcontentloaded' });
+          await snap(page, name, tag);
+        } finally {
+          await ctx.close();
+        }
+      });
+    }
+    for (const [name, plans, expand] of [
+      ['allenamenti-piani-sola-lettura-schede', 'gratis-schede', true],
+      ['allenamenti-piani-sola-lettura-giorni', 'gratis-giorni', true],
+      ['allenamenti-piani-limite', 'gratis-limite', false],
+    ]) {
+      if (!want(name)) continue;
+      await attempt(tag, name, async () => {
+        const { ctx, page } = await openPage(vp, theme, { loggedIn: true, gratis: true, plans }, tag);
+        try {
+          await page.goto(`${base}/workouts?tab=plans`, { waitUntil: 'domcontentloaded' });
+          await page.getByRole('button', { name: 'Nuova scheda' }).waitFor();
+          // la scheda in sola lettura (l'ultima) aperta: senza i comandi di modifica
+          if (expand) await page.getByRole('button', { name: /^(Mostra dettagli|Mostra giorni)$/ }).last().click();
+          await snap(page, name, tag);
+        } finally {
+          await ctx.close();
+        }
+      });
+    }
+    if (want('allenamenti-piani-nuova-gratis')) await attempt(tag, 'allenamenti-piani-nuova-gratis', async () => {
+      const { ctx, page } = await openPage(vp, theme, { loggedIn: true, gratis: true, plans: 'gratis-nuova' }, tag);
+      try {
+        await page.goto(`${base}/workouts?tab=plans`, { waitUntil: 'domcontentloaded' });
+        await page.setViewportSize({ width: vp.w, height: 1600 });
+        await page.getByRole('button', { name: 'Nuova scheda' }).click();
+        await page.getByRole('dialog').waitFor();
+        await snap(page, 'allenamenti-piani-nuova-gratis', tag, page.getByRole('dialog'));
+      } finally {
+        await ctx.close();
+      }
+    });
+    if (want('allenamenti-piani-elimina-giorno')) await attempt(tag, 'allenamenti-piani-elimina-giorno', async () => {
+      const { ctx, page } = await openPage(vp, theme, { loggedIn: true, gratis: true, plans: 'gratis-elimina' }, tag);
+      try {
+        await page.goto(`${base}/workouts?tab=plans`, { waitUntil: 'domcontentloaded' });
+        await page.setViewportSize({ width: vp.w, height: 1600 });
+        await page.getByRole('button', { name: /^(Mostra dettagli|Mostra giorni)$/ }).first().click();
+        await page.getByRole('button', { name: /^Elimina giorno/ }).first().click();
+        await page.getByRole('dialog').waitFor();
+        await snap(page, 'allenamenti-piani-elimina-giorno', tag, page.getByRole('dialog'));
+      } finally {
+        await ctx.close();
+      }
+    });
+    if (want('focus-plus-dialogo', 'focus-plus-allenamento')) await attempt(tag, 'focus-plus-dialogo', async () => {
+      const { ctx, page } = await openPage(vp, theme, { loggedIn: true, gratis: true }, tag);
+      try {
+        await page.goto(`${base}/focus`, { waitUntil: 'domcontentloaded' });
+        await page.getByRole('button', { name: 'Inizia allenamento', exact: true }).waitFor();
+        await page.getByRole('combobox').click();
+        await page.getByRole('option', { name: 'Trazione', exact: true }).click();
+        await page.getByRole('button', { name: 'Inizia allenamento', exact: true }).click();
+        await page.getByRole('button', { name: 'Conferma serie', exact: true }).waitFor();
+        await snap(page, 'focus-plus-allenamento', tag);
+        await page.getByRole('button', { name: /Cambia esercizio/ }).click();
+        await page.getByRole('dialog').waitFor();
+        await snap(page, 'focus-plus-dialogo', tag, page.getByRole('dialog'));
       } finally {
         await ctx.close();
       }

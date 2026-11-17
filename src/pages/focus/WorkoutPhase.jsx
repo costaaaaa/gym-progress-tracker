@@ -17,7 +17,7 @@ import { MAX_WEIGHT, isValidWeight, isValidReps, plannedSetAt, slotTarget, lastS
 import { intlLocale, formatSetText } from '../../i18n/format';
 import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, muscleLabel, techniqueLabel } from '../../i18n/labels';
 import { radius } from '../../theme/radius';
-import PremiumButton from './PremiumButton';
+import LockedButton from './LockedButton';
 
 export default function WorkoutPhase({
   currentExercise, currentExerciseIndex, totalExercises, currentSetIndex, totalSlotsForCurrentExercise,
@@ -198,7 +198,7 @@ export default function WorkoutPhase({
               { mode: 'swap', label: t('focus.swap_exercise'), icon: <SwapIcon /> },
               { mode: 'add', label: t('focus.add_exercise'), icon: <AddIcon /> },
             ].map(({ mode: pickerMode, label, icon }) => (
-              <PremiumButton key={pickerMode} locked={!canEditSession} label={label} startIcon={icon}
+              <LockedButton key={pickerMode} locked={!canEditSession} label={label} startIcon={icon}
                 onClick={() => onOpenPicker(pickerMode)}
                 wrapperSx={{ flex: 1, minWidth: 0 }}
                 faded={pickerMode === 'swap' && !canSwap} />

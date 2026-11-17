@@ -41,9 +41,31 @@ import FitNames from '../components/FitNames';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
 import { radius } from '../theme/radius';
 import ButtonSpinner from '../components/ButtonSpinner';
+import LockedRow from '../components/LockedRow';
+import { savedDraftDayId } from './focus/useFocusSession';
 
+const MAX_DAY_OPTIONS = 7; // giorni offerti al massimo nella nuova scheda
 const MAX_EXERCISE_ROWS = 4; // esercizi mostrati per giorno nella card aperta
 const DAY_LINK_SX = { fontSize: 12, fontWeight: 600, textTransform: 'none', minWidth: 0, p: 0 };
+
+// Motivo di sola lettura → testo con il numero (limite in account.limits), testo senza numero, chiave del limite
+const READ_ONLY_NOTICE = {
+  plans_over_limit: { key: 'plans.read_only_plans', genericKey: 'plans.read_only_plans_generic', limit: 'plans' },
+  days_over_limit: { key: 'plans.read_only_days', genericKey: 'plans.read_only_days_generic', limit: 'days_per_plan' },
+};
+
+// Avviso di sola lettura. Senza il limite dell'account (lettura fallita o valore null) la frase non ha numero.
+const ReadOnlyNotice = ({ reason, limits, isFree }) => {
+  const { t } = useTranslation();
+  const notice = READ_ONLY_NOTICE[reason];
+  const max = limits?.[notice.limit];
+  return (
+    <Alert severity="info" sx={{ mb: 1.5 }}>
+      {max == null ? t(notice.genericKey) : t(notice.key, { max })}
+      {isFree && ` ${t('plans.read_only_raise')}`}
+    </Alert>
+  );
+};
 
 const WorkoutPlans = ({ isEmbedded = false }) => {
   const { t } = useTranslation();
@@ -96,9 +118,33 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
   });
   const [updatePlanLoading, setUpdatePlanLoading] = useState(false);
 
+  // Stati per l'eliminazione di un giorno
+  const [dayToDelete, setDayToDelete] = useState(null);
+  const [deleteDayLoading, setDeleteDayLoading] = useState(false);
+
+  // Piano, limiti e funzioni dell'utente (user/read.php). Se la lettura fallisce restano senza valori: nessun
+  // tetto lato client, decide il server (limite accettato).
+  const [account, setAccount] = useState({ loaded: false, tier: null, limits: null, features: [] });
+
   useEffect(() => {
     fetchWorkoutPlans();
+    fetchAccount();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fetchAccount = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}api/user/read.php`, { credentials: 'include' });
+      const user = response.ok ? await response.json() : null;
+      setAccount({
+        loaded: true,
+        tier: user?.tier ?? null,
+        limits: user?.limits ?? null,
+        features: Array.isArray(user?.features) ? user.features : [],
+      });
+    } catch {
+      setAccount((prev) => ({ ...prev, loaded: true }));
+    }
+  };
 
   const fetchWorkoutPlans = async () => {
     try {
@@ -331,6 +377,29 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
         message: error.message || t('plans.msg.add_exercise_error'),
         severity: 'error'
       });
+    }
+  };
+
+  const handleConfirmDeleteDay = async () => {
+    if (!dayToDelete) return;
+    setDeleteDayLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}api/workout/delete_day.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ day_id: dayToDelete.id })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || t('plans.msg.delete_day_error'));
+      }
+      setSnackbar({ open: true, message: t('plans.msg.day_deleted'), severity: 'success' });
+      fetchWorkoutPlans();
+    } catch (error) {
+      setSnackbar({ open: true, message: error.message || t('plans.msg.delete_day_error'), severity: 'error' });
+    } finally {
+      setDeleteDayLoading(false);
+      setDayToDelete(null);
     }
   };
 
@@ -728,6 +797,21 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
     }
   };
 
+  const isFree = account.tier === 'free';
+  const maxDays = Math.min(MAX_DAY_OPTIONS, account.limits?.days_per_plan ?? MAX_DAY_OPTIONS);
+  // Senza focus_session_edit (piano Gratis) un allenamento Focus salvato su questo browser su un giorno eliminato non
+  // si potrebbe più registrare: si elimina il giorno solo dopo averlo salvato o scartato. Plus e Pro lo salvano
+  // comunque. Finché user/read.php carica, o se fallisce, `features` è vuoto e il blocco vale anche per Plus e Pro
+  // (scelta prudente). Una sessione in corso su un altro dispositivo da qui non si vede: limite accettato.
+  const draftDayId = savedDraftDayId();
+  const draftBlocksDelete = !!dayToDelete && !account.features.includes('focus_session_edit')
+    && draftDayId !== null && String(draftDayId) === String(dayToDelete.id);
+  // «Troppi giorni» riguarda una scheda sola: l'avviso sta sulla sua card. Con «troppe schede» il server le segna
+  // tutte: l'avviso sta una volta sola sopra l'elenco, e lì finisce anche un motivo che questa pagina non conosce.
+  const readOnlyOnCard = (plan) => plan.read_only && plan.read_only_reason === 'days_over_limit';
+  const readOnlyAbovePlans = workoutPlans.some((plan) => plan.read_only && !readOnlyOnCard(plan));
+  const atPlanLimit = isFree && !!account.limits && workoutPlans.length >= account.limits.plans;
+
   return (
     <Box sx={{ p: isEmbedded ? 0 : 3 }}>
       {!isEmbedded && (
@@ -746,11 +830,16 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
           variant="contained"
           startIcon={<AddIcon sx={{ color: "white" }} fontSize="small" />}
           onClick={() => setOpenDialog(true)}
+          disabled={!account.loaded || atPlanLimit}
           sx={{ fontSize: 16, fontWeight: 600 }}
         >
           {t('plans.new')}
         </Button>
       </Box>
+      {atPlanLimit && (
+        <LockedRow>{t('plans.locked_plans', { used: workoutPlans.length, max: account.limits.plans })}</LockedRow>
+      )}
+      {readOnlyAbovePlans && <ReadOnlyNotice reason="plans_over_limit" limits={account.limits} isFree={isFree} />}
 
       <Grid container spacing={2.5}>
         {workoutPlans.map((plan, planIndex) => {
@@ -805,6 +894,9 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                     </Box>
                   </Box>
 
+                  {readOnlyOnCard(plan) && (
+                    <ReadOnlyNotice reason="days_over_limit" limits={account.limits} isFree={isFree} />
+                  )}
                   {!isExpanded && summary.splitNames && (
                     <Box sx={{ display: 'flex', mb: 0.75, fontSize: 16, fontWeight: 600, color: 'text.primary' }}>
                       <FitNames names={summary.splitNames} sepSx={{ color: 'text.secondary' }} />
@@ -827,16 +919,28 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                               <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'text.primary' }}>
                                 {day.name}
                               </Typography>
-                              <Button
-                                variant="text"
-                                size="small"
-                                onClick={() => toggleDayExpansion(day.id)}
-                                aria-expanded={dayExpanded}
-                                aria-controls={dayPanelId}
-                                sx={DAY_LINK_SX}
-                              >
-                                {dayExpanded ? t('plans.hide') : t('plans.details')}
-                              </Button>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <Button
+                                  variant="text"
+                                  size="small"
+                                  onClick={() => toggleDayExpansion(day.id)}
+                                  aria-expanded={dayExpanded}
+                                  aria-controls={dayPanelId}
+                                  sx={DAY_LINK_SX}
+                                >
+                                  {dayExpanded ? t('plans.hide') : t('plans.details')}
+                                </Button>
+                                {plan.days.length > 1 && (
+                                  <IconButton
+                                    size="small"
+                                    aria-label={t('plans.delete_day.aria', { name: day.name })}
+                                    onClick={() => setDayToDelete(day)}
+                                    sx={{ color: 'text.secondary' }}
+                                  >
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                )}
+                              </Box>
                             </Box>
 
                             {day.exercises && day.exercises.length > 0 ? (
@@ -904,6 +1008,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                                   </Typography>
                                                 )}
                                               </div>
+                                              {!plan.read_only && (
                                               <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                                                 <ButtonGroup size="small" sx={{ mr: 1 }}>
                                                   <IconButton
@@ -940,6 +1045,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                                                   <DeleteIcon fontSize="small" />
                                                 </IconButton>
                                               </Box>
+                                              )}
                                             </Box>
                                           </Box>
                                         );
@@ -954,13 +1060,15 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                               </Box>
                             </Collapse>
 
-                            <Button
-                              onClick={() => handleOpenExerciseDialog(planIndex, dayIndex)}
-                              size="small"
-                              sx={{ ...DAY_LINK_SX, mt: 1, display: 'flex' }}
-                            >
-                              {t('plans.add_exercise')}
-                            </Button>
+                            {!plan.read_only && (
+                              <Button
+                                onClick={() => handleOpenExerciseDialog(planIndex, dayIndex)}
+                                size="small"
+                                sx={{ ...DAY_LINK_SX, mt: 1, display: 'flex' }}
+                              >
+                                {t('plans.add_exercise')}
+                              </Button>
+                            )}
                           </Box>
                         );
                       })}
@@ -1040,13 +1148,16 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                 label={t('plans.new_dialog.days')}
                 onChange={(e) => setNumDays(parseInt(e.target.value, 10))}
               >
-                {[1, 2, 3, 4, 5, 6, 7].map((num) => (
+                {Array.from({ length: maxDays }, (_, i) => i + 1).map((num) => (
                   <MenuItem key={num} value={num}>
                     {t('plans.new_dialog.days_option', { count: num })}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
+            {isFree && maxDays < MAX_DAY_OPTIONS && (
+              <LockedRow sx={{ mb: 0 }}>{t('plans.locked_days', { max: maxDays })}</LockedRow>
+            )}
           </Box>
         </DialogContent>
         <DialogActions>
@@ -1094,11 +1205,46 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
         </DialogActions>
       </Dialog>
 
+      <Dialog
+        open={!!dayToDelete}
+        onClose={() => !deleteDayLoading && setDayToDelete(null)}
+        aria-labelledby="delete-day-title"
+        aria-describedby="delete-day-description"
+      >
+        <DialogTitle id="delete-day-title">{t('plans.delete_day.title')}</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-day-description" component="div">
+            {draftBlocksDelete ? t('plans.delete_day.in_progress') : (
+              <>
+                {t('plans.delete_day.text')}
+                <Box sx={{ mt: 1.5 }}>{t('plans.delete_plan.history_kept')}</Box>
+              </>
+            )}
+            {dayToDelete && (
+              <Box sx={{ mt: 2, fontWeight: 'bold' }}>{t('plans.delete_day.name', { name: dayToDelete.name })}</Box>
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDayToDelete(null)} color="primary" disabled={deleteDayLoading}>{t('common.cancel')}</Button>
+          <Button
+            onClick={handleConfirmDeleteDay}
+            color="error"
+            variant="contained"
+            disabled={deleteDayLoading || draftBlocksDelete}
+            startIcon={deleteDayLoading ? <ButtonSpinner /> : <DeleteIcon />}
+          >
+            {deleteDayLoading ? t('plans.deleting') : t('common.delete')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <ExerciseDialog
         open={openExerciseDialog}
         onClose={() => setOpenExerciseDialog(false)}
         onAdd={handleAddExercise}
         dayIndex={selectedDayIndex}
+        plansLink={isFree}
       />
 
       <Dialog

@@ -204,3 +204,32 @@ describe('ExerciseDialog · etichette attrezzo', () => {
     expect(screen.queryByText('Bilanciere')).toBeNull();
   });
 });
+
+describe('ExerciseDialog · esercizi personali al limite', () => {
+  const MSG = 'Hai già 10 esercizi personali: non puoi crearne altri.';
+  const provaACreare = async (plansLink) => {
+    fetchMock.mockImplementation((url) => Promise.resolve(
+      String(url).includes('exercise/read_all.php')
+        ? json({ records: RECORDS })
+        : json({ success: false, code: 'too_many_exercises', message: MSG, limit: 10 }, 409),
+    ));
+    render(<ExerciseDialog open onClose={() => {}} onAdd={() => {}} dayIndex={0} plansLink={plansLink} />);
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    await scegliGruppo('Petto');
+    fireEvent.change(screen.getByPlaceholderText(/Nuovo esercizio/), { target: { value: 'Panca Nuova' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Crea' }));
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+  };
+
+  it('con il piano Gratis resta il messaggio del server e c\'è il link ai piani', async () => {
+    await provaACreare(true);
+    expect(screen.getByText(MSG, { exact: false })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Confronta i piani' }).getAttribute('href')).toBe('/piani');
+  });
+
+  it('senza il piano Gratis c\'è solo il messaggio', async () => {
+    await provaACreare(false);
+    expect(screen.getByText(MSG, { exact: false })).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Confronta i piani' })).toBeNull();
+  });
+});

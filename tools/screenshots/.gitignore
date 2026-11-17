@@ -1,6 +1,7 @@
 before/
 before-bis/
 after/
+after-gratis/
 diff/
 *.log
 *.pid

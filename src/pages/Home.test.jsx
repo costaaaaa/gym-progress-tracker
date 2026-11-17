@@ -308,6 +308,36 @@ describe('home: serie allenanti', () => {
   });
 });
 
+describe('home: piano Gratis (detail "basic")', () => {
+  const withDashboard = (patch) => vi.stubGlobal('fetch', vi.fn((url) => {
+    const key = Object.keys(responses).find((k) => String(url).includes(k));
+    let body = key ? responses[key] : { success: false };
+    if (key === 'workout_stats/dashboard.php') body = { ...body, ...patch };
+    return Promise.resolve({ ok: Boolean(key), status: key ? 200 : 404, json: async () => body, text: async () => JSON.stringify(body) });
+  }));
+
+  it('le serie vengono da weekly_sets.total e la card Stato muscolare ha la riga con lucchetto', async () => {
+    withDashboard({
+      detail: 'basic',
+      weekly_sets: { total: 11 },
+      recovery: { petto: { status: 'PRONTO', last_trained: '2026-10-18 10:00:00' } },
+    });
+    renderHome();
+    const label = await screen.findByText('Serie allenanti');
+    expect(label.closest('a').textContent).toContain('11');
+    expect(screen.getByText('Percentuale di recupero e giorni mancanti')).toBeTruthy();
+    expect(screen.queryByRole('progressbar')).toBeNull();
+  });
+
+  it('con detail "full" il totale è quello di sempre e non c\'è la riga con lucchetto', async () => {
+    withDashboard({ detail: 'full' });
+    renderHome();
+    const label = await screen.findByText('Serie allenanti');
+    expect(label.closest('a').textContent).toContain('8');
+    expect(screen.queryByText('Percentuale di recupero e giorni mancanti')).toBeNull();
+  });
+});
+
 // Il font dei titoli di card è un valore atteso scritto per esteso: non importato dal codice.
 describe('home: titoli delle card', () => {
   const style = (el) => {
