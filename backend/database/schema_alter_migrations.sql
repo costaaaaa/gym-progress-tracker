@@ -941,14 +941,14 @@ ALTER TABLE `gym_workout_history`
 --     - gym_workout_history.exercises (copia JSON dell'allenamento, le serie vere stanno in
 --       gym_workout_sets) e l'indice user_id, ridondante con idx_user_date (la chiave esterna verso
 --       gym_users si appoggia a lui, quindi si toglie solo se idx_user_date c'è);
---     - la tabella gym_progress;
---     - gym_users.ai_tier, age ed experience_years (i campi age ed experience_years delle risposte
---       sono calcolati da birth_date e training_start_date e restano).
+--     - la tabella gym_progress, non più usata da nessun codice;
+--     - gym_users.age ed experience_years (i campi age ed experience_years delle risposte sono
+--       calcolati da birth_date e training_start_date e restano) e gym_users.ai_tier, una colonna
+--       aggiunta fuori da queste migrazioni e non più letta da nulla: il livello dell'account è
+--       tier.
 --     Ogni passo controlla information_schema prima di eliminare, quindi la sezione si può
---     rieseguire anche se si è fermata a metà. È una rimozione: dopo questa sezione il rollback del
---     codice a un'immagine precedente alla 20261117-122 non è più possibile (l'utente l'ha deciso
---     il 17 novembre). Le viste di sola lettura ai_user e ai_progress dell'AI Coach restano invalide
---     finché non gira bin/ai-init.sh con le viste nuove.
+--     rieseguire anche se si è fermata a metà. Dopo questa sezione il rollback del solo codice a
+--     versioni precedenti non è più possibile.
 -- ------------------------------------------------------------------------------
 
 SET @q = (SELECT IF(COUNT(*) > 0, 'ALTER TABLE `gym_workout_exercises` DROP COLUMN `sets`', 'DO 0') FROM information_schema.columns

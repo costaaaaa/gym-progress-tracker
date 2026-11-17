@@ -43,10 +43,10 @@ legacy_add gym_workout_exercises warmup_sets "tinyint(3) unsigned NOT NULL DEFAU
 legacy_add gym_workout_exercises reps "varchar(20) NOT NULL DEFAULT ''"
 legacy_add gym_workout_exercises intensity_technique "varchar(100) DEFAULT NULL"
 legacy_add gym_workout_history exercises "text NOT NULL"
+# ai_tier: colonna aggiunta fuori dalle migrazioni del repo e non più letta da nulla
 legacy_add gym_users ai_tier "enum('free','premium') NOT NULL DEFAULT 'free'"
 legacy_add gym_users age "int(11) DEFAULT NULL"
 legacy_add gym_users experience_years "float DEFAULT '0'"
-tm_sql -e 'ALTER TABLE gym_workout_history MODIFY `exercises` text NOT NULL' || tm_die "colonna non preparata"
 if [[ "$(tm_sql -N -B -e "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'gym_workout_history' AND index_name = 'user_id'")" == 0 ]]; then
     tm_sql -e 'ALTER TABLE gym_workout_history ADD KEY `user_id` (`user_id`)' || tm_die "indice non preparato"
 fi
@@ -72,7 +72,9 @@ echo "Sezione 37 (due esecuzioni) e percorsi con la colonna facoltativa, il rest
 tm_run_section 37
 tm_php_phase schema_avanzi_test.php with-column
 
-# Dati che la sezione 38 non deve toccare, accanto a quelli delle colonne che elimina
+# Dati che la sezione 38 non deve toccare, accanto a quelli delle colonne che elimina.
+# Utente 9001 ('seme') e allenamento 9001: la fase `dropped` di schema_avanzi_test.php li ricontrolla
+# con gli stessi id e gli stessi valori.
 tm_sql <<'SQL' || tm_die "dati di prova non inseriti"
 SET @ex = (SELECT MAX(id) FROM gym_exercises);
 INSERT INTO gym_users (id, username, email, password, birth_date, training_start_date, age, experience_years, ai_tier)
@@ -93,6 +95,33 @@ echo
 echo "Sezione 38 (due esecuzioni): colonne e tabella eliminate, percorsi e dati invariati"
 tm_run_section "$SECTION"
 tm_php_phase schema_avanzi_test.php dropped
+
+echo
+echo "Sezione interrotta a metà: solo una parte dei DROP è già stata fatta, poi la sezione 38 intera"
+legacy_add gym_workout_exercises sets "int(11) NOT NULL DEFAULT 0"
+legacy_add gym_workout_exercises warmup_sets "tinyint(3) unsigned NOT NULL DEFAULT 0"
+legacy_add gym_workout_exercises reps "varchar(20) NOT NULL DEFAULT ''"
+legacy_add gym_workout_exercises intensity_technique "varchar(100) DEFAULT NULL"
+legacy_add gym_workout_history exercises "text NULL"
+legacy_add gym_users ai_tier "enum('free','premium') NOT NULL DEFAULT 'free'"
+legacy_add gym_users age "int(11) DEFAULT NULL"
+legacy_add gym_users experience_years "float DEFAULT '0'"
+tm_sql -e 'ALTER TABLE gym_workout_history ADD KEY `user_id` (`user_id`)' || tm_die "indice non preparato"
+tm_sql -e 'CREATE TABLE gym_progress (id int NOT NULL AUTO_INCREMENT PRIMARY KEY, user_id int NOT NULL, exercise_id int NOT NULL, weight decimal(5,2) NOT NULL, date date NOT NULL) ENGINE=InnoDB' || tm_die "gym_progress non preparata"
+# Già eliminati prima dell'interruzione: due colonne di gym_workout_exercises, l'indice, la tabella e ai_tier
+tm_sql -e 'ALTER TABLE gym_workout_exercises DROP COLUMN `sets`, DROP COLUMN `reps`; ALTER TABLE gym_workout_history DROP INDEX `user_id`; DROP TABLE gym_progress; ALTER TABLE gym_users DROP COLUMN `ai_tier`' \
+    || tm_die "eliminazione parziale non riuscita"
+tm_run_section "$SECTION"
+left="$(tm_sql -N -B -e "SELECT
+    (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND ((table_name = 'gym_workout_exercises' AND column_name IN ('sets', 'warmup_sets', 'reps', 'intensity_technique'))
+        OR (table_name = 'gym_workout_history' AND column_name = 'exercises') OR (table_name = 'gym_users' AND column_name IN ('ai_tier', 'age', 'experience_years'))))
+  + (SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'gym_progress')
+  + (SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'gym_workout_history' AND index_name = 'user_id')")"
+total=$((total + 1))
+if [[ "$left" == 0 ]]; then echo "  ok   la sezione completa quello che mancava, senza errori"; else echo "  FAIL dopo la sezione restano $left voci da eliminare"; failed=$((failed + 1)); fi
+row="$(tm_sql -N -B -e "SELECT CONCAT(u.username, '/', e.rest, '/', h.notes) FROM gym_users u, gym_workout_exercises e, gym_workout_history h WHERE u.id = 9001 AND e.id = 9001 AND h.id = 9001")"
+total=$((total + 1))
+if [[ "$row" == "seme/75/allenamento seme" ]]; then echo "  ok   le righe di prova sono ancora intatte"; else echo "  FAIL righe di prova: «$row»"; failed=$((failed + 1)); fi
 
 echo
 echo "$total controlli, $failed falliti"

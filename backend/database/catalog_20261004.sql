@@ -1,7 +1,7 @@
 -- Catalogo esercizi (4 ottobre 2026): nomi italiani uniformi, name_en, equipment, unione dei doppioni.
 -- Richiede la sezione 17 di schema_alter_migrations.sql (colonne name_en, equipment, merged_into).
 -- I doppioni non si cancellano: sono nascosti (status = 'rejected', created_by NULL, merged_into = voce
--- che resta) e serie, schede e progressi passano alla voce che resta. Rieseguibile.
+-- che resta) e serie e schede passano alla voce che resta. Rieseguibile.
 
 START TRANSACTION;
 
@@ -148,7 +148,7 @@ INSERT INTO gym_exercises (name, name_en, equipment, muscle_group)
 SELECT 'Panca Scott (Macchina)', 'Machine Preacher Curl', 'macchina', 'bicipiti'
 WHERE NOT EXISTS (SELECT 1 FROM gym_exercises WHERE name = 'Panca Scott (Macchina)');
 
--- 3. Unioni: serie, schede, progressi e XP passano alla voce che resta; il doppione viene nascosto
+-- 3. Unioni: serie, schede e XP passano alla voce che resta; il doppione viene nascosto
 
 -- 88 -> 6
 UPDATE gym_workout_sets      SET exercise_id = 6 WHERE exercise_id = 88;

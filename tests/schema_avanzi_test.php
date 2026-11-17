@@ -33,6 +33,13 @@ function columnExists($conn, $table, $column)
     return (int)$stmt->fetchColumn() > 0;
 }
 
+function indexExists($conn, $table, $index)
+{
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?");
+    $stmt->execute([$table, $index]);
+    return (int)$stmt->fetchColumn() > 0;
+}
+
 function tableExists($conn, $table)
 {
     $stmt = $conn->prepare("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?");
@@ -53,14 +60,12 @@ foreach ($dropColumns as [$table, $column]) {
     check(($withColumn ? "la colonna $table.$column esiste" : "la colonna $table.$column non esiste"), columnExists($conn, $table, $column) === $withColumn);
 }
 check($withColumn ? 'la tabella gym_progress esiste' : 'la tabella gym_progress non esiste', tableExists($conn, 'gym_progress') === $withColumn);
-$stmt = $conn->query("SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gym_workout_history' AND INDEX_NAME = 'user_id'");
-check($withColumn ? 'l\'indice user_id di gym_workout_history esiste' : 'l\'indice user_id di gym_workout_history non esiste', ((int)$stmt->fetchColumn() > 0) === $withColumn);
+check($withColumn ? 'l\'indice user_id di gym_workout_history esiste' : 'l\'indice user_id di gym_workout_history non esiste', indexExists($conn, 'gym_workout_history', 'user_id') === $withColumn);
 // Quello che resta
 foreach ([['gym_workout_sets', 'intensity_technique'], ['gym_workout_plan_sets', 'intensity_technique'], ['gym_users', 'birth_date'], ['gym_users', 'training_start_date']] as [$table, $column]) {
     check("la colonna $table.$column resta", columnExists($conn, $table, $column));
 }
-$stmt = $conn->query("SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gym_workout_history' AND INDEX_NAME = 'idx_user_date'");
-check('l\'indice idx_user_date resta', (int)$stmt->fetchColumn() > 0);
+check('l\'indice idx_user_date resta', indexExists($conn, 'gym_workout_history', 'idx_user_date'));
 $stmt = $conn->query("SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gym_workout_history' AND CONSTRAINT_TYPE = 'FOREIGN KEY'");
 check('la chiave esterna verso gym_users resta', (int)$stmt->fetchColumn() === 1);
 if ($withColumn) {
@@ -68,7 +73,7 @@ if ($withColumn) {
     $col = $stmt->fetch(PDO::FETCH_ASSOC);
     check('dopo la sezione 37 la colonna exercises è facoltativa (NULL, default NULL)', $col && $col['IS_NULLABLE'] === 'YES' && $col['COLUMN_DEFAULT'] === null, json_encode($col));
 } else {
-    // Righe di prova inserite prima della sezione 38: tutto quello che non è stato eliminato è intatto
+    // Righe di prova (utente 9001 'seme', ecc.) inserite da tests/schema_avanzi.sh prima della sezione 38: tutto quello che non è stato eliminato è intatto
     $u = $conn->query("SELECT username, birth_date, training_start_date FROM gym_users WHERE id = 9001")->fetch(PDO::FETCH_ASSOC);
     check('l\'utente di prova è intatto', $u && $u['username'] === 'seme' && $u['birth_date'] === '1990-04-02' && $u['training_start_date'] === '2018-01-15', json_encode($u));
     $e = $conn->query("SELECT day_id, exercise_id, position, rest, notes FROM gym_workout_exercises WHERE id = 9001")->fetch(PDO::FETCH_ASSOC);
@@ -83,7 +88,7 @@ if ($withColumn) {
 
 // Utente con una scheda (un giorno, due esercizi): il controllo premium vuole che i set siano di
 // esercizi della scheda indicata da day_id, come mandano le app
-$conn->prepare("INSERT INTO gym_users (username, email, password) VALUES (?, ?, ?)")
+$conn->prepare("INSERT INTO gym_users (username, email, password, birth_date, gender, training_start_date) VALUES (?, ?, ?, '1990-04-02', 'M', '2018-01-15')")
     ->execute(['avanzi', 'avanzi@example.test', password_hash('Prova!Avanzi2026', PASSWORD_DEFAULT)]);
 $userId = (int)$conn->lastInsertId();
 $exerciseIds = array_map('intval', $conn->query("SELECT id FROM gym_exercises ORDER BY id LIMIT 2")->fetchAll(PDO::FETCH_COLUMN));
@@ -181,6 +186,33 @@ foreach ($exercise->adminList('approved') as $r) {
     }
 }
 check('Exercise::adminList dà gli stessi usi', $used === $expectedUses, 'ottenuto ' . var_export($used, true));
+
+// Gli altri endpoint che toccano le tabelle modificate: schede, esercizi di scheda, profilo, statistiche, registrazione
+[$code, $plans] = call('GET', '/api/workout/read_plans.php', $token);
+$planExercises = $plans['records'][0]['days'][0]['exercises'] ?? [];
+check('read_plans.php risponde con la scheda e i suoi 2 esercizi', $code === 200 && count($planExercises) === 2, "codice $code: " . substr(json_encode($plans), 0, 300));
+$planKeys = array_keys($planExercises[0] ?? []);
+check('read_plans.php non restituisce le colonne eliminate', array_intersect($planKeys, ['sets', 'warmup_sets', 'reps', 'intensity_technique']) === [], json_encode($planKeys));
+$plannedSets = [['set_number' => 1, 'kind' => 'warmup'], ['set_number' => 2, 'kind' => 'working', 'reps_min' => 8, 'reps_max' => 10]];
+[$code, $added] = call('POST', '/api/workout/add_exercise.php', $token, ['day_id' => $dayId, 'exercise_id' => $exerciseIds[0], 'rest' => 90, 'notes' => 'nota', 'planned_sets' => $plannedSets]);
+$weId = (int)($added['workout_exercise']['id'] ?? 0);
+check('add_exercise.php aggiunge l\'esercizio con 2 serie pianificate (201)', $code === 201 && $weId > 0 && count($added['workout_exercise']['planned_sets'] ?? []) === 2, "codice $code: " . json_encode($added));
+[$code, $updated] = call('POST', '/api/workout/update_exercise.php', $token, ['day_id' => $dayId, 'exercise_id' => $weId, 'rest' => 45, 'notes' => 'nota 2', 'planned_sets' => [['set_number' => 1, 'kind' => 'working', 'reps_min' => 5, 'reps_max' => 5]]]);
+check('update_exercise.php sostituisce le serie pianificate (200)', $code === 200 && ($updated['success'] ?? false) === true && count($updated['workout_exercise']['planned_sets'] ?? []) === 1 && (int)$updated['workout_exercise']['rest'] === 45, "codice $code: " . json_encode($updated));
+$conn->prepare("DELETE FROM gym_workout_exercises WHERE id = ?")->execute([$weId]);
+
+[$code, $me] = call('GET', '/api/user/read.php', $token);
+$ageWant = (new DateTimeImmutable('1990-04-02'))->diff(new DateTimeImmutable('now', new DateTimeZone('UTC')))->y;
+check('user/read.php risponde con età e anni di esperienza calcolati dalle date',
+    $code === 200 && abs((int)($me['age'] ?? -99) - $ageWant) <= 1 && (float)($me['experience_years'] ?? 0) >= 8.0 && ($me['birth_date'] ?? '') === '1990-04-02', "codice $code: " . json_encode($me));
+[$code, $set] = call('POST', '/api/user/update_settings.php', $token, ['rest_timer_enabled' => false, 'training_start_date' => '2016-06-01']);
+check('update_settings.php salva e restituisce età e anni di esperienza (200)',
+    $code === 200 && ($set['success'] ?? false) === true && abs((int)($set['age'] ?? -99) - $ageWant) <= 1 && (float)($set['experience_years'] ?? 0) >= 10.0 && ($set['training_start_date'] ?? '') === '2016-06-01', "codice $code: " . json_encode($set));
+[$code, $dash] = call('GET', '/api/workout_stats/dashboard.php', $token);
+check('workout_stats/dashboard.php risponde (200, success)', $code === 200 && ($dash['success'] ?? false) === true, "codice $code: " . substr(json_encode($dash), 0, 300));
+[$code, $reg] = call('POST', '/api/user/register.php', '', ['username' => 'nuovo_avanzi', 'email' => 'nuovo@example.test', 'password' => 'Prova!Avanzi2026', 'birth_date' => '1995-05-05', 'gender' => 'F', 'accept_terms' => true]);
+$newUser = $conn->query("SELECT birth_date, gender FROM gym_users WHERE username = 'nuovo_avanzi'")->fetch(PDO::FETCH_ASSOC);
+check('register.php crea un utente nuovo (201)', $code === 201 && ($reg['success'] ?? false) === true && $newUser && $newUser['birth_date'] === '1995-05-05' && $newUser['gender'] === 'F', "codice $code: " . json_encode($reg));
 
 // Cancellazione dell'allenamento
 [$code, $deleted] = call('POST', '/api/workout_history/delete.php', $token, ['id' => $workoutId]);
