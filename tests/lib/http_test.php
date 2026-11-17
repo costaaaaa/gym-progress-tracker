@@ -38,11 +38,11 @@ function startTestServer($backend)
     }
 }
 
-// Chiamata HTTP ($extraHeaders: righe di header già terminate da \r\n): ritorna [codice, JSON decodificato come array, corpo grezzo]
-function call($method, $path, $token, $body = null, $extraHeaders = '')
+// Chiamata HTTP ($extraHeaders: array di righe di header, es. ['X-Locale: en']): ritorna [codice, JSON decodificato come array, corpo grezzo]
+function call($method, $path, $token, $body = null, $extraHeaders = [])
 {
     global $port;
-    $headers = "Authorization: Bearer $token\r\nContent-Type: application/json\r\n$extraHeaders";
+    $headers = "Authorization: Bearer $token\r\nContent-Type: application/json\r\n" . implode('', array_map(fn($h) => "$h\r\n", $extraHeaders));
     $context = stream_context_create(['http' => [
         'method' => $method, 'header' => $headers, 'ignore_errors' => true, 'timeout' => 30,
         'content' => $body === null ? '' : json_encode($body),
