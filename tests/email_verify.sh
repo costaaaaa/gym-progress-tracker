@@ -50,6 +50,14 @@ if section_sql | tm_sql >/dev/null 2>&1; then ok "la sezione 39 si rilancia senz
     && ok "rilanciata, l'account nato dopo resta non confermato" || ko "rilanciata, l'account nato dopo resta non confermato"
 [[ "$(sql_value "SELECT COUNT(*) FROM gym_users WHERE email_verified_at = created_at AND username LIKE 'migold%'")" == 2 ]] \
     && ok "rilanciata, gli account vecchi restano come erano" || ko "rilanciata, gli account vecchi restano come erano"
+# Sezione interrotta dopo l'ALTER (colonna presente, tabella dei codici assente, utenti con NULL): il rilancio riempie
+tm_sql -e "DROP TABLE gym_email_codes; UPDATE gym_users SET email_verified_at = NULL WHERE username LIKE 'migold%'" \
+    || tm_die "impossibile simulare la sezione interrotta"
+if section_sql | tm_sql >/dev/null 2>&1; then ok "la sezione interrotta dopo l'ALTER si rilancia"; else ko "la sezione interrotta dopo l'ALTER si rilancia"; fi
+[[ "$(sql_value "SELECT COUNT(*) FROM gym_users WHERE email_verified_at = created_at AND username LIKE 'migold%'")" == 2 ]] \
+    && ok "interrotta e rilanciata, gli account esistenti risultano confermati" || ko "interrotta e rilanciata, gli account esistenti risultano confermati"
+[[ "$(sql_value "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'gym_progress_tracker' AND table_name = 'gym_email_codes'")" == 1 ]] \
+    && ok "interrotta e rilanciata, la tabella dei codici c'è" || ko "interrotta e rilanciata, la tabella dei codici c'è"
 # Gli account di questa fase non servono alla fase PHP
 tm_sql -e "DELETE FROM gym_users WHERE username LIKE 'mig%'" || tm_die "pulizia degli utenti di prova della migrazione"
 
