@@ -113,7 +113,7 @@ check_page($htmlEn, 'en', $en, array(
     'passaggio a un piano inferiore: nessun dato cancellato' => 'No data is deleted',
     'sola lettura' => 'read-only',
 ), array('plans' => 'Workout plans', 'days' => 'Days per workout plan', 'exercises' => 'Custom exercises', 'head' => array('Free', 'Plus', 'Pro'), 'corner' => 'Feature', 'coach' => 'AI Coach', 'coach_cells' => array('–', 'coming soon', 'coming soon, with a higher allowance'), 'list_title' => 'Included in Free, Plus and Pro, today', 'items' => 9));
-check('EN: «plan» da solo non indica il piano', strpos($htmlEn, 'LiftIndex plans') === false && stripos($htmlEn, 'every plan') === false);
+check('EN: le frasi «LiftIndex plans» e «every plan» non tornano', strpos($htmlEn, 'LiftIndex plans') === false && stripos($htmlEn, 'every plan') === false);
 check('titolo con Free, Plus and Pro', preg_match('#<title>[^<]*Free, Plus and Pro#u', $htmlEn) === 1);
 check('EN: niente link alle pagine legali italiane', strpos($htmlEn, 'liftindex.app/privacy.html') === false && strpos($htmlEn, 'liftindex.app/termini.html') === false);
 check('EN: niente link italiani a login e registrazione', strpos($htmlEn, 'https://liftindex.app/register"') === false && strpos($htmlEn, 'https://liftindex.app/login"') === false);

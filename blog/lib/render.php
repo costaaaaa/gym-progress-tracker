@@ -419,6 +419,8 @@ thead th { color: var(--text-secondary); font-weight: 600; }
   h2 { font-size: 1.3rem; }
   /* Le tabelle larghe degli articoli scorrono da sole, senza allargare la pagina. */
   table:not(.pct-table) { display: block; overflow-x: auto; }
+  /* Il confronto dei piani sta nei 320px del telefono senza scorrere: celle e carattere più stretti. */
+  .plans-table th, .plans-table td { padding: 6px 5px; font-size: 13px; }
   .header-actions { gap: 8px; }
   .nav-link { padding: 10px 4px; }
   .header-actions .cta { padding: 10px 14px; }

@@ -26,7 +26,7 @@ ob_start();
         <p>Questa pagina confronta i tre piani di LiftIndex e dice cosa cambia dall'uno all'altro.</p>
 
         <h2>Confronto dei piani</h2>
-        <table>
+        <table class="plans-table">
             <thead>
                 <tr><th scope="col">Funzione</th><th scope="col">Gratis</th><th scope="col">Plus</th><th scope="col">Pro</th></tr>
             </thead>

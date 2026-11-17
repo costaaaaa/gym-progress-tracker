@@ -26,7 +26,7 @@ ob_start();
         <p>This page compares Free, Plus and Pro and says what changes from one to the next.</p>
 
         <h2>Compare Free, Plus and Pro</h2>
-        <table>
+        <table class="plans-table">
             <thead>
                 <tr><th scope="col">Feature</th><th scope="col">Free</th><th scope="col">Plus</th><th scope="col">Pro</th></tr>
             </thead>
