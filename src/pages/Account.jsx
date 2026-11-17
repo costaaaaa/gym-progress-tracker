@@ -48,7 +48,8 @@ import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import { validatePassword } from '../utils/passwordPolicy';
 import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
-import { NEUTRAL_OUTLINED } from '../utils/buttonStyles';
+import { NEUTRAL_OUTLINED, LINK_BUTTON } from '../utils/buttonStyles';
+import useAccountDeleted from '../hooks/useAccountDeleted';
 import { getConsents, setConsent } from '../utils/consent';
 import useFocusField from '../hooks/useFocusField';
 import useConfirmPassword from '../hooks/useConfirmPassword';
@@ -160,17 +161,7 @@ const Account = ({ isEmbedded = false }) => {
   };
 
   // Eliminazione riuscita: l'esito e, dopo un breve delay, logout e home
-  const handleAccountDeleted = () => {
-    setSnackbar({
-      open: true,
-      message: t('account.delete.done'),
-      severity: 'success'
-    });
-    setTimeout(() => {
-      logout();
-      navigate('/');
-    }, 2000);
-  };
+  const handleAccountDeleted = useAccountDeleted((message, severity) => setSnackbar({ open: true, message, severity }));
 
   // Esportazione dati: scarica un JSON completo generato dal server (vedi useDataExport)
   const { exporting: exportLoading, download: handleDownloadData } = useDataExport(
@@ -492,7 +483,7 @@ const Account = ({ isEmbedded = false }) => {
 
       {/* Card profilo */}
       <Card sx={{ p: '24px' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: emailState?.pendingEmail ? 'flex-start' : 'center', gap: 2 }}>
           <Avatar sx={{
             width: 64, height: 64,
             bgcolor: 'ink',
@@ -513,7 +504,7 @@ const Account = ({ isEmbedded = false }) => {
               {emailState?.email || userData?.email || t('account.email_unavailable')}
             </Typography>
             {emailState && (
-              <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', columnGap: 1, mt: 0.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', columnGap: 2, mt: 0.5 }}>
                 {emailState.verified ? (
                   <Typography sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, fontSize: 16, fontWeight: 600, color: 'success.main' }}>
                     <CheckCircleOutlineIcon aria-hidden="true" fontSize="small" />
@@ -525,7 +516,7 @@ const Account = ({ isEmbedded = false }) => {
                       <ErrorOutlineIcon aria-hidden="true" fontSize="small" />
                       {t('emailstatus.unconfirmed')}
                     </Typography>
-                    <Button onClick={openEmailDialog} sx={{ minHeight: 44, fontSize: 16, fontWeight: 600, textDecoration: 'underline', color: 'text.primary' }}>
+                    <Button onClick={openEmailDialog} sx={LINK_BUTTON}>
                       {t('emailstatus.enter_code')}
                     </Button>
                   </>
@@ -537,15 +528,15 @@ const Account = ({ isEmbedded = false }) => {
                 <Typography sx={{ fontSize: 16, overflowWrap: 'anywhere' }}>
                   {t('emailstatus.pending', { email: emailState.pendingEmail })}
                 </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 1 }}>
-                  <Button onClick={openEmailDialog} sx={{ minHeight: 44, fontSize: 16, fontWeight: 600, textDecoration: 'underline', color: 'text.primary' }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 3 }}>
+                  <Button onClick={openEmailDialog} sx={LINK_BUTTON}>
                     {t('emailstatus.enter_code')}
                   </Button>
                   <Button
                     onClick={handleCancelEmailChange}
                     disabled={cancellingChange}
                     aria-label={t('emailstatus.cancel_aria')}
-                    sx={{ minHeight: 44, fontSize: 16, fontWeight: 600, textDecoration: 'underline', color: 'text.primary' }}
+                    sx={LINK_BUTTON}
                   >
                     {t('common.cancel')}
                   </Button>

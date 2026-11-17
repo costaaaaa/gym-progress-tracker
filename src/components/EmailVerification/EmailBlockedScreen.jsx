@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Alert, Box, Button, Card, Snackbar, Typography } from '@mui/material';
 import { Download as DownloadIcon, DeleteForever as DeleteForeverIcon, Logout as LogoutIcon } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import useDataExport from '../../hooks/useDataExport';
+import useAccountDeleted from '../../hooks/useAccountDeleted';
 import { NEUTRAL_OUTLINED } from '../../utils/buttonStyles';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 import DeleteAccountDialog from '../Account/DeleteAccountDialog';
@@ -18,7 +18,6 @@ import ChangeEmailDialog from './ChangeEmailDialog';
 // rimette le pagine: l'app riparte senza ricaricare.
 const EmailBlockedScreen = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [changeOpen, setChangeOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -26,13 +25,7 @@ const EmailBlockedScreen = () => {
   const notify = (message, severity) => setSnackbar({ open: true, message, severity });
   const { exporting, download } = useDataExport(user?.username, notify);
 
-  const handleDeleted = () => {
-    notify(t('account.delete.done'), 'success');
-    setTimeout(() => {
-      logout();
-      navigate('/');
-    }, 2000);
-  };
+  const handleDeleted = useAccountDeleted(notify);
 
   return (
     <Box sx={{ maxWidth: 560, mx: 'auto', display: 'flex', flexDirection: 'column', gap: 3, pb: 4 }}>
