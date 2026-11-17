@@ -51,7 +51,7 @@ import { radius } from '../theme/radius';
 import { intlLocale, formatDate, formatClockTime, formatSetText } from '../i18n/format';
 import { clockDate, clockDay } from '../utils/calendarDay';
 import TimeZoneBadge from '../components/TimeZoneBadge';
-import { muscleLabel, techniqueLabel } from '../i18n/labels';
+import { muscleLabel, techniqueLabel, achievementLabel } from '../i18n/labels';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
 import { isWorkingSet } from '../utils/workoutMetrics';
 import WarmupBadge from '../components/WarmupBadge';
@@ -560,7 +560,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
           )}
           {(deletePreview?.achievements_removed ?? []).map(key => (
             <Typography key={key} variant="body2" sx={{ mt: 0.5 }}>
-              {t('history.delete.lose_achievement', { label: t(`achievement.${key}`, { defaultValue: key }) })}
+              {t('history.delete.lose_achievement', { label: achievementLabel(key) })}
             </Typography>
           ))}
           {workoutToDelete?.health_written && (

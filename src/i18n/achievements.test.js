@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import i18n from './index';
 import { achievementCatalog } from '../utils/gamificationLevels';
 
-// Nomi approvati dei 19 traguardi (stessi di backend/lang): il catalogo del client resta il ripiego italiano
+// Nomi approvati dei 19 traguardi (stessi di backend/lang). achievementCatalog in utils/gamificationLevels.js resta solo perché
+// quel file è condiviso con un altro client: il web non lo usa, qui serve a controllare le chiavi e i nomi italiani
 const EN = {
   sessions_10: 'First 10 sessions', sessions_50: '50 sessions', sessions_100: 'Centurion', sessions_250: '250 sessions',
   tonnage_auto: '1.5 t — a car', tonnage_elephant: '6 t — an elephant', tonnage_bus: '15 t — a city bus',

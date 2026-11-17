@@ -16,12 +16,13 @@ startTestServer($backend);
 
 $exerciseId = (int)$conn->query("SELECT id FROM gym_exercises ORDER BY id LIMIT 1")->fetchColumn();
 
-// Account di prova nella lingua $locale, con una scheda di un esercizio; ritorna [token, day_id]
+// Account di prova nella lingua $locale (stringa vuota: lingua non valida, decide l'header), con una scheda di un esercizio; ritorna [token, day_id]
 function newUser($name, $locale)
 {
     global $conn, $exerciseId;
-    $conn->prepare("INSERT INTO gym_users (username, email, password, locale) VALUES (?, ?, ?, ?)")
-        ->execute([$name, "$name@example.test", password_hash('Prova!Traguardi2026', PASSWORD_DEFAULT), $locale]);
+    // $locale null: la colonna resta al suo default (italiano), come un account mai passato dalle impostazioni
+    $conn->prepare("INSERT INTO gym_users (username, email, password" . ($locale === null ? '' : ', locale') . ") VALUES (?, ?, ?" . ($locale === null ? '' : ', ?') . ")")
+        ->execute(array_merge([$name, "$name@example.test", password_hash('Prova!Traguardi2026', PASSWORD_DEFAULT)], $locale === null ? [] : [$locale]));
     $id = (int)$conn->lastInsertId();
     $conn->prepare("INSERT INTO gym_workout_plans (user_id, name) VALUES (?, 'Scheda')")->execute([$id]);
     $plan = (int)$conn->lastInsertId();
@@ -54,7 +55,7 @@ foreach (['it', 'en'] as $locale) {
     foreach ($expected[$locale] as $key => $label) {
         check("profile.php: $key = «{$label}»", ($labels[$key] ?? null) === $label, 'ottenuto: ' . var_export($labels[$key] ?? null, true));
     }
-    check('le chiavi dei traguardi restano quelle di sempre', array_keys($labels)[2] === 'sessions_100' && in_array('strength_140', array_keys($labels), true));
+    check('le chiavi dei traguardi restano quelle di sempre', isset($labels['sessions_100'], $labels['strength_140']));
 
     [$code, $saved] = call('POST', '/api/workout/record_workout.php', $token, ['workout_records' => [
         ['exercise_id' => $exerciseId, 'exercise_name' => 'Esercizio', 'day_id' => $day, 'set_number' => 1, 'weight' => 140, 'reps' => '1'],
@@ -63,5 +64,19 @@ foreach (['it', 'en'] as $locale) {
     $unlocked = array_column($saved['unlocked_achievements'] ?? [], 'label', 'key');
     check("unlocked_achievements: strength_140 = «{$expected[$locale]['strength_140']}»", ($unlocked['strength_140'] ?? null) === $expected[$locale]['strength_140'], json_encode($unlocked));
 }
+
+// Client vecchio: nessuna lingua scelta sull'account e nessun header, deve restare tutto in italiano
+echo "Account senza lingua scelta, senza header\n";
+[$token] = newUser('traglegacy', null);
+[$code, $profile] = call('GET', '/api/gamification/profile.php', $token);
+check('profile.php: sessions_100 = «Centurione»', $code === 200 && (labelsOf($profile)['sessions_100'] ?? null) === 'Centurione');
+
+// Lingua dell'account non valida: decide X-Locale
+echo "Account senza lingua valida, X-Locale: en\n";
+[$token] = newUser('tragheader', '');
+[$code, $profile] = call('GET', '/api/gamification/profile.php', $token, null, "X-Locale: en\r\n");
+check('profile.php: sessions_100 = «Centurion»', $code === 200 && (labelsOf($profile)['sessions_100'] ?? null) === 'Centurion');
+[$code, $profile] = call('GET', '/api/gamification/profile.php', $token);
+check('senza header resta «Centurione»', $code === 200 && (labelsOf($profile)['sessions_100'] ?? null) === 'Centurione');
 
 finishTest();

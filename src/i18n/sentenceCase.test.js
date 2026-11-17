@@ -12,7 +12,7 @@ const NOMI_PROPRI = new Set([
 
 // Fuori ticket: testo del cartoncino (canvas), segnaposto del codice gruppo e nomi dei traguardi
 // (contengono nomi propri: Space Shuttle, Stazione Spaziale, Torre Eiffel).
-const ESCLUSE = [/^share\.card\./, /^groups\.code\.placeholder$/, /^achievement\./];
+const ESCLUSE = [/^share\.card\./, /^groups\.code\.placeholder$/, /^achievement\.tonnage_(iss|shuttle|eiffel)$/];
 
 const appiattisci = (obj, prefisso = '', out = {}) => {
   for (const [k, v] of Object.entries(obj)) {

@@ -184,7 +184,7 @@ function achievementCatalog(): array {
 }
 
 // Nome del traguardo nella lingua della richiesta (o $locale): le etichette stanno in backend/lang
-// (chiavi achievement.<key>), così c'è una sola fonte per italiano e inglese.
+// (chiavi achievement.<key>), così c'è una sola fonte lato server per italiano e inglese.
 function achievementLabel(string $key, ?string $locale = null): string {
     foreach (achievementCatalog() as $entry) {
         if ($entry['key'] === $key) return t_server("achievement.$key", array(), $locale);

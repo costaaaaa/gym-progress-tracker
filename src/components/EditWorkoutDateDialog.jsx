@@ -13,6 +13,7 @@ import {
 import { format, subDays } from 'date-fns';
 import { API_BASE_URL } from '../config';
 import { formatDate } from '../i18n/format';
+import { achievementLabel } from '../i18n/labels';
 import { isClockString, clockDay } from '../utils/calendarDay';
 import { isoClock, differentZone, zoneCity } from '../utils/workoutTime';
 import ButtonSpinner from './ButtonSpinner';
@@ -162,10 +163,10 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
             <Typography variant="body2">{t('history.streak_change', { from: preview.streak_before, to: preview.streak_after })}</Typography>
           )}
           {(preview?.achievements_unlocked ?? []).map(key => (
-            <Typography key={key} variant="body2">{t('history.date.gain_achievement', { label: t(`achievement.${key}`, { defaultValue: key }) })}</Typography>
+            <Typography key={key} variant="body2">{t('history.date.gain_achievement', { label: achievementLabel(key) })}</Typography>
           ))}
           {(preview?.achievements_removed ?? []).map(key => (
-            <Typography key={key} variant="body2">{t('history.delete.lose_achievement', { label: t(`achievement.${key}`, { defaultValue: key }) })}</Typography>
+            <Typography key={key} variant="body2">{t('history.delete.lose_achievement', { label: achievementLabel(key) })}</Typography>
           ))}
           {workout.health_written && (
             <Typography variant="body2">{t('history.date.health_note')}</Typography>
