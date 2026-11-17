@@ -165,12 +165,65 @@ describe('livello dopo la conferma dell\'email da questa pagina', () => {
     expect(screen.getByText('mario')).toBeTruthy();
   });
 
-  it('senza cambi nello stato dell\'email non rilegge nulla', async () => {
-    view();
+  it('senza cambi nello stato dell\'email non rilegge nulla oltre al montaggio', async () => {
+    const { rerender } = view();
     await screen.findByText('mario');
+    await waitFor(() => expect(screen.getByTestId('account-tier')).toBeTruthy());
     const reads = () => fetch.mock.calls.filter(([u]) => String(u).includes('user/read.php')).length;
-    const before = reads();
+    const mounted = reads();
+    // stesso stato, oggetto nuovo
+    auth.emailState = { ...auth.emailState };
+    rerender(<MemoryRouter><ThemeModeProvider><Account isEmbedded /></ThemeModeProvider></MemoryRouter>);
     await new Promise((r) => setTimeout(r, 50));
-    expect(reads()).toBe(before);
+    expect(reads()).toBe(mounted);
+  });
+
+  // Dopo il montaggio le letture di read.php le decide il test: ognuna resta in volo finché non la risolve
+  const holdReads = () => {
+    const held = [];
+    const normal = fetch.getMockImplementation();
+    fetch.mockImplementation((url, init) => (String(url).includes('user/read.php')
+      ? new Promise((resolve) => held.push(resolve))
+      : normal(url, init)));
+    return held;
+  };
+  const readOf = (fields) => json({ success: true, id: 1, username: 'mario', email: 'mario@example.com', created_at: '2025-03-01T10:00:00+01:00', weekly_goal_default: 3, ...fields });
+  const PLUS = { tier: 'plus', tier_until: '2027-02-15T23:00:00Z', tier_last_day: '2027-02-15', signup_code: { status: 'applied', tier: 'plus', duration_days: 90 } };
+  const PRO = { tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null };
+  const unverified = () => ({ verified: false, email: 'mario@example.com', pendingEmail: null, blocked: false, daysLeft: 4 });
+  const confirmedView = (rerender) => {
+    auth.emailState = { ...unverified(), verified: true, daysLeft: null };
+    rerender(<MemoryRouter><ThemeModeProvider><Account isEmbedded /></ThemeModeProvider></MemoryRouter>);
+  };
+
+  it('una risposta con success: false non cancella il livello mostrato', async () => {
+    auth.emailState = unverified();
+    tierFields = { tier: 'free', tier_until: null, tier_last_day: null, signup_code: { status: 'pending', tier: 'plus', duration_days: 90 } };
+    const { rerender } = view();
+    await screen.findByText('mario');
+    const held = holdReads();
+    confirmedView(rerender);
+    await waitFor(() => expect(held).toHaveLength(1));
+    held[0](json({ success: false, message: 'errore' }));
+    await new Promise((r) => setTimeout(r, 30));
+    expect(screen.getByTestId('account-tier').textContent).toContain('Plus in attesa');
+  });
+
+  it('una risposta vecchia arrivata dopo la nuova non scrive', async () => {
+    auth.emailState = unverified();
+    tierFields = { tier: 'free', tier_until: null, tier_last_day: null, signup_code: { status: 'pending', tier: 'plus', duration_days: 90 } };
+    const { rerender } = view();
+    await screen.findByText('mario');
+    const held = holdReads();
+    confirmedView(rerender); // lettura 1
+    await waitFor(() => expect(held).toHaveLength(1));
+    auth.emailState = { ...auth.emailState, email: 'nuovo@example.com' }; // lettura 2: l'indirizzo diventa un altro
+    rerender(<MemoryRouter><ThemeModeProvider><Account isEmbedded /></ThemeModeProvider></MemoryRouter>);
+    await waitFor(() => expect(held).toHaveLength(2));
+    held[1](readOf(PRO));
+    await waitFor(() => expect(screen.getByTestId('account-tier').textContent).toBe('Livello: Pro, senza scadenza'));
+    held[0](readOf(PLUS)); // la vecchia arriva dopo
+    await new Promise((r) => setTimeout(r, 30));
+    expect(screen.getByTestId('account-tier').textContent).toBe('Livello: Pro, senza scadenza');
   });
 });

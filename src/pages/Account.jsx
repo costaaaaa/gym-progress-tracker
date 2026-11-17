@@ -305,7 +305,11 @@ const Account = ({ isEmbedded = false }) => {
   // Il livello cambia con la conferma dell'email (codice di registrazione che parte) e con l'indirizzo che diventa
   // quello dell'account: quando lo stato dell'email cambia in questo modo si rilegge solo il livello, senza far
   // tornare la pagina in caricamento
+  // (Resta una seconda lettura di read.php a ogni conferma: il livello non sta in AuthContext in questa PR.)
   const lastEmailState = useRef(emailState);
+  // Solo l'ultima lettura scrive; allo smontaggio il contatore avanza e una risposta in volo non scrive più
+  const tierRead = useRef(0);
+  useEffect(() => () => { tierRead.current += 1; }, []);
   useEffect(() => {
     const before = lastEmailState.current;
     lastEmailState.current = emailState;
@@ -313,10 +317,11 @@ const Account = ({ isEmbedded = false }) => {
     const confirmed = !before.verified && emailState.verified;
     const addressChanged = before.email !== emailState.email;
     if (!confirmed && !addressChanged) return;
+    const mine = ++tierRead.current;
     fetch(`${API_BASE_URL}api/user/read.php`, { method: 'GET', credentials: 'include' })
       .then((response) => (response.ok ? response.json() : null))
       .then((details) => {
-        if (!details) return;
+        if (!details?.success || mine !== tierRead.current) return;
         setUserData((prev) => (prev ? { ...prev, tier: details.tier, tier_last_day: details.tier_last_day, signup_code: details.signup_code } : prev));
       })
       .catch((error) => console.error('Errore nel recupero del livello:', error));
