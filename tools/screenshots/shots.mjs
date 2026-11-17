@@ -177,7 +177,15 @@ const LIMITS = {
   pro: { plans: 50, days_per_plan: 7, personal_exercises: 30 },
   gratis: { plans: 2, days_per_plan: 4, personal_exercises: 10 },
 };
-const user = ({ admin, gratis }) => ({
+// Stati della conferma email: da confermare (14 giorni a scadere), confermata, cambio in attesa, bloccato
+const EMAIL_STATES = {
+  'da-confermare': { email_verified: false, email_verification: { deadline: stamp(5, '10:00:00'), blocked: false, days_left: 5 }, pending_email: null },
+  confermata: { email_verified: true, email_verification: { deadline: null, blocked: false, days_left: null }, pending_email: null },
+  'cambio-in-attesa': { email_verified: true, email_verification: { deadline: null, blocked: false, days_left: null }, pending_email: 'nuovo@example.com' },
+  bloccato: { email_verified: false, email_verification: { deadline: stamp(-1, '10:00:00'), blocked: true, days_left: 0 }, pending_email: null },
+};
+const user = ({ admin, gratis, email }) => ({
+  ...(EMAIL_STATES[email ?? 'confermata']),
   success: true, id: 1, username: 'atleta_demo', email: 'atleta@example.com',
   created_at: stamp(-900, '10:00:00'), password_changed_at: stamp(-140, '09:00:00'),
   age: 34, gender: 'm', experience_years: 4, birth_date: '1992-05-14', training_start_date: '2022-01-10',
@@ -331,11 +339,13 @@ async function openPage(vp, theme, opts, tag) {
     colorScheme: theme, locale: 'it-IT', timezoneId: 'Europe/Rome',
   });
   await ctx.clock.setFixedTime(NOW);
-  await ctx.addInitScript(({ mode, loggedIn }) => {
+  await ctx.addInitScript(({ mode, loggedIn, reminder }) => {
     localStorage.setItem('themeMode', mode);
     localStorage.setItem('lx_locale', 'it');
     localStorage.setItem('lx_lang_choice', 'it');
     localStorage.removeItem('gym_focus_workout_draft');
+    // Promemoria dell'email già mostrato oggi (orologio fisso 2026-10-23), salvo `reminder`: la finestra non copre la pagina
+    if (!reminder) localStorage.setItem('lx_email_reminder_1', '2026-10-23');
     if (loggedIn) {
       localStorage.setItem('isLoggedIn', 'true');
       localStorage.setItem('user', JSON.stringify({ id: 1, username: 'atleta_demo' }));
@@ -343,11 +353,11 @@ async function openPage(vp, theme, opts, tag) {
       localStorage.removeItem('isLoggedIn');
       localStorage.removeItem('user');
     }
-  }, { mode: theme, loggedIn: opts.loggedIn });
+  }, { mode: theme, loggedIn: opts.loggedIn, reminder: opts.reminder === true });
   await ctx.route('**/backend/**', (route) => {
     const url = route.request().url();
     const hit = fixtures.find(([key]) => url.includes(key));
-    const body = hit ? hit[1]({ admin: opts.admin === true, gratis: opts.gratis === true, plans: opts.plans, u: UTENTI[opts.utente ?? 'attivo'] }) : fallback;
+    const body = hit ? hit[1]({ admin: opts.admin === true, gratis: opts.gratis === true, email: opts.email, plans: opts.plans, u: UTENTI[opts.utente ?? 'attivo'] }) : fallback;
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
   });
   const page = await ctx.newPage();
@@ -582,6 +592,50 @@ for (const vp of viewports) {
         await page.getByRole('button', { name: /Cambia esercizio/ }).click();
         await page.getByRole('dialog').waitFor();
         await snap(page, 'focus-plus-dialogo', tag, page.getByRole('dialog'));
+      } finally {
+        await ctx.close();
+      }
+    });
+
+    // Conferma email: finestra del codice, striscia, schermata di blocco, card dell'account nei tre stati, cambio indirizzo
+    for (const [name, url, opts] of [
+      ['email-striscia', '/', { loggedIn: true, email: 'da-confermare' }],
+      ['email-blocco', '/', { loggedIn: true, email: 'bloccato' }],
+      ['email-account-da-confermare', '/account', { loggedIn: true, email: 'da-confermare' }],
+      ['email-account-confermata', '/account', { loggedIn: true, email: 'confermata' }],
+      ['email-account-cambio-in-attesa', '/account', { loggedIn: true, email: 'cambio-in-attesa' }],
+    ]) {
+      if (!want(name)) continue;
+      await attempt(tag, name, async () => {
+        const { ctx, page } = await openPage(vp, theme, opts, tag);
+        try {
+          await page.goto(`${base}${url}`, { waitUntil: 'domcontentloaded' });
+          await page.getByRole('heading', { level: 1 }).first().waitFor();
+          await snap(page, name, tag);
+        } finally {
+          await ctx.close();
+        }
+      });
+    }
+    if (want('email-dialogo-conferma')) await attempt(tag, 'email-dialogo-conferma', async () => {
+      const { ctx, page } = await openPage(vp, theme, { loggedIn: true, email: 'da-confermare', reminder: true }, tag);
+      try {
+        await page.goto(`${base}/`, { waitUntil: 'domcontentloaded' });
+        const dialog = page.getByRole('dialog');
+        await dialog.waitFor();
+        await snap(page, 'email-dialogo-conferma', tag, dialog);
+      } finally {
+        await ctx.close();
+      }
+    });
+    if (want('email-dialogo-cambia-indirizzo')) await attempt(tag, 'email-dialogo-cambia-indirizzo', async () => {
+      const { ctx, page } = await openPage(vp, theme, { loggedIn: true, email: 'da-confermare' }, tag);
+      try {
+        await page.goto(`${base}/account`, { waitUntil: 'domcontentloaded' });
+        await page.getByRole('button', { name: 'Cambia indirizzo' }).click();
+        const dialog = page.getByRole('dialog');
+        await dialog.waitFor();
+        await snap(page, 'email-dialogo-cambia-indirizzo', tag, dialog);
       } finally {
         await ctx.close();
       }
