@@ -2,7 +2,7 @@
 // registrazione in attesa o non applicato). La fetch è il confine; le date sono giorni scritti (tier_last_day),
 // senza conversione di fuso: stesso testo in ogni fuso del browser.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Account from './Account';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
@@ -136,5 +136,33 @@ describe('livello nella card del profilo', () => {
     tierFields = { tier: 'plus', tier_until: '2027-02-15T23:00:00Z', tier_last_day: '2027-02-15', signup_code: null };
     const card = await mount();
     expect(row(card).textContent).toBe('Livello: Plus fino al 15 febbraio 2027');
+  });
+});
+
+describe('livello dopo la conferma dell\'email da questa pagina', () => {
+  const view = () => render(<MemoryRouter><ThemeModeProvider><Account isEmbedded /></ThemeModeProvider></MemoryRouter>);
+
+  it('lo stato passa a confermata: la riga si aggiorna senza ricaricare e la pagina non torna in caricamento', async () => {
+    auth.emailState = { verified: false, email: 'mario@example.com', pendingEmail: null, blocked: false, daysLeft: 4 };
+    tierFields = { tier: 'free', tier_until: null, tier_last_day: null, signup_code: { status: 'pending', tier: 'plus', duration_days: 90 } };
+    const { rerender } = view();
+    await screen.findByText('mario');
+    expect(screen.getByTestId('account-tier').textContent).toContain('Plus in attesa');
+
+    tierFields = { tier: 'plus', tier_until: '2027-02-15T23:00:00Z', tier_last_day: '2027-02-15', signup_code: { status: 'applied', tier: 'plus', duration_days: 90 } };
+    auth.emailState = { ...auth.emailState, verified: true, daysLeft: null };
+    rerender(<MemoryRouter><ThemeModeProvider><Account isEmbedded /></ThemeModeProvider></MemoryRouter>);
+
+    await waitFor(() => expect(screen.getByTestId('account-tier').textContent).toBe('Livello: Plus fino al 15 febbraio 2027'));
+    expect(screen.getByText('mario')).toBeTruthy();
+  });
+
+  it('senza cambi nello stato dell\'email non rilegge nulla', async () => {
+    view();
+    await screen.findByText('mario');
+    const reads = () => fetch.mock.calls.filter(([u]) => String(u).includes('user/read.php')).length;
+    const before = reads();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(reads()).toBe(before);
   });
 });

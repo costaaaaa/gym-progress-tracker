@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -301,6 +301,26 @@ const Account = ({ isEmbedded = false }) => {
       setLoading(false);
     }
   }, [user, fetchUserData]);
+
+  // Il livello cambia con la conferma dell'email (codice di registrazione che parte) e con l'indirizzo che diventa
+  // quello dell'account: quando lo stato dell'email cambia in questo modo si rilegge solo il livello, senza far
+  // tornare la pagina in caricamento
+  const lastEmailState = useRef(emailState);
+  useEffect(() => {
+    const before = lastEmailState.current;
+    lastEmailState.current = emailState;
+    if (!before || !emailState || !user) return;
+    const confirmed = !before.verified && emailState.verified;
+    const addressChanged = before.email !== emailState.email;
+    if (!confirmed && !addressChanged) return;
+    fetch(`${API_BASE_URL}api/user/read.php`, { method: 'GET', credentials: 'include' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((details) => {
+        if (!details) return;
+        setUserData((prev) => (prev ? { ...prev, tier: details.tier, tier_last_day: details.tier_last_day, signup_code: details.signup_code } : prev));
+      })
+      .catch((error) => console.error('Errore nel recupero del livello:', error));
+  }, [emailState, user]);
 
   const handleUpdateProfile = async () => {
     if (birthDate && isInvalidBirthDate(birthDate)) {
