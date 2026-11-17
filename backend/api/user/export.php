@@ -12,13 +12,14 @@ require_once '../../lib/gamification_rules.php';
 $database = new Database();
 $db = $database->getConnection();
 
-$user_id = require_authenticated_user($db);
+// Dal giorno 8 senza email confermata resta raggiungibile: il diritto di accesso ai dati non si sospende
+$user_id = require_authenticated_user($db, ALLOW_UNVERIFIED);
 
 // Colonne data+ora che il database tiene nel fuso del server: nell'export diventano ISO 8601 con
 // offset. Una colonna nuova di questo tipo va aggiunta qui. Le colonne DATE (date, birth_date, ...)
 // restano com'erano.
 const EXPORT_DATETIME_COLUMNS = array(
-    'created_at', 'password_changed_at', 'last_login_at', 'unlocked_at', 'expires_at', 'revoked_at',
+    'created_at', 'email_verified_at', 'password_changed_at', 'last_login_at', 'unlocked_at', 'expires_at', 'revoked_at',
     'granted_at', 'share_consent_at', 'joined_at', 'decided_at',
 );
 
@@ -40,7 +41,7 @@ function export_rows($db, $sql, $params)
 
 try {
     $profile = export_rows($db,
-        "SELECT username, email, birth_date, gender, training_start_date, rest_timer_enabled, time_zone,
+        "SELECT username, email, email_verified_at, pending_email, birth_date, gender, training_start_date, rest_timer_enabled, time_zone,
                 created_at, password_changed_at, last_login_at
          FROM gym_users WHERE id = ?", array($user_id));
     if (!$profile) {

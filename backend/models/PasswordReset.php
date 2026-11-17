@@ -1,6 +1,8 @@
 <?php
 // Token di recupero password. Il token in chiaro viaggia solo nell'email: nel database resta
 // l'hash SHA-256. Monouso, scadenza breve, un solo token attivo per utente.
+require_once __DIR__ . '/EmailVerification.php';
+
 class PasswordReset
 {
     private $conn;
@@ -157,6 +159,8 @@ class PasswordReset
                 "UPDATE gym_users SET password = ?, password_legacy = 0, password_changed_at = NOW(), updated_at = NOW() WHERE id = ?"
             );
             $upd->execute([$password_hash, $row['user_id']]);
+            // Il link è arrivato all'indirizzo dell'account: aprirlo prova che è suo, l'email risulta confermata
+            EmailVerification::markVerified($this->conn, $row['user_id'], true);
 
             $this->invalidateForUser($row['user_id']);
             (new ApiToken($this->conn))->revokeAllForUser($row['user_id']);

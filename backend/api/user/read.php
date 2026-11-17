@@ -16,14 +16,19 @@ try {
 
     $user = new User($db);
 
-    $user_id = require_authenticated_user($db);
+    // Risponde 200 anche all'account bloccato dal giorno 8: è il modo in cui il client sa di dover chiedere il codice
+    $user_id = require_authenticated_user($db, ALLOW_UNVERIFIED);
 
     if ($user->readById($user_id)) {
+        $verification = user_email_verification($db, $user_id);
         echo json_encode(array(
             'success' => true,
             'id' => $user->id,
             'username' => $user->username,
             'email' => $user->email,
+            'email_verified' => $verification['verified'],
+            'email_verification' => $verification['status'],
+            'pending_email' => $verification['pending_email'],
             'created_at' => server_time_iso($user->created_at),
             'rest_timer_enabled' => $user->rest_timer_enabled,
             'age' => $user->age,

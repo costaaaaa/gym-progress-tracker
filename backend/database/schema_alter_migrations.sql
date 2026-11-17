@@ -983,3 +983,49 @@ SET @q = (SELECT IF(COUNT(*) = 2, 'ALTER TABLE `gym_workout_history` DROP INDEX 
 PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
 
 DROP TABLE IF EXISTS `gym_progress`;
+
+-- ------------------------------------------------------------------------------
+-- 39. Verifica dell'email. gym_users: email_verified_at (NULL = non confermata), pending_email (nuovo
+--     indirizzo in attesa di conferma), unverified_notice_stage e unverified_notice_at (avvisi di
+--     eliminazione mandati dalla pulizia notturna, backend/tools/purge.php). Tabella gym_email_codes:
+--     i codici a 6 cifre (nel database solo l'hash sha256("<id utente>:<codice>")).
+--     Gli account che esistono adesso risultano confermati (email_verified_at = created_at). Il
+--     backfill gira finché la tabella gym_email_codes non esiste (si crea dopo): se la sezione si
+--     ferma a metà si rilancia e riempie; a sezione completa non tocca più gli account nati dopo
+--     (non confermati finché non confermano). Per questo gym_email_codes non va mai eliminata e
+--     ricreata: il riempimento ripartirebbe e confermerebbe gli account non confermati. Solo
+--     aggiunte: il rollback del codice resta possibile (il codice vecchio ignora le colonne nuove).
+-- ------------------------------------------------------------------------------
+
+SET @fresh = (SELECT COUNT(*) = 0 FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = 'gym_users' AND column_name = 'email_verified_at');
+SET @q = IF(@fresh,
+  'ALTER TABLE `gym_users`
+     ADD COLUMN `email_verified_at` DATETIME NULL DEFAULT NULL AFTER `email`,
+     ADD COLUMN `pending_email` VARCHAR(100) NULL DEFAULT NULL AFTER `email_verified_at`,
+     ADD COLUMN `unverified_notice_stage` TINYINT NOT NULL DEFAULT 0 AFTER `pending_email`,
+     ADD COLUMN `unverified_notice_at` DATETIME NULL DEFAULT NULL AFTER `unverified_notice_stage`',
+  'DO 0');
+PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
+-- Il riempimento è legato alla tabella dei codici, che la CREATE qui sotto crea solo dopo: se la
+-- sezione si ferma tra l'ALTER e l'UPDATE, al rilancio la tabella manca ancora e il riempimento
+-- rigira; a sezione completa non gira più. Vale finché gym_email_codes non viene eliminata e
+-- ricreata.
+SET @backfill = (SELECT COUNT(*) = 0 FROM information_schema.tables
+                 WHERE table_schema = DATABASE() AND table_name = 'gym_email_codes');
+SET @q = IF(@backfill, 'UPDATE `gym_users` SET `email_verified_at` = `created_at`, `updated_at` = `updated_at` WHERE `email_verified_at` IS NULL', 'DO 0');
+PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
+
+CREATE TABLE IF NOT EXISTS `gym_email_codes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `code_hash` char(64) NOT NULL,
+  `attempts` tinyint NOT NULL DEFAULT 0,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `expires_at` datetime NOT NULL,
+  `used_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_email_code_user` (`user_id`, `created_at`),
+  CONSTRAINT `gym_email_codes_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

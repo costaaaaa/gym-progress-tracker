@@ -10,6 +10,10 @@ CREATE TABLE IF NOT EXISTS `gym_users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(50) NOT NULL,
   `email` varchar(100) NOT NULL,
+  `email_verified_at` datetime DEFAULT NULL, -- NULL = email non confermata (blocco dal giorno 8, lib/email_verification_rules.php)
+  `pending_email` varchar(100) DEFAULT NULL, -- nuovo indirizzo in attesa del codice
+  `unverified_notice_stage` tinyint NOT NULL DEFAULT 0, -- avvisi di eliminazione mandati (0, 1, 2) dalla pulizia notturna
+  `unverified_notice_at` datetime DEFAULT NULL,
   `birth_date` DATE DEFAULT NULL,
   `password` varchar(255) NOT NULL,
   `password_legacy` tinyint(1) NOT NULL DEFAULT 0,
@@ -292,6 +296,21 @@ CREATE TABLE IF NOT EXISTS `gym_password_resets` (
   UNIQUE KEY `uq_reset_token_hash` (`token_hash`),
   KEY `idx_reset_user_id` (`user_id`),
   CONSTRAINT `gym_password_resets_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Codici a 6 cifre per confermare l'email (salvato solo sha256("<id utente>:<codice>"), valgono 30 minuti)
+CREATE TABLE IF NOT EXISTS `gym_email_codes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `email` varchar(100) NOT NULL, -- indirizzo a cui il codice è stato spedito
+  `code_hash` char(64) NOT NULL,
+  `attempts` tinyint NOT NULL DEFAULT 0,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `expires_at` datetime NOT NULL,
+  `used_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_email_code_user` (`user_id`, `created_at`),
+  CONSTRAINT `gym_email_codes_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Insert default exercises

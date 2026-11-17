@@ -5,6 +5,13 @@ include_once __DIR__ . '/../lib/plan_sets_rules.php';
 include_once __DIR__ . '/../lib/tier_rules.php';
 include_once __DIR__ . '/../lib/tier_limits.php';
 include_once __DIR__ . '/../lib/web_session.php';
+include_once __DIR__ . '/../lib/email_verification_rules.php';
+
+// Passato a resolve_authenticated_user_id() / require_authenticated_user() dagli endpoint che restano
+// raggiungibili dal giorno 8 anche con l'email non confermata (stato, conferma, reinvio, cambio
+// di indirizzo, esportazione, eliminazione). Il predefinito è il blocco: un endpoint nuovo è bloccato
+// senza che nessuno ci pensi.
+const ALLOW_UNVERIFIED = true;
 
 // Token Bearer in chiaro dall'header Authorization, o null.
 function bearer_token_from_request()
@@ -58,7 +65,32 @@ function find_authenticated_user_id($db)
     return $api_token->findValidByToken($plain_token);
 }
 
-function resolve_authenticated_user_id($db)
+// Stato di verifica dell'email dell'utente: ['verified' => bool, 'pending_email' => ?string,
+// 'status' => null | ['deadline', 'blocked', 'days_left']] (lib/email_verification_rules.php). Richiede la
+// migrazione 39, che deploy.sh applica prima di avviare il codice.
+function user_email_verification($db, $user_id)
+{
+    $stmt = $db->prepare("SELECT email_verified_at IS NOT NULL AS verified, pending_email,
+                                 UNIX_TIMESTAMP(created_at) AS created_ts, UNIX_TIMESTAMP() AS now_ts
+                          FROM gym_users WHERE id = ? LIMIT 1");
+    $stmt->execute([(int)$user_id]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        return array('verified' => true, 'pending_email' => null, 'status' => null);
+    }
+    $verified = (int)$row['verified'] === 1;
+    return array(
+        'verified' => $verified,
+        'pending_email' => $row['pending_email'],
+        'status' => emailVerificationStatus((int)$row['created_ts'], $verified, (int)$row['now_ts']),
+    );
+}
+
+// Dal giorno 8 senza email confermata ogni richiesta autenticata è rifiutata con 403 email_unverified
+// (mai 401: i client lo prendono per sessione scaduta ed escono), salvo che l'endpoint passi
+// ALLOW_UNVERIFIED. Gli endpoint che non autenticano (login, registrazione, logout, recupero password)
+// non passano di qui.
+function resolve_authenticated_user_id($db, $allow_unverified = false)
 {
     $user_id = find_authenticated_user_id($db);
     request_user_context($db, $user_id);
@@ -66,15 +98,22 @@ function resolve_authenticated_user_id($db)
         // Qui e non in request_time_zone(): vale per ogni richiesta autenticata, anche per gli endpoint
         // che il fuso non lo usano, così il «fuso salvato» è sempre l'ultimo visto dall'app
         remember_request_time_zone($db, $user_id);
+        if ($allow_unverified !== ALLOW_UNVERIFIED) {
+            $verification = user_email_verification($db, $user_id);
+            if ($verification['status'] !== null && $verification['status']['blocked']) {
+                api_error(403, 'email_unverified', t_server('email.unverified_blocked'));
+            }
+        }
     }
     return $user_id;
 }
 
 // Utente autenticato (sessione web o token Bearer), altrimenti 401. Ritorna lo user_id.
 // La connessione va aperta prima: la validazione di sessione e token legge dal database.
-function require_authenticated_user($db)
+// $allow_unverified: vedi resolve_authenticated_user_id().
+function require_authenticated_user($db, $allow_unverified = false)
 {
-    $user_id = resolve_authenticated_user_id($db);
+    $user_id = resolve_authenticated_user_id($db, $allow_unverified);
     if (!$user_id) {
         api_error(401, 'unauthenticated', t_server('auth.unauthenticated'));
     }
@@ -482,6 +521,14 @@ function api_error($status_code, $code, $message, array $extra = [])
         'code' => $code,
         'message' => $message
     ] + $extra, $status_code);
+}
+
+// 429 email_resend_wait con retry_after e header Retry-After (non ritorna)
+function api_email_resend_wait($seconds)
+{
+    header('Retry-After: ' . $seconds);
+    api_error(429, 'email_resend_wait', t_server('email.resend_wait', array('seconds' => $seconds)),
+        array('retry_after' => $seconds));
 }
 
 // Riga di appartenenza (role, share_level, joined_at) dell'utente al gruppo, o null
