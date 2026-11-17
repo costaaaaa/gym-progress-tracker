@@ -24,7 +24,7 @@ const markShownToday = (userId) => {
   try {
     localStorage.setItem(reminderKey(userId), localDay());
   } catch {
-    // niente da fare: vale la lettura
+    // niente da fare: al prossimo caricamento il promemoria potrà ripresentarsi
   }
 };
 
