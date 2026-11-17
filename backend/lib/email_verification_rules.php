@@ -13,6 +13,7 @@ const UNVERIFIED_NOTICE1_SECONDS = 2592000;   // 30 giorni: primo avviso
 const UNVERIFIED_NOTICE2_SECONDS = 3024000;   // 35 giorni: secondo avviso
 const UNVERIFIED_DELETE_SECONDS = 3196800;    // 37 giorni: eliminazione possibile
 const UNVERIFIED_DELETE_AFTER_NOTICE_SECONDS = 169200; // 47 ore dal secondo avviso
+const UNVERIFIED_NOTICE_GAP_SECONDS = 72000;  // 20 ore tra il primo e il secondo avviso: uno per notte
 
 // Codice di 6 cifre, anche con zeri iniziali
 function emailCodeGenerate()
@@ -93,7 +94,7 @@ function emailVerificationStatus($created_at, $verified, $now)
 
 // Cosa fa la pulizia notturna di un account: 'none', 'notice1', 'notice2' o 'delete'. Un solo passo
 // per notte: chi ha saltato più soglie riceve un avviso per notte, in ordine, e non è mai eliminato
-// senza i due avvisi. $notice_at: timestamp del secondo avviso (o null). Mai gli admin, mai i confermati.
+// senza i due avvisi. $notice_at: timestamp dell'ultimo avviso mandato (o null). Mai gli admin, mai i confermati.
 function unverifiedAccountAction($created_at, $stage, $notice_at, $now, $is_admin, $verified)
 {
     if ($is_admin || $verified) {
@@ -105,6 +106,10 @@ function unverifiedAccountAction($created_at, $stage, $notice_at, $now, $is_admi
         return $age >= UNVERIFIED_NOTICE1_SECONDS ? 'notice1' : 'none';
     }
     if ($stage === 1) {
+        // un avviso per notte: il secondo parte solo se il primo è partito da almeno 20 ore
+        if ($notice_at !== null && $now - $notice_at < UNVERIFIED_NOTICE_GAP_SECONDS) {
+            return 'none';
+        }
         return $age >= UNVERIFIED_NOTICE2_SECONDS ? 'notice2' : 'none';
     }
     if ($age >= UNVERIFIED_DELETE_SECONDS && $notice_at !== null
@@ -112,4 +117,22 @@ function unverifiedAccountAction($created_at, $stage, $notice_at, $now, $is_admi
         return 'delete';
     }
     return 'none';
+}
+
+// Data (timestamp) prima della quale l'account non verrà eliminato secondo la regola vera, da scrivere nell'avviso
+// $stage (1 o 2) mandato adesso: il più tardi tra created_at + 37 giorni e il momento più vicino in cui
+// l'eliminazione sarebbe possibile (primo avviso: secondo avviso tra almeno 20 ore, al più tardi alla prima pulizia
+// dopo 5 giorni, poi 47 ore; qui si usa adesso + 5 giorni + 47 ore come da specifica).
+function emailNoticeDeleteAfter($created_at, $stage, $now)
+{
+    $byAge = $created_at + UNVERIFIED_DELETE_SECONDS;
+    $byNotice = $now + UNVERIFIED_DELETE_AFTER_NOTICE_SECONDS + ((int)$stage === 1 ? 5 * 86400 : 0);
+    return max($byAge, $byNotice);
+}
+
+// La data dell'avviso, mostrata in ora italiana
+function emailNoticeDateText($timestamp, $lang)
+{
+    $d = (new DateTimeImmutable('@' . (int)$timestamp))->setTimezone(new DateTimeZone('Europe/Rome'));
+    return $lang === 'en' ? $d->format('F j, Y') : $d->format('d/m/Y');
 }

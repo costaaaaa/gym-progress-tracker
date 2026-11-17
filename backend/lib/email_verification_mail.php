@@ -20,12 +20,11 @@ function email_verification_send_changed_notice($old_email, $username, $lang, $n
     return mail_send($old_email, t_server('email.changed_subject', array(), $lang), $text);
 }
 
-// Avviso di eliminazione (1 o 2): l'account sarà eliminato dopo created_at + 37 giorni
-function email_verification_send_deletion_notice($stage, $to, $username, $lang, $created_at)
+// Avviso di eliminazione (1 o 2): la data è quella prima della quale la pulizia non elimina l'account (vedi
+// emailNoticeDeleteAfter); $now è l'istante dell'invio
+function email_verification_send_deletion_notice($stage, $to, $username, $lang, $created_at, $now = null)
 {
-    $deleteAfter = new DateTimeImmutable('@' . ($created_at + UNVERIFIED_DELETE_SECONDS));
-    $deleteAfter = $deleteAfter->setTimezone(new DateTimeZone('Europe/Rome'));
-    $date = $lang === 'en' ? $deleteAfter->format('F j, Y') : $deleteAfter->format('d/m/Y');
+    $date = emailNoticeDateText(emailNoticeDeleteAfter($created_at, $stage, $now ?? time()), $lang);
     $key = 'email.notice' . ($stage === 2 ? '2' : '1') . '_';
     $text = t_server($key . 'body', array('username' => $username, 'date' => $date), $lang) . mail_footer($lang);
     return mail_send($to, t_server($key . 'subject', array(), $lang), $text);

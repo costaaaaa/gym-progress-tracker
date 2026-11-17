@@ -99,6 +99,10 @@ check('giorno 37 con avviso da 47 ore: elimina', act(37 * DAY, 2, 47 * 3600) ===
 check('giorno 36 con avviso da 3 giorni (impossibile ma sicuro): niente prima del giorno 37', act(36 * DAY, 2, 3 * DAY) === 'none');
 check('giorno 38 con avviso da 3 giorni: elimina', act(38 * DAY, 2, 3 * DAY) === 'delete');
 check('stage 2 senza data dell\'avviso: mai elimina', act(60 * DAY, 2, null) === 'none');
+check('un avviso per notte: giorno 35 con il primo avviso da 1 ora: niente', act(35 * DAY, 1, 3600) === 'none');
+check('un avviso per notte: giorno 35 con il primo avviso da 19 ore 59 minuti: niente', act(35 * DAY, 1, 20 * 3600 - 60) === 'none');
+check('un avviso per notte: giorno 35 con il primo avviso da 20 ore: secondo avviso', act(35 * DAY, 1, 20 * 3600) === 'notice2');
+check('un avviso per notte: due lanci nella stessa notte a 40 giorni, secondo avviso solo dopo 20 ore', act(40 * DAY, 1, 600) === 'none' && act(40 * DAY, 1, DAY) === 'notice2');
 check('notte saltata: a 40 giorni con stage 0 solo il primo avviso', act(40 * DAY, 0, null) === 'notice1');
 check('notte saltata: a 40 giorni con stage 1 solo il secondo avviso', act(40 * DAY, 1, null) === 'notice2');
 check('notte saltata: a 100 giorni con stage 0 non elimina', act(100 * DAY, 0, null) === 'notice1');
@@ -116,6 +120,26 @@ check('percorso completo senza mai saltare notti: notice1, notice2, delete', (fu
     }
     return $out === array('30:1', '35:2', '37:d');
 })());
+
+echo "Data di eliminazione scritta negli avvisi\n";
+$del = 37 * DAY;
+check('primo avviso a tempo: vale created_at + 37 giorni (supera adesso + 5 giorni + 47 ore)', emailNoticeDeleteAfter($t0, 1, $t0 + 30 * DAY) === $t0 + $del);
+check('secondo avviso a tempo: created_at + 37 giorni', emailNoticeDeleteAfter($t0, 2, $t0 + 35 * DAY) === $t0 + $del);
+check('primo avviso in ritardo (giorno 34): adesso + 5 giorni + 47 ore', emailNoticeDeleteAfter($t0, 1, $t0 + 34 * DAY) === $t0 + 34 * DAY + 5 * DAY + 47 * 3600);
+check('secondo avviso in ritardo (giorno 36 e mezzo): adesso + 47 ore', emailNoticeDeleteAfter($t0, 2, $t0 + 36 * DAY + 12 * 3600) === $t0 + 36 * DAY + 12 * 3600 + 47 * 3600);
+check('secondo avviso: la data non è mai già passata', emailNoticeDeleteAfter($t0, 2, $t0 + 50 * DAY) > $t0 + 50 * DAY);
+check('la data scritta non è mai prima di quando la regola elimina davvero (secondo avviso)', (function () {
+    global $t0;
+    for ($d = 35; $d < 60; $d++) {
+        $now = $t0 + $d * DAY + 15 * 3600;
+        $after = emailNoticeDeleteAfter($t0, 2, $now);
+        // la prima volta che la regola elimina, con l'avviso partito adesso, è dopo $after - 1 secondo
+        if (unverifiedAccountAction($t0, 2, $now, $after - 1, false, false) !== 'none') return false;
+    }
+    return true;
+})());
+check('testo della data in ora italiana (italiano)', emailNoticeDateText(gmmktime(23, 30, 0, 4, 10, 2027), 'it') === '11/04/2027');
+check('testo della data in ora italiana (inglese)', emailNoticeDateText(gmmktime(23, 30, 0, 4, 10, 2027), 'en') === 'April 11, 2027');
 
 echo "\nCONTROLLI $checks FALLITI $fails\n";
 exit($fails > 0 ? 1 : 0);

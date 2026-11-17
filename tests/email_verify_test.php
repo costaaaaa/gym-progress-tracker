@@ -8,6 +8,7 @@
 $backend = $argv[1];
 require $backend . '/config/database.php';
 require __DIR__ . '/lib/http_test.php';
+require_once $backend . '/lib/email_verification_rules.php';
 
 const PASSWORD = 'Prova!Verifica2026';
 const PORT_A = 8099;  // MAIL_DRIVER=log
@@ -643,7 +644,12 @@ check('l\'avviso va nella lingua dell\'account (inglese)', isset($byTo['evpurgee
 
 // seconda notte: l'account 7 riceve l'avviso 2; la terza l'eliminazione (se l'avviso ha 47 ore)
 [$rc, $out] = purgeRun(['MAIL_DRIVER' => 'log']);
+check('due lanci nella stessa notte: il secondo avviso non parte subito dopo il primo', stage($p7) === 1 && rowCount('gym_users', 'id = ?', [$p7]) === 1 && strpos($out, 'evpurge7@example.test') === false, $out);
+sql("UPDATE gym_users SET unverified_notice_at = DATE_SUB(NOW(), INTERVAL 24 HOUR) WHERE id = ?", [$p7]);
+[$rc, $out] = purgeRun(['MAIL_DRIVER' => 'log']);
 check('seconda notte: l\'account fermo da 100 giorni riceve il secondo avviso, ancora non eliminato', stage($p7) === 2 && rowCount('gym_users', 'id = ?', [$p7]) === 1);
+preg_match('#dopo il (\d\d/\d\d/\d{4})#', $out, $dm);
+check('la data nell\'avviso di un account in ritardo non è già passata: adesso + 47 ore, in ora italiana', ($dm[1] ?? '') === emailNoticeDateText(time() + 47 * 3600, 'it'), json_encode($dm));
 [$rc, $out] = purgeRun(['MAIL_DRIVER' => 'log']);
 check('terza notte, avviso appena mandato: non eliminato', rowCount('gym_users', 'id = ?', [$p7]) === 1);
 sql("UPDATE gym_users SET unverified_notice_at = DATE_SUB(NOW(), INTERVAL 47 HOUR) WHERE id = ?", [$p7]);
