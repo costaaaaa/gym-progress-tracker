@@ -74,18 +74,19 @@ tm_php_phase schema_avanzi_test.php with-column
 
 # Dati che la sezione 38 non deve toccare, accanto a quelli delle colonne che elimina
 tm_sql <<'SQL' || tm_die "dati di prova non inseriti"
+SET @ex = (SELECT MAX(id) FROM gym_exercises);
 INSERT INTO gym_users (id, username, email, password, birth_date, training_start_date, age, experience_years, ai_tier)
   VALUES (9001, 'seme', 'seme@example.test', 'x', '1990-04-02', '2018-01-15', 36, 8.5, 'premium');
 INSERT INTO gym_workout_plans (id, user_id, name) VALUES (9001, 9001, 'Scheda seme');
 INSERT INTO gym_workout_days (id, plan_id, name, day_order) VALUES (9001, 9001, 'Giorno seme', 1);
 INSERT INTO gym_workout_exercises (id, day_id, exercise_id, position, rest, notes, sets, warmup_sets, reps, intensity_technique)
-  VALUES (9001, 9001, 1, 0, 75, 'nota seme', 4, 1, '8-10', 'Rest Pause');
+  VALUES (9001, 9001, @ex, 0, 75, 'nota seme', 4, 1, '8-10', 'Rest Pause');
 INSERT INTO gym_workout_plan_sets (workout_exercise_id, set_number, kind, reps_min, reps_max, intensity_technique)
   VALUES (9001, 1, 'working', 8, 10, 'Rest Pause');
 INSERT INTO gym_workout_history (id, user_id, exercises, date, notes) VALUES (9001, 9001, '[{"exercise_id":1}]', '2026-11-01 10:00:00', 'allenamento seme');
 INSERT INTO gym_workout_sets (workout_history_id, exercise_id, set_number, weight, reps, intensity_technique)
-  VALUES (9001, 1, 1, 60, '8', 'Rest Pause');
-INSERT INTO gym_progress (user_id, exercise_id, weight, date) VALUES (9001, 1, 60, '2026-11-01');
+  VALUES (9001, @ex, 1, 60, '8', 'Rest Pause');
+INSERT INTO gym_progress (user_id, exercise_id, weight, date) VALUES (9001, @ex, 60, '2026-11-01');
 SQL
 
 echo

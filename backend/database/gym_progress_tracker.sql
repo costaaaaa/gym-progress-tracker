@@ -13,10 +13,8 @@ CREATE TABLE IF NOT EXISTS `gym_users` (
   `birth_date` DATE DEFAULT NULL,
   `password` varchar(255) NOT NULL,
   `password_legacy` tinyint(1) NOT NULL DEFAULT 0,
-  `age` int(11) DEFAULT NULL,
   `gender` enum('M','F','O') DEFAULT NULL,
   `training_start_date` DATE DEFAULT NULL,
-  `experience_years` float DEFAULT '0',
   `rest_timer_enabled` tinyint(1) NOT NULL DEFAULT 1,
   `is_admin` tinyint(1) NOT NULL DEFAULT 0,
   `tier` enum('free','plus','pro') NOT NULL DEFAULT 'free', -- livello dell'account (backend/tools/tier.php)
@@ -87,11 +85,7 @@ CREATE TABLE IF NOT EXISTS `gym_workout_exercises` (
   `day_id` int(11) NOT NULL,
   `exercise_id` int(11) NOT NULL,
   `position` smallint(5) unsigned NOT NULL DEFAULT 0, -- ordine dentro il giorno, ORDER BY position, id (#77)
-  `sets` int(11) NOT NULL DEFAULT 0, -- congelata (#77): vedi gym_workout_plan_sets
-  `warmup_sets` tinyint(3) unsigned NOT NULL DEFAULT 0, -- congelata (#77): serie di riscaldamento (#66), vedi gym_workout_plan_sets
-  `reps` varchar(20) NOT NULL DEFAULT '', -- congelata (#77)
   `rest` int(11) NOT NULL,
-  `intensity_technique` varchar(100) DEFAULT NULL, -- congelata (#77)
   `notes` text DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -103,9 +97,8 @@ CREATE TABLE IF NOT EXISTS `gym_workout_exercises` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Serie pianificate di un esercizio in scheda, riscaldamento compreso (#77): una riga per serie, con il
--- suo target di ripetizioni e la sua tecnica. Sostituiscono `sets`, `warmup_sets`, `reps` e
--- `intensity_technique` di gym_workout_exercises, che restano nella tabella congelate (default
--- `sets` 0 e `reps` '') e che il codice non usa più.
+-- suo target di ripetizioni e la sua tecnica. Hanno sostituito `sets`, `warmup_sets`, `reps` e
+-- `intensity_technique` di gym_workout_exercises (eliminate dalla migrazione 38).
 CREATE TABLE IF NOT EXISTS `gym_workout_plan_sets` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `workout_exercise_id` int(11) NOT NULL,
@@ -121,22 +114,6 @@ CREATE TABLE IF NOT EXISTS `gym_workout_plan_sets` (
   CONSTRAINT `gym_workout_plan_sets_reps_range` CHECK ((`reps_min` IS NULL OR `reps_min` BETWEEN 1 AND 250) AND (`reps_max` IS NULL OR `reps_max` BETWEEN 1 AND 250) AND (`reps_min` IS NULL OR `reps_max` IS NULL OR `reps_min` <= `reps_max`)),
   CONSTRAINT `gym_workout_plan_sets_warmup_empty` CHECK (`kind` = 'working' OR (`reps_min` IS NULL AND `reps_max` IS NULL AND `to_failure` = 0 AND `intensity_technique` IS NULL)),
   CONSTRAINT `gym_workout_plan_sets_working_target` CHECK (`kind` = 'warmup' OR (`to_failure` = 1 AND `reps_max` IS NULL) OR (`to_failure` = 0 AND `reps_min` IS NOT NULL AND `reps_max` IS NOT NULL))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Progress tracking table: no longer used by any code, to be dropped in a later release
-CREATE TABLE IF NOT EXISTS `gym_progress` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `exercise_id` int(11) NOT NULL,
-  `weight` decimal(5,2) NOT NULL,
-  `date` date NOT NULL,
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `user_id` (`user_id`),
-  KEY `exercise_id` (`exercise_id`),
-  CONSTRAINT `gym_progress_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `gym_progress_ibfk_2` FOREIGN KEY (`exercise_id`) REFERENCES `gym_exercises` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- User body stats table
@@ -165,7 +142,6 @@ CREATE TABLE IF NOT EXISTS `gym_user_stats` (
 CREATE TABLE IF NOT EXISTS `gym_workout_history` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
-  `exercises` text DEFAULT NULL, -- copia JSON dell'allenamento: non più scritta né letta (migrazione 37), da eliminare in un rilascio successivo
   `date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `duration_seconds` int unsigned DEFAULT NULL,
   `notes` text DEFAULT NULL,
@@ -173,7 +149,6 @@ CREATE TABLE IF NOT EXISTS `gym_workout_history` (
   `health_written_at` datetime DEFAULT NULL, -- quando il telefono l'ha scritto nell'app Salute (NULL = non è in Salute)
   `time_zone` varchar(64) NOT NULL DEFAULT 'Europe/Rome', -- fuso IANA del luogo in cui si è allenato: `date` è l'ora locale lì
   PRIMARY KEY (`id`),
-  KEY `user_id` (`user_id`),
   KEY `idx_user_date` (`user_id`, `date`),
   UNIQUE KEY `uniq_user_idempotency` (`user_id`, `idempotency_key`),
   CONSTRAINT `gym_workout_history_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE

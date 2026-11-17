@@ -258,4 +258,19 @@ echo "DELETE FROM gym_workout_exercises WHERE id = 1" | sql >/dev/null
 check "eliminando l'esercizio spariscono le sue serie" "0" "$(count_sets 1)"
 
 echo
+echo "Sezione 38: le quattro colonne vecchie vengono eliminate (due esecuzioni; le altre tabelle qui non ci sono)"
+sets_before="$(echo "SELECT COUNT(*) FROM gym_workout_plan_sets" | sql)"
+notes_before="$(echo "SELECT GROUP_CONCAT(id, ':', COALESCE(notes, '-'), ':', rest ORDER BY id) FROM gym_workout_exercises" | sql)"
+for pass in 1 2; do
+    check "sezione 38, esecuzione $pass, senza errori" "no" "$(section 38 | sql_fails)"
+done
+check "sets, warmup_sets, reps e intensity_technique non ci sono più" "0" \
+    "$(echo "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = 't' AND table_name = 'gym_workout_exercises' AND column_name IN ('sets', 'warmup_sets', 'reps', 'intensity_technique')" | sql)"
+check "le colonne che restano (id, day_id, exercise_id, position, rest, notes)" "6" \
+    "$(echo "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = 't' AND table_name = 'gym_workout_exercises' AND column_name IN ('id', 'day_id', 'exercise_id', 'position', 'rest', 'notes')" | sql)"
+check "le serie pianificate non cambiano" "$sets_before" "$(echo "SELECT COUNT(*) FROM gym_workout_plan_sets" | sql)"
+check "note e pause degli esercizi non cambiano" "$notes_before" "$(echo "SELECT GROUP_CONCAT(id, ':', COALESCE(notes, '-'), ':', rest ORDER BY id) FROM gym_workout_exercises" | sql)"
+check "INSERT senza le colonne vecchie riesce" "no" "$(echo "INSERT INTO gym_workout_exercises (day_id, exercise_id, rest) VALUES (99, 98, 60)" | sql_fails)"
+
+echo
 if [[ $fails -eq 0 ]]; then echo "$checks controlli, 0 falliti"; else echo "$checks controlli, $fails falliti"; exit 1; fi
