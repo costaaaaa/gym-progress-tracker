@@ -13,6 +13,23 @@ function email_verification_send_code($to, $username, $lang, $code, $is_change =
     return mail_send($to, t_server($prefix . 'subject', array(), $lang), $text);
 }
 
+// Dagli endpoint, dopo la risposta: manda il codice nella lingua dell'account ($locale grezza dal database)
+function email_verification_send_code_later($to, $username, $locale, $code, $is_change = false)
+{
+    $lang = normalize_locale($locale) ?? 'it';
+    after_response(function () use ($to, $username, $lang, $code, $is_change) {
+        email_verification_send_code($to, $username, $lang, $code, $is_change);
+    });
+}
+
+// Dagli endpoint: 429 email_resend_wait con retry_after e header Retry-After (non ritorna)
+function email_verification_respond_wait($seconds)
+{
+    header('Retry-After: ' . $seconds);
+    api_error(429, 'email_resend_wait', t_server('email.resend_wait', array('seconds' => $seconds)),
+        array('retry_after' => $seconds));
+}
+
 // Al VECCHIO indirizzo: l'indirizzo dell'account è cambiato in $new_email
 function email_verification_send_changed_notice($old_email, $username, $lang, $new_email)
 {

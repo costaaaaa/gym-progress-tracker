@@ -69,7 +69,6 @@ class EmailVerification
                 return array('status' => 'wait', 'seconds' => $wait);
             }
             $target = $this->targetOf($user);
-            $this->invalidateForUser($user_id);
             $code = $this->insertCode($user_id, $target);
             $this->conn->commit();
             return array('status' => 'sent', 'code' => $code, 'email' => $target, 'is_change' => $user['pending_email'] !== null,
@@ -131,15 +130,8 @@ class EmailVerification
                 // L'unicità si controlla di nuovo: nel frattempo qualcuno può aver preso l'indirizzo
                 $taken = $this->emailTakenByOther($user['pending_email'], $user_id);
                 if (!$taken) {
-                    try {
-                        $this->conn->prepare("UPDATE gym_users SET email = ?, pending_email = NULL, updated_at = NOW() WHERE id = ?")
-                            ->execute([$user['pending_email'], $user_id]);
-                    } catch (PDOException $e) {
-                        if (($e->errorInfo[0] ?? $e->getCode()) !== '23000') {
-                            throw $e;
-                        }
-                        $taken = true;
-                    }
+                    $taken = !$this->execUnique("UPDATE gym_users SET email = ?, pending_email = NULL, updated_at = NOW() WHERE id = ?",
+                        [$user['pending_email'], $user_id]);
                 }
                 if ($taken) {
                     $this->conn->prepare("UPDATE gym_users SET pending_email = NULL, updated_at = NOW() WHERE id = ?")->execute([$user_id]);
@@ -187,22 +179,13 @@ class EmailVerification
             }
 
             $immediate = $user['email_verified_at'] === null;
-            try {
-                if ($immediate) {
-                    $this->conn->prepare("UPDATE gym_users SET email = ?, pending_email = NULL, updated_at = NOW() WHERE id = ?")
-                        ->execute([$new_email, $user_id]);
-                } else {
-                    $this->conn->prepare("UPDATE gym_users SET pending_email = ?, updated_at = NOW() WHERE id = ?")
-                        ->execute([$new_email, $user_id]);
-                }
-            } catch (PDOException $e) {
-                if (($e->errorInfo[0] ?? $e->getCode()) !== '23000') {
-                    throw $e;
-                }
+            $saved = $immediate
+                ? $this->execUnique("UPDATE gym_users SET email = ?, pending_email = NULL, updated_at = NOW() WHERE id = ?", [$new_email, $user_id])
+                : $this->execUnique("UPDATE gym_users SET pending_email = ?, updated_at = NOW() WHERE id = ?", [$new_email, $user_id]);
+            if (!$saved) {
                 $this->conn->rollBack();
                 return array('status' => 'taken');
             }
-            $this->invalidateForUser($user_id);
             $code = $this->insertCode($user_id, $new_email);
             $this->conn->commit();
             return array('status' => 'sent', 'mode' => $immediate ? 'immediate' : 'pending', 'code' => $code,
@@ -276,6 +259,21 @@ class EmailVerification
     {
         $this->conn->prepare("UPDATE " . $this->table_name . " SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL")
             ->execute([$user_id]);
+    }
+
+    // Esegue un UPDATE che può scontrarsi con l'unicità dell'email: false se l'indirizzo è stato preso nel frattempo
+    // (SQLSTATE 23000), true se riuscito; ogni altro errore risale.
+    private function execUnique($sql, array $params)
+    {
+        try {
+            $this->conn->prepare($sql)->execute($params);
+            return true;
+        } catch (PDOException $e) {
+            if (($e->errorInfo[0] ?? $e->getCode()) !== '23000') {
+                throw $e;
+            }
+            return false;
+        }
     }
 
     private function emailTakenByOther($email, $user_id)

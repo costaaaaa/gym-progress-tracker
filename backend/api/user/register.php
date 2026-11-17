@@ -133,7 +133,7 @@ try {
             after_response(function () use ($db, $newId, $newEmail, $newName, $newLang) {
                 $code = (new EmailVerification($db))->issueForRegistration($newId);
                 if ($code !== null) {
-                    email_verification_send_code($newEmail, $newName, $newLang, $code);
+                    email_verification_send_code($newEmail, $newName, normalize_locale($newLang) ?? 'it', $code);
                 }
             });
             http_response_code(201);

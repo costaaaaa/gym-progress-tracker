@@ -49,10 +49,7 @@ try {
     $result = (new EmailVerification($db))->requestChange($user_id, $email);
     switch ($result['status']) {
         case 'sent':
-            $lang = normalize_locale($result['locale']) ?? 'it';
-            after_response(function () use ($result, $lang) {
-                email_verification_send_code($result['email'], $result['username'], $lang, $result['code'], true);
-            });
+            email_verification_send_code_later($result['email'], $result['username'], $result['locale'], $result['code'], true);
             $immediate = $result['mode'] === 'immediate';
             api_json_response(array(
                 'success' => true,
@@ -66,9 +63,7 @@ try {
         case 'taken':
             api_error(409, 'email_taken', t_server('email.change_taken'), array('field' => 'email'));
         case 'wait':
-            header('Retry-After: ' . $result['seconds']);
-            api_error(429, 'email_resend_wait', t_server('email.resend_wait', array('seconds' => $result['seconds'])),
-                array('retry_after' => $result['seconds']));
+            email_verification_respond_wait($result['seconds']);
         default:
             api_not_found(t_server('common.user_not_found'));
     }

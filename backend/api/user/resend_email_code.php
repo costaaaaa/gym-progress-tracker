@@ -22,15 +22,10 @@ try {
     $result = (new EmailVerification($db))->resend($user_id);
     switch ($result['status']) {
         case 'sent':
-            $lang = normalize_locale($result['locale']) ?? 'it';
-            after_response(function () use ($result, $lang) {
-                email_verification_send_code($result['email'], $result['username'], $lang, $result['code'], $result['is_change']);
-            });
+            email_verification_send_code_later($result['email'], $result['username'], $result['locale'], $result['code'], $result['is_change']);
             api_json_response(array('success' => true, 'message' => t_server('email.code_sent')));
         case 'wait':
-            header('Retry-After: ' . $result['seconds']);
-            api_error(429, 'email_resend_wait', t_server('email.resend_wait', array('seconds' => $result['seconds'])),
-                array('retry_after' => $result['seconds']));
+            email_verification_respond_wait($result['seconds']);
         case 'already_verified':
             api_error(409, 'email_already_verified', t_server('email.already_confirmed'));
         default:
