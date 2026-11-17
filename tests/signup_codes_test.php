@@ -654,7 +654,8 @@ foreach ([['tier' => 'pro'], ['duration_days' => 10], ['code' => 'mario-nuovo']]
     check('con usi: ' . key($change) . ' non si cambia (409 code_has_uses)', $r[0] === 409 && $r[1]['code'] === 'code_has_uses', $r[2]);
 }
 check('con usi: i valori invariati sono ammessi (modulo con tutti i campi)', admPost(['action' => 'update', 'id' => $mid, 'tier' => 'plus', 'duration_days' => 90, 'code' => ' mario-plus ', 'max_uses' => 3, 'enabled' => true, 'assignee' => 'Mario'])[0] === 200);
-check('con usi: tier, durata e testo sono rimasti', rows("SELECT tier, duration_days, code FROM gym_signup_codes WHERE id = ?", [$mid])[0] === ['tier' => 'plus', 'duration_days' => '90', 'code' => 'MARIO-PLUS']);
+$kept = rows("SELECT tier, duration_days, code FROM gym_signup_codes WHERE id = ?", [$mid])[0];
+check('con usi: tier, durata e testo sono rimasti', $kept['tier'] === 'plus' && (int)$kept['duration_days'] === 90 && $kept['code'] === 'MARIO-PLUS', json_encode($kept));
 check('con usi: enabled, assegnatario e last_day sempre', admPost(['action' => 'update', 'id' => $mid, 'enabled' => false, 'assignee' => 'Marco', 'last_day' => romeLastDay(5)])[0] === 200);
 admPost(['action' => 'update', 'id' => $mid, 'enabled' => true, 'last_day' => '']);
 check('un codice con usi ma tutti missed: livello e durata restano bloccati (ha usi)', admPost(['action' => 'update', 'id' => codeId('si-spegne'), 'tier' => 'pro'])[0] === 409);
