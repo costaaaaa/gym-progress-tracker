@@ -15,7 +15,7 @@ import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../..
 import { track } from '../../utils/analytics';
 import { currentTimeZone, moveToZoneDay, zoneClock } from '../../utils/workoutTime';
 import i18n from '../../i18n';
-import { achievementLabel } from '../i18n/labels';
+import { achievementLabel } from '../../i18n/labels';
 
 const DRAFT_STORAGE_KEY = 'gym_focus_workout_draft';
 
