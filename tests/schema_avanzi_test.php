@@ -6,8 +6,10 @@
 // salvataggio, storico, cambio data, cancellazione dell'allenamento, esportazione; poi i conteggi
 // admin degli esercizi e la cancellazione dell'account dai modelli.
 //   with-column: la colonna gym_workout_history.exercises esiste ed è facoltativa (sezione 37): ogni
-//                allenamento salvato la lascia NULL.
-//   dropped:     colonna e tabella gym_progress non esistono più: tutto deve funzionare uguale.
+//                allenamento salvato la lascia NULL; le altre colonne e la tabella gym_progress
+//                della sezione 38 ci sono ancora.
+//   dropped:     dopo la sezione 38 colonne, indice e tabella non esistono più: tutto deve
+//                funzionare uguale e le righe di prova (utente 9001) sono intatte.
 $backend = $argv[1];
 $phase = $argv[2] ?? '';
 if (!in_array($phase, ['with-column', 'dropped'], true)) {
@@ -41,12 +43,42 @@ function tableExists($conn, $table)
 echo "Fase $phase\n";
 
 $withColumn = $phase === 'with-column';
-check($withColumn ? 'la colonna exercises esiste' : 'la colonna exercises non esiste', columnExists($conn, 'gym_workout_history', 'exercises') === $withColumn);
+// Cosa elimina la sezione 38
+$dropColumns = [
+    ['gym_workout_exercises', 'sets'], ['gym_workout_exercises', 'warmup_sets'], ['gym_workout_exercises', 'reps'],
+    ['gym_workout_exercises', 'intensity_technique'], ['gym_workout_history', 'exercises'],
+    ['gym_users', 'ai_tier'], ['gym_users', 'age'], ['gym_users', 'experience_years'],
+];
+foreach ($dropColumns as [$table, $column]) {
+    check(($withColumn ? "la colonna $table.$column esiste" : "la colonna $table.$column non esiste"), columnExists($conn, $table, $column) === $withColumn);
+}
 check($withColumn ? 'la tabella gym_progress esiste' : 'la tabella gym_progress non esiste', tableExists($conn, 'gym_progress') === $withColumn);
+$stmt = $conn->query("SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gym_workout_history' AND INDEX_NAME = 'user_id'");
+check($withColumn ? 'l\'indice user_id di gym_workout_history esiste' : 'l\'indice user_id di gym_workout_history non esiste', ((int)$stmt->fetchColumn() > 0) === $withColumn);
+// Quello che resta
+foreach ([['gym_workout_sets', 'intensity_technique'], ['gym_workout_plan_sets', 'intensity_technique'], ['gym_users', 'birth_date'], ['gym_users', 'training_start_date']] as [$table, $column]) {
+    check("la colonna $table.$column resta", columnExists($conn, $table, $column));
+}
+$stmt = $conn->query("SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gym_workout_history' AND INDEX_NAME = 'idx_user_date'");
+check('l\'indice idx_user_date resta', (int)$stmt->fetchColumn() > 0);
+$stmt = $conn->query("SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gym_workout_history' AND CONSTRAINT_TYPE = 'FOREIGN KEY'");
+check('la chiave esterna verso gym_users resta', (int)$stmt->fetchColumn() === 1);
 if ($withColumn) {
     $stmt = $conn->query("SELECT IS_NULLABLE, COLUMN_DEFAULT FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'gym_workout_history' AND COLUMN_NAME = 'exercises'");
     $col = $stmt->fetch(PDO::FETCH_ASSOC);
     check('dopo la sezione 37 la colonna exercises è facoltativa (NULL, default NULL)', $col && $col['IS_NULLABLE'] === 'YES' && $col['COLUMN_DEFAULT'] === null, json_encode($col));
+} else {
+    // Righe di prova inserite prima della sezione 38: tutto quello che non è stato eliminato è intatto
+    $u = $conn->query("SELECT username, birth_date, training_start_date FROM gym_users WHERE id = 9001")->fetch(PDO::FETCH_ASSOC);
+    check('l\'utente di prova è intatto', $u && $u['username'] === 'seme' && $u['birth_date'] === '1990-04-02' && $u['training_start_date'] === '2018-01-15', json_encode($u));
+    $e = $conn->query("SELECT day_id, exercise_id, position, rest, notes FROM gym_workout_exercises WHERE id = 9001")->fetch(PDO::FETCH_ASSOC);
+    check('l\'esercizio di scheda di prova è intatto', $e && (int)$e['rest'] === 75 && $e['notes'] === 'nota seme' && (int)$e['day_id'] === 9001, json_encode($e));
+    $p = $conn->query("SELECT reps_min, reps_max, intensity_technique FROM gym_workout_plan_sets WHERE workout_exercise_id = 9001")->fetchAll(PDO::FETCH_ASSOC);
+    check('le serie pianificate di prova sono intatte', count($p) === 1 && (int)$p[0]['reps_min'] === 8 && (int)$p[0]['reps_max'] === 10 && $p[0]['intensity_technique'] === 'Rest Pause', json_encode($p));
+    $h = $conn->query("SELECT notes, date FROM gym_workout_history WHERE id = 9001")->fetch(PDO::FETCH_ASSOC);
+    check('l\'allenamento di prova è intatto', $h && $h['notes'] === 'allenamento seme' && $h['date'] === '2026-11-01 10:00:00', json_encode($h));
+    $s = $conn->query("SELECT weight, reps, intensity_technique FROM gym_workout_sets WHERE workout_history_id = 9001")->fetchAll(PDO::FETCH_ASSOC);
+    check('la serie registrata di prova è intatta (compresa la tecnica)', count($s) === 1 && (float)$s[0]['weight'] === 60.0 && $s[0]['reps'] === '8' && $s[0]['intensity_technique'] === 'Rest Pause', json_encode($s));
 }
 
 // Utente con una scheda (un giorno, due esercizi): il controllo premium vuole che i set siano di
