@@ -495,6 +495,11 @@ class User
             $stmt = $this->conn->prepare("DELETE FROM gym_exercises WHERE created_by = ? AND status <> 'approved'");
             $stmt->execute([$this->id]);
 
+            // Dell'uso di un codice di registrazione restano solo quelli applicati (contano il posto, user_id diventa NULL
+            // per la chiave esterna); quelli in attesa o mancati non servono a nulla e vanno via con l'account.
+            $stmt = $this->conn->prepare("DELETE FROM gym_signup_code_uses WHERE user_id = ? AND status <> 'applied'");
+            $stmt->execute([$this->id]);
+
             $query = "DELETE FROM " . $this->table_name . " WHERE id = ?";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(1, $this->id);
