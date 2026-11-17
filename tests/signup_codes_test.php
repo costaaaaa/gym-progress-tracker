@@ -509,7 +509,13 @@ mk('elimina-pending', 'plus', 30, 1);
 check('pending recente occupa il posto', seats('elimina-pending') === 1);
 $r = api('POST', '/api/user/delete.php', $e1Auth, ['password' => PASSWORD]);
 check('eliminazione dell\'account: 200', $r[0] === 200, $r[2]);
-check('l\'uso resta con user_id NULL (lo fa la chiave esterna)', (int)scalar("SELECT COUNT(*) FROM gym_signup_code_uses WHERE code_id = ? AND user_id IS NULL", [codeId('elimina-pending')]) === 1);
+check('l\'uso pending non resta: eliminato con l\'account', (int)scalar("SELECT COUNT(*) FROM gym_signup_code_uses WHERE code_id = ?", [codeId('elimina-pending')]) === 0);
+mk('elimina-missed', 'plus', 30, 2);
+[$m1, $m1Auth] = newAccount('scdelm', 'elimina-missed');
+sql("UPDATE gym_signup_code_uses SET status = 'missed' WHERE user_id = ?", [$m1]);
+$r = api('POST', '/api/user/delete.php', $m1Auth, ['password' => PASSWORD]);
+check('eliminazione dell\'account con uso missed: 200', $r[0] === 200, $r[2]);
+check('l\'uso missed non resta: eliminato con l\'account', (int)scalar("SELECT COUNT(*) FROM gym_signup_code_uses WHERE code_id = ?", [codeId('elimina-missed')]) === 0);
 check('il posto del pending eliminato si libera', seats('elimina-pending') === 0);
 check('un altro può registrarsi', register('scdel1b', 'elimina-pending')[0] === 201);
 
@@ -531,7 +537,7 @@ mk('purge-code', 'plus', 30, 1);
 sql("UPDATE gym_users SET created_at = DATE_SUB(NOW(), INTERVAL 40 DAY), unverified_notice_stage = 2, unverified_notice_at = DATE_SUB(NOW(), INTERVAL 5 DAY) WHERE id = ?", [$g1]);
 exec('php ' . escapeshellarg($backend . '/tools/purge.php') . ' 2>&1', $out, $rc);
 check('la pulizia elimina l\'account (esito 0)', $rc === 0 && userCount('scpurge1') === 0, implode("\n", $out));
-check('l\'uso pending resta con user_id NULL, il posto è libero, nessun orfano', (int)scalar("SELECT COUNT(*) FROM gym_signup_code_uses WHERE code_id = ? AND user_id IS NULL", [codeId('purge-code')]) === 1
+check('l\'uso pending è eliminato con l\'account (anche dalla pulizia), il posto è libero, nessun orfano', (int)scalar("SELECT COUNT(*) FROM gym_signup_code_uses WHERE code_id = ?", [codeId('purge-code')]) === 0
     && seats('purge-code') === 0 && orphans() === 0);
 
 echo "Recupero password\n";

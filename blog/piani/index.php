@@ -22,7 +22,7 @@ $limits = plans_page_limits();
 ob_start();
 ?>
         <h1>Piani Gratis, Plus e Pro</h1>
-        <p class="page-intro">Plus e Pro non sono ancora acquistabili.</p>
+        <p class="page-intro">Plus e Pro non sono ancora acquistabili: per ora li assegna solo il titolare, anche con un codice di registrazione.</p>
         <p>Questa pagina confronta i tre piani di LiftIndex e dice cosa cambia dall'uno all'altro.</p>
 
         <h2>Confronto dei piani</h2>
