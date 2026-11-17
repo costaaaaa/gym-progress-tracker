@@ -29,6 +29,8 @@ const outDir = path.join(path.dirname(fileURLToPath(import.meta.url)), outName);
 mkdirSync(outDir, { recursive: true });
 
 const NOW = Date.parse('2026-10-23T10:00:00+02:00');
+// Giorno locale (Europe/Rome) dell'orologio fisso, yyyy-MM-dd
+const TODAY = new Date(NOW).toLocaleDateString('sv-SE', { timeZone: 'Europe/Rome' });
 const DAY = 86400000;
 const isoDay = (offset) => new Date(NOW + offset * DAY).toISOString().slice(0, 10);
 const stamp = (offset, time) => `${isoDay(offset)} ${time}`;
@@ -177,7 +179,7 @@ const LIMITS = {
   pro: { plans: 50, days_per_plan: 7, personal_exercises: 30 },
   gratis: { plans: 2, days_per_plan: 4, personal_exercises: 10 },
 };
-// Stati della conferma email: da confermare (14 giorni a scadere), confermata, cambio in attesa, bloccato
+// Stati della conferma email: da confermare (5 giorni a scadere), confermata, cambio in attesa, bloccato
 const EMAIL_STATES = {
   'da-confermare': { email_verified: false, email_verification: { deadline: stamp(5, '10:00:00'), blocked: false, days_left: 5 }, pending_email: null },
   confermata: { email_verified: true, email_verification: { deadline: null, blocked: false, days_left: null }, pending_email: null },
@@ -339,13 +341,13 @@ async function openPage(vp, theme, opts, tag) {
     colorScheme: theme, locale: 'it-IT', timezoneId: 'Europe/Rome',
   });
   await ctx.clock.setFixedTime(NOW);
-  await ctx.addInitScript(({ mode, loggedIn, reminder }) => {
+  await ctx.addInitScript(({ mode, loggedIn, reminder, today }) => {
     localStorage.setItem('themeMode', mode);
     localStorage.setItem('lx_locale', 'it');
     localStorage.setItem('lx_lang_choice', 'it');
     localStorage.removeItem('gym_focus_workout_draft');
     // Promemoria dell'email già mostrato oggi (orologio fisso 2026-10-23), salvo `reminder`: la finestra non copre la pagina
-    if (!reminder) localStorage.setItem('lx_email_reminder_1', '2026-10-23');
+    if (!reminder) localStorage.setItem('lx_email_reminder_1', today);
     if (loggedIn) {
       localStorage.setItem('isLoggedIn', 'true');
       localStorage.setItem('user', JSON.stringify({ id: 1, username: 'atleta_demo' }));
@@ -353,7 +355,7 @@ async function openPage(vp, theme, opts, tag) {
       localStorage.removeItem('isLoggedIn');
       localStorage.removeItem('user');
     }
-  }, { mode: theme, loggedIn: opts.loggedIn, reminder: opts.reminder === true });
+  }, { mode: theme, loggedIn: opts.loggedIn, reminder: opts.reminder === true, today: TODAY });
   await ctx.route('**/backend/**', (route) => {
     const url = route.request().url();
     const hit = fixtures.find(([key]) => url.includes(key));
