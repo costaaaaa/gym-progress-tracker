@@ -4,7 +4,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import EmailCodeForm from './EmailCodeForm';
 import { textBelow } from '../../test/minText';
 
-const auth = { emailState: null, refreshEmailState: vi.fn(() => Promise.resolve()) };
+const auth = { emailState: null, refreshEmailState: vi.fn(() => Promise.resolve()), reportEmailOutcome: vi.fn() };
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth }));
 
 const reply = (status, body, headers = {}) => ({ ok: status < 400, status, headers, json: async () => body });
@@ -30,6 +30,7 @@ const resend = () => screen.getByRole('button', { name: /nuovo codice/i });
 beforeEach(() => {
   auth.emailState = { verified: false, email: 'mario@example.com', pendingEmail: null, blocked: false, daysLeft: 5 };
   auth.refreshEmailState.mockClear();
+  auth.reportEmailOutcome.mockClear();
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -77,6 +78,40 @@ describe('conferma', () => {
     expect(bodyOf(0)).toEqual({ code: '123456' });
     expect(auth.refreshEmailState).toHaveBeenCalled();
     expect(onConfirmed.mock.calls[0][0]).toMatchObject({ email: 'mario@example.com', changed: false });
+  });
+
+  it('con un codice di registrazione passa il messaggio del server all\'avviso di esito, prima di rileggere lo stato', async () => {
+    const message = 'Email confermata. Plus attivo fino al 15 febbraio 2027.';
+    const order = [];
+    auth.reportEmailOutcome.mockImplementation(() => order.push('report'));
+    auth.refreshEmailState.mockImplementation(() => { order.push('refresh'); return Promise.resolve(); });
+    answers(reply(200, { success: true, message, email_verified: true, email: 'mario@example.com', signup_code: { status: 'applied', tier: 'plus', tier_last_day: '2027-02-15' } }));
+    const { onConfirmed } = mount();
+    type('123456');
+    confirm();
+    await waitFor(() => expect(onConfirmed).toHaveBeenCalledTimes(1));
+    expect(auth.reportEmailOutcome).toHaveBeenCalledWith(message);
+    expect(order).toEqual(['report', 'refresh']);
+    auth.refreshEmailState.mockImplementation(() => Promise.resolve());
+  });
+
+  it('codice di registrazione non applicato (posti finiti): anche qui vale il messaggio del server', async () => {
+    const message = 'Email confermata. Il codice di registrazione non è più valido e non è stato applicato.';
+    answers(reply(200, { success: true, message, email_verified: true, email: 'mario@example.com', signup_code: { status: 'missed', tier: 'plus', tier_last_day: null } }));
+    const { onConfirmed } = mount();
+    type('123456');
+    confirm();
+    await waitFor(() => expect(onConfirmed).toHaveBeenCalledTimes(1));
+    expect(auth.reportEmailOutcome).toHaveBeenCalledWith(message);
+  });
+
+  it('senza codice di registrazione non c\'è nessun esito speciale', async () => {
+    answers(reply(200, { success: true, message: 'Email confermata.', email_verified: true, email: 'mario@example.com' }));
+    const { onConfirmed } = mount();
+    type('123456');
+    confirm();
+    await waitFor(() => expect(onConfirmed).toHaveBeenCalledTimes(1));
+    expect(auth.reportEmailOutcome).not.toHaveBeenCalled();
   });
 
   it('dopo un cambio di indirizzo in attesa dice che l\'indirizzo è cambiato', async () => {

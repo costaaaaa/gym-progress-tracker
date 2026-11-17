@@ -59,6 +59,16 @@ export const AuthProvider = ({ children }) => {
     return true;
   }, []);
 
+  // Messaggio del server alla conferma con un codice di registrazione («Plus attivo fino al…»): chi conferma lo
+  // lascia qui, l'avviso di esito lo ritira quando lo stato passa a «confermata» (una volta sola)
+  const emailOutcome = useRef('');
+  const reportEmailOutcome = useCallback((message) => { emailOutcome.current = message || ''; }, []);
+  const takeEmailOutcome = useCallback(() => {
+    const message = emailOutcome.current;
+    emailOutcome.current = '';
+    return message;
+  }, []);
+
   const openEmailDialog = useCallback(() => setEmailDialogOpen(true), []);
   const closeEmailDialog = useCallback(() => setEmailDialogOpen(false), []);
 
@@ -202,7 +212,9 @@ export const AuthProvider = ({ children }) => {
     emailDialogOpen,
     openEmailDialog,
     closeEmailDialog,
-    claimEmailReminder
+    claimEmailReminder,
+    reportEmailOutcome,
+    takeEmailOutcome
   };
 
   return (

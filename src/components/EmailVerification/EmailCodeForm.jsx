@@ -35,7 +35,7 @@ function useSecondsUntil(until) {
 // onConfirmed({ email, changed }) parte a conferma avvenuta e stato già riletto.
 const EmailCodeForm = ({ onConfirmed, actions, autoFocus = false }) => {
   const { t } = useTranslation();
-  const { emailState, refreshEmailState } = useAuth();
+  const { emailState, refreshEmailState, reportEmailOutcome } = useAuth();
   const id = useId();
   const hintId = `${id}-hint`;
   const codeErrorId = `${id}-error`;
@@ -53,9 +53,11 @@ const EmailCodeForm = ({ onConfirmed, actions, autoFocus = false }) => {
   const pendingEmail = emailState?.pendingEmail ?? null;
   const sentTo = pendingEmail ?? emailState?.email ?? '';
 
-  const done = async (email, changed) => {
+  // `outcome`: il messaggio del server quando la conferma ha anche deciso il codice di registrazione
+  const done = async (email, changed, outcome) => {
+    if (outcome) reportEmailOutcome(outcome);
     await refreshEmailState();
-    setAnnounce(t('emailconfirm.done'));
+    setAnnounce(outcome || t('emailconfirm.done'));
     onConfirmed?.({ email, changed });
   };
 
@@ -78,7 +80,7 @@ const EmailCodeForm = ({ onConfirmed, actions, autoFocus = false }) => {
     const res = await confirmEmailCode(code);
     setConfirming(false);
     if (res.ok) {
-      await done(res.data.email ?? sentTo, pendingEmail !== null);
+      await done(res.data.email ?? sentTo, pendingEmail !== null, res.data.signup_code ? res.data.message : '');
     } else if (res.data?.code === 'email_already_verified') {
       await done(sentTo, false);
     } else {

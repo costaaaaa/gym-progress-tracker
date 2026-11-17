@@ -31,11 +31,11 @@ const markShownToday = (userId) => {
 // Montato una volta sola nel layout, fuori dalla pagina. Tiene:
 //  - la finestra del codice (aperta dal contesto: registrazione, striscia, Account, promemoria);
 //  - il promemoria all'apertura dell'app, al massimo una volta per giorno e mai su un allenamento Focus in corso;
-//  - l'avviso di esito, quando lo stato passa a «confermata» o l'indirizzo in attesa diventa quello dell'account.
+//  - l'avviso di esito (con un codice di registrazione, il messaggio del server), quando lo stato passa a «confermata» o l'indirizzo in attesa diventa quello dell'account.
 // Con l'app bloccata non c'è la finestra: il codice si scrive nella schermata di blocco.
 const EmailGate = () => {
   const { t } = useTranslation();
-  const { isLoggedIn, user, emailState, emailDialogOpen, openEmailDialog, closeEmailDialog, claimEmailReminder } = useAuth();
+  const { isLoggedIn, user, emailState, emailDialogOpen, openEmailDialog, closeEmailDialog, claimEmailReminder, takeEmailOutcome } = useAuth();
   const [notice, setNotice] = useState('');
 
   const userId = user?.id;
@@ -68,11 +68,11 @@ const EmailGate = () => {
     previous.current = emailState;
     if (!before || !emailState) return;
     if (!before.verified && emailState.verified) {
-      setNotice(t('emailconfirm.done'));
+      setNotice(takeEmailOutcome() || t('emailconfirm.done'));
     } else if (before.pendingEmail && !emailState.pendingEmail && emailState.email === before.pendingEmail) {
       setNotice(t('emailconfirm.done_changed', { email: emailState.email }));
     }
-  }, [emailState, t]);
+  }, [emailState, t, takeEmailOutcome]);
 
   return (
     <>

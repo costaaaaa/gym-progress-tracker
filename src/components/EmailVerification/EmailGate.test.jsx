@@ -25,6 +25,7 @@ beforeEach(() => {
     openEmailDialog: vi.fn(() => { auth.emailDialogOpen = true; }),
     closeEmailDialog: vi.fn(() => { auth.emailDialogOpen = false; }),
     refreshEmailState: vi.fn(() => Promise.resolve()),
+    takeEmailOutcome: vi.fn(() => ''),
     claimEmailReminder: vi.fn(() => { const first = !claimed; claimed = true; return first; }),
   });
 });
@@ -241,6 +242,25 @@ describe('avviso di esito', () => {
   });
 
   it('quando l\'indirizzo in attesa diventa quello dell\'account lo dice con il nuovo indirizzo', () => {
+    auth.emailState = state({ verified: true, daysLeft: null, pendingEmail: 'nuovo@example.com' });
+    const view = mountGate();
+    auth.emailState = state({ verified: true, daysLeft: null, email: 'nuovo@example.com', pendingEmail: null });
+    view.rerender(<EmailGate />);
+    expect(screen.getByText('Indirizzo email aggiornato: nuovo@example.com.')).toBeTruthy();
+  });
+
+  it('con un esito dal server (codice di registrazione) mostra quello al posto del testo fisso', () => {
+    const message = 'Email confermata. Plus attivo fino al 15 febbraio 2027.';
+    auth.takeEmailOutcome = vi.fn(() => message);
+    const view = mountGate();
+    auth.emailState = state({ verified: true, daysLeft: null });
+    view.rerender(<EmailGate />);
+    expect(screen.getByText(message)).toBeTruthy();
+    expect(screen.queryByText('Email confermata.')).toBeNull();
+  });
+
+  it('un esito non ritirato non resta per il cambio di indirizzo successivo', () => {
+    auth.takeEmailOutcome = vi.fn(() => 'Email confermata. Plus attivo.');
     auth.emailState = state({ verified: true, daysLeft: null, pendingEmail: 'nuovo@example.com' });
     const view = mountGate();
     auth.emailState = state({ verified: true, daysLeft: null, email: 'nuovo@example.com', pendingEmail: null });
