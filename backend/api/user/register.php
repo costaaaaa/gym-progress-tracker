@@ -110,13 +110,16 @@ try {
 
         // Username o email già in uso: messaggio preciso e campo da correggere (lo stesso dice
         // check_availability.php al primo passo; create() resta comunque il controllo finale).
-        $taken = $user->usernameExists() ? 'username' : ($user->emailExists() ? 'email' : null);
-        if ($taken !== null) {
-            http_response_code(409);
-            $message = $taken === 'username' ? t_server('register.username_taken') : t_server('register.email_taken');
-            echo json_encode(array("success" => false, "field" => $taken, "message" => $message));
-            exit;
-        }
+        $respondTaken = function () use ($user) {
+            $taken = $user->usernameExists() ? 'username' : ($user->emailExists() ? 'email' : null);
+            if ($taken !== null) {
+                http_response_code(409);
+                $message = $taken === 'username' ? t_server('register.username_taken') : t_server('register.email_taken');
+                echo json_encode(array("success" => false, "field" => $taken, "message" => $message));
+                exit;
+            }
+        };
+        $respondTaken();
 
         // Create the user
         if ($user->create()) {
@@ -139,6 +142,8 @@ try {
                 "message" => t_server('register.ok')
             ));
         } else {
+            // Il doppione può essere stato preso tra il controllo e l'inserimento: stessa risposta del controllo
+            $respondTaken();
             http_response_code(400);
             echo json_encode(array(
                 "success" => false,

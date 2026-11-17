@@ -80,15 +80,15 @@ foreach ($unverified as $u) {
             continue;
         }
         if ($action === 'delete') {
-            // Riletto subito prima: nel frattempo può aver confermato l'email
-            $still = $db->prepare("SELECT COUNT(*) FROM gym_users WHERE id = ? AND email_verified_at IS NULL AND unverified_notice_stage = 2 AND is_admin = 0");
-            $still->execute([$u['id']]);
-            if ((int)$still->fetchColumn() !== 1) {
-                continue;
-            }
+            // Ricontrollo ed eliminazione nella stessa transazione, con la riga utente bloccata: chi ha confermato
+            // l'email nel frattempo non viene eliminato
             $account = new User($db);
             $account->id = (int)$u['id'];
-            if (!$account->deleteRecords()) {
+            $deleted = $account->deleteRecords(true);
+            if ($deleted === null) {
+                continue;
+            }
+            if (!$deleted) {
                 throw new Exception('eliminazione non riuscita');
             }
             $counts['delete']++;

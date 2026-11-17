@@ -463,7 +463,10 @@ class User
 
     // Elimina l'account e i suoi dati senza chiedere la password: da chiamare solo dopo aver verificato
     // la password (deleteAccount) o per la pulizia notturna degli account mai confermati (tools/purge.php).
-    public function deleteRecords()
+    // $only_unconfirmed: dentro la stessa transazione, con la riga utente bloccata (FOR UPDATE), si ricontrolla che
+    // l'account sia ancora non confermato, non admin e al secondo avviso; altrimenti non si elimina nulla e si
+    // restituisce null (chi conferma tra il controllo e l'eliminazione non viene eliminato).
+    public function deleteRecords($only_unconfirmed = false)
     {
         if (!$this->id) {
             error_log("Delete account failed: No user ID provided");
@@ -474,6 +477,16 @@ class User
             // Iniziamo una transazione per garantire l'integrità dei dati.
             // I dati correlati sono rimossi dai vincoli ON DELETE CASCADE, tranne giorni ed esercizi delle schede.
             $this->conn->beginTransaction();
+
+            if ($only_unconfirmed) {
+                $lock = $this->conn->prepare("SELECT id FROM " . $this->table_name . "
+                    WHERE id = ? AND email_verified_at IS NULL AND unverified_notice_stage = 2 AND is_admin = 0 FOR UPDATE");
+                $lock->execute([$this->id]);
+                if ($lock->fetchColumn() === false) {
+                    $this->conn->rollBack();
+                    return null;
+                }
+            }
 
             (new WorkoutPlan($this->conn))->deleteDaysAndExercises($this->id);
 

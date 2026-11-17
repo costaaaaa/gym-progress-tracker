@@ -9,6 +9,7 @@ $backend = $argv[1];
 require $backend . '/config/database.php';
 require __DIR__ . '/lib/http_test.php';
 require_once $backend . '/lib/email_verification_rules.php';
+require_once $backend . '/models/EmailVerification.php';
 
 const PASSWORD = 'Prova!Verifica2026';
 const PORT_A = 8099;  // MAIL_DRIVER=log
@@ -659,6 +660,23 @@ check('l\'account 3 ha ancora l\'avviso da meno di 47 ore e resta; quello da 48 
 sql("UPDATE gym_users SET unverified_notice_at = DATE_SUB(NOW(), INTERVAL 47 HOUR) WHERE id = ?", [$p3]);
 purgeRun(['MAIL_DRIVER' => 'log']);
 check('account 3 con l\'avviso da 47 ore: eliminato', rowCount('gym_users', 'id = ?', [$p3]) === 0);
+
+// Eliminazione atomica: chi conferma tra il controllo e l'eliminazione non viene eliminato. A tiene la riga utente
+// bloccata e segna l'email come confermata; B (un altro processo) prova a eliminare e deve aspettare, poi non eliminare.
+[$race] = newAccount('evrace');
+setAccount($race, 40, 2, 100);
+$conn->beginTransaction();
+sql("SELECT id FROM gym_users WHERE id = ? FOR UPDATE", [$race]);
+$bCode = '$b = $argv[1]; require $b . "/config/database.php"; require $b . "/models/WorkoutPlan.php"; require $b . "/models/User.php";'
+    . '$u = new User((new Database())->getConnection()); $u->id = (int)$argv[2]; var_export($u->deleteRecords(true));';
+$racer = proc_open(['php', '-r', $bCode, $backend, (string)$race], [0 => ['file', '/dev/null', 'r'], 1 => ['pipe', 'w'], 2 => ['file', '/dev/null', 'w']], $racePipes);
+usleep(1500000);
+check('eliminazione concorrente: aspetta il blocco della riga utente', proc_get_status($racer)['running'] === true);
+EmailVerification::markVerified($conn, $race);
+$conn->commit();
+$raceOut = stream_get_contents($racePipes[1]);
+proc_close($racer);
+check('eliminazione concorrente: chi ha confermato nel frattempo non viene eliminato (null)', trim($raceOut) === 'NULL' && rowCount('gym_users', 'id = ?', [$race]) === 1, $raceOut);
 
 // un account che fallisce non ferma gli altri: con le email che non partono gli avvisi falliscono, le eliminazioni no
 [$f1] = newAccount('evfail1'); [$f2] = newAccount('evfail2'); [$f3] = newAccount('evfail3');
