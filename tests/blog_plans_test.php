@@ -95,7 +95,7 @@ function check_page($html, $lang, $canonical, array $t, array $labels)
 echo "Pagina italiana\n";
 $htmlIt = render('piani/index.php');
 check_page($htmlIt, 'it', $it, array(
-    'frase in alto: Plus e Pro non ancora acquistabili' => 'Plus e Pro non sono ancora acquistabili',
+    'frase in alto: Plus e Pro non ancora acquistabili' => 'Plus e Pro non sono ancora acquistabili: per ora li assegna solo il titolare, anche con un codice di registrazione',
     'AI Coach: quote diverse' => 'in arrivo, con quote diverse per Plus e Pro',
     'elenco «in tutti i piani, oggi»' => 'In tutti i piani, oggi',
     'passaggio a un piano inferiore: nessun dato cancellato' => 'Nessun dato viene cancellato',
@@ -107,7 +107,7 @@ check('IT: la parola «livello» non indica l\'abbonamento', stripos($htmlIt, 'l
 echo "Pagina inglese\n";
 $htmlEn = render('en/plans/index.php');
 check_page($htmlEn, 'en', $en, array(
-    'frase in alto: Plus e Pro non ancora acquistabili' => 'Plus and Pro can\'t be bought yet',
+    'frase in alto: Plus e Pro non ancora acquistabili' => 'Plus and Pro can\'t be bought yet: for now only the owner assigns them, including through a sign-up code',
     'AI Coach: quote diverse' => 'coming soon, with different allowances for Plus and Pro',
     'elenco «in tutti i piani, oggi»' => 'Included in Free, Plus and Pro, today',
     'passaggio a un piano inferiore: nessun dato cancellato' => 'No data is deleted',
