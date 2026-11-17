@@ -210,8 +210,9 @@ check('update_settings.php salva e restituisce età e anni di esperienza (200)',
     $code === 200 && ($set['success'] ?? false) === true && abs((int)($set['age'] ?? -99) - $ageWant) <= 1 && (float)($set['experience_years'] ?? 0) >= 10.0 && ($set['training_start_date'] ?? '') === '2016-06-01', "codice $code: " . json_encode($set));
 [$code, $dash] = call('GET', '/api/workout_stats/dashboard.php', $token);
 check('workout_stats/dashboard.php risponde (200, success)', $code === 200 && ($dash['success'] ?? false) === true, "codice $code: " . substr(json_encode($dash), 0, 300));
-[$code, $reg] = call('POST', '/api/user/register.php', '', ['username' => 'nuovo_avanzi', 'email' => 'nuovo@example.test', 'password' => 'Prova!Avanzi2026', 'birth_date' => '1995-05-05', 'gender' => 'F', 'accept_terms' => true]);
-$newUser = $conn->query("SELECT birth_date, gender FROM gym_users WHERE username = 'nuovo_avanzi'")->fetch(PDO::FETCH_ASSOC);
+$newName = $withColumn ? 'nuovoavanziA' : 'nuovoavanziB';
+[$code, $reg] = call('POST', '/api/user/register.php', '', ['username' => $newName, 'email' => "$newName@example.test", 'password' => 'Prova!Avanzi2026', 'birth_date' => '1995-05-05', 'gender' => 'F', 'accept_terms' => true]);
+$newUser = $conn->query("SELECT birth_date, gender FROM gym_users WHERE username = '$newName'")->fetch(PDO::FETCH_ASSOC);
 check('register.php crea un utente nuovo (201)', $code === 201 && ($reg['success'] ?? false) === true && $newUser && $newUser['birth_date'] === '1995-05-05' && $newUser['gender'] === 'F', "codice $code: " . json_encode($reg));
 
 // Cancellazione dell'allenamento
