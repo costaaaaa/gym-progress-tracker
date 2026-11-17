@@ -295,6 +295,7 @@ check('passata un\'ora dagli invii vecchi: si può di nuovo', $r[0] === 200, $r[
 
 // Limite per IP sui codici sbagliati (server B: 3)
 [$ipId, $ipAuth] = newAccount('evipl');
+sql("DELETE FROM gym_rate_limits WHERE rate_key LIKE 'emailcode:%'"); // il contatore per IP è nel database, in comune con il server A
 $codes = [];
 for ($i = 0; $i < 4; $i++) {
     $r = api('POST', '/api/user/confirm_email.php', $ipAuth, ['code' => '000000'], PORT_B);
@@ -345,17 +346,23 @@ foreach ($files as $f) {
     if (strpos(file_get_contents("$backend/api/$f"), 'ALLOW_UNVERIFIED') !== false) $declared[] = $f;
 }
 check('gli endpoint che dichiarano ALLOW_UNVERIFIED sono esattamente i sette attesi', $declared === array_values(array_intersect($files, $allowedExpected)) && count($declared) === 7, json_encode($declared));
+// GET e POST, con ?name=abc (esercizi simili legge il nome prima di autenticare). Per ogni endpoint ogni risposta
+// deve essere 403 email_unverified, o 405 se il metodo non è quello dell'endpoint, e almeno una deve essere 403:
+// mai 2xx, mai 401, mai un endpoint che lasci passare.
 $scanned = 0;
 $bad = [];
 foreach ($files as $f) {
     if (in_array($f, $public, true) || in_array($f, $declared, true)) continue;
+    $blocked = false;
     foreach (['GET', 'POST'] as $method) {
-        $r = api($method, "/api/$f", $bAuth, $method === 'POST' ? ['x' => 1] : null);
+        $r = api($method, "/api/$f?name=abc", $bAuth, $method === 'POST' ? ['x' => 1] : null);
         $scanned++;
-        if ($r[0] !== 403 || ($r[1]['code'] ?? null) !== 'email_unverified') $bad[] = "$method $f -> {$r[0]}";
+        if ($r[0] === 403 && ($r[1]['code'] ?? null) === 'email_unverified') $blocked = true;
+        elseif ($r[0] !== 405) $bad[] = "$method $f -> {$r[0]}";
     }
+    if (!$blocked) $bad[] = "$f non blocca";
 }
-check("tutti gli endpoint autenticati non ammessi rispondono 403 email_unverified a un account bloccato ($scanned richieste, mai 2xx né 401)", $scanned > 60 && !$bad, json_encode($bad));
+check("tutti gli endpoint autenticati non ammessi bloccano un account al giorno 8: 403 email_unverified ($scanned richieste, mai 2xx né 401)", $scanned > 60 && !$bad, json_encode($bad));
 check('l\'elenco scorre anche i sottodirectory (admin, groups, workout...)', count(array_filter($files, fn($f) => strpos($f, 'admin/') === 0)) >= 3 && count(array_filter($files, fn($f) => strpos($f, 'groups/') === 0)) >= 5);
 
 // Ammessi: con il codice dal giorno 8 tutto riparte
@@ -588,7 +595,7 @@ check('l\'account da eliminare ha dati veri (scheda, giorni, esercizi, token, co
 [$rc, $out] = purgeRun([], '--dry-run');
 check('--dry-run: conta e non cambia nulla', $rc === 0 && purgeLine($out, 'account non confermati: avviso 1 (30 gg)') === 3
     && purgeLine($out, 'account non confermati: avviso 2 (35 gg)') === 1 && purgeLine($out, 'account non confermati eliminati (37 gg)') === 1
-    && stage($p1) === 0 && stage($p2) === 1 && rowCount('gym_users', 'id = ?', [$p4]) === 1 && rowCount('gym_email_codes', 'user_id = ?', [$p8]) === 2
+    && stage($p1) === 0 && stage($p2) === 1 && rowCount('gym_users', 'id = ?', [$p4]) === 1 && rowCount('gym_email_codes', 'user_id = ?', [$p8]) === 3
     && strpos($out, '[mail:log]') === false, $out);
 
 [$rc, $out] = purgeRun(['MAIL_DRIVER' => 'log']);
@@ -604,7 +611,7 @@ check('admin: mai (resta, stage invariato)', rowCount('gym_users', 'id = ?', [$p
 check('account confermato: mai', rowCount('gym_users', 'id = ?', [$p6]) === 1);
 check('pulizia ferma per giorni (100 giorni, stage 0): un solo avviso per notte, non eliminato', stage($p7) === 1 && rowCount('gym_users', 'id = ?', [$p7]) === 1);
 check('account di 20 giorni: nessun avviso', stage($p8) === 0 && scalar("SELECT unverified_notice_at FROM gym_users WHERE id = ?", [$p8]) === null);
-check('codici scaduti da più di 7 giorni cancellati, quelli da 6 giorni restano', rowCount('gym_email_codes', 'user_id = ?', [$p8]) === 1);
+check('codici scaduti da più di 7 giorni cancellati, quello da 6 giorni e quello attivo restano', rowCount('gym_email_codes', 'user_id = ?', [$p8]) === 2 && rowCount('gym_email_codes', 'user_id = ? AND code_hash = ?', [$p8, hash('sha256', 'a')]) === 0);
 // le email di avviso (stdout della pulizia CLI): lette dall'output
 preg_match_all('/\[mail:log\] a=(\S+) oggetto="([^"]*)"\n(.*?)(?=\n\[mail:log\]|\z)/s', $out, $mm, PREG_SET_ORDER);
 $byTo = [];
