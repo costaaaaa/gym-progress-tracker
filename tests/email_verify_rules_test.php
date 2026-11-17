@@ -123,13 +123,13 @@ check('percorso completo senza mai saltare notti: notice1, notice2, delete', (fu
 
 echo "Data di eliminazione scritta negli avvisi\n";
 $del = 37 * DAY;
-check('primo avviso a tempo (giorno 30): created_at + 37 giorni', emailNoticeDeleteAfter($t0, 1, $t0 + 30 * DAY) === $t0 + $del);
-check('secondo avviso a tempo: created_at + 37 giorni', emailNoticeDeleteAfter($t0, 2, $t0 + 35 * DAY) === $t0 + $del);
+check('primo avviso a tempo (giorno 30): created_at + 37 giorni', emailNoticeEarliestDelete($t0, 1, $t0 + 30 * DAY) === $t0 + $del);
+check('secondo avviso a tempo: created_at + 37 giorni', emailNoticeEarliestDelete($t0, 2, $t0 + 35 * DAY) === $t0 + $del);
 check('primo avviso in ritardo (giorno 34): secondo avviso al giorno 35 + 47 ore = giorno 36 e 23 ore, prima del 37: created_at + 37 giorni',
-    emailNoticeDeleteAfter($t0, 1, $t0 + 34 * DAY) === $t0 + $del);
-check('primo avviso in ritardo (giorno 36): adesso + 20 ore + 47 ore', emailNoticeDeleteAfter($t0, 1, $t0 + 36 * DAY) === $t0 + 36 * DAY + 67 * 3600);
-check('secondo avviso in ritardo (giorno 36 e mezzo): adesso + 47 ore', emailNoticeDeleteAfter($t0, 2, $t0 + 36 * DAY + 12 * 3600) === $t0 + 36 * DAY + 12 * 3600 + 47 * 3600);
-check('secondo avviso: la data non è mai già passata', emailNoticeDeleteAfter($t0, 2, $t0 + 50 * DAY) > $t0 + 50 * DAY);
+    emailNoticeEarliestDelete($t0, 1, $t0 + 34 * DAY) === $t0 + $del);
+check('primo avviso in ritardo (giorno 36): adesso + 20 ore + 47 ore', emailNoticeEarliestDelete($t0, 1, $t0 + 36 * DAY) === $t0 + 36 * DAY + 67 * 3600);
+check('secondo avviso in ritardo (giorno 36 e mezzo): adesso + 47 ore', emailNoticeEarliestDelete($t0, 2, $t0 + 36 * DAY + 12 * 3600) === $t0 + 36 * DAY + 12 * 3600 + 47 * 3600);
+check('secondo avviso: la data non è mai già passata', emailNoticeEarliestDelete($t0, 2, $t0 + 50 * DAY) > $t0 + 50 * DAY);
 // Simula la regola vera ora per ora (la pulizia più sollecita possibile) dal momento dell'avviso: l'eliminazione non
 // deve mai avvenire prima dell'istante scritto nell'avviso, in nessuno dei due avvisi, anche con notti saltate.
 function simulateDeleteTime($created, $stage, $noticeAt, $from)
@@ -146,7 +146,7 @@ check('la data scritta non è mai prima di quando la regola elimina davvero (pri
     foreach ([30, 31, 33, 34, 35, 36, 37, 40, 60] as $d) {
         foreach ([0, 7, 15, 23] as $h) {
             $n1 = $t0 + $d * DAY + $h * 3600;
-            $promised = emailNoticeDeleteAfter($t0, 1, $n1);
+            $promised = emailNoticeEarliestDelete($t0, 1, $n1);
             $at = simulateDeleteTime($t0, 1, $n1, $n1);
             if ($at === null || $at < $promised) return false;
         }
@@ -158,7 +158,7 @@ check('la data scritta non è mai prima di quando la regola elimina davvero (sec
     foreach ([35, 36, 37, 38, 45, 60] as $d) {
         foreach ([0, 7, 15, 23] as $h) {
             $n2 = $t0 + $d * DAY + $h * 3600;
-            $promised = emailNoticeDeleteAfter($t0, 2, $n2);
+            $promised = emailNoticeEarliestDelete($t0, 2, $n2);
             $at = simulateDeleteTime($t0, 2, $n2, $n2);
             if ($at === null || $at < $promised) return false;
         }
@@ -168,7 +168,7 @@ check('la data scritta non è mai prima di quando la regola elimina davvero (sec
 check('la data scritta è anche raggiunta: la regola elimina subito dopo (nessuna data troppo lontana, primo avviso)', (function () {
     global $t0;
     $n1 = $t0 + 36 * DAY;
-    return simulateDeleteTime($t0, 1, $n1, $n1) === emailNoticeDeleteAfter($t0, 1, $n1);
+    return simulateDeleteTime($t0, 1, $n1, $n1) === emailNoticeEarliestDelete($t0, 1, $n1);
 })());
 check('testo della data in ora italiana (italiano)', emailNoticeDateText(gmmktime(23, 30, 0, 4, 10, 2027), 'it') === '11/04/2027');
 check('testo della data in ora italiana (inglese)', emailNoticeDateText(gmmktime(23, 30, 0, 4, 10, 2027), 'en') === 'April 11, 2027');

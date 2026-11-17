@@ -124,7 +124,7 @@ function unverifiedAccountAction($created_at, $stage, $notice_at, $now, $is_admi
 //  - secondo avviso: adesso + 47 ore;
 //  - primo avviso: (il più tardi tra adesso + 20 ore e created_at + 35 giorni) + 47 ore, cioè quando può partire
 //    il secondo avviso più il tempo che deve passare prima dell'eliminazione.
-function emailNoticeDeleteAfter($created_at, $stage, $now)
+function emailNoticeEarliestDelete($created_at, $stage, $now)
 {
     $byAge = $created_at + UNVERIFIED_DELETE_SECONDS;
     if ((int)$stage === 1) {

@@ -641,7 +641,7 @@ check('avviso 2: email all\'account 2 ("ultimo avviso") senza codici', isset($by
     && !preg_match('/\b\d{6}\b/', $byTo['evpurge2@example.test'][3]));
 check('niente email a chi non è in soglia, né agli admin e ai confermati', !isset($byTo['evpurge3@example.test']) && !isset($byTo['evpurge5@example.test']) && !isset($byTo['evpurge6@example.test']) && !isset($byTo['evpurge8@example.test']));
 check('l\'avviso va nella lingua dell\'account (inglese)', isset($byTo['evpurgeen@example.test']) && $byTo['evpurgeen@example.test'][2] === 'Confirm your email on LiftIndex'
-    && preg_match('/deleted, not before [A-Z][a-z]+ \d+, \d{4}/', $byTo['evpurgeen@example.test'][3]) === 1, json_encode($byTo['evpurgeen@example.test'] ?? null));
+    && preg_match('/deleted no earlier than [A-Z][a-z]+ \d+, \d{4}/', $byTo['evpurgeen@example.test'][3]) === 1, json_encode($byTo['evpurgeen@example.test'] ?? null));
 
 // seconda notte: l'account 7 riceve l'avviso 2; la terza l'eliminazione (se l'avviso ha 47 ore)
 [$rc, $out] = purgeRun(['MAIL_DRIVER' => 'log']);

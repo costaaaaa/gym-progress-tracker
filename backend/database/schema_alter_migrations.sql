@@ -1009,7 +1009,8 @@ SET @q = IF(@fresh,
 PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
 -- Il riempimento è legato alla tabella dei codici, che la CREATE qui sotto crea solo dopo: se la
 -- sezione si ferma tra l'ALTER e l'UPDATE, al rilancio la tabella manca ancora e il riempimento
--- rigira; a sezione completa non gira più. Vale finché gym_email_codes non viene eliminata e ricreata.
+-- rigira; a sezione completa non gira più. Vale finché gym_email_codes non viene eliminata e
+-- ricreata.
 SET @backfill = (SELECT COUNT(*) = 0 FROM information_schema.tables
                  WHERE table_schema = DATABASE() AND table_name = 'gym_email_codes');
 SET @q = IF(@backfill, 'UPDATE `gym_users` SET `email_verified_at` = `created_at`, `updated_at` = `updated_at` WHERE `email_verified_at` IS NULL', 'DO 0');
