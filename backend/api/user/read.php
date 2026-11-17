@@ -1,9 +1,14 @@
 <?php
+// GET: profilo dell'utente. signup_code = l'uso del codice di registrazione (null senza) {status, tier,
+// duration_days}: tier e duration_days sono quelli del CODICE (servono per «Plus in attesa» finché è pending),
+// non quelli dell'account; l'account è in tier, tier_until e tier_last_day. In confirm_email.php, invece, con
+// applied signup_code.tier e tier_last_day descrivono l'account dopo la conferma.
 include_once '../../config/cors_headers.php';
 
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/User.php';
+include_once '../../models/SignupCode.php';
 require_once '../../lib/weekly_stats.php';
 
 try {
@@ -21,6 +26,7 @@ try {
 
     if ($user->readById($user_id)) {
         $verification = user_email_verification($db, $user_id);
+        $tierDates = SignupCode::tierDates($db, $user_id);
         echo json_encode(array(
             'success' => true,
             'id' => $user->id,
@@ -40,6 +46,11 @@ try {
             'password_changed_at' => server_time_iso($user->password_changed_at),
             'is_admin' => user_is_admin($db, $user_id),
             'tier' => user_tier($db, $user_id),
+            // Quando finisce il livello: istante UTC e ultimo giorno valido in ora italiana (null se free o senza scadenza)
+            'tier_until' => $tierDates['tier_until'],
+            'tier_last_day' => $tierDates['tier_last_day'],
+            // Codice di registrazione dell'account: null o {status: pending|applied|missed, tier, duration_days}
+            'signup_code' => SignupCode::useOf($db, $user_id),
             'limits' => user_limits($db, $user_id),
             'features' => user_features($db, $user_id)
         ) + weekly_goal_settings($db, $user_id));

@@ -1029,3 +1029,42 @@ CREATE TABLE IF NOT EXISTS `gym_email_codes` (
   KEY `idx_email_code_user` (`user_id`, `created_at`),
   CONSTRAINT `gym_email_codes_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ------------------------------------------------------------------------------
+-- 40. Codici di registrazione. gym_signup_codes: il codice (testo normalizzato), il livello (plus o pro), la
+--     durata in giorni dalla conferma dell'email (NULL = per sempre), i posti, la scadenza del codice, acceso/spento
+--     e l'assegnatario. gym_signup_code_uses: un uso per utente (UNIQUE su user_id); la chiave sul codice è
+--     senza cascata (un codice usato non si elimina), quella sull'utente è SET NULL (l'uso di un account
+--     eliminato resta e, se applicato, occupa ancora il posto). Nessuna colonna nuova su gym_users. Solo
+--     aggiunte, rilanciabile anche se interrotta a metà (CREATE TABLE IF NOT EXISTS): il rollback del codice
+--     resta possibile.
+-- ------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `gym_signup_codes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `code` varchar(40) NOT NULL,                 -- testo normalizzato: maiuscole, A-Z, cifre e trattino
+  `tier` enum('plus','pro') NOT NULL,
+  `duration_days` int(11) DEFAULT NULL,        -- giorni di livello dalla conferma dell'email; NULL = per sempre
+  `max_uses` int(11) NOT NULL,
+  `expires_at` datetime DEFAULT NULL,          -- UTC, primo istante in cui il codice non si usa più; NULL = non scade
+  `enabled` tinyint(1) NOT NULL DEFAULT 1,
+  `assignee` varchar(100) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_signup_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `gym_signup_code_uses` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `code_id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,              -- NULL dopo l'eliminazione dell'account
+  `status` enum('pending','applied','missed') NOT NULL DEFAULT 'pending',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `applied_at` datetime DEFAULT NULL,          -- istante della conferma dell'email
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_signup_use_user` (`user_id`),
+  KEY `idx_signup_use_code` (`code_id`, `status`),
+  CONSTRAINT `gym_signup_code_uses_ibfk_1` FOREIGN KEY (`code_id`) REFERENCES `gym_signup_codes` (`id`),
+  CONSTRAINT `gym_signup_code_uses_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -5,7 +5,11 @@
 // conta come tentativo); 400 email_code_wrong {attempts_left} (a 0 il codice non vale più); 400
 // email_code_expired (scaduto, esaurito, annullato o mai chiesto: chiederne uno nuovo); 409 email_taken
 // (l'indirizzo in attesa è stato preso nel frattempo: il cambio si annulla); 409 email_already_verified;
-// 429 rate_limited (troppi codici sbagliati per IP). Raggiungibile anche dal giorno 8 (ALLOW_UNVERIFIED).
+// 429 rate_limited (troppi codici sbagliati per IP). Se l'account aveva un codice di registrazione, la risposta
+// aggiunge signup_code {status: applied|missed, tier, tier_last_day} e il message lo dice. Con applied, tier e
+// tier_last_day descrivono l'account dopo la conferma (il livello del codice, o quello migliore che l'account
+// aveva già; tier_last_day = AAAA-MM-GG in ora italiana, null se non scade); con missed, tier è il livello del
+// codice e tier_last_day è null. Raggiungibile anche dal giorno 8 (ALLOW_UNVERIFIED).
 include_once '../../config/cors_headers.php';
 include_once '../../config/database.php';
 include_once '../../config/rate_limiter.php';
@@ -47,12 +51,29 @@ try {
                 });
             }
             $doneKey = $result['changed'] ? 'email.changed' : 'email.confirmed';
-            api_json_response(array(
+            $response = array(
                 'success' => true,
                 'message' => t_server($doneKey),
                 'email_verified' => true,
                 'email' => $result['new_email'],
-            ));
+            );
+            if ($result['signup_code'] !== null) {
+                $response['signup_code'] = $result['signup_code'];
+                $sc = $result['signup_code'];
+                if ($sc['status'] === 'applied') {
+                    // il livello dell'account dopo la conferma (può essere migliore di quello del codice)
+                    $vars = array('tier' => ucfirst($sc['tier']));
+                    if ($sc['tier_last_day'] === null) {
+                        $response['message'] = t_server('email.confirmed_code_applied_forever', $vars);
+                    } else {
+                        $vars['date'] = emailNoticeDateText(strtotime($sc['tier_last_day'] . ' 12:00:00 UTC'), request_locale());
+                        $response['message'] = t_server('email.confirmed_code_applied_until', $vars);
+                    }
+                } else {
+                    $response['message'] = t_server('email.confirmed_code_missed');
+                }
+            }
+            api_json_response($response);
         case 'wrong':
             $limiter->hit($ipKey, $ipDecay);
             $left = $result['attempts_left'];

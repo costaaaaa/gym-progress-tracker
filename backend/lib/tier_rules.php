@@ -39,6 +39,14 @@ function tierSetUntil(string $tier, ?string $lastDay, string $now): array
     if ($tier === 'free') {
         return ['error' => "Il livello free non ha scadenza: togli la data."];
     }
+    return tierUntilFromDay($lastDay, $now);
+}
+
+// Ultimo giorno valido (AAAA-MM-GG, ora italiana) -> primo istante senza livello (UTC): la mezzanotte
+// italiana del giorno dopo. Torna ['until' => stringa] oppure ['error' => messaggio] se il giorno non è
+// valido o l'istante è già passato. Usata da tierSetUntil e dall'admin dei codici di registrazione.
+function tierUntilFromDay(string $lastDay, string $now): array
+{
     $day = DateTimeImmutable::createFromFormat('!Y-m-d', $lastDay, new DateTimeZone(TIER_TIME_ZONE));
     if ($day === false || $day->format('Y-m-d') !== $lastDay) {
         return ['error' => "Data non valida: $lastDay (formato AAAA-MM-GG)."];
