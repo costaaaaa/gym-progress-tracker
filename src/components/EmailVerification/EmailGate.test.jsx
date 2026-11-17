@@ -69,6 +69,12 @@ describe('striscia', () => {
     expect(screen.getByText('Conferma la tua email: ti restano 5 giorni.')).toBeTruthy();
   });
 
+  it('senza days_left e con una scadenza illeggibile dice 1 giorno, mai «NaN»', () => {
+    auth.emailState = state({ daysLeft: null, deadline: 'non una data' });
+    strip();
+    expect(screen.getByText('Conferma la tua email: ti resta 1 giorno.')).toBeTruthy();
+  });
+
   it('il comando apre la finestra del codice', () => {
     strip();
     fireEvent.click(screen.getByRole('button', { name: 'Scrivi il codice' }));
@@ -121,29 +127,12 @@ describe('promemoria del giorno', () => {
   });
 
   it('se localStorage lancia in scrittura la finestra si mostra lo stesso', () => {
-    auth.user = { id: 98 }; // il segno in memoria vale per utente: un id che gli altri test non usano
     const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('pieno'); });
     try {
       const view = mountGate();
       expect(auth.openEmailDialog).toHaveBeenCalledTimes(1);
       expect(() => view.rerender(<EmailGate />)).not.toThrow();
       expect(dialog()).toBeTruthy();
-    } finally {
-      spy.mockRestore();
-    }
-  });
-
-  it('se la scrittura fallisce non si riapre nella stessa sessione della pagina', () => {
-    auth.user = { id: 99 };
-    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('pieno'); });
-    try {
-      const view = mountGate();
-      expect(auth.openEmailDialog).toHaveBeenCalledTimes(1);
-      view.rerender(<EmailGate />); // la finestra è mostrata: la scrittura fallisce, il segno resta in memoria
-      view.unmount();
-      claimed = false; // nuova valutazione, come a un nuovo montaggio
-      mountGate();
-      expect(auth.openEmailDialog).toHaveBeenCalledTimes(1);
     } finally {
       spy.mockRestore();
     }

@@ -10,13 +10,10 @@ import EmailConfirmDialog from './EmailConfirmDialog';
 const reminderKey = (userId) => `lx_email_reminder_${userId}`;
 const localDay = () => format(new Date(), 'yyyy-MM-dd');
 
-// localStorage può lanciare (modalità privata, spazio pieno, accesso negato): la scrittura si ignora e, se la
-// lettura fallisce, il promemoria vale come già mostrato oggi (meglio un promemoria in meno che uno a ogni apertura)
-// Se la scrittura fallisce si tiene un segno in memoria per il resto della sessione della pagina: non si riapre
-// nella stessa sessione. Se la scrittura fallisce davvero a ogni avvio non c'è rimedio: il promemoria si ripete.
-const shownInThisSession = new Set();
+// localStorage può lanciare (modalità privata, spazio pieno, accesso negato): la scrittura si ignora (il promemoria
+// si valuta comunque una volta sola per caricamento della pagina) e, se la lettura fallisce, vale come già mostrato
+// oggi: meglio un promemoria in meno che uno a ogni apertura
 const shownToday = (userId) => {
-  if (shownInThisSession.has(userId)) return true;
   try {
     return localStorage.getItem(reminderKey(userId)) === localDay();
   } catch {
@@ -27,7 +24,7 @@ const markShownToday = (userId) => {
   try {
     localStorage.setItem(reminderKey(userId), localDay());
   } catch {
-    shownInThisSession.add(userId);
+    // niente da fare: vale la lettura
   }
 };
 

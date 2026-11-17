@@ -13,8 +13,9 @@ const EmailStrip = () => {
   const { isLoggedIn, emailState, openEmailDialog } = useAuth();
   if (!isLoggedIn || !emailState || emailState.verified || emailState.blocked) return null;
 
-  const deadline = emailState.deadline ? new Date(emailState.deadline) : null;
-  const dueToday = deadline !== null && !Number.isNaN(deadline.getTime()) && isToday(deadline);
+  const parsed = emailState.deadline ? new Date(emailState.deadline) : null;
+  const deadline = parsed && !Number.isNaN(parsed.getTime()) ? parsed : null;
+  const dueToday = deadline !== null && isToday(deadline);
   // Senza `days_left` si contano i giorni di calendario fino alla scadenza (minimo 1)
   const days = Math.max(emailState.daysLeft ?? (deadline ? differenceInCalendarDays(deadline, new Date()) : 1), 1);
   const text = dueToday ? t('emailconfirm.strip_today') : t('emailconfirm.strip_days', { count: days });
