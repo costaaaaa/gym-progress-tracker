@@ -22,14 +22,6 @@ function email_verification_send_code_later($to, $username, $locale, $code, $is_
     });
 }
 
-// Dagli endpoint: 429 email_resend_wait con retry_after e header Retry-After (non ritorna)
-function email_verification_respond_wait($seconds)
-{
-    header('Retry-After: ' . $seconds);
-    api_error(429, 'email_resend_wait', t_server('email.resend_wait', array('seconds' => $seconds)),
-        array('retry_after' => $seconds));
-}
-
 // Al VECCHIO indirizzo: l'indirizzo dell'account è cambiato in $new_email
 function email_verification_send_changed_notice($old_email, $username, $lang, $new_email)
 {
@@ -38,10 +30,10 @@ function email_verification_send_changed_notice($old_email, $username, $lang, $n
 }
 
 // Avviso di eliminazione (1 o 2): la data è quella prima della quale la pulizia non elimina l'account (vedi
-// emailNoticeDeleteAfter); $now è l'istante dell'invio
-function email_verification_send_deletion_notice($stage, $to, $username, $lang, $created_at, $now = null)
+// emailNoticeDeleteAfter); $now è l'istante dell'invio (l'ora del database, la stessa della regola della pulizia)
+function email_verification_send_deletion_notice($stage, $to, $username, $lang, $created_at, $now)
 {
-    $date = emailNoticeDateText(emailNoticeDeleteAfter($created_at, $stage, $now ?? time()), $lang);
+    $date = emailNoticeDateText(emailNoticeDeleteAfter($created_at, $stage, $now), $lang);
     $key = 'email.notice' . ($stage === 2 ? '2' : '1') . '_';
     $text = t_server($key . 'body', array('username' => $username, 'date' => $date), $lang) . mail_footer($lang);
     return mail_send($to, t_server($key . 'subject', array(), $lang), $text);

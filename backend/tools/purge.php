@@ -96,7 +96,7 @@ foreach ($unverified as $u) {
         }
         $stage = $action === 'notice1' ? 1 : 2;
         $lang = normalize_locale($u['locale']) ?? 'it';
-        if (!email_verification_send_deletion_notice($stage, $u['email'], $u['username'], $lang, (int)$u['created_ts'])) {
+        if (!email_verification_send_deletion_notice($stage, $u['email'], $u['username'], $lang, (int)$u['created_ts'], (int)$u['now_ts'])) {
             throw new Exception('email di avviso non partita');
         }
         $upd = $db->prepare("UPDATE gym_users SET unverified_notice_stage = ?, unverified_notice_at = NOW()

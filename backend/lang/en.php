@@ -72,12 +72,12 @@ return array(
     'email.notice1_subject' => 'Confirm your email on LiftIndex',
     'email.notice1_body' => "Hi {username},\n\n"
         . "you haven't confirmed the email of your LiftIndex account yet.\n"
-        . "If you don't confirm it, the account and its data will be deleted after {date}.\n\n"
+        . "If you don't confirm it, the account and its data will be deleted, not before {date}.\n\n"
         . "To confirm it, open the app or the website and ask for a code.\n",
     'email.notice2_subject' => 'Last notice: confirm your email on LiftIndex',
     'email.notice2_body' => "Hi {username},\n\n"
         . "this is the last notice: you haven't confirmed the email of your LiftIndex account yet.\n"
-        . "The account and its data will be deleted after {date}.\n\n"
+        . "If you don't confirm it, the account and its data will be deleted, not before {date}.\n\n"
         . "To confirm it, open the app or the website and ask for a code.\n",
     'email.code_missing' => 'Enter the 6-digit code we emailed you.',
     'email.code_wrong' => "That code isn't correct. Attempts left: {left}.",

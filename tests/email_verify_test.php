@@ -634,14 +634,14 @@ preg_match_all('/\[mail:log\] a=(\S+) oggetto="([^"]*)"\n(.*?)(?=\n\[mail:log\]|
 $byTo = [];
 foreach ($mm as $x) $byTo[$x[1]] = $x;
 check('avviso 1: email all\'account 1 con la data di eliminazione e senza codici',
-    isset($byTo['evpurge1@example.test']) && preg_match('#dopo il \d\d/\d\d/\d{4}#', $byTo['evpurge1@example.test'][3]) === 1
+    isset($byTo['evpurge1@example.test']) && preg_match('#non prima del \d\d/\d\d/\d{4}#', $byTo['evpurge1@example.test'][3]) === 1
     && strpos($byTo['evpurge1@example.test'][3], 'chiedi un codice') !== false && !preg_match('/\b\d{6}\b/', $byTo['evpurge1@example.test'][3])
     && strpos($byTo['evpurge1@example.test'][3], 'Informativa privacy') !== false, json_encode($byTo['evpurge1@example.test'] ?? null));
 check('avviso 2: email all\'account 2 ("ultimo avviso") senza codici', isset($byTo['evpurge2@example.test']) && strpos($byTo['evpurge2@example.test'][2], 'Ultimo avviso') !== false
     && !preg_match('/\b\d{6}\b/', $byTo['evpurge2@example.test'][3]));
 check('niente email a chi non è in soglia, né agli admin e ai confermati', !isset($byTo['evpurge3@example.test']) && !isset($byTo['evpurge5@example.test']) && !isset($byTo['evpurge6@example.test']) && !isset($byTo['evpurge8@example.test']));
 check('l\'avviso va nella lingua dell\'account (inglese)', isset($byTo['evpurgeen@example.test']) && $byTo['evpurgeen@example.test'][2] === 'Confirm your email on LiftIndex'
-    && preg_match('/deleted after [A-Z][a-z]+ \d+, \d{4}/', $byTo['evpurgeen@example.test'][3]) === 1, json_encode($byTo['evpurgeen@example.test'] ?? null));
+    && preg_match('/deleted, not before [A-Z][a-z]+ \d+, \d{4}/', $byTo['evpurgeen@example.test'][3]) === 1, json_encode($byTo['evpurgeen@example.test'] ?? null));
 
 // seconda notte: l'account 7 riceve l'avviso 2; la terza l'eliminazione (se l'avviso ha 47 ore)
 [$rc, $out] = purgeRun(['MAIL_DRIVER' => 'log']);
@@ -649,8 +649,13 @@ check('due lanci nella stessa notte: il secondo avviso non parte subito dopo il 
 sql("UPDATE gym_users SET unverified_notice_at = DATE_SUB(NOW(), INTERVAL 24 HOUR) WHERE id = ?", [$p7]);
 [$rc, $out] = purgeRun(['MAIL_DRIVER' => 'log']);
 check('seconda notte: l\'account fermo da 100 giorni riceve il secondo avviso, ancora non eliminato', stage($p7) === 2 && rowCount('gym_users', 'id = ?', [$p7]) === 1);
-preg_match('#dopo il (\d\d/\d\d/\d{4})#', $out, $dm);
-check('la data nell\'avviso di un account in ritardo non è già passata: adesso + 47 ore, in ora italiana', ($dm[1] ?? '') === emailNoticeDateText(time() + 47 * 3600, 'it'), json_encode($dm));
+preg_match('#non prima del (\d\d/\d\d/\d{4})#', $out, $dm);
+// L'istante dell'invio è l'ora del database (la stessa letta dalla pulizia): si parte da unverified_notice_at, scritto
+// con NOW() pochi istanti dopo, e si accettano le date di quei pochi secondi, così il confronto non dipende dall'ora del test
+$noticeTs = (int)scalar("SELECT UNIX_TIMESTAMP(unverified_notice_at) FROM gym_users WHERE id = ?", [$p7]);
+$expectedDates = [];
+for ($k = 0; $k <= 10; $k++) $expectedDates[emailNoticeDateText($noticeTs - $k + 47 * 3600, 'it')] = true;
+check('la data nell\'avviso di un account in ritardo non è già passata: adesso + 47 ore, in ora italiana', isset($expectedDates[$dm[1] ?? '']), json_encode([$dm, array_keys($expectedDates)]));
 [$rc, $out] = purgeRun(['MAIL_DRIVER' => 'log']);
 check('terza notte, avviso appena mandato: non eliminato', rowCount('gym_users', 'id = ?', [$p7]) === 1);
 sql("UPDATE gym_users SET unverified_notice_at = DATE_SUB(NOW(), INTERVAL 47 HOUR) WHERE id = ?", [$p7]);
