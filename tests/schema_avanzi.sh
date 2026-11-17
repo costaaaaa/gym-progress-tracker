@@ -10,13 +10,16 @@
 #
 # Avvia in Docker un MySQL usa e getta (tests/lib/throwaway_mysql.sh) e il backend con il server
 # integrato di PHP (immagine web), e chiama gli endpoint veri con un token Bearer:
-# record_workout, workout_history/read, update_date, delete, user/export. Due fasi sullo stesso
-# database:
+# record_workout, workout_history/read, update_date, delete, user/export, read_plans, add_exercise,
+# update_exercise, user/read, update_settings, workout_stats/dashboard, user/register (dodici
+# endpoint). Tre fasi sullo stesso database:
 #   1. database come uno già in produzione (colonne e tabella ancora presenti, `exercises` ancora
 #      obbligatoria) più la sezione 37, eseguita due volte: l'allenamento si salva con `exercises`
 #      NULL e tutti i percorsi funzionano;
 #   2. sezione 38 eseguita due volte su quel database (con qualche riga di prova): colonne, indice e
-#      tabella spariti, gli stessi percorsi passano lo stesso e le righe di prova sono intatte.
+#      tabella spariti, gli stessi percorsi passano lo stesso e le righe di prova sono intatte;
+#   3. sezione interrotta a metà: si rimettono le voci tolte, se ne eliminano a mano solo alcune,
+#      si rilancia la sezione 38 intera e si ripete la fase 2 (stesse righe di prova).
 # Le prove sono in tests/schema_avanzi_test.php.
 #
 # Richiede docker. Esce con 1 se un controllo fallisce, con 2 se la preparazione fallisce.
@@ -38,19 +41,20 @@ legacy_add() { # tabella colonna definizione
     n="$(tm_sql -N -B -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = '$1' AND column_name = '$2'")"
     if [[ "$n" == 0 ]]; then tm_sql -e "ALTER TABLE \`$1\` ADD COLUMN \`$2\` $3" || tm_die "colonna $1.$2 non preparata"; fi
 }
-legacy_add gym_workout_exercises sets "int(11) NOT NULL DEFAULT 0"
-legacy_add gym_workout_exercises warmup_sets "tinyint(3) unsigned NOT NULL DEFAULT 0"
-legacy_add gym_workout_exercises reps "varchar(20) NOT NULL DEFAULT ''"
-legacy_add gym_workout_exercises intensity_technique "varchar(100) DEFAULT NULL"
-legacy_add gym_workout_history exercises "text NOT NULL"
-# ai_tier: colonna aggiunta fuori dalle migrazioni del repo e non più letta da nulla
-legacy_add gym_users ai_tier "enum('free','premium') NOT NULL DEFAULT 'free'"
-legacy_add gym_users age "int(11) DEFAULT NULL"
-legacy_add gym_users experience_years "float DEFAULT '0'"
-if [[ "$(tm_sql -N -B -e "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'gym_workout_history' AND index_name = 'user_id'")" == 0 ]]; then
-    tm_sql -e 'ALTER TABLE gym_workout_history ADD KEY `user_id` (`user_id`)' || tm_die "indice non preparato"
-fi
-tm_sql <<'SQL' || tm_die "gym_progress non preparata"
+prepare_legacy() { # definizione di gym_workout_history.exercises
+    legacy_add gym_workout_exercises sets "int(11) NOT NULL DEFAULT 0"
+    legacy_add gym_workout_exercises warmup_sets "tinyint(3) unsigned NOT NULL DEFAULT 0"
+    legacy_add gym_workout_exercises reps "varchar(20) NOT NULL DEFAULT ''"
+    legacy_add gym_workout_exercises intensity_technique "varchar(100) DEFAULT NULL"
+    legacy_add gym_workout_history exercises "$1"
+    # ai_tier: colonna aggiunta fuori dalle migrazioni del repo e non più letta da nulla
+    legacy_add gym_users ai_tier "enum('free','premium') NOT NULL DEFAULT 'free'"
+    legacy_add gym_users age "int(11) DEFAULT NULL"
+    legacy_add gym_users experience_years "float DEFAULT '0'"
+    if [[ "$(tm_sql -N -B -e "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'gym_workout_history' AND index_name = 'user_id'")" == 0 ]]; then
+        tm_sql -e 'ALTER TABLE gym_workout_history ADD KEY `user_id` (`user_id`)' || tm_die "indice non preparato"
+    fi
+    tm_sql <<'SQL' || tm_die "gym_progress non preparata"
 CREATE TABLE IF NOT EXISTS `gym_progress` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -66,6 +70,8 @@ CREATE TABLE IF NOT EXISTS `gym_progress` (
   CONSTRAINT `gym_progress_ibfk_2` FOREIGN KEY (`exercise_id`) REFERENCES `gym_exercises` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 SQL
+}
+prepare_legacy "text NOT NULL"
 
 echo
 echo "Sezione 37 (due esecuzioni) e percorsi con la colonna facoltativa, il resto ancora presente"
@@ -98,30 +104,13 @@ tm_php_phase schema_avanzi_test.php dropped
 
 echo
 echo "Sezione interrotta a metà: solo una parte dei DROP è già stata fatta, poi la sezione 38 intera"
-legacy_add gym_workout_exercises sets "int(11) NOT NULL DEFAULT 0"
-legacy_add gym_workout_exercises warmup_sets "tinyint(3) unsigned NOT NULL DEFAULT 0"
-legacy_add gym_workout_exercises reps "varchar(20) NOT NULL DEFAULT ''"
-legacy_add gym_workout_exercises intensity_technique "varchar(100) DEFAULT NULL"
-legacy_add gym_workout_history exercises "text NULL"
-legacy_add gym_users ai_tier "enum('free','premium') NOT NULL DEFAULT 'free'"
-legacy_add gym_users age "int(11) DEFAULT NULL"
-legacy_add gym_users experience_years "float DEFAULT '0'"
-tm_sql -e 'ALTER TABLE gym_workout_history ADD KEY `user_id` (`user_id`)' || tm_die "indice non preparato"
-tm_sql -e 'CREATE TABLE gym_progress (id int NOT NULL AUTO_INCREMENT PRIMARY KEY, user_id int NOT NULL, exercise_id int NOT NULL, weight decimal(5,2) NOT NULL, date date NOT NULL) ENGINE=InnoDB' || tm_die "gym_progress non preparata"
+prepare_legacy "text NULL"
 # Già eliminati prima dell'interruzione: due colonne di gym_workout_exercises, l'indice, la tabella e ai_tier
 tm_sql -e 'ALTER TABLE gym_workout_exercises DROP COLUMN `sets`, DROP COLUMN `reps`; ALTER TABLE gym_workout_history DROP INDEX `user_id`; DROP TABLE gym_progress; ALTER TABLE gym_users DROP COLUMN `ai_tier`' \
     || tm_die "eliminazione parziale non riuscita"
 tm_run_section "$SECTION"
-left="$(tm_sql -N -B -e "SELECT
-    (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND ((table_name = 'gym_workout_exercises' AND column_name IN ('sets', 'warmup_sets', 'reps', 'intensity_technique'))
-        OR (table_name = 'gym_workout_history' AND column_name = 'exercises') OR (table_name = 'gym_users' AND column_name IN ('ai_tier', 'age', 'experience_years'))))
-  + (SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'gym_progress')
-  + (SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'gym_workout_history' AND index_name = 'user_id')")"
-total=$((total + 1))
-if [[ "$left" == 0 ]]; then echo "  ok   la sezione completa quello che mancava, senza errori"; else echo "  FAIL dopo la sezione restano $left voci da eliminare"; failed=$((failed + 1)); fi
-row="$(tm_sql -N -B -e "SELECT CONCAT(u.username, '/', e.rest, '/', h.notes) FROM gym_users u, gym_workout_exercises e, gym_workout_history h WHERE u.id = 9001 AND e.id = 9001 AND h.id = 9001")"
-total=$((total + 1))
-if [[ "$row" == "seme/75/allenamento seme" ]]; then echo "  ok   le righe di prova sono ancora intatte"; else echo "  FAIL righe di prova: «$row»"; failed=$((failed + 1)); fi
+# Stessi controlli della fase `dropped` (colonne, indice, tabella, righe 9001, percorsi)
+tm_php_phase schema_avanzi_test.php dropped
 
 echo
 echo "$total controlli, $failed falliti"

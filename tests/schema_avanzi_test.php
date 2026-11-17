@@ -3,8 +3,9 @@
 // Argomenti: cartella backend da provare, fase (with-column | dropped).
 //
 // Avvia il server integrato di PHP sul backend e chiama gli endpoint veri con un token Bearer:
-// salvataggio, storico, cambio data, cancellazione dell'allenamento, esportazione; poi i conteggi
-// admin degli esercizi e la cancellazione dell'account dai modelli.
+// salvataggio, storico, cambio data, cancellazione dell'allenamento, esportazione, schede, profilo,
+// statistiche, registrazione; poi i conteggi admin degli esercizi e la cancellazione dell'account dai
+// modelli. Ogni fase si può rilanciare sullo stesso database: toglie gli utenti che crea.
 //   with-column: la colonna gym_workout_history.exercises esiste ed è facoltativa (sezione 37): ogni
 //                allenamento salvato la lascia NULL; le altre colonne e la tabella gym_progress
 //                della sezione 38 ci sono ancora.
@@ -208,12 +209,22 @@ check('user/read.php risponde con età e anni di esperienza calcolati dalle date
 [$code, $set] = call('POST', '/api/user/update_settings.php', $token, ['rest_timer_enabled' => false, 'training_start_date' => '2016-06-01']);
 check('update_settings.php salva e restituisce età e anni di esperienza (200)',
     $code === 200 && ($set['success'] ?? false) === true && abs((int)($set['age'] ?? -99) - $ageWant) <= 1 && (float)($set['experience_years'] ?? 0) >= 10.0 && ($set['training_start_date'] ?? '') === '2016-06-01', "codice $code: " . json_encode($set));
+$conn->prepare("UPDATE gym_workout_plans SET is_active = 1 WHERE id = ?")->execute([$plan]);
 [$code, $dash] = call('GET', '/api/workout_stats/dashboard.php', $token);
-check('workout_stats/dashboard.php risponde (200, success)', $code === 200 && ($dash['success'] ?? false) === true, "codice $code: " . substr(json_encode($dash), 0, 300));
+// user_level nasce da training_start_date di gym_users (2016 dopo update_settings: oltre 3 anni =
+// 'avanzato'); plan_days_total conta i giorni delle schede attive dell'utente (la scheda di prova si attiva qui)
+$planDaysWant = (int)$conn->query("SELECT COUNT(wd.id) FROM gym_workout_plans wp JOIN gym_workout_days wd ON wd.plan_id = wp.id WHERE wp.user_id = $userId AND wp.is_active = 1")->fetchColumn();
+check('workout_stats/dashboard.php risponde (200, success) con livello e giorni di scheda dalle tabelle',
+    $code === 200 && ($dash['success'] ?? false) === true && ($dash['user_level'] ?? null) === 'avanzato' && ($dash['plan_days_total'] ?? null) === $planDaysWant && $planDaysWant >= 1,
+    "codice $code (giorni attesi $planDaysWant): " . substr(json_encode($dash), 0, 300));
 $newName = $withColumn ? 'nuovoavanziA' : 'nuovoavanziB';
 [$code, $reg] = call('POST', '/api/user/register.php', '', ['username' => $newName, 'email' => "$newName@example.test", 'password' => 'Prova!Avanzi2026', 'birth_date' => '1995-05-05', 'gender' => 'F', 'accept_terms' => true]);
-$newUser = $conn->query("SELECT birth_date, gender FROM gym_users WHERE username = '$newName'")->fetch(PDO::FETCH_ASSOC);
+$newUserStmt = $conn->prepare("SELECT birth_date, gender FROM gym_users WHERE username = ?");
+$newUserStmt->execute([$newName]);
+$newUser = $newUserStmt->fetch(PDO::FETCH_ASSOC);
 check('register.php crea un utente nuovo (201)', $code === 201 && ($reg['success'] ?? false) === true && $newUser && $newUser['birth_date'] === '1995-05-05' && $newUser['gender'] === 'F', "codice $code: " . json_encode($reg));
+// L'utente nuovo non serve oltre: la fase si può rilanciare sullo stesso database
+$conn->prepare("DELETE FROM gym_users WHERE username = ?")->execute([$newName]);
 
 // Cancellazione dell'allenamento
 [$code, $deleted] = call('POST', '/api/workout_history/delete.php', $token, ['id' => $workoutId]);
