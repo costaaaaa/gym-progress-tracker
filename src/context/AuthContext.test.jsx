@@ -347,4 +347,3 @@ describe('AuthProvider: esito della conferma', () => {
     expect(screen.queryByText('Email confermata.')).toBeNull();
   });
 });
-
