@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import i18n from './index';
-import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, equipmentName } from './labels';
+import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, equipmentName, achievementLabel } from './labels';
 
 describe('INTENSITY_TECHNIQUES', () => {
   it('parte da "Nessuna (Normale)" e tiene l\'ordine del menu', () => {
@@ -23,5 +23,18 @@ describe('equipmentName', () => {
     expect(equipmentName('')).toBe('');
     expect(equipmentName(null)).toBe('');
     expect(equipmentName('elastici')).toBe('elastici');
+  });
+});
+
+describe('achievementLabel', () => {
+  it('dà il nome del traguardo nella lingua dell\'app, senza guardare il testo del server', async () => {
+    await i18n.changeLanguage('it');
+    expect(achievementLabel('sessions_100', 'Centurion')).toBe('Centurione');
+    await i18n.changeLanguage('en');
+    expect(achievementLabel('sessions_100', 'Centurione')).toBe('Centurion');
+  });
+  it('per una chiave che il client non conosce usa il ripiego, e senza ripiego la chiave', () => {
+    expect(achievementLabel('nuovo_1', 'Nome del server')).toBe('Nome del server');
+    expect(achievementLabel('nuovo_1')).toBe('nuovo_1');
   });
 });

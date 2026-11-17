@@ -244,3 +244,28 @@ describe('in inglese', () => {
     expect(screen.queryByText('Livelli per esercizio')).toBeNull();
   });
 });
+
+describe('nomi dei traguardi', () => {
+  // Il server risponde nella lingua dell'account (qui italiano), l'app può essere in un'altra
+  const withServerLabels = (achievements) => vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({
+    ok: true, status: 200, json: async () => ({ ...profile, achievements }),
+  })));
+
+  it('seguono la lingua dell\'app, non quella del testo mandato dal server', async () => {
+    withServerLabels([a('sessions_100', 'sessions', 'Centurione', 100), a('tonnage_auto', 'tonnage', '1,5 t — automobile', 1500)]);
+    await i18n.changeLanguage('en');
+    render(<ThemeModeProvider><ProfileSummary /></ThemeModeProvider>);
+    await screen.findByText('Level 7');
+    screen.getByText('Centurion');
+    screen.getByText('1.5 t — a car');
+    expect(screen.queryByText('Centurione')).toBeNull();
+  });
+
+  it('un traguardo che il client non conosce mostra il testo del server', async () => {
+    withServerLabels([a('sessions_9000', 'sessions', 'Nome nuovo', 9000)]);
+    await i18n.changeLanguage('en');
+    render(<ThemeModeProvider><ProfileSummary /></ThemeModeProvider>);
+    await screen.findByText('Level 7');
+    screen.getByText('Nome nuovo');
+  });
+});
