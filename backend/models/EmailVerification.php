@@ -4,6 +4,7 @@
 // Ogni operazione prende il blocco sulla riga dell'utente (FOR UPDATE), come PasswordReset, così
 // richieste parallele per lo stesso account si accodano. Regole pure in lib/email_verification_rules.php.
 require_once __DIR__ . '/../lib/email_verification_rules.php';
+require_once __DIR__ . '/SignupCode.php';
 
 class EmailVerification
 {
@@ -16,15 +17,23 @@ class EmailVerification
     }
 
     // L'UNICO punto che segna l'email come confermata e azzera gli avvisi di eliminazione: lo usano la
-    // conferma con codice e il recupero password (e i futuri codici di registrazione). Con
-    // $only_if_unverified non tocca un account già confermato (recupero password).
+    // conferma con codice e il recupero password. Con $only_if_unverified non tocca un account già confermato
+    // (recupero password). Va chiamato dentro una transazione con la riga dell'utente bloccata: alla prima
+    // conferma (l'account era non confermato) applica anche il codice di registrazione, se c'è, nella stessa
+    // transazione (SignupCode::applyOnConfirm). Su un account già confermato (cambio di indirizzo) non
+    // riapplica nulla. Ritorna l'esito del codice di registrazione o null.
     public static function markVerified($conn, $user_id, $only_if_unverified = false)
     {
-        $stmt = $conn->prepare(
-            "UPDATE gym_users SET email_verified_at = NOW(), unverified_notice_stage = 0, unverified_notice_at = NULL
-             WHERE id = ?" . ($only_if_unverified ? " AND email_verified_at IS NULL" : "")
-        );
-        $stmt->execute([$user_id]);
+        $was = $conn->prepare("SELECT email_verified_at IS NULL FROM gym_users WHERE id = ? FOR UPDATE");
+        $was->execute([$user_id]);
+        $wasUnverified = (int)$was->fetchColumn() === 1;
+        if ($only_if_unverified && !$wasUnverified) {
+            return null;
+        }
+        $conn->prepare(
+            "UPDATE gym_users SET email_verified_at = NOW(), unverified_notice_stage = 0, unverified_notice_at = NULL WHERE id = ?"
+        )->execute([$user_id]);
+        return $wasUnverified ? SignupCode::applyOnConfirm($conn, $user_id) : null;
     }
 
     // Registrazione: crea il primo codice e lo ritorna in chiaro (null se l'utente non c'è più).
@@ -80,7 +89,7 @@ class EmailVerification
     }
 
     // Scrive il codice. Ritorna:
-    //  ['status' => 'confirmed', 'changed' => bool, 'old_email', 'new_email', 'username', 'locale']
+    //  ['status' => 'confirmed', 'changed' => bool, 'signup_code' (esito del codice di registrazione o null), 'old_email', 'new_email', 'username', 'locale']
     //  ['status' => 'wrong', 'attempts_left' => n]   (n = 0: il codice non vale più)
     //  ['status' => 'expired']                       (scaduto, esaurito, annullato o mai chiesto)
     //  ['status' => 'email_taken']                   (l'indirizzo in attesa è stato preso: il cambio si annulla)
@@ -139,9 +148,9 @@ class EmailVerification
                     return array('status' => 'email_taken');
                 }
             }
-            self::markVerified($this->conn, $user_id);
+            $signup = self::markVerified($this->conn, $user_id);
             $this->conn->commit();
-            return array('status' => 'confirmed', 'changed' => $changed, 'old_email' => $user['email'],
+            return array('status' => 'confirmed', 'changed' => $changed, 'signup_code' => $signup, 'old_email' => $user['email'],
                 'new_email' => $changed ? $user['pending_email'] : $user['email'],
                 'username' => $user['username'], 'locale' => $user['locale']);
         } catch (Exception $e) {

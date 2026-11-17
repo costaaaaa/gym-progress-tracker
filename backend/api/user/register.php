@@ -9,6 +9,7 @@ include_once '../../models/Consent.php';
 include_once '../../models/User.php';
 include_once '../../models/EmailVerification.php';
 include_once '../../lib/email_verification_mail.php';
+include_once '../../lib/signup_code_guard.php';
 
 try {
     $raw_data = file_get_contents("php://input");
@@ -93,6 +94,11 @@ try {
             exit;
         }
 
+        // Codice di registrazione facoltativo: se c'è e non si può usare la registrazione si ferma. Il limite per IP
+        // conta solo i codici sbagliati e si controlla prima di guardare il database.
+        $signupCode = signup_code_field($data);
+        $signupGuard = $signupCode !== null ? signup_code_rate_guard($limiter) : null;
+
         $user->username = $data->username;
         $user->email = strtolower(trim($data->email));
         $user->password = $data->password;
@@ -121,8 +127,23 @@ try {
         };
         $respondTaken();
 
+        // Con un codice, utente e uso 'pending' nascono nella stessa transazione, con la riga del codice bloccata:
+        // due registrazioni sull'ultimo posto si accodano e una sola passa. Senza codice nulla cambia.
+        $signupCodeRow = null;
+        if ($signupCode !== null) {
+            $locked = SignupCode::lockForRegistration($db, $signupCode);
+            if ($locked['status'] !== 'ok') {
+                signup_code_fail($limiter, $signupGuard, $locked['status']);
+            }
+            $signupCodeRow = $locked['code'];
+        }
+
         // Create the user
         if ($user->create()) {
+            if ($signupCodeRow !== null) {
+                SignupCode::recordPendingUse($db, $signupCodeRow['id'], (int)$user->id);
+                $db->commit();
+            }
             (new Consent($db))->grant((int)$user->id, 'terms');
             // L'account nasce non confermato (email_verified_at NULL). Il codice parte dopo la risposta, nella
             // lingua dell'account: la registrazione riesce anche se l'email non parte.
@@ -136,12 +157,22 @@ try {
                     email_verification_send_code($newEmail, $newName, $newLang, $code);
                 }
             });
-            http_response_code(201);
-            echo json_encode(array(
+            $response = array(
                 "success" => true,
                 "message" => t_server('register.ok')
-            ));
+            );
+            if ($signupCodeRow !== null) {
+                $response["signup_code"] = array(
+                    "tier" => $signupCodeRow['tier'],
+                    "duration_days" => $signupCodeRow['duration_days'] === null ? null : (int)$signupCodeRow['duration_days']
+                );
+            }
+            http_response_code(201);
+            echo json_encode($response);
         } else {
+            if ($signupCodeRow !== null && $db->inTransaction()) {
+                $db->rollBack();
+            }
             // Il doppione può essere stato preso tra il controllo e l'inserimento: stessa risposta del controllo
             $respondTaken();
             http_response_code(400);
@@ -158,6 +189,9 @@ try {
         ));
     }
 } catch (Exception $e) {
+    if (isset($db) && $db && $db->inTransaction()) {
+        $db->rollBack();
+    }
     error_log("Registration Error: " . $e->getMessage());
 
     http_response_code(500);

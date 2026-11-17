@@ -2,12 +2,19 @@
 // Primo passo della registrazione: dice se username ed email sono già in uso, prima di chiedere
 // il profilo. Come quasi tutti i servizi pubblici rivela se un'email è registrata: il limite per IP
 // rallenta chi prova indirizzi in massa. register.php ripete comunque gli stessi controlli.
+// Con il campo facoltativo "signup_code" dice anche se il codice di registrazione si può usare (senza occupare
+// posti): la risposta aggiunge signup_code {usable: true, tier, duration_days}; se non si può usare risponde
+// con lo stesso errore di register.php (400 signup_code_invalid, 400 signup_code_expired, 409
+// signup_code_exhausted, 429 rate_limited), con lo stesso limite di 10 codici non utilizzabili all'ora per IP
+// (conta solo i fallimenti). Sta qui e non in un endpoint a parte perché il modulo web la chiama già al primo
+// passo con username ed email, e un secondo giro di rete per il solo codice non serve.
 include_once '../../config/cors_headers.php';
 
 include_once '../../config/database.php';
 include_once '../../config/rate_limiter.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/User.php';
+include_once '../../lib/signup_code_guard.php';
 
 try {
     $data = json_decode(file_get_contents("php://input"));
@@ -22,7 +29,8 @@ try {
         ? $data->username : null;
     $email = (isset($data->email) && is_string($data->email) && filter_var(trim($data->email), FILTER_VALIDATE_EMAIL))
         ? strtolower(trim($data->email)) : null;
-    if ($username === null && $email === null) {
+    $signupCode = signup_code_field($data);
+    if ($username === null && $email === null && $signupCode === null) {
         http_response_code(200);
         echo json_encode(array("success" => true, "username_taken" => null, "email_taken" => null));
         exit;
@@ -43,6 +51,16 @@ try {
     }
     $limiter->hit($key, $decay);
 
+    $signup = null;
+    if ($signupCode !== null) {
+        $guard = signup_code_rate_guard($limiter);
+        $result = SignupCode::check($db, $signupCode);
+        if ($result['status'] !== 'ok') {
+            signup_code_fail($limiter, $guard, $result['status']);
+        }
+        $signup = array("usable" => true, "tier" => $result['tier'], "duration_days" => $result['duration_days']);
+    }
+
     $user = new User($db);
     $usernameTaken = null;
     if ($username !== null) {
@@ -55,8 +73,12 @@ try {
         $emailTaken = $user->emailExists();
     }
 
+    $response = array("success" => true, "username_taken" => $usernameTaken, "email_taken" => $emailTaken);
+    if ($signup !== null) {
+        $response["signup_code"] = $signup;
+    }
     http_response_code(200);
-    echo json_encode(array("success" => true, "username_taken" => $usernameTaken, "email_taken" => $emailTaken));
+    echo json_encode($response);
 } catch (Exception $e) {
     error_log("Check availability error: " . $e->getMessage());
     http_response_code(500);
