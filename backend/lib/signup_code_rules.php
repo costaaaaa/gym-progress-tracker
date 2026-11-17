@@ -110,12 +110,10 @@ function signupCodeLastDay(int $durationDays, int $now): string
 
 // Livello da scrivere nell'account alla conferma. $curTier/$curUntil: quello salvato (tier, tier_until).
 // Ritorna ['changed' => bool, 'tier', 'until' (UTC 'Y-m-d H:i:s' o null)]: con changed false l'account
-// resta com'è (e l'uso risulta comunque applicato). Il livello del codice non peggiora mai quello che
-// l'account ha già:
-//  - già un livello in vigore uguale o superiore con scadenza uguale o più lontana (o senza): resta;
-//  - già un livello in vigore strettamente superiore, anche con scadenza più vicina: resta (declassarlo
-//    adesso sarebbe un peggioramento);
-//  - altrimenti: il livello del codice, con la scadenza del codice.
+// resta com'è (e l'uso risulta comunque applicato). Regola unica di dominanza: il livello del codice si
+// assegna solo se è uguale o superiore a quello in vigore E la sua scadenza è uguale o più lontana (senza
+// scadenza = infinito) E non è identico a quello che c'è già. Un account Gratis (o con livello scaduto)
+// riceve sempre il livello del codice.
 function signupCodeTierOutcome(string $codeTier, ?int $durationDays, string $curTier, ?string $curUntil, int $now): array
 {
     $nowUtc = gmdate('Y-m-d H:i:s', $now);
@@ -131,13 +129,12 @@ function signupCodeTierOutcome(string $codeTier, ?int $durationDays, string $cur
     }
 
     if ($effective !== 'free') {
+        // dominanza: il codice si applica solo se non peggiora l'account (livello e scadenza)
         $curRank = array_search($effective, TIER_LEVELS, true);
         $codeRank = array_search($codeTier, TIER_LEVELS, true);
-        if ($curRank > $codeRank) {
-            return array('changed' => false, 'tier' => $curTier, 'until' => $curUntil);
-        }
-        $curNoWorse = $curUntil === null || ($until !== null && $curUntil >= $until);
-        if ($curRank === $codeRank && $curNoWorse) {
+        $codeDominates = $codeRank >= $curRank && ($curUntil === null ? $until === null : ($until === null || $until >= $curUntil));
+        $identical = $effective === $codeTier && $curUntil === $until;
+        if (!$codeDominates || $identical) {
             return array('changed' => false, 'tier' => $curTier, 'until' => $curUntil);
         }
     }
