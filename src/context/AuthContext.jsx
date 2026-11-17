@@ -20,6 +20,8 @@ const emailStateFrom = (data) => ({
   deadline: data.email_verification?.deadline ?? null,
   blocked: data.email_verification?.blocked === true,
   daysLeft: data.email_verification?.days_left ?? null,
+  // Messaggio del server dell'ultima conferma (vedi refreshEmailState); sempre presente, vuoto se non c'è
+  outcome: '',
 });
 
 // Provider che avvolgerà l'applicazione
@@ -31,20 +33,29 @@ export const AuthProvider = ({ children }) => {
   const [emailState, setEmailState] = useState(null);
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const refreshing = useRef(null);
+  // Numero dell'ultima rilettura partita: solo quella scrive lo stato (una più vecchia, risolta dopo, non copre la nuova)
+  const lastRead = useRef(0);
 
   // Rilegge lo stato della conferma. Non fa mai uscire l'utente: se la lettura non riesce, resta lo stato di prima.
-  const refreshEmailState = useCallback(() => {
-    if (refreshing.current) return refreshing.current;
+  // `outcome`: il messaggio del server quando la conferma ha anche deciso il codice di registrazione («Plus attivo
+  // fino al…»); resta solo nello stato letto adesso e sparisce alla rilettura successiva.
+  const refreshEmailState = useCallback((arg) => {
+    // Usato anche come gestore di click: solo una stringa è un messaggio
+    const outcome = typeof arg === 'string' ? arg : '';
+    if (refreshing.current && !outcome) return refreshing.current;
+    // Una lettura già in corso potrebbe essere precedente alla conferma: con un messaggio se ne fa una nuova e la vecchia non scrive più
+    // (se la nuova fallisce resta lo stato di prima: lo sistema la rilettura successiva)
+    const mine = ++lastRead.current;
     const run = (async () => {
       try {
         const response = await fetch(`${API_BASE_URL}api/user/read.php`, { method: 'GET', credentials: 'include' });
         if (!response.ok) return;
         const data = await response.json();
-        if (data.success) setEmailState(emailStateFrom(data));
+        if (data.success && mine === lastRead.current) setEmailState({ ...emailStateFrom(data), outcome });
       } catch (error) {
         console.error('Errore lettura stato email:', error);
       } finally {
-        refreshing.current = null;
+        if (refreshing.current === run) refreshing.current = null;
       }
     })();
     refreshing.current = run;

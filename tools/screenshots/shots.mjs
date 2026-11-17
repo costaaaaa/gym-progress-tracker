@@ -188,14 +188,47 @@ const EMAIL_STATES = {
   'cambio-in-attesa': { email_verified: true, email_verification: { deadline: null, blocked: false, days_left: null }, pending_email: 'nuovo@example.com' },
   bloccato: { email_verified: false, email_verification: { deadline: isoInstant(-1, '10:00:00'), blocked: true, days_left: 0 }, pending_email: null },
 };
-const user = ({ admin, gratis, email }) => ({
+// Livello dell'account (`tierState`): `plus` (codice applicato, scade il 15/02/2027), `attesa` (Gratis, Plus in
+// attesa della conferma), `missed` (Gratis, codice non applicato), `gratis` (Gratis senza codice)
+const TIER_STATES = {
+  plus: { tier: 'plus', tier_until: '2027-02-15T23:00:00Z', tier_last_day: '2027-02-15', signup_code: { status: 'applied', tier: 'plus', duration_days: 90 } },
+  attesa: { tier: 'free', tier_until: null, tier_last_day: null, signup_code: { status: 'pending', tier: 'plus', duration_days: 90 } },
+  missed: { tier: 'free', tier_until: null, tier_last_day: null, signup_code: { status: 'missed', tier: 'plus', duration_days: 90 } },
+  gratis: { tier: 'free', tier_until: null, tier_last_day: null, signup_code: null },
+};
+const user = ({ admin, gratis, email, tierState }) => ({
   ...(EMAIL_STATES[email ?? 'confermata']),
   success: true, id: 1, username: 'atleta_demo', email: 'atleta@example.com',
   created_at: stamp(-900, '10:00:00'), password_changed_at: stamp(-140, '09:00:00'),
   age: 34, gender: 'm', experience_years: 4, birth_date: '1992-05-14', training_start_date: '2022-01-10',
   rest_timer_enabled: true, locale: 'it', language: 'it', features: [], is_admin: admin,
-  tier: gratis ? 'free' : 'pro', limits: gratis ? LIMITS.gratis : LIMITS.pro,
+  tier: gratis ? 'free' : 'pro', tier_until: null, tier_last_day: null, signup_code: null,
+  ...(tierState ? TIER_STATES[tierState] : {}),
+  limits: gratis ? LIMITS.gratis : LIMITS.pro,
 });
+
+// Codici di registrazione per la sezione admin (nomi e assegnatari inventati)
+const CODE_ROWS = [
+  { id: 1, code: 'AMICI-90', tier: 'plus', duration_days: 90, forever: false, max_uses: 10, last_day: '2027-03-15', expired: false, enabled: true, assignee: 'Luca', seats_taken: 3, registered: 3, confirmed: 2, missed: 0, created_at: '2026-10-01T10:00:00Z', updated_at: '2026-10-01T10:00:00Z' },
+  { id: 2, code: 'TESTER', tier: 'pro', duration_days: null, forever: true, max_uses: 2, last_day: null, expired: false, enabled: true, assignee: 'Marta', seats_taken: 1, registered: 1, confirmed: 1, missed: 0, created_at: '2026-10-05T10:00:00Z', updated_at: '2026-10-05T10:00:00Z' },
+  { id: 3, code: 'PRIMAVERA-26', tier: 'plus', duration_days: 30, forever: false, max_uses: 5, last_day: '2026-10-01', expired: true, enabled: false, assignee: null, seats_taken: 0, registered: 0, confirmed: 0, missed: 0, created_at: '2026-09-01T10:00:00Z', updated_at: '2026-09-01T10:00:00Z' },
+];
+const CODE_USES = [
+  { username: 'atleta_2', account_deleted: false, status: 'applied', created_at: '2026-10-10T09:00:00Z', applied_at: '2026-10-10T09:30:00Z' },
+  { username: 'atleta_3', account_deleted: false, status: 'pending', created_at: '2026-10-20T09:00:00Z', applied_at: null },
+  { username: null, account_deleted: true, status: 'pending', created_at: '2026-10-21T09:00:00Z', applied_at: null },
+];
+const signupCodes = ({ url }) => {
+  const id = new URL(url).searchParams.get('id');
+  if (id) return { success: true, code: CODE_ROWS.find((c) => c.id === Number(id)), uses: CODE_USES, page: 1, per_page: 20, total: CODE_USES.length, pages: 1 };
+  return { success: true, codes: CODE_ROWS, page: 1, per_page: 20, total: CODE_ROWS.length, pages: 1 };
+};
+
+// Controllo anticipato della registrazione: `codice` = 'ok' (Plus 90 giorni), 'errore' (non valido)
+const checkAvailability = ({ codice }) => {
+  if (codice === 'errore') return { __status: 400, success: false, code: 'signup_code_invalid', message: 'Il codice di registrazione non è valido.', field: 'signup_code' };
+  return { success: true, username_taken: false, email_taken: false, ...(codice === 'ok' ? { signup_code: { usable: true, tier: 'plus', duration_days: 90 } } : {}) };
+};
 
 // Utenti dei dati finti: `attivo` è l'utente di tutte le pagine, `un-allenamento` cambia solo lo storico
 // (un solo allenamento: ogni esercizio è "Nuovo" nei Progressi). `nuovo` risponde come un account vuoto
@@ -252,6 +285,8 @@ const UTENTI = {
 
 const fixtures = [
   ['user/read.php', user],
+  ['user/check_availability.php', checkAvailability],
+  ['admin/signup_codes.php', signupCodes],
   ['user/consent.php', () => ({ success: true, consents: { terms: { granted: true }, health_data: { granted: true } } })],
   ['workout_history/read.php', ({ u }) => ({ success: true, records: u.history })],
   ['workout/read_plans.php', ({ plans, u }) => ({ success: true, records: plans ? PLAN_SETS[plans] : u.plans })],
@@ -361,8 +396,9 @@ async function openPage(vp, theme, opts, tag) {
   await ctx.route('**/backend/**', (route) => {
     const url = route.request().url();
     const hit = fixtures.find(([key]) => url.includes(key));
-    const body = hit ? hit[1]({ admin: opts.admin === true, gratis: opts.gratis === true, email: opts.email, plans: opts.plans, u: UTENTI[opts.utente ?? 'attivo'] }) : fallback;
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+    const body = hit ? hit[1]({ admin: opts.admin === true, gratis: opts.gratis === true, email: opts.email, tierState: opts.tierState, codice: opts.codice, url, plans: opts.plans, u: UTENTI[opts.utente ?? 'attivo'] }) : fallback;
+    const { __status: status = 200, ...payload } = body;
+    route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(payload) });
   });
   const page = await ctx.newPage();
   page.on('pageerror', (err) => problems.push(`[${tag}] ${page.url()} pageerror: ${err.message}`));
@@ -644,6 +680,64 @@ for (const vp of viewports) {
         await ctx.close();
       }
     });
+
+    // Codici di registrazione: registrazione con il campo aperto (e il codice controllato o rifiutato), livello in Account, sezione admin
+    for (const [name, url, opts] of [
+      ['codici-registrazione-campo', '/register?code=PRIMAVERA-26', { loggedIn: false }],
+      ['codici-account-gratis', '/account', { loggedIn: true, tierState: 'gratis' }],
+      ['codici-account-plus', '/account', { loggedIn: true, tierState: 'plus' }],
+      ['codici-account-attesa', '/account', { loggedIn: true, tierState: 'attesa', email: 'da-confermare' }],
+      ['codici-account-non-applicato', '/account', { loggedIn: true, tierState: 'missed' }],
+    ]) {
+      if (!want(name)) continue;
+      await attempt(tag, name, async () => {
+        const { ctx, page } = await openPage(vp, theme, opts, tag);
+        try {
+          await page.goto(`${base}${url}`, { waitUntil: 'domcontentloaded' });
+          await page.getByRole('heading', { level: 1 }).first().waitFor();
+          await snap(page, name, tag);
+        } finally {
+          await ctx.close();
+        }
+      });
+    }
+    for (const [name, codice] of [['codici-registrazione-errore', 'errore'], ['codici-registrazione-ok', 'ok']]) {
+      if (!want(name)) continue;
+      await attempt(tag, name, async () => {
+        const { ctx, page } = await openPage(vp, theme, { loggedIn: false, codice }, tag);
+        try {
+          await page.goto(`${base}/register?code=PRIMAVERA-26`, { waitUntil: 'domcontentloaded' });
+          await page.getByLabel(/^Username/).fill('atletanuovo');
+          await page.getByLabel(/^Email/).fill('nuovo@example.com');
+          await page.getByLabel(/^Password/).fill('Segreta!2026');
+          await page.getByLabel(/^Conferma password/).fill('Segreta!2026');
+          await page.getByRole('button', { name: 'Avanti' }).click();
+          if (codice === 'ok') await page.getByText('Il tuo profilo').waitFor();
+          else await page.getByText('Il codice di registrazione non è valido.').waitFor();
+          await snap(page, name, tag);
+        } finally {
+          await ctx.close();
+        }
+      });
+    }
+    const codesCard = (page) => page.getByRole('heading', { name: 'Codici di registrazione' }).locator('xpath=ancestor::*[contains(@class,"MuiCard-root")][1]');
+    for (const name of ['codici-admin-elenco', 'codici-admin-creazione', 'codici-admin-dettaglio']) {
+      if (!want(name)) continue;
+      await attempt(tag, name, async () => {
+        const { ctx, page } = await openPage(vp, theme, { loggedIn: true, admin: true }, tag);
+        try {
+          await page.goto(`${base}/admin`, { waitUntil: 'domcontentloaded' });
+          const card = codesCard(page);
+          await card.waitFor();
+          if (name === 'codici-admin-creazione') await page.getByRole('button', { name: 'Nuovo codice' }).click();
+          if (name === 'codici-admin-dettaglio') await page.getByRole('button', { name: 'Apri il codice AMICI-90' }).click();
+          await page.getByRole('heading', { name: 'Codici di registrazione' }).scrollIntoViewIfNeeded();
+          await snap(page, name, tag, codesCard(page));
+        } finally {
+          await ctx.close();
+        }
+      });
+    }
 
     console.log(`ok ${tag}`);
   }

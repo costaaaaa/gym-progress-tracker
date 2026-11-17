@@ -17,13 +17,13 @@ const json = (body, status = 200) => Promise.resolve(new Response(JSON.stringify
 
 beforeEach(() => {
   localStorage.setItem('isLoggedIn', 'true');
-  server = { read: { success: true, id: 7, username: 'mario', email: 'mario@example.com', pending_email: null, email_verified: true, email_verification: null } };
+  server = { read: { success: true, id: 7, username: 'mario', email: 'mario@example.com', pending_email: null, email_verified: true, email_verification: null, tier: 'free', tier_until: null, tier_last_day: null, signup_code: null } };
   window.fetch = vi.fn((input) => {
     const url = String(input instanceof Request ? input.url : input);
     if (url.includes('user/read.php')) return json(server.read);
     if (url.includes('confirm_email.php')) {
       server.read = { ...server.read, email_verified: true, email_verification: null };
-      return json({ success: true, email_verified: true, email: 'mario@example.com' });
+      return json(server.confirmBody ?? { success: true, email_verified: true, email: 'mario@example.com' });
     }
     if (url.includes('page.php')) return json({ success: false, code: 'email_unverified', message: 'Conferma la tua email' }, 403);
     return json({ success: true });
@@ -118,6 +118,18 @@ describe('email non confermata dal giorno 8', () => {
     expect(await screen.findByRole('heading', { name: 'Pagina dell\'app' })).toBeTruthy();
     expect(screen.queryByRole('heading', { level: 1, name: 'Conferma la tua email per continuare' })).toBeNull();
     expect(await screen.findByText('Email confermata.')).toBeTruthy();
+  });
+
+  it('con un codice di registrazione, la conferma da bloccati mostra il messaggio del server', async () => {
+    const message = 'Email confermata. Plus attivo fino al 15 febbraio 2027.';
+    server.confirmBody = { success: true, message, email_verified: true, email: 'mario@example.com', signup_code: { status: 'applied', tier: 'plus', tier_last_day: '2027-02-15' } };
+    mount();
+    await screen.findByRole('heading', { level: 1, name: 'Conferma la tua email per continuare' });
+    fireEvent.change(screen.getByLabelText(/^Codice di 6 cifre/), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Conferma' }));
+    expect(await screen.findByRole('heading', { name: 'Pagina dell\'app' })).toBeTruthy();
+    expect(await screen.findByText(message)).toBeTruthy();
+    expect(screen.queryByText('Email confermata.')).toBeNull();
   });
 
   it.each(['/login', '/en/login'])('le pagine di accesso restano raggiungibili (%s)', async (path) => {

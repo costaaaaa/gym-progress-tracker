@@ -53,9 +53,10 @@ const EmailCodeForm = ({ onConfirmed, actions, autoFocus = false }) => {
   const pendingEmail = emailState?.pendingEmail ?? null;
   const sentTo = pendingEmail ?? emailState?.email ?? '';
 
-  const done = async (email, changed) => {
-    await refreshEmailState();
-    setAnnounce(t('emailconfirm.done'));
+  // `outcome`: il messaggio del server quando la conferma ha anche deciso il codice di registrazione
+  const done = async (email, changed, outcome) => {
+    await refreshEmailState(outcome);
+    setAnnounce(outcome || t('emailconfirm.done'));
     onConfirmed?.({ email, changed });
   };
 
@@ -78,7 +79,7 @@ const EmailCodeForm = ({ onConfirmed, actions, autoFocus = false }) => {
     const res = await confirmEmailCode(code);
     setConfirming(false);
     if (res.ok) {
-      await done(res.data.email ?? sentTo, pendingEmail !== null);
+      await done(res.data.email ?? sentTo, pendingEmail !== null, res.data.signup_code ? res.data.message : '');
     } else if (res.data?.code === 'email_already_verified') {
       await done(sentTo, false);
     } else {

@@ -7,6 +7,7 @@ import AdminExercises from '../components/Admin/AdminExercises';
 import AdminReports from '../components/Admin/AdminReports';
 import AdminGroups from '../components/Admin/AdminGroups';
 import AdminTiers from '../components/Admin/AdminTiers';
+import AdminSignupCodes from '../components/Admin/AdminSignupCodes';
 import { listAdminExercises } from '../api/exercises';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
 
@@ -32,6 +33,7 @@ const AdminContent = () => {
       <AdminReports />
       <AdminGroups />
       <AdminTiers />
+      <AdminSignupCodes />
     </Box>
   );
 };

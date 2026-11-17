@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -56,6 +56,7 @@ import useConfirmPassword from '../hooks/useConfirmPassword';
 import ConfirmPasswordField from '../components/Auth/ConfirmPasswordField';
 import { loginWithNext } from '../utils/safeNext';
 import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
+import AccountTier from '../components/Account/AccountTier';
 import PasswordToggle from '../components/Auth/PasswordToggle';
 import ButtonSpinner from '../components/ButtonSpinner';
 import DeleteAccountDialog from '../components/Account/DeleteAccountDialog';
@@ -252,7 +253,10 @@ const Account = ({ isEmbedded = false }) => {
         email: userDetails.email,
         created_at: userDetails.created_at,
         password_changed_at: userDetails.password_changed_at,
-        is_admin: userDetails.is_admin === true
+        is_admin: userDetails.is_admin === true,
+        tier: userDetails.tier,
+        tier_last_day: userDetails.tier_last_day,
+        signup_code: userDetails.signup_code
       });
 
       // Impostazione dati profilo
@@ -297,6 +301,31 @@ const Account = ({ isEmbedded = false }) => {
       setLoading(false);
     }
   }, [user, fetchUserData]);
+
+  // Il livello cambia con la conferma dell'email (codice di registrazione che parte) e con l'indirizzo che diventa
+  // quello dell'account: quando lo stato dell'email cambia in questo modo si rilegge solo il livello, senza far
+  // tornare la pagina in caricamento
+  // (Resta una seconda lettura di read.php a ogni conferma: il livello non sta in AuthContext in questa PR.)
+  const lastEmailState = useRef(emailState);
+  // Solo l'ultima lettura scrive; allo smontaggio il contatore avanza e una risposta in volo non scrive più
+  const tierRead = useRef(0);
+  useEffect(() => () => { tierRead.current += 1; }, []);
+  useEffect(() => {
+    const before = lastEmailState.current;
+    lastEmailState.current = emailState;
+    if (!before || !emailState || !user) return;
+    const confirmed = !before.verified && emailState.verified;
+    const addressChanged = before.email !== emailState.email;
+    if (!confirmed && !addressChanged) return;
+    const mine = ++tierRead.current;
+    fetch(`${API_BASE_URL}api/user/read.php`, { method: 'GET', credentials: 'include' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((details) => {
+        if (!details?.success || mine !== tierRead.current) return;
+        setUserData((prev) => (prev ? { ...prev, tier: details.tier, tier_last_day: details.tier_last_day, signup_code: details.signup_code } : prev));
+      })
+      .catch((error) => console.error('Errore nel recupero del livello:', error));
+  }, [emailState, user]);
 
   const handleUpdateProfile = async () => {
     if (birthDate && isInvalidBirthDate(birthDate)) {
@@ -546,6 +575,7 @@ const Account = ({ isEmbedded = false }) => {
             <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
               {t('account.member_since', { date: joinDate ? format(joinDate, 'MMMM yyyy', { locale: dateFnsLocale() }) : t('account.date_unavailable') })}
             </Typography>
+            <AccountTier tier={userData?.tier} lastDay={userData?.tier_last_day} signupCode={userData?.signup_code} />
           </Box>
         </Box>
 

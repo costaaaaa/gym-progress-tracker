@@ -27,7 +27,7 @@ beforeEach(() => {
     const u = String(url);
     if (u.includes('groups/list.php')) return Promise.resolve(json({ success: true, groups: [] }));
     if (u.includes('user/consent.php')) return Promise.resolve(json({ success: true, consents: { terms: { granted: true, version: 1 }, health_data: { granted: true, version: 1 } } }));
-    if (u.includes('user/read.php')) return Promise.resolve(json({ id: 1, username: 'mario', email: 'vecchio@example.com', created_at: '2025-03-01T10:00:00+01:00', weekly_goal_default: 3 }));
+    if (u.includes('user/read.php')) return Promise.resolve(json({ id: 1, username: 'mario', email: 'vecchio@example.com', created_at: '2025-03-01T10:00:00+01:00', weekly_goal_default: 3, tier: 'free', tier_until: null, tier_last_day: null, signup_code: null }));
     if (u.includes('change_email.php')) return Promise.resolve(json(auth.changeReply ?? { success: true, mode: 'immediate', email: 'nuovo@example.com', pending_email: null }));
     if (u.includes('cancel_email_change.php')) return Promise.resolve(json({ success: true, cancelled: true }));
     return Promise.resolve(json({ success: true, consents: [], id: 1, weekly_goal_default: 3 }));

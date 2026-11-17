@@ -248,6 +248,23 @@ describe('avviso di esito', () => {
     expect(screen.getByText('Indirizzo email aggiornato: nuovo@example.com.')).toBeTruthy();
   });
 
+  it('con un esito dal server (codice di registrazione) mostra quello al posto del testo fisso', () => {
+    const message = 'Email confermata. Plus attivo fino al 15 febbraio 2027.';
+    const view = mountGate();
+    auth.emailState = state({ verified: true, daysLeft: null, outcome: message });
+    view.rerender(<EmailGate />);
+    expect(screen.getByText(message)).toBeTruthy();
+    expect(screen.queryByText('Email confermata.')).toBeNull();
+  });
+
+  it('l\'esito sta nello stato letto: il cambio di indirizzo successivo non lo riusa', () => {
+    auth.emailState = state({ verified: true, daysLeft: null, pendingEmail: 'nuovo@example.com' });
+    const view = mountGate();
+    auth.emailState = state({ verified: true, daysLeft: null, email: 'nuovo@example.com', pendingEmail: null, outcome: '' });
+    view.rerender(<EmailGate />);
+    expect(screen.getByText('Indirizzo email aggiornato: nuovo@example.com.')).toBeTruthy();
+  });
+
   it('l\'annullamento di un cambio in attesa non è una conferma: nessun avviso', () => {
     auth.emailState = state({ verified: true, daysLeft: null, pendingEmail: 'nuovo@example.com' });
     const view = mountGate();

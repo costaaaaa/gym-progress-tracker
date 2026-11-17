@@ -79,6 +79,35 @@ describe('conferma', () => {
     expect(onConfirmed.mock.calls[0][0]).toMatchObject({ email: 'mario@example.com', changed: false });
   });
 
+  it('con un codice di registrazione rilegge lo stato portando il messaggio del server', async () => {
+    const message = 'Email confermata. Plus attivo fino al 15 febbraio 2027.';
+    answers(reply(200, { success: true, message, email_verified: true, email: 'mario@example.com', signup_code: { status: 'applied', tier: 'plus', tier_last_day: '2027-02-15' } }));
+    const { onConfirmed } = mount();
+    type('123456');
+    confirm();
+    await waitFor(() => expect(onConfirmed).toHaveBeenCalledTimes(1));
+    expect(auth.refreshEmailState).toHaveBeenCalledWith(message);
+  });
+
+  it('codice di registrazione non applicato (posti finiti): anche qui vale il messaggio del server', async () => {
+    const message = 'Email confermata. Il codice di registrazione non è più valido e non è stato applicato.';
+    answers(reply(200, { success: true, message, email_verified: true, email: 'mario@example.com', signup_code: { status: 'missed', tier: 'plus', tier_last_day: null } }));
+    const { onConfirmed } = mount();
+    type('123456');
+    confirm();
+    await waitFor(() => expect(onConfirmed).toHaveBeenCalledTimes(1));
+    expect(auth.refreshEmailState).toHaveBeenCalledWith(message);
+  });
+
+  it('senza codice di registrazione non c\'è nessun esito speciale', async () => {
+    answers(reply(200, { success: true, message: 'Email confermata.', email_verified: true, email: 'mario@example.com' }));
+    const { onConfirmed } = mount();
+    type('123456');
+    confirm();
+    await waitFor(() => expect(onConfirmed).toHaveBeenCalledTimes(1));
+    expect(auth.refreshEmailState).toHaveBeenCalledWith('');
+  });
+
   it('dopo un cambio di indirizzo in attesa dice che l\'indirizzo è cambiato', async () => {
     auth.emailState = { ...auth.emailState, verified: true, pendingEmail: 'nuovo@example.com' };
     answers(reply(200, { success: true, email_verified: true, email: 'nuovo@example.com' }));

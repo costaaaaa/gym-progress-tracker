@@ -32,6 +32,8 @@ import PasswordToggle from '../components/Auth/PasswordToggle';
 import ConfirmPasswordField from '../components/Auth/ConfirmPasswordField';
 import useConfirmPassword from '../hooks/useConfirmPassword';
 import useFocusField from '../hooks/useFocusField';
+import useSignupCode from '../hooks/useSignupCode';
+import SignupCodeField from '../components/Auth/SignupCodeField';
 
 // Username: stessa regola di register.php. Email: solo un primo filtro, il server usa FILTER_VALIDATE_EMAIL
 const USERNAME_RE = /^[a-zA-Z0-9]{3,50}$/;
@@ -63,6 +65,8 @@ const Register = () => {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const { fieldRef, focusField } = useFocusField();
+  const location = useLocation();
+  const signup = useSignupCode({ search: location.search, focusField });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const pair = useConfirmPassword({ password, confirm: confirmPassword });
@@ -75,7 +79,6 @@ const Register = () => {
     setShowConfirmPassword(!showConfirmPassword);
   };
   const navigate = useNavigate();
-  const location = useLocation();
   // Dove tornare dopo la registrazione, per esempio un link di invito a un gruppo
   const next = safeNext(location.search);
   const { login, openEmailDialog } = useAuth();
@@ -110,6 +113,7 @@ const Register = () => {
 
   const handleNext = async () => {
     setError('');
+    signup.clearError();
     pair.submit();
     const errors = {
       username: USERNAME_RE.test(username) ? '' : t('register.username_help'),
@@ -124,13 +128,21 @@ const Register = () => {
     }
 
     setLoading(true);
+    const sent = signup.toSend;
     try {
       const response = await fetch(`${API_BASE_URL}api/user/check_availability.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email }),
+        body: JSON.stringify(sent ? { username, email, signup_code: sent } : { username, email }),
       });
       const data = await response.json().catch(() => ({}));
+      // Il codice è stato cambiato mentre si controllava: la risposta non vale più, si riparte da «Avanti»
+      if (!signup.isCurrent(sent)) return;
+      if (!response.ok && data.field === 'signup_code') {
+        signup.fail(data.message);
+        return;
+      }
+      signup.accept(sent, response.ok ? data.signup_code : null);
       if (response.status === 429) {
         setError(data.message || t('register.error.generic'));
         return;
@@ -188,13 +200,20 @@ const Register = () => {
           gender,
           accept_terms: true,
           locale: i18n.language,
-          training_start_date: trainingStartDate ? format(trainingStartDate, 'yyyy-MM-01') : null
+          training_start_date: trainingStartDate ? format(trainingStartDate, 'yyyy-MM-01') : null,
+          ...(signup.toSend ? { signup_code: signup.toSend } : {})
         }),
         credentials: 'include'
       });
 
       const data = await response.json();
 
+      // Codice non più utilizzabile (posto finito nel frattempo, scaduto, spento): si torna al campo
+      if (!response.ok && data.field === 'signup_code') {
+        signup.fail(data.message);
+        setStep(1);
+        return;
+      }
       // Username o email presi nel frattempo: si torna al primo passo, con l'errore sul campo
       if (response.status === 409 && (data.field === 'username' || data.field === 'email')) {
         setFieldErrors({ [data.field]: takenError(data.field) });
@@ -327,6 +346,7 @@ const Register = () => {
               onChange={editPair(setConfirmPassword, 'confirmPassword')}
               InputProps={{ endAdornment: <PasswordToggle shown={showConfirmPassword} onToggle={handleToggleConfirmPasswordVisibility} label={t('password.show_confirm')} /> }}
             />
+            <SignupCodeField signup={signup} fieldRef={fieldRef} disabled={loading} />
             <Button type="submit" fullWidth variant="contained" size="large" sx={{ mt: 3, mb: 2 }} disabled={loading}>
               {loading ? t('register.checking') : t('register.next')}
             </Button>
@@ -335,6 +355,7 @@ const Register = () => {
           <>
             <Typography variant="h2" sx={{ fontSize: '1.25rem', mt: 1, mb: 1 }}>{t('register.profile_title')}</Typography>
             <Typography sx={{ mb: 1 }}>{t('register.profile_text')}</Typography>
+            {signup.note && <Typography sx={{ mb: 1, fontWeight: 600 }}>{signup.note}</Typography>}
             <DateLocalization>
               <LabeledDatePicker
                 label={t('register.birth_date')}
