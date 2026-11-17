@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, useContext } from 'react';
+import { createContext, useState, useEffect, useContext, useCallback, useRef } from 'react';
 import { API_BASE_URL } from '../config';
 import i18n from '../i18n';
 import { currentTimeZone } from '../utils/workoutTime';
@@ -12,11 +12,47 @@ const AuthContext = createContext(null);
 // (non a login o registrazione, da cui il login riporterebbe al login)
 const loginAfterExpiry = () => (isAuthPath(window.location.pathname) ? '/login' : loginWithNext(window.location));
 
+// Stato della conferma dell'email, da user/read.php. Un server senza i campi nuovi vale «confermata».
+const emailStateFrom = (data) => ({
+  verified: data.email_verified !== false,
+  email: data.email ?? null,
+  pendingEmail: data.pending_email ?? null,
+  deadline: data.email_verification?.deadline ?? null,
+  blocked: data.email_verification?.blocked === true,
+  daysLeft: data.email_verification?.days_left ?? null,
+});
+
 // Provider che avvolgerà l'applicazione
 export const AuthProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  // null finché non è stato letto
+  const [emailState, setEmailState] = useState(null);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const refreshing = useRef(null);
+
+  // Rilegge lo stato della conferma. Non fa mai uscire l'utente: se la lettura non riesce, resta lo stato di prima.
+  const refreshEmailState = useCallback(() => {
+    if (refreshing.current) return refreshing.current;
+    const run = (async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}api/user/read.php`, { method: 'GET', credentials: 'include' });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.success) setEmailState(emailStateFrom(data));
+      } catch (error) {
+        console.error('Errore lettura stato email:', error);
+      } finally {
+        refreshing.current = null;
+      }
+    })();
+    refreshing.current = run;
+    return run;
+  }, []);
+
+  const openEmailDialog = useCallback(() => setEmailDialogOpen(true), []);
+  const closeEmailDialog = useCallback(() => setEmailDialogOpen(false), []);
 
   useEffect(() => {
     const verifySession = async () => {
@@ -39,6 +75,7 @@ export const AuthProvider = ({ children }) => {
         const userData = await response.json();
         if (userData.success) {
           setUser(userData);
+          setEmailState(emailStateFrom(userData));
           setIsLoggedIn(true);
         } else {
           throw new Error('Validazione fallita');
@@ -59,6 +96,8 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('isLoggedIn', 'true');
     setIsLoggedIn(true);
     setUser(userData);
+    // Il login risponde con id, username e lingua: lo stato della conferma si legge subito
+    refreshEmailState();
   };
 
   // Chiude la sessione e porta al login
@@ -77,6 +116,8 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('isLoggedIn');
       setIsLoggedIn(false);
       setUser(null);
+      setEmailState(null);
+      setEmailDialogOpen(false);
       // Reindirizzamento alla pagina di login
       window.location.href = loginUrl;
     }
@@ -112,13 +153,22 @@ export const AuthProvider = ({ children }) => {
           !requestUrl.includes('api/user/read.php')) {
         endSession(loginAfterExpiry());
       }
+      // Scadenza dei 7 giorni passata a pagina aperta: 403 (mai 401), si rilegge lo stato e il layout mostra
+      // la schermata di conferma. Non è una sessione scaduta: nessuna uscita.
+      if (response.status === 403 &&
+          localStorage.getItem('isLoggedIn') === 'true' &&
+          !requestUrl.includes('api/user/read.php')) {
+        response.clone().json().then((body) => {
+          if (body?.code === 'email_unverified') refreshEmailState();
+        }).catch(() => {});
+      }
       return response;
     };
 
     return () => {
       window.fetch = originalFetch;
     };
-  }, []);
+  }, [refreshEmailState]);
 
   // Aggiorna campi dell'utente già salvati sul server (es. la lingua)
   const updateUser = (patch) => {
@@ -136,7 +186,12 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     updateUser,
-    loading
+    loading,
+    emailState,
+    refreshEmailState,
+    emailDialogOpen,
+    openEmailDialog,
+    closeEmailDialog
   };
 
   return (

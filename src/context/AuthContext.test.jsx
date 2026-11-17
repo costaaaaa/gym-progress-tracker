@@ -147,3 +147,129 @@ describe('AuthProvider: fine della sessione', () => {
     await waitFor(() => expect(window.location.href).toBe('/login'));
   });
 });
+
+// Stato della conferma dell'email: viene da user/read.php, lo stesso che verifica la sessione
+const readBody = (extra = {}) => ({
+  success: true, id: 1, username: 'mario', email: 'mario@example.com', email_verified: true,
+  email_verification: null, pending_email: null, ...extra,
+});
+const json = (body, status = 200) => new Response(JSON.stringify(body), { status });
+const Probe = () => {
+  const { emailState, refreshEmailState } = useAuth();
+  return (
+    <div>
+      <output data-testid="state">{JSON.stringify(emailState)}</output>
+      <button onClick={refreshEmailState}>rileggi</button>
+    </div>
+  );
+};
+const stateOf = () => JSON.parse(screen.getByTestId('state').textContent);
+const unverified = { email_verified: false, email_verification: { deadline: '2026-11-24T10:00:00Z', blocked: false, days_left: 5 } };
+
+describe('AuthProvider: stato della conferma email', () => {
+  it('all\'apertura lo legge da read.php: confermata, scadenza, giorni rimasti, indirizzo in attesa', async () => {
+    localStorage.setItem('isLoggedIn', 'true');
+    backend.mockImplementation(() => Promise.resolve(json(readBody({ ...unverified, pending_email: null }))));
+    render(<AuthProvider><Probe /></AuthProvider>);
+    await waitFor(() => expect(stateOf()).toMatchObject({
+      verified: false, blocked: false, daysLeft: 5, deadline: '2026-11-24T10:00:00Z', email: 'mario@example.com', pendingEmail: null,
+    }));
+  });
+
+  it('un account confermato ha verified true e nessuna scadenza', async () => {
+    localStorage.setItem('isLoggedIn', 'true');
+    backend.mockImplementation(() => Promise.resolve(json(readBody({ pending_email: 'nuovo@example.com' }))));
+    render(<AuthProvider><Probe /></AuthProvider>);
+    await waitFor(() => expect(stateOf()).toMatchObject({ verified: true, blocked: false, daysLeft: null, pendingEmail: 'nuovo@example.com' }));
+  });
+
+  it('refreshEmailState rilegge lo stato', async () => {
+    localStorage.setItem('isLoggedIn', 'true');
+    backend.mockImplementation(() => Promise.resolve(json(readBody(unverified))));
+    render(<AuthProvider><Probe /></AuthProvider>);
+    await waitFor(() => expect(stateOf().verified).toBe(false));
+    backend.mockImplementation(() => Promise.resolve(json(readBody())));
+
+    fireEvent.click(screen.getByText('rileggi'));
+
+    await waitFor(() => expect(stateOf().verified).toBe(true));
+  });
+
+  it('un 403 email_unverified da una chiamata qualunque fa rileggere lo stato, senza uscire', async () => {
+    localStorage.setItem('isLoggedIn', 'true');
+    backend.mockImplementation(() => Promise.resolve(json(readBody(unverified))));
+    render(<AuthProvider><Probe /></AuthProvider>);
+    await waitFor(() => expect(stateOf().blocked).toBe(false));
+    backend.mockImplementation((input) => Promise.resolve(String(input).includes('user/read.php')
+      ? json(readBody({ email_verified: false, email_verification: { deadline: '2026-11-17T10:00:00Z', blocked: true, days_left: 0 } }))
+      : json({ success: false, code: 'email_unverified', message: 'Conferma la tua email' }, 403)));
+
+    const response = await window.fetch('/backend/api/workout/read_plans.php');
+
+    expect(response.status).toBe(403);
+    expect((await response.json()).code).toBe('email_unverified'); // il corpo resta leggibile da chi ha chiamato
+    await waitFor(() => expect(stateOf().blocked).toBe(true));
+    expect(localStorage.getItem('isLoggedIn')).toBe('true');
+    expect(backend.mock.calls.some(([u]) => String(u).includes('logout.php'))).toBe(false);
+  });
+
+  it('un 403 con un altro codice non rilegge nulla', async () => {
+    localStorage.setItem('isLoggedIn', 'true');
+    backend.mockImplementation(() => Promise.resolve(json(readBody())));
+    render(<AuthProvider><Probe /></AuthProvider>);
+    await waitFor(() => expect(stateOf().verified).toBe(true));
+    backend.mockClear();
+    backend.mockImplementation(() => Promise.resolve(json({ success: false, code: 'consent_required' }, 403)));
+
+    await window.fetch('/backend/api/user_stats/create.php');
+
+    expect(backend).toHaveBeenCalledTimes(1);
+  });
+
+  it('se la rilettura fallisce lo stato resta com\'era e l\'utente non esce', async () => {
+    localStorage.setItem('isLoggedIn', 'true');
+    backend.mockImplementation(() => Promise.resolve(json(readBody(unverified))));
+    render(<AuthProvider><Probe /></AuthProvider>);
+    await waitFor(() => expect(stateOf().verified).toBe(false));
+    backend.mockImplementation(() => Promise.reject(new Error('rete')));
+
+    fireEvent.click(screen.getByText('rileggi'));
+
+    await waitFor(() => expect(backend).toHaveBeenCalled());
+    expect(stateOf().verified).toBe(false);
+    expect(localStorage.getItem('isLoggedIn')).toBe('true');
+  });
+
+  it('dopo il login lo legge, così striscia e finestra compaiono subito', async () => {
+    backend.mockImplementation(() => Promise.resolve(json(readBody(unverified))));
+    const LoginButton = () => {
+      const { login } = useAuth();
+      return <button onClick={() => login({ id: 1, username: 'mario', locale: 'it' })}>entra</button>;
+    };
+    render(<AuthProvider><LoginButton /><Probe /></AuthProvider>);
+
+    fireEvent.click(screen.getByText('entra'));
+
+    await waitFor(() => expect(stateOf()).toMatchObject({ verified: false, daysLeft: 5 }));
+  });
+
+  it('la finestra del codice si apre e si chiude dal contesto', async () => {
+    backend.mockImplementation(() => Promise.resolve(json(readBody())));
+    const Dialog = () => {
+      const { emailDialogOpen, openEmailDialog, closeEmailDialog } = useAuth();
+      return (
+        <div>
+          <output data-testid="open">{String(emailDialogOpen)}</output>
+          <button onClick={openEmailDialog}>apri</button>
+          <button onClick={closeEmailDialog}>chiudi</button>
+        </div>
+      );
+    };
+    render(<AuthProvider><Dialog /></AuthProvider>);
+    expect(screen.getByTestId('open').textContent).toBe('false');
+    fireEvent.click(screen.getByText('apri'));
+    expect(screen.getByTestId('open').textContent).toBe('true');
+    fireEvent.click(screen.getByText('chiudi'));
+    expect(screen.getByTestId('open').textContent).toBe('false');
+  });
+});
