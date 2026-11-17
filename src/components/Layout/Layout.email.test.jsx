@@ -61,7 +61,7 @@ const mount = (path = '/workouts') => render(
 );
 
 describe('email non ancora confermata, entro i 7 giorni', () => {
-  beforeEach(() => { server.read = { ...server.read, ...unverified }; localStorage.setItem('lx_email_reminder_7', today()); // promemoria di oggi già mostrato });
+  beforeEach(() => { server.read = { ...server.read, ...unverified }; localStorage.setItem('lx_email_reminder_7', today()); }); // promemoria di oggi già mostrato
 
   it('la pagina c\'è e sotto la barra in alto compare la striscia con i giorni rimasti', async () => {
     mount();
