@@ -15,7 +15,7 @@ const EmailConfirmDialog = ({ open, onClose, onConfirmed }) => {
         <EmailCodeForm
           autoFocus
           onConfirmed={onConfirmed}
-          actions={<Button type="button" onClick={onClose} sx={{ minHeight: 44 }}>{t('emailconfirm.later')}</Button>}
+          actions={<Button type="button" onClick={onClose} sx={{ minHeight: 44, fontSize: 16 }}>{t('emailconfirm.later')}</Button>}
         />
       </DialogContent>
     </Dialog>
