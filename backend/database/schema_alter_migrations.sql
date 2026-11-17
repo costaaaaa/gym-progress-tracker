@@ -932,3 +932,54 @@ WHERE e.`id` IS NULL;
 
 ALTER TABLE `gym_workout_history`
   MODIFY COLUMN `exercises` TEXT NULL DEFAULT NULL;
+
+-- ------------------------------------------------------------------------------
+-- 38. Eliminazione di quello che il codice non usa più (#87 e gli avanzi dello schema):
+--     - gym_workout_exercises: sets, warmup_sets, reps e intensity_technique (le serie pianificate
+--       stanno in gym_workout_plan_sets; intensity_technique di gym_workout_sets, le serie
+--       registrate, resta);
+--     - gym_workout_history.exercises (copia JSON dell'allenamento, le serie vere stanno in
+--       gym_workout_sets) e l'indice user_id, ridondante con idx_user_date (la chiave esterna verso
+--       gym_users si appoggia a lui, quindi si toglie solo se idx_user_date c'è);
+--     - la tabella gym_progress, non più usata da nessun codice;
+--     - gym_users.age ed experience_years (i campi age ed experience_years delle risposte sono
+--       calcolati da birth_date e training_start_date e restano) e gym_users.ai_tier, una colonna
+--       aggiunta fuori da queste migrazioni e non più letta da nulla: il livello dell'account è
+--       tier.
+--     Ogni passo controlla information_schema prima di eliminare, quindi la sezione si può
+--     rieseguire anche se si è fermata a metà. Dopo questa sezione il rollback del solo codice a
+--     versioni precedenti non è più possibile.
+-- ------------------------------------------------------------------------------
+
+SET @q = (SELECT IF(COUNT(*) > 0, 'ALTER TABLE `gym_workout_exercises` DROP COLUMN `sets`', 'DO 0') FROM information_schema.columns
+          WHERE table_schema = DATABASE() AND table_name = 'gym_workout_exercises' AND column_name = 'sets');
+PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
+SET @q = (SELECT IF(COUNT(*) > 0, 'ALTER TABLE `gym_workout_exercises` DROP COLUMN `warmup_sets`', 'DO 0') FROM information_schema.columns
+          WHERE table_schema = DATABASE() AND table_name = 'gym_workout_exercises' AND column_name = 'warmup_sets');
+PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
+SET @q = (SELECT IF(COUNT(*) > 0, 'ALTER TABLE `gym_workout_exercises` DROP COLUMN `reps`', 'DO 0') FROM information_schema.columns
+          WHERE table_schema = DATABASE() AND table_name = 'gym_workout_exercises' AND column_name = 'reps');
+PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
+SET @q = (SELECT IF(COUNT(*) > 0, 'ALTER TABLE `gym_workout_exercises` DROP COLUMN `intensity_technique`', 'DO 0') FROM information_schema.columns
+          WHERE table_schema = DATABASE() AND table_name = 'gym_workout_exercises' AND column_name = 'intensity_technique');
+PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
+SET @q = (SELECT IF(COUNT(*) > 0, 'ALTER TABLE `gym_workout_history` DROP COLUMN `exercises`', 'DO 0') FROM information_schema.columns
+          WHERE table_schema = DATABASE() AND table_name = 'gym_workout_history' AND column_name = 'exercises');
+PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
+SET @q = (SELECT IF(COUNT(*) > 0, 'ALTER TABLE `gym_users` DROP COLUMN `ai_tier`', 'DO 0') FROM information_schema.columns
+          WHERE table_schema = DATABASE() AND table_name = 'gym_users' AND column_name = 'ai_tier');
+PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
+SET @q = (SELECT IF(COUNT(*) > 0, 'ALTER TABLE `gym_users` DROP COLUMN `age`', 'DO 0') FROM information_schema.columns
+          WHERE table_schema = DATABASE() AND table_name = 'gym_users' AND column_name = 'age');
+PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
+SET @q = (SELECT IF(COUNT(*) > 0, 'ALTER TABLE `gym_users` DROP COLUMN `experience_years`', 'DO 0') FROM information_schema.columns
+          WHERE table_schema = DATABASE() AND table_name = 'gym_users' AND column_name = 'experience_years');
+PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
+
+-- Indice user_id di gym_workout_history, solo se la chiave esterna ha idx_user_date a cui appoggiarsi
+SET @q = (SELECT IF(COUNT(*) = 2, 'ALTER TABLE `gym_workout_history` DROP INDEX `user_id`', 'DO 0') FROM information_schema.statistics
+          WHERE table_schema = DATABASE() AND table_name = 'gym_workout_history'
+            AND ((index_name = 'user_id' AND seq_in_index = 1) OR (index_name = 'idx_user_date' AND seq_in_index = 1 AND column_name = 'user_id')));
+PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
+
+DROP TABLE IF EXISTS `gym_progress`;
