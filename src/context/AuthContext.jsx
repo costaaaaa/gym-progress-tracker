@@ -51,6 +51,14 @@ export const AuthProvider = ({ children }) => {
     return run;
   }, []);
 
+  // Il promemoria all'apertura dell'app si valuta una volta sola per apertura (per caricamento della pagina)
+  const reminderClaimed = useRef(false);
+  const claimEmailReminder = useCallback(() => {
+    if (reminderClaimed.current) return false;
+    reminderClaimed.current = true;
+    return true;
+  }, []);
+
   const openEmailDialog = useCallback(() => setEmailDialogOpen(true), []);
   const closeEmailDialog = useCallback(() => setEmailDialogOpen(false), []);
 
@@ -191,7 +199,8 @@ export const AuthProvider = ({ children }) => {
     refreshEmailState,
     emailDialogOpen,
     openEmailDialog,
-    closeEmailDialog
+    closeEmailDialog,
+    claimEmailReminder
   };
 
   return (

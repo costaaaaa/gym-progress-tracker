@@ -16,18 +16,9 @@ import { track } from '../../utils/analytics';
 import { currentTimeZone, moveToZoneDay, zoneClock } from '../../utils/workoutTime';
 import i18n from '../../i18n';
 import { unlockedAchievementsText } from './unlockedAchievementsText';
+import { DRAFT_STORAGE_KEY, savedDraftDayId } from '../../utils/focusDraft';
 
-const DRAFT_STORAGE_KEY = 'gym_focus_workout_draft';
-
-// Id del giorno di scheda dell'allenamento salvato su questo browser (la bozza), o null se non c'è.
-// Lo legge la pagina Schede prima di eliminare un giorno.
-export const savedDraftDayId = () => {
-  try {
-    return JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY))?.selectedDayId ?? null;
-  } catch {
-    return null;
-  }
-};
+export { savedDraftDayId };
 
 // Stato e transizioni di Focus Mode (loading -> select_day o resume_prompt -> workout <-> rest_timer -> summary).
 // Restituisce le props di ogni fase, come useFocusSession del mobile.

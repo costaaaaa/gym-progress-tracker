@@ -253,6 +253,19 @@ describe('AuthProvider: stato della conferma email', () => {
     await waitFor(() => expect(stateOf()).toMatchObject({ verified: false, daysLeft: 5 }));
   });
 
+  it('il promemoria si può reclamare una volta sola per apertura dell\'app', () => {
+    backend.mockImplementation(() => Promise.resolve(json(readBody())));
+    const results = [];
+    const Claims = () => {
+      const { claimEmailReminder } = useAuth();
+      return <button onClick={() => results.push(claimEmailReminder())}>reclama</button>;
+    };
+    render(<AuthProvider><Claims /></AuthProvider>);
+    fireEvent.click(screen.getByText('reclama'));
+    fireEvent.click(screen.getByText('reclama'));
+    expect(results).toEqual([true, false]);
+  });
+
   it('la finestra del codice si apre e si chiude dal contesto', async () => {
     backend.mockImplementation(() => Promise.resolve(json(readBody())));
     const Dialog = () => {
