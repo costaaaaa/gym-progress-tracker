@@ -12,10 +12,12 @@ import { mockPointer } from '../test/pointer';
 import { pinLocalClock } from '../test/timeZone';
 import { birthFieldChange } from '../test/birthFieldSpy';
 
-vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
-vi.mock('../context/AuthContext', () => ({
-  useAuth: () => ({ user: null, isLoggedIn: false, loading: false, login: () => {} }),
+const { navigate, auth } = vi.hoisted(() => ({
+  navigate: vi.fn(),
+  auth: { user: null, isLoggedIn: false, loading: false, login: vi.fn(), openEmailDialog: vi.fn() },
 }));
+vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => navigate }));
+vi.mock('../context/AuthContext', () => ({ useAuth: () => auth }));
 
 // Il campo data vero, con l'onChange della data di nascita a portata di test (vedi src/test/birthFieldSpy.js)
 vi.mock('../components/LabeledDatePicker', async (importOriginal) => (
@@ -34,6 +36,9 @@ const fillStep1 = ({ confirm = 'Segreta!2026', confirmLabel = /^Conferma passwor
 };
 
 beforeEach(() => {
+  navigate.mockClear();
+  auth.login.mockClear();
+  auth.openEmailDialog.mockClear();
   vi.stubGlobal('fetch', availability({ username_taken: false, email_taken: false }));
 });
 afterEach(() => {
@@ -450,5 +455,45 @@ describe('conferma password: riga riservata', () => {
     expect(describedBy(field)).toBe("Passwords don't match");
     expect(field.getAttribute('aria-invalid')).toBe('true');
     expect(screen.getByRole('status').textContent).toBe("Passwords don't match");
+  });
+});
+
+
+describe('dopo la registrazione: conferma dell\'email', () => {
+  beforeEach(() => mockPointer(true));
+  const answer = (url, body, status = 200) => ({ ok: status < 400, status, json: async () => body, url });
+  const registerAs = async ({ loginOk = true } = {}) => {
+    fetch.mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes('register.php')) return Promise.resolve(answer(url, { success: true, message: 'ok' }, 201));
+      if (url.includes('login.php')) {
+        return Promise.resolve(loginOk
+          ? answer(url, { success: true, user: { id: 7, username: 'mario88', locale: 'it' } })
+          : answer(url, { success: false }, 401));
+      }
+      return Promise.resolve(answer(url, { success: true, username_taken: false, email_taken: false }));
+    });
+    renderRegister();
+    fillStep1();
+    fireEvent.click(screen.getByRole('button', { name: 'Avanti' }));
+    await screen.findByText('Il tuo profilo');
+    fireEvent.change(screen.getByLabelText(/^Data di nascita/), { target: { value: format(subYears(startOfToday(), 30), 'dd/MM/yyyy') } });
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /Sesso/ }));
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: /Maschio/ }));
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Registrati' }));
+  };
+
+  it('registrazione e accesso riusciti: si apre la finestra del codice e si va comunque alla pagina di arrivo', async () => {
+    await registerAs();
+    await waitFor(() => expect(auth.openEmailDialog).toHaveBeenCalledTimes(1));
+    expect(auth.login).toHaveBeenCalledWith({ id: 7, username: 'mario88', locale: 'it' });
+    expect(navigate).toHaveBeenCalledWith('/');
+  });
+
+  it('se l\'accesso automatico non riesce non apre nulla: si va a «Accedi»', async () => {
+    await registerAs({ loginOk: false });
+    await waitFor(() => expect(screen.getByText(/Registrazione completata/i)).toBeTruthy());
+    expect(auth.openEmailDialog).not.toHaveBeenCalled();
   });
 });
