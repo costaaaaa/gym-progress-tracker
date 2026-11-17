@@ -1086,7 +1086,7 @@
   "emailchange.password": "Password",
   "emailchange.submit": "Change address",
   "emailchange.error_invalid": "Enter a valid email address.",
-  "emailchange.error_taken": "This email is already registered. If it is your address, use \"Forgot password\".",
+  "emailchange.error_taken": "This email is already registered. If it is your address, reset the password to get back in.",
   "emailchange.error_same": "This is already your account's email address.",
   "emailchange.error_password": "Wrong password.",
   "emailchange.error_password_missing": "Enter your password.",

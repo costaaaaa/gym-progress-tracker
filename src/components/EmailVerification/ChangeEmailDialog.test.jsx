@@ -93,7 +93,7 @@ describe('Cambia indirizzo', () => {
     fill();
     submit();
     await waitFor(() => expect(emailField().getAttribute('aria-invalid')).toBe('true'));
-    expect(describedByText(emailField())).toContain('usa "Password dimenticata"');
+    expect(describedByText(emailField())).toContain('reset della password');
     expect(onClose).not.toHaveBeenCalled();
     expect(document.activeElement).toBe(emailField());
   });
