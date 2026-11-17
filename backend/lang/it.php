@@ -40,7 +40,7 @@ return array(
     'register.terms_required' => "Per registrarti devi accettare i termini d'uso e l'informativa privacy.",
     'register.ok' => 'Utente registrato con successo.',
     'register.username_taken' => 'Questo username è già preso.',
-    'register.email_taken' => 'Questa email è già registrata.',
+    'register.email_taken' => 'Questa email è già registrata. Se è il tuo indirizzo, usa "Password dimenticata".',
     'register.check_too_many' => 'Troppi controlli da questo indirizzo. Riprova tra {seconds} secondi.',
     'register.failed' => "Impossibile registrare l'utente. Il nome utente o l'email potrebbero essere già in uso.",
     'register.incomplete' => 'Dati incompleti. Username, email e password sono obbligatori.',
@@ -53,6 +53,49 @@ return array(
         . "abbiamo ricevuto una richiesta per reimpostare la password del tuo account.\n"
         . "Apri questo link entro 1 ora:\n\n{link}\n\n"
         . "Se non l'hai chiesto tu, ignora questa email: la tua password non cambia.\n",
+
+    'email.unverified_blocked' => 'Conferma la tua email per continuare a usare LiftIndex.',
+    'email.code_subject' => 'Il tuo codice per confermare l\'email',
+    'email.code_body' => "Ciao {username},\n\n"
+        . "il tuo codice per confermare l'email è:\n\n{code}\n\n"
+        . "Vale 30 minuti. Scrivilo nell'app o nel sito, dopo aver effettuato l'accesso.\n\n"
+        . "Non ti sei registrato tu? Ignora questa email: l'account verrà eliminato.\n",
+    'email.change_code_subject' => 'Conferma il nuovo indirizzo email',
+    'email.change_code_body' => "Ciao {username},\n\n"
+        . "hai chiesto di usare questo indirizzo per il tuo account LiftIndex. Il codice per confermare l'email è:\n\n{code}\n\n"
+        . "Vale 30 minuti. Scrivilo nell'app o nel sito, dopo aver effettuato l'accesso.\n\n"
+        . "Non l'hai chiesto tu? Ignora questa email: l'indirizzo dell'account non cambia.\n",
+    'email.changed_subject' => "L'indirizzo email del tuo account è cambiato",
+    'email.changed_body' => "Ciao {username},\n\n"
+        . "l'indirizzo email del tuo account LiftIndex è stato cambiato in {new_email}.\n\n"
+        . "Se non sei stato tu, scrivi a info@liftindex.app.\n",
+    'email.notice1_subject' => 'Conferma la tua email su LiftIndex',
+    'email.notice1_body' => "Ciao {username},\n\n"
+        . "non hai ancora confermato l'email del tuo account LiftIndex.\n"
+        . "Se non la confermi, l'account e i suoi dati verranno eliminati dopo il {date}.\n\n"
+        . "Per confermarla, entra nell'app o nel sito e chiedi un codice.\n",
+    'email.notice2_subject' => 'Ultimo avviso: conferma la tua email su LiftIndex',
+    'email.notice2_body' => "Ciao {username},\n\n"
+        . "questo è l'ultimo avviso: non hai ancora confermato l'email del tuo account LiftIndex.\n"
+        . "L'account e i suoi dati verranno eliminati dopo il {date}.\n\n"
+        . "Per confermarla, entra nell'app o nel sito e chiedi un codice.\n",
+    'email.code_missing' => 'Scrivi il codice di 6 cifre che ti abbiamo mandato per email.',
+    'email.code_wrong' => 'Il codice non è corretto. Tentativi rimasti: {left}.',
+    'email.code_wrong_last' => 'Il codice non è corretto e non vale più. Chiedine uno nuovo.',
+    'email.code_expired' => 'Il codice è scaduto o non vale più. Chiedine uno nuovo.',
+    'email.too_many_codes' => 'Troppi codici sbagliati da questo indirizzo. Riprova tra {seconds} secondi.',
+    'email.already_confirmed' => "L'email è già confermata.",
+    'email.resend_wait' => 'Hai già chiesto un codice da poco. Riprova tra {seconds} secondi.',
+    'email.code_sent' => 'Ti abbiamo mandato un codice di 6 cifre per email.',
+    'email.confirmed' => 'Email confermata.',
+    'email.changed' => "L'indirizzo email dell'account è cambiato.",
+    'email.change_same' => "Questo è già l'indirizzo email del tuo account.",
+    'email.change_taken' => 'Questa email è già registrata.',
+    'email.change_taken_late' => "Questo indirizzo è stato preso da un altro account nel frattempo: il cambio è annullato.",
+    'email.change_missing' => 'Servono il nuovo indirizzo email e la password.',
+    'email.wrong_password' => 'Password non corretta.',
+    'email.change_cancelled' => "Cambio di indirizzo annullato.",
+    'email.error' => 'Si è verificato un errore. Riprova.',
 
     'mail.footer' => "--\nRicevi questa email perché hai un account su LiftIndex.\n"
         . "Informativa privacy: {privacy_url}\nContatti: info@liftindex.app\n",

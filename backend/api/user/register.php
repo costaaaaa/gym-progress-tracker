@@ -7,6 +7,8 @@ include_once '../../config/api_helpers.php';
 include_once '../../lib/password_policy.php';
 include_once '../../models/Consent.php';
 include_once '../../models/User.php';
+include_once '../../models/EmailVerification.php';
+include_once '../../lib/email_verification_mail.php';
 
 try {
     $raw_data = file_get_contents("php://input");
@@ -119,6 +121,18 @@ try {
         // Create the user
         if ($user->create()) {
             (new Consent($db))->grant((int)$user->id, 'terms');
+            // L'account nasce non confermato (email_verified_at NULL). Il codice parte dopo la risposta, nella
+            // lingua dell'account: la registrazione riesce anche se l'email non parte.
+            $newId = (int)$user->id;
+            $newEmail = $user->email;
+            $newName = $user->username;
+            $newLang = $user->locale;
+            after_response(function () use ($db, $newId, $newEmail, $newName, $newLang) {
+                $code = (new EmailVerification($db))->issueForRegistration($newId);
+                if ($code !== null) {
+                    email_verification_send_code($newEmail, $newName, $newLang, $code);
+                }
+            });
             http_response_code(201);
             echo json_encode(array(
                 "success" => true,

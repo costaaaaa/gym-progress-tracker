@@ -10,7 +10,8 @@ include_once '../../models/User.php';
 $database = new Database();
 $db = $database->getConnection();
 
-$user_id = require_authenticated_user($db);
+// Dal giorno 8 senza email confermata resta raggiungibile: è una delle uscite
+$user_id = require_authenticated_user($db, ALLOW_UNVERIFIED);
 
 try {
     $raw_data = file_get_contents("php://input");

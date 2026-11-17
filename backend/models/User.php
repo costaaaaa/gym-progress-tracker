@@ -242,6 +242,15 @@ class User
         return password_verify($plain_password, $stored_hash);
     }
 
+    // True se $password è quella dell'utente $user_id (cambio di indirizzo email)
+    public function checkPassword($user_id, $password)
+    {
+        $stmt = $this->conn->prepare("SELECT password, password_legacy FROM " . $this->table_name . " WHERE id = ? LIMIT 1");
+        $stmt->execute([$user_id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row && $this->verifyPassword($password, $row['password'], (bool)$row['password_legacy']);
+    }
+
     // Aggiorna l'hash della password salvato e azzera il flag legacy.
     private function persistPasswordHash($password_hash)
     {
@@ -446,6 +455,18 @@ class User
         // Verifichiamo che la password sia corretta
         if (!$this->verifyPassword($password, $saved_password, (bool)$row['password_legacy'])) {
             error_log("Delete account failed: password is incorrect");
+            return false;
+        }
+
+        return $this->deleteRecords();
+    }
+
+    // Elimina l'account e i suoi dati senza chiedere la password: da chiamare solo dopo aver verificato
+    // la password (deleteAccount) o per la pulizia notturna degli account mai confermati (tools/purge.php).
+    public function deleteRecords()
+    {
+        if (!$this->id) {
+            error_log("Delete account failed: No user ID provided");
             return false;
         }
 
