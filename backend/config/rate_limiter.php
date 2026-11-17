@@ -120,6 +120,9 @@ function rate_limit_rule($name)
         'reset_ip'     => [(int)(getenv('RL_RESET_IP_MAX')     ?: 20), (int)(getenv('RL_RESET_IP_DECAY')     ?: 900)],
         // codici di conferma dell'email sbagliati, per IP (il codice ha 6 cifre e 5 tentativi: argine in più)
         'email_code_ip' => [(int)(getenv('RL_EMAIL_CODE_IP_MAX') ?: 20), (int)(getenv('RL_EMAIL_CODE_IP_DECAY') ?: 900)],
+        // codici di registrazione non utilizzabili (non validi, scaduti, esauriti), per IP: conta solo i fallimenti,
+        // vale per register.php e check_availability.php insieme
+        'signup_code_ip' => [(int)(getenv('RL_SIGNUP_CODE_IP_MAX') ?: 10), (int)(getenv('RL_SIGNUP_CODE_IP_DECAY') ?: 3600)],
         // password attuale (cambio password, cancellazione account): errori per account
         'password_check_user' => [(int)(getenv('RL_PASSWORD_CHECK_MAX') ?: 5), (int)(getenv('RL_PASSWORD_CHECK_DECAY') ?: 900)],
         // gruppi: anteprima e ingresso con codice per IP (anti tentativi sui codici),

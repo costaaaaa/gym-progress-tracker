@@ -20,7 +20,7 @@ $user_id = require_authenticated_user($db, ALLOW_UNVERIFIED);
 // restano com'erano.
 const EXPORT_DATETIME_COLUMNS = array(
     'created_at', 'email_verified_at', 'password_changed_at', 'last_login_at', 'unlocked_at', 'expires_at', 'revoked_at',
-    'granted_at', 'share_consent_at', 'joined_at', 'decided_at',
+    'granted_at', 'share_consent_at', 'joined_at', 'decided_at', 'applied_at',
 );
 
 // Esegue una query con parametri e ritorna tutte le righe
@@ -154,6 +154,10 @@ try {
             "SELECT g.name, g.type, m.role, m.share_level, m.share_consent_at, m.joined_at
              FROM gym_group_members m JOIN gym_groups g ON g.id = m.group_id
              WHERE m.user_id = ? ORDER BY m.joined_at", array($user_id)),
+        // Codice di registrazione usato (null se l'account non ne ha usati): testo, livello, durata, stato, date
+        'signup_code' => (export_rows($db,
+            "SELECT c.code, c.tier, c.duration_days, s.status, s.created_at, s.applied_at
+             FROM gym_signup_code_uses s JOIN gym_signup_codes c ON c.id = s.code_id WHERE s.user_id = ?", array($user_id)) ?: array(null))[0],
         // Segnalazioni fatte dall'utente, con l'esito
         'reports' => export_rows($db,
             "SELECT target, target_label, reason, status, decision_note, decided_at, created_at
