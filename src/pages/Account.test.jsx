@@ -26,7 +26,11 @@ vi.mock('../components/LabeledDatePicker', async (importOriginal) => (
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
 // Lo stesso oggetto a ogni render: la pagina ricarica i dati quando `user` cambia identità.
 vi.mock('../context/AuthContext', () => {
-  const auth = { user: { id: 1 }, isLoggedIn: true, loading: false, logout: () => {}, updateUser: () => {} };
+  const auth = {
+    user: { id: 1 }, isLoggedIn: true, loading: false, logout: () => {}, updateUser: () => {},
+    emailState: { verified: true, email: 'atleta.con.un.indirizzo.lungo@example.com', pendingEmail: null, blocked: false, daysLeft: null },
+    openEmailDialog: () => {}, refreshEmailState: () => Promise.resolve(),
+  };
   return { useAuth: () => auth };
 });
 
@@ -52,6 +56,7 @@ const stubFetch = ({ is_admin = false } = {}) => vi.stubGlobal('fetch', vi.fn((u
     : url.includes('user/read.php') ? json({
       id: 1, username: 'atleta_con_un_nome_molto_lungo', email: 'atleta.con.un.indirizzo.lungo@example.com',
       created_at: '2025-03-01T10:00:00+01:00', is_admin, weekly_goal_default: 3,
+      email_verified: true, email_verification: null, pending_email: null,
     })
       : json({ success: true, consents: [], id: 1, weekly_goal_default: 3 }),
 )));
