@@ -103,9 +103,9 @@ const Uses = ({ uses, page, pages, onPage }) => (
       <Typography sx={{ ...TEXT, color: 'text.secondary' }}>Nessun iscritto.</Typography>
     ) : (
       <Box component="ul" aria-label="Iscritti con questo codice" sx={{ m: 0, p: 0 }}>
-        {/* Il server non manda un id dell'uso: la chiave è registrazione + utente (l'indice solo come spareggio) */}
+        {/* Il server non manda un id dell'uso: la chiave è registrazione + utente; l'indice solo per gli account eliminati (senza nome) */}
         {uses.map((use, i) => (
-          <Box component="li" key={`${use.created_at}|${use.username ?? 'eliminato'}|${i}`} sx={{ listStyle: 'none', py: 1, borderBottom: 1, borderColor: 'divider', display: 'flex', flexWrap: 'wrap', columnGap: 2 }}>
+          <Box component="li" key={use.username ? `${use.created_at}|${use.username}` : `${use.created_at}||${i}`} sx={{ listStyle: 'none', py: 1, borderBottom: 1, borderColor: 'divider', display: 'flex', flexWrap: 'wrap', columnGap: 2 }}>
             <Typography component="span" sx={{ ...TEXT, fontWeight: 600, wordBreak: 'break-word' }}>{use.account_deleted ? 'Account eliminato' : use.username}</Typography>
             <Typography component="span" sx={TEXT}>{USE_STATUS[use.status] ?? use.status}</Typography>
             <Typography component="span" sx={{ ...TEXT, color: 'text.secondary' }}>{`Registrato il ${formatInstant(use.created_at)}`}</Typography>
@@ -196,10 +196,8 @@ const CodeDetail = ({ id, onBack, onDeleted }) => {
       <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, my: 1 }}>
         <Button variant="outlined" onClick={copyLink} sx={BUTTON}>Copia link</Button>
         <Typography role="status" sx={TEXT}>{copy === 'ok' ? 'Link copiato' : copy === 'failed' ? 'Copia non riuscita, copia il link:' : ''}</Typography>
+        {copy === 'failed' && <Typography component="span" sx={{ ...TEXT, wordBreak: 'break-all' }}>{registerLink(code.code)}</Typography>}
       </Box>
-      {copy === 'failed' && (
-        <Typography sx={{ ...TEXT, wordBreak: 'break-all', mb: 1 }}>{registerLink(code.code)}</Typography>
-      )}
 
       {notice && <Alert severity="success" onClose={() => setNotice('')} sx={{ my: 2 }}>{notice}</Alert>}
       {error && <Alert severity="error" sx={{ my: 2 }}>{error}</Alert>}

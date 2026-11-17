@@ -317,6 +317,16 @@ describe('dettaglio', () => {
     expect(screen.getByRole('status').textContent).toBe('Copia non riuscita, copia il link:');
   });
 
+  it('se la copia non riesce, testo e link stanno nella stessa riga del comando (a capo solo se non ci stanno)', async () => {
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: vi.fn(() => Promise.reject(new Error('no'))) }, configurable: true });
+    await open();
+    await openCode('AMICI-90');
+    await click('Copia link');
+    const row = screen.getByRole('button', { name: 'Copia link' }).parentElement;
+    expect(within(row).getByRole('status')).toBeTruthy();
+    expect(within(row).getByText(`${window.location.origin}/register?code=AMICI-90`)).toBeTruthy();
+  });
+
   it('il testo del codice è codificato nel link', async () => {
     const writeText = vi.fn(() => Promise.resolve());
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
