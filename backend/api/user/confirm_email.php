@@ -46,9 +46,10 @@ try {
                     email_verification_send_changed_notice($result['old_email'], $result['username'], $lang, $result['new_email']);
                 });
             }
+            $doneKey = $result['changed'] ? 'email.changed' : 'email.confirmed';
             api_json_response(array(
                 'success' => true,
-                'message' => t_server($result['changed'] ? 'email.changed' : 'email.confirmed'),
+                'message' => t_server($doneKey),
                 'email_verified' => true,
                 'email' => $result['new_email'],
             ));
