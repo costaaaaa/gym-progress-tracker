@@ -143,7 +143,8 @@ export const AuthProvider = ({ children }) => {
       const requestUrl = typeof args[0] === 'string' ? args[0] : (args[0]?.url ?? String(args[0]));
       // Lingua dell'interfaccia per i messaggi del server
       const target = new URL(requestUrl, window.location.origin);
-      if (target.origin === window.location.origin && target.pathname.startsWith(API_BASE_URL)) {
+      const isOurApi = target.origin === window.location.origin && target.pathname.startsWith(API_BASE_URL);
+      if (isOurApi) {
         const [input, init] = args;
         const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
         if (!headers.has('X-Locale')) headers.set('X-Locale', i18n.language);
@@ -164,6 +165,7 @@ export const AuthProvider = ({ children }) => {
       // Scadenza dei 7 giorni passata a pagina aperta: 403 (mai 401), si rilegge lo stato e il layout mostra
       // la schermata di conferma. Non è una sessione scaduta: nessuna uscita.
       if (response.status === 403 &&
+          isOurApi &&
           localStorage.getItem('isLoggedIn') === 'true' &&
           !requestUrl.includes('api/user/read.php')) {
         response.clone().json().then((body) => {

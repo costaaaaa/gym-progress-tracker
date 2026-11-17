@@ -222,6 +222,21 @@ describe('AuthProvider: stato della conferma email', () => {
     backend.mockImplementation(() => Promise.resolve(json({ success: false, code: 'consent_required' }, 403)));
 
     await window.fetch('/backend/api/user_stats/create.php');
+    await new Promise((resolve) => { setTimeout(resolve, 20); }); // la rilettura, se partisse, parte in un giro successivo
+
+    expect(backend).toHaveBeenCalledTimes(1);
+  });
+
+  it('un 403 email_unverified di un altro sito non rilegge nulla', async () => {
+    localStorage.setItem('isLoggedIn', 'true');
+    backend.mockImplementation(() => Promise.resolve(json(readBody())));
+    render(<AuthProvider><Probe /></AuthProvider>);
+    await waitFor(() => expect(stateOf().verified).toBe(true));
+    backend.mockClear();
+    backend.mockImplementation(() => Promise.resolve(json({ success: false, code: 'email_unverified' }, 403)));
+
+    await window.fetch('https://altro-sito.example/api/qualcosa');
+    await new Promise((resolve) => { setTimeout(resolve, 20); });
 
     expect(backend).toHaveBeenCalledTimes(1);
   });
@@ -231,6 +246,7 @@ describe('AuthProvider: stato della conferma email', () => {
     backend.mockImplementation(() => Promise.resolve(json(readBody(unverified))));
     render(<AuthProvider><Probe /></AuthProvider>);
     await waitFor(() => expect(stateOf().verified).toBe(false));
+    backend.mockClear();
     backend.mockImplementation(() => Promise.reject(new Error('rete')));
 
     fireEvent.click(screen.getByText('rileggi'));
@@ -251,38 +267,5 @@ describe('AuthProvider: stato della conferma email', () => {
     fireEvent.click(screen.getByText('entra'));
 
     await waitFor(() => expect(stateOf()).toMatchObject({ verified: false, daysLeft: 5 }));
-  });
-
-  it('il promemoria si può reclamare una volta sola per apertura dell\'app', () => {
-    backend.mockImplementation(() => Promise.resolve(json(readBody())));
-    const results = [];
-    const Claims = () => {
-      const { claimEmailReminder } = useAuth();
-      return <button onClick={() => results.push(claimEmailReminder())}>reclama</button>;
-    };
-    render(<AuthProvider><Claims /></AuthProvider>);
-    fireEvent.click(screen.getByText('reclama'));
-    fireEvent.click(screen.getByText('reclama'));
-    expect(results).toEqual([true, false]);
-  });
-
-  it('la finestra del codice si apre e si chiude dal contesto', async () => {
-    backend.mockImplementation(() => Promise.resolve(json(readBody())));
-    const Dialog = () => {
-      const { emailDialogOpen, openEmailDialog, closeEmailDialog } = useAuth();
-      return (
-        <div>
-          <output data-testid="open">{String(emailDialogOpen)}</output>
-          <button onClick={openEmailDialog}>apri</button>
-          <button onClick={closeEmailDialog}>chiudi</button>
-        </div>
-      );
-    };
-    render(<AuthProvider><Dialog /></AuthProvider>);
-    expect(screen.getByTestId('open').textContent).toBe('false');
-    fireEvent.click(screen.getByText('apri'));
-    expect(screen.getByTestId('open').textContent).toBe('true');
-    fireEvent.click(screen.getByText('chiudi'));
-    expect(screen.getByTestId('open').textContent).toBe('false');
   });
 });

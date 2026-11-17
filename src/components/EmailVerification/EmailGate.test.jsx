@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import EmailGate from './EmailGate';
 import EmailStrip from './EmailStrip';
+import { textBelow } from '../../test/minText';
 import { DRAFT_STORAGE_KEY } from '../../utils/focusDraft';
 
 const auth = {};
@@ -39,15 +40,27 @@ const today = () => {
 describe('striscia', () => {
   const strip = () => render(<EmailStrip />);
 
+  // Mezzogiorno locale di oggi o di domani: il giorno della scadenza non dipende dall'ora in cui gira il test
+  const noon = (dayOffset) => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate() + dayOffset, 12).toISOString();
+  };
+
   it.each([
-    [5, 'Conferma la tua email: ti restano 5 giorni.'],
-    [2, 'Conferma la tua email: ti restano 2 giorni.'],
-    [1, 'Conferma la tua email: scade oggi.'],
-    [0, 'Conferma la tua email: scade oggi.'],
-  ])('con %i giorni rimasti dice «%s»', (daysLeft, text) => {
-    auth.emailState = state({ daysLeft });
+    ['5 giorni rimasti', 5, 5, 'Conferma la tua email: ti restano 5 giorni.'],
+    ['2 giorni rimasti', 2, 2, 'Conferma la tua email: ti restano 2 giorni.'],
+    ['1 giorno rimasto e scadenza domani', 1, 1, 'Conferma la tua email: ti resta 1 giorno.'],
+    ['1 giorno rimasto e scadenza oggi', 1, 0, 'Conferma la tua email: scade oggi.'],
+    ['0 giorni e scadenza oggi', 0, 0, 'Conferma la tua email: scade oggi.'],
+  ])('con %s dice «%s»', (_name, daysLeft, dayOffset, text) => {
+    auth.emailState = state({ daysLeft, deadline: noon(dayOffset) });
     strip();
     expect(screen.getByText(text)).toBeTruthy();
+  });
+
+  it('nessun testo della striscia è sotto i 16px', () => {
+    const { container } = strip();
+    expect(textBelow(container, 16)).toEqual([]);
   });
 
   it('il comando apre la finestra del codice', () => {
@@ -89,6 +102,28 @@ describe('promemoria del giorno', () => {
     localStorage.setItem('lx_email_reminder_7', today());
     mountGate();
     expect(auth.openEmailDialog).not.toHaveBeenCalled();
+  });
+
+  it('se localStorage lancia in lettura vale come già mostrato oggi: non si apre e non si rompe', () => {
+    const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('negato'); });
+    try {
+      expect(() => mountGate()).not.toThrow();
+      expect(auth.openEmailDialog).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('se localStorage lancia in scrittura la finestra si mostra lo stesso', () => {
+    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('pieno'); });
+    try {
+      const view = mountGate();
+      expect(auth.openEmailDialog).toHaveBeenCalledTimes(1);
+      expect(() => view.rerender(<EmailGate />)).not.toThrow();
+      expect(dialog()).toBeTruthy();
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('il giorno dopo si apre di nuovo', () => {

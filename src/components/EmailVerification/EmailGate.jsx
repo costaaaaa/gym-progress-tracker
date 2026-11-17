@@ -10,6 +10,23 @@ import EmailConfirmDialog from './EmailConfirmDialog';
 const reminderKey = (userId) => `lx_email_reminder_${userId}`;
 const localDay = () => format(new Date(), 'yyyy-MM-dd');
 
+// localStorage può lanciare (modalità privata, spazio pieno, accesso negato): la scrittura si ignora e, se la
+// lettura fallisce, il promemoria vale come già mostrato oggi (meglio un promemoria in meno che uno a ogni apertura)
+const shownToday = (userId) => {
+  try {
+    return localStorage.getItem(reminderKey(userId)) === localDay();
+  } catch {
+    return true;
+  }
+};
+const markShownToday = (userId) => {
+  try {
+    localStorage.setItem(reminderKey(userId), localDay());
+  } catch {
+    // niente da fare: vale la lettura
+  }
+};
+
 // Montato una volta sola nel layout, fuori dalla pagina. Tiene:
 //  - la finestra del codice (aperta dal contesto: registrazione, striscia, Account, promemoria);
 //  - il promemoria all'apertura dell'app, al massimo una volta per giorno e mai su un allenamento Focus in corso;
@@ -26,7 +43,7 @@ const EmailGate = () => {
 
   // Ogni volta che la finestra è davanti all'utente (anche aperta da lui) conta come mostrata oggi
   useEffect(() => {
-    if (dialogOpen && userId) localStorage.setItem(reminderKey(userId), localDay());
+    if (dialogOpen && userId) markShownToday(userId);
   }, [dialogOpen, userId]);
 
   // Promemoria: si valuta una volta per apertura dell'app, appena lo stato è noto
@@ -34,7 +51,7 @@ const EmailGate = () => {
     if (!isLoggedIn || !userId || !emailState || emailState.verified || emailState.blocked) return;
     if (!claimEmailReminder()) return;
     if (hasFocusSessionInProgress()) return; // rimandato all'apertura successiva
-    if (localStorage.getItem(reminderKey(userId)) === localDay()) return;
+    if (shownToday(userId)) return;
     openEmailDialog();
   }, [isLoggedIn, userId, emailState, claimEmailReminder, openEmailDialog]);
 
