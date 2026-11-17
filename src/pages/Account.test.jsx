@@ -57,6 +57,7 @@ const stubFetch = ({ is_admin = false } = {}) => vi.stubGlobal('fetch', vi.fn((u
       id: 1, username: 'atleta_con_un_nome_molto_lungo', email: 'atleta.con.un.indirizzo.lungo@example.com',
       created_at: '2025-03-01T10:00:00+01:00', is_admin, weekly_goal_default: 3,
       email_verified: true, email_verification: null, pending_email: null,
+      tier: 'free', tier_until: null, tier_last_day: null, signup_code: null,
     })
       : json({ success: true, consents: [], id: 1, weekly_goal_default: 3 }),
 )));

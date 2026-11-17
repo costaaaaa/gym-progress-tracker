@@ -56,6 +56,7 @@ import useConfirmPassword from '../hooks/useConfirmPassword';
 import ConfirmPasswordField from '../components/Auth/ConfirmPasswordField';
 import { loginWithNext } from '../utils/safeNext';
 import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
+import AccountTier from '../components/Account/AccountTier';
 import PasswordToggle from '../components/Auth/PasswordToggle';
 import ButtonSpinner from '../components/ButtonSpinner';
 import DeleteAccountDialog from '../components/Account/DeleteAccountDialog';
@@ -252,7 +253,10 @@ const Account = ({ isEmbedded = false }) => {
         email: userDetails.email,
         created_at: userDetails.created_at,
         password_changed_at: userDetails.password_changed_at,
-        is_admin: userDetails.is_admin === true
+        is_admin: userDetails.is_admin === true,
+        tier: userDetails.tier,
+        tier_last_day: userDetails.tier_last_day,
+        signup_code: userDetails.signup_code
       });
 
       // Impostazione dati profilo
@@ -546,6 +550,7 @@ const Account = ({ isEmbedded = false }) => {
             <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
               {t('account.member_since', { date: joinDate ? format(joinDate, 'MMMM yyyy', { locale: dateFnsLocale() }) : t('account.date_unavailable') })}
             </Typography>
+            <AccountTier tier={userData?.tier} lastDay={userData?.tier_last_day} signupCode={userData?.signup_code} />
           </Box>
         </Box>
 
