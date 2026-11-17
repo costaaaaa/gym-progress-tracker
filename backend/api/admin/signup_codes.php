@@ -13,11 +13,12 @@
 //   POST {action: update, id, max_uses?, last_day?, enabled?, assignee?, tier?, duration_days?, confirm_forever?, code?}
 //        max_uses (qualsiasi valore >= posti occupati), last_day, enabled e assignee sempre; tier, duration_days
 //        e code solo finché il codice non ha usi (lo stesso valore di prima è sempre ammesso). Solo i campi presenti cambiano.
-//   POST {action: delete, id}    solo un codice senza usi
+//   POST {action: delete, id}    solo un codice senza usi (applied o con l'account ancora presente); gli usi rimasti senza
+//                                utente e mai applicati si cancellano insieme al codice
 //
 // Ogni codice: id, code, tier, duration_days (null = per sempre), forever, max_uses, last_day (null = non scade),
 // expired, enabled, assignee, seats_taken (posti occupati), registered (tutti gli usi), confirmed (applied),
-// missed, created_at. Errori: {success:false, code, message}.
+// missed, created_at, updated_at. Errori: {success:false, code, message}.
 include_once __DIR__ . '/../../config/cors_headers.php';
 include_once __DIR__ . '/../../config/database.php';
 include_once __DIR__ . '/../../config/api_helpers.php';
@@ -45,7 +46,7 @@ function signup_admin_rows($db, array $codes): array
 {
     $ids = array_map(function ($c) { return (int)$c['id']; }, $codes);
     $counts = array();
-    $seatUses = array();
+    $seatUses = SignupCode::seatUses($db, $ids);
     if ($ids) {
         $in = implode(',', array_fill(0, count($ids), '?'));
         $stmt = $db->prepare("SELECT code_id, COUNT(*) AS registered, SUM(status = 'applied') AS confirmed, SUM(status = 'missed') AS missed
@@ -54,16 +55,8 @@ function signup_admin_rows($db, array $codes): array
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
             $counts[(int)$r['code_id']] = $r;
         }
-        $stmt = $db->prepare("SELECT s.code_id, s.status, g.id IS NOT NULL AS user_exists, UNIX_TIMESTAMP(g.created_at) AS created_ts
-                              FROM gym_signup_code_uses s LEFT JOIN gym_users g ON g.id = s.user_id
-                              WHERE s.code_id IN ($in) AND (s.status = 'applied' OR (s.status = 'pending' AND s.user_id IS NOT NULL))");
-        $stmt->execute($ids);
-        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
-            $seatUses[(int)$r['code_id']][] = array('status' => $r['status'], 'user_exists' => (int)$r['user_exists'] === 1,
-                'user_created_ts' => $r['created_ts'] === null ? null : (int)$r['created_ts']);
-        }
     }
-    $nowTs = (int)$db->query("SELECT UNIX_TIMESTAMP()")->fetchColumn();
+    $nowTs = SignupCode::dbNow($db);
     $nowUtc = gmdate('Y-m-d H:i:s', $nowTs);
     return array_map(function ($c) use ($counts, $seatUses, $nowTs, $nowUtc) {
         $id = (int)$c['id'];
@@ -83,11 +76,12 @@ function signup_admin_rows($db, array $codes): array
             'confirmed' => (int)($counts[$id]['confirmed'] ?? 0),
             'missed' => (int)($counts[$id]['missed'] ?? 0),
             'created_at' => server_time_iso($c['created_at']),
+            'updated_at' => server_time_iso($c['updated_at']),
         );
     }, $codes);
 }
 
-const SIGNUP_CODE_COLUMNS = 'id, code, tier, duration_days, max_uses, expires_at, enabled, assignee, created_at';
+const SIGNUP_CODE_COLUMNS = 'id, code, tier, duration_days, max_uses, expires_at, enabled, assignee, created_at, updated_at';
 
 // Numero intero positivo da JSON: int, oppure stringa di sole cifre
 function signup_admin_int($v): ?int
@@ -124,7 +118,7 @@ function signup_admin_last_day($raw, string $nowUtc): array
     if (!is_string($raw)) {
         return array('error' => 'Data non valida (formato AAAA-MM-GG).');
     }
-    $r = tierSetUntil('plus', $raw, $nowUtc);
+    $r = tierUntilFromDay($raw, $nowUtc);
     return isset($r['error']) ? array('error' => $r['error']) : array('expires_at' => $r['until']);
 }
 
@@ -268,7 +262,9 @@ try {
         if (!$code) {
             signup_admin_fail($db, 404, 'code_not_found', 'Codice non trovato.');
         }
-        $usesCount = $db->prepare("SELECT COUNT(*) FROM gym_signup_code_uses WHERE code_id = ?");
+        // Un codice «usato» ha un uso applied o un uso con l'account ancora lì: i pending e i missed rimasti senza
+        // utente (account eliminato prima della conferma) non contano
+        $usesCount = $db->prepare("SELECT COUNT(*) FROM gym_signup_code_uses WHERE code_id = ? AND (status = 'applied' OR user_id IS NOT NULL)");
         $usesCount->execute([$id]);
         $hasUses = (int)$usesCount->fetchColumn() > 0;
 
@@ -276,6 +272,7 @@ try {
             if ($hasUses) {
                 signup_admin_fail($db, 409, 'code_has_uses', 'Un codice già usato non si elimina: spegnilo.');
             }
+            $db->prepare("DELETE FROM gym_signup_code_uses WHERE code_id = ? AND user_id IS NULL AND status <> 'applied'")->execute([$id]);
             $db->prepare("DELETE FROM gym_signup_codes WHERE id = ?")->execute([$id]);
             $db->commit();
             api_json_response(array('success' => true));
@@ -319,7 +316,7 @@ try {
             $params[] = $assignee['assignee'];
         }
         // Livello, durata e testo: solo finché il codice non ha usi (il valore invariato è sempre ammesso)
-        $locked = function ($field) use ($db, $hasUses) {
+        $rejectIfUsed = function ($field) use ($db, $hasUses) {
             if ($hasUses) {
                 signup_admin_fail($db, 409, 'code_has_uses', "Dopo il primo uso $field non si cambia.");
             }
@@ -328,18 +325,20 @@ try {
             if (!is_string($data['tier']) || !in_array($data['tier'], SIGNUP_TIERS, true)) {
                 signup_admin_fail($db, 400, 'invalid_tier', 'Livello non valido (plus o pro).');
             }
-            $locked('il livello');
+            $rejectIfUsed('il livello');
             $set[] = 'tier = ?';
             $params[] = $data['tier'];
         }
         if (array_key_exists('duration_days', $data)) {
-            $duration = signup_admin_duration($data['duration_days'], $data['confirm_forever'] ?? null);
+            $current = $code['duration_days'] === null ? null : (int)$code['duration_days'];
+            // già per sempre e rimandato vuoto: nulla cambia, niente conferma
+            $sameForever = $current === null && ($data['duration_days'] === null || $data['duration_days'] === '');
+            $duration = $sameForever ? array('days' => null) : signup_admin_duration($data['duration_days'], $data['confirm_forever'] ?? null);
             if (isset($duration['error'])) {
                 signup_admin_fail($db, 400, $duration['error'][0], $duration['error'][1]);
             }
-            $current = $code['duration_days'] === null ? null : (int)$code['duration_days'];
             if ($duration['days'] !== $current) {
-                $locked('la durata');
+                $rejectIfUsed('la durata');
                 $set[] = 'duration_days = ?';
                 $params[] = $duration['days'];
             }
@@ -350,7 +349,7 @@ try {
                 signup_admin_fail($db, 400, 'invalid_code', 'Codice non valido: da ' . SIGNUP_CODE_MIN_LENGTH . ' a ' . SIGNUP_CODE_MAX_LENGTH . ' caratteri tra lettere, cifre e trattino.');
             }
             if ($newCode !== $code['code']) {
-                $locked('il testo del codice');
+                $rejectIfUsed('il testo del codice');
                 $set[] = 'code = ?';
                 $params[] = $newCode;
             }

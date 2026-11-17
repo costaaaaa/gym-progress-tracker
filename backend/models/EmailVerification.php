@@ -24,16 +24,18 @@ class EmailVerification
     // riapplica nulla. Ritorna l'esito del codice di registrazione o null.
     public static function markVerified($conn, $user_id, $only_if_unverified = false)
     {
-        $was = $conn->prepare("SELECT email_verified_at IS NULL FROM gym_users WHERE id = ? FOR UPDATE");
+        $was = $conn->prepare("SELECT email_verified_at IS NULL AS unverified, tier, tier_until, UNIX_TIMESTAMP(created_at) AS created_ts
+                               FROM gym_users WHERE id = ? FOR UPDATE");
         $was->execute([$user_id]);
-        $wasUnverified = (int)$was->fetchColumn() === 1;
+        $row = $was->fetch(PDO::FETCH_ASSOC);
+        $wasUnverified = $row !== false && (int)$row['unverified'] === 1;
         if ($only_if_unverified && !$wasUnverified) {
             return null;
         }
         $conn->prepare(
             "UPDATE gym_users SET email_verified_at = NOW(), unverified_notice_stage = 0, unverified_notice_at = NULL WHERE id = ?"
         )->execute([$user_id]);
-        return $wasUnverified ? SignupCode::applyOnConfirm($conn, $user_id) : null;
+        return $wasUnverified ? SignupCode::applyOnConfirm($conn, $user_id, $row) : null;
     }
 
     // Registrazione: crea il primo codice e lo ritorna in chiaro (null se l'utente non c'è più).

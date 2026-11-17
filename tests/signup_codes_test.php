@@ -9,6 +9,7 @@ $backend = $argv[1];
 require $backend . '/config/database.php';
 require __DIR__ . '/lib/http_test.php';
 require __DIR__ . '/lib/server_test.php';
+require $backend . '/lib/signup_code_rules.php';
 
 const PASSWORD = 'Prova!Codici2026';
 const PORT_A = 8097;  // limiti per IP alti, 4 processi
@@ -105,6 +106,12 @@ function romeLastDay($days)
 {
     return (new DateTimeImmutable('now', new DateTimeZone('Europe/Rome')))->modify("+$days days")->format('Y-m-d');
 }
+// Ultimo giorno atteso di un codice di $days giorni applicato all'utente: ricavato dall'istante salvato
+// (applied_at) con la regola pura, non dall'orologio del test (a mezzanotte italiana i due divergerebbero)
+function appliedLastDay($userId, $days)
+{
+    return signupCodeLastDay($days, (int)scalar("SELECT UNIX_TIMESTAMP(applied_at) FROM gym_signup_code_uses WHERE user_id = ?", [$userId]));
+}
 // tier_until atteso (UTC) di un ultimo giorno italiano: il giorno dopo alle 00:00 italiane
 function untilOfLastDay($lastDay)
 {
@@ -156,20 +163,20 @@ function orphans()
     }
     return $total;
 }
-// Registrazioni contemporanee in processi veri: ogni corpo parte da un processo PHP a sé, tutti allo stesso istante.
+// Richieste POST contemporanee in processi veri (registrazioni, conferme; $auths = token Bearer per corpo): ogni corpo parte da un processo PHP a sé, tutti allo stesso istante.
 // Ritorna [[codice HTTP, JSON], ...]
-function parallelRegister(array $bodies, $port = PORT_A)
+function parallelPost($path, array $bodies, array $auths = [], $port = PORT_A)
 {
     $script = '/tmp/sc-par.php';
     file_put_contents($script, '<?php $t = (float)$argv[1]; while (microtime(true) < $t) usleep(200);
-        $c = stream_context_create(["http" => ["method" => "POST", "header" => "Content-Type: application/json\r\n", "content" => $argv[3], "ignore_errors" => true, "timeout" => 30]]);
-        $r = file_get_contents("http://127.0.0.1:" . $argv[2] . "/api/user/register.php", false, $c);
+        $c = stream_context_create(["http" => ["method" => "POST", "header" => "Content-Type: application/json\r\n" . $argv[5], "content" => $argv[3], "ignore_errors" => true, "timeout" => 30]]);
+        $r = file_get_contents("http://127.0.0.1:" . $argv[2] . $argv[4], false, $c);
         $h = function_exists("http_get_last_response_headers") ? http_get_last_response_headers() : ($http_response_header ?? []);
         preg_match("/ (\d{3})/", $h[0] ?? "", $m); echo ($m[1] ?? 0), " ", $r;');
     $start = microtime(true) + 1.0;
     $procs = [];
     foreach ($bodies as $i => $b) {
-        $procs[$i] = proc_open(['php', $script, (string)$start, (string)$port, json_encode($b)], [1 => ['pipe', 'w'], 2 => ['file', '/dev/null', 'w']], $pipes[$i]);
+        $procs[$i] = proc_open(['php', $script, (string)$start, (string)$port, json_encode($b), $path, isset($auths[$i]['bearer']) ? "Authorization: Bearer {$auths[$i]['bearer']}\r\n" : ''], [1 => ['pipe', 'w'], 2 => ['file', '/dev/null', 'w']], $pipes[$i]);
     }
     $out = [];
     foreach ($procs as $i => $p) {
@@ -243,10 +250,11 @@ $r = admPost(['action' => 'create', 'code' => 'bad-day', 'tier' => 'plus', 'dura
 check('data malformata: 400 invalid_date', $r[0] === 400 && $r[1]['code'] === 'invalid_date', $r[2]);
 $r = admPost(['action' => 'create', 'code' => 'long-assignee', 'tier' => 'plus', 'duration_days' => 30, 'max_uses' => 1, 'assignee' => str_repeat('x', 101)]);
 check('assegnatario troppo lungo: 400 invalid_assignee', $r[0] === 400 && $r[1]['code'] === 'invalid_assignee', $r[2]);
-$c = mk('with-last-day', 'plus', 30, 1, ['last_day' => romeLastDay(10)]);
+$ld10 = romeLastDay(10);
+$c = mk('with-last-day', 'plus', 30, 1, ['last_day' => $ld10]);
 check('last_day: salvato in ora italiana, expires_at = giorno dopo 00:00 italiane (UTC), non scaduto',
-    $c['last_day'] === romeLastDay(10) && $c['expired'] === false
-    && scalar("SELECT expires_at FROM gym_signup_codes WHERE code = 'WITH-LAST-DAY'") === untilOfLastDay(romeLastDay(10)), json_encode($c));
+    $c['last_day'] === $ld10 && $c['expired'] === false
+    && scalar("SELECT expires_at FROM gym_signup_codes WHERE code = 'WITH-LAST-DAY'") === untilOfLastDay($ld10), json_encode($c));
 check('azione sconosciuta: 400', admPost(['action' => 'boh'])[0] === 400);
 
 // ═══ Registrazione con codice ════════════════════════════════════════════════════════════════════
@@ -358,7 +366,7 @@ $allOneWinner = true;
 $detail = '';
 for ($round = 1; $round <= 4; $round++) {
     mk("gara-$round", 'plus', 30, 1);
-    $res = parallelRegister([regBody("scgara{$round}a", "gara-$round"), regBody("scgara{$round}b", "gara-$round"), regBody("scgara{$round}c", "GARA-$round")]);
+    $res = parallelPost('/api/user/register.php', [regBody("scgara{$round}a", "gara-$round"), regBody("scgara{$round}b", "gara-$round"), regBody("scgara{$round}c", "GARA-$round")]);
     $codes = array_map(function ($x) { return $x[0]; }, $res);
     sort($codes);
     $users = userCount("scgara{$round}a") + userCount("scgara{$round}b") + userCount("scgara{$round}c");
@@ -374,15 +382,16 @@ check('4 giri con 3 registrazioni sull\'ultimo posto: una sola passa (201), le a
 // ═══ Conferma dell'email ═════════════════════════════════════════════════════════════════════════
 echo "Conferma entro i 7 giorni\n";
 $r = confirm('scmario1', $m1Auth);
-check('200 con signup_code {status applied, tier plus, tier_last_day = oggi italiano + 90}', $r[0] === 200 && $r[1]['signup_code'] === ['status' => 'applied', 'tier' => 'plus', 'tier_last_day' => romeLastDay(90)], $r[2]);
-check('il messaggio dice che il codice è attivo', strpos($r[1]['message'], 'codice di registrazione è attivo') !== false, $r[2]);
+$ld90 = appliedLastDay($m1, 90);
+check('200 con signup_code {status applied, tier plus, tier_last_day = giorno di applied_at + 90}', $r[0] === 200 && $r[1]['signup_code'] === ['status' => 'applied', 'tier' => 'plus', 'tier_last_day' => $ld90], $r[2]);
+check('il messaggio dice il livello dell\'account e fino a quando', $r[1]['message'] === 'Email confermata. Hai il livello Plus fino al ' . (new DateTimeImmutable($ld90))->format('d/m/Y') . '.', $r[2]);
 $t = tierRow($m1);
-check('livello Plus con tier_until = giorno dopo l\'ultimo, 00:00 italiane (UTC)', $t['tier'] === 'plus' && $t['tier_until'] === untilOfLastDay(romeLastDay(90)), json_encode($t));
+check('livello Plus con tier_until = giorno dopo l\'ultimo, 00:00 italiane (UTC)', $t['tier'] === 'plus' && $t['tier_until'] === untilOfLastDay($ld90), json_encode($t));
 $u = useRow($m1);
 check('uso applied con applied_at', $u['status'] === 'applied' && $u['applied_at'] !== null);
 $read = api('GET', '/api/user/read.php', $m1Auth);
-check('read.php: Plus, tier_until ISO UTC, tier_last_day, signup_code applied', $read[1]['tier'] === 'plus' && $read[1]['tier_last_day'] === romeLastDay(90)
-    && $read[1]['tier_until'] === str_replace(' ', 'T', untilOfLastDay(romeLastDay(90))) . 'Z' && $read[1]['signup_code']['status'] === 'applied', $read[2]);
+check('read.php: Plus, tier_until ISO UTC, tier_last_day, signup_code applied', $read[1]['tier'] === 'plus' && $read[1]['tier_last_day'] === $ld90
+    && $read[1]['tier_until'] === str_replace(' ', 'T', untilOfLastDay($ld90)) . 'Z' && $read[1]['signup_code']['status'] === 'applied', $read[2]);
 check('admin: confermati 1', admGet('?id=' . codeId('mario-plus'))[1]['code']['confirmed'] === 1);
 $exp = api('GET', '/api/user/export.php', $m1Auth);
 check('esportazione: codice, livello, durata, stato e date (ISO con offset)', $exp[0] === 200 && ($exp[1]['signup_code']['code'] ?? '') === 'MARIO-PLUS'
@@ -392,6 +401,7 @@ check('esportazione: codice, livello, durata, stato e date (ISO con offset)', $e
 [$pf, $pfAuth] = newAccount('scpro1', 'pro-forever');
 $r = confirm('scpro1', $pfAuth);
 check('Pro per sempre: applied, tier_last_day null', $r[0] === 200 && $r[1]['signup_code'] === ['status' => 'applied', 'tier' => 'pro', 'tier_last_day' => null], $r[2]);
+check('il messaggio dice il livello senza scadenza', $r[1]['message'] === 'Email confermata. Hai il livello Pro, senza scadenza.', $r[2]);
 check('livello Pro senza scadenza', tierRow($pf) === ['tier' => 'pro', 'tier_until' => null]);
 $read = api('GET', '/api/user/read.php', $pfAuth);
 check('read.php: Pro, tier_until null, tier_last_day null', $read[1]['tier'] === 'pro' && $read[1]['tier_until'] === null && $read[1]['tier_last_day'] === null, $read[2]);
@@ -402,7 +412,7 @@ mk('si-spegne', 'plus', 30, 3);
 admPost(['action' => 'update', 'id' => codeId('si-spegne'), 'enabled' => false]);
 $r = confirm('scoff1', $off1Auth);
 check('spento nel frattempo: missed, l\'email risulta confermata, tier_last_day null', $r[0] === 200 && $r[1]['email_verified'] === true && $r[1]['signup_code']['status'] === 'missed'
-    && $r[1]['signup_code']['tier_last_day'] === null, $r[2]);
+    && $r[1]['signup_code']['tier'] === 'plus' && $r[1]['signup_code']['tier_last_day'] === null, $r[2]);
 check('il messaggio dice che il codice non si può più usare', strpos($r[1]['message'], 'resta Gratis') !== false, $r[2]);
 check('resta Gratis, uso missed senza applied_at', tierRow($off1)['tier'] === 'free' && useRow($off1)['status'] === 'missed' && useRow($off1)['applied_at'] === null);
 $read = api('GET', '/api/user/read.php', $off1Auth);
@@ -435,7 +445,7 @@ mk('dopo-sette-libero', 'plus', 5, 5);
 age($b1, 8);
 $r = confirm('scdopob1', $b1Auth);
 check('dopo 7 giorni con un posto libero e il codice acceso: applied', $r[0] === 200 && $r[1]['signup_code']['status'] === 'applied' && tierRow($b1)['tier'] === 'plus'
-    && $r[1]['signup_code']['tier_last_day'] === romeLastDay(5), $r[2]);
+    && $r[1]['signup_code']['tier_last_day'] === appliedLastDay($b1, 5), $r[2]);
 
 mk('dopo-sette-scaduto', 'plus', 5, 5);
 [$c1, $c1Auth] = newAccount('scdopoc1', 'dopo-sette-scaduto');
@@ -450,6 +460,29 @@ age($d1, 8);
 admPost(['action' => 'update', 'id' => codeId('dopo-sette-spento'), 'enabled' => false]);
 $r = confirm('scdopod1', $d1Auth);
 check('dopo 7 giorni con il codice spento: missed', $r[1]['signup_code']['status'] === 'missed', $r[2]);
+
+echo "Due conferme tardive sull'ultimo posto libero (processi veri)\n";
+$lateOk = true;
+$lateDetail = '';
+for ($round = 1; $round <= 3; $round++) {
+    mk("tardive-$round", 'plus', 30, 2);
+    [$lx, $lxAuth] = newAccount("sclate{$round}x", "tardive-$round");
+    confirm("sclate{$round}x", $lxAuth);
+    [$ly, $lyAuth] = newAccount("sclate{$round}y", "tardive-$round");
+    age($ly, 8);
+    [$lz, $lzAuth] = newAccount("sclate{$round}z", "tardive-$round");
+    age($lz, 8);
+    $res = parallelPost('/api/user/confirm_email.php', [['code' => lastCode("sclate{$round}y@example.test")], ['code' => lastCode("sclate{$round}z@example.test")]], [$lyAuth, $lzAuth]);
+    $st = array_map(function ($x) { return $x[0] === 200 ? ($x[1]['signup_code']['status'] ?? '?') : "http{$x[0]}"; }, $res);
+    sort($st);
+    $applied = (int)scalar("SELECT COUNT(*) FROM gym_signup_code_uses WHERE code_id = ? AND status = 'applied'", [codeId("tardive-$round")]);
+    $plus = (int)scalar("SELECT COUNT(*) FROM gym_users WHERE id IN (?, ?) AND tier = 'plus'", [$ly, $lz]);
+    if ($st !== ['applied', 'missed'] || $applied !== 2 || $plus !== 1) {
+        $lateOk = false;
+        $lateDetail .= " giro $round: " . json_encode($res);
+    }
+}
+check('3 giri: due conferme oltre i 7 giorni sull\'ultimo posto: una applied, l\'altra missed; in tutto 2 posti presi e un solo Plus tra i due', $lateOk, $lateDetail);
 
 echo "Posti e account eliminati\n";
 mk('elimina-pending', 'plus', 30, 1);
@@ -490,7 +523,7 @@ sql("INSERT INTO gym_password_resets (user_id, token_hash, expires_at) VALUES (?
 $r = api('POST', '/api/user/reset_password.php', null, ['token' => $token, 'new_password' => 'Nuova!Password2026']);
 check('recupero password completato: 200', $r[0] === 200, $r[2]);
 $t = tierRow($h1);
-check('applica il codice: Pro per 20 giorni, uso applied', $t['tier'] === 'pro' && $t['tier_until'] === untilOfLastDay(romeLastDay(20)) && useRow($h1)['status'] === 'applied', json_encode($t));
+check('applica il codice: Pro per 20 giorni, uso applied', $t['tier'] === 'pro' && $t['tier_until'] === untilOfLastDay(appliedLastDay($h1, 20)) && useRow($h1)['status'] === 'applied', json_encode($t));
 // Un account già confermato che fa il recupero non riapplica nulla
 $token2 = bin2hex(random_bytes(32));
 sql("UPDATE gym_users SET tier = 'free', tier_until = NULL WHERE id = ?", [$h1]);
@@ -516,7 +549,39 @@ mk('migliore', 'plus', 30, 3);
 sql("UPDATE gym_users SET tier = 'pro', tier_until = NULL WHERE id = ?", [$j1]);
 $r = confirm('scbest1', $j1Auth);
 check('già Pro per sempre: resta Pro per sempre, l\'uso risulta applied', $r[0] === 200 && $r[1]['signup_code']['status'] === 'applied' && tierRow($j1) === ['tier' => 'pro', 'tier_until' => null] && useRow($j1)['status'] === 'applied', $r[2]);
-check('e tier_last_day riflette l\'account (null: senza scadenza)', $r[1]['signup_code']['tier_last_day'] === null, $r[2]);
+check('e la risposta descrive l\'account: tier pro, tier_last_day null (non il livello del codice)', $r[1]['signup_code']['tier'] === 'pro' && $r[1]['signup_code']['tier_last_day'] === null, $r[2]);
+check('il messaggio dice Pro, senza scadenza', $r[1]['message'] === 'Email confermata. Hai il livello Pro, senza scadenza.', $r[2]);
+
+mk('migliore-pro30', 'pro', 30, 3);
+[$j2, $j2Auth] = newAccount('scbest2', 'migliore-pro30');
+sql("UPDATE gym_users SET tier = 'plus', tier_until = NULL WHERE id = ?", [$j2]);
+$r = confirm('scbest2', $j2Auth);
+check('Plus per sempre + codice Pro 30: resta Plus per sempre (la scadenza del codice è meno lontana)', $r[0] === 200 && $r[1]['signup_code'] === ['status' => 'applied', 'tier' => 'plus', 'tier_last_day' => null]
+    && tierRow($j2) === ['tier' => 'plus', 'tier_until' => null] && useRow($j2)['status'] === 'applied', $r[2]);
+
+mk('migliore-plus30', 'plus', 30, 3);
+[$j3, $j3Auth] = newAccount('scbest3', 'migliore-plus30');
+sql("UPDATE gym_users SET tier = 'pro', tier_until = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 5 DAY) WHERE id = ?", [$j3]);
+$before3 = tierRow($j3);
+$r = confirm('scbest3', $j3Auth);
+check('Pro che scade tra 5 giorni + codice Plus 30: resta Pro 5 giorni (livello inferiore)', $r[0] === 200 && tierRow($j3) === $before3 && useRow($j3)['status'] === 'applied'
+    && $r[1]['signup_code'] === ['status' => 'applied', 'tier' => 'pro', 'tier_last_day' => tierLastDay($before3['tier_until'])], $r[2]);
+
+mk('migliore-plus90', 'plus', 90, 3);
+[$j4, $j4Auth] = newAccount('scbest4', 'migliore-plus90');
+sql("UPDATE gym_users SET tier = 'plus', tier_until = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 10 DAY) WHERE id = ?", [$j4]);
+$r = confirm('scbest4', $j4Auth);
+$ld = appliedLastDay($j4, 90);
+check('Plus che scade tra 10 giorni + codice Plus 90: Plus 90 (stesso livello, scadenza più lontana)', $r[0] === 200 && $r[1]['signup_code'] === ['status' => 'applied', 'tier' => 'plus', 'tier_last_day' => $ld]
+    && tierRow($j4) === ['tier' => 'plus', 'tier_until' => untilOfLastDay($ld)], $r[2]);
+
+mk('migliore-pro30b', 'pro', 30, 3);
+[$j5, $j5Auth] = newAccount('scbest5', 'migliore-pro30b');
+sql("UPDATE gym_users SET tier = 'plus', tier_until = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 10 DAY) WHERE id = ?", [$j5]);
+$r = confirm('scbest5', $j5Auth);
+$ld = appliedLastDay($j5, 30);
+check('Plus che scade tra 10 giorni + codice Pro 30: Pro 30 (livello superiore, scadenza più lontana)', $r[0] === 200 && $r[1]['signup_code'] === ['status' => 'applied', 'tier' => 'pro', 'tier_last_day' => $ld]
+    && tierRow($j5) === ['tier' => 'pro', 'tier_until' => untilOfLastDay($ld)], $r[2]);
 
 // ═══ Admin: elenco, dettaglio, modifica, eliminazione ════════════════════════════════════════════
 echo "Admin: elenco a pagine\n";
@@ -550,7 +615,7 @@ check('SCADUTO: expired true', $byCode['SCADUTO']['expired'] === true);
 check('SPENTO: enabled false', $byCode['SPENTO']['enabled'] === false);
 check('SI-SPEGNE: missed 1 e confermati 0 (acceso di nuovo)', $byCode['SI-SPEGNE']['missed'] === 1 && $byCode['SI-SPEGNE']['confirmed'] === 0 && $byCode['SI-SPEGNE']['enabled'] === true);
 check('ELIMINA-APPLIED: account eliminato ma applied conta ancora (registrati 1, confermati 1, posti 1)', $byCode['ELIMINA-APPLIED']['registered'] === 1 && $byCode['ELIMINA-APPLIED']['confirmed'] === 1 && $byCode['ELIMINA-APPLIED']['seats_taken'] === 1);
-check('WITH-LAST-DAY: last_day nell\'elenco', $byCode['WITH-LAST-DAY']['last_day'] === romeLastDay(10));
+check('WITH-LAST-DAY: last_day nell\'elenco', $byCode['WITH-LAST-DAY']['last_day'] === $ld10);
 
 echo "Admin: dettaglio\n";
 $d = admGet('?id=' . codeId('mario-plus'));
@@ -581,8 +646,15 @@ check('durata vuota senza conferma: 400 confirm_forever_required, durata invaria
     && (int)scalar("SELECT duration_days FROM gym_signup_codes WHERE id = ?", [$id]) === 60, $r[2]);
 $r = admPost(['action' => 'update', 'id' => $id, 'duration_days' => '', 'confirm_forever' => true]);
 check('durata vuota con conferma: per sempre', $r[0] === 200 && $r[1]['code']['forever'] === true, $r[2]);
-$r = admPost(['action' => 'update', 'id' => $id, 'enabled' => false, 'assignee' => '  Luca ', 'last_day' => romeLastDay(3)]);
-check('enabled, assegnatario e last_day', $r[0] === 200 && $r[1]['code']['enabled'] === false && $r[1]['code']['assignee'] === 'Luca' && $r[1]['code']['last_day'] === romeLastDay(3), $r[2]);
+$ld3 = romeLastDay(3);
+$r = admPost(['action' => 'update', 'id' => $id, 'duration_days' => null]);
+check('già per sempre: duration_days null senza conferma non la chiede (nulla cambia)', $r[0] === 200 && $r[1]['code']['forever'] === true, $r[2]);
+$r = admPost(['action' => 'update', 'id' => $id, 'duration_days' => '']);
+check('già per sempre: duration_days vuoto senza conferma: 200', $r[0] === 200 && $r[1]['code']['forever'] === true, $r[2]);
+$r = admPost(['action' => 'update', 'id' => codeId('pro-forever'), 'duration_days' => null]);
+check('già per sempre e con usi: duration_days null senza conferma: 200, invariato', $r[0] === 200 && $r[1]['code']['forever'] === true, $r[2]);
+$r = admPost(['action' => 'update', 'id' => $id, 'enabled' => false, 'assignee' => '  Luca ', 'last_day' => $ld3]);
+check('enabled, assegnatario e last_day', $r[0] === 200 && $r[1]['code']['enabled'] === false && $r[1]['code']['assignee'] === 'Luca' && $r[1]['code']['last_day'] === $ld3, $r[2]);
 $r = admPost(['action' => 'update', 'id' => $id, 'last_day' => '', 'assignee' => null]);
 check('last_day vuoto: non scade più; assegnatario null: tolto', $r[0] === 200 && $r[1]['code']['last_day'] === null && $r[1]['code']['assignee'] === null, $r[2]);
 $r = admPost(['action' => 'update', 'id' => $id, 'last_day' => '2020-01-01']);
@@ -591,6 +663,8 @@ $r = admPost(['action' => 'update', 'id' => $id, 'enabled' => 'si']);
 check('enabled non booleano: 400', $r[0] === 400 && $r[1]['code'] === 'invalid_enabled', $r[2]);
 $r = admPost(['action' => 'update', 'id' => $id, 'code' => 'mario-plus']);
 check('testo già usato da un altro: 409 code_taken', $r[0] === 409 && $r[1]['code'] === 'code_taken', $r[2]);
+check('elenco e dettaglio hanno updated_at (ISO)', preg_match('/^\d{4}-\d\d-\d\dT[\d:]+[+-]\d\d:\d\d$|Z$/', (string)(admGet('?id=' . $id)[1]['code']['updated_at'] ?? ''))
+    && array_key_exists('updated_at', admGet()[1]['codes'][0]) && admGet()[1]['codes'][0]['updated_at'] !== null, json_encode(admGet('?id=' . $id)[1]['code']));
 check('update senza campi: 200 invariato', admPost(['action' => 'update', 'id' => $id])[0] === 200);
 check('id inesistente: 404', admPost(['action' => 'update', 'id' => 999999, 'enabled' => true])[0] === 404);
 check('id non intero: 404', admPost(['action' => 'update', 'id' => 'x', 'enabled' => true])[0] === 404);
@@ -625,6 +699,25 @@ $r = admPost(['action' => 'delete', 'id' => $mid]);
 check('con usi: 409 code_has_uses, il codice resta', $r[0] === 409 && $r[1]['code'] === 'code_has_uses' && codeId('mario-plus') === $mid, $r[2]);
 $r = admPost(['action' => 'delete', 'id' => codeId('elimina-applied')]);
 check('con un uso il cui account è stato eliminato: non si elimina', $r[0] === 409 && codeId('elimina-applied') > 0, $r[2]);
+mk('usi-fantasma', 'plus', 30, 2);
+[$gh1] = newAccount('scghost1', 'usi-fantasma');
+[$gh2] = newAccount('scghost2', 'usi-fantasma');
+sql("DELETE FROM gym_users WHERE id IN (?, ?)", [$gh1, $gh2]);
+check('(prova) due usi pending senza utente sul codice', (int)scalar("SELECT COUNT(*) FROM gym_signup_code_uses WHERE code_id = ? AND user_id IS NULL AND status = 'pending'", [codeId('usi-fantasma')]) === 2);
+$r = admPost(['action' => 'update', 'id' => codeId('usi-fantasma'), 'tier' => 'pro', 'duration_days' => 15, 'code' => 'usi-fantasma-2']);
+check('usi pending senza utente non contano: livello, durata e testo si cambiano', $r[0] === 200 && $r[1]['code']['tier'] === 'pro' && $r[1]['code']['duration_days'] === 15 && $r[1]['code']['code'] === 'USI-FANTASMA-2', $r[2]);
+mk('usi-misti', 'plus', 30, 3);
+[$mx] = newAccount('scmixed1', 'usi-misti');
+[$my] = newAccount('scmixed2', 'usi-misti');
+sql("DELETE FROM gym_users WHERE id = ?", [$my]);
+$r = admPost(['action' => 'delete', 'id' => codeId('usi-misti')]);
+check('con un uso reale e uno fantasma: 409 e nessun uso cancellato (la pulizia è nella stessa transazione)', $r[0] === 409 && $r[1]['code'] === 'code_has_uses'
+    && (int)scalar("SELECT COUNT(*) FROM gym_signup_code_uses WHERE code_id = ?", [codeId('usi-misti')]) === 2, $r[2]);
+$ghostId = codeId('usi-fantasma-2');
+$r = admPost(['action' => 'delete', 'id' => $ghostId]);
+check('solo usi pending senza utente: il codice si elimina', $r[0] === 200 && codeId('usi-fantasma-2') === 0, $r[2]);
+check('e i suoi usi fantasma sono stati cancellati', (int)scalar("SELECT COUNT(*) FROM gym_signup_code_uses WHERE code_id = ?", [$ghostId]) === 0);
+check('purge-code: uso fantasma pending, il codice non conta come usato (si elimina)', admPost(['action' => 'delete', 'id' => codeId('purge-code')])[0] === 200 && codeId('purge-code') === 0);
 check('delete di un id inesistente: 404', admPost(['action' => 'delete', 'id' => 999999])[0] === 404);
 
 echo "Nessuna riga orfana alla fine\n";
