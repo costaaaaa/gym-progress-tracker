@@ -11,18 +11,19 @@
 require __DIR__ . '/../../lib/config.php';
 require __DIR__ . '/../../lib/render.php';
 require __DIR__ . '/../../lib/plans.php';
+require __DIR__ . '/../../lib/mcp.php';
 
 $alternates = plans_page_alternates();
 $canonical = $alternates['en'];
 $title = 'Free, Plus and Pro: what each one includes';
 $description = 'Compare Free, Plus and Pro in LiftIndex: workout plans, days, custom exercises, muscle status and weekly sets.';
-list($free, $plus, $pro) = plans_page_limits();
+$limits = plans_page_limits();
 
 ob_start();
 ?>
         <h1>Free, Plus and Pro</h1>
         <p class="page-intro">Plus and Pro can't be bought yet.</p>
-        <p>This page compares the three LiftIndex plans and says what changes from one to the next.</p>
+        <p>This page compares Free, Plus and Pro and says what changes from one to the next.</p>
 
         <h2>Compare Free, Plus and Pro</h2>
         <table>
@@ -30,9 +31,9 @@ ob_start();
                 <tr><th scope="col">Feature</th><th scope="col">Free</th><th scope="col">Plus</th><th scope="col">Pro</th></tr>
             </thead>
             <tbody>
-                <tr><th scope="row">Workout plans</th><td><?php echo (int) $free['plans']; ?></td><td><?php echo (int) $plus['plans']; ?></td><td><?php echo (int) $pro['plans']; ?></td></tr>
-                <tr><th scope="row">Days per workout plan</th><td><?php echo (int) $free['days_per_plan']; ?></td><td><?php echo (int) $plus['days_per_plan']; ?></td><td><?php echo (int) $pro['days_per_plan']; ?></td></tr>
-                <tr><th scope="row">Custom exercises</th><td><?php echo (int) $free['personal_exercises']; ?></td><td><?php echo (int) $plus['personal_exercises']; ?></td><td><?php echo (int) $pro['personal_exercises']; ?></td></tr>
+                <tr><th scope="row">Workout plans</th><td><?php echo (int) $limits['free']['plans']; ?></td><td><?php echo (int) $limits['plus']['plans']; ?></td><td><?php echo (int) $limits['pro']['plans']; ?></td></tr>
+                <tr><th scope="row">Days per workout plan</th><td><?php echo (int) $limits['free']['days_per_plan']; ?></td><td><?php echo (int) $limits['plus']['days_per_plan']; ?></td><td><?php echo (int) $limits['pro']['days_per_plan']; ?></td></tr>
+                <tr><th scope="row">Custom exercises</th><td><?php echo (int) $limits['free']['personal_exercises']; ?></td><td><?php echo (int) $limits['plus']['personal_exercises']; ?></td><td><?php echo (int) $limits['pro']['personal_exercises']; ?></td></tr>
                 <tr><th scope="row">Swap or add exercises during a workout</th><td>no</td><td>yes</td><td>yes</td></tr>
                 <tr><th scope="row">Muscle status</th><td>ready / recovering</td><td>with recovery percentage and days left</td><td>same as Plus</td></tr>
                 <tr><th scope="row">Weekly sets</th><td>total only</td><td>by muscle, compared with last week</td><td>same as Plus</td></tr>
@@ -41,7 +42,7 @@ ob_start();
         </table>
         <p>The AI Coach is coming soon, with different allowances for Plus and Pro.</p>
 
-        <h2>On every plan, today</h2>
+        <h2>Included in Free, Plus and Pro, today</h2>
         <ul>
             <li>unlimited workouts</li>
             <li>full history</li>
@@ -51,7 +52,7 @@ ob_start();
             <li>health data</li>
             <li>groups</li>
             <li>export of your data</li>
-            <li>connecting AI assistants, as explained in the <a href="<?php echo blog_e(BLOG_APP_URL . 'en/blog/mcp/'); ?>">connection guide</a></li>
+            <li>connecting AI assistants, as explained in the <a href="<?php echo blog_e(mcp_page_alternates()['en']); ?>">connection guide</a></li>
         </ul>
 
         <h2>If you move down from Plus or Pro</h2>

@@ -70,6 +70,9 @@ function check_page($html, $lang, $canonical, array $t, array $labels)
 
     // Numeri della tabella = numeri del server.
     $rows = table_rows($html);
+    $coach = isset($rows[$labels['coach']]) ? $rows[$labels['coach']] : null;
+    check('riga AI Coach: celle Gratis, Plus e Pro', $coach === $labels['coach_cells']);
+    check('elenco dei piani: ' . $labels['items'] . ' voci', preg_match('#<h2>' . preg_quote($labels['list_title'], '#') . '</h2>\s*<ul>(.*?)</ul>#s', $html, $m) === 1 && substr_count($m[1], '<li>') === $labels['items']);
     $free = tierLimits('free');
     $plus = tierLimits('plus');
     $pro = tierLimits('pro');
@@ -97,7 +100,7 @@ check_page($htmlIt, 'it', $it, array(
     'elenco «in tutti i piani, oggi»' => 'In tutti i piani, oggi',
     'passaggio a un piano inferiore: nessun dato cancellato' => 'Nessun dato viene cancellato',
     'sola lettura' => 'sola lettura',
-), array('plans' => 'Schede', 'days' => 'Giorni per scheda', 'exercises' => 'Esercizi personalizzati', 'head' => array('Gratis', 'Plus', 'Pro'), 'corner' => 'Funzione'));
+), array('plans' => 'Schede', 'days' => 'Giorni per scheda', 'exercises' => 'Esercizi personalizzati', 'head' => array('Gratis', 'Plus', 'Pro'), 'corner' => 'Funzione', 'coach' => 'AI Coach', 'coach_cells' => array('–', 'in arrivo', 'in arrivo, con quota più alta'), 'list_title' => 'In tutti i piani, oggi', 'items' => 9));
 check('titolo con Gratis, Plus e Pro', preg_match('#<title>[^<]*Gratis[^<]*Plus[^<]*Pro#u', $htmlIt) === 1);
 check('IT: la parola «livello» non indica l\'abbonamento', stripos($htmlIt, 'livello') === false && stripos($htmlIt, 'livelli') === false);
 
@@ -106,10 +109,11 @@ $htmlEn = render('en/plans/index.php');
 check_page($htmlEn, 'en', $en, array(
     'frase in alto: Plus e Pro non ancora acquistabili' => 'Plus and Pro can\'t be bought yet',
     'AI Coach: quote diverse' => 'coming soon, with different allowances for Plus and Pro',
-    'elenco «in tutti i piani, oggi»' => 'On every plan, today',
+    'elenco «in tutti i piani, oggi»' => 'Included in Free, Plus and Pro, today',
     'passaggio a un piano inferiore: nessun dato cancellato' => 'No data is deleted',
     'sola lettura' => 'read-only',
-), array('plans' => 'Workout plans', 'days' => 'Days per workout plan', 'exercises' => 'Custom exercises', 'head' => array('Free', 'Plus', 'Pro'), 'corner' => 'Feature'));
+), array('plans' => 'Workout plans', 'days' => 'Days per workout plan', 'exercises' => 'Custom exercises', 'head' => array('Free', 'Plus', 'Pro'), 'corner' => 'Feature', 'coach' => 'AI Coach', 'coach_cells' => array('–', 'coming soon', 'coming soon, with a higher allowance'), 'list_title' => 'Included in Free, Plus and Pro, today', 'items' => 9));
+check('EN: «plan» da solo non indica il piano', strpos($htmlEn, 'LiftIndex plans') === false && stripos($htmlEn, 'every plan') === false);
 check('titolo con Free, Plus and Pro', preg_match('#<title>[^<]*Free, Plus and Pro#u', $htmlEn) === 1);
 check('EN: niente link alle pagine legali italiane', strpos($htmlEn, 'liftindex.app/privacy.html') === false && strpos($htmlEn, 'liftindex.app/termini.html') === false);
 check('EN: niente link italiani a login e registrazione', strpos($htmlEn, 'https://liftindex.app/register"') === false && strpos($htmlEn, 'https://liftindex.app/login"') === false);

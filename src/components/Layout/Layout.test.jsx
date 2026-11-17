@@ -76,7 +76,7 @@ describe('piè di pagina: link al blog', () => {
     expect(links()).toEqual(expect.arrayContaining([
       ['Calcolatore 1RM', '/blog/calcolatore-1rm/'],
       ['Collega il tuo assistente AI', '/blog/mcp/'],
-      ['Confronta i piani', '/piani'],
+      ['Piani', '/piani'],
     ]));
   });
 

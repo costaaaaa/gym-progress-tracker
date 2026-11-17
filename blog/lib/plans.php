@@ -20,8 +20,8 @@ function plans_page_alternates()
     );
 }
 
-/** Limiti dei tre piani, nell'ordine della tabella: Gratis, Plus, Pro. */
+/** Limiti dei tre piani, per chiave: free, plus, pro. */
 function plans_page_limits()
 {
-    return array(tierLimits('free'), tierLimits('plus'), tierLimits('pro'));
+    return array('free' => tierLimits('free'), 'plus' => tierLimits('plus'), 'pro' => tierLimits('pro'));
 }

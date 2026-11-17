@@ -11,12 +11,13 @@
 require __DIR__ . '/../lib/config.php';
 require __DIR__ . '/../lib/render.php';
 require __DIR__ . '/../lib/plans.php';
+require __DIR__ . '/../lib/mcp.php';
 
 $alternates = plans_page_alternates();
 $canonical = $alternates['it'];
 $title = 'Piani Gratis, Plus e Pro: cosa include ciascuno';
 $description = 'Il confronto tra i piani Gratis, Plus e Pro di LiftIndex: schede, giorni, esercizi personalizzati, stato muscolare e serie della settimana.';
-list($free, $plus, $pro) = plans_page_limits();
+$limits = plans_page_limits();
 
 ob_start();
 ?>
@@ -30,9 +31,9 @@ ob_start();
                 <tr><th scope="col">Funzione</th><th scope="col">Gratis</th><th scope="col">Plus</th><th scope="col">Pro</th></tr>
             </thead>
             <tbody>
-                <tr><th scope="row">Schede</th><td><?php echo (int) $free['plans']; ?></td><td><?php echo (int) $plus['plans']; ?></td><td><?php echo (int) $pro['plans']; ?></td></tr>
-                <tr><th scope="row">Giorni per scheda</th><td><?php echo (int) $free['days_per_plan']; ?></td><td><?php echo (int) $plus['days_per_plan']; ?></td><td><?php echo (int) $pro['days_per_plan']; ?></td></tr>
-                <tr><th scope="row">Esercizi personalizzati</th><td><?php echo (int) $free['personal_exercises']; ?></td><td><?php echo (int) $plus['personal_exercises']; ?></td><td><?php echo (int) $pro['personal_exercises']; ?></td></tr>
+                <tr><th scope="row">Schede</th><td><?php echo (int) $limits['free']['plans']; ?></td><td><?php echo (int) $limits['plus']['plans']; ?></td><td><?php echo (int) $limits['pro']['plans']; ?></td></tr>
+                <tr><th scope="row">Giorni per scheda</th><td><?php echo (int) $limits['free']['days_per_plan']; ?></td><td><?php echo (int) $limits['plus']['days_per_plan']; ?></td><td><?php echo (int) $limits['pro']['days_per_plan']; ?></td></tr>
+                <tr><th scope="row">Esercizi personalizzati</th><td><?php echo (int) $limits['free']['personal_exercises']; ?></td><td><?php echo (int) $limits['plus']['personal_exercises']; ?></td><td><?php echo (int) $limits['pro']['personal_exercises']; ?></td></tr>
                 <tr><th scope="row">Cambiare o aggiungere esercizi durante l'allenamento</th><td>no</td><td>sì</td><td>sì</td></tr>
                 <tr><th scope="row">Stato muscolare</th><td>pronto / in recupero</td><td>con percentuale di recupero e giorni mancanti</td><td>come Plus</td></tr>
                 <tr><th scope="row">Serie della settimana</th><td>solo il totale</td><td>per muscolo, con confronto con la settimana scorsa</td><td>come Plus</td></tr>
@@ -51,7 +52,7 @@ ob_start();
             <li>dati di Salute</li>
             <li>gruppi</li>
             <li>esportazione dei tuoi dati</li>
-            <li>collegamento degli assistenti AI, come spiegato nella <a href="<?php echo blog_e(BLOG_BASE_URL . '/mcp/'); ?>">guida al collegamento</a></li>
+            <li>collegamento degli assistenti AI, come spiegato nella <a href="<?php echo blog_e(mcp_page_alternates()['it']); ?>">guida al collegamento</a></li>
         </ul>
 
         <h2>Se passi a un piano inferiore</h2>
