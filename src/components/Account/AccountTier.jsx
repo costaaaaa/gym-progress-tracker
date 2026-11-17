@@ -2,9 +2,8 @@ import { Box, Link, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { formatDate } from '../../i18n/format';
 import { plansPath } from '../../i18n/paths';
+import { tierName } from '../../utils/tiers';
 
-const TIER_NAMES = { plus: 'Plus', pro: 'Pro' };
-const tierName = (tier) => TIER_NAMES[tier] ?? tier;
 
 // Riga del livello nella card del profilo, da user/read.php: tier e tier_last_day (ultimo giorno compreso, AAAA-MM-GG,
 // ora italiana: si scrive com'è, senza fuso) descrivono l'account; signup_code {status, tier} il codice di registrazione

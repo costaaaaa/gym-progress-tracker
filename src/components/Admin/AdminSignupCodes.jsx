@@ -3,17 +3,15 @@ import { Alert, Box, Button, Card, CircularProgress, Dialog, DialogActions, Dial
 import { errorMessage } from '../../api/exercises';
 import { createSignupCode, deleteSignupCode, getSignupCode, listSignupCodes, updateSignupCode } from '../../api/signupCodes';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
+import { formatDay, tierName } from '../../utils/tiers';
 import SignupCodeForm from './SignupCodeForm';
 
 const TEXT = { fontSize: 16 };
 const BUTTON = { minHeight: 44, fontSize: 16 };
 
-// "2026-12-31" → "31/12/2026", senza passare da Date (niente fusi)
-const formatDay = (day) => day.split('-').reverse().join('/');
 // Istante ISO → giorno nel fuso del browser
 const formatInstant = (iso) => new Date(iso).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-const TIER_LABELS = { plus: 'Plus', pro: 'Pro' };
 const USE_STATUS = { applied: 'Confermato', pending: 'In attesa di conferma', missed: 'Non applicato' };
 
 // Link da dare a chi si registra: il campo del codice si apre già compilato
@@ -48,13 +46,13 @@ const Loading = () => <Box sx={{ display: 'flex', justifyContent: 'center', p: 3
 // Una riga dell'elenco
 const CodeRow = ({ code, onOpen }) => (
   <Box component="li" aria-label={code.code} sx={{ listStyle: 'none', py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
-    <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', columnGap: 2, rowGap: 0.5 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', columnGap: 2 }}>
       <Typography component="span" sx={{ ...TEXT, fontWeight: 700, fontFamily: 'monospace', wordBreak: 'break-all' }}>{code.code}</Typography>
-      <Typography component="span" sx={{ ...TEXT, fontWeight: 600 }}>{TIER_LABELS[code.tier] ?? code.tier}</Typography>
-      <Duration code={code} />
-      <Button onClick={() => onOpen(code.id)} aria-label={`Apri il codice ${code.code}`} sx={{ ...BUTTON, ml: 'auto' }}>Apri</Button>
+      <Button onClick={() => onOpen(code.id)} aria-label={`Apri il codice ${code.code}`} sx={{ ...BUTTON, flexShrink: 0 }}>Apri</Button>
     </Box>
     <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 2, color: 'text.secondary' }}>
+      <Typography component="span" sx={{ ...TEXT, fontWeight: 600, color: 'text.primary' }}>{tierName(code.tier)}</Typography>
+      <Duration code={code} />
       <Typography component="span" sx={TEXT}>{`Posti ${code.seats_taken}/${code.max_uses}`}</Typography>
       <Typography component="span" sx={TEXT}>{`Registrati ${code.registered}`}</Typography>
       <Typography component="span" sx={TEXT}>{`Confermati ${code.confirmed}`}</Typography>
@@ -105,8 +103,9 @@ const Uses = ({ uses, page, pages, onPage }) => (
       <Typography sx={{ ...TEXT, color: 'text.secondary' }}>Nessun iscritto.</Typography>
     ) : (
       <Box component="ul" aria-label="Iscritti con questo codice" sx={{ m: 0, p: 0 }}>
+        {/* Il server non manda un id dell'uso: la chiave è registrazione + utente (l'indice solo come spareggio) */}
         {uses.map((use, i) => (
-          <Box component="li" key={i} sx={{ listStyle: 'none', py: 1, borderBottom: 1, borderColor: 'divider', display: 'flex', flexWrap: 'wrap', columnGap: 2 }}>
+          <Box component="li" key={`${use.created_at}|${use.username ?? 'eliminato'}|${i}`} sx={{ listStyle: 'none', py: 1, borderBottom: 1, borderColor: 'divider', display: 'flex', flexWrap: 'wrap', columnGap: 2 }}>
             <Typography component="span" sx={{ ...TEXT, fontWeight: 600, wordBreak: 'break-word' }}>{use.account_deleted ? 'Account eliminato' : use.username}</Typography>
             <Typography component="span" sx={TEXT}>{USE_STATUS[use.status] ?? use.status}</Typography>
             <Typography component="span" sx={{ ...TEXT, color: 'text.secondary' }}>{`Registrato il ${formatInstant(use.created_at)}`}</Typography>
@@ -121,8 +120,8 @@ const Uses = ({ uses, page, pages, onPage }) => (
 
 const CodeDetail = ({ id, onBack, onDeleted }) => {
   const [code, setCode] = useState(null);
-  const [usesPage, setUsesPage] = useState(1);
-  const [uses, setUses] = useState(null);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [usesPage, setUsesPage] = useState(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [copy, setCopy] = useState('');
@@ -131,19 +130,19 @@ const CodeDetail = ({ id, onBack, onDeleted }) => {
 
   useEffect(() => {
     let current = true;
-    getSignupCode(id, usesPage).then((res) => {
+    getSignupCode(id, pageNumber).then((res) => {
       if (!current) return;
       if (res.ok) {
         // Il codice si legge una volta: riletto a ogni pagina farebbe ripartire il modulo e perderebbe le modifiche
         setCode((prev) => prev ?? res.data.code);
-        setUses(res.data);
+        setUsesPage(res.data);
         setError('');
       } else {
         setError(errorMessage(res, 'Impossibile caricare il codice.'));
       }
     });
     return () => { current = false; };
-  }, [id, usesPage]);
+  }, [id, pageNumber]);
 
   const copyLink = async () => {
     try {
@@ -175,19 +174,20 @@ const CodeDetail = ({ id, onBack, onDeleted }) => {
   if (!code) {
     return (
       <>
-        <Button onClick={onBack} sx={BUTTON}>Torna all'elenco</Button>
+        <Button onClick={onBack} sx={{ ...BUTTON, px: 0 }}>Torna all'elenco</Button>
         {error ? <Alert severity="error" sx={{ mt: 1 }}>{error}</Alert> : <Loading />}
       </>
     );
   }
+  // Il server elimina insieme all'account gli usi mai confermati: «registered > 0» coincide con la sua regola. Se il server rifiuta lo stesso, l'errore si mostra.
   const hasUses = code.registered > 0;
 
   return (
     <>
-      <Button onClick={onBack} sx={{ ...BUTTON, mb: 1 }}>Torna all'elenco</Button>
+      <Button onClick={onBack} sx={{ ...BUTTON, px: 0, mb: 1 }}>Torna all'elenco</Button>
       <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', columnGap: 2, rowGap: 0.5 }}>
         <Typography component="h3" sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 20, wordBreak: 'break-all' }}>{code.code}</Typography>
-        <Typography component="span" sx={{ ...TEXT, fontWeight: 600 }}>{TIER_LABELS[code.tier] ?? code.tier}</Typography>
+        <Typography component="span" sx={{ ...TEXT, fontWeight: 600 }}>{tierName(code.tier)}</Typography>
         <Duration code={code} />
       </Box>
       <Typography sx={{ ...TEXT, color: 'text.secondary' }}>
@@ -195,7 +195,7 @@ const CodeDetail = ({ id, onBack, onDeleted }) => {
       </Typography>
       <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, my: 1 }}>
         <Button variant="outlined" onClick={copyLink} sx={BUTTON}>Copia link</Button>
-        <Typography role="status" sx={TEXT}>{copy === 'ok' ? 'Link copiato' : ''}</Typography>
+        <Typography role="status" sx={TEXT}>{copy === 'ok' ? 'Link copiato' : copy === 'failed' ? 'Copia non riuscita, copia il link:' : ''}</Typography>
       </Box>
       {copy === 'failed' && (
         <Typography sx={{ ...TEXT, wordBreak: 'break-all', mb: 1 }}>{registerLink(code.code)}</Typography>
@@ -221,7 +221,7 @@ const CodeDetail = ({ id, onBack, onDeleted }) => {
         )}
       </Box>
 
-      {uses && <Uses uses={uses.uses} page={uses.page} pages={uses.pages} onPage={setUsesPage} />}
+      {usesPage && <Uses uses={usesPage.uses} page={usesPage.page} pages={usesPage.pages} onPage={setPageNumber} />}
 
       {askDelete && (
         <Dialog open onClose={() => setAskDelete(false)} aria-labelledby="signup-delete-title">

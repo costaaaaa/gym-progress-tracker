@@ -3,13 +3,11 @@ import { Alert, Box, Button, Card, CircularProgress, TextField, Typography } fro
 import { errorMessage } from '../../api/exercises';
 import { searchAdminTiers, setAdminTier } from '../../api/adminTiers';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
+import { formatDay } from '../../utils/tiers';
 
 const MIN_QUERY = 2;
 const LEVELS = [['free', 'Gratis'], ['plus', 'Plus'], ['pro', 'Pro']];
 const label = (tier) => LEVELS.find(([value]) => value === tier)?.[1] ?? tier;
-
-// "2026-12-31" → "31/12/2026", senza passare da Date (niente fusi)
-const formatDay = (day) => day.split('-').reverse().join('/');
 
 const isExpired = (u) => u.tier !== u.effective_tier;
 

@@ -300,6 +300,23 @@ describe('dettaglio', () => {
     expect(screen.getByText(`${window.location.origin}/register?code=AMICI-90`)).toBeTruthy();
   });
 
+  it('in elenco «Apri» sta sulla riga del codice, non su quella dei numeri', async () => {
+    await open();
+    const line = screen.getByText('AMICI-90').parentElement;
+    expect(within(line).getByRole('button', { name: 'Apri il codice AMICI-90' })).toBeTruthy();
+    // codice e «Apri» da soli in una riga che non va a capo: livello, durata e numeri stanno sotto
+    expect(within(line).queryByText('Plus')).toBeNull();
+    expect(within(line).queryByText(/^Posti/)).toBeNull();
+  });
+
+  it('se la copia non riesce, il messaggio sta nella regione di stato (lo leggono anche gli screen reader)', async () => {
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: vi.fn(() => Promise.reject(new Error('no'))) }, configurable: true });
+    await open();
+    await openCode('AMICI-90');
+    await click('Copia link');
+    expect(screen.getByRole('status').textContent).toBe('Copia non riuscita, copia il link:');
+  });
+
   it('il testo del codice è codificato nel link', async () => {
     const writeText = vi.fn(() => Promise.resolve());
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
