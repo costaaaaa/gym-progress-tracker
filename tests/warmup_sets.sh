@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
 # warmup_sets.sh — controlla le serie di riscaldamento nella scheda e nell'allenamento (#66):
-# warmup_sets si salva e si legge sulla scheda, con la validazione 0-10; le serie segnate
-# is_warmup restano nello storico ma sono escluse da weekly_sets, volume settimanale,
+# le serie di riscaldamento si salvano e si leggono sulla scheda (planned_sets, kind 'warmup');
+# le serie segnate is_warmup restano nello storico ma sono escluse da weekly_sets, volume settimanale,
 # workout_stats/volume.php, record personali e volume a vita.
 #
 #   tests/warmup_sets.sh http://localhost:8080/backend/
