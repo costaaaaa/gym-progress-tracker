@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { AuthProvider, useAuth } from './AuthContext';
+import EmailGate from '../components/EmailVerification/EmailGate';
 
 const original = window.fetch;
 let backend;
@@ -267,5 +268,65 @@ describe('AuthProvider: stato della conferma email', () => {
     fireEvent.click(screen.getByText('entra'));
 
     await waitFor(() => expect(stateOf()).toMatchObject({ verified: false, daysLeft: 5 }));
+  });
+});
+
+// Esito della conferma con un codice di registrazione: con il provider vero, non con report/take finti
+describe('AuthProvider: esito della conferma', () => {
+  const Confirm = () => {
+    const { refreshEmailState, login, logout } = useAuth();
+    return (
+      <div>
+        <button onClick={() => refreshEmailState('Email confermata. Plus attivo fino al 15 febbraio 2027.')}>conferma con codice</button>
+        <button onClick={() => refreshEmailState('')}>conferma senza codice</button>
+        <button onClick={() => login({ id: 2, username: 'luca', locale: 'it' })}>entra</button>
+        <button onClick={logout}>esci</button>
+      </div>
+    );
+  };
+  const mountGate = () => {
+    localStorage.setItem('isLoggedIn', 'true');
+    backend.mockImplementation(() => Promise.resolve(json(readBody(unverified))));
+    render(<AuthProvider><EmailGate /><Confirm /><Probe /></AuthProvider>);
+    return waitFor(() => expect(stateOf().verified).toBe(false));
+  };
+
+  it('conferma con codice: l\'avviso dice il messaggio del server', async () => {
+    await mountGate();
+    backend.mockImplementation(() => Promise.resolve(json(readBody())));
+    fireEvent.click(screen.getByText('conferma con codice'));
+    expect(await screen.findByText('Email confermata. Plus attivo fino al 15 febbraio 2027.')).toBeTruthy();
+  });
+
+  it('conferma senza codice: il testo di sempre', async () => {
+    await mountGate();
+    backend.mockImplementation(() => Promise.resolve(json(readBody())));
+    fireEvent.click(screen.getByText('conferma senza codice'));
+    expect(await screen.findByText('Email confermata.')).toBeTruthy();
+  });
+
+  it('l\'esito sta solo nello stato letto con la conferma: una rilettura successiva lo toglie', async () => {
+    await mountGate();
+    backend.mockImplementation(() => Promise.resolve(json(readBody())));
+    fireEvent.click(screen.getByText('conferma con codice'));
+    await waitFor(() => expect(stateOf().outcome).toBe('Email confermata. Plus attivo fino al 15 febbraio 2027.'));
+    fireEvent.click(screen.getByText('rileggi'));
+    await waitFor(() => expect(stateOf().outcome).toBe(''));
+  });
+
+  it('uscita e nuovo accesso: nessun messaggio vecchio per l\'altro account', async () => {
+    await mountGate();
+    backend.mockImplementation(() => Promise.resolve(json(readBody())));
+    fireEvent.click(screen.getByText('conferma con codice'));
+    await screen.findByText('Email confermata. Plus attivo fino al 15 febbraio 2027.');
+    fireEvent.click(screen.getByText('esci'));
+    await waitFor(() => expect(stateOf()).toBeNull());
+    backend.mockImplementation(() => Promise.resolve(json(readBody(unverified))));
+    fireEvent.click(screen.getByText('entra'));
+    await waitFor(() => expect(stateOf()).toMatchObject({ verified: false, outcome: '' }));
+    backend.mockImplementation(() => Promise.resolve(json(readBody())));
+    fireEvent.click(screen.getByText('conferma senza codice'));
+    await waitFor(() => expect(stateOf().verified).toBe(true));
+    expect(screen.queryByText(/Plus attivo/)).toBeNull();
   });
 });

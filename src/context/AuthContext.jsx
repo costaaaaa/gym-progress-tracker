@@ -33,18 +33,24 @@ export const AuthProvider = ({ children }) => {
   const refreshing = useRef(null);
 
   // Rilegge lo stato della conferma. Non fa mai uscire l'utente: se la lettura non riesce, resta lo stato di prima.
-  const refreshEmailState = useCallback(() => {
-    if (refreshing.current) return refreshing.current;
+  // `outcome`: il messaggio del server quando la conferma ha anche deciso il codice di registrazione («Plus attivo
+  // fino al…»); resta solo nello stato letto adesso e sparisce alla rilettura successiva.
+  const refreshEmailState = useCallback((arg) => {
+    // Usato anche come gestore di click: solo una stringa è un messaggio
+    const outcome = typeof arg === 'string' ? arg : '';
+    if (refreshing.current && !outcome) return refreshing.current;
     const run = (async () => {
+      // Una lettura già in corso potrebbe essere precedente alla conferma: se ne fa una nuova che porta il messaggio
+      if (refreshing.current) await refreshing.current;
       try {
         const response = await fetch(`${API_BASE_URL}api/user/read.php`, { method: 'GET', credentials: 'include' });
         if (!response.ok) return;
         const data = await response.json();
-        if (data.success) setEmailState(emailStateFrom(data));
+        if (data.success) setEmailState({ ...emailStateFrom(data), outcome: outcome || '' });
       } catch (error) {
         console.error('Errore lettura stato email:', error);
       } finally {
-        refreshing.current = null;
+        if (refreshing.current === run) refreshing.current = null;
       }
     })();
     refreshing.current = run;
@@ -57,16 +63,6 @@ export const AuthProvider = ({ children }) => {
     if (reminderClaimed.current) return false;
     reminderClaimed.current = true;
     return true;
-  }, []);
-
-  // Messaggio del server alla conferma con un codice di registrazione («Plus attivo fino al…»): chi conferma lo
-  // lascia qui, l'avviso di esito lo ritira quando lo stato passa a «confermata» (una volta sola)
-  const emailOutcome = useRef('');
-  const reportEmailOutcome = useCallback((message) => { emailOutcome.current = message || ''; }, []);
-  const takeEmailOutcome = useCallback(() => {
-    const message = emailOutcome.current;
-    emailOutcome.current = '';
-    return message;
   }, []);
 
   const openEmailDialog = useCallback(() => setEmailDialogOpen(true), []);
@@ -212,9 +208,7 @@ export const AuthProvider = ({ children }) => {
     emailDialogOpen,
     openEmailDialog,
     closeEmailDialog,
-    claimEmailReminder,
-    reportEmailOutcome,
-    takeEmailOutcome
+    claimEmailReminder
   };
 
   return (

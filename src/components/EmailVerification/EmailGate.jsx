@@ -35,7 +35,7 @@ const markShownToday = (userId) => {
 // Con l'app bloccata non c'è la finestra: il codice si scrive nella schermata di blocco.
 const EmailGate = () => {
   const { t } = useTranslation();
-  const { isLoggedIn, user, emailState, emailDialogOpen, openEmailDialog, closeEmailDialog, claimEmailReminder, takeEmailOutcome } = useAuth();
+  const { isLoggedIn, user, emailState, emailDialogOpen, openEmailDialog, closeEmailDialog, claimEmailReminder } = useAuth();
   const [notice, setNotice] = useState('');
 
   const userId = user?.id;
@@ -68,11 +68,11 @@ const EmailGate = () => {
     previous.current = emailState;
     if (!before || !emailState) return;
     if (!before.verified && emailState.verified) {
-      setNotice(takeEmailOutcome() || t('emailconfirm.done'));
+      setNotice(emailState.outcome || t('emailconfirm.done'));
     } else if (before.pendingEmail && !emailState.pendingEmail && emailState.email === before.pendingEmail) {
       setNotice(t('emailconfirm.done_changed', { email: emailState.email }));
     }
-  }, [emailState, t, takeEmailOutcome]);
+  }, [emailState, t]);
 
   return (
     <>

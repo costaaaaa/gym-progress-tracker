@@ -35,7 +35,7 @@ function useSecondsUntil(until) {
 // onConfirmed({ email, changed }) parte a conferma avvenuta e stato già riletto.
 const EmailCodeForm = ({ onConfirmed, actions, autoFocus = false }) => {
   const { t } = useTranslation();
-  const { emailState, refreshEmailState, reportEmailOutcome } = useAuth();
+  const { emailState, refreshEmailState } = useAuth();
   const id = useId();
   const hintId = `${id}-hint`;
   const codeErrorId = `${id}-error`;
@@ -55,8 +55,7 @@ const EmailCodeForm = ({ onConfirmed, actions, autoFocus = false }) => {
 
   // `outcome`: il messaggio del server quando la conferma ha anche deciso il codice di registrazione
   const done = async (email, changed, outcome) => {
-    if (outcome) reportEmailOutcome(outcome);
-    await refreshEmailState();
+    await refreshEmailState(outcome);
     setAnnounce(outcome || t('emailconfirm.done'));
     onConfirmed?.({ email, changed });
   };
