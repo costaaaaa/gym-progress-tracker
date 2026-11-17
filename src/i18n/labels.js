@@ -38,6 +38,3 @@ export const equipmentName = (slug) => (slug ? i18n.t(`equipment.${slug}`, { def
 // Nome di un traguardo nella lingua dell'app. Il label del server segue la lingua dell'account, che può
 // essere diversa: serve solo come ripiego per una chiave che il client non conosce (senza ripiego, la chiave).
 export const achievementLabel = (key, fallback) => i18n.t(`achievement.${key}`, { defaultValue: fallback ?? key });
-
-// Nomi dei traguardi appena sbloccati ([{ key, label }] dal server), separati da virgola, per l'avviso dopo il salvataggio
-export const unlockedAchievementNames = (unlocked) => unlocked.map((a) => achievementLabel(a.key, a.label)).join(', ');

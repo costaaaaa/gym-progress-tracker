@@ -8,6 +8,8 @@
 $backend = $argv[1];
 require $backend . '/config/database.php';
 
+require_once $backend . '/lib/gamification_rules.php';
+
 require __DIR__ . '/lib/http_test.php';
 
 $conn = (new Database())->getConnection();
@@ -47,7 +49,7 @@ $expected = [
     'en' => ['sessions_100' => 'Centurion', 'tonnage_auto' => '1.5 t — a car', 'tonnage_shuttle' => '2,000 t — a Space Shuttle', 'strength_140' => '140 kg on one exercise'],
 ];
 
-$allKeys = ['sessions_10', 'sessions_50', 'sessions_100', 'sessions_250', 'tonnage_auto', 'tonnage_elephant', 'tonnage_bus', 'tonnage_tank', 'tonnage_whale', 'tonnage_iss', 'tonnage_shuttle', 'tonnage_eiffel', 'strength_60', 'strength_100', 'strength_140', 'streak_4', 'streak_8', 'streak_12', 'streak_24'];
+$allKeys = array_column(achievementCatalog(), 'key');
 sort($allKeys);
 
 foreach (['it', 'en'] as $locale) {

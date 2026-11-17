@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import i18n from './index';
-import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, equipmentName, achievementLabel, unlockedAchievementNames } from './labels';
+import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, equipmentName, achievementLabel } from './labels';
 
 describe('INTENSITY_TECHNIQUES', () => {
   it('parte da "Nessuna (Normale)" e tiene l\'ordine del menu', () => {
@@ -36,17 +36,5 @@ describe('achievementLabel', () => {
   it('per una chiave che il client non conosce usa il ripiego, e senza ripiego la chiave', () => {
     expect(achievementLabel('nuovo_1', 'Nome del server')).toBe('Nome del server');
     expect(achievementLabel('nuovo_1')).toBe('nuovo_1');
-  });
-});
-
-describe('unlockedAchievementNames', () => {
-  const unlocked = [{ key: 'sessions_100', label: 'Centurione' }, { key: 'nuovo_1', label: 'Nome del server' }];
-  it('app in inglese, label italiano dal server: nome inglese; chiave sconosciuta: label del server', async () => {
-    await i18n.changeLanguage('en');
-    expect(unlockedAchievementNames(unlocked)).toBe('Centurion, Nome del server');
-  });
-  it('app in italiano: nomi italiani', async () => {
-    await i18n.changeLanguage('it');
-    expect(unlockedAchievementNames([{ key: 'sessions_100', label: 'Centurion' }])).toBe('Centurione');
   });
 });
