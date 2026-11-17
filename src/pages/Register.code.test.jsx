@@ -76,6 +76,16 @@ describe('campo del codice', () => {
     expect(screen.queryByRole('textbox', { name: /Codice di registrazione/ })).toBeNull();
   });
 
+  it('aria-controls c\'è solo quando il campo c\'è (aperto), mai verso un elemento assente', () => {
+    renderAt();
+    const toggle = screen.getByRole('button', { name: 'Hai un codice?' });
+    expect(toggle.hasAttribute('aria-controls')).toBe(false);
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-controls')).toBe(codeField().id);
+    fireEvent.click(toggle);
+    expect(toggle.hasAttribute('aria-controls')).toBe(false);
+  });
+
   it('la riga apre il campo e porta il focus lì', () => {
     renderAt();
     fireEvent.click(screen.getByRole('button', { name: 'Hai un codice?' }));
@@ -195,6 +205,31 @@ describe('codice buono', () => {
     expect(auth.openEmailDialog).toHaveBeenCalledTimes(1);
   });
 
+  it('richiudere il campo dopo un controllo riuscito svuota il codice: non parte e non c\'è nota', async () => {
+    responses.check = () => answer({ success: true, username_taken: false, email_taken: false, signup_code: { usable: true, tier: 'plus', duration_days: 90 } });
+    renderAt('/register?code=amici');
+    fillStep1();
+    next();
+    await screen.findByText('Il tuo profilo');
+    fireEvent.click(screen.getByRole('button', { name: 'Indietro' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Hai un codice?' }));
+    expect(screen.queryByRole('textbox', { name: /Codice di registrazione/ })).toBeNull();
+    next();
+    await screen.findByText('Il tuo profilo');
+    expect(screen.queryByText(/parte quando confermi l'email/)).toBeNull();
+    expect(bodies('check_availability')[1]).not.toHaveProperty('signup_code');
+    await registerNow();
+    await waitFor(() => expect(bodies('register.php')).toHaveLength(1));
+    expect(bodies('register.php')[0]).not.toHaveProperty('signup_code');
+  });
+
+  it('riaprendo il campo dopo averlo chiuso è vuoto', () => {
+    renderAt('/register?code=amici');
+    fireEvent.click(screen.getByRole('button', { name: 'Hai un codice?' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Hai un codice?' }));
+    expect(codeField().value).toBe('');
+  });
+
   it('modificando il codice la nota sparisce (va ricontrollato)', async () => {
     responses.check = () => answer({ success: true, username_taken: false, email_taken: false, signup_code: { usable: true, tier: 'plus', duration_days: 90 } });
     renderAt('/register?code=amici');
@@ -250,6 +285,16 @@ describe('codice non utilizzabile al controllo anticipato', () => {
     next();
     expect(await screen.findByText('Questo username è già preso')).toBeTruthy();
     expect(screen.getByText('Passo 1 di 2')).toBeTruthy();
+  });
+});
+
+describe('errore del codice senza messaggio dal server', () => {
+  it('vale il testo d\'errore generico già esistente', async () => {
+    responses.check = () => answer({ success: false, field: 'signup_code' }, 400);
+    renderAt('/register?code=amici');
+    fillStep1();
+    next();
+    await waitFor(() => expect(describedBy(codeField())).toBe(i18n.t('register.error.generic')));
   });
 });
 

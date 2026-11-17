@@ -163,7 +163,6 @@
   "register.code_ok_days_one": "{{tier}} for {{count}} day, starts when you confirm your email",
   "register.code_ok_days_other": "{{tier}} for {{count}} days, starts when you confirm your email",
   "register.code_ok_forever": "{{tier}} with no expiry, starts when you confirm your email",
-  "register.error.code_generic": "The sign-up code can't be used.",
   "forgot.meta.title": "Forgot password",
   "forgot.meta.description": "Reset your account password.",
   "forgot.title": "Forgot password",

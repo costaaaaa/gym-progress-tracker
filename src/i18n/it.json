@@ -163,7 +163,6 @@
   "register.code_ok_days_one": "{{tier}} per {{count}} giorno, parte quando confermi l'email",
   "register.code_ok_days_other": "{{tier}} per {{count}} giorni, parte quando confermi l'email",
   "register.code_ok_forever": "{{tier}} senza scadenza, parte quando confermi l'email",
-  "register.error.code_generic": "Il codice di registrazione non si può usare.",
   "forgot.meta.title": "Password dimenticata",
   "forgot.meta.description": "Reimposta la password del tuo account.",
   "forgot.title": "Password dimenticata",

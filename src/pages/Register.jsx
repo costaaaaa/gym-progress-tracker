@@ -32,14 +32,15 @@ import PasswordToggle from '../components/Auth/PasswordToggle';
 import ConfirmPasswordField from '../components/Auth/ConfirmPasswordField';
 import useConfirmPassword from '../hooks/useConfirmPassword';
 import useFocusField from '../hooks/useFocusField';
-import { LINK_BUTTON } from '../utils/buttonStyles';
+import useSignupCode from '../hooks/useSignupCode';
+import SignupCodeField from '../components/Auth/SignupCodeField';
 
 // Username: stessa regola di register.php. Email: solo un primo filtro, il server usa FILTER_VALIDATE_EMAIL
 const USERNAME_RE = /^[a-zA-Z0-9]{3,50}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Ordine dei campi di ogni passo (il primo con un errore riceve il focus)
-const STEP1_FIELDS = ['username', 'email', 'password', 'confirmPassword', 'signupCode'];
+const STEP1_FIELDS = ['username', 'email', 'password', 'confirmPassword'];
 const STEP2_FIELDS = ['birthDate', 'gender', 'terms'];
 
 const Register = () => {
@@ -56,12 +57,6 @@ const Register = () => {
   const [gender, setGender] = useState('');
   const [trainingStartDate, setTrainingStartDate] = useState(null);
   const [acceptTerms, setAcceptTerms] = useState(false);
-  // Codice di registrazione: il campo si apre dalla riga «Hai un codice?» o da /register?code=…
-  const initialCode = new URLSearchParams(useLocation().search).get('code')?.trim() ?? '';
-  const [codeOpen, setCodeOpen] = useState(initialCode !== '');
-  const [signupCode, setSignupCode] = useState(initialCode);
-  // Esito del controllo anticipato, valido solo per il codice controllato: {code, tier, days (null = senza scadenza)}
-  const [codeInfo, setCodeInfo] = useState(null);
   // Due passaggi: 1 = account (controllato subito con check_availability.php), 2 = profilo per il recupero.
   // La registrazione parte solo alla fine, con una chiamata sola.
   const [step, setStep] = useState(1);
@@ -70,6 +65,8 @@ const Register = () => {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const { fieldRef, focusField } = useFocusField();
+  const location = useLocation();
+  const signup = useSignupCode({ search: location.search, focusField });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const pair = useConfirmPassword({ password, confirm: confirmPassword });
@@ -82,28 +79,11 @@ const Register = () => {
     setShowConfirmPassword(!showConfirmPassword);
   };
   const navigate = useNavigate();
-  const location = useLocation();
   // Dove tornare dopo la registrazione, per esempio un link di invito a un gruppo
   const next = safeNext(location.search);
   const { login, openEmailDialog } = useAuth();
 
   const withNext = (path) => (next === '/' ? localizedPath(path) : `${localizedPath(path)}?next=${encodeURIComponent(next)}`);
-
-  // Codice da inviare: vuoto o campo chiuso = registrazione normale
-  const codeToSend = codeOpen ? signupCode.trim() : '';
-  const codeNote = codeInfo && codeInfo.code === codeToSend
-    ? (codeInfo.days === null
-      ? t('register.code_ok_forever', { tier: codeInfo.tier })
-      : t('register.code_ok_days', { tier: codeInfo.tier, count: codeInfo.days }))
-    : '';
-  // Errore del server sul codice: sul campo, con il focus lì (anche tornando dal secondo passo)
-  const showCodeError = (message) => {
-    setCodeOpen(true);
-    setCodeInfo(null);
-    setFieldErrors({ signupCode: message || t('register.error.code_generic') });
-    setStep(1);
-    focusField('signupCode');
-  };
 
   // Errore sul campo: per l'email già registrata, con i link per accedere o recuperare la password
   const takenError = (field) => (field === 'email' ? (
@@ -133,6 +113,7 @@ const Register = () => {
 
   const handleNext = async () => {
     setError('');
+    signup.clearError();
     pair.submit();
     const errors = {
       username: USERNAME_RE.test(username) ? '' : t('register.username_help'),
@@ -151,18 +132,14 @@ const Register = () => {
       const response = await fetch(`${API_BASE_URL}api/user/check_availability.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(codeToSend ? { username, email, signup_code: codeToSend } : { username, email }),
+        body: JSON.stringify(signup.toSend ? { username, email, signup_code: signup.toSend } : { username, email }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok && data.field === 'signup_code') {
-        showCodeError(data.message);
+        signup.fail(data.message);
         return;
       }
-      if (response.ok && data.signup_code?.usable) {
-        setCodeInfo({ code: codeToSend, tier: data.signup_code.tier === 'pro' ? 'Pro' : 'Plus', days: data.signup_code.duration_days ?? null });
-      } else {
-        setCodeInfo(null);
-      }
+      signup.accept(signup.toSend, response.ok ? data.signup_code : null);
       if (response.status === 429) {
         setError(data.message || t('register.error.generic'));
         return;
@@ -221,7 +198,7 @@ const Register = () => {
           accept_terms: true,
           locale: i18n.language,
           training_start_date: trainingStartDate ? format(trainingStartDate, 'yyyy-MM-01') : null,
-          ...(codeToSend ? { signup_code: codeToSend } : {})
+          ...(signup.toSend ? { signup_code: signup.toSend } : {})
         }),
         credentials: 'include'
       });
@@ -230,7 +207,8 @@ const Register = () => {
 
       // Codice non più utilizzabile (posto finito nel frattempo, scaduto, spento): si torna al campo
       if (!response.ok && data.field === 'signup_code') {
-        showCodeError(data.message);
+        signup.fail(data.message);
+        setStep(1);
         return;
       }
       // Username o email presi nel frattempo: si torna al primo passo, con l'errore sul campo
@@ -365,31 +343,7 @@ const Register = () => {
               onChange={editPair(setConfirmPassword, 'confirmPassword')}
               InputProps={{ endAdornment: <PasswordToggle shown={showConfirmPassword} onToggle={handleToggleConfirmPasswordVisibility} label={t('password.show_confirm')} /> }}
             />
-            <Button
-              onClick={() => { setCodeOpen((open) => !open); if (!codeOpen) focusField('signupCode'); }}
-              aria-expanded={codeOpen}
-              aria-controls="signupCode"
-              sx={{ ...LINK_BUTTON, mt: 1 }}
-            >
-              {t('register.code_toggle')}
-            </Button>
-            {codeOpen && (
-              <TextField
-                margin="dense"
-                fullWidth
-                id="signupCode"
-                inputRef={fieldRef('signupCode')}
-                label={t('register.code_label')}
-                name="signupCode"
-                autoComplete="off"
-                autoCapitalize="none"
-                spellCheck={false}
-                value={signupCode}
-                onChange={edit(setSignupCode, 'signupCode')}
-                error={Boolean(fieldErrors.signupCode)}
-                helperText={fieldErrors.signupCode || codeNote}
-              />
-            )}
+            <SignupCodeField signup={signup} fieldRef={fieldRef} />
             <Button type="submit" fullWidth variant="contained" size="large" sx={{ mt: 3, mb: 2 }} disabled={loading}>
               {loading ? t('register.checking') : t('register.next')}
             </Button>
@@ -398,7 +352,7 @@ const Register = () => {
           <>
             <Typography variant="h2" sx={{ fontSize: '1.25rem', mt: 1, mb: 1 }}>{t('register.profile_title')}</Typography>
             <Typography sx={{ mb: 1 }}>{t('register.profile_text')}</Typography>
-            {codeNote && <Typography sx={{ mb: 1, fontWeight: 600 }}>{codeNote}</Typography>}
+            {signup.note && <Typography sx={{ mb: 1, fontWeight: 600 }}>{signup.note}</Typography>}
             <DateLocalization>
               <LabeledDatePicker
                 label={t('register.birth_date')}
