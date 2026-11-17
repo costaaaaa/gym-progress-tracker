@@ -344,8 +344,8 @@ describe('nomi accessibili', () => {
 
 // Piano Gratis: sola lettura, elimina giorno, selettore dei giorni, "Nuova scheda" al limite.
 describe('limiti del piano Gratis', () => {
-  const FREE = { success: true, email_verified: true, email_verification: null, pending_email: null, tier: 'free', limits: { plans: 2, days_per_plan: 4, personal_exercises: 10 }, features: [] };
-  const PRO = { success: true, email_verified: true, email_verification: null, pending_email: null, tier: 'pro', limits: { plans: 50, days_per_plan: 14, personal_exercises: 30 }, features: ['focus_session_edit'] };
+  const FREE = { success: true, email_verified: true, email_verification: null, pending_email: null, tier: 'free', tier_until: null, tier_last_day: null, signup_code: null, limits: { plans: 2, days_per_plan: 4, personal_exercises: 10 }, features: [] };
+  const PRO = { success: true, email_verified: true, email_verification: null, pending_email: null, tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null, limits: { plans: 50, days_per_plan: 14, personal_exercises: 30 }, features: ['focus_session_edit'] };
   const ex = (id, name) => ({ id, exercise_name: name, muscle_group: 'petto', planned_sets: plannedSets(0, times(3, { min: 8, max: 10 })), rest: 90, notes: '' });
   const day = (id, name = `Giorno ${id}`) => ({ id, name, exercises: [ex(id * 10, `Esercizio ${id}`)] });
   const mk = (id, over = {}) => ({

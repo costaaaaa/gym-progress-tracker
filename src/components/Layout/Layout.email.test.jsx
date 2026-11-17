@@ -17,7 +17,7 @@ const json = (body, status = 200) => Promise.resolve(new Response(JSON.stringify
 
 beforeEach(() => {
   localStorage.setItem('isLoggedIn', 'true');
-  server = { read: { success: true, id: 7, username: 'mario', email: 'mario@example.com', pending_email: null, email_verified: true, email_verification: null } };
+  server = { read: { success: true, id: 7, username: 'mario', email: 'mario@example.com', pending_email: null, email_verified: true, email_verification: null, tier: 'free', tier_until: null, tier_last_day: null, signup_code: null } };
   window.fetch = vi.fn((input) => {
     const url = String(input instanceof Request ? input.url : input);
     if (url.includes('user/read.php')) return json(server.read);

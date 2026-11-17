@@ -99,7 +99,7 @@ beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock);
   responses = {
     'read_plans.php': () => json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [pushDay, fullDay] }] }),
-    'user/read.php': () => json({ email_verified: true, email_verification: null, pending_email: null, rest_timer_enabled: true, features: [] }),
+    'user/read.php': () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'free', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: [] }),
     'workout_history/read.php': () => json({ records: [] }),
     'record_workout.php': () => json({ success: true, id: 77 }),
     'exercise/read_all.php': () => json({ records: CATALOG }),
@@ -418,7 +418,7 @@ describe('bozza di un altro fuso ripresa a Roma: il giorno è quello del luogo d
 describe('ripresa dal riepilogo: il tempo a pagina chiusa è una pausa', () => {
   const at = (h, m, day = 20) => new Date(2026, 9, day, h, m);
   beforeEach(() => {
-    responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
+    responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
   });
 
   // Allenamento Push dalle 18:00, riepilogo alle 19:00
@@ -790,7 +790,7 @@ describe('errori e funzioni bloccate', () => {
   });
 
   it('con la funzione Plus non c\'è nessuna etichetta "Plus"', async () => {
-    responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
+    responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
     await startDay('Push');
     expect(screen.queryByText('Plus')).toBeNull();
     expect(screen.getByRole('button', { name: 'Cambia esercizio' })).toBeTruthy();
@@ -952,7 +952,7 @@ describe('riepilogo', () => {
   });
 
   it('con la funzione Plus "Aggiungi esercizio" del riepilogo non ha l\'etichetta "Plus" e il nome è semplice', async () => {
-    responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
+    responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
     await toSummary();
     expect(screen.getByRole('button', { name: 'Aggiungi esercizio' })).toBeTruthy();
     expect(screen.queryByText('Plus')).toBeNull();
@@ -1169,7 +1169,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
 
   describe('cambio esercizio', () => {
     beforeEach(() => {
-      responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
+      responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
     });
     const swapToCroci = async () => {
       click('Cambia esercizio');
@@ -1392,7 +1392,7 @@ describe('nomi accessibili', () => {
   });
 
   it('il picker degli esercizi: il tasto di chiusura ha un nome e non finisce in quello del dialogo', async () => {
-    responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
+    responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
     await startDay('Push');
     click('Cambia esercizio');
     await advance(0);

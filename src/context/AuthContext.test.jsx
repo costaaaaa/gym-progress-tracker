@@ -152,7 +152,8 @@ describe('AuthProvider: fine della sessione', () => {
 // Stato della conferma dell'email: viene da user/read.php, lo stesso che verifica la sessione
 const readBody = (extra = {}) => ({
   success: true, id: 1, username: 'mario', email: 'mario@example.com', email_verified: true,
-  email_verification: null, pending_email: null, ...extra,
+  email_verification: null, pending_email: null,
+  tier: 'free', tier_until: null, tier_last_day: null, signup_code: null, ...extra,
 });
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status });
 const Probe = () => {

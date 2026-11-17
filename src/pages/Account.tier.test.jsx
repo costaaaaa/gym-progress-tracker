@@ -137,6 +137,14 @@ describe('livello nella card del profilo', () => {
     const card = await mount();
     expect(row(card).textContent).toBe('Livello: Plus fino al 15 febbraio 2027');
   });
+
+  it.each(['UTC', 'Europe/Rome', 'America/Los_Angeles', 'Asia/Tokyo'])('in inglese la data è il giorno scritto anche con il browser in %s', async (zone) => {
+    await i18n.changeLanguage('en');
+    setBrowserTimeZone(zone);
+    tierFields = { tier: 'plus', tier_until: '2027-02-15T23:00:00Z', tier_last_day: '2027-02-15', signup_code: null };
+    const card = await mount();
+    expect(row(card).textContent).toBe('Plan: Plus until February 15, 2027');
+  });
 });
 
 describe('livello dopo la conferma dell\'email da questa pagina', () => {
