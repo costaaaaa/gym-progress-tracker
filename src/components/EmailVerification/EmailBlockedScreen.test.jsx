@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import EmailBlockedScreen from './EmailBlockedScreen';
+import { textBelow } from '../../test/minText';
 
 const auth = {};
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth }));
@@ -39,6 +40,13 @@ describe('schermata di blocco', () => {
     // nessun link verso pagine dell'app che darebbero 403
     expect(screen.queryAllByRole('link')).toEqual([]);
     expect(screen.queryByRole('navigation')).toBeNull();
+  });
+
+  it('nessun testo della schermata è sotto i 16px e «Cambia indirizzo» ha un bersaglio di almeno 44px', () => {
+    const { container } = mount();
+    expect(textBelow(container, 16, '.MuiFormLabel-root, legend')).toEqual([]);
+    const change = screen.getByRole('button', { name: 'Cambia indirizzo' });
+    expect(getComputedStyle(change).minHeight).toBe('44px');
   });
 
   it('non è una finestra: il codice sta nella pagina', () => {

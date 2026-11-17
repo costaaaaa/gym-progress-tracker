@@ -18,7 +18,6 @@ import i18n from '../../i18n';
 import { unlockedAchievementsText } from './unlockedAchievementsText';
 import { DRAFT_STORAGE_KEY } from '../../utils/focusDraft';
 
-
 // Stato e transizioni di Focus Mode (loading -> select_day o resume_prompt -> workout <-> rest_timer -> summary).
 // Restituisce le props di ogni fase, come useFocusSession del mobile.
 export default function useFocusSession() {

@@ -33,6 +33,8 @@ const NOW = Date.parse('2026-10-23T10:00:00+02:00');
 const TODAY = new Date(NOW).toLocaleDateString('sv-SE', { timeZone: 'Europe/Rome' });
 const DAY = 86400000;
 const isoDay = (offset) => new Date(NOW + offset * DAY).toISOString().slice(0, 10);
+// Istante ISO con Z, come lo manda il server (deadline di email_verification)
+const isoInstant = (offset, time) => `${isoDay(offset)}T${time}Z`;
 const stamp = (offset, time) => `${isoDay(offset)} ${time}`;
 const round = (n, d = 1) => Math.round(n * 10 ** d) / 10 ** d;
 
@@ -181,10 +183,10 @@ const LIMITS = {
 };
 // Stati della conferma email: da confermare (5 giorni a scadere), confermata, cambio in attesa, bloccato
 const EMAIL_STATES = {
-  'da-confermare': { email_verified: false, email_verification: { deadline: stamp(5, '10:00:00'), blocked: false, days_left: 5 }, pending_email: null },
+  'da-confermare': { email_verified: false, email_verification: { deadline: isoInstant(5, '10:00:00'), blocked: false, days_left: 5 }, pending_email: null },
   confermata: { email_verified: true, email_verification: { deadline: null, blocked: false, days_left: null }, pending_email: null },
   'cambio-in-attesa': { email_verified: true, email_verification: { deadline: null, blocked: false, days_left: null }, pending_email: 'nuovo@example.com' },
-  bloccato: { email_verified: false, email_verification: { deadline: stamp(-1, '10:00:00'), blocked: true, days_left: 0 }, pending_email: null },
+  bloccato: { email_verified: false, email_verification: { deadline: isoInstant(-1, '10:00:00'), blocked: true, days_left: 0 }, pending_email: null },
 };
 const user = ({ admin, gratis, email }) => ({
   ...(EMAIL_STATES[email ?? 'confermata']),

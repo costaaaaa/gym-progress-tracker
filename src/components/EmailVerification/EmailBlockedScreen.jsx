@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import useDataExport from '../../hooks/useDataExport';
 import useAccountDeleted from '../../hooks/useAccountDeleted';
-import { NEUTRAL_OUTLINED } from '../../utils/buttonStyles';
+import { NEUTRAL_OUTLINED, LINK_BUTTON } from '../../utils/buttonStyles';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 import DeleteAccountDialog from '../Account/DeleteAccountDialog';
 import ButtonSpinner from '../ButtonSpinner';
@@ -35,7 +35,7 @@ const EmailBlockedScreen = () => {
         </Typography>
         <Typography sx={{ color: 'text.secondary', mb: 3 }}>{t('emailblocked.text')}</Typography>
         <EmailCodeForm
-          actions={<Button type="button" onClick={() => setChangeOpen(true)} sx={{ minHeight: 44 }}>{t('emailchange.open')}</Button>}
+          actions={<Button type="button" onClick={() => setChangeOpen(true)} sx={LINK_BUTTON}>{t('emailchange.open')}</Button>}
         />
       </Card>
 

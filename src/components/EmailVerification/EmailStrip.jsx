@@ -1,7 +1,7 @@
 import { Box, Button, Typography } from '@mui/material';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
 import { useTranslation } from 'react-i18next';
-import { isToday } from 'date-fns';
+import { differenceInCalendarDays, isToday } from 'date-fns';
 import { useAuth } from '../../context/AuthContext';
 import { LINK_BUTTON } from '../../utils/buttonStyles';
 
@@ -15,7 +15,8 @@ const EmailStrip = () => {
 
   const deadline = emailState.deadline ? new Date(emailState.deadline) : null;
   const dueToday = deadline !== null && !Number.isNaN(deadline.getTime()) && isToday(deadline);
-  const days = Math.max(emailState.daysLeft ?? 1, 1);
+  // Senza `days_left` si contano i giorni di calendario fino alla scadenza (minimo 1)
+  const days = Math.max(emailState.daysLeft ?? (deadline ? differenceInCalendarDays(deadline, new Date()) : 1), 1);
   const text = dueToday ? t('emailconfirm.strip_today') : t('emailconfirm.strip_days', { count: days });
 
   return (

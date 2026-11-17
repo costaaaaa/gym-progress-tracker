@@ -88,7 +88,7 @@ const EmailCodeForm = ({ onConfirmed, actions, autoFocus = false }) => {
         seconds: res.data?.retry_after,
         message: res.data?.message,
       });
-      // Il campo resta lo stesso durante l'invio (sola lettura, non disabilitato), ma il focus era sul bottone
+      // Dopo un errore il focus torna sul campo, così si può correggere subito il codice
       inputRef.current?.focus();
     }
   };
