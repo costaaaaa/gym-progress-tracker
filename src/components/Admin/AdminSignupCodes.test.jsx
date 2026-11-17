@@ -400,7 +400,7 @@ describe('modifica', () => {
   });
 
   it('togliere la durata a un codice a tempo chiede la conferma «per sempre»', async () => {
-    server.post = (body) => ({ success: true, code: { ...UNUSED, duration_days: null, forever: true } });
+    server.post = () => ({ success: true, code: { ...UNUSED, duration_days: null, forever: true } });
     await open();
     await openCode('NUOVO-1');
     type('Durata in giorni', '');
