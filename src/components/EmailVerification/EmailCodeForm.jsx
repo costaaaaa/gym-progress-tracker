@@ -1,4 +1,4 @@
-import { useState, useEffect, useId } from 'react';
+import { useState, useEffect, useId, useRef } from 'react';
 import { Box, Button, FormHelperText, TextField, Typography } from '@mui/material';
 import { visuallyHidden } from '@mui/utils';
 import { useTranslation } from 'react-i18next';
@@ -48,6 +48,7 @@ const EmailCodeForm = ({ onConfirmed, actions, autoFocus = false }) => {
   const [resendUntil, setResendUntil] = useState(0);
   const [announce, setAnnounce] = useState('');
   const waitLeft = useSecondsUntil(resendUntil);
+  const inputRef = useRef(null);
 
   const pendingEmail = emailState?.pendingEmail ?? null;
   const sentTo = pendingEmail ?? emailState?.email ?? '';
@@ -69,6 +70,7 @@ const EmailCodeForm = ({ onConfirmed, actions, autoFocus = false }) => {
     if (confirming) return;
     if (code.length !== CODE_LENGTH) {
       setCodeError({ code: 'email_code_format' });
+      inputRef.current?.focus();
       return;
     }
     setConfirming(true);
@@ -86,6 +88,8 @@ const EmailCodeForm = ({ onConfirmed, actions, autoFocus = false }) => {
         seconds: res.data?.retry_after,
         message: res.data?.message,
       });
+      // Il campo resta lo stesso durante l'invio (sola lettura, non disabilitato), ma il focus era sul bottone
+      inputRef.current?.focus();
     }
   };
 
@@ -114,7 +118,9 @@ const EmailCodeForm = ({ onConfirmed, actions, autoFocus = false }) => {
     switch (codeError.code) {
       case 'email_code_format': return t('emailconfirm.error_format');
       case 'email_code_wrong':
-        return codeError.left > 0 ? t('emailconfirm.error_wrong', { left: codeError.left }) : t('emailconfirm.error_wrong_last');
+        if (codeError.left > 0) return t('emailconfirm.error_wrong', { left: codeError.left });
+        // «Non vale più» solo se il server dice che i tentativi sono finiti (0); senza numero, il testo semplice
+        return codeError.left === 0 ? t('emailconfirm.error_wrong_last') : t('emailconfirm.error_wrong_plain');
       case 'email_code_expired': return t('emailconfirm.error_expired');
       case 'rate_limited': return t('emailconfirm.error_too_many', { time: formatWait(codeError.seconds ?? 0) });
       case 'email_taken': return t('emailconfirm.error_taken_late');
@@ -143,34 +149,35 @@ const EmailCodeForm = ({ onConfirmed, actions, autoFocus = false }) => {
         fullWidth
         required
         error={Boolean(codeErrorText)}
-        disabled={confirming}
+        inputRef={inputRef}
         sx={{ '& input': { letterSpacing: '0.3em', fontVariantNumeric: 'tabular-nums' } }}
         inputProps={{
           inputMode: 'numeric',
+          readOnly: confirming,
           autoComplete: 'one-time-code',
           'aria-describedby': [hintId, codeErrorText ? codeErrorId : ''].filter(Boolean).join(' '),
           'aria-invalid': codeErrorText ? 'true' : undefined,
         }}
       />
-      <FormHelperText id={hintId} sx={{ mx: 0 }}>{t('emailconfirm.code_help')}</FormHelperText>
+      <FormHelperText id={hintId} sx={{ mx: 0, fontSize: 16 }}>{t('emailconfirm.code_help')}</FormHelperText>
       {codeErrorText && (
-        <FormHelperText id={codeErrorId} error role="alert" sx={{ mx: 0, fontSize: 14 }}>{codeErrorText}</FormHelperText>
+        <FormHelperText id={codeErrorId} error role="alert" sx={{ mx: 0, fontSize: 16 }}>{codeErrorText}</FormHelperText>
       )}
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mt: 2 }}>
-        <Button type="submit" variant="contained" disabled={confirming} sx={{ minHeight: 44 }}
+        <Button type="submit" variant="contained" disabled={confirming} sx={{ minHeight: 44, fontSize: 16 }}
           startIcon={confirming ? <ButtonSpinner size={16} /> : undefined}>
           {confirming ? t('emailconfirm.confirming') : t('emailconfirm.confirm')}
         </Button>
-        <Button type="button" variant="outlined" onClick={handleResend} disabled={resending || waitLeft > 0} sx={{ minHeight: 44 }}>
+        <Button type="button" variant="outlined" onClick={handleResend} disabled={resending || waitLeft > 0} sx={{ minHeight: 44, fontSize: 16 }}>
           {waitLeft > 0 ? t('emailconfirm.resend_wait', { time: formatWait(waitLeft) }) : t('emailconfirm.resend')}
         </Button>
         {actions}
       </Box>
       {resendErrorText && (
-        <FormHelperText error role="alert" sx={{ mx: 0, mt: 1, fontSize: 14 }}>{resendErrorText}</FormHelperText>
+        <FormHelperText error role="alert" sx={{ mx: 0, mt: 1, fontSize: 16 }}>{resendErrorText}</FormHelperText>
       )}
-      <Box role="status" aria-live="polite" sx={announce ? { mt: 1, fontSize: 14, color: 'text.secondary' } : visuallyHidden}>
+      <Box role="status" aria-live="polite" sx={announce ? { mt: 1, fontSize: 16, color: 'text.secondary' } : visuallyHidden}>
         {announce}
       </Box>
     </Box>

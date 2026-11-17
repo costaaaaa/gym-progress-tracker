@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import EmailCodeForm from './EmailCodeForm';
+import { textBelow } from '../../test/minText';
 
 const auth = { emailState: null, refreshEmailState: vi.fn(() => Promise.resolve()) };
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth }));
@@ -115,6 +116,45 @@ describe('conferma', () => {
     type('111111');
     confirm();
     expect((await screen.findByRole('alert')).textContent).toBe('Il codice non è corretto e non vale più. Chiedine uno nuovo.');
+  });
+
+  it('codice sbagliato senza il numero dei tentativi: testo semplice, non «non vale più»', async () => {
+    answers(reply(400, { success: false, code: 'email_code_wrong' }));
+    mount();
+    type('111111');
+    confirm();
+    expect((await screen.findByRole('alert')).textContent).toBe('Il codice non è corretto.');
+  });
+
+  it('dopo un errore il focus torna sul campo, che durante l\'invio non è disabilitato', async () => {
+    let finish;
+    fetchMock = vi.fn(() => new Promise((resolve) => { finish = resolve; }));
+    vi.stubGlobal('fetch', fetchMock);
+    mount();
+    type('111111');
+    confirm();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(field().disabled).toBe(false);
+    expect(field().readOnly).toBe(true);
+    await act(async () => { finish(reply(400, { success: false, code: 'email_code_wrong', attempts_left: 2 })); });
+    await screen.findByRole('alert');
+    expect(document.activeElement).toBe(field());
+  });
+
+  it('con meno di 6 cifre il focus va sul campo', () => {
+    mount();
+    type('12');
+    confirm();
+    expect(document.activeElement).toBe(field());
+  });
+
+  it('nessun testo del campo, d\'aiuto o d\'errore, è sotto i 16px', async () => {
+    answers(reply(400, { success: false, code: 'email_code_wrong', attempts_left: 3 }));
+    const { container } = render(<EmailCodeForm />);
+    type('111111');
+    confirm();
+    await screen.findByRole('alert');
+    expect(textBelow(container, 16, '.MuiFormLabel-root, legend')).toEqual([]);
   });
 
   it('codice scaduto: invita a chiederne uno nuovo', async () => {
