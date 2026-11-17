@@ -341,18 +341,33 @@ $public = ['user/register.php', 'user/login.php', 'user/mobile_login.php', 'user
 $allowedExpected = ['user/read.php', 'user/confirm_email.php', 'user/resend_email_code.php', 'user/change_email.php',
     'user/cancel_email_change.php', 'user/export.php', 'user/delete.php'];
 $files = apiFiles($backend . '/api');
-$declared = [];
-foreach ($files as $f) {
-    if (strpos(file_get_contents("$backend/api/$f"), 'ALLOW_UNVERIFIED') !== false) $declared[] = $f;
+// Gli ammessi sono l'elenco qui sopra (non il testo dei file): ognuno risponde da bloccato, con Bearer e con sessione web,
+// con la sua risposta e mai con 403 email_unverified né 401; ogni altro endpoint autenticato dà 403 (giro qui sotto).
+check('gli endpoint ammessi esistono tutti', count(array_intersect($allowedExpected, $files)) === count($allowedExpected), json_encode(array_diff($allowedExpected, $files)));
+foreach (['Bearer' => $bAuth, 'sessione web' => $bCookie] as $via => $auth) {
+    $notBlocked = fn($r) => $r[0] !== 401 && ($r[1]['code'] ?? '') !== 'email_unverified';
+    $r = api('POST', '/api/user/change_email.php', $auth, ['email' => 'evblock-nuovo@example.test', 'password' => 'sbagliata-di-sicuro']);
+    check("change_email.php da bloccato ($via): password sbagliata 400 wrong_password, non 403", $r[0] === 400 && ($r[1]['code'] ?? '') === 'wrong_password', $r[2]);
+    $r = api('POST', '/api/user/cancel_email_change.php', $auth);
+    check("cancel_email_change.php da bloccato ($via): 200", $r[0] === 200 && $r[1]['success'] === true, $r[2]);
+    $r = api('POST', '/api/user/confirm_email.php', $auth, ['code' => '000000']);
+    check("confirm_email.php da bloccato ($via): risposta propria (400/409), non 403", in_array($r[0], [400, 409], true) && $notBlocked($r), $r[2]);
+    $r = api('POST', '/api/user/resend_email_code.php', $auth);
+    check("resend_email_code.php da bloccato ($via): 200 o 429, non 403", in_array($r[0], [200, 429], true) && $notBlocked($r), $r[2]);
+    $r = api('POST', '/api/user/delete.php', $auth, ['password' => 'sbagliata-di-sicuro']);
+    check("delete.php da bloccato ($via): arriva alla verifica della password, non 403", $r[0] !== 403 && $notBlocked($r), $r[2]);
+    $r = api('GET', '/api/user/read.php', $auth);
+    check("read.php da bloccato ($via): 200", $r[0] === 200, $r[2]);
+    $r = api('GET', '/api/user/export.php', $auth);
+    check("export.php da bloccato ($via): 200", $r[0] === 200, substr($r[2], 0, 200));
 }
-check('gli endpoint che dichiarano ALLOW_UNVERIFIED sono esattamente i sette attesi', $declared === array_values(array_intersect($files, $allowedExpected)) && count($declared) === 7, json_encode($declared));
 // GET e POST, con ?name=abc (esercizi simili legge il nome prima di autenticare). Per ogni endpoint ogni risposta
 // deve essere 403 email_unverified, o 405 se il metodo non è quello dell'endpoint, e almeno una deve essere 403:
 // mai 2xx, mai 401, mai un endpoint che lasci passare.
 $scanned = 0;
 $bad = [];
 foreach ($files as $f) {
-    if (in_array($f, $public, true) || in_array($f, $declared, true)) continue;
+    if (in_array($f, $public, true) || in_array($f, $allowedExpected, true)) continue;
     $blocked = false;
     foreach (['GET', 'POST'] as $method) {
         $r = api($method, "/api/$f?name=abc", $bAuth, $method === 'POST' ? ['x' => 1] : null);
