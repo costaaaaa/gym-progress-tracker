@@ -22,7 +22,7 @@ $limits = plans_page_limits();
 ob_start();
 ?>
         <h1>Free, Plus and Pro</h1>
-        <p class="page-intro">Plus and Pro can't be bought yet.</p>
+        <p class="page-intro">Plus and Pro can't be bought yet: for now the owner assigns them, also with a sign-up code.</p>
         <p>This page compares Free, Plus and Pro and says what changes from one to the next.</p>
 
         <h2>Compare Free, Plus and Pro</h2>
