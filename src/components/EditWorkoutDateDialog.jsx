@@ -13,12 +13,10 @@ import {
 import { format, subDays } from 'date-fns';
 import { API_BASE_URL } from '../config';
 import { formatDate } from '../i18n/format';
+import { achievementLabel } from '../i18n/labels';
 import { isClockString, clockDay } from '../utils/calendarDay';
 import { isoClock, differentZone, zoneCity } from '../utils/workoutTime';
-import { achievementCatalog } from '../utils/gamificationLevels';
 import ButtonSpinner from './ButtonSpinner';
-
-const achievementLabel = (key) => achievementCatalog.find(a => a.key === key)?.label ?? key;
 
 // Codici d'errore di update_date.php → testo tradotto (il message del server è solo in italiano)
 const ERROR_KEYS = {

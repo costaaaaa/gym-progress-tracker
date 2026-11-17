@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../config';
 import { xpIntoLevel, xpForNextLevel } from '../utils/gamificationLevels';
 import { formatDate, formatNumber } from '../i18n/format';
+import { achievementLabel } from '../i18n/labels';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
 import { ELLIPSIS_FROM_390 } from '../theme/narrowScreens';
 import { radius } from '../theme/radius';
@@ -40,7 +41,8 @@ const progressOf = (t, cat, data, achievement) => {
 
 const AchievementCard = ({ achievement, isNext, progress }) => {
   const { t } = useTranslation();
-  const { label, locked, unlocked_at } = achievement;
+  const { locked, unlocked_at } = achievement;
+  const label = achievementLabel(achievement.key, achievement.label);
   return (
     <Card sx={{
       ...BORDERED, borderRadius: radius.lg, p: '16px 12px', textAlign: 'center', height: '100%',

@@ -34,3 +34,7 @@ export const muscleLabel = (group) => {
 // Etichetta tradotta di uno slug di attrezzo (es. 'corpo_libero'). equipmentLabel in utils/exerciseCatalog.js resta la mappa
 // italiana fissa, perché quel file è condiviso byte per byte con un altro client. Uno slug sconosciuto si mostra com'è.
 export const equipmentName = (slug) => (slug ? i18n.t(`equipment.${slug}`, { defaultValue: slug }) : '');
+
+// Nome di un traguardo nella lingua dell'app. Il label del server segue la lingua dell'account, che può
+// essere diversa: serve solo come ripiego per una chiave che il client non conosce (senza ripiego, la chiave).
+export const achievementLabel = (key, fallback) => i18n.t(`achievement.${key}`, { defaultValue: fallback ?? key });

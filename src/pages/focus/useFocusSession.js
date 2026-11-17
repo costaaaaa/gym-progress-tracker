@@ -15,6 +15,7 @@ import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../..
 import { track } from '../../utils/analytics';
 import { currentTimeZone, moveToZoneDay, zoneClock } from '../../utils/workoutTime';
 import i18n from '../../i18n';
+import { unlockedAchievementsText } from './unlockedAchievementsText';
 
 const DRAFT_STORAGE_KEY = 'gym_focus_workout_draft';
 
@@ -754,7 +755,7 @@ export default function useFocusSession() {
       const notifyParts = [];
       if (data.leveled_up) notifyParts.push(t('focus.level_reached', { level: data.new_level }));
       if (data.unlocked_achievements?.length) {
-        notifyParts.push(t('focus.achievements', { labels: data.unlocked_achievements.map(a => a.label).join(', ') }));
+        notifyParts.push(t('focus.achievements', { labels: unlockedAchievementsText(data.unlocked_achievements) }));
       }
       if (notifyParts.length) {
         setSnackbar({ open: true, message: notifyParts.join(' · '), severity: 'success' });

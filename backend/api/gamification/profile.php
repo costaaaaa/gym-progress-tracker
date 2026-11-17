@@ -55,7 +55,7 @@ try {
         $key = $entry['key'];
         $achievements[] = [
             'key'         => $key,
-            'label'       => $entry['label'],
+            'label'       => achievementLabel($key),
             'category'    => $entry['category'],
             'threshold'   => $entry['threshold'],
             'locked'      => !isset($unlocked_map[$key]),

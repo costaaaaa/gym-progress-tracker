@@ -156,35 +156,38 @@ function workoutRewards(array $sets_by_exercise, array $prev_bests, bool $xp_ses
 // La chiamante confronta con quelli già salvati e fa INSERT IGNORE solo per i nuovi.
 
 // ── Catalogo achievement (usato da profile.php e dalla risposta di record_workout) ─
+// I nomi non sono qui: vedi achievementLabel().
 
 function achievementCatalog(): array {
     return [
-        ['key' => 'sessions_10',      'label' => 'Prime 10 sessioni',         'category' => 'sessions',  'threshold' => 10],
-        ['key' => 'sessions_50',      'label' => '50 sessioni',                'category' => 'sessions',  'threshold' => 50],
-        ['key' => 'sessions_100',     'label' => 'Centurione',                 'category' => 'sessions',  'threshold' => 100],
-        ['key' => 'sessions_250',     'label' => '250 sessioni',               'category' => 'sessions',  'threshold' => 250],
+        ['key' => 'sessions_10',      'category' => 'sessions',  'threshold' => 10],
+        ['key' => 'sessions_50',      'category' => 'sessions',  'threshold' => 50],
+        ['key' => 'sessions_100',     'category' => 'sessions',  'threshold' => 100],
+        ['key' => 'sessions_250',     'category' => 'sessions',  'threshold' => 250],
         // Tonnellaggio: oggetti reali in ordine di peso, dalla prima sessione ad anni di allenamento
-        ['key' => 'tonnage_auto',     'label' => '1,5 t — automobile',         'category' => 'tonnage',   'threshold' => 1500],
-        ['key' => 'tonnage_elephant', 'label' => '6 t — elefante',             'category' => 'tonnage',   'threshold' => 6000],
-        ['key' => 'tonnage_bus',      'label' => '15 t — autobus',             'category' => 'tonnage',   'threshold' => 15000],
-        ['key' => 'tonnage_tank',     'label' => '60 t — carro armato',        'category' => 'tonnage',   'threshold' => 60000],
-        ['key' => 'tonnage_whale',    'label' => '150 t — balenottera azzurra', 'category' => 'tonnage',  'threshold' => 150000],
-        ['key' => 'tonnage_iss',      'label' => '420 t — Stazione Spaziale',  'category' => 'tonnage',   'threshold' => 420000],
-        ['key' => 'tonnage_shuttle',  'label' => '2.000 t — Space Shuttle',    'category' => 'tonnage',   'threshold' => 2000000],
-        ['key' => 'tonnage_eiffel',   'label' => '7.300 t — Torre Eiffel',     'category' => 'tonnage',   'threshold' => 7300000],
-        ['key' => 'strength_60',      'label' => '60 kg in un esercizio',      'category' => 'strength',  'threshold' => 60],
-        ['key' => 'strength_100',     'label' => '100 kg in un esercizio',     'category' => 'strength',  'threshold' => 100],
-        ['key' => 'strength_140',     'label' => '140 kg in un esercizio',     'category' => 'strength',  'threshold' => 140],
-        ['key' => 'streak_4',         'label' => '4 settimane consecutive',    'category' => 'streak',    'threshold' => 4],
-        ['key' => 'streak_8',         'label' => '8 settimane consecutive',    'category' => 'streak',    'threshold' => 8],
-        ['key' => 'streak_12',        'label' => '12 settimane consecutive',   'category' => 'streak',    'threshold' => 12],
-        ['key' => 'streak_24',        'label' => '24 settimane consecutive',   'category' => 'streak',    'threshold' => 24],
+        ['key' => 'tonnage_auto',     'category' => 'tonnage',   'threshold' => 1500],
+        ['key' => 'tonnage_elephant', 'category' => 'tonnage',   'threshold' => 6000],
+        ['key' => 'tonnage_bus',      'category' => 'tonnage',   'threshold' => 15000],
+        ['key' => 'tonnage_tank',     'category' => 'tonnage',   'threshold' => 60000],
+        ['key' => 'tonnage_whale',    'category' => 'tonnage',  'threshold' => 150000],
+        ['key' => 'tonnage_iss',      'category' => 'tonnage',   'threshold' => 420000],
+        ['key' => 'tonnage_shuttle',  'category' => 'tonnage',   'threshold' => 2000000],
+        ['key' => 'tonnage_eiffel',   'category' => 'tonnage',   'threshold' => 7300000],
+        ['key' => 'strength_60',      'category' => 'strength',  'threshold' => 60],
+        ['key' => 'strength_100',     'category' => 'strength',  'threshold' => 100],
+        ['key' => 'strength_140',     'category' => 'strength',  'threshold' => 140],
+        ['key' => 'streak_4',         'category' => 'streak',    'threshold' => 4],
+        ['key' => 'streak_8',         'category' => 'streak',    'threshold' => 8],
+        ['key' => 'streak_12',        'category' => 'streak',    'threshold' => 12],
+        ['key' => 'streak_24',        'category' => 'streak',    'threshold' => 24],
     ];
 }
 
-function achievementLabel(string $key): string {
+// Nome del traguardo nella lingua della richiesta (o $locale): le etichette stanno in backend/lang
+// (chiavi achievement.<key>), così c'è una sola fonte lato server per italiano e inglese.
+function achievementLabel(string $key, ?string $locale = null): string {
     foreach (achievementCatalog() as $entry) {
-        if ($entry['key'] === $key) return $entry['label'];
+        if ($entry['key'] === $key) return t_server("achievement.$key", array(), $locale);
     }
     return $key;
 }
