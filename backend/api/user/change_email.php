@@ -63,7 +63,7 @@ try {
         case 'taken':
             api_error(409, 'email_taken', t_server('email.change_taken'), array('field' => 'email'));
         case 'wait':
-            email_verification_respond_wait($result['seconds']);
+            api_email_resend_wait($result['seconds']);
         default:
             api_not_found(t_server('common.user_not_found'));
     }

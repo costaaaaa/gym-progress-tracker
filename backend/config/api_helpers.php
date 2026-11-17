@@ -523,6 +523,14 @@ function api_error($status_code, $code, $message, array $extra = [])
     ] + $extra, $status_code);
 }
 
+// 429 email_resend_wait con retry_after e header Retry-After (non ritorna)
+function api_email_resend_wait($seconds)
+{
+    header('Retry-After: ' . $seconds);
+    api_error(429, 'email_resend_wait', t_server('email.resend_wait', array('seconds' => $seconds)),
+        array('retry_after' => $seconds));
+}
+
 // Riga di appartenenza (role, share_level, joined_at) dell'utente al gruppo, o null
 function group_membership($db, $group_id, $user_id)
 {

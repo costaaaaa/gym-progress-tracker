@@ -25,7 +25,7 @@ try {
             email_verification_send_code_later($result['email'], $result['username'], $result['locale'], $result['code'], $result['is_change']);
             api_json_response(array('success' => true, 'message' => t_server('email.code_sent')));
         case 'wait':
-            email_verification_respond_wait($result['seconds']);
+            api_email_resend_wait($result['seconds']);
         case 'already_verified':
             api_error(409, 'email_already_verified', t_server('email.already_confirmed'));
         default:

@@ -990,8 +990,10 @@ DROP TABLE IF EXISTS `gym_progress`;
 --     eliminazione mandati dalla pulizia notturna, backend/tools/purge.php). Tabella gym_email_codes:
 --     i codici a 6 cifre (nel database solo l'hash sha256("<id utente>:<codice>")).
 --     Gli account che esistono adesso risultano confermati (email_verified_at = created_at). Il
---     backfill gira finché la tabella gym_email_codes non esiste (si crea dopo): se la sezione si ferma a metà
---     si rilancia e riempie, a sezione completa non tocca più gli account nati dopo (non confermati finché non confermano). Solo
+--     backfill gira finché la tabella gym_email_codes non esiste (si crea dopo): se la sezione si
+--     ferma a metà si rilancia e riempie; a sezione completa non tocca più gli account nati dopo
+--     (non confermati finché non confermano). Per questo gym_email_codes non va mai eliminata e
+--     ricreata: il riempimento ripartirebbe e confermerebbe gli account non confermati. Solo
 --     aggiunte: il rollback del codice resta possibile (il codice vecchio ignora le colonne nuove).
 -- ------------------------------------------------------------------------------
 
@@ -1005,8 +1007,9 @@ SET @q = IF(@fresh,
      ADD COLUMN `unverified_notice_at` DATETIME NULL DEFAULT NULL AFTER `unverified_notice_stage`',
   'DO 0');
 PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
--- Il riempimento è legato alla tabella dei codici, che la CREATE qui sotto crea solo dopo: se la sezione si ferma
--- tra l'ALTER e l'UPDATE, al rilancio la tabella manca ancora e il riempimento rigira; a sezione completa non gira più.
+-- Il riempimento è legato alla tabella dei codici, che la CREATE qui sotto crea solo dopo: se la
+-- sezione si ferma tra l'ALTER e l'UPDATE, al rilancio la tabella manca ancora e il riempimento
+-- rigira; a sezione completa non gira più. Vale finché gym_email_codes non viene eliminata e ricreata.
 SET @backfill = (SELECT COUNT(*) = 0 FROM information_schema.tables
                  WHERE table_schema = DATABASE() AND table_name = 'gym_email_codes');
 SET @q = IF(@backfill, 'UPDATE `gym_users` SET `email_verified_at` = `created_at`, `updated_at` = `updated_at` WHERE `email_verified_at` IS NULL', 'DO 0');
