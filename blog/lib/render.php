@@ -50,8 +50,8 @@ function blog_render_page(array $opts)
 
     // Il marchio porta alla landing (in inglese /en/), come accesso e registrazione alle pagine dell'app.
     $ui = array(
-        'it' => array('locale' => 'it_IT', 'app' => BLOG_APP_URL, 'login' => 'Accedi', 'register' => 'Registrati', 'terms' => "Termini d'uso", 'privacyPath' => 'privacy.html', 'termsPath' => 'termini.html'),
-        'en' => array('locale' => 'en_US', 'app' => BLOG_APP_URL . 'en/', 'login' => 'Log in', 'register' => 'Sign up', 'terms' => 'Terms of use', 'privacyPath' => 'en/privacy.html', 'termsPath' => 'en/terms.html'),
+        'it' => array('locale' => 'it_IT', 'app' => BLOG_APP_URL, 'login' => 'Accedi', 'register' => 'Registrati', 'terms' => "Termini d'uso", 'privacyPath' => 'privacy.html', 'termsPath' => 'termini.html', 'plans' => 'Piani', 'plansPath' => 'piani'),
+        'en' => array('locale' => 'en_US', 'app' => BLOG_APP_URL . 'en/', 'login' => 'Log in', 'register' => 'Sign up', 'terms' => 'Terms of use', 'privacyPath' => 'en/privacy.html', 'termsPath' => 'en/terms.html', 'plans' => 'Free, Plus and Pro', 'plansPath' => 'en/plans'),
     );
     $ui = $ui[$lang];
     $languageNames = array('it' => 'Italiano', 'en' => 'English');
@@ -141,6 +141,7 @@ function blog_render_page(array $opts)
 <?php if ($lang === 'it'): ?>
         <a href="<?php echo blog_e(BLOG_BASE_URL); ?>/">Blog</a> &middot;
 <?php endif; ?>
+        <a href="<?php echo blog_e(BLOG_APP_URL . $ui['plansPath']); ?>"><?php echo blog_e($ui['plans']); ?></a> &middot;
         <a href="<?php echo blog_e(BLOG_APP_URL . $ui['privacyPath']); ?>">Privacy</a> &middot;
         <a href="<?php echo blog_e(BLOG_APP_URL . $ui['termsPath']); ?>"><?php echo blog_e($ui['terms']); ?></a>
 <?php foreach ($alternates as $hreflang => $href): if (isset($languageNames[$hreflang]) && $hreflang !== $lang): ?>

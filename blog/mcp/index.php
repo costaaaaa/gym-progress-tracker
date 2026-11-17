@@ -29,7 +29,7 @@ ob_start();
             <li>allenamenti e sessioni, con esercizi, serie e andamento dei carichi</li>
             <li>record personali</li>
             <li>schede</li>
-            <li>statistiche e serie per gruppo muscolare</li>
+            <li>statistiche e serie della settimana: il dettaglio per gruppo muscolare è di Plus e Pro; con il piano Gratis leggi il totale (<a href="<?php echo blog_e(BLOG_APP_URL . 'piani'); ?>">confronto dei piani</a>)</li>
             <li>misure corporee, anche lo storico, solo se scegli di condividerle</li>
         </ul>
         <p>Non legge mai le note, la tua email né la password.</p>

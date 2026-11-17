@@ -28,7 +28,7 @@ ob_start();
             <li>workouts and sessions, with exercises, sets and load progress</li>
             <li>personal records</li>
             <li>training plans</li>
-            <li>stats and sets by muscle group</li>
+            <li>stats and weekly sets: the breakdown by muscle group is for Plus and Pro; on Free you get the total (<a href="<?php echo blog_e(BLOG_APP_URL . 'en/plans'); ?>">compare Free, Plus and Pro</a>)</li>
             <li>body measurements, including history, only if you choose to share them</li>
         </ul>
         <p>It never reads your notes, your email or your password.</p>

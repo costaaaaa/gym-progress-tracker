@@ -6,7 +6,7 @@ import { Outlet, Link as RouterLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LanguageHint from './LanguageHint';
 import { radius } from '../../theme/radius';
-import { isEnPath, stripLangPrefix, withLangPrefix, legalPaths, blogPaths } from '../../i18n/paths';
+import { isEnPath, stripLangPrefix, withLangPrefix, legalPaths, blogPaths, plansPath } from '../../i18n/paths';
 import { setLanguageChoice } from '../../i18n';
 
 const MAIN_ID = 'main-content';
@@ -83,6 +83,8 @@ const Layout = () => {
               <Link href={blogPaths(i18n.language).calculator} color="inherit" underline="hover">{t('footer.calculator')}</Link>
               {' · '}
               <Link href={blogPaths(i18n.language).mcp} color="inherit" underline="hover">{t('footer.mcp')}</Link>
+              {' · '}
+              <Link href={plansPath(i18n.language)} color="inherit" underline="hover">{t('footer.plans')}</Link>
               {' · '}
               <Link
                 component={RouterLink}

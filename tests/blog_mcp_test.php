@@ -63,6 +63,8 @@ check_page(render('mcp/index.php'), 'it', $it, array(
     'pulsante del consenso' => '"Consenti"',
     'casella delle misure corporee' => '"Condividi anche le misure corporee (peso e simili)"',
     'revoca dalla scheda Account' => 'puoi revocarlo in qualunque momento dalla scheda Account',
+    'serie per muscolo: dettaglio di Plus e Pro, totale al piano Gratis' => 'il dettaglio per gruppo muscolare è di Plus e Pro; con il piano Gratis leggi il totale',
+    'link ai piani' => 'href="https://liftindex.app/piani"',
 ));
 
 echo "Pagina inglese\n";
@@ -75,6 +77,8 @@ check_page(render('en/mcp/index.php'), 'en', $en, array(
     'pulsante del consenso' => '"Allow"',
     'casella delle misure corporee' => '"Also share body measurements (weight and similar)"',
     'revoca dalla scheda Account' => 'you can revoke it anytime from the Account tab',
+    'serie per muscolo: dettaglio di Plus e Pro, totale al piano Gratis' => 'the breakdown by muscle group is for Plus and Pro; on Free you get the total',
+    'link ai piani' => 'href="https://liftindex.app/en/plans"',
 ));
 $html = render('en/mcp/index.php');
 check('EN: niente link alle pagine legali italiane', strpos($html, 'liftindex.app/privacy.html') === false && strpos($html, 'liftindex.app/termini.html') === false);
