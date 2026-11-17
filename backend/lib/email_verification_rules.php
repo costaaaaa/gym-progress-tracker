@@ -119,15 +119,20 @@ function unverifiedAccountAction($created_at, $stage, $notice_at, $now, $is_admi
     return 'none';
 }
 
-// Data (timestamp) prima della quale l'account non verrà eliminato secondo la regola vera, da scrivere nell'avviso
-// $stage (1 o 2) mandato adesso: il più tardi tra created_at + 37 giorni e il momento più vicino in cui
-// l'eliminazione sarebbe possibile (primo avviso: secondo avviso tra almeno 20 ore, al più tardi alla prima pulizia
-// dopo 5 giorni, poi 47 ore; qui si usa adesso + 5 giorni + 47 ore come da specifica).
+// Data (timestamp) del primo istante in cui l'account può essere eliminato secondo la regola vera, da scrivere
+// nell'avviso $stage (1 o 2) mandato adesso: il più tardi tra created_at + 37 giorni e
+//  - secondo avviso: adesso + 47 ore;
+//  - primo avviso: (il più tardi tra adesso + 20 ore e created_at + 35 giorni) + 47 ore, cioè quando può partire
+//    il secondo avviso più il tempo che deve passare prima dell'eliminazione.
 function emailNoticeDeleteAfter($created_at, $stage, $now)
 {
     $byAge = $created_at + UNVERIFIED_DELETE_SECONDS;
-    $byNotice = $now + UNVERIFIED_DELETE_AFTER_NOTICE_SECONDS + ((int)$stage === 1 ? 5 * 86400 : 0);
-    return max($byAge, $byNotice);
+    if ((int)$stage === 1) {
+        $notice2 = max($now + UNVERIFIED_NOTICE_GAP_SECONDS, $created_at + UNVERIFIED_NOTICE2_SECONDS);
+    } else {
+        $notice2 = $now;
+    }
+    return max($byAge, $notice2 + UNVERIFIED_DELETE_AFTER_NOTICE_SECONDS);
 }
 
 // La data dell'avviso, mostrata in ora italiana
