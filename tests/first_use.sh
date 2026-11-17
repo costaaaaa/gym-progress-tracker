@@ -14,6 +14,10 @@
 # registrazioni per IP alzato (RL_REGISTER_MAX).
 #
 # Richiede curl e jq. Esce con 1 se un controllo fallisce.
+#
+# Serve DB_SQL_CMD (comando che legge SQL da stdin sul database dell'istanza, vedi tests/lib/tier.sh):
+# gli account che creano più di 2 schede sono portati a Plus, perché il Gratis ne ammette 2. Le regole
+# controllate (scheda attiva, mai due attive, storico vuoto) non dipendono dal piano.
 
 # I filtri jq stanno fra apici semplici di proposito: $status è una variabile di jq
 # shellcheck disable=SC2016
@@ -21,6 +25,8 @@ set -uo pipefail
 
 BASE="${1:?uso: $(basename "$0") <url del backend, es. http://localhost:8080/backend/>}"
 [[ "$BASE" == */ ]] || BASE="$BASE/"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/tier.sh"
+need_db_sql_cmd
 
 PASS='Prova!PrimoUso2026'
 SUFFIX="$(date +%s | tail -c 7)$RANDOM"
@@ -104,6 +110,7 @@ expect_n "è l'unica attiva" "$(active_ids "$A" | tr '\n' ' ')" "$(plan_id "$R3"
 
 echo "Utente con schede ma nessuna attiva"
 new_account "fuB$SUFFIX"; B="$TOKEN"
+plus_account "fuB$SUFFIX"
 RB1="$(new_plan "$B" '{"name":"Scheda ferma","is_active":0}')"
 check "is_active 0 esplicito è rispettato anche senza schede attive" "$RB1" '$status == 201 and (.plan.is_active | tonumber) == 0'
 expect_n "nessuna scheda attiva" "$(active_count "$B")" 0
@@ -118,6 +125,7 @@ expect_n "l'unica attiva è la nuova" "$(active_ids "$B" | tr '\n' ' ')" "$(plan
 
 echo "Creazioni contemporanee"
 new_account "fuC$SUFFIX"; C="$TOKEN"
+plus_account "fuC$SUFFIX"
 for i in 1 2 3 4 5 6; do
     new_plan "$C" "{\"name\":\"Parallela $i\"}" >/dev/null &
 done
@@ -127,6 +135,7 @@ expect_n "una sola attiva" "$(active_count "$C")" 1
 
 echo "Creazioni e attivazioni contemporanee"
 new_account "fuD$SUFFIX"; D="$TOKEN"
+plus_account "fuD$SUFFIX"
 DP=()
 for i in 1 2 3 4; do DP+=("$(plan_id "$(new_plan "$D" "{\"name\":\"Esistente $i\",\"is_active\":0}")")"); done
 for i in 1 2 3 4; do
@@ -151,6 +160,7 @@ expect_n "l'attiva resta attiva" "$(active_ids "$E" | tr '\n' ' ')" "$EP1 "
 
 echo "Scheda cancellata mentre la si attiva (sicurezza: mai 5xx; la regressione è in tests/workout_plan_active.sh)"
 new_account "fuG$SUFFIX"; G="$TOKEN"
+plus_account "fuG$SUFFIX"
 GA="$(plan_id "$(new_plan "$G")")"
 bad=0; notfound=0
 FU_R="$(mktemp)"; TMPFILES+=("$FU_R")
