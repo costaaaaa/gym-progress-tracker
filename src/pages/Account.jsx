@@ -33,6 +33,8 @@ import {
   Download as DownloadIcon,
   Edit as EditIcon,
   Logout as LogoutIcon,
+  CheckCircleOutline as CheckCircleOutlineIcon,
+  ErrorOutline as ErrorOutlineIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import LabeledDatePicker from '../components/LabeledDatePicker';
@@ -57,9 +59,11 @@ import PasswordToggle from '../components/Auth/PasswordToggle';
 import ButtonSpinner from '../components/ButtonSpinner';
 import DeleteAccountDialog from '../components/Account/DeleteAccountDialog';
 import useDataExport from '../hooks/useDataExport';
+import ChangeEmailDialog from '../components/EmailVerification/ChangeEmailDialog';
+import { cancelEmailChange } from '../api/emailVerification';
 
 const Account = ({ isEmbedded = false }) => {
-  const { user, logout, isLoggedIn, updateUser, loading: authLoading } = useAuth();
+  const { user, logout, isLoggedIn, updateUser, loading: authLoading, emailState, openEmailDialog, refreshEmailState } = useAuth();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -101,6 +105,10 @@ const Account = ({ isEmbedded = false }) => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const confirmPair = useConfirmPassword({ password: newPassword, confirm: confirmPassword });
+
+  // Cambio di indirizzo email: la finestra è ChangeEmailDialog, il codice si scrive nella finestra comune (contesto)
+  const [changeEmailOpen, setChangeEmailOpen] = useState(false);
+  const [cancellingChange, setCancellingChange] = useState(false);
 
   // Eliminazione dell'account: la finestra (con password e conferma) è DeleteAccountDialog
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -436,6 +444,18 @@ const Account = ({ isEmbedded = false }) => {
     }
   };
 
+  const handleCancelEmailChange = async () => {
+    setCancellingChange(true);
+    const res = await cancelEmailChange();
+    setCancellingChange(false);
+    if (res.ok) {
+      await refreshEmailState();
+      setSnackbar({ open: true, message: t('emailstatus.cancelled'), severity: 'success' });
+    } else {
+      setSnackbar({ open: true, message: res.status === 0 ? t('emailconfirm.error_network') : (res.data?.message || t('emailconfirm.error_generic')), severity: 'error' });
+    }
+  };
+
   // Chiusura dello snackbar
   const handleCloseSnackbar = () => {
     setSnackbar({
@@ -490,22 +510,69 @@ const Account = ({ isEmbedded = false }) => {
               {userData?.username || t('account.user_fallback')}
             </Typography>
             <Typography sx={{ fontSize: 16, color: 'text.secondary', overflowWrap: 'anywhere' }}>
-              {userData?.email || t('account.email_unavailable')}
+              {emailState?.email || userData?.email || t('account.email_unavailable')}
             </Typography>
+            {emailState && (
+              <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', columnGap: 1, mt: 0.5 }}>
+                {emailState.verified ? (
+                  <Typography sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, fontSize: 16, fontWeight: 600, color: 'success.main' }}>
+                    <CheckCircleOutlineIcon aria-hidden="true" fontSize="small" />
+                    {t('emailstatus.confirmed')}
+                  </Typography>
+                ) : (
+                  <>
+                    <Typography sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, fontSize: 16, fontWeight: 600, color: 'warning.text' }}>
+                      <ErrorOutlineIcon aria-hidden="true" fontSize="small" />
+                      {t('emailstatus.unconfirmed')}
+                    </Typography>
+                    <Button onClick={openEmailDialog} sx={{ minHeight: 44, fontSize: 16, fontWeight: 600, textDecoration: 'underline', color: 'text.primary' }}>
+                      {t('emailstatus.enter_code')}
+                    </Button>
+                  </>
+                )}
+              </Box>
+            )}
+            {emailState?.pendingEmail && (
+              <Box sx={{ mt: 0.5 }}>
+                <Typography sx={{ fontSize: 16, overflowWrap: 'anywhere' }}>
+                  {t('emailstatus.pending', { email: emailState.pendingEmail })}
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 1 }}>
+                  <Button onClick={openEmailDialog} sx={{ minHeight: 44, fontSize: 16, fontWeight: 600, textDecoration: 'underline', color: 'text.primary' }}>
+                    {t('emailstatus.enter_code')}
+                  </Button>
+                  <Button
+                    onClick={handleCancelEmailChange}
+                    disabled={cancellingChange}
+                    aria-label={t('emailstatus.cancel_aria')}
+                    sx={{ minHeight: 44, fontSize: 16, fontWeight: 600, textDecoration: 'underline', color: 'text.primary' }}
+                  >
+                    {t('common.cancel')}
+                  </Button>
+                </Box>
+              </Box>
+            )}
             <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
               {t('account.member_since', { date: joinDate ? format(joinDate, 'MMMM yyyy', { locale: dateFnsLocale() }) : t('account.date_unavailable') })}
             </Typography>
           </Box>
         </Box>
 
-        <Button
-          variant="outlined"
-          startIcon={<EditIcon />}
-          onClick={() => setEditOpen(o => !o)}
-          sx={{ ...NEUTRAL_OUTLINED, mt: 2 }}
-        >
-          {t('account.edit')}
-        </Button>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mt: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<EditIcon />}
+            onClick={() => setEditOpen(o => !o)}
+            sx={NEUTRAL_OUTLINED}
+          >
+            {t('account.edit')}
+          </Button>
+          {emailState && (
+            <Button variant="outlined" onClick={() => setChangeEmailOpen(true)} sx={{ ...NEUTRAL_OUTLINED, minHeight: 44 }}>
+              {t('emailchange.open')}
+            </Button>
+          )}
+        </Box>
 
         {/* Card "Profilo fisico" e "Allenamento": fuori dal design, restano collassate */}
         <Collapse in={editOpen}>
@@ -929,6 +996,8 @@ const Account = ({ isEmbedded = false }) => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ChangeEmailDialog open={changeEmailOpen} onClose={() => setChangeEmailOpen(false)} onChanged={() => openEmailDialog()} />
 
       <DeleteAccountDialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)} onDeleted={handleAccountDeleted} />
 
