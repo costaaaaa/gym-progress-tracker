@@ -8,10 +8,12 @@
 $backend = $argv[1];
 require $backend . '/config/database.php';
 require __DIR__ . '/lib/http_test.php';
+require __DIR__ . '/lib/server_test.php';
 
 const PASSWORD = 'Prova!Codici2026';
 const PORT_A = 8097;  // limiti per IP alti, 4 processi
 const PORT_B = 8096;  // al massimo 3 codici non utilizzabili all'ora per IP
+const API_DEFAULT_PORT = PORT_A;
 const LOG_A = '/tmp/sc-a.log';
 const LOG_B = '/tmp/sc-b.log';
 
@@ -21,55 +23,10 @@ foreach (['RL_REGISTER_MAX', 'RL_LOGIN_IP_MAX', 'RL_LOGIN_USER_MAX', 'RL_LOGIN_A
 putenv('MAIL_DRIVER=log');
 putenv('APP_PUBLIC_URL=https://liftindex.test');
 
-function startServer($backend, $port, $log, array $env)
-{
-    $server = proc_open(['php', '-S', "127.0.0.1:$port", '-t', $backend],
-        [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['file', $log, 'w']], $pipes, null, $env + getenv());
-    register_shutdown_function(function () use ($server) {
-        proc_terminate($server);
-    });
-    for ($i = 0; $i < 50; $i++) {
-        $sock = @fsockopen('127.0.0.1', $port);
-        if ($sock) { fclose($sock); break; }
-        usleep(100000);
-    }
-}
 startServer($backend, PORT_A, LOG_A, ['PHP_CLI_SERVER_WORKERS' => '4']);
 startServer($backend, PORT_B, LOG_B, ['RL_SIGNUP_CODE_IP_MAX' => '3']);
 
 $conn = (new Database())->getConnection();
-
-function sql($query, $params = [])
-{
-    global $conn;
-    $stmt = $conn->prepare($query);
-    $stmt->execute($params);
-    return $stmt;
-}
-function scalar($query, $params = [])
-{
-    return sql($query, $params)->fetchColumn();
-}
-function rows($query, $params = [])
-{
-    return sql($query, $params)->fetchAll(PDO::FETCH_ASSOC);
-}
-
-function api($method, $path, $auth = null, $body = null, $port = PORT_A, $extra = [])
-{
-    $headers = "Content-Type: application/json\r\n";
-    if ($auth && isset($auth['bearer'])) $headers .= "Authorization: Bearer {$auth['bearer']}\r\n";
-    foreach ($extra as $h) $headers .= "$h\r\n";
-    $context = stream_context_create(['http' => [
-        'method' => $method, 'header' => $headers, 'ignore_errors' => true, 'timeout' => 30,
-        'content' => $body === null ? '' : json_encode($body),
-    ]]);
-    $raw = file_get_contents("http://127.0.0.1:$port$path", false, $context);
-    $responseHeaders = function_exists('http_get_last_response_headers') ? http_get_last_response_headers() : ($http_response_header ?? []);
-    $code = 0;
-    if (isset($responseHeaders[0]) && preg_match('/ (\d{3})/', $responseHeaders[0], $m)) $code = (int)$m[1];
-    return [$code, json_decode((string)$raw, true), (string)$raw, $responseHeaders ?: []];
-}
 
 function regBody($name, $signupCode = null, $email = null, $locale = 'it')
 {
