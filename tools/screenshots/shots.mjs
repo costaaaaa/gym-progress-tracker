@@ -100,16 +100,17 @@ const richPlans = [
 ];
 // Scheda attiva con un giorno solo: con esercizi (preselezionato) o ancora vuoto (appena creata)
 const oneDayPlan = (exercises) => [{ id: 5, name: 'La mia scheda', description: '', is_active: true, days: [day(1, 'Giorno 1', exercises)] }];
-// Schede del piano Gratis (limiti: 2 schede, 3 giorni per scheda). `read_only` come lo manda read_plans.php
+// Schede del piano Gratis (limiti: 2 schede, 4 giorni per scheda). `read_only` come lo manda read_plans.php
 const gratisPlan = (id, name, days, extra = {}) => ({ id, name, description: '', is_active: id === 1, days, read_only: false, ...extra });
 const gratisDays = (base, n) => Array.from({ length: n }, (_, i) => day(base + i, `Giorno ${i + 1}`, [ex('Panca piana', std), ex('Squat', std, 'quadricipiti')]));
 const PLAN_SETS_GRATIS = {
   schede: [
-    gratisPlan(1, 'Push Pull', gratisDays(10, 2)),
-    gratisPlan(2, 'Full body', gratisDays(20, 1)),
+    // come le manda il server: con troppe schede sono tutte in sola lettura
+    gratisPlan(1, 'Push Pull', gratisDays(10, 2), { read_only: true, read_only_reason: 'plans_over_limit' }),
+    gratisPlan(2, 'Full body', gratisDays(20, 1), { read_only: true, read_only_reason: 'plans_over_limit' }),
     gratisPlan(3, 'Upper Lower', gratisDays(30, 2), { read_only: true, read_only_reason: 'plans_over_limit' }),
   ],
-  giorni: [gratisPlan(1, 'PPL x2', gratisDays(10, 5), { read_only: true, read_only_reason: 'days_over_limit' })],
+  giorni: [gratisPlan(1, 'PPL x2', gratisDays(10, 6), { read_only: true, read_only_reason: 'days_over_limit' })],
   limite: [gratisPlan(1, 'Push Pull', gratisDays(10, 2)), gratisPlan(2, 'Full body', gratisDays(20, 1))],
   nuova: [gratisPlan(1, 'Push Pull', gratisDays(10, 2))],
   elimina: [gratisPlan(1, 'Push Pull', gratisDays(10, 3))],
@@ -174,7 +175,7 @@ const GROUP_ROWS = [
 // Piano dell'account: `pro` (default, come Plus/Pro: nessun tetto) o `gratis` (tetti del piano Gratis)
 const LIMITS = {
   pro: { plans: 50, days_per_plan: 7, personal_exercises: 30 },
-  gratis: { plans: 2, days_per_plan: 3, personal_exercises: 10 },
+  gratis: { plans: 2, days_per_plan: 4, personal_exercises: 10 },
 };
 const user = ({ admin, gratis }) => ({
   success: true, id: 1, username: 'atleta_demo', email: 'atleta@example.com',
