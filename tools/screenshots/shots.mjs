@@ -707,10 +707,10 @@ for (const vp of viewports) {
         const { ctx, page } = await openPage(vp, theme, { loggedIn: false, codice }, tag);
         try {
           await page.goto(`${base}/register?code=PRIMAVERA-26`, { waitUntil: 'domcontentloaded' });
-          await page.getByLabel('Username').fill('atleta_nuovo');
-          await page.getByLabel('Email').fill('nuovo@example.com');
-          await page.getByLabel('Password', { exact: true }).fill('Segreta!2026');
-          await page.getByLabel('Conferma password').fill('Segreta!2026');
+          await page.getByLabel(/^Username/).fill('atletanuovo');
+          await page.getByLabel(/^Email/).fill('nuovo@example.com');
+          await page.getByLabel(/^Password/).fill('Segreta!2026');
+          await page.getByLabel(/^Conferma password/).fill('Segreta!2026');
           await page.getByRole('button', { name: 'Avanti' }).click();
           if (codice === 'ok') await page.getByText('Il tuo profilo').waitFor();
           else await page.getByText('Il codice di registrazione non è valido.').waitFor();
