@@ -87,13 +87,14 @@ describe('Cambia indirizzo', () => {
     expect(document.activeElement).toBe(passwordField());
   });
 
-  it('indirizzo già in uso: errore sul campo indirizzo, con il rimando a «Password dimenticata»', async () => {
+  it('indirizzo già in uso: errore sul campo indirizzo, senza suggerimenti di recupero', async () => {
     answers(reply(409, { success: false, code: 'email_taken', field: 'email' }));
     const { onClose } = mount();
     fill();
     submit();
     await waitFor(() => expect(emailField().getAttribute('aria-invalid')).toBe('true'));
-    expect(describedByText(emailField())).toContain('reset della password');
+    expect(describedByText(emailField())).toContain('Questa email è già usata da un altro account.');
+    expect(describedByText(emailField())).not.toContain('password');
     expect(onClose).not.toHaveBeenCalled();
     expect(document.activeElement).toBe(emailField());
   });
