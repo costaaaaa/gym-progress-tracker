@@ -15,10 +15,7 @@ import { API_BASE_URL } from '../config';
 import { formatDate } from '../i18n/format';
 import { isClockString, clockDay } from '../utils/calendarDay';
 import { isoClock, differentZone, zoneCity } from '../utils/workoutTime';
-import { achievementCatalog } from '../utils/gamificationLevels';
 import ButtonSpinner from './ButtonSpinner';
-
-const achievementLabel = (key) => achievementCatalog.find(a => a.key === key)?.label ?? key;
 
 // Codici d'errore di update_date.php → testo tradotto (il message del server è solo in italiano)
 const ERROR_KEYS = {
@@ -165,10 +162,10 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess }) => {
             <Typography variant="body2">{t('history.streak_change', { from: preview.streak_before, to: preview.streak_after })}</Typography>
           )}
           {(preview?.achievements_unlocked ?? []).map(key => (
-            <Typography key={key} variant="body2">{t('history.date.gain_achievement', { label: achievementLabel(key) })}</Typography>
+            <Typography key={key} variant="body2">{t('history.date.gain_achievement', { label: t(`achievement.${key}`, { defaultValue: key }) })}</Typography>
           ))}
           {(preview?.achievements_removed ?? []).map(key => (
-            <Typography key={key} variant="body2">{t('history.delete.lose_achievement', { label: achievementLabel(key) })}</Typography>
+            <Typography key={key} variant="body2">{t('history.delete.lose_achievement', { label: t(`achievement.${key}`, { defaultValue: key }) })}</Typography>
           ))}
           {workout.health_written && (
             <Typography variant="body2">{t('history.date.health_note')}</Typography>

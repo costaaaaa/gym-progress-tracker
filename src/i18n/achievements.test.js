@@ -25,6 +25,7 @@ describe('nomi dei traguardi', () => {
     for (const { key } of achievementCatalog) expect(i18n.t(`achievement.${key}`, { defaultValue: key })).toBe(EN[key]);
   });
   it('una chiave sconosciuta resta la chiave', async () => {
-    expect(i18n.t('achievement.nope_1', { defaultValue: 'nope_1' })).toBe('nope_1');
+    const key = 'nope_1';
+    expect(i18n.t(`achievement.${key}`, { defaultValue: key })).toBe(key);
   });
 });
