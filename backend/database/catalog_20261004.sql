@@ -153,7 +153,6 @@ WHERE NOT EXISTS (SELECT 1 FROM gym_exercises WHERE name = 'Panca Scott (Macchin
 -- 88 -> 6
 UPDATE gym_workout_sets      SET exercise_id = 6 WHERE exercise_id = 88;
 UPDATE gym_workout_exercises SET exercise_id = 6 WHERE exercise_id = 88;
-UPDATE gym_progress          SET exercise_id = 6 WHERE exercise_id = 88;
 INSERT IGNORE INTO gym_exercise_gamification (user_id, exercise_id, xp, level)
   SELECT DISTINCT user_id, 6, 0, 1 FROM gym_exercise_gamification WHERE exercise_id IN (6, 88);
 UPDATE gym_exercise_gamification g
@@ -167,7 +166,6 @@ UPDATE gym_exercises SET merged_into = 6, status = 'rejected', created_by = NULL
 -- 104 -> 11
 UPDATE gym_workout_sets      SET exercise_id = 11 WHERE exercise_id = 104;
 UPDATE gym_workout_exercises SET exercise_id = 11 WHERE exercise_id = 104;
-UPDATE gym_progress          SET exercise_id = 11 WHERE exercise_id = 104;
 INSERT IGNORE INTO gym_exercise_gamification (user_id, exercise_id, xp, level)
   SELECT DISTINCT user_id, 11, 0, 1 FROM gym_exercise_gamification WHERE exercise_id IN (11, 104);
 UPDATE gym_exercise_gamification g
@@ -181,7 +179,6 @@ UPDATE gym_exercises SET merged_into = 11, status = 'rejected', created_by = NUL
 -- 75 -> 107
 UPDATE gym_workout_sets      SET exercise_id = 107 WHERE exercise_id = 75;
 UPDATE gym_workout_exercises SET exercise_id = 107 WHERE exercise_id = 75;
-UPDATE gym_progress          SET exercise_id = 107 WHERE exercise_id = 75;
 INSERT IGNORE INTO gym_exercise_gamification (user_id, exercise_id, xp, level)
   SELECT DISTINCT user_id, 107, 0, 1 FROM gym_exercise_gamification WHERE exercise_id IN (107, 75);
 UPDATE gym_exercise_gamification g
@@ -195,7 +192,6 @@ UPDATE gym_exercises SET merged_into = 107, status = 'rejected', created_by = NU
 -- 21 -> 22
 UPDATE gym_workout_sets      SET exercise_id = 22 WHERE exercise_id = 21;
 UPDATE gym_workout_exercises SET exercise_id = 22 WHERE exercise_id = 21;
-UPDATE gym_progress          SET exercise_id = 22 WHERE exercise_id = 21;
 INSERT IGNORE INTO gym_exercise_gamification (user_id, exercise_id, xp, level)
   SELECT DISTINCT user_id, 22, 0, 1 FROM gym_exercise_gamification WHERE exercise_id IN (22, 21);
 UPDATE gym_exercise_gamification g
@@ -209,7 +205,6 @@ UPDATE gym_exercises SET merged_into = 22, status = 'rejected', created_by = NUL
 -- 27 -> 117
 UPDATE gym_workout_sets      SET exercise_id = 117 WHERE exercise_id = 27;
 UPDATE gym_workout_exercises SET exercise_id = 117 WHERE exercise_id = 27;
-UPDATE gym_progress          SET exercise_id = 117 WHERE exercise_id = 27;
 INSERT IGNORE INTO gym_exercise_gamification (user_id, exercise_id, xp, level)
   SELECT DISTINCT user_id, 117, 0, 1 FROM gym_exercise_gamification WHERE exercise_id IN (117, 27);
 UPDATE gym_exercise_gamification g
@@ -223,7 +218,6 @@ UPDATE gym_exercises SET merged_into = 117, status = 'rejected', created_by = NU
 -- 128 -> 36
 UPDATE gym_workout_sets      SET exercise_id = 36 WHERE exercise_id = 128;
 UPDATE gym_workout_exercises SET exercise_id = 36 WHERE exercise_id = 128;
-UPDATE gym_progress          SET exercise_id = 36 WHERE exercise_id = 128;
 INSERT IGNORE INTO gym_exercise_gamification (user_id, exercise_id, xp, level)
   SELECT DISTINCT user_id, 36, 0, 1 FROM gym_exercise_gamification WHERE exercise_id IN (36, 128);
 UPDATE gym_exercise_gamification g
@@ -237,7 +231,6 @@ UPDATE gym_exercises SET merged_into = 36, status = 'rejected', created_by = NUL
 -- 143 -> 39
 UPDATE gym_workout_sets      SET exercise_id = 39 WHERE exercise_id = 143;
 UPDATE gym_workout_exercises SET exercise_id = 39 WHERE exercise_id = 143;
-UPDATE gym_progress          SET exercise_id = 39 WHERE exercise_id = 143;
 INSERT IGNORE INTO gym_exercise_gamification (user_id, exercise_id, xp, level)
   SELECT DISTINCT user_id, 39, 0, 1 FROM gym_exercise_gamification WHERE exercise_id IN (39, 143);
 UPDATE gym_exercise_gamification g
@@ -251,7 +244,6 @@ UPDATE gym_exercises SET merged_into = 39, status = 'rejected', created_by = NUL
 -- 141 -> 43
 UPDATE gym_workout_sets      SET exercise_id = 43 WHERE exercise_id = 141;
 UPDATE gym_workout_exercises SET exercise_id = 43 WHERE exercise_id = 141;
-UPDATE gym_progress          SET exercise_id = 43 WHERE exercise_id = 141;
 INSERT IGNORE INTO gym_exercise_gamification (user_id, exercise_id, xp, level)
   SELECT DISTINCT user_id, 43, 0, 1 FROM gym_exercise_gamification WHERE exercise_id IN (43, 141);
 UPDATE gym_exercise_gamification g
@@ -265,7 +257,6 @@ UPDATE gym_exercises SET merged_into = 43, status = 'rejected', created_by = NUL
 -- 44 -> 42
 UPDATE gym_workout_sets      SET exercise_id = 42 WHERE exercise_id = 44;
 UPDATE gym_workout_exercises SET exercise_id = 42 WHERE exercise_id = 44;
-UPDATE gym_progress          SET exercise_id = 42 WHERE exercise_id = 44;
 INSERT IGNORE INTO gym_exercise_gamification (user_id, exercise_id, xp, level)
   SELECT DISTINCT user_id, 42, 0, 1 FROM gym_exercise_gamification WHERE exercise_id IN (42, 44);
 UPDATE gym_exercise_gamification g
@@ -279,7 +270,6 @@ UPDATE gym_exercises SET merged_into = 42, status = 'rejected', created_by = NUL
 -- 52 -> 163
 UPDATE gym_workout_sets      SET exercise_id = 163 WHERE exercise_id = 52;
 UPDATE gym_workout_exercises SET exercise_id = 163 WHERE exercise_id = 52;
-UPDATE gym_progress          SET exercise_id = 163 WHERE exercise_id = 52;
 INSERT IGNORE INTO gym_exercise_gamification (user_id, exercise_id, xp, level)
   SELECT DISTINCT user_id, 163, 0, 1 FROM gym_exercise_gamification WHERE exercise_id IN (163, 52);
 UPDATE gym_exercise_gamification g
