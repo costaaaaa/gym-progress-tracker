@@ -16,6 +16,7 @@
 # Richiede docker. Esce con 1 se un controllo fallisce, con 2 se la preparazione fallisce.
 
 set -uo pipefail
+shopt -s extglob
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MIGRATIONS="$ROOT/backend/database/schema_alter_migrations.sql"
@@ -47,8 +48,8 @@ if section_sql | tm_sql >/dev/null 2>&1 && [[ "$(tables)" == 2 ]]; then ok "la s
     && ok "gli utenti esistenti non sono toccati" || ko "gli utenti esistenti non sono toccati"
 [[ "$(sql_value "SELECT CONCAT(delete_rule, '/', unique_constraint_name) FROM information_schema.referential_constraints WHERE constraint_schema = 'gym_progress_tracker' AND table_name = 'gym_signup_code_uses' AND referenced_table_name = 'gym_users'")" == SET\ NULL/* ]] \
     && ok "chiave sull'utente: ON DELETE SET NULL" || ko "chiave sull'utente: ON DELETE SET NULL"
-[[ "$(sql_value "SELECT delete_rule FROM information_schema.referential_constraints WHERE constraint_schema = 'gym_progress_tracker' AND table_name = 'gym_signup_code_uses' AND referenced_table_name = 'gym_signup_codes'")" == RESTRICT ]] \
-    && ok "chiave sul codice: senza cascata (RESTRICT)" || ko "chiave sul codice: senza cascata (RESTRICT)"
+[[ "$(sql_value "SELECT delete_rule FROM information_schema.referential_constraints WHERE constraint_schema = 'gym_progress_tracker' AND table_name = 'gym_signup_code_uses' AND referenced_table_name = 'gym_signup_codes'")" == @(RESTRICT|NO ACTION) ]] \
+    && ok "chiave sul codice: senza cascata" || ko "chiave sul codice: senza cascata"
 [[ "$(sql_value "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = 'gym_progress_tracker' AND table_name = 'gym_signup_code_uses' AND column_name = 'user_id' AND non_unique = 0")" == 1 ]] \
     && ok "user_id UNIQUE: un utente usa al massimo un codice" || ko "user_id UNIQUE: un utente usa al massimo un codice"
 [[ "$(sql_value "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = 'gym_progress_tracker' AND table_name = 'gym_signup_codes' AND column_name = 'code' AND non_unique = 0")" == 1 ]] \

@@ -109,7 +109,7 @@ function mails($to, $log = LOG_A)
 {
     $text = (string)@file_get_contents($log);
     $out = [];
-    $parts = preg_split('/^\[[A-Z][a-z]{2} [A-Z][a-z]{2} +\d+ [\d:]+ \d{4}\] /m', $text);
+    $parts = preg_split('/^(?:\[\d+\] )?\[[A-Z][a-z]{2} [A-Z][a-z]{2} +\d+ [\d:]+ \d{4}\] /m', $text);
     foreach ($parts as $p) {
         if (preg_match('/^\[mail:log\] a=(\S+) oggetto="([^"]*)"\n(.*)$/s', $p, $m) && $m[1] === $to) {
             $out[] = ['to' => $m[1], 'subject' => $m[2], 'body' => $m[3]];
@@ -370,6 +370,8 @@ check('codice vuoto e nient\'altro: 200 senza controlli', $r[0] === 200 && $r[1]
 
 // ═══ Limite dei codici non utilizzabili ══════════════════════════════════════════════════════════
 echo "Limite: 3 codici non utilizzabili all'ora per IP (server B, limite basso)\n";
+// I contatori stanno nel database e sono per IP: quelli dei fallimenti delle prove precedenti (tutte da 127.0.0.1) si azzerano
+sql("DELETE FROM gym_rate_limits");
 mk('buono-b', 'plus', 30, 50);
 $allOk = true;
 for ($i = 0; $i < 6; $i++) {
@@ -544,6 +546,7 @@ mk('cambio', 'plus', 30, 3);
 [$i1, $i1Auth] = newAccount('sccamb1', 'cambio');
 confirm('sccamb1', $i1Auth);
 sql("UPDATE gym_users SET tier = 'free', tier_until = NULL WHERE id = ?", [$i1]);
+sql("UPDATE gym_email_codes SET created_at = DATE_SUB(created_at, INTERVAL 3 MINUTE) WHERE user_id = ?", [$i1]);
 $r = api('POST', '/api/user/change_email.php', $i1Auth, ['email' => 'sccamb1-nuova@example.test', 'password' => PASSWORD]);
 check('cambio di indirizzo: 200', $r[0] === 200, $r[2]);
 $r = api('POST', '/api/user/confirm_email.php', $i1Auth, ['code' => lastCode('sccamb1-nuova@example.test')]);
