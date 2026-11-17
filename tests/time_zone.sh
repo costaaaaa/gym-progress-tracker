@@ -316,7 +316,7 @@ for z in Europe/Rome America/New_York Europe/London Australia/Sydney Pacific/Auc
     for n in $(seq 27 -1 2); do
         o1="$(TZ=$z date -d "$n days ago 12:00" +%z)"
         o2="$(TZ=$z date -d "$((n - 1)) days ago 12:00" +%z)"
-        if [[ "$o1" != "$o2" ]]; then DST_ZONE="$z"; DST_BEFORE="$(TZ=$z date -d "$n days ago" +%F)"; DST_AFTER="$(TZ=$z date -d "$((n - 1)) days ago" +%F)"; break 2; fi
+        if [[ "$o1" != "$o2" ]]; then DST_ZONE="$z"; DST_BEFORE="$(TZ=$z date -d "$n days ago 12:00" +%F)"; DST_AFTER="$(TZ=$z date -d "$((n - 1)) days ago 12:00" +%F)"; break 2; fi
     done
 done
 if [[ -z "$DST_ZONE" ]]; then

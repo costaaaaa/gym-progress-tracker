@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }) => {
   const refreshEmailState = useCallback((arg) => {
     // Usato anche come gestore di click: solo una stringa è un messaggio
     const outcome = typeof arg === 'string' ? arg : '';
-    if (refreshing.current && !outcome) return refreshing.current;
+    if (refreshing.current && typeof arg !== 'string') return refreshing.current;
     // Una lettura già in corso potrebbe essere precedente alla conferma: con un messaggio se ne fa una nuova e la vecchia non scrive più
     // (se la nuova fallisce resta lo stato di prima: lo sistema la rilettura successiva)
     const mine = ++lastRead.current;

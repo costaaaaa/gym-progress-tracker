@@ -280,6 +280,7 @@ describe('AuthProvider: esito della conferma', () => {
       <div>
         <button onClick={() => refreshEmailState('Email confermata. Plus attivo fino al 15 febbraio 2027.')}>conferma con codice</button>
         <button onClick={() => refreshEmailState('')}>conferma senza codice</button>
+        <button onClick={() => refreshEmailState()}>rilettura semplice</button>
         <button onClick={() => login({ id: 2, username: 'luca', locale: 'it' })}>entra</button>
         <button onClick={logout}>esci</button>
       </div>
@@ -335,7 +336,7 @@ describe('AuthProvider: esito della conferma', () => {
     await mountGate();
     const pending = [];
     backend.mockImplementation(() => new Promise((resolve) => pending.push(resolve)));
-    fireEvent.click(screen.getByText('conferma senza codice')); // lettura vecchia, in volo
+    fireEvent.click(screen.getByText('rilettura semplice')); // lettura vecchia, in volo
     fireEvent.click(screen.getByText('conferma con codice')); // lettura nuova, col messaggio
     await waitFor(() => expect(pending.length).toBeGreaterThanOrEqual(2));
     // la vecchia risponde per prima, con l'email già confermata
@@ -345,5 +346,18 @@ describe('AuthProvider: esito della conferma', () => {
     pending[1](json(readBody()));
     expect(await screen.findByText('Email confermata. Plus attivo fino al 15 febbraio 2027.')).toBeTruthy();
     expect(screen.queryByText('Email confermata.')).toBeNull();
+  });
+
+  it('conferma senza codice con una lettura semplice in volo: parte una lettura nuova e lo stato finale è confermato', async () => {
+    await mountGate();
+    const pending = [];
+    backend.mockImplementation(() => new Promise((resolve) => pending.push(resolve)));
+    fireEvent.click(screen.getByText('rilettura semplice')); // partita prima della conferma
+    fireEvent.click(screen.getByText('conferma senza codice'));
+    await waitFor(() => expect(pending.length).toBe(2));
+    pending[0](json(readBody(unverified))); // letta prima del commit: non deve scrivere
+    pending[1](json(readBody()));
+    await waitFor(() => expect(stateOf().verified).toBe(true));
+    expect(await screen.findByText('Email confermata.')).toBeTruthy();
   });
 });
