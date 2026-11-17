@@ -119,6 +119,31 @@ confronta privacy.html privacy.html "privacy"
 echo "termini"
 confronta termini.html terms.html "termini"
 
+# Piani Gratis, Plus e Pro nei testi legali (17 novembre 2026): versione dei termini invariata, rimando
+# alla pagina dei piani, niente «gratuito» generico né promesse sul futuro, informativa con piano e scadenza.
+echo "piani"
+cerca() { grep -q -- "$2" "$ROOT/public/$1" && ok "$3" || ko "$3" "manca «$2» in $1"; }
+assenza() { grep -qi -- "$2" "$ROOT/public/$1" && ko "$3" "trovato «$2» in $1" || ok "$3"; }
+cerca termini.html 'Versione 2026-11 · aggiornati il 17 novembre 2026' "termini IT: versione 2026-11, data 17 novembre 2026"
+cerca en/terms.html 'Version 2026-11 · updated on 17 November 2026' "termini EN: versione 2026-11, data 17 novembre 2026"
+cerca privacy.html 'Versione 2026-11 · aggiornata il 17 novembre 2026' "privacy IT: versione 2026-11, data 17 novembre 2026"
+cerca en/privacy.html 'Version 2026-11 · updated on 17 November 2026' "privacy EN: versione 2026-11, data 17 novembre 2026"
+cerca privacy.html '<li>2026-11, aggiornata il 17 novembre 2026:' "privacy IT: voce nella cronologia"
+cerca en/privacy.html '<li>2026-11, updated on 17 November 2026:' "privacy EN: voce nella cronologia"
+cerca termini.html 'href="/piani"' "termini IT: link alla pagina dei piani"
+cerca en/terms.html 'href="/en/plans"' "termini EN: link alla pagina dei piani"
+assenza termini.html 'servizio è gratuito' "termini IT: niente «il servizio è gratuito»"
+assenza en/terms.html 'the service is free' "termini EN: niente «the service is free»"
+assenza termini.html 'per sempre' "termini IT: nessuna promessa «per sempre»"
+assenza en/terms.html 'forever' "termini EN: nessuna promessa «forever»"
+assenza termini.html 'watch' "termini IT: nessun riferimento all'Apple Watch"
+assenza privacy.html 'watch' "privacy IT: nessun riferimento all'Apple Watch"
+assenza en/terms.html 'watch' "termini EN: nessun riferimento all'Apple Watch"
+assenza en/privacy.html 'watch' "privacy EN: nessun riferimento all'Apple Watch"
+cerca privacy.html '<tr><td>Piano dell.account</td>' "privacy IT: il piano dell'account nella tabella dei dati"
+cerca en/privacy.html '<tr><td>Account type</td>' "privacy EN: il piano dell'account nella tabella dei dati"
+grep -q "'terms' => '2026-11'" "$ROOT/backend/models/Consent.php" && ok "versione del consenso ai termini invariata (2026-11)" || ko "versione del consenso ai termini cambiata"
 echo
+
 echo "$checks controlli, $fails falliti"
 [[ "$fails" -eq 0 ]]

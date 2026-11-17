@@ -62,7 +62,7 @@ describe('salta al contenuto', () => {
   });
 });
 
-// Piè di pagina degli ospiti: calcolatore 1RM e guida MCP sono pagine PHP, quindi link normali (non del router)
+// Piè di pagina degli ospiti: calcolatore 1RM, guida MCP e piani sono pagine PHP, quindi link normali (non del router)
 // e nella lingua corrente.
 describe('piè di pagina: link al blog', () => {
   const links = () => {
@@ -76,6 +76,7 @@ describe('piè di pagina: link al blog', () => {
     expect(links()).toEqual(expect.arrayContaining([
       ['Calcolatore 1RM', '/blog/calcolatore-1rm/'],
       ['Collega il tuo assistente AI', '/blog/mcp/'],
+      ['Piani', '/piani'],
     ]));
   });
 
@@ -85,6 +86,7 @@ describe('piè di pagina: link al blog', () => {
     expect(links()).toEqual(expect.arrayContaining([
       ['1RM calculator', '/en/blog/1rm-calculator/'],
       ['Connect your AI assistant', '/en/blog/mcp/'],
+      ['Free, Plus and Pro', '/en/plans'],
     ]));
   });
 });

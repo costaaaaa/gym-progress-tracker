@@ -10,6 +10,7 @@
 require __DIR__ . '/../../lib/config.php';
 require __DIR__ . '/../../lib/render.php';
 require __DIR__ . '/../../lib/mcp.php';
+require __DIR__ . '/../../lib/plans.php';
 
 $alternates = mcp_page_alternates();
 $canonical = $alternates['en'];
@@ -28,7 +29,7 @@ ob_start();
             <li>workouts and sessions, with exercises, sets and load progress</li>
             <li>personal records</li>
             <li>training plans</li>
-            <li>stats and sets by muscle group</li>
+            <li>stats and weekly sets: the breakdown by muscle group is for Plus and Pro; on Free you get the total (<a href="<?php echo blog_e(plans_page_alternates()['en']); ?>">compare Free, Plus and Pro</a>)</li>
             <li>body measurements, including history, only if you choose to share them</li>
         </ul>
         <p>It never reads your notes, your email or your password.</p>
