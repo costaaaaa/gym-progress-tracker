@@ -64,7 +64,7 @@ foreach (['it', 'en'] as $locale) {
     }
     $keys = array_keys($labels);
     sort($keys);
-    check('le chiavi dei traguardi restano le 19 di sempre', $keys === $allKeys);
+    check('le chiavi dei traguardi sono esattamente quelle del catalogo', $keys === $allKeys);
 
     [$code, $saved] = call('POST', '/api/workout/record_workout.php', $token, ['workout_records' => [
         ['exercise_id' => $exerciseId, 'exercise_name' => 'Esercizio', 'day_id' => $day, 'set_number' => 1, 'weight' => 140, 'reps' => '1'],
