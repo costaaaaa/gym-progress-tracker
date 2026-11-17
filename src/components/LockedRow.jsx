@@ -5,8 +5,8 @@ import { plansPath } from '../i18n/paths';
 import { radius } from '../theme/radius';
 
 // Riga con lucchetto in cima alla card di una funzione bloccata dal piano Gratis: cosa si sblocca (children),
-// l'etichetta "Plus" e il link al confronto dei piani. /piani non è una rotta della SPA: link a pagina intera.
-const LockedRow = ({ children, sx }) => {
+// l'etichetta "Plus" e il link al confronto dei piani (`compare={false}` lo toglie: con due righe di fila basta un link). /piani non è una rotta della SPA: link a pagina intera.
+const LockedRow = ({ children, sx, compare = true }) => {
   const { t, i18n } = useTranslation();
   return (
     <Box sx={{
@@ -21,10 +21,12 @@ const LockedRow = ({ children, sx }) => {
       }}>
         {t('plans.label_plus')}
       </Box>
-      <Link href={plansPath(i18n.language)} color="text.primary" underline="always"
-        sx={{ fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>
-        {t('plans.compare')}
-      </Link>
+      {compare && (
+        <Link href={plansPath(i18n.language)} color="text.primary" underline="always"
+          sx={{ fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>
+          {t('plans.compare')}
+        </Link>
+      )}
     </Box>
   );
 };

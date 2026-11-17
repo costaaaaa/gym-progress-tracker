@@ -21,6 +21,12 @@ describe('riga con lucchetto', () => {
     expect(screen.getByRole('link', { name: 'Confronta i piani' }).getAttribute('href')).toBe('/piani');
   });
 
+  it('con compare={false} non mostra il link', () => {
+    render(<ThemeModeProvider><LockedRow compare={false}>Solo testo</LockedRow></ThemeModeProvider>);
+    expect(screen.getByText('Plus')).toBeTruthy();
+    expect(screen.queryByRole('link')).toBeNull();
+  });
+
   it('il lucchetto è decorativo e il link ha un bersaglio di almeno 44 px', () => {
     mount();
     expect(screen.getByTestId('LockOutlinedIcon').getAttribute('aria-hidden')).toBe('true');

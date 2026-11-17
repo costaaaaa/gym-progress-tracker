@@ -184,13 +184,15 @@ describe('piano Gratis (detail "basic")', () => {
     expect(within(row('Petto')).queryByText('0')).toBeNull();
   });
 
-  it('le due righe con lucchetto stanno in cima e portano ai piani', async () => {
+  it('le due righe con lucchetto stanno in cima, con un solo link ai piani', async () => {
     await mount(basicStats);
     expect(screen.getByText('Serie per muscolo e confronto con la settimana scorsa')).toBeTruthy();
     expect(screen.getByText('Percentuale di recupero e giorni mancanti')).toBeTruthy();
+    // un solo link, sotto la seconda riga
     const links = screen.getAllByRole('link', { name: 'Confronta i piani' });
-    expect(links).toHaveLength(2);
-    for (const link of links) expect(link.getAttribute('href')).toBe('/piani');
+    expect(links).toHaveLength(1);
+    expect(links[0].getAttribute('href')).toBe('/piani');
+    expect(links[0].closest('div').textContent).toContain('Percentuale di recupero e giorni mancanti');
   });
 
   it('ogni muscolo ha solo "Puoi allenare" o "In recupero" ("nessun dato" se mai allenato)', async () => {

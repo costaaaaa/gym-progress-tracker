@@ -406,6 +406,29 @@ describe('limiti del piano Gratis', () => {
       expect(screen.queryByRole('button', { name: 'Aggiungi esercizio' })).toBeNull();
     });
 
+    it('con un limite null nell\'account l\'avviso non cita "null"', async () => {
+      await mount([readOnly('plans_over_limit')], { ...FREE, limits: { plans: null, days_per_plan: null, personal_exercises: 10 } });
+      expect(screen.getByText(/Hai più schede del limite consentito/)).toBeTruthy();
+      expect(screen.queryByText(/null/)).toBeNull();
+    });
+
+    it('tre schede plans_over_limit: un solo avviso, sopra l\'elenco e non sulle card', async () => {
+      const over = (id) => mk(id, { read_only: true, read_only_reason: 'plans_over_limit' });
+      await mount([over(1), over(2), over(3)]);
+      const notice = screen.getAllByText(/Hai più di 2 schede: sono in sola lettura/);
+      expect(notice).toHaveLength(1);
+      expect(notice[0].closest('.MuiCard-root')).toBeNull();
+      // i comandi restano nascosti sulle schede in sola lettura
+      for (const b of screen.getAllByRole('button', { name: 'Mostra giorni' })) fireEvent.click(b);
+      expect(screen.queryByRole('button', { name: 'Aggiungi esercizio' })).toBeNull();
+    });
+
+    it('una scheda days_over_limit ha l\'avviso sulla sua card, non in cima', async () => {
+      await mount([mk(1), readOnly('days_over_limit', 5)].map((p, i) => (i === 1 ? { ...p, id: 2, name: 'Scheda 2' } : p)));
+      const notice = screen.getByText(/Questa scheda ha più di 4 giorni/);
+      expect(notice.closest('.MuiCard-root')).not.toBeNull();
+    });
+
     it('la scheda in sola lettura non ancora attiva si può attivare', async () => {
       await mount([mk(2, { read_only: true, read_only_reason: 'plans_over_limit' })]);
       expect(screen.getByRole('button', { name: 'Attiva scheda' })).toBeTruthy();
@@ -588,6 +611,15 @@ describe('limiti del piano Gratis', () => {
       expect(screen.getByRole('button', { name: 'Nuova scheda' }).disabled).toBe(true);
       await act(async () => { rispondi(); });
       expect(screen.getByRole('button', { name: 'Nuova scheda' }).disabled).toBe(false);
+    });
+
+    it('se la lettura di user/read.php fallisce per la rete il comando si attiva', async () => {
+      vi.stubGlobal('fetch', vi.fn((url) => (String(url).includes('user/read.php')
+        ? Promise.reject(new TypeError('Failed to fetch'))
+        : Promise.resolve(json({ records: [mk(1)] })))));
+      render(<MemoryRouter><ThemeModeProvider><WorkoutPlans /></ThemeModeProvider></MemoryRouter>);
+      await screen.findByText('Scheda 1');
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Nuova scheda' }).disabled).toBe(false));
     });
 
     it('sotto il limite il comando è attivo e senza riga', async () => {

@@ -45,13 +45,27 @@ import LockedRow from '../components/LockedRow';
 import { savedDraftDayId } from './focus/useFocusSession';
 
 const MAX_DAY_OPTIONS = 7; // giorni offerti al massimo nella nuova scheda
+const MAX_EXERCISE_ROWS = 4; // esercizi mostrati per giorno nella card aperta
+const DAY_LINK_SX = { fontSize: 12, fontWeight: 600, textTransform: 'none', minWidth: 0, p: 0 };
+
 // Motivo di sola lettura → testo con il numero (limite in account.limits), testo senza numero, chiave del limite
 const READ_ONLY_NOTICE = {
   plans_over_limit: { key: 'plans.read_only_plans', genericKey: 'plans.read_only_plans_generic', limit: 'plans' },
   days_over_limit: { key: 'plans.read_only_days', genericKey: 'plans.read_only_days_generic', limit: 'days_per_plan' },
 };
-const MAX_EXERCISE_ROWS = 4; // esercizi mostrati per giorno nella card aperta
-const DAY_LINK_SX = { fontSize: 12, fontWeight: 600, textTransform: 'none', minWidth: 0, p: 0 };
+
+// Avviso di sola lettura. Senza il limite dell'account (lettura fallita o valore null) la frase non ha numero.
+const ReadOnlyNotice = ({ reason, limits, isFree }) => {
+  const { t } = useTranslation();
+  const notice = READ_ONLY_NOTICE[reason] || READ_ONLY_NOTICE.plans_over_limit;
+  const max = limits?.[notice.limit];
+  return (
+    <Alert severity="info" sx={{ mb: 1.5 }}>
+      {max == null ? t(notice.genericKey) : t(notice.key, { max })}
+      {isFree && ` ${t('plans.read_only_raise')}`}
+    </Alert>
+  );
+};
 
 const WorkoutPlans = ({ isEmbedded = false }) => {
   const { t } = useTranslation();
@@ -108,7 +122,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
   const [dayToDelete, setDayToDelete] = useState(null);
   const [deleteDayLoading, setDeleteDayLoading] = useState(false);
 
-  // Livello, limiti e funzioni dell'utente (user/read.php). Se la lettura fallisce restano senza valori: nessun
+  // Piano, limiti e funzioni dell'utente (user/read.php). Se la lettura fallisce restano senza valori: nessun
   // tetto lato client, decide il server (limite accettato).
   const [account, setAccount] = useState({ loaded: false, tier: null, limits: null, features: [] });
 
@@ -787,10 +801,13 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
   const maxDays = Math.min(MAX_DAY_OPTIONS, account.limits?.days_per_plan ?? MAX_DAY_OPTIONS);
   // Senza focus_session_edit (piano Gratis) un allenamento Focus salvato su questo browser su un giorno eliminato non
   // si potrebbe più registrare: si elimina il giorno solo dopo averlo salvato o scartato. Plus e Pro lo salvano
-  // comunque. Una sessione in corso su un altro dispositivo da qui non si vede: limite accettato.
+  // comunque. Finché user/read.php carica, o se fallisce, `features` è vuoto e il blocco vale anche per Plus e Pro
+  // (scelta prudente). Una sessione in corso su un altro dispositivo da qui non si vede: limite accettato.
   const draftDayId = savedDraftDayId();
   const draftBlocksDelete = !!dayToDelete && !account.features.includes('focus_session_edit')
     && draftDayId !== null && String(draftDayId) === String(dayToDelete.id);
+  // Il server segna in sola lettura tutte le schede: l'avviso "troppe schede" sta una volta sola sopra l'elenco
+  const plansOverLimit = workoutPlans.some((plan) => plan.read_only_reason === 'plans_over_limit');
   const atPlanLimit = isFree && !!account.limits && workoutPlans.length >= account.limits.plans;
 
   return (
@@ -820,6 +837,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       {atPlanLimit && (
         <LockedRow>{t('plans.locked_plans', { used: workoutPlans.length, max: account.limits.plans })}</LockedRow>
       )}
+      {plansOverLimit && <ReadOnlyNotice reason="plans_over_limit" limits={account.limits} isFree={isFree} />}
 
       <Grid container spacing={2.5}>
         {workoutPlans.map((plan, planIndex) => {
@@ -874,16 +892,9 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                     </Box>
                   </Box>
 
-                  {plan.read_only && (() => {
-                    const notice = READ_ONLY_NOTICE[plan.read_only_reason] || READ_ONLY_NOTICE.plans_over_limit;
-                    const max = account.limits?.[notice.limit];
-                    return (
-                      <Alert severity="info" sx={{ mb: 1.5 }}>
-                        {max === undefined ? t(notice.genericKey) : t(notice.key, { max })}
-                        {isFree && ` ${t('plans.read_only_raise')}`}
-                      </Alert>
-                    );
-                  })()}
+                  {plan.read_only && plan.read_only_reason !== 'plans_over_limit' && (
+                    <ReadOnlyNotice reason={plan.read_only_reason} limits={account.limits} isFree={isFree} />
+                  )}
                   {!isExpanded && summary.splitNames && (
                     <Box sx={{ display: 'flex', mb: 0.75, fontSize: 16, fontWeight: 600, color: 'text.primary' }}>
                       <FitNames names={summary.splitNames} sepSx={{ color: 'text.secondary' }} />

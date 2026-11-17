@@ -128,7 +128,6 @@ const Muscles = () => {
 
   const sets = data.weekly_sets || { week: {}, previous_to_date: {}, previous_total: 0 };
   const basic = data.detail === 'basic';
-  const weekSets = weeklyTotal(sets);
   const prevToDateTotal = totalSets(sets.previous_to_date);
   const max = Math.max(1, ...MUSCLE_GROUPS.map((m) => sets.week?.[m] || 0));
 
@@ -136,11 +135,11 @@ const Muscles = () => {
     <Card sx={{ p: '20px 22px', maxWidth: 720 }}>
       {basic && (
         <>
-          <LockedRow sx={{ mb: 1 }}>{t('muscles.locked_sets')}</LockedRow>
+          <LockedRow sx={{ mb: 1 }} compare={false}>{t('muscles.locked_sets')}</LockedRow>
           <LockedRow>{t('recovery.locked')}</LockedRow>
         </>
       )}
-      <Header weekTotal={weekSets} prevToDateTotal={prevToDateTotal} prevTotal={sets.previous_total || 0} compare={!basic} />
+      <Header weekTotal={weeklyTotal(sets)} prevToDateTotal={prevToDateTotal} prevTotal={sets.previous_total || 0} compare={!basic} />
       <Box component="ul" aria-label={t('dashboard.tab.muscles')} sx={{ listStyle: 'none', p: 0, m: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
         {MUSCLE_GROUPS.map((muscle) => {
           const week = sets.week?.[muscle] || 0;
