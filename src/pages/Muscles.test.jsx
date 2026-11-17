@@ -192,7 +192,8 @@ describe('piano Gratis (detail "basic")', () => {
     const links = screen.getAllByRole('link', { name: 'Confronta i piani' });
     expect(links).toHaveLength(1);
     expect(links[0].getAttribute('href')).toBe('/piani');
-    expect(links[0].closest('div').textContent).toContain('Percentuale di recupero e giorni mancanti');
+    const secondRow = screen.getByText('Percentuale di recupero e giorni mancanti');
+    expect(secondRow.compareDocumentPosition(links[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('ogni muscolo ha solo "Puoi allenare" o "In recupero" ("nessun dato" se mai allenato)', async () => {

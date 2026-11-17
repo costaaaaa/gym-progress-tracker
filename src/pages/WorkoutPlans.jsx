@@ -57,7 +57,7 @@ const READ_ONLY_NOTICE = {
 // Avviso di sola lettura. Senza il limite dell'account (lettura fallita o valore null) la frase non ha numero.
 const ReadOnlyNotice = ({ reason, limits, isFree }) => {
   const { t } = useTranslation();
-  const notice = READ_ONLY_NOTICE[reason] || READ_ONLY_NOTICE.plans_over_limit;
+  const notice = READ_ONLY_NOTICE[reason];
   const max = limits?.[notice.limit];
   return (
     <Alert severity="info" sx={{ mb: 1.5 }}>
@@ -807,7 +807,10 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
   const draftBlocksDelete = !!dayToDelete && !account.features.includes('focus_session_edit')
     && draftDayId !== null && String(draftDayId) === String(dayToDelete.id);
   // Il server segna in sola lettura tutte le schede: l'avviso "troppe schede" sta una volta sola sopra l'elenco
-  const plansOverLimit = workoutPlans.some((plan) => plan.read_only_reason === 'plans_over_limit');
+  // «Troppi giorni» riguarda una scheda sola: l'avviso sta sulla sua card. Ogni altro motivo (troppe schede, o uno
+  // che questa pagina non conosce) si spiega una volta sola sopra l'elenco.
+  const readOnlyOnCard = (plan) => plan.read_only && plan.read_only_reason === 'days_over_limit';
+  const readOnlyAbovePlans = workoutPlans.some((plan) => plan.read_only && !readOnlyOnCard(plan));
   const atPlanLimit = isFree && !!account.limits && workoutPlans.length >= account.limits.plans;
 
   return (
@@ -837,7 +840,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       {atPlanLimit && (
         <LockedRow>{t('plans.locked_plans', { used: workoutPlans.length, max: account.limits.plans })}</LockedRow>
       )}
-      {plansOverLimit && <ReadOnlyNotice reason="plans_over_limit" limits={account.limits} isFree={isFree} />}
+      {readOnlyAbovePlans && <ReadOnlyNotice reason="plans_over_limit" limits={account.limits} isFree={isFree} />}
 
       <Grid container spacing={2.5}>
         {workoutPlans.map((plan, planIndex) => {
@@ -892,8 +895,8 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
                     </Box>
                   </Box>
 
-                  {plan.read_only && plan.read_only_reason !== 'plans_over_limit' && (
-                    <ReadOnlyNotice reason={plan.read_only_reason} limits={account.limits} isFree={isFree} />
+                  {readOnlyOnCard(plan) && (
+                    <ReadOnlyNotice reason="days_over_limit" limits={account.limits} isFree={isFree} />
                   )}
                   {!isExpanded && summary.splitNames && (
                     <Box sx={{ display: 'flex', mb: 0.75, fontSize: 16, fontWeight: 600, color: 'text.primary' }}>
