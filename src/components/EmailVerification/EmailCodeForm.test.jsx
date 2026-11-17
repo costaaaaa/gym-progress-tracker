@@ -30,7 +30,6 @@ const resend = () => screen.getByRole('button', { name: /nuovo codice/i });
 beforeEach(() => {
   auth.emailState = { verified: false, email: 'mario@example.com', pendingEmail: null, blocked: false, daysLeft: 5 };
   auth.refreshEmailState.mockClear();
-  auth.refreshEmailState.mockClear();
 });
 afterEach(() => {
   vi.useRealTimers();

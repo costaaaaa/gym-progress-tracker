@@ -330,4 +330,21 @@ describe('AuthProvider: esito della conferma', () => {
     await waitFor(() => expect(stateOf().verified).toBe(true));
     expect(screen.queryByText(/Plus attivo/)).toBeNull();
   });
+
+  it('una lettura semplice partita prima della conferma, risolta dopo il commit, non copre il messaggio del server', async () => {
+    await mountGate();
+    const pending = [];
+    backend.mockImplementation(() => new Promise((resolve) => pending.push(resolve)));
+    fireEvent.click(screen.getByText('conferma senza codice')); // lettura vecchia, in volo
+    fireEvent.click(screen.getByText('conferma con codice')); // lettura nuova, col messaggio
+    await waitFor(() => expect(pending.length).toBeGreaterThanOrEqual(2));
+    // la vecchia risponde per prima, con l'email già confermata
+    pending[0](json(readBody()));
+    await new Promise((r) => setTimeout(r, 30));
+    expect(screen.queryByText('Email confermata.')).toBeNull();
+    pending[1](json(readBody()));
+    expect(await screen.findByText('Email confermata. Plus attivo fino al 15 febbraio 2027.')).toBeTruthy();
+    expect(screen.queryByText('Email confermata.')).toBeNull();
+  });
 });
+
