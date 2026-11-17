@@ -13,6 +13,13 @@ export const isPublicPath = (pathname) => PUBLIC_PATHS.includes(pathname);
 
 export const stripLangPrefix = (pathname) => (isEnPath(pathname) ? pathname.slice(3) || '/' : pathname);
 
+// Pagine di accesso: login, registrazione, password dimenticata e reimpostazione. Restano raggiungibili anche
+// con l'app bloccata dalla conferma dell'email.
+export const isAccessPath = (pathname) => {
+  const bare = stripLangPrefix(pathname);
+  return bare !== '/' && PUBLIC_PATHS.includes(bare);
+};
+
 // Login e registrazione, in tutte e due le lingue.
 export const isAuthPath = (pathname) => AUTH_PATHS.includes(stripLangPrefix(pathname));
 

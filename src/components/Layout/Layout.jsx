@@ -6,8 +6,11 @@ import { Outlet, Link as RouterLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LanguageHint from './LanguageHint';
 import { radius } from '../../theme/radius';
-import { isEnPath, stripLangPrefix, withLangPrefix, legalPaths, blogPaths, plansPath } from '../../i18n/paths';
+import { isEnPath, isAccessPath, stripLangPrefix, withLangPrefix, legalPaths, blogPaths, plansPath } from '../../i18n/paths';
 import { setLanguageChoice } from '../../i18n';
+import EmailStrip from '../EmailVerification/EmailStrip';
+import EmailGate from '../EmailVerification/EmailGate';
+import EmailBlockedScreen from '../EmailVerification/EmailBlockedScreen';
 
 const MAIN_ID = 'main-content';
 
@@ -31,10 +34,12 @@ const skipLinkSx = {
 
 const Layout = () => {
   // Utilizziamo il context di autenticazione - questo forza il re-render quando cambia lo stato di autenticazione
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, emailState } = useAuth();
   const { t, i18n } = useTranslation();
   const { pathname, search } = useLocation();
   const otherLang = isEnPath(pathname) ? 'it' : 'en';
+  // Dal giorno 8 senza email confermata, al posto di ogni pagina dell'app c'è la schermata di conferma (le pagine di accesso restano)
+  const blocked = isLoggedIn && emailState?.blocked === true && !isAccessPath(pathname);
 
   return (
     // Solo per gli ospiti: serve al campo pieno della home (100cqw); i Safari più vecchi trattavano il container
@@ -52,6 +57,7 @@ const Layout = () => {
       </Link>
       {!isLoggedIn && <LanguageHint />}
       <Navbar />
+      <EmailStrip />
       <Container
         component="main"
         id={MAIN_ID}
@@ -66,7 +72,7 @@ const Layout = () => {
           '&:focus': { outline: 'none' },
         }}
       >
-        <Outlet />
+        {blocked ? <EmailBlockedScreen /> : <Outlet />}
       </Container>
       <Box
         component="footer"
@@ -100,6 +106,7 @@ const Layout = () => {
           )}
         </Typography>
       </Box>
+      <EmailGate />
       <BottomNav />
     </Box>
   );

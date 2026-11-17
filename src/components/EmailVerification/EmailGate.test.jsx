@@ -1,7 +1,7 @@
 // Finestra del codice, promemoria del giorno, striscia e avviso di esito. Lo stato di AuthContext è finto: qui
 // conta cosa fanno i componenti con quello che il contesto dice.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import EmailGate from './EmailGate';
 import EmailStrip from './EmailStrip';
 import { DRAFT_STORAGE_KEY } from '../../utils/focusDraft';

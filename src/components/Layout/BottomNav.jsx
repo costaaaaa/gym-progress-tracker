@@ -49,9 +49,10 @@ const BottomNav = () => {
   const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { isLoggedIn, user } = useAuth();
+  const { isLoggedIn, user, emailState } = useAuth();
 
-  if (!isMobile || !isLoggedIn) return null;
+  // Con l'app bloccata dalla conferma dell'email le voci porterebbero a pagine che rispondono 403
+  if (!isMobile || !isLoggedIn || emailState?.blocked === true) return null;
 
   // La modalità Focus vive fuori dal Layout (full screen, senza Navbar): niente barra lì.
   if (location.pathname === '/focus') return null;
