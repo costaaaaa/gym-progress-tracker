@@ -806,9 +806,8 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
   const draftDayId = savedDraftDayId();
   const draftBlocksDelete = !!dayToDelete && !account.features.includes('focus_session_edit')
     && draftDayId !== null && String(draftDayId) === String(dayToDelete.id);
-  // Il server segna in sola lettura tutte le schede: l'avviso "troppe schede" sta una volta sola sopra l'elenco
-  // «Troppi giorni» riguarda una scheda sola: l'avviso sta sulla sua card. Ogni altro motivo (troppe schede, o uno
-  // che questa pagina non conosce) si spiega una volta sola sopra l'elenco.
+  // «Troppi giorni» riguarda una scheda sola: l'avviso sta sulla sua card. Con «troppe schede» il server le segna
+  // tutte: l'avviso sta una volta sola sopra l'elenco, e lì finisce anche un motivo che questa pagina non conosce.
   const readOnlyOnCard = (plan) => plan.read_only && plan.read_only_reason === 'days_over_limit';
   const readOnlyAbovePlans = workoutPlans.some((plan) => plan.read_only && !readOnlyOnCard(plan));
   const atPlanLimit = isFree && !!account.limits && workoutPlans.length >= account.limits.plans;

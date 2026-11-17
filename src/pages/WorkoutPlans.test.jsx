@@ -406,7 +406,7 @@ describe('limiti del piano Gratis', () => {
       expect(screen.queryByRole('button', { name: 'Aggiungi esercizio' })).toBeNull();
     });
 
-    it('con un limite null nell\'account l\'avviso non cita "null"', async () => {
+    it('con un limite null nell\'account l\'avviso resta senza numero', async () => {
       await mount([readOnly('plans_over_limit')], { ...FREE, limits: { plans: null, days_per_plan: null, personal_exercises: 10 } });
       expect(screen.getByText(/Hai più schede del limite consentito/)).toBeTruthy();
     });
@@ -429,8 +429,8 @@ describe('limiti del piano Gratis', () => {
       expect(notice[0].closest('.MuiCard-root')).not.toBeNull();
     });
 
-    it('sola lettura con un motivo sconosciuto: l\'avviso generale, una volta sola sopra l\'elenco', async () => {
-      await mount([readOnly('altro', 2, 1), readOnly(undefined, 2, 2)]);
+    it('sola lettura con un motivo sconosciuto o assente: l\'avviso «troppe schede», una volta sola sopra l\'elenco', async () => {
+      await mount([readOnly('altro', 2, 1), readOnly(null, 2, 2)]);
       const notice = screen.getAllByText(/Hai più di 2 schede: sono in sola lettura/);
       expect(notice).toHaveLength(1);
       expect(notice[0].closest('.MuiCard-root')).toBeNull();
