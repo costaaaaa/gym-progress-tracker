@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   lastSessionSets, totalSlots, setSlot, skipWarmup, slotWeight, numberedSets, withWarmupRule, isCurrentDraft, swapExercise, buildSessionEntry, suggestedWeight,
   plannedSetAt, slotTarget, slotTechnique, repsNeedConfirm, addedPlannedSets,
-  MAX_WEIGHT, maxWeightInUnit, weightStepInUnit, weightToField, weightFieldKg, weightFieldKgText,
 } from './focusSession';
 import { DROP, plannedSets, times, work } from '../test/plannedSets';
 
@@ -218,53 +217,8 @@ describe('cambio e aggiunta esercizio (#77)', () => {
   });
 });
 
-describe('peso nel campo in lb, dati in kg', () => {
-  it('weightToField: kg come sono, lb al quarto di libbra come testo per il campo', () => {
-    expect(weightToField('100', 'kg')).toBe('100');
-    expect(weightToField('100', 'lb')).toBe('220.5');
-    expect(weightToField('0', 'lb')).toBe('0');
-    expect(weightToField('', 'lb')).toBe('');
-    expect(weightToField('abc', 'lb')).toBe('');
-  });
-
-  it('weightFieldKg: kg come oggi (parseFloat), lb tramite inputToKg, non valido = null', () => {
-    expect(weightFieldKg('82.5', 'kg')).toBe(82.5);
-    expect(weightFieldKg('', 'kg')).toBeNull();
-    expect(weightFieldKg('1000', 'kg')).toBeNull();
-    expect(weightFieldKg('220', 'lb')).toBe(99.79);
-    expect(weightFieldKg('220,5', 'lb')).toBe(100.02);
-    expect(weightFieldKg('1e3', 'lb')).toBeNull();
-    expect(weightFieldKg('2204.5', 'lb')).toBe(999.94);
-    expect(weightFieldKg('2204.75', 'lb')).toBeNull();
-    expect(weightFieldKg('0', 'lb')).toBe(0);
-  });
-
-  it('un campo precompilato e non toccato produce i kg originali, non quelli riconvertiti', () => {
-    const origin = { text: weightToField('100', 'lb'), kg: '100' };
-    expect(weightFieldKg('220.5', 'lb', origin)).toBe(100);
-    expect(weightFieldKg('220.5', 'lb')).toBe(100.02);
-    expect(weightFieldKg('221', 'lb', origin)).toBe(100.24);
-  });
-
-  it('weightFieldKgText: la stringa in kg da riportare alla serie dopo; in kg il testo com\'è', () => {
-    expect(weightFieldKgText('82.5', 'kg')).toBe('82.5');
-    expect(weightFieldKgText('abc', 'kg')).toBe('abc');
-    expect(weightFieldKgText('220', 'lb')).toBe('99.79');
-    expect(weightFieldKgText('abc', 'lb')).toBe('');
-    expect(weightFieldKgText('220.5', 'lb', { text: '220.5', kg: '100' })).toBe('100');
-  });
-
-  it('maxWeightInUnit: 999,99 kg; in lb il quarto di libbra più alto sotto il limite', () => {
-    expect(maxWeightInUnit('kg')).toBe(MAX_WEIGHT);
-    expect(maxWeightInUnit('lb')).toBe(2204.5);
-  });
-
-  it('weightStepInUnit: 0,5 kg come prima, 2,5 lb', () => {
-    expect(weightStepInUnit('kg')).toBe(0.5);
-    expect(weightStepInUnit('lb')).toBe(2.5);
-  });
-
-  it('lastSessionSets mostra il peso nella unità', () => {
+describe('lastSessionSets nella unità dell\'utente', () => {
+  it('mostra il peso in lb', () => {
     expect(lastSessionSets({ sets: [{ weight: 100, reps: 5 }] }, 'it-IT', undefined, 'lb')[0].label).toBe('220,5\u00a0lb\u00a0×\u00a05');
   });
 });

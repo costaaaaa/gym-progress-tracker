@@ -13,8 +13,8 @@ import { TABULAR } from '../../utils/fonts';
 import ElapsedClock from './ElapsedClock';
 import QuitDialog from './QuitDialog';
 import { slotLabel } from './slotLabel';
-import { maxWeightInUnit, weightStepInUnit, isValidReps, plannedSetAt, slotTarget, lastSessionSets, setStatus, setSlot } from '../../utils/focusSession';
-import { weightUnitLabel } from '../../utils/weightUnit';
+import { MAX_WEIGHT, isValidReps, plannedSetAt, slotTarget, lastSessionSets, setStatus, setSlot } from '../../utils/focusSession';
+import { maxWeightInUnit, weightStepInUnit, weightUnitLabel } from '../../utils/weightUnit';
 import { intlLocale, formatSetText } from '../../i18n/format';
 import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, muscleLabel, techniqueLabel } from '../../i18n/labels';
 import { radius } from '../../theme/radius';
@@ -128,7 +128,7 @@ export default function WorkoutPhase({
 
           <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
             <TextField label={t('record.weight', { unit: weightUnitLabel(weightUnit) })} type="number" value={weightInput} onChange={(e) => onWeightChange(e.target.value)}
-              fullWidth autoFocus inputProps={{ step: weightStepInUnit(weightUnit), min: 0, max: maxWeightInUnit(weightUnit), inputMode: 'decimal' }}
+              fullWidth autoFocus inputProps={{ step: weightStepInUnit(weightUnit), min: 0, max: maxWeightInUnit(MAX_WEIGHT, weightUnit), inputMode: 'decimal' }}
               sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.fieldBorder, borderWidth: 2 } }, '& .MuiOutlinedInput-input': FOCUS_FIELD_PADDING, '& .MuiInputLabel-root': { color: colors.textSecondary } }} />
             {/* Vuoto a ogni serie: la scheda in grigio è solo un suggerimento, va scritta */}
             <TextField label={t('record.reps')} value={repsInput} onChange={(e) => onRepsChange(e.target.value)}

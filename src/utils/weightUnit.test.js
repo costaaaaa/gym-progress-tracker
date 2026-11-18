@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   LB_IN_KG, DEFAULT_WEIGHT_UNIT, isWeightUnit, weightUnitLabel, kgToDisplay, formatWeightInUnit, formatWeightRounded, inputToKg, formatSetInUnit,
+  maxWeightInUnit, weightStepInUnit, weightToField, fieldToKg, fieldToKgText,
 } from './weightUnit';
 
 const NB = ' ';
@@ -170,5 +171,57 @@ describe('formatSetInUnit: una serie nella unità dell\'utente', () => {
   it('peso assente = 0, come formatSet', () => {
     expect(formatSetInUnit(null, 12, 'kg', 'it-IT')).toBe(`0${NB}kg${NB}×${NB}12`);
     expect(formatSetInUnit('', 12, 'lb', 'it-IT')).toBe(`0${NB}lb${NB}×${NB}12`);
+  });
+});
+
+const MAX = 999.99;
+
+describe('campo peso in lb, dati in kg', () => {
+  it('weightToField: in kg il testo com\'è, in lb al quarto di libbra come testo per il campo', () => {
+    expect(weightToField('100', 'kg')).toBe('100');
+    expect(weightToField('20.0', 'kg')).toBe('20.0');
+    expect(weightToField('080', 'kg')).toBe('080');
+    expect(weightToField('', 'kg')).toBe('');
+    expect(weightToField('100', 'lb')).toBe('220.5');
+    expect(weightToField('0', 'lb')).toBe('0');
+    expect(weightToField('', 'lb')).toBe('');
+    expect(weightToField('abc', 'lb')).toBe('');
+  });
+
+  it('fieldToKg: kg con la lettura di sempre (parseFloat), lb tramite inputToKg, non valido = null', () => {
+    expect(fieldToKg('82.5', 'kg', MAX)).toBe(82.5);
+    expect(fieldToKg('', 'kg', MAX)).toBeNull();
+    expect(fieldToKg('1000', 'kg', MAX)).toBeNull();
+    expect(fieldToKg('220', 'lb', MAX)).toBe(99.79);
+    expect(fieldToKg('220,5', 'lb', MAX)).toBe(100.02);
+    expect(fieldToKg('1e3', 'lb', MAX)).toBeNull();
+    expect(fieldToKg('2204.5', 'lb', MAX)).toBe(999.94);
+    expect(fieldToKg('2204.75', 'lb', MAX)).toBeNull();
+    expect(fieldToKg('0', 'lb', MAX)).toBe(0);
+  });
+
+  it('un campo precompilato e non toccato produce i kg originali, non quelli riconvertiti', () => {
+    const origin = { text: weightToField('100', 'lb'), kg: '100' };
+    expect(fieldToKg('220.5', 'lb', MAX, origin)).toBe(100);
+    expect(fieldToKg('220.5', 'lb', MAX)).toBe(100.02);
+    expect(fieldToKg('221', 'lb', MAX, origin)).toBe(100.24);
+  });
+
+  it('fieldToKgText: la stringa in kg da riportare alla serie dopo; in kg il testo com\'è', () => {
+    expect(fieldToKgText('82.5', 'kg', MAX)).toBe('82.5');
+    expect(fieldToKgText('abc', 'kg', MAX)).toBe('abc');
+    expect(fieldToKgText('220', 'lb', MAX)).toBe('99.79');
+    expect(fieldToKgText('abc', 'lb', MAX)).toBe('');
+    expect(fieldToKgText('220.5', 'lb', MAX, { text: '220.5', kg: '100' })).toBe('100');
+  });
+
+  it('maxWeightInUnit: il limite in kg; in lb il quarto di libbra più alto sotto di esso', () => {
+    expect(maxWeightInUnit(MAX, 'kg')).toBe(MAX);
+    expect(maxWeightInUnit(MAX, 'lb')).toBe(2204.5);
+  });
+
+  it('weightStepInUnit: 0,5 kg, 2,5 lb', () => {
+    expect(weightStepInUnit('kg')).toBe(0.5);
+    expect(weightStepInUnit('lb')).toBe(2.5);
   });
 });

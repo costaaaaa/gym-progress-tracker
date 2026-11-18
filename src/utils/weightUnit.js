@@ -47,7 +47,7 @@ export function formatWeightRounded(kg, unit, locale) {
   return `${formatWeight(whole, locale, { unit: false, maxDecimals: 0 })}${NBSP}${weightUnitLabel(unit)}`;
 }
 
-// "80 kg × 8" / "220,5 lb × 5": una serie nell'unità dell'utente. Peso assente = 0, come formatSet.
+// "80 kg × 8" / "220,5 lb × 5": una serie nell'unità dell'utente. Peso assente = 0.
 export function formatSetInUnit(weight, reps, unit, locale) {
   return `${formatWeightInUnit(toNumber(weight) ?? 0, unit, locale)}${NBSP}×${NBSP}${reps}`;
 }
@@ -72,3 +72,40 @@ export function inputToKg(text, unit) {
   const kg = roundCents(unit === 'lb' ? n * LB_IN_KG : n);
   return Number.isFinite(kg) ? kg : null; // oltre 1e21 l'arrotondamento non è più un numero
 }
+
+// Limite di un campo peso nell'unità dell'utente: in kg `maxKg`, in lb il quarto di libbra più alto sotto di esso
+// (999,99 kg → 2204,5 lb).
+export const maxWeightInUnit = (maxKg, unit) => (unit === 'lb' ? Math.floor((maxKg / LB_IN_KG) * 4) / 4 : maxKg);
+
+// Passo delle frecce di un campo peso: 0,5 kg, 2,5 lb (il passo in kg è sotto 1,25)
+export const weightStepInUnit = (unit) => (unit === 'lb' ? 2.5 : 0.5);
+
+// Un campo peso mostra e legge l'unità dell'utente, i dati restano in kg. `kg` è una stringa in kg (come il peso
+// suggerito): il testo da mettere nel campo. In kg com'è, scritto dall'utente; in lb al quarto di libbra, vuoto
+// se non è un peso.
+export const weightToField = (kg, unit) => {
+  if (unit !== 'lb') return kg;
+  const shown = kgToDisplay(kg, unit);
+  return shown === null ? '' : String(shown);
+};
+
+// kg (numero) di ciò che sta nel campo, o null se non è un peso valido (0 - maxKg). Un campo precompilato e non
+// toccato (`origin` = { text, kg }: il testo con cui è stato riempito e i kg da cui viene) dà i kg originali: si
+// passa da inputToKg solo ciò che l'utente ha scritto. In kg la lettura è quella permissiva di sempre (parseFloat).
+export const fieldToKg = (text, unit, maxKg, origin = null) => {
+  if (origin && text === origin.text) return parseFloat(origin.kg);
+  if (unit !== 'lb') {
+    const n = parseFloat(text);
+    return Number.isFinite(n) && n >= 0 && n <= maxKg ? n : null;
+  }
+  const kg = inputToKg(text, 'lb');
+  return kg !== null && kg <= maxKg ? kg : null;
+};
+
+// Come fieldToKg ma come stringa in kg, per riportare il peso alla serie dopo (corpo libero, serie saltata).
+// In kg il testo com'è; in lb un peso non valido diventa vuoto.
+export const fieldToKgText = (text, unit, maxKg, origin = null) => {
+  if (unit !== 'lb') return text;
+  const kg = fieldToKg(text, unit, maxKg, origin);
+  return kg === null ? '' : String(kg);
+};

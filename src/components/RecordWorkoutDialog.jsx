@@ -30,11 +30,11 @@ import { track } from '../utils/analytics';
 import { useTranslation } from 'react-i18next';
 import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, techniqueLabel } from '../i18n/labels';
 import {
-  maxWeightInUnit, weightStepInUnit, weightFieldKg, newIdempotencyKey, isValidReps, repsNeedConfirm, withWarmupRule,
+  MAX_WEIGHT, newIdempotencyKey, isValidReps, repsNeedConfirm, withWarmupRule,
 } from '../utils/focusSession';
 import { initialSetRows, toggleWarmupRow, rowTarget, rowPlannedSet } from '../utils/manualEntryRows';
 import { planSummary } from '../utils/plannedSets';
-import { weightUnitLabel } from '../utils/weightUnit';
+import { fieldToKg, maxWeightInUnit, weightStepInUnit, weightUnitLabel } from '../utils/weightUnit';
 
 const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
   const { t } = useTranslation();
@@ -94,7 +94,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
         exercise, setIndex, reps: String(set.reps ?? '').trim(), weight: set.weight,
         planned: rowPlannedSet(workoutData[exercise.id], setIndex, exercise),
       }))
-      .filter(set => weightFieldKg(set.weight, weightUnit) !== null && set.reps !== ''));
+      .filter(set => fieldToKg(set.weight, weightUnit, MAX_WEIGHT) !== null && set.reps !== ''));
 
   const handleSave = () => {
     const written = writtenSets();
@@ -123,7 +123,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
             return {
               exercise_id: exercise.exercise_id,
               exercise_name: exercise.exercise_name,
-              weight: weightFieldKg(row.weight, weightUnit),
+              weight: fieldToKg(row.weight, weightUnit, MAX_WEIGHT),
               reps: String(row.reps ?? '').trim(),
               intensity_technique,
               is_warmup,
@@ -179,7 +179,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
       // Controlla se c'è almeno un set con entrambi i valori inseriti
       // Ora accettiamo anche ripetizioni in formato testo
       return sets.some(set => 
-        weightFieldKg(set.weight, weightUnit) !== null &&
+        fieldToKg(set.weight, weightUnit, MAX_WEIGHT) !== null &&
         (set.reps && set.reps.toString().trim() !== '')
       );
     });
@@ -324,7 +324,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                           type="number"
                           value={row.weight || ''}
                           onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'weight', e.target.value)}
-                          inputProps={{ min: 0, max: maxWeightInUnit(weightUnit), step: weightStepInUnit(weightUnit) }}
+                          inputProps={{ min: 0, max: maxWeightInUnit(MAX_WEIGHT, weightUnit), step: weightStepInUnit(weightUnit) }}
                           fullWidth
                           size="small"
                           sx={{

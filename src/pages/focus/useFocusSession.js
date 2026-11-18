@@ -2,11 +2,12 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
+import { fieldToKg, fieldToKgText, weightToField } from '../../utils/weightUnit';
 import { API_BASE_URL } from '../../config';
 import { hapticFeedback } from '../../utils/vibration';
 import { buildExerciseHistoryIndex, detectPersonalRecords } from '../../utils/workoutMetrics';
 import {
-  FEATURE_SESSION_EDIT, weightFieldKg, weightFieldKgText, weightToField, suggestedWeight, slotWeight, totalSlots, setSlot, skipWarmup,
+  FEATURE_SESSION_EDIT, MAX_WEIGHT, suggestedWeight, slotWeight, totalSlots, setSlot, skipWarmup,
   isValidReps, repsNeedConfirm, plannedSetAt, slotTechnique, isCurrentDraft,
   numberedSets, groupsInExecutionOrder, withWarmupRule, buildSessionEntry, swapExercise, insertExercise,
   newIdempotencyKey, draftIdempotencyKey
@@ -350,7 +351,6 @@ export default function useFocusSession() {
     return entry?.lastSession || null;
   }, [historyIndex]);
 
-  // Peso suggerito = top set (peso più alto) delle serie allenanti dell'ultima sessione.
   // Riempie il campo peso con un peso in kg (stringa), mostrato nell'unità dell'utente
   const prefillWeight = useCallback((kg) => {
     const text = weightToField(kg, weightUnit);
@@ -358,7 +358,12 @@ export default function useFocusSession() {
     setWeightOrigin(text === '' ? null : { text, kg });
   }, [weightUnit]);
 
+  // Peso suggerito = top set (peso più alto) delle serie allenanti dell'ultima sessione.
   const getSuggestedWeight = useCallback((exercise) => suggestedWeight(getLastSession(exercise)), [getLastSession]);
+
+  // kg del campo peso (numero, null se non valido) e come stringa per la serie dopo: una volta per render
+  const weightKg = fieldToKg(weightInput, weightUnit, MAX_WEIGHT, weightOrigin);
+  const weightKgText = fieldToKgText(weightInput, weightUnit, MAX_WEIGHT, weightOrigin);
 
   const handleStartWorkout = () => {
     if (!selectedDay || !selectedDay.exercises || selectedDay.exercises.length === 0) return;
@@ -424,7 +429,7 @@ export default function useFocusSession() {
   };
 
   const handleConfirmSet = () => {
-    if (weightFieldKg(weightInput, weightUnit, weightOrigin) === null || !isValidReps(repsInput)) return;
+    if (weightKg === null || !isValidReps(repsInput)) return;
     if (repsNeedConfirm(repsInput, plannedSetAt(currentExercise, currentSetIndex))) {
       setRepsConfirmDialog(true);
       return;
@@ -440,7 +445,7 @@ export default function useFocusSession() {
     const { isWarmup } = currentSlot;
     const newSet = withWarmupRule({
       setNumber: currentSetIndex + 1,
-      weight: weightFieldKg(weightInput, weightUnit, weightOrigin),
+      weight: weightKg,
       reps: String(parseInt(repsInput, 10)),
       intensity_technique: intensityTechniqueInput,
       is_warmup: isWarmup,
@@ -462,7 +467,7 @@ export default function useFocusSession() {
       goToNextExercise();
     } else {
       // Prossima serie
-      goToSlot(nextSetIndex, slotWeight(currentExercise, nextSetIndex, { suggested: getSuggestedWeight(currentExercise), current: weightFieldKgText(weightInput, weightUnit, weightOrigin) }));
+      goToSlot(nextSetIndex, slotWeight(currentExercise, nextSetIndex, { suggested: getSuggestedWeight(currentExercise), current: weightKgText }));
 
       // Avvia timer di recupero se abilitato
       if (timerEnabled && currentExercise.rest > 0) {
@@ -516,7 +521,7 @@ export default function useFocusSession() {
     if (nextSetIndex >= totalSlotsForCurrentExercise) {
       goToNextExercise();
     } else {
-      goToSlot(nextSetIndex, weightFieldKgText(weightInput, weightUnit, weightOrigin));
+      goToSlot(nextSetIndex, weightKgText);
     }
   };
 
@@ -848,7 +853,7 @@ export default function useFocusSession() {
     finishedClock: retroDate ? getElapsedTime() : null,
     weightInput,
     weightUnit,
-    weightValid: weightFieldKg(weightInput, weightUnit, weightOrigin) !== null,
+    weightValid: weightKg !== null,
     onWeightChange: setWeightInput,
     repsInput,
     onRepsChange: setRepsInput,

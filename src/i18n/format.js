@@ -2,7 +2,7 @@ import { it as dfIt, enUS, enGB } from 'date-fns/locale';
 import i18n from './index';
 import { clockDate, isClockString } from '../utils/calendarDay';
 import { formatWeight } from '../utils/weightFormat';
-import { formatSetInUnit } from '../utils/weightUnit';
+import { DEFAULT_WEIGHT_UNIT, formatSetInUnit } from '../utils/weightUnit';
 
 // Per l'inglese si usa la variante del browser (en-GB → giorno/mese), di default en-US.
 export const intlLocale = () => {
@@ -30,4 +30,4 @@ export const formatNumber = (value, options) => Number(value || 0).toLocaleStrin
 // Una misura in numero (grasso, circonferenze, peso in tabella): lingua dell'utente, al massimo due decimali, niente zeri finali
 export const formatMeasureText = (value) => formatWeight(value, intlLocale(), { unit: false });
 export const formatWeightText = (value, options) => formatWeight(value, intlLocale(), options);
-export const formatSetText = (weight, reps, unit = 'kg') => formatSetInUnit(weight, reps, unit, intlLocale());
+export const formatSetText = (weight, reps, unit = DEFAULT_WEIGHT_UNIT) => formatSetInUnit(weight, reps, unit, intlLocale());
