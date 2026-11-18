@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   LB_IN_KG, DEFAULT_WEIGHT_UNIT, isWeightUnit, weightUnitLabel, kgToDisplay, formatWeightInUnit, formatWeightRounded, inputToKg, formatSetInUnit,
   maxWeightInUnit, weightStepInUnit, weightToField, fieldToKg, fieldToKgText,
-  kgToTotal, formatTotalInUnit, usesTonnes, formatEstimateInUnit, kgToBodyDisplay, formatBodyWeightInUnit, maxBodyWeightInUnit, fieldTextToKgText,
+  kgToTotal, formatTotalInUnit, usesTonnes, formatEstimateInUnit, kgToBodyDisplay, kgToShareDisplay, formatBodyWeightInUnit, maxBodyWeightInUnit, fieldTextToKgText,
 } from './weightUnit';
 
 const NB = ' ';
@@ -308,5 +308,14 @@ describe('limite e lettura del campo peso corporeo', () => {
     expect(fieldTextToKgText('176.4', 'lb')).toBe('80.01');
     expect(fieldTextToKgText('1e2', 'lb')).toBe('NaN');
     expect(fieldTextToKgText('-5', 'lb')).toBe('NaN');
+  });
+});
+
+describe('kgToShareDisplay (card di condivisione)', () => {
+  it('in kg un decimale come sempre, in lb il quarto di libbra', () => {
+    expect(kgToShareDisplay(82.25, 'kg')).toBe(82.3);
+    expect(kgToShareDisplay(100, 'kg')).toBe(100);
+    expect(kgToShareDisplay(100, 'lb')).toBe(220.5);
+    expect(kgToShareDisplay(undefined, 'lb')).toBeNull();
   });
 });

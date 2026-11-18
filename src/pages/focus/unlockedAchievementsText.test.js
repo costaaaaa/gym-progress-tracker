@@ -12,4 +12,9 @@ describe('unlockedAchievementsText', () => {
     await i18n.changeLanguage('it');
     expect(unlockedAchievementsText([{ key: 'sessions_100', label: 'Centurion' }])).toBe('Centurione');
   });
+  it('un traguardo di forza ha la soglia nell\'unità dell\'utente', async () => {
+    await i18n.changeLanguage('it');
+    expect(unlockedAchievementsText([{ key: 'strength_100', label: '100 kg' }], 'lb')).toBe('220 lb in un esercizio');
+    expect(unlockedAchievementsText([{ key: 'strength_100', label: '100 kg' }])).toBe('100 kg in un esercizio');
+  });
 });

@@ -560,7 +560,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
           )}
           {(deletePreview?.achievements_removed ?? []).map(key => (
             <Typography key={key} variant="body2" sx={{ mt: 0.5 }}>
-              {t('history.delete.lose_achievement', { label: achievementLabel(key) })}
+              {t('history.delete.lose_achievement', { label: achievementLabel(key, undefined, weightUnit) })}
             </Typography>
           ))}
           {workoutToDelete?.health_written && (
@@ -590,7 +590,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
         ))}
       </Menu>
       <ShareCardDialog open={!!shareStats} stats={shareStats} weightUnit={weightUnit} onClose={() => setShareStats(null)} />
-      <EditWorkoutDateDialog open={openEditDateDialog} onClose={handleCloseEditDateDialog} workout={workoutToEdit} onUpdateSuccess={handleUpdateDateSuccess} />
+      <EditWorkoutDateDialog open={openEditDateDialog} onClose={handleCloseEditDateDialog} workout={workoutToEdit} onUpdateSuccess={handleUpdateDateSuccess} weightUnit={weightUnit} />
       <Snackbar
         open={pendingId !== null}
         message={t('history.delete.removed')}

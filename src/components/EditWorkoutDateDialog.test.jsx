@@ -91,3 +91,23 @@ describe('giorno futuro nel fuso dell\'allenamento', () => {
     expect(await screen.findByText('La data dell\'allenamento non può essere nel futuro')).toBeTruthy();
   });
 });
+
+describe('traguardi di forza nell\'anteprima, nell\'unità dell\'utente', () => {
+  const mostra = async (weightUnit) => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(json({
+      success: true, xp_delta: 0, streak_before: 1, streak_after: 1, achievements_unlocked: ['strength_100'], achievements_removed: [],
+    }))));
+    render(<EditWorkoutDateDialog open onClose={() => {}} workout={workout} onUpdateSuccess={() => {}} weightUnit={weightUnit} />);
+    fireEvent.change(screen.getByLabelText('Nuova data'), { target: { value: '2026-10-19' } });
+  };
+
+  it('in kg la soglia è quella di sempre', async () => {
+    await mostra('kg');
+    expect(await screen.findByText(/100 kg in un esercizio/)).toBeTruthy();
+  });
+
+  it('in lb la soglia è convertita', async () => {
+    await mostra('lb');
+    expect(await screen.findByText(/220 lb in un esercizio/)).toBeTruthy();
+  });
+});
