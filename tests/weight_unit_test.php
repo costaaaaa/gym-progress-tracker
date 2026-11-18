@@ -98,7 +98,7 @@ echo "Proposta dell'unità da Accept-Language\n";
 $cases = [
     ['en-US,en;q=0.9', 'lb'], ['en-us', 'lb'], ['EN-US', 'lb'], ['es-US,es;q=0.9', 'lb'], ['en-Latn-US', 'lb'], ['en-US;q=0.8', 'lb'],
     ['  en-US , it', 'lb'], ['it-IT,it;q=0.9,en-US;q=0.8', 'kg'], ['it-IT', 'kg'], ['en-GB', 'kg'], ['en', 'kg'], ['en-GB,en-US;q=0.9', 'kg'],
-    ['en-USA', 'kg'], ['en,en-US', 'kg'], ['en-AUS', 'kg'], ['en,en-US', 'kg'], ['en-AUS', 'kg'], ['*', 'kg'], [',en-US', 'kg'], ['-US', 'kg'], ['en-', 'kg'], ['garbage;;;', 'kg'], ['US', 'kg'], ['', 'kg'],
+    ['en-USA', 'kg'], ['en,en-US', 'kg'], ['en-AUS', 'kg'], ['*', 'kg'], [',en-US', 'kg'], ['-US', 'kg'], ['en-', 'kg'], ['garbage;;;', 'kg'], ['US', 'kg'], ['', 'kg'],
 ];
 foreach ($cases as [$header, $expected]) {
     $r = api('GET', '/api/user/suggested_unit.php', null, null, PORT_A, ["Accept-Language: $header"]);

@@ -64,5 +64,6 @@ export function inputToKg(text, unit) {
     if (!/^\d+(?:[.,]\d+)?$/.test(s)) return null;
     n = Number(s.replace(',', '.'));
   }
-  return roundCents(unit === 'lb' ? n * LB_IN_KG : n);
+  const kg = roundCents(unit === 'lb' ? n * LB_IN_KG : n);
+  return Number.isFinite(kg) ? kg : null; // oltre 1e21 l'arrotondamento non è più un numero
 }

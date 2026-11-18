@@ -87,6 +87,13 @@ describe('formatWeightRounded (totali e soglie)', () => {
 });
 
 describe('inputToKg', () => {
+  it('un valore troppo grande per essere arrotondato è null, non NaN', () => {
+    expect(inputToKg(1e21, 'kg')).toBeNull();
+    expect(inputToKg(1e300, 'lb')).toBeNull();
+    expect(inputToKg('9'.repeat(25), 'kg')).toBeNull();
+    expect(inputToKg('9'.repeat(25), 'lb')).toBeNull();
+  });
+
   it('kg: il numero scritto, a 0,01', () => {
     expect(inputToKg('82,5', 'kg')).toBe(82.5);
     expect(inputToKg('82.5', 'kg')).toBe(82.5);

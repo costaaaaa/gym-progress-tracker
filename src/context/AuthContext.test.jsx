@@ -405,13 +405,13 @@ describe('AuthProvider: unità di peso', () => {
     const Reread = () => <button onClick={() => useAuthRef.current.refreshEmailState()}>rileggi</button>;
     const useAuthRef = { current: null };
     const Grab = () => { useAuthRef.current = useAuth(); return null; };
-    render(<AuthProvider><Unit /><Grab /><Reread /></AuthProvider>);
+    const Email = () => <div data-testid="email">{useAuth().emailState?.email ?? ''}</div>;
+    render(<AuthProvider><Unit /><Email /><Grab /><Reread /></AuthProvider>);
     await waitFor(() => expect(screen.getByTestId('unit').textContent).toBe('lb'));
-    readReturns({ id: 1, username: 'a', weight_unit: 'st' });
-    const calls = backend.mock.calls.length;
+    readReturns({ id: 1, username: 'a', email: 'riletta@example.com', weight_unit: 'st' });
     fireEvent.click(screen.getByText('rileggi'));
-    await waitFor(() => expect(backend.mock.calls.length).toBeGreaterThan(calls));
-    await new Promise((r) => setTimeout(r, 50));
+    // Effetto certo della rilettura: l'indirizzo nuovo è nello stato dell'email
+    await waitFor(() => expect(screen.getByTestId('email').textContent).toBe('riletta@example.com'));
     expect(screen.getByTestId('unit').textContent).toBe('lb');
   });
 
