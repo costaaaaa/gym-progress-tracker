@@ -45,7 +45,7 @@ export const achievementLabel = (key, fallback, weightUnit) => {
   const threshold = achievementCatalog.find((a) => a.key === key && a.category === 'strength')?.threshold;
   return i18n.t(`achievement.${key}`, {
     defaultValue: fallback ?? key,
-    value: threshold === undefined ? undefined : Math.round(kgToTotal(threshold, weightUnit)),
+    value: threshold === undefined ? undefined : kgToTotal(threshold, weightUnit),
     unit: weightUnitLabel(weightUnit),
   });
 };

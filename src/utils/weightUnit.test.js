@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  LB_IN_KG, DEFAULT_WEIGHT_UNIT, isWeightUnit, weightUnitLabel, kgToDisplay, formatWeightInUnit, formatWeightRounded, inputToKg, formatSetInUnit,
+  LB_IN_KG, DEFAULT_WEIGHT_UNIT, isWeightUnit, weightUnitLabel, kgToDisplay, formatWeightInUnit, inputToKg, formatSetInUnit,
   maxWeightInUnit, weightStepInUnit, weightToField, fieldToKg, fieldToKgText,
   kgToTotal, formatTotalInUnit, usesTonnes, formatEstimateInUnit, kgToBodyDisplay, kgToShareDisplay, formatBodyWeightInUnit, maxBodyWeightInUnit, fieldTextToKgText,
 } from './weightUnit';
@@ -68,23 +68,6 @@ describe('formatWeightInUnit', () => {
   it('senza valore: trattino; unit: false solo il numero', () => {
     expect(formatWeightInUnit(null, 'lb', 'it-IT')).toBe('—');
     expect(formatWeightInUnit(100, 'lb', 'it-IT', { unit: false })).toBe('220,5');
-  });
-});
-
-describe('formatWeightRounded (totali e soglie)', () => {
-  it('lb: intero più vicino, convertendo il totale in kg', () => {
-    expect(formatWeightRounded(100, 'lb', 'it-IT')).toBe(`220${NB}lb`);
-    expect(formatWeightRounded(12345.6, 'lb', 'it-IT')).toBe(`27.217${NB}lb`);
-    expect(formatWeightRounded(12345.6, 'lb', 'en-US')).toBe(`27,217${NB}lb`);
-  });
-
-  it('kg: intero più vicino', () => {
-    expect(formatWeightRounded(1234.4, 'kg', 'it-IT')).toBe(`1234${NB}kg`);
-    expect(formatWeightRounded(100, 'kg', 'it-IT')).toBe(`100${NB}kg`);
-  });
-
-  it('senza valore: trattino', () => {
-    expect(formatWeightRounded(undefined, 'lb', 'it-IT')).toBe('—');
   });
 });
 

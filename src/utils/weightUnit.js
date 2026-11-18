@@ -38,16 +38,7 @@ export function formatWeightInUnit(kg, unit, locale, { unit: withUnit = true, ..
   return withUnit ? `${digits}${NBSP}${weightUnitLabel(unit)}` : digits;
 }
 
-// Variante intera per totali (volume, tonnellaggio) e soglie dei traguardi: si converte il totale in kg,
-// poi si arrotonda all'intero più vicino nell'unità dell'utente.
-export function formatWeightRounded(kg, unit, locale) {
-  const n = toNumber(kg);
-  if (n === null) return '—';
-  const whole = Math.round(unit === 'lb' ? n / LB_IN_KG : n);
-  return `${formatWeight(whole, locale, { unit: false, maxDecimals: 0 })}${NBSP}${weightUnitLabel(unit)}`;
-}
-
-// Totale (volume, tonnellaggio) nell'unità dell'utente, come numero: in kg il totale com'è (nessun arrotondamento
+// Totale (volume, tonnellaggio) o soglia di un traguardo nell'unità dell'utente, come numero: in kg il totale com'è (nessun arrotondamento
 // nuovo), in lb il totale convertito e arrotondato all'intero. Mai la somma di righe già convertite.
 export function kgToTotal(kg, unit) {
   const n = toNumber(kg);
