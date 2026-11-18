@@ -25,9 +25,10 @@ vi.mock('../components/LabeledDatePicker', async (importOriginal) => (
 
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
 // Lo stesso oggetto a ogni render: la pagina ricarica i dati quando `user` cambia identità.
+const { updateUser } = vi.hoisted(() => ({ updateUser: vi.fn() }));
 vi.mock('../context/AuthContext', () => {
   const auth = {
-    user: { id: 1 }, isLoggedIn: true, loading: false, logout: () => {}, updateUser: () => {},
+    user: { id: 1 }, isLoggedIn: true, loading: false, logout: () => {}, updateUser,
     emailState: { verified: true, email: 'atleta.con.un.indirizzo.lungo@example.com', pendingEmail: null, blocked: false, daysLeft: null },
     openEmailDialog: () => {}, refreshEmailState: () => Promise.resolve(),
   };
@@ -50,12 +51,13 @@ const groups = [
   { id: 7, name: 'Palestra Rossi', my_role: 'owner' },
   { id: 8, name: 'Amici del giovedì', my_role: 'member' },
 ];
-const stubFetch = ({ is_admin = false } = {}) => vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
-  url.includes('groups/list.php') ? json({ success: true, groups })
+const stubFetch = ({ is_admin = false, weight_unit = 'kg', settings } = {}) => vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
+  settings && url.includes('update_settings.php') ? settings()
+    : url.includes('groups/list.php') ? json({ success: true, groups })
     : url.includes('user/consent.php') ? json({ success: true, consents: { terms: { granted: true, version: 1 }, health_data: { granted: true, version: 1 } } })
     : url.includes('user/read.php') ? json({
       id: 1, username: 'atleta_con_un_nome_molto_lungo', email: 'atleta.con.un.indirizzo.lungo@example.com',
-      created_at: '2025-03-01T10:00:00+01:00', is_admin, weekly_goal_default: 3,
+      created_at: '2025-03-01T10:00:00+01:00', is_admin, weight_unit, weekly_goal_default: 3,
       email_verified: true, email_verification: null, pending_email: null,
       tier: 'free', tier_until: null, tier_last_day: null, signup_code: null,
     })
@@ -63,6 +65,7 @@ const stubFetch = ({ is_admin = false } = {}) => vi.stubGlobal('fetch', vi.fn((u
 )));
 
 beforeEach(() => {
+  updateUser.mockClear();
   localStorage.setItem('themeMode', 'light');
   stubFetch();
 });
@@ -77,6 +80,45 @@ const mount = async () => {
   await screen.findByText('Palestra Rossi');
 };
 const button = (name) => screen.getByRole('button', { name });
+
+describe('unità di peso', () => {
+  const unitSelect = () => screen.getByLabelText('Unità di peso');
+  const savedBodies = () => fetch.mock.calls.filter(([url]) => url.includes('update_settings.php')).map(([, init]) => JSON.parse(init.body));
+  const choose = async (label) => {
+    fireEvent.mouseDown(unitSelect());
+    fireEvent.click(await screen.findByRole('option', { name: label, hidden: true }));
+  };
+
+  it('parte dall\'unità salvata sull\'account', async () => {
+    stubFetch({ weight_unit: 'lb' });
+    await mount();
+    await waitFor(() => expect(unitSelect().textContent).toBe('lb'));
+    expect(screen.getByText(/restano salvati in kg/)).toBeTruthy();
+  });
+
+  it('salva la scelta e aggiorna il contesto', async () => {
+    stubFetch({ settings: () => json({ success: true, weight_unit: 'lb' }) });
+    await mount();
+    await waitFor(() => expect(unitSelect().textContent).toBe('kg'));
+    await choose('lb');
+    await waitFor(() => expect(updateUser).toHaveBeenCalledWith({ weight_unit: 'lb' }));
+    expect(savedBodies()).toEqual([{ weight_unit: 'lb' }]);
+    expect(unitSelect().textContent).toBe('lb');
+  });
+
+  it.each([
+    ['errore del server', () => json({ success: false, message: 'no' }, 500)],
+    ['errore di rete', () => Promise.reject(new Error('offline'))],
+  ])('%s: la scelta torna al valore precedente e si mostra l\'errore', async (_, settings) => {
+    stubFetch({ weight_unit: 'lb', settings });
+    await mount();
+    await waitFor(() => expect(unitSelect().textContent).toBe('lb'));
+    await choose('kg');
+    await screen.findByText('Errore nel salvataggio dell\'unità di peso');
+    expect(unitSelect().textContent).toBe('lb');
+    expect(updateUser).not.toHaveBeenCalled();
+  });
+});
 
 describe('obiettivo settimanale', () => {
   it('i pulsanti sono in Lexend 500, come i chip che si premono', async () => {
