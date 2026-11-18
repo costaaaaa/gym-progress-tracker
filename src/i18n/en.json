@@ -624,7 +624,7 @@
   "record.close": "close",
   "record.set": "Set {{n}}:",
   "record.warmup_aria": "Warm-up, set {{n}}",
-  "record.weight": "Weight (kg)",
+  "record.weight": "Weight ({{unit}})",
   "record.reps": "Reps",
   "record.technique": "Technique",
   "record.no_technique": "None",

@@ -16,6 +16,9 @@ export const MAX_WEIGHT = 999.99;
 // Limite del campo peso nell'unità dell'utente: in lb il quarto di libbra più alto sotto 999,99 kg (2204,5)
 export const maxWeightInUnit = (unit) => (unit === 'lb' ? Math.floor((MAX_WEIGHT / LB_IN_KG) * 4) / 4 : MAX_WEIGHT);
 
+// Passo delle frecce del campo: 0,5 kg come prima, 2,5 lb (il passo in kg è sotto 1,25)
+export const weightStepInUnit = (unit) => (unit === 'lb' ? 2.5 : 0.5);
+
 // Il campo peso mostra e legge l'unità dell'utente, i dati restano in kg. `kg` è una stringa in kg (come il
 // peso suggerito): il testo da mostrare nel campo, vuoto se non è un peso.
 export const weightToField = (kg, unit) => {

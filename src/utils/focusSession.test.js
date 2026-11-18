@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   lastSessionSets, totalSlots, setSlot, skipWarmup, slotWeight, numberedSets, withWarmupRule, isCurrentDraft, swapExercise, buildSessionEntry, suggestedWeight,
   plannedSetAt, slotTarget, slotTechnique, repsNeedConfirm, addedPlannedSets,
-  MAX_WEIGHT, maxWeightInUnit, weightToField, weightFieldKg, weightFieldKgText,
+  MAX_WEIGHT, maxWeightInUnit, weightStepInUnit, weightToField, weightFieldKg, weightFieldKgText,
 } from './focusSession';
 import { DROP, plannedSets, times, work } from '../test/plannedSets';
 
@@ -257,6 +257,11 @@ describe('peso nel campo in lb, dati in kg', () => {
   it('maxWeightInUnit: 999,99 kg; in lb il quarto di libbra più alto sotto il limite', () => {
     expect(maxWeightInUnit('kg')).toBe(MAX_WEIGHT);
     expect(maxWeightInUnit('lb')).toBe(2204.5);
+  });
+
+  it('weightStepInUnit: 0,5 kg come prima, 2,5 lb', () => {
+    expect(weightStepInUnit('kg')).toBe(0.5);
+    expect(weightStepInUnit('lb')).toBe(2.5);
   });
 
   it('lastSessionSets mostra il peso nella unità', () => {

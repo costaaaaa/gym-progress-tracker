@@ -624,7 +624,7 @@
   "record.close": "chiudi",
   "record.set": "Serie {{n}}:",
   "record.warmup_aria": "Risc. (riscaldamento), serie {{n}}",
-  "record.weight": "Peso (kg)",
+  "record.weight": "Peso ({{unit}})",
   "record.reps": "Ripetizioni",
   "record.technique": "Tecnica",
   "record.no_technique": "Nessuna",

@@ -7,6 +7,9 @@ import { plannedSets } from '../test/plannedSets';
 import { strayListChildren } from '../test/accessibleNames';
 
 vi.mock('../utils/analytics', () => ({ track: vi.fn() }));
+// Unità di peso dell'utente: kg salvo i test che la cambiano
+const account = vi.hoisted(() => ({ weightUnit: 'kg' }));
+vi.mock('../context/AuthContext', () => ({ useAuth: () => account }));
 
 // 2 riscaldamenti + 2 serie da 5, Rest pause sulla seconda
 const squat = {
@@ -22,7 +25,7 @@ beforeEach(() => {
   fetchMock = vi.fn(() => Promise.resolve(json({ success: true })));
   vi.stubGlobal('fetch', fetchMock);
 });
-afterEach(() => { vi.unstubAllGlobals(); });
+afterEach(() => { vi.unstubAllGlobals(); account.weightUnit = 'kg'; });
 
 const open = (activePlan = basePlan) => {
   render(<RecordWorkoutDialog open onClose={() => {}} activePlan={activePlan} />);
@@ -185,5 +188,46 @@ describe('struttura accessibile', () => {
     const list = screen.getByRole('list');
     expect(list.children).toHaveLength(2);
     expect(strayListChildren(list)).toEqual([]);
+  });
+});
+
+describe('peso in libbre: dati sempre in kg', () => {
+  beforeEach(() => { account.weightUnit = 'lb'; });
+  const lbField = (row) => screen.getAllByLabelText('Peso (lb)')[row];
+
+  it('il campo si chiama in lb, ha il limite in lb e nessun campo dice kg', () => {
+    open();
+    expect(screen.queryByLabelText('Peso (kg)')).toBeNull();
+    expect(lbField(0).getAttribute('max')).toBe('2204.5');
+    expect(lbField(0).getAttribute('step')).toBe('2.5');
+  });
+
+  it('ciò che l\'utente scrive in lb arriva al server in kg arrotondati a 0,01', async () => {
+    open();
+    fireEvent.change(lbField(2), { target: { value: '220' } });
+    fireEvent.change(screen.getAllByLabelText('Ripetizioni')[2], { target: { value: '5' } });
+    fireEvent.change(lbField(3), { target: { value: '225.5' } });
+    fireEvent.change(screen.getAllByLabelText('Ripetizioni')[3], { target: { value: '4' } });
+    const body = await save();
+    expect(body.workout_records.map((r) => [r.set_number, r.weight])).toEqual([[3, 99.79], [4, 102.29]]);
+  });
+
+  it('un peso oltre il limite (2204,75 lb) non si salva; 0 lb sì (corpo libero)', async () => {
+    open();
+    fireEvent.change(lbField(2), { target: { value: '2204.75' } });
+    fireEvent.change(screen.getAllByLabelText('Ripetizioni')[2], { target: { value: '5' } });
+    expect(screen.getByRole('button', { name: 'Salva' }).disabled).toBe(true);
+    fireEvent.change(lbField(2), { target: { value: '0' } });
+    const body = await save();
+    expect(body.workout_records.map((r) => [r.set_number, r.weight])).toEqual([[3, 0]]);
+  });
+
+  it('per un utente in kg il campo e il payload non cambiano', async () => {
+    account.weightUnit = 'kg';
+    open();
+    expect(screen.getAllByLabelText('Peso (kg)')[0].getAttribute('max')).toBe('999.99');
+    fill(2, '82.5', '5');
+    const body = await save();
+    expect(body.workout_records.map((r) => r.weight)).toEqual([82.5]);
   });
 });
