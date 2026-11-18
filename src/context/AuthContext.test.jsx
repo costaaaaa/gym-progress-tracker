@@ -361,3 +361,60 @@ describe('AuthProvider: esito della conferma', () => {
     expect(await screen.findByText('Email confermata.')).toBeTruthy();
   });
 });
+
+// Unità di peso dell'account: da user/read.php, kg finché non è letta e da sloggati
+const Unit = () => {
+  const { weightUnit } = useAuth();
+  return <div data-testid="unit">{weightUnit}</div>;
+};
+const readReturns = (data) =>
+  backend.mockImplementation((input) =>
+    Promise.resolve(new Response(String(input).includes('read.php') ? JSON.stringify({ success: true, ...data }) : '{}', { status: 200 })));
+
+describe('AuthProvider: unità di peso', () => {
+  it('da sloggati è kg', () => {
+    render(<AuthProvider><Unit /></AuthProvider>);
+    expect(screen.getByTestId('unit').textContent).toBe('kg');
+  });
+
+  it('kg finché non è letta, poi quella dell\'account', async () => {
+    readReturns({ id: 1, username: 'a', locale: 'en', weight_unit: 'lb' });
+    localStorage.setItem('isLoggedIn', 'true');
+    render(<AuthProvider><Unit /></AuthProvider>);
+    expect(screen.getByTestId('unit').textContent).toBe('kg');
+    await waitFor(() => expect(screen.getByTestId('unit').textContent).toBe('lb'));
+  });
+
+  it('un server senza il campo o con un valore non valido vale kg', async () => {
+    readReturns({ id: 1, username: 'a', weight_unit: 'st' });
+    localStorage.setItem('isLoggedIn', 'true');
+    render(<AuthProvider><Unit /></AuthProvider>);
+    await waitFor(() => expect(backend).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByTestId('unit').textContent).toBe('kg'));
+  });
+
+  it('dopo il login (che risponde senza unità) la rilettura la porta', async () => {
+    readReturns({ id: 1, username: 'a', locale: 'en', weight_unit: 'lb' });
+    const Login = () => {
+      const { login } = useAuth();
+      return <button onClick={() => login({ id: 1, username: 'a', locale: 'en' })}>entra</button>;
+    };
+    render(<AuthProvider><Unit /><Login /></AuthProvider>);
+    expect(screen.getByTestId('unit').textContent).toBe('kg');
+    fireEvent.click(screen.getByText('entra'));
+    await waitFor(() => expect(screen.getByTestId('unit').textContent).toBe('lb'));
+  });
+
+  it('updateUser({ weight_unit }) cambia l\'unità', async () => {
+    readReturns({ id: 1, username: 'a', weight_unit: 'kg' });
+    localStorage.setItem('isLoggedIn', 'true');
+    const Change = () => {
+      const { updateUser } = useAuth();
+      return <button onClick={() => updateUser({ weight_unit: 'lb' })}>cambia</button>;
+    };
+    render(<AuthProvider><Unit /><Change /></AuthProvider>);
+    await waitFor(() => expect(backend).toHaveBeenCalled());
+    fireEvent.click(screen.getByText('cambia'));
+    await waitFor(() => expect(screen.getByTestId('unit').textContent).toBe('lb'));
+  });
+});

@@ -4,6 +4,7 @@ import i18n from '../i18n';
 import { currentTimeZone } from '../utils/workoutTime';
 import { loginWithNext } from '../utils/safeNext';
 import { isAuthPath } from '../i18n/paths';
+import { DEFAULT_WEIGHT_UNIT, isWeightUnit } from '../utils/weightUnit';
 
 // Crea il contesto di autenticazione
 const AuthContext = createContext(null);
@@ -51,7 +52,13 @@ export const AuthProvider = ({ children }) => {
         const response = await fetch(`${API_BASE_URL}api/user/read.php`, { method: 'GET', credentials: 'include' });
         if (!response.ok) return;
         const data = await response.json();
-        if (data.success && mine === lastRead.current) setEmailState({ ...emailStateFrom(data), outcome });
+        if (data.success && mine === lastRead.current) {
+          setEmailState({ ...emailStateFrom(data), outcome });
+          // Il login risponde senza l'unità di peso: la rilettura la porta
+          if (isWeightUnit(data.weight_unit)) {
+            setUser((prev) => (prev && prev.weight_unit !== data.weight_unit ? { ...prev, weight_unit: data.weight_unit } : prev));
+          }
+        }
       } catch (error) {
         console.error('Errore lettura stato email:', error);
       } finally {
@@ -200,10 +207,14 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
+  // Unità di peso dell'account: kg finché non è letta e da sloggati
+  const weightUnit = isWeightUnit(user?.weight_unit) ? user.weight_unit : DEFAULT_WEIGHT_UNIT;
+
   // Valore fornito dal context
   const authContextValue = {
     isLoggedIn,
     user,
+    weightUnit,
     login,
     logout,
     updateUser,
