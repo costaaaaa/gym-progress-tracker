@@ -47,11 +47,22 @@ export function formatWeightRounded(kg, unit, locale) {
   return `${formatWeight(whole, locale, { unit: false, maxDecimals: 0 })}${NBSP}${weightUnitLabel(unit)}`;
 }
 
-// Testo scritto dall'utente nella sua unità → kg arrotondati a 0,01. Virgola e punto come decimale (come la
-// lettura del peso di oggi, parseFloat). null se vuoto, non numerico o negativo.
+// A 0,01 con i mezzi per eccesso: lo spostamento è sul testo decimale (1.005 → 1.01), non su kg * 100, che in
+// virgola mobile dà 100.49999… e sbaglia.
+const roundCents = (n) => Number(`${Math.round(Number(`${n.toFixed(10)}e2`))}e-2`);
+
+// Testo scritto dall'utente nella sua unità → kg arrotondati a 0,01. Dopo il trim solo cifre con al più un
+// separatore decimale (virgola o punto) seguito da cifre: tutto il resto (12abc, 1e3, 0x10, 1.000,5, -0, .5, 5.)
+// è null. Un numero finito e non negativo passa. Nessun tetto: il limite (999,99 kg) lo mette chi valida.
 export function inputToKg(text, unit) {
-  const n = parseFloat(String(text ?? '').trim().replace(',', '.'));
-  if (!Number.isFinite(n) || n < 0) return null;
-  const kg = unit === 'lb' ? n * LB_IN_KG : n;
-  return Math.round(kg * 100) / 100;
+  let n;
+  if (typeof text === 'number') {
+    n = text;
+    if (!Number.isFinite(n) || n < 0 || Object.is(n, -0)) return null;
+  } else {
+    const s = String(text ?? '').trim();
+    if (!/^\d+(?:[.,]\d+)?$/.test(s)) return null;
+    n = Number(s.replace(',', '.'));
+  }
+  return roundCents(unit === 'lb' ? n * LB_IN_KG : n);
 }

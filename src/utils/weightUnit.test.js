@@ -105,6 +105,30 @@ describe('inputToKg', () => {
       expect(inputToKg(text, 'lb')).toBeNull();
     }
   });
+
+  it.each(['12abc', '1e3', '0x10', '1.000,5', '-0', '.5', '5.', '1 2', '1,2,3', '1.2.3', '+5', ',5', '5,', '--5', '１２'])(
+    'testo non fatto di sole cifre con al più un decimale: %j → null', (text) => {
+      expect(inputToKg(text, 'kg')).toBeNull();
+      expect(inputToKg(text, 'lb')).toBeNull();
+    });
+
+  it.each([['12', 12], ['12,5', 12.5], ['12.5', 12.5], ['0', 0], ['  12,5  ', 12.5], ['007', 7]])('%j in kg → %j', (text, kg) => {
+    expect(inputToKg(text, 'kg')).toBe(kg);
+  });
+
+  it('un numero finito e non negativo resta accettato; il resto no', () => {
+    expect(inputToKg(12.5, 'kg')).toBe(12.5);
+    expect(inputToKg(225, 'lb')).toBe(102.06);
+    expect(inputToKg(0, 'kg')).toBe(0);
+    for (const n of [-1, NaN, Infinity, -0.001]) expect(inputToKg(n, 'kg')).toBeNull();
+  });
+
+  it('i mezzi a 0,01 kg si arrotondano per eccesso senza errori di virgola mobile', () => {
+    expect(inputToKg('1.005', 'kg')).toBe(1.01);
+    expect(inputToKg('2.675', 'kg')).toBe(2.68);
+    expect(inputToKg('8.345', 'kg')).toBe(8.35);
+    expect(inputToKg('225', 'lb')).toBe(102.06); // 102,0582…
+  });
 });
 
 describe('andata e ritorno', () => {
@@ -120,5 +144,11 @@ describe('andata e ritorno', () => {
 
   it('con 2204 lb il peso resta nel limite del database (0-999,99 kg)', () => {
     expect(inputToKg('2204', 'lb')).toBeLessThanOrEqual(999.99);
+  });
+
+  it('il limite del server è 999,99 kg: lo fissano i fatti, inputToKg non mette tetti', () => {
+    expect(kgToDisplay(999.99, 'lb')).toBe(2204.5);
+    expect(inputToKg('2204.5', 'lb')).toBeLessThanOrEqual(999.99);
+    expect(inputToKg('2204.75', 'lb')).toBeGreaterThan(999.99);
   });
 });
