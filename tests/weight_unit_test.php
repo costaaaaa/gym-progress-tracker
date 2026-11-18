@@ -85,8 +85,8 @@ $r = api('POST', '/api/user/update_settings.php', $kg, ['weight_unit' => 'kg']);
 check('update_settings: di nuovo kg', $r[0] === 200 && ($r[1]['weight_unit'] ?? null) === 'kg' && unitOf('wuplain') === 'kg', $r[2]);
 $r = api('POST', '/api/user/update_settings.php', $kg, ['rest_timer_enabled' => false]);
 check('un\'altra impostazione non cambia l\'unità e la risposta la riporta', $r[0] === 200 && ($r[1]['weight_unit'] ?? null) === 'kg', $r[2]);
-$api = api('POST', '/api/user/update_settings.php', $lb, ['gender' => 'F']);
-check('l\'unità lb resta con un\'altra impostazione', $api[0] === 200 && ($api[1]['weight_unit'] ?? null) === 'lb' && unitOf('wulb') === 'lb', $api[2]);
+$r = api('POST', '/api/user/update_settings.php', $lb, ['gender' => 'F']);
+check('l\'unità lb resta con un\'altra impostazione', $r[0] === 200 && ($r[1]['weight_unit'] ?? null) === 'lb' && unitOf('wulb') === 'lb', $r[2]);
 foreach ([['st'], ['LB'], [''], [5], [null], [['lb']]] as [$bad]) {
     $r = api('POST', '/api/user/update_settings.php', $lb, ['weight_unit' => $bad]);
     check('valore non valido ' . json_encode($bad) . ': 400, unità invariata', $r[0] === 400 && ($r[1]['success'] ?? null) === false && unitOf('wulb') === 'lb', $r[2]);
@@ -98,7 +98,7 @@ echo "Proposta dell'unità da Accept-Language\n";
 $cases = [
     ['en-US,en;q=0.9', 'lb'], ['en-us', 'lb'], ['EN-US', 'lb'], ['es-US,es;q=0.9', 'lb'], ['en-Latn-US', 'lb'], ['en-US;q=0.8', 'lb'],
     ['  en-US , it', 'lb'], ['it-IT,it;q=0.9,en-US;q=0.8', 'kg'], ['it-IT', 'kg'], ['en-GB', 'kg'], ['en', 'kg'], ['en-GB,en-US;q=0.9', 'kg'],
-    ['en-USA', 'kg'], ['*', 'kg'], [',en-US', 'kg'], ['-US', 'kg'], ['en-', 'kg'], ['garbage;;;', 'kg'], ['US', 'kg'], ['', 'kg'],
+    ['en-USA', 'kg'], ['en,en-US', 'kg'], ['en-AUS', 'kg'], ['en,en-US', 'kg'], ['en-AUS', 'kg'], ['*', 'kg'], [',en-US', 'kg'], ['-US', 'kg'], ['en-', 'kg'], ['garbage;;;', 'kg'], ['US', 'kg'], ['', 'kg'],
 ];
 foreach ($cases as [$header, $expected]) {
     $r = api('GET', '/api/user/suggested_unit.php', null, null, PORT_A, ["Accept-Language: $header"]);
@@ -107,9 +107,21 @@ foreach ($cases as [$header, $expected]) {
 // Senza intestazione: la chiamata di file_get_contents non ne manda
 $r = api('GET', '/api/user/suggested_unit.php');
 check('intestazione assente → kg', $r[0] === 200 && ($r[1]['suggested_weight_unit'] ?? null) === 'kg', $r[2]);
-$before = (int)scalar("SELECT COUNT(*) FROM gym_users");
-api('GET', '/api/user/suggested_unit.php', null, null, PORT_A, ['Accept-Language: en-US']);
-check('non registra nulla: nessun utente nuovo', (int)scalar("SELECT COUNT(*) FROM gym_users") === $before);
+// La proposta non lascia tracce: nessun cookie e nessuna tabella cambia, tranne il conteggio del limite di frequenza
+function tableChecksums()
+{
+    global $conn;
+    $out = [];
+    foreach ($conn->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN) as $t) {
+        if ($t === 'gym_rate_limits') continue;
+        $out[$t] = $conn->query("CHECKSUM TABLE `$t`")->fetch(PDO::FETCH_NUM)[1];
+    }
+    return $out;
+}
+$before = tableChecksums();
+$r = api('GET', '/api/user/suggested_unit.php', null, null, PORT_A, ['Accept-Language: en-US']);
+check('nessun Set-Cookie nella risposta', $r[0] === 200 && count(preg_grep('/^Set-Cookie:/i', $r[3])) === 0, implode("\n", $r[3]));
+check('nessuna tabella cambia, oltre a gym_rate_limits', $before === tableChecksums() && count($before) > 10);
 $r = api('POST', '/api/user/suggested_unit.php', null, [], PORT_A, ['Accept-Language: en-US']);
 check('solo GET: POST → 405', $r[0] === 405, $r[2]);
 $headers = implode("\n", api('GET', '/api/user/suggested_unit.php', null, null, PORT_A, ['Accept-Language: en-US'])[3]);

@@ -1,7 +1,9 @@
 <?php
 // GET, senza login → {"success": true, "suggested_weight_unit": "kg"|"lb"}: l'unità da preimpostare nel modulo di
 // registrazione, calcolata dal solo Accept-Language (lb se il primo tag ha regione US, altrimenti kg). Non salva né
-// registra nulla (nessun cookie, nessuna posizione): l'unità resta quella che l'utente conferma nel modulo.
+// registra nulla sull'account (nessun cookie, nessuna posizione, nessun log dell'intestazione): l'unica scrittura è il
+// conteggio del limite di frequenza (impronta dell'IP in gym_rate_limits, come negli altri endpoint pubblici).
+// L'unità resta quella che l'utente conferma nel modulo.
 // Sta in un endpoint a parte perché la pagina di registrazione non fa nessuna richiesta senza login al caricamento
 // (check_availability.php parte solo dal primo passo). Stesso limite per IP del primo passo della registrazione.
 include_once '../../config/cors_headers.php';
