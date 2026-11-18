@@ -385,12 +385,34 @@ describe('AuthProvider: unità di peso', () => {
     await waitFor(() => expect(screen.getByTestId('unit').textContent).toBe('lb'));
   });
 
-  it('un server senza il campo o con un valore non valido vale kg', async () => {
-    readReturns({ id: 1, username: 'a', weight_unit: 'st' });
+  it.each([
+    ['senza il campo', {}],
+    ['con un valore non valido', { weight_unit: 'st' }],
+    ['con un valore di un altro tipo', { weight_unit: 5 }],
+  ])('un server %s: la lettura è avvenuta (utente visibile) e l\'unità resta kg', async (_name, extra) => {
+    readReturns({ id: 1, username: 'letto', locale: 'en', ...extra });
     localStorage.setItem('isLoggedIn', 'true');
-    render(<AuthProvider><Unit /></AuthProvider>);
-    await waitFor(() => expect(backend).toHaveBeenCalled());
-    await waitFor(() => expect(screen.getByTestId('unit').textContent).toBe('kg'));
+    const Name = () => <div data-testid="name">{useAuth().user?.username ?? ''}</div>;
+    render(<AuthProvider><Unit /><Name /></AuthProvider>);
+    // Effetto certo della lettura: l'utente è nello stato. Solo allora si guarda l'unità (kg è anche lo stato iniziale)
+    await waitFor(() => expect(screen.getByTestId('name').textContent).toBe('letto'));
+    expect(screen.getByTestId('unit').textContent).toBe('kg');
+  });
+
+  it('una rilettura con un valore non valido non cancella l\'unità già letta', async () => {
+    readReturns({ id: 1, username: 'a', weight_unit: 'lb' });
+    localStorage.setItem('isLoggedIn', 'true');
+    const Reread = () => <button onClick={() => useAuthRef.current.refreshEmailState()}>rileggi</button>;
+    const useAuthRef = { current: null };
+    const Grab = () => { useAuthRef.current = useAuth(); return null; };
+    render(<AuthProvider><Unit /><Grab /><Reread /></AuthProvider>);
+    await waitFor(() => expect(screen.getByTestId('unit').textContent).toBe('lb'));
+    readReturns({ id: 1, username: 'a', weight_unit: 'st' });
+    const calls = backend.mock.calls.length;
+    fireEvent.click(screen.getByText('rileggi'));
+    await waitFor(() => expect(backend.mock.calls.length).toBeGreaterThan(calls));
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.getByTestId('unit').textContent).toBe('lb');
   });
 
   it('dopo il login (che risponde senza unità) la rilettura la porta', async () => {
