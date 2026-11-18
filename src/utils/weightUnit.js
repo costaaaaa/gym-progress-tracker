@@ -47,6 +47,49 @@ export function formatWeightRounded(kg, unit, locale) {
   return `${formatWeight(whole, locale, { unit: false, maxDecimals: 0 })}${NBSP}${weightUnitLabel(unit)}`;
 }
 
+// Totale (volume, tonnellaggio) nell'unità dell'utente, come numero: in kg il totale com'è (nessun arrotondamento
+// nuovo), in lb il totale convertito e arrotondato all'intero. Mai la somma di righe già convertite.
+export function kgToTotal(kg, unit) {
+  const n = toNumber(kg);
+  if (n === null) return null;
+  return unit === 'lb' ? Math.round(n / LB_IN_KG) : n;
+}
+
+// "9.259 lb" / "4.200,5 kg": totale con separatori della lingua e unità. In kg è formatWeightInUnit.
+export function formatTotalInUnit(kg, unit, locale) {
+  const total = kgToTotal(kg, unit);
+  if (total === null) return '—';
+  return `${formatWeight(total, locale, { unit: false })}${NBSP}${weightUnitLabel(unit)}`;
+}
+
+// 1RM stimato: in kg un decimale (come prima), in lb al quarto di libbra come ogni peso di una serie.
+export const formatEstimateInUnit = (kg, unit, locale) =>
+  formatWeightInUnit(kg, unit, locale, { maxDecimals: unit === 'lb' ? 2 : 1 });
+
+// Peso corporeo: in lb si mostra e si legge con un decimale (0,1 lb), non al quarto.
+export function kgToBodyDisplay(kg, unit) {
+  const n = toNumber(kg);
+  if (n === null) return null;
+  return unit === 'lb' ? Math.round((n / LB_IN_KG) * 10) / 10 : n;
+}
+
+// Come formatWeightInUnit ma al decimo di libbra; opzioni di formatWeight (signed, maxDecimals). Vale anche per le
+// differenze: si convertono in kg e poi si mostrano.
+export function formatBodyWeightInUnit(kg, unit, locale, { unit: withUnit = true, ...options } = {}) {
+  const shown = kgToBodyDisplay(kg, unit);
+  if (shown === null) return '—';
+  const digits = formatWeight(shown, locale, { ...options, unit: false });
+  return withUnit ? `${digits}${NBSP}${weightUnitLabel(unit)}` : digits;
+}
+
+// Testo del campo peso corporeo da un valore in kg (stringa): in kg com'è, in lb a 0,1 (vuoto se non è un peso). La
+// lettura è fieldToKg, uguale a ogni altro campo peso.
+export const bodyWeightToField = (kg, unit) => {
+  if (unit !== 'lb') return kg;
+  const shown = kgToBodyDisplay(kg, unit);
+  return shown === null ? '' : String(shown);
+};
+
 // "80 kg × 8" / "220,5 lb × 5": una serie nell'unità dell'utente. Peso assente = 0.
 export function formatSetInUnit(weight, reps, unit, locale) {
   return `${formatWeightInUnit(toNumber(weight) ?? 0, unit, locale)}${NBSP}×${NBSP}${reps}`;
