@@ -43,6 +43,7 @@ import { format, parseISO, startOfToday, formatDistanceToNow } from 'date-fns';
 import { useTranslation, Trans } from 'react-i18next';
 import DateLocalization from '../i18n/DateLocalization';
 import { dateFnsLocale } from '../i18n/format';
+import { DEFAULT_WEIGHT_UNIT, isWeightUnit } from '../utils/weightUnit';
 import { legalPaths } from '../i18n/paths';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
@@ -118,6 +119,7 @@ const Account = ({ isEmbedded = false }) => {
   // Stato per le impostazioni allenamento
   const [restTimerEnabled, setRestTimerEnabled] = useState(true);
   const [locale, setLocale] = useState('it');
+  const [weightUnit, setWeightUnit] = useState(DEFAULT_WEIGHT_UNIT);
   const [savingSettings, setSavingSettings] = useState(false);
   const [weeklyGoal, setWeeklyGoal] = useState({ weekly_goal: null, weekly_goal_default: 3, weekly_goal_pending: null });
   const [weeklyGoalChoice, setWeeklyGoalChoice] = useState('default');
@@ -272,6 +274,9 @@ const Account = ({ isEmbedded = false }) => {
       }
       if (userDetails.locale) {
         setLocale(userDetails.locale);
+      }
+      if (isWeightUnit(userDetails.weight_unit)) {
+        setWeightUnit(userDetails.weight_unit);
       }
       applyWeeklyGoalSettings(userDetails);
 
@@ -753,6 +758,48 @@ const Account = ({ isEmbedded = false }) => {
               >
                 <MenuItem value="it">Italiano</MenuItem>
                 <MenuItem value="en">English</MenuItem>
+              </Select>
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
+              <Box>
+                <Typography sx={{ fontSize: 16, fontWeight: 700 }}>{t('account.weight_unit')}</Typography>
+                <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
+                  {t('account.weight_unit_help')}
+                </Typography>
+              </Box>
+              <Select
+                size="small"
+                value={weightUnit}
+                disabled={savingSettings}
+                inputProps={{ 'aria-label': t('account.weight_unit') }}
+                onChange={async (e) => {
+                  const previous = weightUnit;
+                  const next = e.target.value;
+                  setWeightUnit(next);
+                  setSavingSettings(true);
+                  try {
+                    const response = await fetch(`${API_BASE_URL}api/user/update_settings.php`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      credentials: 'include',
+                      body: JSON.stringify({ weight_unit: next })
+                    });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.message);
+                    updateUser({ weight_unit: next });
+                    setSnackbar({ open: true, message: t('account.weight_unit_saved'), severity: 'success' });
+                  } catch (error) {
+                    console.error('Errore aggiornamento unità di peso:', error);
+                    setWeightUnit(previous);
+                    setSnackbar({ open: true, message: t('account.weight_unit_error'), severity: 'error' });
+                  } finally {
+                    setSavingSettings(false);
+                  }
+                }}
+              >
+                <MenuItem value="kg">kg</MenuItem>
+                <MenuItem value="lb">lb</MenuItem>
               </Select>
             </Box>
 

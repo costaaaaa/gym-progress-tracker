@@ -26,7 +26,13 @@ vi.mock('../components/LabeledDatePicker', async (importOriginal) => (
 
 const availability = (body) => vi.fn(() => Promise.resolve({ ok: true, status: 200, json: async () => ({ success: true, ...body }) }));
 
-const renderRegister = () => render(<MemoryRouter><ThemeModeProvider><Register /></ThemeModeProvider></MemoryRouter>);
+// Al caricamento il modulo chiede la proposta dell'unità di peso (vedi Register.unit.test.jsx): qui non conta, i test
+// controllano le richieste dei passi, quindi la si toglie dalle chiamate registrate.
+const renderRegister = () => {
+  const view = render(<MemoryRouter><ThemeModeProvider><Register /></ThemeModeProvider></MemoryRouter>);
+  fetch.mockClear();
+  return view;
+};
 
 const fillStep1 = ({ confirm = 'Segreta!2026', confirmLabel = /^Conferma password/ } = {}) => {
   fireEvent.change(screen.getByLabelText(/^Username/), { target: { value: 'mario88' } });

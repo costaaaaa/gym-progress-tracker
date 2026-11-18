@@ -192,6 +192,7 @@ return array(
     'workout.record_invalid' => 'Dati mancanti o non validi',
     'workout.record_too_many_sets' => 'Troppe serie in un solo allenamento.',
     'workout.record_weight_invalid' => 'Peso non valido: usa un valore tra 0 e 999,99 kg.',
+    'workout.record_weight_invalid_lb' => 'Peso non valido: usa un valore tra 0 e 2204,5 lb.',
     'workout.record_reps_invalid' => 'Ripetizioni non valide: usa un numero intero tra 1 e 250.',
     'workout.record_sets_invalid' => 'Numero di serie non valido.',
     'workout.record_premium_required' => "Cambiare o aggiungere esercizi durante l'allenamento è una funzione disponibile con Plus o Pro: puoi salvare solo gli esercizi del giorno di scheda.",

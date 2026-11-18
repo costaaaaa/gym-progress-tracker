@@ -142,6 +142,12 @@ assenza en/terms.html 'watch' "termini EN: nessun riferimento all'Apple Watch"
 assenza en/privacy.html 'watch' "privacy EN: nessun riferimento all'Apple Watch"
 cerca privacy.html '<tr><td>Piano dell.account</td>' "privacy IT: il piano dell'account nella tabella dei dati"
 cerca en/privacy.html '<tr><td>Account type</td>' "privacy EN: il piano dell'account nella tabella dei dati"
+# Unità di peso (18 novembre 2026): tra i dati dell'account, con come viene proposta alla registrazione. Le date e la
+# versione dei testi restano quelle di prima.
+cerca privacy.html "data dell'ultimo accesso, unità di peso (kg o lb)" "privacy IT: l'unità di peso tra i dati dell'account"
+cerca privacy.html "dalla lingua che il browser invia con la richiesta; non salviamo la regione né la proposta, solo l'unità che confermi; puoi cambiarla in ogni momento nelle impostazioni" "privacy IT: come viene proposta l'unità"
+cerca en/privacy.html "date of last login, weight unit (kg or lb)" "privacy EN: l'unità di peso tra i dati dell'account"
+cerca en/privacy.html "from the language your browser sends with the request; we do not store the region or the suggestion, only the unit you confirm; you can change it at any time in the settings" "privacy EN: come viene proposta l'unità"
 grep -q "'terms' => '2026-11'" "$ROOT/backend/models/Consent.php" && ok "versione del consenso ai termini invariata (2026-11)" || ko "versione del consenso ai termini cambiata"
 echo
 
