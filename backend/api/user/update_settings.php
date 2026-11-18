@@ -70,6 +70,14 @@ try {
         }
         $fields['locale'] = $data->locale;
     }
+    if (property_exists($data, 'weight_unit')) {
+        if (!valid_weight_unit($data->weight_unit)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => t_server('settings.weight_unit_invalid')]);
+            exit;
+        }
+        $fields['weight_unit'] = $data->weight_unit;
+    }
     // Obiettivo settimanale: da 1 a 7 allenamenti, null = torna al default (giorni della scheda attiva)
     $weekly_goal_given = property_exists($data, 'weekly_goal');
     if ($weekly_goal_given) {
@@ -113,6 +121,7 @@ try {
             'gender' => $user->gender,
             'training_start_date' => $user->training_start_date,
             'locale' => $user->locale,
+            'weight_unit' => $user->weight_unit,
             'age' => $user->age,
             'experience_years' => $user->experience_years
         ] + weekly_goal_settings($db, $user_id));

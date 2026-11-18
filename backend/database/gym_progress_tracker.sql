@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS `gym_users` (
   `tier` enum('free','plus','pro') NOT NULL DEFAULT 'free', -- livello dell'account (backend/tools/tier.php)
   `tier_until` datetime DEFAULT NULL, -- UTC; NULL = senza scadenza, passata = free
   `locale` varchar(5) NOT NULL DEFAULT 'it',
+  `weight_unit` enum('kg','lb') NOT NULL DEFAULT 'kg', -- come i client mostrano i pesi; i dati restano sempre in kg
   `time_zone` varchar(64) DEFAULT NULL, -- ultimo fuso IANA visto dal dispositivo (header X-Timezone)
   `password_changed_at` datetime DEFAULT NULL,
   `last_login_at` datetime DEFAULT NULL,
