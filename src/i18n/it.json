@@ -286,7 +286,7 @@
   "progress.later_in_session": "più avanti nella seduta",
   "progress.col.date": "Data",
   "progress.col.best_set": "Miglior serie",
-  "progress.col.volume": "Volume totale (kg)",
+  "progress.col.volume": "Volume totale ({{unit}})",
   "progress.close": "Chiudi",
   "progress.show_less": "Mostra meno",
   "progress.show_all": "Mostra tutti ({{count}})",

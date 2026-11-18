@@ -10,6 +10,9 @@ import { mediaStyle } from '../test/mediaStyle';
 import { json, expectNoNestedContainer } from '../test/dom';
 import { format } from 'date-fns';
 
+const account = vi.hoisted(() => ({ weightUnit: 'kg' }));
+vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ weightUnit: account.weightUnit }) }));
+
 const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
 const GREEN = 'rgb(21, 128, 61)';
@@ -47,6 +50,7 @@ const stubFetch = (records) => vi.stubGlobal('fetch', vi.fn((url) => Promise.res
 )));
 
 beforeEach(() => {
+  account.weightUnit = 'kg';
   localStorage.setItem('themeMode', 'light');
   stubFetch(history);
 });
@@ -282,5 +286,14 @@ describe('righe degli esercizi', () => {
     expect(parseFloat(getComputedStyle(title).fontSize)).toBeGreaterThanOrEqual(16);
     const sub = within(section('Petto').querySelector('.MuiAccordionSummary-root')).getByText(/ultimo 2 gg fa/);
     expect(getComputedStyle(sub).fontSize).toBe('16px');
+  });
+});
+
+describe('unità di peso dell\'account', () => {
+  it('in lb il 1RM stimato di una riga è in libbre', async () => {
+    account.weightUnit = 'lb';
+    await mountOpen();
+    expect(within(row('Panca piana')).getByText('231,5 lb')).toBeTruthy(); // 105 kg
+    expect(within(row('Panca piana')).queryByText(/kg/)).toBeNull();
   });
 });
