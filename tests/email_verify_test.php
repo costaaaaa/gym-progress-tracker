@@ -339,7 +339,7 @@ $bCookie = webSession('evblock');
 
 // Il test che scorre gli endpoint: ogni endpoint autenticato non ammesso risponde 403 email_unverified
 $public = ['user/register.php', 'user/login.php', 'user/mobile_login.php', 'user/forgot_password.php', 'user/reset_password.php',
-    'user/check_availability.php', 'user/logout.php', 'user/mobile_logout.php'];
+    'user/check_availability.php', 'user/suggested_unit.php', 'user/logout.php', 'user/mobile_logout.php'];
 $allowedExpected = ['user/read.php', 'user/confirm_email.php', 'user/resend_email_code.php', 'user/change_email.php',
     'user/cancel_email_change.php', 'user/export.php', 'user/delete.php'];
 $files = apiFiles($backend . '/api');
