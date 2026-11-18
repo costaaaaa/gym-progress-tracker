@@ -67,7 +67,8 @@ try {
         $reps = $record->reps ?? null;
         $set_number = $record->set_number ?? null;
         if (!is_numeric($weight) || $weight < 0 || $weight > 999.99) {
-            // Il limite applicato è sempre 999,99 kg; per chi usa le libbre il messaggio lo dice in libbre
+            // Il limite applicato è sempre 999,99 kg; per chi usa le libbre il messaggio lo dice in libbre:
+            // 2204,5 lb, il quarto di libbra più alto sotto il limite (come maxWeightInUnit in src/utils/weightUnit.js)
             $unit_stmt = $db->prepare("SELECT weight_unit FROM gym_users WHERE id = ?");
             $unit_stmt->execute([$user_id]);
             $key = $unit_stmt->fetchColumn() === 'lb' ? 'workout.record_weight_invalid_lb' : 'workout.record_weight_invalid';

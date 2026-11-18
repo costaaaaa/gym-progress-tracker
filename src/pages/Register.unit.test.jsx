@@ -135,6 +135,7 @@ describe('unità di peso nel modulo di registrazione', () => {
     suggestion = failing;
     renderAt();
     await goToStep2();
+    await waitFor(() => expect(suggestionCalls()).toHaveLength(1)); // la proposta è stata chiesta, poi la risposta si scarta
     await act(async () => {});
     expect(unitField().textContent).toBe('kg');
     await submit();
