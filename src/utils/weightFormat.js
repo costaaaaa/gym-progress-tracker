@@ -1,4 +1,4 @@
-// Come si scrive un peso e una serie. File puro (nessun import da i18n o React): la lingua arriva
+// Come si scrive un peso. File puro (nessun import da i18n o React): la lingua arriva
 // come argomento, così lo stesso file si può copiare identico in un altro client.
 
 const NBSP = '\u00a0';
@@ -21,9 +21,4 @@ export function formatWeight(value, locale, { signed = false, unit = true, maxDe
   const isZero = Number(Math.abs(n).toFixed(maxDecimals)) === 0;
   const sign = isZero ? '' : n < 0 ? '-' : signed ? '+' : '';
   return `${sign}${digits}${unit ? `${NBSP}kg` : ''}`;
-}
-
-// "80 kg × 8". Peso assente = 0, come mostravano le schermate prima di questo file.
-export function formatSet(weight, reps, locale) {
-  return `${formatWeight(toNumber(weight) ?? 0, locale)}${NBSP}×${NBSP}${reps}`;
 }
