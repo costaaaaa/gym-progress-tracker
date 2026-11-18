@@ -108,7 +108,7 @@ const DAY_FORMAT = { weekday: 'long', day: 'numeric', month: 'long' };
 
 const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
   const { t } = useTranslation();
-  const { isLoggedIn, loading: authLoading } = useAuth();
+  const { isLoggedIn, loading: authLoading, weightUnit } = useAuth();
   const isPhone = useMediaQuery(useTheme().breakpoints.down('sm'));
   const [rowMenu, setRowMenu] = useState(null); // { anchor, workout } del menu "Altre azioni", null = chiuso
   const [workouts, setWorkouts] = useState([]);
@@ -397,7 +397,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
                         {set.is_warmup && <WarmupBadge />}
                       </Box>
                       <Box sx={{ textAlign: 'right' }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{formatSetText(set.weight, set.reps)}</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{formatSetText(set.weight, set.reps, weightUnit)}</Typography>
                         {set.intensity_technique && (
                           <Typography variant="caption" color="text.secondary" display="block">{techniqueLabel(set.intensity_technique)}</Typography>
                         )}
