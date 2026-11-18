@@ -285,12 +285,12 @@ describe('limite e lettura del campo peso corporeo', () => {
     expect(inputToKg(String(maxBodyWeightInUnit(500, 'lb')), 'lb')).toBeLessThanOrEqual(500);
   });
 
-  it('fieldTextToKgText: in kg il testo com\'è; in lb i kg a 0,01 come testo; testo non valido NaN; vuoto vuoto', () => {
+  it('fieldTextToKgText: in kg il testo com\'è; in lb i kg a 0,01 come testo; testo non valido null; vuoto vuoto', () => {
     expect(fieldTextToKgText('80.5', 'kg')).toBe('80.5');
     expect(fieldTextToKgText('', 'lb')).toBe('');
     expect(fieldTextToKgText('176.4', 'lb')).toBe('80.01');
-    expect(fieldTextToKgText('1e2', 'lb')).toBe('NaN');
-    expect(fieldTextToKgText('-5', 'lb')).toBe('NaN');
+    expect(fieldTextToKgText('1e2', 'lb')).toBeNull();
+    expect(fieldTextToKgText('-5', 'lb')).toBeNull();
   });
 });
 

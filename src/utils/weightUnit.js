@@ -87,12 +87,12 @@ export function formatBodyWeightInUnit(kg, unit, locale, { unit: withUnit = true
 export const maxBodyWeightInUnit = (maxKg, unit) => (unit === 'lb' ? Math.floor((maxKg / LB_IN_KG) * 10) / 10 : maxKg);
 
 // Testo di un campo peso nell'unità dell'utente → kg come testo, per le regole che lavorano in kg (e per il payload):
-// in kg il testo com'è, vuoto resta vuoto, in lb i kg a 0,01. Un testo non valido in lb diventa "NaN", così le
-// regole lo scartano (mai riletto come kg).
+// in kg il testo com'è, vuoto resta vuoto, in lb i kg a 0,01. Un testo non valido in lb dà null: chi chiama lo segnala
+// come errore, mai riletto come kg.
 export const fieldTextToKgText = (text, unit) => {
   if (unit !== 'lb' || text === '') return text;
   const kg = inputToKg(text, 'lb');
-  return kg === null ? 'NaN' : String(kg);
+  return kg === null ? null : String(kg);
 };
 
 // "80 kg × 8" / "220,5 lb × 5": una serie nell'unità dell'utente. Peso assente = 0.

@@ -301,7 +301,7 @@ const BodyStats = ({ isEmbedded = false }) => {
     const weightKgText = fieldTextToKgText(formData.weight, weightUnit);
     Object.entries(BODY_LIMITS).forEach(([name, max]) => {
       const value = name === 'weight' ? weightKgText : formData[name];
-      if (isValueOutOfRange(value, max)) errors[name] = t('body.error.range', { max: rangeMax(name, max) });
+      if (value === null || isValueOutOfRange(value, max)) errors[name] = t('body.error.range', { max: rangeMax(name, max) });
     });
     if (Object.keys(errors).length > 0) {
       showFieldErrors(errors);

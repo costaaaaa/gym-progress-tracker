@@ -661,6 +661,15 @@ describe('unità di peso dell\'account: lb', () => {
     expect(describedBy(field('Peso (lb)'))).toBe('Il valore deve essere tra 0 e 1102,3, estremi inclusi.');
   });
 
+  it('un testo non valido in libbre dà l\'errore sotto il campo e non parte', async () => {
+    records = [row('2026-10-15', '80.0')];
+    await open();
+    type('Peso (lb)', '1e2');
+    await act(async () => { save(); });
+    expect(describedBy(field('Peso (lb)'))).toBe('Il valore deve essere tra 0 e 1102,3, estremi inclusi.');
+    expect(fetch.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+  });
+
   it('un errore del server sul peso (max in kg) è mostrato in libbre', async () => {
     records = [row('2026-10-15', '80.0')];
     await open();
