@@ -66,6 +66,13 @@ export function formatTotalInUnit(kg, unit, locale) {
 export const formatEstimateInUnit = (kg, unit, locale) =>
   formatWeightInUnit(kg, unit, locale, { maxDecimals: unit === 'lb' ? 2 : 1 });
 
+// Peso nelle card di condivisione, come numero: in kg un decimale (come sempre), in lb il quarto di libbra.
+export function kgToShareDisplay(kg, unit) {
+  const n = toNumber(kg);
+  if (n === null) return null;
+  return unit === 'lb' ? kgToDisplay(n, unit) : Math.round(n * 10) / 10;
+}
+
 // Il tonnellaggio si scrive in tonnellate solo in kg; in lb si mostra il totale in libbre (formatTotalInUnit).
 export const usesTonnes = (unit) => unit !== 'lb';
 

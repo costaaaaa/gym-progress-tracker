@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toDate, muscleGroupsTitle, buildShareStats, sessionRecords } from './shareCard';
+import { toDate, muscleGroupsTitle, buildShareStats, sessionRecords, layoutShareCard } from './shareCard';
 import { setBrowserTimeZone } from '../test/timeZone';
 
 describe('toDate: la data di un allenamento', () => {
@@ -58,5 +58,35 @@ describe('Il riscaldamento non è allenante (#66): escluso dalla card condivisa'
       { 1: { bestWeight: 100, bestOneRM: 116.7, bestSessionVolume: 500, bestBodyweightReps: 0 } }
     );
     expect(records).toEqual([]);
+  });
+});
+
+describe('unità di peso della card', () => {
+  const WEIGHT_RECORD = { name: 'Panca', type: 'weight', weight: 100, reps: 5, delta: 2.5, pct: 0.03 };
+  const ONE_RM_RECORD = { name: 'Squat', type: 'oneRM', weight: 140.2, reps: 3, delta: 4, pct: 0.02 };
+  const stats = (records) => buildShareStats({
+    exercises: [{ name: 'Panca', muscle_group: 'petto', sets: [{ weight: 100, reps: 5 }, { weight: 82.5, reps: 8 }] }],
+    date: '2026-10-18 10:00:00', durationSec: 3600, title: 'Petto', records,
+  });
+  const texts = (records, options) => layoutShareCard(stats(records), 'scuro', options)
+    .elements.filter((el) => el.type === 'text').map((el) => el.text);
+  const summary = { blocks: ['hero', 'tiles', 'exercises'] };
+
+  it('in kg i testi sono quelli di sempre', () => {
+    const all = [...texts([WEIGHT_RECORD], summary), ...texts([WEIGHT_RECORD, ONE_RM_RECORD], { preset: 'record' }), ...texts([ONE_RM_RECORD], summary)];
+    expect(all).toEqual(expect.arrayContaining(['100 kg × 5', '+2,5 kg', '1.160 kg', '140,2 kg × 3', '+4 kg stimati']));
+  });
+
+  it('in lb serie e record sono al quarto di libbra, delta e volume sono convertiti dai kg', () => {
+    const lb = { weightUnit: 'lb' };
+    const all = [...texts([WEIGHT_RECORD], { ...summary, ...lb }), ...texts([WEIGHT_RECORD, ONE_RM_RECORD], { preset: 'record', ...lb }), ...texts([ONE_RM_RECORD], { ...summary, ...lb })];
+    expect(all).toEqual(expect.arrayContaining([
+      '220,5 lb × 5', // 100 kg: record ed esercizio
+      '+5,5 lb', // 2,5 kg = 5,51 lb
+      '2.557 lb', // 1160 kg = 2557,4 lb
+      '309 lb × 3', // 140,2 kg = 309,1 lb
+      '+8,75 lb stimati', // 4 kg = 8,82 lb
+    ]));
+    expect(all.filter((t) => /\bkg\b/.test(t))).toEqual([]);
   });
 });

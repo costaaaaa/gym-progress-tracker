@@ -55,7 +55,7 @@ const CHECKERBOARD = {
  * stats = buildShareStats(...) da utils/shareCard.js. La foto scelta resta nel
  * browser: si disegna sul canvas e non viene mai inviata al server.
  */
-const ShareCardDialog = ({ open, onClose, stats }) => {
+const ShareCardDialog = ({ open, onClose, stats, weightUnit }) => {
   const { t, i18n } = useTranslation();
   const bgLabel = (bg) => t(`share.bg.${bg.id}`, { defaultValue: bg.label });
   const theme = useTheme();
@@ -110,9 +110,9 @@ const ShareCardDialog = ({ open, onClose, stats }) => {
   // Il disegno segue subito ogni spostamento della foto; il PNG si prepara solo quando
   // l'utente si ferma, perché costa più del disegno.
   const layout = useMemo(
-    () => (stats ? layoutShareCard(stats, template, { hasPhoto: !!photo, photoBackground, format, preset, blocks: customBlocks || undefined, hideWeights, showBestVolume, strings: shareCardStrings() }) : null),
+    () => (stats ? layoutShareCard(stats, template, { hasPhoto: !!photo, photoBackground, format, preset, blocks: customBlocks || undefined, hideWeights, showBestVolume, weightUnit, strings: shareCardStrings() }) : null),
     // shareCardStrings() legge la lingua attiva: serve nelle dipendenze per rifare il testo al cambio lingua.
-    [stats, template, photo, photoBackground, format, preset, customBlocks, hideWeights, showBestVolume, i18n.language], // eslint-disable-line react-hooks/exhaustive-deps
+    [stats, template, photo, photoBackground, format, preset, customBlocks, hideWeights, showBestVolume, weightUnit, i18n.language], // eslint-disable-line react-hooks/exhaustive-deps
   );
   const cardText = layout ? layout.elements.filter((el) => el.type === 'text').map((el) => el.text).join(', ') : '';
 

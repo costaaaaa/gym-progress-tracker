@@ -235,7 +235,7 @@ export default function SummaryPhase({
               {t('focus.go_home')}
             </Button>
 
-            <ShareCardDialog open={!!shareStats} stats={shareStats} onClose={onCloseShare} />
+            <ShareCardDialog open={!!shareStats} stats={shareStats} weightUnit={weightUnit} onClose={onCloseShare} />
           </>
         ) : (
           <>

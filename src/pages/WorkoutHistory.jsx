@@ -589,7 +589,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
           </MenuItem>
         ))}
       </Menu>
-      <ShareCardDialog open={!!shareStats} stats={shareStats} onClose={() => setShareStats(null)} />
+      <ShareCardDialog open={!!shareStats} stats={shareStats} weightUnit={weightUnit} onClose={() => setShareStats(null)} />
       <EditWorkoutDateDialog open={openEditDateDialog} onClose={handleCloseEditDateDialog} workout={workoutToEdit} onUpdateSuccess={handleUpdateDateSuccess} />
       <Snackbar
         open={pendingId !== null}

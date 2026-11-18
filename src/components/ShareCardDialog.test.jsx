@@ -23,8 +23,8 @@ const stats = () => buildShareStats({
 
 beforeEach(() => setBrowserTimeZone('Europe/Rome'));
 
-const mount = async () => {
-  render(<ShareCardDialog open onClose={() => {}} stats={stats()} />);
+const mount = async (weightUnit) => {
+  render(<ShareCardDialog open onClose={() => {}} stats={stats()} weightUnit={weightUnit} />);
   await act(async () => {});
 };
 
@@ -46,6 +46,12 @@ describe('nomi accessibili', () => {
     ['DOMENICA 18 OTTOBRE', 'Petto', '1h 00m', '\\b2\\W+SERIE', '800 kg'].forEach((text) => {
       expect(screen.getByRole('img', { name: new RegExp(text) })).toBe(card);
     });
+  });
+
+  it('in lb il testo dell\'anteprima riporta il volume in libbre', async () => {
+    await mount('lb');
+    expect(screen.getByRole('img', { name: /1\.764 lb/ })).toBeTruthy(); // 800 kg
+    expect(screen.queryByRole('img', { name: /\bkg\b/ })).toBeNull();
   });
 
   it('cambiando lingua a dialogo aperto il testo dell\'anteprima segue la lingua', async () => {
