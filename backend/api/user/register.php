@@ -113,6 +113,13 @@ try {
         }
         $user->training_start_date = ($tsd === '') ? null : $tsd;
         $user->locale = normalize_locale(isset($data->locale) ? $data->locale : null) ?: 'it';
+        // Unità di peso facoltativa: assente = kg; presente ma non valida = nessun account
+        if (property_exists($data, 'weight_unit') && !valid_weight_unit($data->weight_unit)) {
+            http_response_code(400);
+            echo json_encode(array("success" => false, "message" => t_server('settings.weight_unit_invalid')));
+            exit;
+        }
+        $user->weight_unit = isset($data->weight_unit) ? $data->weight_unit : 'kg';
 
         // Username o email già in uso: messaggio preciso e campo da correggere (lo stesso dice
         // check_availability.php al primo passo; create() resta comunque il controllo finale).

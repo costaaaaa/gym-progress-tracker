@@ -132,6 +132,32 @@ function normalize_locale($value)
     return in_array($code, SUPPORTED_LOCALES, true) ? $code : null;
 }
 
+// ── Unità di peso ───────────────────────────────────────────────────────────
+
+const SUPPORTED_WEIGHT_UNITS = array('kg', 'lb');
+
+// 'kg' o 'lb' esatti (niente maiuscole), altrimenti false
+function valid_weight_unit($value)
+{
+    return is_string($value) && in_array($value, SUPPORTED_WEIGHT_UNITS, true);
+}
+
+// Unità proposta nel modulo di registrazione, dal solo Accept-Language: 'lb' se il primo tag della lista
+// ha regione US (en-US, es-US, en-Latn-US, senza distinguere le maiuscole), altrimenti 'kg'. Non conta
+// il peso q dei tag, solo l'ordine; un'intestazione assente o malformata dà 'kg'. Non salva nulla.
+function suggested_weight_unit($accept_language)
+{
+    if (!is_string($accept_language)) return 'kg';
+    $first = trim(explode(',', $accept_language, 2)[0]);
+    $tag = trim(explode(';', $first, 2)[0]);
+    if (!preg_match('/^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*$/', $tag)) return 'kg';
+    $parts = explode('-', strtolower($tag));
+    array_shift($parts);
+    // La regione viene dopo l'eventuale scrittura (4 lettere: Latn)
+    if (isset($parts[0]) && preg_match('/^[a-z]{4}$/', $parts[0])) array_shift($parts);
+    return (isset($parts[0]) && $parts[0] === 'us') ? 'lb' : 'kg';
+}
+
 // Utente della richiesta, ricordato da resolve_authenticated_user_id() per leggerne la lingua
 // quando serve (nomi degli esercizi) senza passare $db e l'id attraverso tutti i modelli.
 function request_user_context($db = null, $user_id = null)

@@ -124,6 +124,7 @@ return array(
     'settings.no_fields' => 'Nothing to update.',
     'settings.updated' => 'Profile updated successfully.',
     'settings.locale_invalid' => 'Language not supported.',
+    'settings.weight_unit_invalid' => 'Weight unit not supported.',
     'settings.weekly_goal_invalid' => 'Invalid weekly goal: 1 to 7 workouts.',
     'settings.update_error' => 'Error while updating settings.',
     'account.password_required' => 'Password is required.',

@@ -42,6 +42,7 @@ try {
             'gender' => $user->gender,
             'training_start_date' => $user->training_start_date,
             'locale' => $user->locale,
+            'weight_unit' => $user->weight_unit,
             'experience_years' => $user->experience_years,
             'password_changed_at' => server_time_iso($user->password_changed_at),
             'is_admin' => user_is_admin($db, $user_id),

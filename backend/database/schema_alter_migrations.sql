@@ -1068,3 +1068,17 @@ CREATE TABLE IF NOT EXISTS `gym_signup_code_uses` (
   CONSTRAINT `gym_signup_code_uses_ibfk_1` FOREIGN KEY (`code_id`) REFERENCES `gym_signup_codes` (`id`),
   CONSTRAINT `gym_signup_code_uses_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `gym_users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ------------------------------------------------------------------------------
+-- 41. Unità di peso dell'account: gym_users.weight_unit ('kg' o 'lb'), come la lingua. I dati restano
+--     sempre in kg (nel database, nelle API, nelle schede): l'unità decide solo come i client mostrano un
+--     peso e come leggono quello che l'utente scrive. Gli account che esistono adesso hanno kg. Solo
+--     aggiunte: il rollback del codice resta possibile (il codice vecchio ignora la colonna).
+-- ------------------------------------------------------------------------------
+
+SET @fresh = (SELECT COUNT(*) = 0 FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = 'gym_users' AND column_name = 'weight_unit');
+SET @q = IF(@fresh,
+  'ALTER TABLE `gym_users` ADD COLUMN `weight_unit` ENUM(''kg'',''lb'') NOT NULL DEFAULT ''kg'' AFTER `locale`',
+  'DO 0');
+PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
