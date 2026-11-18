@@ -93,13 +93,11 @@ export const weightToField = (kg, unit) => {
 // toccato (`origin` = { text, kg }: il testo con cui è stato riempito e i kg da cui viene) dà i kg originali: si
 // passa da inputToKg solo ciò che l'utente ha scritto. In kg la lettura è quella permissiva di sempre (parseFloat).
 export const fieldToKg = (text, unit, maxKg, origin = null) => {
-  if (origin && text === origin.text) return parseFloat(origin.kg);
-  if (unit !== 'lb') {
-    const n = parseFloat(text);
-    return Number.isFinite(n) && n >= 0 && n <= maxKg ? n : null;
-  }
-  const kg = inputToKg(text, 'lb');
-  return kg !== null && kg <= maxKg ? kg : null;
+  // Il limite vale anche per l'origine: in kg ogni testo riportato ne ha una, anche se non valido
+  let kg;
+  if (origin && text === origin.text) kg = parseFloat(origin.kg);
+  else kg = unit === 'lb' ? inputToKg(text, 'lb') : parseFloat(text);
+  return kg !== null && Number.isFinite(kg) && kg >= 0 && kg <= maxKg ? kg : null;
 };
 
 // Come fieldToKg ma come stringa in kg, per riportare il peso alla serie dopo (corpo libero, serie saltata).

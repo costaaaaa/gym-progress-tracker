@@ -162,13 +162,13 @@ describe('andata e ritorno', () => {
 });
 
 describe('formatSetInUnit: una serie nella unità dell\'utente', () => {
-  it('kg come formatSet, lb al quarto di libbra', () => {
+  it('kg con la virgola della lingua, lb al quarto di libbra', () => {
     expect(formatSetInUnit(80, 8, 'kg', 'it-IT')).toBe(`80${NB}kg${NB}×${NB}8`);
     expect(formatSetInUnit(100, 5, 'lb', 'it-IT')).toBe(`220,5${NB}lb${NB}×${NB}5`);
     expect(formatSetInUnit(100, 5, 'lb', 'en-US')).toBe(`220.5${NB}lb${NB}×${NB}5`);
   });
 
-  it('peso assente = 0, come formatSet', () => {
+  it('peso assente = 0', () => {
     expect(formatSetInUnit(null, 12, 'kg', 'it-IT')).toBe(`0${NB}kg${NB}×${NB}12`);
     expect(formatSetInUnit('', 12, 'lb', 'it-IT')).toBe(`0${NB}lb${NB}×${NB}12`);
   });
@@ -205,6 +205,13 @@ describe('campo peso in lb, dati in kg', () => {
     expect(fieldToKg('220.5', 'lb', MAX, origin)).toBe(100);
     expect(fieldToKg('220.5', 'lb', MAX)).toBe(100.02);
     expect(fieldToKg('221', 'lb', MAX, origin)).toBe(100.24);
+  });
+
+  it('il limite vale anche per un valore che arriva dall\'origine (in kg ogni testo riportato ne ha una)', () => {
+    expect(fieldToKg('1000', 'kg', MAX, { text: '1000', kg: '1000' })).toBeNull();
+    expect(fieldToKg('-5', 'kg', MAX, { text: '-5', kg: '-5' })).toBeNull();
+    expect(fieldToKg('abc', 'kg', MAX, { text: 'abc', kg: 'abc' })).toBeNull();
+    expect(fieldToKg('20.0', 'kg', MAX, { text: '20.0', kg: '20.0' })).toBe(20);
   });
 
   it('fieldToKgText: la stringa in kg da riportare alla serie dopo; in kg il testo com\'è', () => {
