@@ -77,6 +77,12 @@ describe('unità di peso della card', () => {
     expect(all).toEqual(expect.arrayContaining(['100 kg × 5', '+2,5 kg', '1.160 kg', '140,2 kg × 3', '+4 kg stimati']));
   });
 
+  it('in lb un delta piccolo ma non nullo non diventa «+0 lb»: si mostra il quarto di libbra', () => {
+    const tiny = { ...WEIGHT_RECORD, delta: 0.05 }; // 0,05 kg = 0,11 lb, che al quarto è 0
+    expect(texts([tiny], { preset: 'record' })).toContain('+0,1 kg');
+    expect(texts([tiny], { preset: 'record', weightUnit: 'lb' })).toContain('+0,25 lb');
+  });
+
   it('in lb serie e record sono al quarto di libbra, delta e volume sono convertiti dai kg', () => {
     const lb = { weightUnit: 'lb' };
     const all = [...texts([WEIGHT_RECORD], { ...summary, ...lb }), ...texts([WEIGHT_RECORD, ONE_RM_RECORD], { preset: 'record', ...lb }), ...texts([ONE_RM_RECORD], { ...summary, ...lb })];

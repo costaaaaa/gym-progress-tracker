@@ -32,7 +32,7 @@ import i18n from '../i18n';
 import DateLocalization from '../i18n/DateLocalization';
 import { formatDate, formatMeasureText, intlLocale } from '../i18n/format';
 import { useAuth } from '../context/AuthContext';
-import { fieldTextToKgText, formatBodyWeightInUnit, kgToBodyDisplay, maxBodyWeightInUnit, weightUnitLabel } from '../utils/weightUnit';
+import { BODY_LB_DIVISIONS, fieldTextToKgText, formatWeightInUnit, kgToDisplay, maxWeightInUnit, weightUnitLabel } from '../utils/weightUnit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import FavoriteIcon from '@mui/icons-material/Favorite';
@@ -67,7 +67,7 @@ const StatValue = ({ row, field, weightUnit }) => {
   if (!row[field]) return '-';
   return (
     <>
-      {field === 'weight' ? formatBodyWeightInUnit(row[field], weightUnit, intlLocale(), { unit: false }) : formatMeasureText(row[field])}
+      {field === 'weight' ? formatWeightInUnit(row[field], weightUnit, intlLocale(), { lbDivisions: BODY_LB_DIVISIONS, unit: false }) : formatMeasureText(row[field])}
       {isFromHealth(row, field) && <HealthMark />}
     </>
   );
@@ -291,7 +291,7 @@ const BodyStats = ({ isEmbedded = false }) => {
   };
 
   // Il tetto del peso si mostra nell'unità dell'utente, gli altri com'è
-  const rangeMax = (name, max) => (name === 'weight' ? formatMeasureText(maxBodyWeightInUnit(max, weightUnit)) : max);
+  const rangeMax = (name, max) => (name === 'weight' ? formatMeasureText(maxWeightInUnit(max, weightUnit, BODY_LB_DIVISIONS)) : max);
 
   const handleSubmit = async () => {
     const errors = {};
@@ -390,15 +390,15 @@ const BodyStats = ({ isEmbedded = false }) => {
   ];
 
   const weighed = chartData.filter(d => d.weight !== null && d.weight !== undefined);
-  const weightPoints = weighed.map(d => ({ x: d.day, value: kgToBodyDisplay(d.weight, weightUnit) }));
-  const weightRows = weighed.map(d => [formatDate(d.date), formatBodyWeightInUnit(d.weight, weightUnit, intlLocale())]);
+  const weightPoints = weighed.map(d => ({ x: d.day, value: kgToDisplay(d.weight, weightUnit, BODY_LB_DIVISIONS) }));
+  const weightRows = weighed.map(d => [formatDate(d.date), formatWeightInUnit(d.weight, weightUnit, intlLocale(), { lbDivisions: BODY_LB_DIVISIONS })]);
   const lastWeight = lastValueOf(chartData, 'weight');
-  const weightLabel = formatBodyWeightInUnit(lastWeight, weightUnit, intlLocale());
+  const weightLabel = formatWeightInUnit(lastWeight, weightUnit, intlLocale(), { lbDivisions: BODY_LB_DIVISIONS });
   const weightDelta = periodWeightDelta(periodRows);
   const trend = weightTrend(weightDelta);
   const deltaText = trend === null ? undefined
     : trend === 'flat' ? t(PERIOD_UI[period].stable)
-      : t(PERIOD_UI[period].delta, { delta: formatBodyWeightInUnit(weightDelta, weightUnit, intlLocale(), { signed: true, maxDecimals: 1 }) });
+      : t(PERIOD_UI[period].delta, { delta: formatWeightInUnit(weightDelta, weightUnit, intlLocale(), { lbDivisions: BODY_LB_DIVISIONS, signed: true, maxDecimals: 1 }) });
 
   // Lo storico non segue il periodo: tutte le righe, dalla più recente, a pagine
   const sortedStats = sortByDate(stats);
@@ -438,7 +438,7 @@ const BodyStats = ({ isEmbedded = false }) => {
                 <Typography sx={{ color: 'text.secondary', fontSize: 16, mt: 0.5 }}>
                   {t('body.period_empty_last', {
                     date: formatDate(latestRow.date),
-                    weight: formatBodyWeightInUnit(latestRow.weight, weightUnit, intlLocale()),
+                    weight: formatWeightInUnit(latestRow.weight, weightUnit, intlLocale(), { lbDivisions: BODY_LB_DIVISIONS }),
                   })}
                 </Typography>
               </Card>

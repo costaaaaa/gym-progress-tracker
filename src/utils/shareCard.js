@@ -7,7 +7,7 @@
 // ============================================================================
 
 import { isClockString, localDate } from './calendarDay';
-import { DEFAULT_WEIGHT_UNIT, kgToShareDisplay, kgToTotal, weightUnitLabel } from './weightUnit';
+import { DEFAULT_WEIGHT_UNIT, kgDeltaToTenthKgOrQuarterLb, kgToTenthKgOrQuarterLb, kgToTotal, weightUnitLabel } from './weightUnit';
 import { extractReps, estimateOneRepMax, summarizeSets, buildExerciseHistoryIndex, detectPersonalRecords, isWorkingSet } from './workoutMetrics';
 
 // Formato della card: dimensioni in px. Storia per le storie, Quadrato per feed e chat.
@@ -93,8 +93,8 @@ const formatDecimal = (n, strings = STRINGS_IT) =>
 
 // Un peso in kg → "12,5" nell'unità dell'utente (kg: una cifra decimale al massimo; lb: al quarto di libbra), separatore
 // della lingua; {unit} dei testi è l'etichetta dell'unità.
-const formatWeightValue = (kg, unit, strings = STRINGS_IT) =>
-  String(kgToShareDisplay(kg, unit)).replace('.', strings.decimal);
+const formatWeightValue = (kg, unit, strings = STRINGS_IT, toShown = kgToTenthKgOrQuarterLb) =>
+  String(toShown(kg, unit)).replace('.', strings.decimal);
 
 /**
  * I due gruppi muscolari con più serie, es. "Petto · Tricipiti". Titolo della card
@@ -414,7 +414,7 @@ const recordValue = (record, strings, weightUnit) => (record.type === 'reps'
 const recordDelta = (record, strings, weightUnit) => {
   if (record.delta === null) return null;
   const template = { weight: strings.deltaKg, oneRM: strings.deltaOneRm, reps: strings.deltaReps }[record.type];
-  return fill(template, { n: record.type === 'reps' ? formatDecimal(record.delta, strings) : formatWeightValue(record.delta, weightUnit, strings), unit: weightUnitLabel(weightUnit) });
+  return fill(template, { n: record.type === 'reps' ? formatDecimal(record.delta, strings) : formatWeightValue(record.delta, weightUnit, strings, kgDeltaToTenthKgOrQuarterLb), unit: weightUnitLabel(weightUnit) });
 };
 
 // Blocco principale con un record: esercizio, serie che lo fa, di quanto migliora.

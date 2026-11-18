@@ -22,17 +22,22 @@ const toNumber = (value) => {
   return Number.isFinite(n) ? n : null;
 };
 
-// kg → numero da mostrare: kg come sono, lb al quarto di libbra. null se il valore manca.
-export function kgToDisplay(kg, unit) {
+// Divisioni della libbra con cui si mostra un peso in lb: 4 = quarto di libbra (pesi delle serie, default), 10 = decimo
+// (peso corporeo).
+export const BODY_LB_DIVISIONS = 10;
+
+// kg → numero da mostrare: kg come sono, lb al quarto di libbra (o al decimo, con BODY_LB_DIVISIONS). null se il valore manca.
+export function kgToDisplay(kg, unit, lbDivisions = 4) {
   const n = toNumber(kg);
   if (n === null) return null;
-  return unit === 'lb' ? Math.round((n / LB_IN_KG) * 4) / 4 : n;
+  return unit === 'lb' ? Math.round((n / LB_IN_KG) * lbDivisions) / lbDivisions : n;
 }
 
 // "220,5 lb" / "79,3 kg": numero nella lingua dell'utente, senza zeri inutili, spazio non separabile prima
-// dell'unità. Senza un valore valido: "—". Opzioni di formatWeight (signed, maxDecimals), unit: false = solo il numero.
-export function formatWeightInUnit(kg, unit, locale, { unit: withUnit = true, ...options } = {}) {
-  const shown = kgToDisplay(kg, unit);
+// dell'unità. Senza un valore valido: "—". Opzioni di formatWeight (signed, maxDecimals), unit: false = solo il numero,
+// lbDivisions = divisioni della libbra (default il quarto; BODY_LB_DIVISIONS per il peso corporeo).
+export function formatWeightInUnit(kg, unit, locale, { unit: withUnit = true, lbDivisions, ...options } = {}) {
+  const shown = kgToDisplay(kg, unit, lbDivisions);
   if (shown === null) return '—';
   const digits = formatWeight(shown, locale, { ...options, unit: false });
   return withUnit ? `${digits}${NBSP}${weightUnitLabel(unit)}` : digits;
@@ -57,34 +62,22 @@ export function formatTotalInUnit(kg, unit, locale) {
 export const formatEstimateInUnit = (kg, unit, locale) =>
   formatWeightInUnit(kg, unit, locale, { maxDecimals: unit === 'lb' ? 2 : 1 });
 
-// Peso nelle card di condivisione, come numero: in kg un decimale (come sempre), in lb il quarto di libbra.
-export function kgToShareDisplay(kg, unit) {
+// Peso nelle card di condivisione, come numero: in kg a un decimale (come sempre), in lb al quarto di libbra.
+export function kgToTenthKgOrQuarterLb(kg, unit) {
   const n = toNumber(kg);
   if (n === null) return null;
   return unit === 'lb' ? kgToDisplay(n, unit) : Math.round(n * 10) / 10;
 }
 
+// Come kgToTenthKgOrQuarterLb per un miglioramento (delta): in lb, se il delta non è zero ma al quarto di libbra
+// verrebbe 0, si mostra un quarto di libbra (con il segno del delta) invece di «+0 lb».
+export function kgDeltaToTenthKgOrQuarterLb(kg, unit) {
+  const shown = kgToTenthKgOrQuarterLb(kg, unit);
+  return unit === 'lb' && shown === 0 && toNumber(kg) !== 0 ? Math.sign(toNumber(kg)) * 0.25 : shown;
+}
+
 // Il tonnellaggio si scrive in tonnellate solo in kg; in lb si mostra il totale in libbre (formatTotalInUnit).
 export const usesTonnes = (unit) => unit !== 'lb';
-
-// Peso corporeo: in lb si mostra e si legge con un decimale (0,1 lb), non al quarto.
-export function kgToBodyDisplay(kg, unit) {
-  const n = toNumber(kg);
-  if (n === null) return null;
-  return unit === 'lb' ? Math.round((n / LB_IN_KG) * 10) / 10 : n;
-}
-
-// Come formatWeightInUnit ma al decimo di libbra; opzioni di formatWeight (signed, maxDecimals). Vale anche per le
-// differenze: si convertono in kg e poi si mostrano.
-export function formatBodyWeightInUnit(kg, unit, locale, { unit: withUnit = true, ...options } = {}) {
-  const shown = kgToBodyDisplay(kg, unit);
-  if (shown === null) return '—';
-  const digits = formatWeight(shown, locale, { ...options, unit: false });
-  return withUnit ? `${digits}${NBSP}${weightUnitLabel(unit)}` : digits;
-}
-
-// Limite del peso corporeo nell'unità dell'utente: in lb il decimo di libbra più alto sotto il limite (500 kg → 1102,3 lb).
-export const maxBodyWeightInUnit = (maxKg, unit) => (unit === 'lb' ? Math.floor((maxKg / LB_IN_KG) * 10) / 10 : maxKg);
 
 // Testo di un campo peso nell'unità dell'utente → kg come testo, per le regole che lavorano in kg (e per il payload):
 // in kg il testo com'è, vuoto resta vuoto, in lb i kg a 0,01. Un testo non valido in lb dà null: chi chiama lo segnala
@@ -122,8 +115,9 @@ export function inputToKg(text, unit) {
 }
 
 // Limite di un campo peso nell'unità dell'utente: in kg `maxKg`, in lb il quarto di libbra più alto sotto di esso
-// (999,99 kg → 2204,5 lb).
-export const maxWeightInUnit = (maxKg, unit) => (unit === 'lb' ? Math.floor((maxKg / LB_IN_KG) * 4) / 4 : maxKg);
+// (999,99 kg → 2204,5 lb); con BODY_LB_DIVISIONS il decimo (500 kg → 1102,3 lb).
+export const maxWeightInUnit = (maxKg, unit, lbDivisions = 4) =>
+  (unit === 'lb' ? Math.floor((maxKg / LB_IN_KG) * lbDivisions) / lbDivisions : maxKg);
 
 // Passo delle frecce di un campo peso: 0,5 kg, 2,5 lb (il passo in kg è sotto 1,25)
 export const weightStepInUnit = (unit) => (unit === 'lb' ? 2.5 : 0.5);
