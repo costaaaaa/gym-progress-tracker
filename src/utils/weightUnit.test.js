@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  LB_IN_KG, DEFAULT_WEIGHT_UNIT, isWeightUnit, weightUnitLabel, kgToDisplay, formatWeightInUnit, formatWeightRounded, inputToKg,
+  LB_IN_KG, DEFAULT_WEIGHT_UNIT, isWeightUnit, weightUnitLabel, kgToDisplay, formatWeightInUnit, formatWeightRounded, inputToKg, formatSetInUnit,
 } from './weightUnit';
 
 const NB = ' ';
@@ -157,5 +157,18 @@ describe('andata e ritorno', () => {
     expect(kgToDisplay(999.99, 'lb')).toBe(2204.5);
     expect(inputToKg('2204.5', 'lb')).toBeLessThanOrEqual(999.99);
     expect(inputToKg('2204.75', 'lb')).toBeGreaterThan(999.99);
+  });
+});
+
+describe('formatSetInUnit: una serie nella unità dell\'utente', () => {
+  it('kg come formatSet, lb al quarto di libbra', () => {
+    expect(formatSetInUnit(80, 8, 'kg', 'it-IT')).toBe(`80${NB}kg${NB}×${NB}8`);
+    expect(formatSetInUnit(100, 5, 'lb', 'it-IT')).toBe(`220,5${NB}lb${NB}×${NB}5`);
+    expect(formatSetInUnit(100, 5, 'lb', 'en-US')).toBe(`220.5${NB}lb${NB}×${NB}5`);
+  });
+
+  it('peso assente = 0, come formatSet', () => {
+    expect(formatSetInUnit(null, 12, 'kg', 'it-IT')).toBe(`0${NB}kg${NB}×${NB}12`);
+    expect(formatSetInUnit('', 12, 'lb', 'it-IT')).toBe(`0${NB}lb${NB}×${NB}12`);
   });
 });

@@ -4,7 +4,7 @@
 // Stessa logica nell'altro client.
 
 import { isWorkingSet } from './workoutMetrics';
-import { formatSet } from './weightFormat';
+import { LB_IN_KG, formatSetInUnit, inputToKg, kgToDisplay } from './weightUnit';
 import { MAX_WORKING, fromCompact, parseRowTarget, plannedOf, plannedTarget, plannedTechnique, toInt, workingOf } from './plannedSets';
 
 // Funzione Plus e Pro che sblocca cambio e aggiunta (vedi user_features() nel backend)
@@ -12,6 +12,34 @@ export const FEATURE_SESSION_EDIT = 'focus_session_edit';
 
 // Peso massimo accettato dal backend (colonna decimal(5,2))
 export const MAX_WEIGHT = 999.99;
+
+// Limite del campo peso nell'unità dell'utente: in lb il quarto di libbra più alto sotto 999,99 kg (2204,5)
+export const maxWeightInUnit = (unit) => (unit === 'lb' ? Math.floor((MAX_WEIGHT / LB_IN_KG) * 4) / 4 : MAX_WEIGHT);
+
+// Il campo peso mostra e legge l'unità dell'utente, i dati restano in kg. `kg` è una stringa in kg (come il
+// peso suggerito): il testo da mostrare nel campo, vuoto se non è un peso.
+export const weightToField = (kg, unit) => {
+  const shown = kgToDisplay(kg, unit);
+  return shown === null ? '' : String(shown);
+};
+
+// kg di ciò che sta nel campo (numero) o null se non è un peso valido (0-999,99 kg). Un campo precompilato e non
+// toccato (`origin` = { text, kg }, il testo con cui è stato riempito e i kg da cui viene) dà i kg originali:
+// si passa da inputToKg solo ciò che l'utente ha scritto. In kg vale isValidWeight come prima.
+export const weightFieldKg = (text, unit, origin = null) => {
+  if (origin && text === origin.text) return parseFloat(origin.kg);
+  if (unit !== 'lb') return isValidWeight(text) ? parseFloat(text) : null;
+  const kg = inputToKg(text, 'lb');
+  return kg !== null && kg <= MAX_WEIGHT ? kg : null;
+};
+
+// Come weightFieldKg ma come stringa in kg, per riportare il peso alla serie dopo (corpo libero, serie saltata).
+// In kg il testo com'è; in lb un peso non valido diventa vuoto.
+export const weightFieldKgText = (text, unit, origin = null) => {
+  if (unit !== 'lb') return text;
+  const kg = weightFieldKg(text, unit, origin);
+  return kg === null ? '' : origin && text === origin.text ? String(origin.kg) : String(kg);
+};
 
 // Peso valido per una serie: 0 compreso (corpo libero, macchinari senza carico)
 export const isValidWeight = (value) => {
@@ -98,12 +126,12 @@ export const slotWeight = (exercise, slotIndex, { suggested = '', current = '' }
 
 // Serie dell'ultima sessione per le chip "Ultima volta": [{ label, technique }]
 // repsLabel(reps) scrive le ripetizioni di una serie senza peso: il testo lo dà il chiamante (lingua).
-export const lastSessionSets = (lastSession, locale, repsLabel) => {
+export const lastSessionSets = (lastSession, locale, repsLabel, unit = 'kg') => {
   if (!lastSession || !Array.isArray(lastSession.sets)) return [];
   return lastSession.sets.filter(isWorkingSet).map((s) => {
     const w = parseFloat(s.weight) || 0;
     return {
-      label: w > 0 ? formatSet(w, s.reps, locale) : repsLabel(s.reps),
+      label: w > 0 ? formatSetInUnit(w, s.reps, unit, locale) : repsLabel(s.reps),
       technique: s.intensity_technique || '',
     };
   });

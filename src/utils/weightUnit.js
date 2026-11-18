@@ -47,6 +47,11 @@ export function formatWeightRounded(kg, unit, locale) {
   return `${formatWeight(whole, locale, { unit: false, maxDecimals: 0 })}${NBSP}${weightUnitLabel(unit)}`;
 }
 
+// "80 kg × 8" / "220,5 lb × 5": una serie nell'unità dell'utente. Peso assente = 0, come formatSet.
+export function formatSetInUnit(weight, reps, unit, locale) {
+  return `${formatWeightInUnit(toNumber(weight) ?? 0, unit, locale)}${NBSP}×${NBSP}${reps}`;
+}
+
 // A 0,01 con i mezzi per eccesso: lo spostamento è sul testo decimale (1.005 → 1.01), non su kg * 100, che in
 // virgola mobile dà 100.49999… e sbaglia.
 const roundCents = (n) => Number(`${Math.round(Number(`${n.toFixed(10)}e2`))}e-2`);
