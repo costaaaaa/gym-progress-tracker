@@ -85,12 +85,16 @@ export function formatBodyWeightInUnit(kg, unit, locale, { unit: withUnit = true
   return withUnit ? `${digits}${NBSP}${weightUnitLabel(unit)}` : digits;
 }
 
-// Testo del campo peso corporeo da un valore in kg (stringa): in kg com'è, in lb a 0,1 (vuoto se non è un peso). La
-// lettura è fieldToKg, uguale a ogni altro campo peso.
-export const bodyWeightToField = (kg, unit) => {
-  if (unit !== 'lb') return kg;
-  const shown = kgToBodyDisplay(kg, unit);
-  return shown === null ? '' : String(shown);
+// Limite del peso corporeo nell'unità dell'utente: in lb il decimo di libbra più alto sotto il limite (500 kg → 1102,3 lb).
+export const maxBodyWeightInUnit = (maxKg, unit) => (unit === 'lb' ? Math.floor((maxKg / LB_IN_KG) * 10) / 10 : maxKg);
+
+// Testo di un campo peso nell'unità dell'utente → kg come testo, per le regole che lavorano in kg (e per il payload):
+// in kg il testo com'è, vuoto resta vuoto, in lb i kg a 0,01. Un testo non valido in lb diventa "NaN", così le
+// regole lo scartano (mai riletto come kg).
+export const fieldTextToKgText = (text, unit) => {
+  if (unit !== 'lb' || text === '') return text;
+  const kg = inputToKg(text, 'lb');
+  return kg === null ? 'NaN' : String(kg);
 };
 
 // "80 kg × 8" / "220,5 lb × 5": una serie nell'unità dell'utente. Peso assente = 0.

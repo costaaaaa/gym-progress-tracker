@@ -12,10 +12,14 @@ import { describedBy } from '../test/accessibleNames';
 import { mockPointer } from '../test/pointer';
 import { expectNoNestedContainer } from '../test/dom';
 
+const account = vi.hoisted(() => ({ weightUnit: 'kg' }));
+vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ weightUnit: account.weightUnit }) }));
+
 const row = (date, weight, extra = {}) => ({ id: date, date, weight, ...extra });
 
 let records;
 beforeEach(() => {
+  account.weightUnit = 'kg';
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date(2026, 9, 20, 12, 0));
   records = [];
@@ -607,5 +611,77 @@ describe('nuova misura: errori dei valori (WCAG 3.3.1, 4.1.3)', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     fireEvent.click(screen.getByRole('button', { name: 'Nuova misurazione' }));
     expect(field('Peso (kg)').getAttribute('aria-invalid')).not.toBe('true');
+  });
+});
+
+describe('unità di peso dell\'account: lb', () => {
+  beforeEach(() => { account.weightUnit = 'lb'; });
+  const field = (label) => screen.getByRole('spinbutton', { name: label });
+  const type = (label, value) => fireEvent.change(field(label), { target: { value } });
+  const posts = () => fetch.mock.calls.filter(([, init]) => init?.method === 'POST');
+  const open = async () => {
+    await mount();
+    fireEvent.click(screen.getByRole('button', { name: 'Nuova misurazione' }));
+    await screen.findByRole('dialog');
+  };
+  const save = () => fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Salva' }));
+
+  it('peso, variazione, titolo e intestazioni sono in libbre con un decimale', async () => {
+    records = [row('2026-09-25', '81.0'), row('2026-10-15', '80.0')];
+    await mount();
+    expect(bigValue('176,4 lb')).toBeTruthy(); // 80 kg
+    expect(screen.getByText(/-2,2 lb negli ultimi 3 mesi/)).toBeTruthy(); // -1 kg
+    expect(screen.getByText('Andamento peso (lb)')).toBeTruthy();
+    expect(within(history()).getAllByRole('columnheader')[1].textContent).toBe('Peso (lb)');
+    expect(within(tableRows()[0]).getByText('176,4')).toBeTruthy();
+    expect(screen.queryByText(/\bkg\b/)).toBeNull();
+  });
+
+  it('un periodo senza misure mostra l\'ultima rilevazione in libbre', async () => {
+    records = [row('2026-05-19', '83.5')];
+    await mount();
+    expect(screen.getByText(`Ultima rilevazione il ${formatDate('2026-05-19')}: 184,1 lb`)).toBeTruthy();
+  });
+
+  it('il campo si legge in libbre e parte in kg a 0,01', async () => {
+    records = [row('2026-10-15', '80.0')];
+    await open();
+    type('Peso (lb)', '176.4');
+    save();
+    expect(posts()).toHaveLength(1);
+    expect(JSON.parse(posts()[0][1].body).weight).toBe('80.01');
+  });
+
+  it('il tetto è mostrato in libbre: 500 kg = 1102,3 lb', async () => {
+    records = [row('2026-10-15', '80.0')];
+    await open();
+    type('Peso (lb)', '1200');
+    save();
+    expect(posts()).toHaveLength(0);
+    expect(describedBy(field('Peso (lb)'))).toBe('Il valore deve essere tra 0 e 1102,3, estremi inclusi.');
+  });
+
+  it('un errore del server sul peso (max in kg) è mostrato in libbre', async () => {
+    records = [row('2026-10-15', '80.0')];
+    await open();
+    type('Peso (lb)', '176');
+    fetch.mockImplementation((url, init) => Promise.resolve(init?.method === 'POST'
+      ? { ok: false, status: 400, json: async () => ({ message: 'Peso: fuori scala', field: 'weight', max: 500 }) }
+      : { ok: true, json: async () => ({ records }) }));
+    await act(async () => { save(); });
+    expect(describedBy(field('Peso (lb)'))).toBe('Il valore deve essere tra 0 e 1102,3, estremi inclusi.');
+  });
+});
+
+describe('unità di peso dell\'account: kg, il peso inviato resta come scritto', () => {
+  it('un peso in kg parte com\'è', async () => {
+    records = [row('2026-10-15', '80.0')];
+    await mount();
+    fireEvent.click(screen.getByRole('button', { name: 'Nuova misurazione' }));
+    await screen.findByRole('dialog');
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Peso (kg)' }), { target: { value: '80.5' } });
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Salva' }));
+    const post = fetch.mock.calls.find(([, init]) => init?.method === 'POST');
+    expect(JSON.parse(post[1].body).weight).toBe('80.5');
   });
 });

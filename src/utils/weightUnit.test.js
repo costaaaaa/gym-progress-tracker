@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   LB_IN_KG, DEFAULT_WEIGHT_UNIT, isWeightUnit, weightUnitLabel, kgToDisplay, formatWeightInUnit, formatWeightRounded, inputToKg, formatSetInUnit,
   maxWeightInUnit, weightStepInUnit, weightToField, fieldToKg, fieldToKgText,
-  kgToTotal, formatTotalInUnit, usesTonnes, formatEstimateInUnit, kgToBodyDisplay, formatBodyWeightInUnit, bodyWeightToField,
+  kgToTotal, formatTotalInUnit, usesTonnes, formatEstimateInUnit, kgToBodyDisplay, formatBodyWeightInUnit, maxBodyWeightInUnit, fieldTextToKgText,
 } from './weightUnit';
 
 const NB = ' ';
@@ -278,18 +278,11 @@ describe('peso corporeo (un decimale in lb)', () => {
     expect(formatBodyWeightInUnit('', 'lb', 'it-IT')).toBe('—');
   });
 
-  it('bodyWeightToField: kg com\'è, lb come stringa a 0,1', () => {
-    expect(bodyWeightToField('79.30', 'kg')).toBe('79.30');
-    expect(bodyWeightToField('80.00', 'lb')).toBe('176.4');
-    expect(bodyWeightToField('', 'lb')).toBe('');
-    expect(bodyWeightToField(null, 'lb')).toBe('');
-  });
-
   it('andata e ritorno: ogni 0,1 lb da 0 a 2204 → kg a 0,01 → stessa cifra', () => {
     for (let i = 0; i <= 22040; i += 1) {
       const lb = i / 10;
       const kg = inputToKg(String(lb), 'lb');
-      expect(bodyWeightToField(kg, 'lb')).toBe(String(lb));
+      expect(kgToBodyDisplay(kg, 'lb')).toBe(lb);
     }
   });
 });
@@ -299,5 +292,21 @@ describe('usesTonnes', () => {
     expect(usesTonnes('kg')).toBe(true);
     expect(usesTonnes(undefined)).toBe(true);
     expect(usesTonnes('lb')).toBe(false);
+  });
+});
+
+describe('limite e lettura del campo peso corporeo', () => {
+  it('maxBodyWeightInUnit: kg com\'è, in lb il decimo di libbra più alto sotto il limite', () => {
+    expect(maxBodyWeightInUnit(500, 'kg')).toBe(500);
+    expect(maxBodyWeightInUnit(500, 'lb')).toBe(1102.3); // 1102,31
+    expect(inputToKg(String(maxBodyWeightInUnit(500, 'lb')), 'lb')).toBeLessThanOrEqual(500);
+  });
+
+  it('fieldTextToKgText: in kg il testo com\'è; in lb i kg a 0,01 come testo; testo non valido NaN; vuoto vuoto', () => {
+    expect(fieldTextToKgText('80.5', 'kg')).toBe('80.5');
+    expect(fieldTextToKgText('', 'lb')).toBe('');
+    expect(fieldTextToKgText('176.4', 'lb')).toBe('80.01');
+    expect(fieldTextToKgText('1e2', 'lb')).toBe('NaN');
+    expect(fieldTextToKgText('-5', 'lb')).toBe('NaN');
   });
 });
