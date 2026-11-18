@@ -31,3 +31,17 @@ describe.each([
     expect(contrast(secondary, bg)).toBeGreaterThanOrEqual(4.5);
   });
 });
+
+describe('unità di peso', () => {
+  it('in kg il volume è quello di sempre', () => {
+    render(<ThemeModeProvider><LeaderboardTable rows={rows} board="week" /></ThemeModeProvider>);
+    expect(screen.getByText('5200 kg')).toBeTruthy();
+  });
+
+  it('in lb ognuno vede il volume (in kg dal server) convertito nel totale intero', () => {
+    render(<ThemeModeProvider><LeaderboardTable rows={rows} board="week" weightUnit="lb" /></ThemeModeProvider>);
+    expect(screen.getByText('11.464 lb')).toBeTruthy(); // 5200 kg
+    expect(screen.getByText('10.626 lb')).toBeTruthy(); // 4820 kg
+    expect(screen.queryByText(/kg/)).toBeNull();
+  });
+});

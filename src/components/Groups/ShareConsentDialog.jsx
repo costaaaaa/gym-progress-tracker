@@ -5,10 +5,11 @@ import {
 import { useTranslation } from 'react-i18next';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 import { legalPaths } from '../../i18n/paths';
+import { weightUnitLabel } from '../../utils/weightUnit';
 
 // Consenso all'ingresso in un gruppo: cosa vedranno gli altri membri e cosa no.
 // Senza la spunta il server rifiuta l'ingresso (join.php, code consent_required).
-const ShareConsentDialog = ({ open, groupName, username, loading, onClose, onConfirm }) => {
+const ShareConsentDialog = ({ open, groupName, username, loading, weightUnit, onClose, onConfirm }) => {
   const { t, i18n } = useTranslation();
   const [accepted, setAccepted] = useState(false);
 
@@ -25,7 +26,7 @@ const ShareConsentDialog = ({ open, groupName, username, loading, onClose, onCon
         <Box component="ul" sx={{ mt: 0, mb: 2, pl: 2.5, fontSize: 14 }}>
           <li>{username ? t('groups.consent.sees_username_named', { username }) : t('groups.consent.sees_username')}</li>
           <li>{t('groups.consent.sees_level')}</li>
-          <li>{t('groups.consent.sees_week')}</li>
+          <li>{t('groups.consent.sees_week', { unit: weightUnitLabel(weightUnit) })}</li>
         </Box>
         <Typography sx={{ fontWeight: 600, mb: 0.5 }}>{t('groups.consent.not_sees')}</Typography>
         <Box component="ul" sx={{ mt: 0, mb: 2, pl: 2.5, fontSize: 14 }}>

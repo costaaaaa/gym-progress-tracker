@@ -514,7 +514,7 @@
   "groups.consent.sees_username": "your username",
   "groups.consent.sees_username_named": "your username ({{username}})",
   "groups.consent.sees_level": "level, XP and streak",
-  "groups.consent.sees_week": "this week's workouts and volume (kg)",
+  "groups.consent.sees_week": "this week's workouts and volume ({{unit}})",
   "groups.consent.not_sees": "They won't see",
   "groups.consent.not_personal": "email, weight and body measurements",
   "groups.consent.not_details": "workout details (exercises, weights, reps)",
