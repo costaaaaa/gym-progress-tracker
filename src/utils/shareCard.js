@@ -92,7 +92,8 @@ const formatDecimal = (n, strings = STRINGS_IT) =>
   String(Math.round(n * 10) / 10).replace('.', strings.decimal);
 
 // Un peso in kg → "12,5" nell'unità dell'utente (kg: una cifra decimale al massimo; lb: al quarto di libbra), separatore
-// della lingua; {unit} dei testi è l'etichetta dell'unità.
+// della lingua; {unit} dei testi è l'etichetta dell'unità. `toShown` cambia l'arrotondamento: per un miglioramento
+// (delta) si passa kgDeltaToTenthKgOrQuarterLb, che non mostra mai «+0 lb».
 const formatWeightValue = (kg, unit, strings = STRINGS_IT, toShown = kgToTenthKgOrQuarterLb) =>
   String(toShown(kg, unit)).replace('.', strings.decimal);
 

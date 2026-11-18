@@ -24,10 +24,11 @@ const toNumber = (value) => {
 
 // Divisioni della libbra con cui si mostra un peso in lb: 4 = quarto di libbra (pesi delle serie, default), 10 = decimo
 // (peso corporeo).
+const QUARTER_LB_DIVISIONS = 4;
 export const BODY_LB_DIVISIONS = 10;
 
 // kg → numero da mostrare: kg come sono, lb al quarto di libbra (o al decimo, con BODY_LB_DIVISIONS). null se il valore manca.
-export function kgToDisplay(kg, unit, lbDivisions = 4) {
+export function kgToDisplay(kg, unit, lbDivisions = QUARTER_LB_DIVISIONS) {
   const n = toNumber(kg);
   if (n === null) return null;
   return unit === 'lb' ? Math.round((n / LB_IN_KG) * lbDivisions) / lbDivisions : n;
@@ -73,7 +74,8 @@ export function kgToTenthKgOrQuarterLb(kg, unit) {
 // verrebbe 0, si mostra un quarto di libbra (con il segno del delta) invece di «+0 lb».
 export function kgDeltaToTenthKgOrQuarterLb(kg, unit) {
   const shown = kgToTenthKgOrQuarterLb(kg, unit);
-  return unit === 'lb' && shown === 0 && toNumber(kg) !== 0 ? Math.sign(toNumber(kg)) * 0.25 : shown;
+  const n = toNumber(kg);
+  return unit === 'lb' && shown === 0 && n !== 0 ? Math.sign(n) / QUARTER_LB_DIVISIONS : shown;
 }
 
 // Il tonnellaggio si scrive in tonnellate solo in kg; in lb si mostra il totale in libbre (formatTotalInUnit).
@@ -116,7 +118,7 @@ export function inputToKg(text, unit) {
 
 // Limite di un campo peso nell'unità dell'utente: in kg `maxKg`, in lb il quarto di libbra più alto sotto di esso
 // (999,99 kg → 2204,5 lb); con BODY_LB_DIVISIONS il decimo (500 kg → 1102,3 lb).
-export const maxWeightInUnit = (maxKg, unit, lbDivisions = 4) =>
+export const maxWeightInUnit = (maxKg, unit, lbDivisions = QUARTER_LB_DIVISIONS) =>
   (unit === 'lb' ? Math.floor((maxKg / LB_IN_KG) * lbDivisions) / lbDivisions : maxKg);
 
 // Passo delle frecce di un campo peso: 0,5 kg, 2,5 lb (il passo in kg è sotto 1,25)
