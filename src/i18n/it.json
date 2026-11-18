@@ -149,6 +149,7 @@
   "register.gender_m": "Maschio",
   "register.gender_f": "Femmina",
   "register.gender_o": "Altro",
+  "register.weight_unit": "Unità di peso",
   "register.training_start": "Mese inizio allenamento",
   "register.training_start_help": "Facoltativo: mese e anno in cui hai iniziato",
   "register.password": "Password",

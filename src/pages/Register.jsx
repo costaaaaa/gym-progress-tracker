@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Typography,
   TextField,
@@ -22,6 +22,7 @@ import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import { validatePassword } from '../utils/passwordPolicy';
 import { safeNext } from '../utils/safeNext';
+import { DEFAULT_WEIGHT_UNIT, isWeightUnit } from '../utils/weightUnit';
 import { track } from '../utils/analytics';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { useTranslation, Trans } from 'react-i18next';
@@ -55,6 +56,10 @@ const Register = () => {
   // Vista con cui si apre il calendario: fissata all'apertura, perché se cambiasse con la data MUI riporterebbe ai giorni.
   const [birthOpenTo, setBirthOpenTo] = useState('year');
   const [gender, setGender] = useState('');
+  // Unità di peso: kg finché non arriva la proposta del server (solo dall'Accept-Language); se l'utente la tocca prima,
+  // la proposta non la sovrascrive.
+  const [weightUnit, setWeightUnit] = useState(DEFAULT_WEIGHT_UNIT);
+  const weightUnitTouched = useRef(false);
   const [trainingStartDate, setTrainingStartDate] = useState(null);
   const [acceptTerms, setAcceptTerms] = useState(false);
   // Due passaggi: 1 = account (controllato subito con check_availability.php), 2 = profilo per il recupero.
@@ -110,6 +115,23 @@ const Register = () => {
     edit(setter, field)(e);
     pair.edit();
   };
+
+  useEffect(() => {
+    const controller = new AbortController();
+    (async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}api/user/suggested_unit.php`, { credentials: 'omit', signal: controller.signal });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (isWeightUnit(data.suggested_weight_unit)) {
+          setWeightUnit((current) => (weightUnitTouched.current ? current : data.suggested_weight_unit));
+        }
+      } catch {
+        // Nessuna proposta (rete, 429): resta kg
+      }
+    })();
+    return () => controller.abort();
+  }, []);
 
   const handleNext = async () => {
     setError('');
@@ -200,6 +222,7 @@ const Register = () => {
           gender,
           accept_terms: true,
           locale: i18n.language,
+          weight_unit: weightUnit,
           training_start_date: trainingStartDate ? format(trainingStartDate, 'yyyy-MM-01') : null,
           ...(signup.toSend ? { signup_code: signup.toSend } : {})
         }),
@@ -399,6 +422,19 @@ const Register = () => {
                   <MenuItem value="O">{t('register.gender_o')}</MenuItem>
                 </Select>
                 {fieldErrors.gender && <FormHelperText id="gender-error">{fieldErrors.gender}</FormHelperText>}
+              </FormControl>
+              <FormControl fullWidth margin="normal">
+                <InputLabel id="weight-unit-label">{t('register.weight_unit')}</InputLabel>
+                <Select
+                  labelId="weight-unit-label"
+                  value={weightUnit}
+                  label={t('register.weight_unit')}
+                  onOpen={() => { weightUnitTouched.current = true; }}
+                  onChange={(e) => { weightUnitTouched.current = true; setWeightUnit(e.target.value); }}
+                >
+                  <MenuItem value="kg">kg</MenuItem>
+                  <MenuItem value="lb">lb</MenuItem>
+                </Select>
               </FormControl>
               <LabeledDatePicker
                 label={t('register.training_start')}

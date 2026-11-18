@@ -149,6 +149,7 @@
   "register.gender_m": "Male",
   "register.gender_f": "Female",
   "register.gender_o": "Other",
+  "register.weight_unit": "Weight unit",
   "register.training_start": "Month you started training",
   "register.training_start_help": "Optional: month and year you started",
   "register.password": "Password",
