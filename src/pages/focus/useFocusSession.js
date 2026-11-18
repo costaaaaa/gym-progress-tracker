@@ -6,7 +6,7 @@ import { API_BASE_URL } from '../../config';
 import { hapticFeedback } from '../../utils/vibration';
 import { buildExerciseHistoryIndex, detectPersonalRecords } from '../../utils/workoutMetrics';
 import {
-  FEATURE_SESSION_EDIT, isValidWeight, suggestedWeight, slotWeight, totalSlots, setSlot, skipWarmup,
+  FEATURE_SESSION_EDIT, weightFieldKg, weightFieldKgText, weightToField, suggestedWeight, slotWeight, totalSlots, setSlot, skipWarmup,
   isValidReps, repsNeedConfirm, plannedSetAt, slotTechnique, isCurrentDraft,
   numberedSets, groupsInExecutionOrder, withWarmupRule, buildSessionEntry, swapExercise, insertExercise,
   newIdempotencyKey, draftIdempotencyKey
@@ -23,7 +23,7 @@ import { DRAFT_STORAGE_KEY } from '../../utils/focusDraft';
 export default function useFocusSession() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { isLoggedIn, loading: authLoading } = useAuth();
+  const { isLoggedIn, loading: authLoading, weightUnit } = useAuth();
 
   // ================================================
   // STATE
@@ -42,7 +42,10 @@ export default function useFocusSession() {
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
   const [completedSets, setCompletedSets] = useState({});
+  // Il campo peso è nell'unità dell'utente; i dati (serie, bozza) sempre in kg. weightOrigin = { text, kg } di un campo
+  // precompilato (serie precedente): se l'utente non lo tocca si usano i kg originali, non le libbre a schermo.
   const [weightInput, setWeightInput] = useState('');
+  const [weightOrigin, setWeightOrigin] = useState(null);
   const [repsInput, setRepsInput] = useState('');
   const [intensityTechniqueInput, setIntensityTechniqueInput] = useState('');
   const [skippedExercises, setSkippedExercises] = useState([]);
@@ -348,6 +351,13 @@ export default function useFocusSession() {
   }, [historyIndex]);
 
   // Peso suggerito = top set (peso più alto) delle serie allenanti dell'ultima sessione.
+  // Riempie il campo peso con un peso in kg (stringa), mostrato nell'unità dell'utente
+  const prefillWeight = useCallback((kg) => {
+    const text = weightToField(kg, weightUnit);
+    setWeightInput(text);
+    setWeightOrigin(text === '' ? null : { text, kg });
+  }, [weightUnit]);
+
   const getSuggestedWeight = useCallback((exercise) => suggestedWeight(getLastSession(exercise)), [getLastSession]);
 
   const handleStartWorkout = () => {
@@ -372,7 +382,7 @@ export default function useFocusSession() {
     const firstExercise = selectedDay.exercises[0];
     setRepsInput('');
     setIntensityTechniqueInput(slotTechnique(firstExercise, 0));
-    setWeightInput(slotWeight(firstExercise, 0, { suggested: getSuggestedWeight(firstExercise) }));
+    prefillWeight(slotWeight(firstExercise, 0, { suggested: getSuggestedWeight(firstExercise) }));
 
     setPhase('workout');
     hapticFeedback.medium();
@@ -399,8 +409,8 @@ export default function useFocusSession() {
     setCurrentSetIndex(0);
     setRepsInput('');
     setIntensityTechniqueInput(slotTechnique(exercise, 0));
-    setWeightInput(slotWeight(exercise, 0, { suggested: getSuggestedWeight(exercise) }));
-  }, [getSuggestedWeight]);
+    prefillWeight(slotWeight(exercise, 0, { suggested: getSuggestedWeight(exercise) }));
+  }, [getSuggestedWeight, prefillWeight]);
 
   // ================================================
   // CONFERMA SERIE
@@ -408,13 +418,13 @@ export default function useFocusSession() {
   // Porta la sessione alla posizione `index` dell'esercizio corrente: peso dato, ripetizioni vuote, tecnica della serie
   const goToSlot = (index, weight) => {
     setCurrentSetIndex(index);
-    setWeightInput(weight);
+    prefillWeight(weight);
     setRepsInput('');
     setIntensityTechniqueInput(slotTechnique(currentExercise, index));
   };
 
   const handleConfirmSet = () => {
-    if (!isValidWeight(weightInput) || !isValidReps(repsInput)) return;
+    if (weightFieldKg(weightInput, weightUnit, weightOrigin) === null || !isValidReps(repsInput)) return;
     if (repsNeedConfirm(repsInput, plannedSetAt(currentExercise, currentSetIndex))) {
       setRepsConfirmDialog(true);
       return;
@@ -430,7 +440,7 @@ export default function useFocusSession() {
     const { isWarmup } = currentSlot;
     const newSet = withWarmupRule({
       setNumber: currentSetIndex + 1,
-      weight: parseFloat(weightInput),
+      weight: weightFieldKg(weightInput, weightUnit, weightOrigin),
       reps: String(parseInt(repsInput, 10)),
       intensity_technique: intensityTechniqueInput,
       is_warmup: isWarmup,
@@ -452,7 +462,7 @@ export default function useFocusSession() {
       goToNextExercise();
     } else {
       // Prossima serie
-      goToSlot(nextSetIndex, slotWeight(currentExercise, nextSetIndex, { suggested: getSuggestedWeight(currentExercise), current: weightInput }));
+      goToSlot(nextSetIndex, slotWeight(currentExercise, nextSetIndex, { suggested: getSuggestedWeight(currentExercise), current: weightFieldKgText(weightInput, weightUnit, weightOrigin) }));
 
       // Avvia timer di recupero se abilitato
       if (timerEnabled && currentExercise.rest > 0) {
@@ -506,7 +516,7 @@ export default function useFocusSession() {
     if (nextSetIndex >= totalSlotsForCurrentExercise) {
       goToNextExercise();
     } else {
-      goToSlot(nextSetIndex, weightInput);
+      goToSlot(nextSetIndex, weightFieldKgText(weightInput, weightUnit, weightOrigin));
     }
   };
 
@@ -837,6 +847,8 @@ export default function useFocusSession() {
     // Già finita: la durata è quella del riepilogo e il cronometro non cammina
     finishedClock: retroDate ? getElapsedTime() : null,
     weightInput,
+    weightUnit,
+    weightValid: weightFieldKg(weightInput, weightUnit, weightOrigin) !== null,
     onWeightChange: setWeightInput,
     repsInput,
     onRepsChange: setRepsInput,
@@ -855,6 +867,7 @@ export default function useFocusSession() {
     onConfirmReps: recordSet,
   };
   const summary = {
+    weightUnit,
     activePlan,
     selectedDay,
     completedSets,

@@ -41,7 +41,7 @@ function SummaryStat({ value, label, valueSx }) {
 }
 
 export default function SummaryPhase({
-  activePlan, selectedDay, completedSets, historyIndex, shareDate, elapsedSeconds, elapsedTime, totalCompletedSets,
+  weightUnit, activePlan, selectedDay, completedSets, historyIndex, shareDate, elapsedSeconds, elapsedTime, totalCompletedSets,
   workoutNotes, onNotesChange, saving, savedResult, onSave, onQuit, onGoHistory, onGoHome,
   canEditSession, onAddExercise, shareStats, onOpenShare, onCloseShare,
   quitDialogOpen, onCloseQuitDialog, onConfirmQuit
@@ -120,7 +120,7 @@ export default function SummaryPhase({
                       fontSize: 12, fontWeight: 600, color: colors.textSecondary, fontVariantNumeric: 'tabular-nums',
                     }}>
                       {set.is_warmup && <WarmupBadge sx={{ mr: 0.75 }} />}
-                      {formatSetText(set.weight, set.reps)}{set.intensity_technique ? ` · ${techniqueLabel(set.intensity_technique)}` : ''}
+                      {formatSetText(set.weight, set.reps, weightUnit)}{set.intensity_technique ? ` · ${techniqueLabel(set.intensity_technique)}` : ''}
                     </Box>
                   ))}
                 </Box>
