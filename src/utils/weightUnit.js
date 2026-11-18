@@ -66,6 +66,9 @@ export function formatTotalInUnit(kg, unit, locale) {
 export const formatEstimateInUnit = (kg, unit, locale) =>
   formatWeightInUnit(kg, unit, locale, { maxDecimals: unit === 'lb' ? 2 : 1 });
 
+// Il tonnellaggio si scrive in tonnellate solo in kg; in lb si mostra il totale in libbre (formatTotalInUnit).
+export const usesTonnes = (unit) => unit !== 'lb';
+
 // Peso corporeo: in lb si mostra e si legge con un decimale (0,1 lb), non al quarto.
 export function kgToBodyDisplay(kg, unit) {
   const n = toNumber(kg);

@@ -974,7 +974,7 @@
   "profile.xp_current": "{{xp}} XP",
   "profile.xp_to_next": "{{xp}} XP to level {{level}}",
   "profile.stat.sessions": "sessions",
-  "profile.stat.volume": "kg lifted",
+  "profile.stat.volume": "{{unit}} lifted",
   "profile.stat.streak": "record weeks",
   "profile.exercises_title": "Levels by exercise",
   "profile.exercise_level": "Lv {{level}}",

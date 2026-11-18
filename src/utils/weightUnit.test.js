@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   LB_IN_KG, DEFAULT_WEIGHT_UNIT, isWeightUnit, weightUnitLabel, kgToDisplay, formatWeightInUnit, formatWeightRounded, inputToKg, formatSetInUnit,
   maxWeightInUnit, weightStepInUnit, weightToField, fieldToKg, fieldToKgText,
-  kgToTotal, formatTotalInUnit, formatEstimateInUnit, kgToBodyDisplay, formatBodyWeightInUnit, bodyWeightToField,
+  kgToTotal, formatTotalInUnit, usesTonnes, formatEstimateInUnit, kgToBodyDisplay, formatBodyWeightInUnit, bodyWeightToField,
 } from './weightUnit';
 
 const NB = ' ';
@@ -291,5 +291,13 @@ describe('peso corporeo (un decimale in lb)', () => {
       const kg = inputToKg(String(lb), 'lb');
       expect(bodyWeightToField(kg, 'lb')).toBe(String(lb));
     }
+  });
+});
+
+describe('usesTonnes', () => {
+  it('tonnellate solo in kg', () => {
+    expect(usesTonnes('kg')).toBe(true);
+    expect(usesTonnes(undefined)).toBe(true);
+    expect(usesTonnes('lb')).toBe(false);
   });
 });
