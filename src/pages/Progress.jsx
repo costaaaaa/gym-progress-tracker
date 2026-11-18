@@ -17,6 +17,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { API_BASE_URL } from '../config';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../context/AuthContext';
 import { muscleLabel } from '../i18n/labels';
 import { exerciseMatches } from '../utils/exerciseCatalog';
 import {
@@ -47,6 +48,7 @@ const BORDERED = { border: '1px solid', borderColor: 'divider' };
 
 const Progress = ({ isEmbedded = false }) => {
   const { t } = useTranslation();
+  const { weightUnit } = useAuth();
   const [exerciseCatalog, setExerciseCatalog] = useState({});
   const [records, setRecords] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -122,6 +124,7 @@ const Progress = ({ isEmbedded = false }) => {
       {i > 0 && <Divider />}
       <ExerciseProgressRow
         item={item}
+        weightUnit={weightUnit}
         showMuscle={showMuscle}
         favorite={favoriteSet.has(item.id)}
         onToggleFavorite={toggleFavorite}
@@ -248,6 +251,7 @@ const Progress = ({ isEmbedded = false }) => {
 
       <ExerciseDetailDialog
         item={selectedItem}
+        weightUnit={weightUnit}
         onClose={() => setSelectedId(null)}
       />
     </>

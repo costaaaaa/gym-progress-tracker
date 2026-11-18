@@ -6,9 +6,9 @@ import { renderToString } from 'react-dom/server';
 import Home from './Home';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 
-const auth = vi.hoisted(() => ({ isLoggedIn: true }));
+const auth = vi.hoisted(() => ({ isLoggedIn: true, weightUnit: 'kg' }));
 vi.mock('../context/AuthContext', () => ({
-  useAuth: () => ({ user: { username: 'mario88' }, isLoggedIn: auth.isLoggedIn, loading: false }),
+  useAuth: () => ({ user: { username: 'mario88' }, isLoggedIn: auth.isLoggedIn, loading: false, weightUnit: auth.weightUnit }),
 }));
 
 const responses = {
@@ -69,6 +69,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   auth.isLoggedIn = true;
+  auth.weightUnit = 'kg';
   vi.unstubAllGlobals();
   Object.assign(responses, original);
 });
@@ -362,5 +363,20 @@ describe('home: titoli delle card', () => {
     renderHome();
     await screen.findByRole('heading', { name: 'Riepilogo settimanale' });
     expect(style(screen.getByText('Azioni rapide'))).toEqual({ tag: 'P', ...titolo });
+  });
+});
+
+describe('volume della settimana nell\'unità dell\'account', () => {
+  const volumeText = async () => (await screen.findByText('Volume totale')).parentElement.textContent.replace(/\s/g, '');
+
+  it('in kg resta quello di sempre', async () => {
+    renderHome();
+    expect(await volumeText()).toBe('4200kg' + 'Volumetotale');
+  });
+
+  it('in lb il totale in kg è convertito e arrotondato all\'intero', async () => {
+    auth.weightUnit = 'lb';
+    renderHome();
+    expect(await volumeText()).toBe('9259lb' + 'Volumetotale'); // 4200 kg = 9259,4 lb
   });
 });

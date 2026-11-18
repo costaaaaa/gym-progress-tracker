@@ -5,7 +5,9 @@ import CheckIcon from '@mui/icons-material/Check';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../config';
 import { xpIntoLevel, xpForNextLevel } from '../utils/gamificationLevels';
-import { formatDate, formatNumber } from '../i18n/format';
+import { formatDate, formatNumber, intlLocale } from '../i18n/format';
+import { useAuth } from '../context/AuthContext';
+import { formatTotalInUnit, kgToTotal, usesTonnes, weightUnitLabel } from '../utils/weightUnit';
 import { achievementLabel } from '../i18n/labels';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
 import { ELLIPSIS_FROM_390 } from '../theme/narrowScreens';
@@ -30,8 +32,10 @@ function exProgressPct(xp) {
 }
 
 // Valore attuale e soglia di una tappa, come testo ("58 di 100", "184 t di 420 t")
-const progressOf = (t, cat, data, achievement) => {
-  const tonnes = (kg) => t('profile.achievements.tonnes', { value: formatNumber(kg / 1000, { maximumFractionDigits: 1 }) });
+const progressOf = (t, cat, data, achievement, unit) => {
+  const tonnes = (kg) => (usesTonnes(unit)
+    ? t('profile.achievements.tonnes', { value: formatNumber(kg / 1000, { maximumFractionDigits: 1 }) })
+    : formatTotalInUnit(kg, unit, intlLocale()));
   const current = { sessions: data.total_sessions, tonnage: data.lifetime_volume_kg, streak: data.longest_streak }[cat];
   const text = cat === 'tonnage'
     ? [tonnes(current), tonnes(achievement.threshold)]
@@ -39,10 +43,10 @@ const progressOf = (t, cat, data, achievement) => {
   return { pct: Math.min(100, (current / achievement.threshold) * 100), label: t('profile.achievements.progress', { current: text[0], target: text[1] }) };
 };
 
-const AchievementCard = ({ achievement, isNext, progress }) => {
+const AchievementCard = ({ achievement, isNext, progress, weightUnit }) => {
   const { t } = useTranslation();
   const { locked, unlocked_at } = achievement;
-  const label = achievementLabel(achievement.key, achievement.label);
+  const label = achievementLabel(achievement.key, achievement.label, weightUnit);
   return (
     <Card sx={{
       ...BORDERED, borderRadius: radius.lg, p: '16px 12px', textAlign: 'center', height: '100%',
@@ -70,6 +74,7 @@ const AchievementCard = ({ achievement, isNext, progress }) => {
 
 const ProfileSummary = () => {
   const { t } = useTranslation();
+  const { weightUnit } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -115,7 +120,7 @@ const ProfileSummary = () => {
 
   const statTiles = [
     { value: formatNumber(total_sessions), label: t('profile.stat.sessions') },
-    { value: formatNumber(Math.round(lifetime_volume_kg)), label: t('profile.stat.volume') },
+    { value: formatNumber(Math.round(kgToTotal(lifetime_volume_kg, weightUnit))), label: t('profile.stat.volume', { unit: weightUnitLabel(weightUnit) }) },
     { value: formatNumber(longest_streak), label: t('profile.stat.streak') },
   ];
 
@@ -207,7 +212,7 @@ const ProfileSummary = () => {
             <Grid container spacing={1.5}>
               {items.map(a => (
                 <Grid item xs={6} sm={3} key={a.key}>
-                  <AchievementCard achievement={a} isNext={a === next} progress={a === next ? progressOf(t, cat, data, a) : null} />
+                  <AchievementCard achievement={a} isNext={a === next} weightUnit={weightUnit} progress={a === next ? progressOf(t, cat, data, a, weightUnit) : null} />
                 </Grid>
               ))}
             </Grid>

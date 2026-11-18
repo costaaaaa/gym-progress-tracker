@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import i18n from './index';
 import { achievementCatalog } from '../utils/gamificationLevels';
+import { achievementLabel } from './labels';
 
-// Nomi approvati dei 19 traguardi (stessi di backend/lang). achievementCatalog in utils/gamificationLevels.js resta solo perché
-// quel file è condiviso con un altro client: il web non lo usa, qui serve a controllare le chiavi e i nomi italiani
+// Nomi approvati dei 19 traguardi (stessi di backend/lang). achievementCatalog in utils/gamificationLevels.js è il catalogo
+// condiviso con un altro client: achievementLabel (labels.js) ne legge le soglie di forza, qui serve a controllare le chiavi
+// e i nomi italiani
 const EN = {
   sessions_10: 'First 10 sessions', sessions_50: '50 sessions', sessions_100: 'Centurion', sessions_250: '250 sessions',
   tonnage_auto: '1.5 t — a car', tonnage_elephant: '6 t — an elephant', tonnage_bus: '15 t — a city bus',
@@ -19,11 +21,11 @@ describe('nomi dei traguardi', () => {
   });
   it('in italiano il nome è quello del catalogo', async () => {
     await i18n.changeLanguage('it');
-    for (const { key, label } of achievementCatalog) expect(i18n.t(`achievement.${key}`, { defaultValue: key })).toBe(label);
+    for (const { key, label } of achievementCatalog) expect(achievementLabel(key)).toBe(label);
   });
   it('in inglese il nome è quello approvato', async () => {
     await i18n.changeLanguage('en');
-    for (const { key } of achievementCatalog) expect(i18n.t(`achievement.${key}`, { defaultValue: key })).toBe(EN[key]);
+    for (const { key } of achievementCatalog) expect(achievementLabel(key)).toBe(EN[key]);
   });
   it('una chiave sconosciuta resta la chiave', async () => {
     const key = 'nope_1';

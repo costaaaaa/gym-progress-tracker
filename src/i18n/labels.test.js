@@ -33,6 +33,16 @@ describe('achievementLabel', () => {
     await i18n.changeLanguage('en');
     expect(achievementLabel('sessions_100', 'Centurione')).toBe('Centurion');
   });
+  it('i traguardi di forza hanno la soglia in kg convertita nell\'unità dell\'utente, all\'intero più vicino', async () => {
+    await i18n.changeLanguage('it');
+    expect(achievementLabel('strength_100', 'x')).toBe('100 kg in un esercizio');
+    expect(achievementLabel('strength_100', 'x', 'kg')).toBe('100 kg in un esercizio');
+    expect(achievementLabel('strength_100', 'x', 'lb')).toBe('220 lb in un esercizio');
+    expect(achievementLabel('strength_60', 'x', 'lb')).toBe('132 lb in un esercizio');
+    expect(achievementLabel('strength_140', 'x', 'lb')).toBe('309 lb in un esercizio');
+    await i18n.changeLanguage('en');
+    expect(achievementLabel('strength_100', 'x', 'lb')).toBe('220 lb on one exercise');
+  });
   it('per una chiave che il client non conosce usa il ripiego, e senza ripiego la chiave', () => {
     expect(achievementLabel('nuovo_1', 'Nome del server')).toBe('Nome del server');
     expect(achievementLabel('nuovo_1')).toBe('nuovo_1');

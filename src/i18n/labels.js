@@ -1,4 +1,6 @@
 import i18n from './index';
+import { achievementCatalog } from '../utils/gamificationLevels';
+import { kgToTotal, weightUnitLabel } from '../utils/weightUnit';
 
 export const NO_TECHNIQUE = 'Nessuna (Normale)';
 
@@ -37,4 +39,13 @@ export const equipmentName = (slug) => (slug ? i18n.t(`equipment.${slug}`, { def
 
 // Nome di un traguardo nella lingua dell'app. Il label del server segue la lingua dell'account, che può
 // essere diversa: serve solo come ripiego per una chiave che il client non conosce (senza ripiego, la chiave).
-export const achievementLabel = (key, fallback) => i18n.t(`achievement.${key}`, { defaultValue: fallback ?? key });
+// I traguardi di forza hanno la soglia in kg ({{value}} {{unit}} nel testo): si mostra nell'unità dell'utente, all'intero più
+// vicino (100 kg → 220 lb); lo sblocco resta calcolato in kg.
+export const achievementLabel = (key, fallback, weightUnit) => {
+  const threshold = achievementCatalog.find((a) => a.key === key && a.category === 'strength')?.threshold;
+  return i18n.t(`achievement.${key}`, {
+    defaultValue: fallback ?? key,
+    value: threshold === undefined ? undefined : kgToTotal(threshold, weightUnit),
+    unit: weightUnitLabel(weightUnit),
+  });
+};

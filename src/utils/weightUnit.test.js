@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
-  LB_IN_KG, DEFAULT_WEIGHT_UNIT, isWeightUnit, weightUnitLabel, kgToDisplay, formatWeightInUnit, formatWeightRounded, inputToKg, formatSetInUnit,
+  LB_IN_KG, DEFAULT_WEIGHT_UNIT, isWeightUnit, weightUnitLabel, kgToDisplay, formatWeightInUnit, inputToKg, formatSetInUnit,
   maxWeightInUnit, weightStepInUnit, weightToField, fieldToKg, fieldToKgText,
+  kgToTotal, formatTotalInUnit, usesTonnes, formatEstimateInUnit, BODY_LB_DIVISIONS, kgToTenthKgOrQuarterLb, kgDeltaToTenthKgOrQuarterLb, fieldTextToKgText,
 } from './weightUnit';
 
 const NB = ' ';
@@ -67,23 +68,6 @@ describe('formatWeightInUnit', () => {
   it('senza valore: trattino; unit: false solo il numero', () => {
     expect(formatWeightInUnit(null, 'lb', 'it-IT')).toBe('—');
     expect(formatWeightInUnit(100, 'lb', 'it-IT', { unit: false })).toBe('220,5');
-  });
-});
-
-describe('formatWeightRounded (totali e soglie)', () => {
-  it('lb: intero più vicino, convertendo il totale in kg', () => {
-    expect(formatWeightRounded(100, 'lb', 'it-IT')).toBe(`220${NB}lb`);
-    expect(formatWeightRounded(12345.6, 'lb', 'it-IT')).toBe(`27.217${NB}lb`);
-    expect(formatWeightRounded(12345.6, 'lb', 'en-US')).toBe(`27,217${NB}lb`);
-  });
-
-  it('kg: intero più vicino', () => {
-    expect(formatWeightRounded(1234.4, 'kg', 'it-IT')).toBe(`1234${NB}kg`);
-    expect(formatWeightRounded(100, 'kg', 'it-IT')).toBe(`100${NB}kg`);
-  });
-
-  it('senza valore: trattino', () => {
-    expect(formatWeightRounded(undefined, 'lb', 'it-IT')).toBe('—');
   });
 });
 
@@ -230,5 +214,99 @@ describe('campo peso in lb, dati in kg', () => {
   it('weightStepInUnit: 0,5 kg, 2,5 lb', () => {
     expect(weightStepInUnit('kg')).toBe(0.5);
     expect(weightStepInUnit('lb')).toBe(2.5);
+  });
+});
+
+describe('kgToTotal e formatTotalInUnit (totali)', () => {
+  it('in kg il totale resta com\'è, senza arrotondare', () => {
+    expect(kgToTotal(4200.5, 'kg')).toBe(4200.5);
+    expect(kgToTotal('4200.50', 'kg')).toBe(4200.5);
+    expect(kgToTotal(null, 'kg')).toBeNull();
+  });
+
+  it('in lb si converte il totale e si arrotonda all\'intero', () => {
+    expect(kgToTotal(4200, 'lb')).toBe(9259); // 9259,43
+    expect(kgToTotal(0, 'lb')).toBe(0);
+  });
+
+  it('formatTotalInUnit: in kg come formatWeightInUnit, in lb intero con separatori e unità', () => {
+    expect(formatTotalInUnit(42000.5, 'kg', 'it-IT')).toBe(`42.000,5${NB}kg`);
+    expect(formatTotalInUnit(42000, 'lb', 'it-IT')).toBe(`92.594${NB}lb`);
+    expect(formatTotalInUnit(42000, 'lb', 'en-US')).toBe(`92,594${NB}lb`);
+    expect(formatTotalInUnit(undefined, 'lb', 'en-US')).toBe('—');
+  });
+});
+
+describe('formatEstimateInUnit (1RM stimato)', () => {
+  it('in kg un decimale come oggi, in lb al quarto di libbra', () => {
+    expect(formatEstimateInUnit(106.66, 'kg', 'it-IT')).toBe(`106,7${NB}kg`);
+    expect(formatEstimateInUnit(100, 'lb', 'it-IT')).toBe(`220,5${NB}lb`);
+    expect(formatEstimateInUnit(102.06, 'lb', 'en-US')).toBe(`225${NB}lb`);
+    expect(formatEstimateInUnit(100.6, 'lb', 'it-IT')).toBe(`221,75${NB}lb`);
+  });
+});
+
+describe('peso corporeo (un decimale in lb)', () => {
+  it('kgToDisplay con BODY_LB_DIVISIONS: kg com\'è, lb a 0,1', () => {
+    expect(kgToDisplay(79.3, 'kg', BODY_LB_DIVISIONS)).toBe(79.3);
+    expect(kgToDisplay(80, 'lb', BODY_LB_DIVISIONS)).toBe(176.4); // 176,37
+    expect(kgToDisplay(null, 'lb', BODY_LB_DIVISIONS)).toBeNull();
+  });
+
+  it('formatWeightInUnit con BODY_LB_DIVISIONS: delta con segno e un decimale', () => {
+    expect(formatWeightInUnit(79.3, 'kg', 'it-IT', { lbDivisions: BODY_LB_DIVISIONS })).toBe(`79,3${NB}kg`);
+    expect(formatWeightInUnit(80, 'lb', 'it-IT', { lbDivisions: BODY_LB_DIVISIONS })).toBe(`176,4${NB}lb`);
+    expect(formatWeightInUnit(-0.7, 'lb', 'en-US', { lbDivisions: BODY_LB_DIVISIONS, signed: true, maxDecimals: 1 })).toBe(`-1.5${NB}lb`);
+    expect(formatWeightInUnit(0.5, 'kg', 'en-US', { lbDivisions: BODY_LB_DIVISIONS, signed: true, maxDecimals: 1 })).toBe(`+0.5${NB}kg`);
+    expect(formatWeightInUnit('', 'lb', 'it-IT', { lbDivisions: BODY_LB_DIVISIONS })).toBe('—');
+  });
+
+  it('andata e ritorno: ogni 0,1 lb da 0 a 2204 → kg a 0,01 → stessa cifra', () => {
+    for (let i = 0; i <= 22040; i += 1) {
+      const lb = i / 10;
+      const kg = inputToKg(String(lb), 'lb');
+      expect(kgToDisplay(kg, 'lb', BODY_LB_DIVISIONS)).toBe(lb);
+    }
+  });
+});
+
+describe('usesTonnes', () => {
+  it('tonnellate solo in kg', () => {
+    expect(usesTonnes('kg')).toBe(true);
+    expect(usesTonnes(undefined)).toBe(true);
+    expect(usesTonnes('lb')).toBe(false);
+  });
+});
+
+describe('limite e lettura del campo peso corporeo', () => {
+  it('maxWeightInUnit con BODY_LB_DIVISIONS: kg com\'è, in lb il decimo di libbra più alto sotto il limite', () => {
+    expect(maxWeightInUnit(500, 'kg', BODY_LB_DIVISIONS)).toBe(500);
+    expect(maxWeightInUnit(500, 'lb', BODY_LB_DIVISIONS)).toBe(1102.3); // 1102,31
+    expect(inputToKg(String(maxWeightInUnit(500, 'lb', BODY_LB_DIVISIONS)), 'lb')).toBeLessThanOrEqual(500);
+  });
+
+  it('fieldTextToKgText: in kg il testo com\'è; in lb i kg a 0,01 come testo; testo non valido null; vuoto vuoto', () => {
+    expect(fieldTextToKgText('80.5', 'kg')).toBe('80.5');
+    expect(fieldTextToKgText('', 'lb')).toBe('');
+    expect(fieldTextToKgText('176.4', 'lb')).toBe('80.01');
+    expect(fieldTextToKgText('1e2', 'lb')).toBeNull();
+    expect(fieldTextToKgText('-5', 'lb')).toBeNull();
+  });
+});
+
+describe('kgToTenthKgOrQuarterLb (card di condivisione)', () => {
+  it('in kg un decimale come sempre, in lb il quarto di libbra', () => {
+    expect(kgToTenthKgOrQuarterLb(82.25, 'kg')).toBe(82.3);
+    expect(kgToTenthKgOrQuarterLb(100, 'kg')).toBe(100);
+    expect(kgToTenthKgOrQuarterLb(100, 'lb')).toBe(220.5);
+    expect(kgToTenthKgOrQuarterLb(undefined, 'lb')).toBeNull();
+  });
+
+  it('kgDeltaToTenthKgOrQuarterLb: in lb un delta non nullo non scende a zero', () => {
+    expect(kgDeltaToTenthKgOrQuarterLb(0.05, 'lb')).toBe(0.25);
+    expect(kgDeltaToTenthKgOrQuarterLb(-0.05, 'lb')).toBe(-0.25);
+    expect(kgDeltaToTenthKgOrQuarterLb(0, 'lb')).toBe(0);
+    expect(kgDeltaToTenthKgOrQuarterLb(2.5, 'lb')).toBe(5.5);
+    expect(kgDeltaToTenthKgOrQuarterLb(0.05, 'kg')).toBe(0.1);
   });
 });

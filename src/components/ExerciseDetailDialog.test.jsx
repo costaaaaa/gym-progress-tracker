@@ -103,3 +103,32 @@ describe('ExerciseDetailDialog: posizione dell\'esercizio nella seduta (#26)', (
     });
   });
 });
+
+describe('ExerciseDetailDialog: unità di peso', () => {
+  const lbItem = () => ({
+    ...item([session(1, '2026-10-18 10:00:00', { value: 100, volume: 4200, bestSet: { weight: 100, reps: 8 } })]),
+    mode: 'oneRM', best: 100,
+  });
+
+  it('in kg niente cambia: valori, miglior serie, volume e intestazione', () => {
+    render(<ExerciseDetailDialog item={lbItem()} onClose={() => {}} />);
+    expect(screen.getAllByText('100 kg').length).toBeGreaterThan(0);
+    expect(screen.getByText('100 × 8')).toBeTruthy();
+    expect(screen.getByText('4200')).toBeTruthy();
+    expect(screen.getByText('Volume totale (kg)')).toBeTruthy();
+  });
+
+  it('in lb il 1RM e la miglior serie sono al quarto di libbra, il volume è il totale convertito', () => {
+    render(<ExerciseDetailDialog item={lbItem()} weightUnit="lb" onClose={() => {}} />);
+    expect(screen.getAllByText('220,5 lb').length).toBeGreaterThan(0);
+    expect(screen.getByText('220,5 × 8')).toBeTruthy();
+    expect(screen.getByText('9259')).toBeTruthy(); // 4200 kg
+    expect(screen.getByText('Volume totale (lb)')).toBeTruthy();
+    expect(screen.queryByText(/kg/)).toBeNull();
+  });
+
+  it('il tooltip del grafico mostra il valore (in kg) nell\'unità dell\'utente', () => {
+    render(<ChartTooltip active payload={[{ payload: { dateLabel: '18/10/2026', value: 100, isPR: false } }]} mode="oneRM" weightUnit="lb" t={i18n.t.bind(i18n)} />);
+    expect(screen.getByText('220,5 lb')).toBeTruthy();
+  });
+});

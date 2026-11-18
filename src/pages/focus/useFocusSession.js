@@ -759,7 +759,7 @@ export default function useFocusSession() {
       const notifyParts = [];
       if (data.leveled_up) notifyParts.push(t('focus.level_reached', { level: data.new_level }));
       if (data.unlocked_achievements?.length) {
-        notifyParts.push(t('focus.achievements', { labels: unlockedAchievementsText(data.unlocked_achievements) }));
+        notifyParts.push(t('focus.achievements', { labels: unlockedAchievementsText(data.unlocked_achievements, weightUnit) }));
       }
       if (notifyParts.length) {
         setSnackbar({ open: true, message: notifyParts.join(' · '), severity: 'success' });

@@ -1,7 +1,8 @@
 import { Box, Chip, LinearProgress, Typography } from '@mui/material';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import { useTranslation } from 'react-i18next';
-import { intlLocale, formatWeightText } from '../../i18n/format';
+import { intlLocale } from '../../i18n/format';
+import { formatTotalInUnit } from '../../utils/weightUnit';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 import { radius } from '../../theme/radius';
 
@@ -9,7 +10,7 @@ import { radius } from '../../theme/radius';
 // (api/groups/read.php); qui cambia solo cosa si mostra per ogni scheda.
 const MEDALS = { 1: 'medal.gold', 2: 'medal.silver', 3: 'medal.bronze' };
 
-const Metric = ({ row, board }) => {
+const Metric = ({ row, board, weightUnit }) => {
   const { t } = useTranslation();
   if (board === 'streak') {
     return (
@@ -33,7 +34,7 @@ const Metric = ({ row, board }) => {
     <Box sx={{ minWidth: 150 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
         <Typography sx={{ fontSize: 16, fontWeight: 700 }}>{row.workouts}/{row.goal}</Typography>
-        <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{formatWeightText(row.volume_kg)}</Typography>
+        <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{formatTotalInUnit(row.volume_kg, weightUnit, intlLocale())}</Typography>
       </Box>
       <LinearProgress
         variant="determinate"
@@ -45,7 +46,7 @@ const Metric = ({ row, board }) => {
   );
 };
 
-const LeaderboardTable = ({ rows, board }) => {
+const LeaderboardTable = ({ rows, board, weightUnit }) => {
   const { t } = useTranslation();
   // La barra della settimana è larga: sul telefono va sotto il nome, altrimenti il nome
   // resta di due lettere.
@@ -92,7 +93,7 @@ const LeaderboardTable = ({ rows, board }) => {
             {row.is_me && <Chip label={t('groups.board.me')} size="small" variant="outlined" sx={{ height: 24, fontSize: 14, color: 'text.primary', borderColor: 'text.secondary' }} />}
           </Box>
           <Box sx={wide ? { width: { xs: '100%', sm: 'auto' }, pl: { xs: '44px', sm: 0 } } : undefined}>
-            <Metric row={row} board={board} />
+            <Metric row={row} board={board} weightUnit={weightUnit} />
           </Box>
         </Box>
       ))}

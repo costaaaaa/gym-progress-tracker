@@ -16,6 +16,7 @@ import {
 } from '../api/groups';
 import { track } from '../utils/analytics';
 import { Trans, useTranslation } from 'react-i18next';
+import { useAuth } from '../context/AuthContext';
 import { intlLocale } from '../i18n/format';
 import { NEUTRAL_TEXT, DANGER_TEXT } from '../utils/buttonStyles';
 import { INK_TABS } from '../utils/inkTabs';
@@ -96,6 +97,7 @@ const InvitePanel = ({ group, onChange, notify }) => {
 
 const GroupDetailContent = () => {
   const { t } = useTranslation();
+  const { weightUnit } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const [board, setBoard] = useState('week');
@@ -188,7 +190,7 @@ const GroupDetailContent = () => {
               {BOARDS.map((b) => <Tab key={b} value={b} label={t(`groups.detail.board.${b}`)} />)}
             </Tabs>
             <Typography sx={{ fontSize: 16, color: 'text.secondary', mb: 1 }}>{t(`groups.detail.board.${board}_hint`)}</Typography>
-            <LeaderboardTable rows={data.board} board={data.board_type} />
+            <LeaderboardTable rows={data.board} board={data.board_type} weightUnit={weightUnit} />
           </Card>
         </Grid>
 

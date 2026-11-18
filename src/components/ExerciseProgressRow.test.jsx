@@ -78,3 +78,17 @@ describe('formatValue', () => {
     expect(formatValue((k) => k, 'oneRM', 101.33)).toBe('101,3\u00a0kg');
   });
 });
+
+describe('unità di peso', () => {
+  it('formatValue: 1RM stimato in lb al quarto di libbra', () => {
+    expect(formatValue((k) => k, 'oneRM', 100, 'lb')).toBe('220,5\u00a0lb');
+    expect(formatValue((k) => k, 'oneRM', 101.33, 'kg')).toBe('101,3\u00a0kg');
+  });
+
+  it('la riga mostra il valore nell\'unità passata', () => {
+    const sessions = [session('2026-10-01 18:00:00', 80), session('2026-10-08 18:00:00', 100)];
+    render(<ExerciseProgressRow item={item(sessions)} weightUnit="lb" favorite={false} onToggleFavorite={() => {}} onOpen={() => {}} />);
+    expect(screen.getByText('220,5 lb')).toBeTruthy();
+    expect(screen.queryByText(/kg/)).toBeNull();
+  });
+});

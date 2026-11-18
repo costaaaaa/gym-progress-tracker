@@ -3,7 +3,8 @@ import { Box, CardActionArea, IconButton, Typography } from '@mui/material';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import { useTranslation } from 'react-i18next';
-import { formatNumber, formatWeightText } from '../i18n/format';
+import { formatNumber, intlLocale } from '../i18n/format';
+import { formatEstimateInUnit } from '../utils/weightUnit';
 import { muscleLabel } from '../i18n/labels';
 import { buildPoints } from './ChartCard';
 import { dayTime } from '../utils/calendarDay';
@@ -16,9 +17,9 @@ export const formatDaysAgo = (t, days) => {
   return t('progress.days_ago', { count: days });
 };
 
-export const formatValue = (t, mode, value) =>
+export const formatValue = (t, mode, value, weightUnit) =>
   mode === 'oneRM'
-    ? formatWeightText(value, { maxDecimals: 1 })
+    ? formatEstimateInUnit(value, weightUnit, intlLocale())
     : `${formatNumber(value)} ${t('progress.unit.reps')}`;
 
 const SPARK_W = 120;
@@ -42,7 +43,7 @@ const Sparkline = ({ sessions, color }) => {
 const TONE_COLOR = { positive: 'success.main', negative: 'recovery.recovering', neutral: 'text.secondary', muted: 'text.disabled' };
 
 // Una riga della panoramica: nome e ultima sessione, mini grafico, valore con variazione, stella dei preferiti
-const ExerciseProgressRow = ({ item, showMuscle = false, favorite, onToggleFavorite, onOpen }) => {
+const ExerciseProgressRow = ({ item, weightUnit, showMuscle = false, favorite, onToggleFavorite, onOpen }) => {
   const { t } = useTranslation();
   const { name, muscle, status, deltaPct, last, mode, sessions, lastDays, recentPR, laterInSession } = item;
   const tone = STATUS_TONE[status];
@@ -63,7 +64,7 @@ const ExerciseProgressRow = ({ item, showMuscle = false, favorite, onToggleFavor
         <Sparkline sessions={sessions} color={TONE_COLOR[tone]} />
 
         <Box sx={{ textAlign: 'right', minWidth: { xs: 76, md: 120 }, ml: { md: 'auto' } }}>
-          <Typography variant="statNumber" sx={{ fontSize: 18 }}>{formatValue(t, mode, last.value)}</Typography>
+          <Typography variant="statNumber" sx={{ fontSize: 18 }}>{formatValue(t, mode, last.value, weightUnit)}</Typography>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'baseline', gap: 0.75 }}>
             {recentPR && <Typography component="span" data-row-badge sx={{ fontSize: 13, fontWeight: 700 }}>{t('progress.pr')}</Typography>}
             <Typography component="span" data-row-badge sx={{ fontSize: 14, fontWeight: 600, color: TONE_COLOR[tone] }}>

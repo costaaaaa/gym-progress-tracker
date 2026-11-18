@@ -25,6 +25,7 @@ import TimeZoneBadge from './TimeZoneBadge';
 import { muscleLabel } from '../i18n/labels';
 import { formatValue } from './ExerciseProgressRow';
 import { dayTime } from '../utils/calendarDay';
+import { kgToDisplay, kgToTotal, weightUnitLabel } from '../utils/weightUnit';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
 import { radius } from '../theme/radius';
 
@@ -41,7 +42,7 @@ const PRDot = ({ cx, cy, payload, color, dotOutline }) => {
 // "1° esercizio": solo se la sessione ha la posizione; altrimenti non si mostra nulla
 const positionLabel = (t, position) => (Number.isInteger(position) ? t('progress.position', { count: position, ordinal: true }) : null);
 
-export const ChartTooltip = ({ active, payload, mode, t }) => {
+export const ChartTooltip = ({ active, payload, mode, t, weightUnit }) => {
   if (!active || !payload?.length) return null;
   const p = payload[0].payload;
   const position = positionLabel(t, p.position);
@@ -50,7 +51,7 @@ export const ChartTooltip = ({ active, payload, mode, t }) => {
       <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 0.5 }}>{p.dateLabel}</Typography>
       {position && <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 0.5 }}>{position}</Typography>}
       <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
-        {t(`progress.kind.${mode}`)}: <strong>{formatValue(t, mode, p.value)}</strong>
+        {t(`progress.kind.${mode}`)}: <strong>{formatValue(t, mode, p.value, weightUnit)}</strong>
         {p.isPR && ` · ${t('progress.pr')}`}
       </Typography>
     </Box>
@@ -64,7 +65,7 @@ const Stat = ({ label, value }) => (
   </Box>
 );
 
-const ExerciseDetailDialog = ({ item, onClose }) => {
+const ExerciseDetailDialog = ({ item, onClose, weightUnit }) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
@@ -73,7 +74,8 @@ const ExerciseDetailDialog = ({ item, onClose }) => {
   const open = Boolean(item);
   const sessions = item?.sessions || [];
   // x con l'ora: due sessioni nello stesso giorno restano punti distinti, ognuno col suo tooltip
-  const chartData = sessions.map((s) => ({ ...s, x: dayTime(s.date), dateLabel: formatDate(s.date) }));
+  // `shown` è il valore che il grafico disegna (1RM nell'unità dell'utente); `value` resta in kg per tooltip e tabella
+  const chartData = sessions.map((s) => ({ ...s, x: dayTime(s.date), dateLabel: formatDate(s.date), shown: item.mode === 'oneRM' ? kgToDisplay(s.value, weightUnit) : s.value }));
   // Etichette dell'asse solo dove c'è una sessione
   const labelByX = new Map(chartData.map((d) => [d.x, d.dateLabel]));
   const rows = [...chartData].reverse();
@@ -92,8 +94,8 @@ const ExerciseDetailDialog = ({ item, onClose }) => {
           </DialogTitle>
           <DialogContent sx={{ px: { xs: 2, sm: 3 } }}>
             <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-              <Stat label={t('progress.detail.current')} value={formatValue(t, item.mode, item.last.value)} />
-              <Stat label={t('progress.detail.best')} value={formatValue(t, item.mode, item.best)} />
+              <Stat label={t('progress.detail.current')} value={formatValue(t, item.mode, item.last.value, weightUnit)} />
+              <Stat label={t('progress.detail.best')} value={formatValue(t, item.mode, item.best, weightUnit)} />
               <Stat label={t('progress.detail.sessions')} value={sessions.length} />
             </Box>
 
@@ -107,8 +109,8 @@ const ExerciseDetailDialog = ({ item, onClose }) => {
                   <CartesianGrid horizontal vertical={false} stroke={theme.palette.divider} />
                   <XAxis dataKey="x" type="number" domain={['dataMin', 'dataMax']} ticks={[...labelByX.keys()]} tickFormatter={(x) => labelByX.get(x)} fontSize={11} stroke={theme.palette.text.secondary} tickLine={false} axisLine={false} minTickGap={24} />
                   <YAxis fontSize={11} stroke={theme.palette.text.secondary} tickLine={false} axisLine={false} tickCount={4} width={40} domain={[(min) => Math.floor(min - 2), (max) => Math.ceil(max + 2)]} allowDecimals={false} />
-                  <Tooltip content={<ChartTooltip mode={item.mode} t={t} />} />
-                  <Line type="monotone" dataKey="value" stroke={theme.palette.primary.main} strokeWidth={2.5} dot={<PRDot color={theme.palette.primary.main} dotOutline={theme.palette.common.white} />} activeDot={{ r: 5 }} isAnimationActive={false} />
+                  <Tooltip content={<ChartTooltip mode={item.mode} t={t} weightUnit={weightUnit} />} />
+                  <Line type="monotone" dataKey="shown" stroke={theme.palette.primary.main} strokeWidth={2.5} dot={<PRDot color={theme.palette.primary.main} dotOutline={theme.palette.common.white} />} activeDot={{ r: 5 }} isAnimationActive={false} />
                 </LineChart>
               </ResponsiveContainer>
             </Box>
@@ -121,7 +123,7 @@ const ExerciseDetailDialog = ({ item, onClose }) => {
                     <TableCell sx={HEAD_SX}>{t('progress.col.date')}</TableCell>
                     <TableCell align="right" sx={HEAD_SX}>{t('progress.col.best_set')}</TableCell>
                     <TableCell align="right" sx={HEAD_SX}>{t(`progress.kind.${item.mode}`)}</TableCell>
-                    <TableCell align="right" sx={HEAD_SX}>{t('progress.col.volume')}</TableCell>
+                    <TableCell align="right" sx={HEAD_SX}>{t('progress.col.volume', { unit: weightUnitLabel(weightUnit) })}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -141,13 +143,13 @@ const ExerciseDetailDialog = ({ item, onClose }) => {
                         </TableCell>
                         <TableCell align="right" sx={cellSx}>
                           {row.bestSet
-                            ? (row.bestSet.weight > 0 ? `${formatNumber(row.bestSet.weight, { maximumFractionDigits: 2 })} × ${row.bestSet.reps}` : `${row.bestSet.reps} ${t('progress.unit.reps')}`)
+                            ? (row.bestSet.weight > 0 ? `${formatNumber(kgToDisplay(row.bestSet.weight, weightUnit), { maximumFractionDigits: 2 })} × ${row.bestSet.reps}` : `${row.bestSet.reps} ${t('progress.unit.reps')}`)
                             : '—'}
                         </TableCell>
                         <TableCell align="right" sx={{ ...cellSx, fontWeight: 700 }}>
-                          {formatValue(t, item.mode, row.value)}{row.isPR && ` · ${t('progress.pr')}`}
+                          {formatValue(t, item.mode, row.value, weightUnit)}{row.isPR && ` · ${t('progress.pr')}`}
                         </TableCell>
-                        <TableCell align="right" sx={{ ...cellSx, color: 'text.secondary' }}>{formatNumber(row.volume)}</TableCell>
+                        <TableCell align="right" sx={{ ...cellSx, color: 'text.secondary' }}>{formatNumber(kgToTotal(row.volume, weightUnit))}</TableCell>
                       </TableRow>
                     );
                   })}

@@ -30,7 +30,9 @@ import { useTranslation } from 'react-i18next';
 import { format, isValid } from 'date-fns';
 import i18n from '../i18n';
 import DateLocalization from '../i18n/DateLocalization';
-import { formatDate, formatMeasureText, formatWeightText } from '../i18n/format';
+import { formatDate, formatMeasureText, intlLocale } from '../i18n/format';
+import { useAuth } from '../context/AuthContext';
+import { BODY_LB_DIVISIONS, fieldTextToKgText, formatWeightInUnit, kgToDisplay, maxWeightInUnit, weightUnitLabel } from '../utils/weightUnit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import FavoriteIcon from '@mui/icons-material/Favorite';
@@ -61,11 +63,11 @@ const HealthMark = () => {
   );
 };
 
-const StatValue = ({ row, field }) => {
+const StatValue = ({ row, field, weightUnit }) => {
   if (!row[field]) return '-';
   return (
     <>
-      {formatMeasureText(row[field])}
+      {field === 'weight' ? formatWeightInUnit(row[field], weightUnit, intlLocale(), { lbDivisions: BODY_LB_DIVISIONS, unit: false }) : formatMeasureText(row[field])}
       {isFromHealth(row, field) && <HealthMark />}
     </>
   );
@@ -161,7 +163,7 @@ const headCellSx = { fontWeight: 600, fontSize: 16, color: 'text.secondary' };
 const bodyCellSx = { fontSize: 16, fontVariantNumeric: 'tabular-nums' };
 
 // Storico sul telefono: data e peso sulla prima linea, le altre misure in grigio sulla seconda
-const HistoryList = ({ rows, empty, onDelete }) => {
+const HistoryList = ({ rows, empty, onDelete, weightUnit }) => {
   const { t } = useTranslation();
   if (empty) {
     return <Typography sx={{ color: 'text.secondary', py: 3, textAlign: 'center', fontSize: 16 }}>{t('body.empty')}</Typography>;
@@ -176,8 +178,8 @@ const HistoryList = ({ rows, empty, onDelete }) => {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 1 }}>
                 <Typography sx={{ fontSize: 16 }}>{formatDate(row.date)}</Typography>
                 <Typography sx={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
-                  {/* Numero (con il cuore di Salute) e unità sono pezzi separati: lo spazio non separabile e kg si scrivono a mano */}
-                  {row.weight ? <><StatValue row={row} field="weight" />{'\u00a0'}kg</> : '-'}
+                  {/* Numero (con il cuore di Salute) e unità sono pezzi separati: lo spazio non separabile e l'unità si scrivono a mano */}
+                  {row.weight ? <><StatValue row={row} field="weight" weightUnit={weightUnit} />{'\u00a0'}{weightUnitLabel(weightUnit)}</> : '-'}
                 </Typography>
               </Box>
               {others.length > 0 && (
@@ -210,6 +212,7 @@ const numberFieldSx = {
 
 const BodyStats = ({ isEmbedded = false }) => {
   const { t } = useTranslation();
+  const { weightUnit } = useAuth();
   const isPhone = useMediaQuery(useTheme().breakpoints.down('sm'));
   const [stats, setStats] = useState([]);
   const [period, setPeriod] = useState(DEFAULT_PERIOD);
@@ -238,7 +241,7 @@ const BodyStats = ({ isEmbedded = false }) => {
 
   // Proprietà comuni dei sette campi numerici del modulo; l'errore passa da error + helperText (aria-describedby)
   const numberField = (name, labelKey) => ({
-    label: t(labelKey), name, type: 'number', fullWidth: true, value: formData[name], onChange: handleInputChange, sx: numberFieldSx,
+    label: t(labelKey, { unit: weightUnitLabel(weightUnit) }), name, type: 'number', fullWidth: true, value: formData[name], onChange: handleInputChange, sx: numberFieldSx,
     error: !!fieldErrors[name], helperText: fieldErrors[name], inputRef: fieldRef(name),
   });
 
@@ -287,12 +290,18 @@ const BodyStats = ({ isEmbedded = false }) => {
     if (fieldErrors.date) setFieldErrors(({ date: _removed, ...others }) => others);
   };
 
+  // Il tetto del peso si mostra nell'unità dell'utente, gli altri com'è
+  const rangeMax = (name, max) => (name === 'weight' ? formatMeasureText(maxWeightInUnit(max, weightUnit, BODY_LB_DIVISIONS)) : max);
+
   const handleSubmit = async () => {
     const errors = {};
     // Data cancellata o incompleta (si digita con il puntatore preciso): arriva null o una data non valida
     if (!isValid(formData.date)) errors.date = t('body.error.date');
+    // Il peso si scrive nell'unità dell'utente; le regole e il payload sono in kg
+    const weightKgText = fieldTextToKgText(formData.weight, weightUnit);
     Object.entries(BODY_LIMITS).forEach(([name, max]) => {
-      if (isValueOutOfRange(formData[name], max)) errors[name] = t('body.error.range', { max });
+      const value = name === 'weight' ? weightKgText : formData[name];
+      if (value === null || isValueOutOfRange(value, max)) errors[name] = t('body.error.range', { max: rangeMax(name, max) });
     });
     if (Object.keys(errors).length > 0) {
       showFieldErrors(errors);
@@ -302,7 +311,7 @@ const BodyStats = ({ isEmbedded = false }) => {
       const formattedData = {
         ...formData,
         date: format(formData.date, 'yyyy-MM-dd'),
-        weight: formData.weight || null,
+        weight: weightKgText || null,
         body_fat_percentage: formData.body_fat_percentage || null,
         muscle_mass_percentage: formData.muscle_mass_percentage || null,
         chest_size: formData.chest_size || null,
@@ -335,7 +344,7 @@ const BodyStats = ({ isEmbedded = false }) => {
         fetchStats();
       } else if (BODY_LIMITS[result.field]) {
         // Con "max" il testo è quello del client (uguale a quello prima dell'invio); il messaggio del server resta il ripiego
-        showFieldErrors({ [result.field]: Number.isFinite(result.max) ? t('body.error.range', { max: result.max }) : result.message });
+        showFieldErrors({ [result.field]: Number.isFinite(result.max) ? t('body.error.range', { max: rangeMax(result.field, result.max) }) : result.message });
       } else {
         setSnackbar({ open: true, message: result.message || t('body.error.save'), severity: 'error' });
       }
@@ -381,15 +390,15 @@ const BodyStats = ({ isEmbedded = false }) => {
   ];
 
   const weighed = chartData.filter(d => d.weight !== null && d.weight !== undefined);
-  const weightPoints = weighed.map(d => ({ x: d.day, value: d.weight }));
-  const weightRows = weighed.map(d => [formatDate(d.date), formatWeightText(d.weight)]);
+  const weightPoints = weighed.map(d => ({ x: d.day, value: kgToDisplay(d.weight, weightUnit, BODY_LB_DIVISIONS) }));
+  const weightRows = weighed.map(d => [formatDate(d.date), formatWeightInUnit(d.weight, weightUnit, intlLocale(), { lbDivisions: BODY_LB_DIVISIONS })]);
   const lastWeight = lastValueOf(chartData, 'weight');
-  const weightLabel = formatWeightText(lastWeight);
+  const weightLabel = formatWeightInUnit(lastWeight, weightUnit, intlLocale(), { lbDivisions: BODY_LB_DIVISIONS });
   const weightDelta = periodWeightDelta(periodRows);
   const trend = weightTrend(weightDelta);
   const deltaText = trend === null ? undefined
     : trend === 'flat' ? t(PERIOD_UI[period].stable)
-      : t(PERIOD_UI[period].delta, { delta: formatWeightText(weightDelta, { signed: true, maxDecimals: 1 }) });
+      : t(PERIOD_UI[period].delta, { delta: formatWeightInUnit(weightDelta, weightUnit, intlLocale(), { lbDivisions: BODY_LB_DIVISIONS, signed: true, maxDecimals: 1 }) });
 
   // Lo storico non segue il periodo: tutte le righe, dalla più recente, a pagine
   const sortedStats = sortByDate(stats);
@@ -429,7 +438,7 @@ const BodyStats = ({ isEmbedded = false }) => {
                 <Typography sx={{ color: 'text.secondary', fontSize: 16, mt: 0.5 }}>
                   {t('body.period_empty_last', {
                     date: formatDate(latestRow.date),
-                    weight: formatWeightText(latestRow.weight),
+                    weight: formatWeightInUnit(latestRow.weight, weightUnit, intlLocale(), { lbDivisions: BODY_LB_DIVISIONS }),
                   })}
                 </Typography>
               </Card>
@@ -439,14 +448,14 @@ const BodyStats = ({ isEmbedded = false }) => {
               {/* Andamento Peso — a piena larghezza */}
               <Grid item xs={12}>
                 <ChartCard
-                  title={t('body.weight_trend')}
+                  title={t('body.weight_trend', { unit: weightUnitLabel(weightUnit) })}
                   points={weightPoints}
                   domain={chartDomain}
                   color={CHART_LINE_COLOR}
                   valueLabel={weightLabel}
                   trend={trend}
                   deltaText={deltaText}
-                  ariaLabel={t('body.weight_chart_aria', { title: t('body.weight_trend'), value: weightLabel })}
+                  ariaLabel={t('body.weight_chart_aria', { title: t('body.weight_trend', { unit: weightUnitLabel(weightUnit) }), value: weightLabel })}
                   table={{ head: [t('body.col.date'), t('body.col.weight')], rows: weightRows }}
                 />
               </Grid>
@@ -467,13 +476,13 @@ const BodyStats = ({ isEmbedded = false }) => {
           <Grid item xs={12}>
             <TableContainer component={Card} sx={{ p: 0 }}>
               {isPhone ? (
-                <HistoryList rows={history.rows} empty={stats.length === 0} onDelete={handleDelete} />
+                <HistoryList rows={history.rows} empty={stats.length === 0} onDelete={handleDelete} weightUnit={weightUnit} />
               ) : (
                 <Table size="small" aria-label={t('body.history_aria')}>
                   <TableHead>
                     <TableRow>
                       <TableCell sx={headCellSx}>{t('body.col.date')}</TableCell>
-                      <TableCell align="right" sx={headCellSx}>{t('body.col.weight_kg')}</TableCell>
+                      <TableCell align="right" sx={headCellSx}>{t('body.col.weight_kg', { unit: weightUnitLabel(weightUnit) })}</TableCell>
                       <TableCell align="right" sx={headCellSx}>{t('body.col.fat')}</TableCell>
                       <TableCell align="right" sx={headCellSx}>{t('body.col.muscle')}</TableCell>
                       <TableCell align="right" sx={headCellSx}>{t('body.chest')}</TableCell>
@@ -487,7 +496,7 @@ const BodyStats = ({ isEmbedded = false }) => {
                     {history.rows.map((row) => (
                       <TableRow key={row.id}>
                         <TableCell sx={bodyCellSx}>{formatDate(row.date)}</TableCell>
-                        <TableCell align="right" sx={{ ...bodyCellSx, fontWeight: 700 }}><StatValue row={row} field="weight" /></TableCell>
+                        <TableCell align="right" sx={{ ...bodyCellSx, fontWeight: 700 }}><StatValue row={row} field="weight" weightUnit={weightUnit} /></TableCell>
                         <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="body_fat_percentage" /></TableCell>
                         <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="muscle_mass_percentage" /></TableCell>
                         <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="chest_size" /></TableCell>

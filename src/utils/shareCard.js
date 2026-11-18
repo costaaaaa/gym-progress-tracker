@@ -7,6 +7,7 @@
 // ============================================================================
 
 import { isClockString, localDate } from './calendarDay';
+import { DEFAULT_WEIGHT_UNIT, kgDeltaToTenthKgOrQuarterLb, kgToTenthKgOrQuarterLb, kgToTotal, weightUnitLabel } from './weightUnit';
 import { extractReps, estimateOneRepMax, summarizeSets, buildExerciseHistoryIndex, detectPersonalRecords, isWorkingSet } from './workoutMetrics';
 
 // Formato della card: dimensioni in px. Storia per le storie, Quadrato per feed e chat.
@@ -33,14 +34,14 @@ export const STRINGS_IT = {
   volume: 'VOLUME',
   muscles: 'MUSCOLI ALLENATI',
   newRecord: 'NUOVO RECORD',
-  setValue: '{weight} kg × {reps}',
+  setValue: '{weight} {unit} × {reps}',
   repsValue: '{reps} rip.',
-  deltaKg: '+{n} kg',
-  deltaOneRm: '+{n} kg stimati',
+  deltaKg: '+{n} {unit}',
+  deltaOneRm: '+{n} {unit} stimati',
   deltaReps: '+{n} rip.',
   othersOne: 'e un altro record',
   othersMany: 'e altri {n} record',
-  kg: '{n} kg',
+  kg: '{n} {unit}',
   effortLine: '{sets} serie · {exercises}',
   exerciseOne: '{n} esercizio',
   exerciseMany: '{n} esercizi',
@@ -89,6 +90,12 @@ export const formatDuration = (seconds, strings = STRINGS_IT) => {
 // 12.5 → "12,5" (una cifra decimale al massimo, separatore della lingua)
 const formatDecimal = (n, strings = STRINGS_IT) =>
   String(Math.round(n * 10) / 10).replace('.', strings.decimal);
+
+// Un peso in kg → "12,5" nell'unità dell'utente (kg: una cifra decimale al massimo; lb: al quarto di libbra), separatore
+// della lingua; {unit} dei testi è l'etichetta dell'unità. `toShown` cambia l'arrotondamento: per un miglioramento
+// (delta) si passa kgDeltaToTenthKgOrQuarterLb, che non mostra mai «+0 lb».
+const formatWeightValue = (kg, unit, strings = STRINGS_IT, toShown = kgToTenthKgOrQuarterLb) =>
+  String(toShown(kg, unit)).replace('.', strings.decimal);
 
 /**
  * I due gruppi muscolari con più serie, es. "Petto · Tricipiti". Titolo della card
@@ -288,11 +295,11 @@ const text = (x, y, value, size, color, opts = {}) => ({
 
 // Riquadri. Durata e serie ci sono già nel blocco principale quando la card lo mostra e non
 // c'è un record; il volume manca negli allenamenti a corpo libero.
-const tilesFor = (stats, strings, effortInHero, hideWeights) => {
+const tilesFor = (stats, strings, effortInHero, hideWeights, weightUnit) => {
   const tiles = [];
   const duration = formatDuration(stats.durationSec, strings);
   if (!effortInHero && duration) tiles.push({ value: duration, label: strings.duration });
-  if (stats.volumeKg > 0 && !hideWeights) tiles.push({ value: fill(strings.kg, { n: formatThousands(stats.volumeKg, strings) }), label: strings.volume });
+  if (stats.volumeKg > 0 && !hideWeights) tiles.push({ value: fill(strings.kg, { n: formatThousands(kgToTotal(stats.volumeKg, weightUnit), strings), unit: weightUnitLabel(weightUnit) }), label: strings.volume });
   if (!effortInHero) tiles.push({ value: String(stats.sets), label: strings.sets });
   return tiles;
 };
@@ -328,7 +335,7 @@ const footer = (theme, format, { footerDy }) => text(format.width / 2, format.he
 // ── Blocchi ────────────────────────────────────────────────────────────────
 // Un blocco è (stats, ctx, y) => { elements, height }: disegna a partire da y e dice quanto
 // spazio occupa, compreso il vuoto che lo separa dal blocco dopo. stack() li impila.
-// ctx = { theme, strings, layout, metrics, contentWidth, height, hasHero, hideWeights, fit }. Le misure (corpi dei testi,
+// ctx = { theme, strings, layout, metrics, contentWidth, height, hasHero, hideWeights, weightUnit, fit }. Le misure (corpi dei testi,
 // distanze) cambiano da un layout all'altro e stanno in METRICS.
 
 const METRICS = {
@@ -401,18 +408,18 @@ const headingBlock = (stats, { theme, strings, metrics, contentWidth }, y) => {
   return { elements, height: m.height };
 };
 
-const recordValue = (record, strings) => (record.type === 'reps'
+const recordValue = (record, strings, weightUnit) => (record.type === 'reps'
   ? fill(strings.repsValue, { reps: record.reps })
-  : fill(strings.setValue, { weight: formatDecimal(record.weight, strings), reps: record.reps }));
+  : fill(strings.setValue, { weight: formatWeightValue(record.weight, weightUnit, strings), unit: weightUnitLabel(weightUnit), reps: record.reps }));
 
-const recordDelta = (record, strings) => {
+const recordDelta = (record, strings, weightUnit) => {
   if (record.delta === null) return null;
   const template = { weight: strings.deltaKg, oneRM: strings.deltaOneRm, reps: strings.deltaReps }[record.type];
-  return fill(template, { n: formatDecimal(record.delta, strings) });
+  return fill(template, { n: record.type === 'reps' ? formatDecimal(record.delta, strings) : formatWeightValue(record.delta, weightUnit, strings, kgDeltaToTenthKgOrQuarterLb), unit: weightUnitLabel(weightUnit) });
 };
 
 // Blocco principale con un record: esercizio, serie che lo fa, di quanto migliora.
-const recordHero = (stats, { theme, strings, metrics, contentWidth, hideWeights }, y) => {
+const recordHero = (stats, { theme, strings, metrics, contentWidth, hideWeights, weightUnit }, y) => {
   const m = metrics.record;
   const { record } = stats;
   const weightless = hideWeights && record.type !== 'reps';
@@ -425,11 +432,11 @@ const recordHero = (stats, { theme, strings, metrics, contentWidth, hideWeights 
     elements.push(text(MARGIN, cursor, name.text, name.size, theme.big, { weight: 800 }));
   } else {
     const name = fit(record.name, contentWidth, m.nameSize, m.nameMin);
-    const value = fit(recordValue(record, strings), contentWidth, m.valueSize);
+    const value = fit(recordValue(record, strings, weightUnit), contentWidth, m.valueSize);
     elements.push(text(MARGIN, y + m.nameDy, name.text, name.size, theme.text, { weight: 800 }));
     cursor = y + m.nameDy + m.valueGap + value.size * 0.78;
     elements.push(text(MARGIN - 4, cursor, value.text, value.size, theme.big, { weight: 800 }));
-    const delta = recordDelta(record, strings);
+    const delta = recordDelta(record, strings, weightUnit);
     if (delta) {
       cursor += m.deltaStep;
       const d = fit(delta, contentWidth, m.deltaSize);
@@ -467,7 +474,7 @@ const effortHero = (stats, { theme, strings, metrics, contentWidth }, y) => {
 const heroBlock = (stats, ctx, y) => (stats.record ? recordHero(stats, ctx, y) : effortHero(stats, ctx, y));
 
 const tilesBlock = (stats, ctx, y) => {
-  const tiles = tilesFor(stats, ctx.strings, ctx.hasHero && !stats.record, ctx.hideWeights);
+  const tiles = tilesFor(stats, ctx.strings, ctx.hasHero && !stats.record, ctx.hideWeights, ctx.weightUnit);
   if (!tiles.length) return { elements: [], height: 0 };
   const grid = tileGrid(tiles, y, ctx, { ...ctx.metrics.tiles, columns: tiles.length });
   return { elements: grid.elements, height: grid.height + ctx.metrics.tilesAfter };
@@ -516,9 +523,9 @@ const bigMusclesBlock = (stats, ctx, y) =>
 
 // Elenco a righe: nome a sinistra, valore a destra; le righe evidenziate (record) hanno uno
 // sfondo e il valore in accento. Se non entrano tutte, l'ultima riga diventa "+N ...".
-const listBlock = (label, rows, moreTemplate) => (stats, { theme, strings, metrics, contentWidth, hideWeights, fit: shrink }, y) => {
+const listBlock = (label, rows, moreTemplate) => (stats, { theme, strings, metrics, contentWidth, hideWeights, weightUnit, fit: shrink }, y) => {
   const m = metrics.list;
-  const items = rows(stats, strings, hideWeights);
+  const items = rows(stats, strings, hideWeights, weightUnit);
   if (!items.length) return { elements: [], height: 0 };
   const space = Math.floor((m.limit - y - m.firstRow - m.tail) / m.pitch);
   const capacity = Math.max(m.minRows, Math.min(m.maxRows, space, shrink.listRows));
@@ -543,24 +550,24 @@ const listBlock = (label, rows, moreTemplate) => (stats, { theme, strings, metri
   return { elements, height: m.firstRow + rowsDrawn * m.pitch + m.tail };
 };
 
-const exerciseValue = (ex, strings, hideWeights) => {
+const exerciseValue = (ex, strings, hideWeights, weightUnit) => {
   if (!ex.best) return null;
   if (ex.best.weight <= 0) return fill(strings.bodyweightValue, { sets: ex.sets, reps: ex.best.reps });
   if (hideWeights) return fill(strings.setsCount, { n: ex.sets });
-  return fill(strings.setValue, { weight: formatDecimal(ex.best.weight, strings), reps: ex.best.reps });
+  return fill(strings.setValue, { weight: formatWeightValue(ex.best.weight, weightUnit, strings), unit: weightUnitLabel(weightUnit), reps: ex.best.reps });
 };
 
-const exerciseRows = (stats, strings, hideWeights) => stats.exerciseList.map((ex) => ({
-  name: ex.name, value: exerciseValue(ex, strings, hideWeights), highlight: ex.isRecord,
+const exerciseRows = (stats, strings, hideWeights, weightUnit) => stats.exerciseList.map((ex) => ({
+  name: ex.name, value: exerciseValue(ex, strings, hideWeights, weightUnit), highlight: ex.isRecord,
 }));
 
-const recordRowValue = (r, strings, hideWeights) => {
+const recordRowValue = (r, strings, hideWeights, weightUnit) => {
   if (r.type === 'volume') return strings.volumeRecord;
-  return hideWeights && r.type !== 'reps' ? null : recordValue(r, strings);
+  return hideWeights && r.type !== 'reps' ? null : recordValue(r, strings, weightUnit);
 };
 
-const recordRows = (stats, strings, hideWeights) => stats.recordList.map((r) => ({
-  name: r.name, value: recordRowValue(r, strings, hideWeights), highlight: true,
+const recordRows = (stats, strings, hideWeights, weightUnit) => stats.recordList.map((r) => ({
+  name: r.name, value: recordRowValue(r, strings, hideWeights, weightUnit), highlight: true,
 }));
 
 const exercisesBlock = listBlock('exercisesLabel', exerciseRows, 'moreExercises');
@@ -741,12 +748,13 @@ const photoUnderlay = (format, hasPhoto) => {
  * strings: i testi della card (STRINGS_IT di base). format: FORMAT_STORIA di base.
  * preset: id di PRESETS (la card pronta); se non è disponibile per l'allenamento, Riepilogo.
  * blocks: id di CUSTOM_BLOCKS accesi (card personalizzata); se c'è, preset non conta.
- * hideWeights: nessun peso (kg) da nessuna parte.
+ * hideWeights: nessun peso da nessuna parte.
+ * weightUnit: 'kg' (di base) o 'lb': i pesi della card sono in kg e si mostrano nell'unità dell'utente.
  * showBestVolume: le righe "miglior volume" nell'elenco dei record (di base no).
  */
 export const layoutShareCard = (stats, templateId, {
   hasPhoto = false, photoBackground, strings = STRINGS_IT, format = FORMAT_STORIA, preset = DEFAULT_PRESET,
-  blocks: customBlocks, hideWeights = false, showBestVolume = false,
+  blocks: customBlocks, hideWeights = false, showBestVolume = false, weightUnit = DEFAULT_WEIGHT_UNIT,
 } = {}) => {
   if (!showBestVolume) stats = { ...stats, recordList: stats.recordList.filter((r) => r.type !== 'volume') };
   const theme = THEMES[templateId] || THEMES.scuro;
@@ -755,7 +763,7 @@ export const layoutShareCard = (stats, templateId, {
   const layout = layoutOf(format);
   const ctx = {
     theme, strings, layout, metrics: isPhoto ? layout.metrics.photo : layout.metrics.full,
-    contentWidth: format.width - 2 * MARGIN, height: format.height, hasHero, hideWeights, fit: NO_SHRINK,
+    contentWidth: format.width - 2 * MARGIN, height: format.height, hasHero, hideWeights, weightUnit, fit: NO_SHRINK,
   };
   const background = isPhoto ? photoBackgroundFill(photoBackground, format) : theme.background?.(format);
   const elements = background ? [{ type: 'rect', x: 0, y: 0, w: format.width, h: format.height, fill: background }] : [];

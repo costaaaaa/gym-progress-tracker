@@ -9,6 +9,9 @@ import { textBelow } from '../test/minText';
 import { unnamedControls } from '../test/accessibleNames';
 import { mediaStyle } from '../test/mediaStyle';
 
+const account = vi.hoisted(() => ({ weightUnit: 'kg' }));
+vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ weightUnit: account.weightUnit }) }));
+
 const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
 const GREEN = 'rgb(21, 128, 61)';
@@ -37,6 +40,7 @@ const profile = {
 };
 
 beforeEach(() => {
+  account.weightUnit = 'kg';
   localStorage.setItem('themeMode', 'light');
   vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: true, status: 200, json: async () => profile })));
 });
@@ -267,5 +271,16 @@ describe('nomi dei traguardi', () => {
     render(<ThemeModeProvider><ProfileSummary /></ThemeModeProvider>);
     await screen.findByText('Level 7');
     screen.getByText('Nome nuovo');
+  });
+});
+
+describe('unità di peso dell\'account', () => {
+  it('in lb il volume totale e l\'avanzamento del tonnellaggio sono in libbre, senza tonnellate', async () => {
+    account.weightUnit = 'lb';
+    await mount();
+    const row = screen.getByText('sessioni').parentElement.parentElement;
+    expect([...row.children].map((c) => c.textContent)).toEqual(['58sessioni', '406.202lb sollevati', '5settimane record']); // 184.250 kg
+    expect(within(screen.getByText('420 t — Stazione Spaziale', { selector: 'p' }).closest('.MuiCard-root')).getByText('406.202 lb di 925.942 lb')).toBeTruthy();
+    expect(screen.queryByText(/184,3 t/)).toBeNull();
   });
 });
