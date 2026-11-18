@@ -29,5 +29,4 @@ export const formatNumber = (value, options) => Number(value || 0).toLocaleStrin
 
 // Una misura in numero (grasso, circonferenze, peso in tabella): lingua dell'utente, al massimo due decimali, niente zeri finali
 export const formatMeasureText = (value) => formatWeight(value, intlLocale(), { unit: false });
-export const formatWeightText = (value, options) => formatWeight(value, intlLocale(), options);
 export const formatSetText = (weight, reps, unit = DEFAULT_WEIGHT_UNIT) => formatSetInUnit(weight, reps, unit, intlLocale());
