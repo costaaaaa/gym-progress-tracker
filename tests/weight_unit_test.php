@@ -94,6 +94,30 @@ foreach ([['st'], ['LB'], [''], [5], [null], [['lb']]] as [$bad]) {
 $r = api('POST', '/api/user/update_settings.php', $lb, ['weight_unit' => 'st'], PORT_A, ['X-Locale: en']);
 check('update_settings: messaggio tradotto (account italiano → italiano)', $r[0] === 400 && $r[1]['message'] === 'Unità di peso non supportata.', $r[2]);
 
+echo "Messaggio del limite di peso nell'unità dell'utente\n";
+// Il limite applicato è sempre 999,99 kg: cambia solo l'unità in cui il messaggio lo dice
+foreach (['wuenlb' => 'lb', 'wuenkg' => 'kg'] as $name => $unit) {
+    api('POST', '/api/user/register.php', null, regBody($name, ['weight_unit' => $unit]));
+    api('POST', '/api/user/update_settings.php', bearer($name), ['locale' => 'en']);
+}
+function recordMessage($auth, $weight)
+{
+    $r = api('POST', '/api/workout/record_workout.php', $auth, ['workout_records' => [['exercise_id' => 1, 'weight' => $weight, 'reps' => 5, 'set_number' => 1]]]);
+    return [$r[0], $r[1]['message'] ?? null, $r[2]];
+}
+$cases = [
+    ['kg, italiano', $kg, 'Peso non valido: usa un valore tra 0 e 999,99 kg.'],
+    ['lb, italiano', $lb, 'Peso non valido: usa un valore tra 0 e 2204,5 lb.'],
+    ['kg, inglese', bearer('wuenkg'), 'Invalid weight: use a value between 0 and 999.99 kg.'],
+    ['lb, inglese', bearer('wuenlb'), 'Invalid weight: use a value between 0 and 2204.5 lb.'],
+];
+foreach ($cases as [$label, $auth, $expected]) {
+    foreach ([1000, -1] as $weight) {
+        [$code, $message, $raw] = recordMessage($auth, $weight);
+        check("peso $weight, $label: 400 con il limite nell'unità dell'utente", $code === 400 && $message === $expected, $raw);
+    }
+}
+
 echo "Proposta dell'unità da Accept-Language\n";
 $cases = [
     ['en-US,en;q=0.9', 'lb'], ['en-us', 'lb'], ['EN-US', 'lb'], ['es-US,es;q=0.9', 'lb'], ['en-Latn-US', 'lb'], ['en-US;q=0.8', 'lb'],

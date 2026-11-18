@@ -192,6 +192,7 @@ return array(
     'workout.record_invalid' => 'Missing or invalid data',
     'workout.record_too_many_sets' => 'Too many sets in a single workout.',
     'workout.record_weight_invalid' => 'Invalid weight: use a value between 0 and 999.99 kg.',
+    'workout.record_weight_invalid_lb' => 'Invalid weight: use a value between 0 and 2204.5 lb.',
     'workout.record_reps_invalid' => 'Invalid reps: use a whole number between 1 and 250.',
     'workout.record_sets_invalid' => 'Invalid number of sets.',
     'workout.record_premium_required' => 'Changing or adding exercises during a workout is available with Plus or Pro: you can only save the exercises of the plan day.',

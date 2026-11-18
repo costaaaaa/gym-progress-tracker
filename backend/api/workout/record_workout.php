@@ -67,7 +67,11 @@ try {
         $reps = $record->reps ?? null;
         $set_number = $record->set_number ?? null;
         if (!is_numeric($weight) || $weight < 0 || $weight > 999.99) {
-            api_json_response(['success' => false, 'message' => t_server('workout.record_weight_invalid')], 400);
+            // Il limite applicato è sempre 999,99 kg; per chi usa le libbre il messaggio lo dice in libbre
+            $unit_stmt = $db->prepare("SELECT weight_unit FROM gym_users WHERE id = ?");
+            $unit_stmt->execute([$user_id]);
+            $key = $unit_stmt->fetchColumn() === 'lb' ? 'workout.record_weight_invalid_lb' : 'workout.record_weight_invalid';
+            api_json_response(['success' => false, 'message' => t_server($key)], 400);
         }
         if (!(is_string($reps) || is_int($reps)) || !preg_match('/^\d{1,3}$/', (string) $reps)
             || (int) $reps < 1 || (int) $reps > 250) {
