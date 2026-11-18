@@ -216,3 +216,9 @@ describe('cambio e aggiunta esercizio (#77)', () => {
     for (const key of ['sets', 'warmup_sets', 'reps', 'intensity_technique']) expect(entry).not.toHaveProperty(key);
   });
 });
+
+describe('lastSessionSets nella unità dell\'utente', () => {
+  it('mostra il peso in lb', () => {
+    expect(lastSessionSets({ sets: [{ weight: 100, reps: 5 }] }, 'it-IT', undefined, 'lb')[0].label).toBe('220,5\u00a0lb\u00a0×\u00a05');
+  });
+});

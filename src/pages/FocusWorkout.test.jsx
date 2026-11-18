@@ -11,7 +11,9 @@ import { unnamedControls } from '../test/accessibleNames';
 
 const { mockNavigate, mockTrack } = vi.hoisted(() => ({ mockNavigate: vi.fn(), mockTrack: vi.fn() }));
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => mockNavigate }));
-vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ isLoggedIn: true, loading: false }) }));
+// Unità di peso dell'utente: kg salvo i test che la cambiano
+const account = vi.hoisted(() => ({ isLoggedIn: true, loading: false, weightUnit: 'kg' }));
+vi.mock('../context/AuthContext', () => ({ useAuth: () => account }));
 vi.mock('../utils/celebrate', () => ({
   celebrate: () => {}, celebratePR: () => {}, celebrateStreak: () => {}, celebrateLevelUp: () => {},
 }));
@@ -106,6 +108,7 @@ beforeEach(() => {
   };
 });
 afterEach(() => {
+  account.weightUnit = 'kg';
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
@@ -1486,3 +1489,121 @@ describe('Focus: struttura della pagina e annunci (WCAG 1.3.1, 2.4.6, 4.1.3)', (
     expect(live().textContent).toBe('');
   });
 });
+
+describe('peso in kg: il testo del campo resta com\'è scritto', () => {
+  it('serie saltata: il peso scritto come "20.0" torna uguale alla serie dopo', async () => {
+    const threeSets = { ...bench, planned_sets: plannedSets(0, times(3, { min: 8, max: 10 })) };
+    responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [{ id: 1, name: 'Push', exercises: [threeSets] }] }] });
+    await startDay('Push');
+    doSet('60', '8');
+    click('Salta timer');
+    fireEvent.change(screen.getByLabelText('Peso (kg)'), { target: { value: '20.0' } });
+    click('Salta serie');
+    expect(screen.getByLabelText('Peso (kg)').value).toBe('20.0');
+  });
+
+  it('corpo libero: la zavorra scritta come "5.0" resta "5.0" nella serie dopo', async () => {
+    const pullups = { ...bench, equipment: 'corpo_libero', planned_sets: plannedSets(0, times(2, { min: 8, max: 10 })) };
+    responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [{ id: 1, name: 'Push', exercises: [pullups] }] }] });
+    await startDay('Push');
+    expect(screen.getByLabelText('Peso (kg)').value).toBe('0');
+    doSet('5.0', '8');
+    click('Salta timer');
+    expect(screen.getByLabelText('Peso (kg)').value).toBe('5.0');
+  });
+
+  it('la serie precedente suggerita parte com\'è nella sessione scorsa, senza riscrivere il numero', async () => {
+    responses['workout_history/read.php'] = () => json({ records: [{ id: 1, date: '2026-10-13', exercises: [{ exercise_id: 3, name: 'Panca piana', sets: [{ weight: 82.5, reps: '8' }] }] }] });
+    await startDay('Push');
+    expect(screen.getByLabelText('Peso (kg)').value).toBe('82.5');
+  });
+});
+
+describe('peso in libbre: dati sempre in kg', () => {
+  const lastTime = (sets) => { responses['workout_history/read.php'] = () => json({ records: [{ id: 1, date: '2026-10-13', exercises: [{ exercise_id: 3, name: 'Panca piana', sets }] }] }); };
+  const saveNow = async () => {
+    await act(async () => { click('Salva allenamento'); });
+    await advance(0);
+    return saveBody().workout_records.map((r) => r.weight);
+  };
+  beforeEach(() => { account.weightUnit = 'lb'; });
+
+  it('il campo si chiama in lb, con limite 2204,5 e passo 2,5', async () => {
+    await startDay('Push');
+    const field = screen.getByLabelText('Peso (lb)');
+    expect(screen.queryByLabelText('Peso (kg)')).toBeNull();
+    expect(field.getAttribute('max')).toBe('2204.5');
+    expect(field.getAttribute('step')).toBe('2.5');
+  });
+
+  it('ultima volta e campo precompilato sono in lb; confermare senza toccare salva i kg originali (100, non 100,02)', async () => {
+    lastTime([{ weight: 100, reps: '8' }, { weight: 90, reps: '8' }]);
+    await startDay('Push');
+    screen.getByText('220,5 lb × 8');
+    expect(screen.getByLabelText('Peso (lb)').value).toBe('220.5');
+    fireEvent.change(screen.getByLabelText('Ripetizioni'), { target: { value: '8' } });
+    click('Conferma serie');
+    click('Salta timer');
+    // la serie dopo parte vuota: scritta dall'utente in lb
+    fireEvent.change(screen.getByLabelText('Peso (lb)'), { target: { value: '200' } });
+    fireEvent.change(screen.getByLabelText('Ripetizioni'), { target: { value: '8' } });
+    click('Conferma serie');
+    screen.getByText('220,5 lb × 8');
+    expect(await saveNow()).toEqual([100, 90.72]);
+  });
+
+  it('la serie saltata riporta alla successiva il peso scritto, in kg giusti', async () => {
+    const threeSets = { ...bench, planned_sets: plannedSets(0, times(3, { min: 8, max: 10 })) };
+    responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [{ id: 1, name: 'Push', exercises: [threeSets] }] }] });
+    await startDay('Push');
+    doSetLb('220', '8');
+    click('Salta timer');
+    fireEvent.change(screen.getByLabelText('Peso (lb)'), { target: { value: '200' } });
+    click('Salta serie');
+    expect(screen.getByLabelText('Peso (lb)').value).toBe('200');
+    fireEvent.change(screen.getByLabelText('Ripetizioni'), { target: { value: '8' } });
+    click('Conferma serie');
+    expect(await saveNow()).toEqual([99.79, 90.72]);
+  });
+
+  it('un peso oltre il limite in lb non si conferma', async () => {
+    await startDay('Push');
+    fireEvent.change(screen.getByLabelText('Peso (lb)'), { target: { value: '2204.75' } });
+    fireEvent.change(screen.getByLabelText('Ripetizioni'), { target: { value: '8' } });
+    expect(screen.getByRole('button', { name: 'Conferma serie' }).disabled).toBe(true);
+  });
+
+  it('la bozza resta in kg: scritto in lb, nella bozza ci sono i kg', async () => {
+    await startDay('Push');
+    doSetLb('220', '8');
+    expect(draft().completedSets[9][0].weight).toBe(99.79);
+    expect(JSON.stringify(draft())).not.toMatch(/220/);
+  });
+
+  it('una bozza in kg ripresa da un utente in lb mostra le libbre e non cambia i kg', async () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(savedDraft));
+    await mount();
+    click('Riprendi allenamento');
+    screen.getByText('132,25 lb × 8');
+    expect(draft().completedSets[9][0].weight).toBe(60);
+  });
+
+  it('il riepilogo scrive le serie in lb', async () => {
+    await startDay('Push');
+    doSetLb('220', '8');
+    click('Salta timer');
+    doSetLb('225', '7');
+    // Siamo nel riepilogo, non più nell'elenco delle serie fatte della fase di allenamento
+    screen.getByRole('heading', { level: 1, name: 'Riepilogo' });
+    expect(screen.queryByText('Serie completate')).toBeNull();
+    screen.getByText('220 lb × 8');
+    screen.getByText('225 lb × 7');
+    expect(await saveNow()).toEqual([99.79, 102.06]);
+  });
+});
+
+const doSetLb = (weight, reps) => {
+  fireEvent.change(screen.getByLabelText('Peso (lb)'), { target: { value: weight } });
+  fireEvent.change(screen.getByLabelText('Ripetizioni'), { target: { value: reps } });
+  click('Conferma serie');
+};

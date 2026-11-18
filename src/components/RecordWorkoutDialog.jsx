@@ -24,18 +24,21 @@ import {
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import { API_BASE_URL } from '../config';
+import { useAuth } from '../context/AuthContext';
 import { FIELD_HEIGHT } from '../theme/fieldHeight';
 import { track } from '../utils/analytics';
 import { useTranslation } from 'react-i18next';
 import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, techniqueLabel } from '../i18n/labels';
 import {
-  MAX_WEIGHT, isValidWeight, newIdempotencyKey, isValidReps, repsNeedConfirm, withWarmupRule,
+  MAX_WEIGHT, newIdempotencyKey, isValidReps, repsNeedConfirm, withWarmupRule,
 } from '../utils/focusSession';
 import { initialSetRows, toggleWarmupRow, rowTarget, rowPlannedSet } from '../utils/manualEntryRows';
 import { planSummary } from '../utils/plannedSets';
+import { fieldToKg, maxWeightInUnit, weightStepInUnit, weightUnitLabel } from '../utils/weightUnit';
 
 const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
   const { t } = useTranslation();
+  const { weightUnit } = useAuth();
   const [selectedDay, setSelectedDay] = useState('');
   const [exercises, setExercises] = useState([]);
   const [workoutData, setWorkoutData] = useState({});
@@ -91,7 +94,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
         exercise, setIndex, reps: String(set.reps ?? '').trim(), weight: set.weight,
         planned: rowPlannedSet(workoutData[exercise.id], setIndex, exercise),
       }))
-      .filter(set => isValidWeight(set.weight) && set.reps !== ''));
+      .filter(set => fieldToKg(set.weight, weightUnit, MAX_WEIGHT) !== null && set.reps !== ''));
 
   const handleSave = () => {
     const written = writtenSets();
@@ -120,7 +123,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
             return {
               exercise_id: exercise.exercise_id,
               exercise_name: exercise.exercise_name,
-              weight: parseFloat(row.weight),
+              weight: fieldToKg(row.weight, weightUnit, MAX_WEIGHT),
               reps: String(row.reps ?? '').trim(),
               intensity_technique,
               is_warmup,
@@ -129,7 +132,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
             };
           })
           // Filtriamo per includere solo le serie che hanno sia peso che ripetizioni
-          .filter(set => isValidWeight(set.weight) && set.reps && set.reps.toString().trim() !== '')
+          .filter(set => set.weight !== null && set.reps && set.reps.toString().trim() !== '')
       );
 
       const response = await fetch(`${API_BASE_URL}api/workout/record_workout.php`, {
@@ -176,7 +179,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
       // Controlla se c'è almeno un set con entrambi i valori inseriti
       // Ora accettiamo anche ripetizioni in formato testo
       return sets.some(set => 
-        isValidWeight(set.weight) &&
+        fieldToKg(set.weight, weightUnit, MAX_WEIGHT) !== null &&
         (set.reps && set.reps.toString().trim() !== '')
       );
     });
@@ -317,11 +320,11 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                           />
                         </Box>
                         <TextField
-                          label={t('record.weight')}
+                          label={t('record.weight', { unit: weightUnitLabel(weightUnit) })}
                           type="number"
                           value={row.weight || ''}
                           onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'weight', e.target.value)}
-                          inputProps={{ min: 0, max: MAX_WEIGHT, step: 0.5 }}
+                          inputProps={{ min: 0, max: maxWeightInUnit(MAX_WEIGHT, weightUnit), step: weightStepInUnit(weightUnit) }}
                           fullWidth
                           size="small"
                           sx={{

@@ -13,7 +13,8 @@ import { TABULAR } from '../../utils/fonts';
 import ElapsedClock from './ElapsedClock';
 import QuitDialog from './QuitDialog';
 import { slotLabel } from './slotLabel';
-import { MAX_WEIGHT, isValidWeight, isValidReps, plannedSetAt, slotTarget, lastSessionSets, setStatus, setSlot } from '../../utils/focusSession';
+import { MAX_WEIGHT, isValidReps, plannedSetAt, slotTarget, lastSessionSets, setStatus, setSlot } from '../../utils/focusSession';
+import { maxWeightInUnit, weightStepInUnit, weightUnitLabel } from '../../utils/weightUnit';
 import { intlLocale, formatSetText } from '../../i18n/format';
 import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, muscleLabel, techniqueLabel } from '../../i18n/labels';
 import { radius } from '../../theme/radius';
@@ -22,7 +23,7 @@ import LockedButton from './LockedButton';
 export default function WorkoutPhase({
   currentExercise, currentExerciseIndex, totalExercises, currentSetIndex, totalSlotsForCurrentExercise,
   currentSlot, currentExerciseSets, canSwap, currentSkippedSets, lastSession, exerciseTransition, clockStart, finishedClock,
-  weightInput, onWeightChange, repsInput, onRepsChange, intensityTechniqueInput, onIntensityChange,
+  weightInput, weightUnit, weightValid, onWeightChange, repsInput, onRepsChange, intensityTechniqueInput, onIntensityChange,
   onConfirmSet, onSkipSet, onSkipWarmup, onSkipExercise, canEditSession, onOpenPicker, onQuit,
   quitDialogOpen, onCloseQuitDialog, onConfirmQuit, totalCompletedSets,
   repsConfirmOpen, onCloseRepsConfirm, onConfirmReps
@@ -87,7 +88,7 @@ export default function WorkoutPhase({
           </Typography>
 
           {(() => {
-            const lastSets = lastSessionSets(lastSession, intlLocale(), (reps) => t('focus.last_reps', { count: reps }));
+            const lastSets = lastSessionSets(lastSession, intlLocale(), (reps) => t('focus.last_reps', { count: reps }), weightUnit);
             if (lastSets.length === 0) return null;
             return (
               <Box sx={{
@@ -126,8 +127,8 @@ export default function WorkoutPhase({
           })()}
 
           <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-            <TextField label={t('record.weight')} type="number" value={weightInput} onChange={(e) => onWeightChange(e.target.value)}
-              fullWidth autoFocus inputProps={{ step: 0.5, min: 0, max: MAX_WEIGHT, inputMode: 'decimal' }}
+            <TextField label={t('record.weight', { unit: weightUnitLabel(weightUnit) })} type="number" value={weightInput} onChange={(e) => onWeightChange(e.target.value)}
+              fullWidth autoFocus inputProps={{ step: weightStepInUnit(weightUnit), min: 0, max: maxWeightInUnit(MAX_WEIGHT, weightUnit), inputMode: 'decimal' }}
               sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.fieldBorder, borderWidth: 2 } }, '& .MuiOutlinedInput-input': FOCUS_FIELD_PADDING, '& .MuiInputLabel-root': { color: colors.textSecondary } }} />
             {/* Vuoto a ogni serie: la scheda in grigio è solo un suggerimento, va scritta */}
             <TextField label={t('record.reps')} value={repsInput} onChange={(e) => onRepsChange(e.target.value)}
@@ -165,7 +166,7 @@ export default function WorkoutPhase({
             </FormControl>
           )}
 
-          <Button variant="contained" fullWidth size="large" startIcon={<CheckIcon />} onClick={onConfirmSet} disabled={!isValidWeight(weightInput) || !isValidReps(repsInput)}
+          <Button variant="contained" fullWidth size="large" startIcon={<CheckIcon />} onClick={onConfirmSet} disabled={!weightValid || !isValidReps(repsInput)}
             sx={{ py: 2.5, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.success, color: colors.onSuccess, borderRadius: radius.xl,
               boxShadow: 'none', '&:hover': { bgcolor: 'success.dark', boxShadow: 'none' },
               '&:disabled': { bgcolor: colors.bgElevated, color: colors.textSecondary }, mb: 2, transition: 'all 0.3s ease' }}>
@@ -220,7 +221,7 @@ export default function WorkoutPhase({
                     {slotLabel(t, setSlot(currentExercise, set.setNumber - 1), 'name')}
                   </Typography>
                   <Box sx={{ textAlign: 'right' }}>
-                    <Typography variant="body2" sx={{ color: colors.text, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{formatSetText(set.weight, set.reps)}</Typography>
+                    <Typography variant="body2" sx={{ color: colors.text, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{formatSetText(set.weight, set.reps, weightUnit)}</Typography>
                     {set.intensity_technique && (
                       <Typography variant="caption" sx={{ color: colors.textSecondary, display: 'block' }}>{techniqueLabel(set.intensity_technique)}</Typography>
                     )}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { formatWeight, formatSet } from './weightFormat';
+import { formatWeight } from './weightFormat';
 
 const NB = '\u00a0';
 
@@ -49,18 +49,6 @@ describe('formatWeight', () => {
 
   it('unit: false dà solo il numero', () => {
     expect(formatWeight('79.30', 'it-IT', { unit: false })).toBe('79,3');
-  });
-});
-
-describe('formatSet', () => {
-  it('peso × ripetizioni con spazi', () => {
-    expect(formatSet(80, 8, 'it-IT')).toBe(`80${NB}kg${NB}×${NB}8`);
-    expect(formatSet('82.50', '5', 'en-US')).toBe(`82.5${NB}kg${NB}×${NB}5`);
-  });
-
-  it('peso assente o zero: 0 kg (come le schermate che mostravano 0)', () => {
-    expect(formatSet(null, 8, 'it-IT')).toBe(`0${NB}kg${NB}×${NB}8`);
-    expect(formatSet(0, 8, 'it-IT')).toBe(`0${NB}kg${NB}×${NB}8`);
   });
 });
 

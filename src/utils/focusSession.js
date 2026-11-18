@@ -4,7 +4,7 @@
 // Stessa logica nell'altro client.
 
 import { isWorkingSet } from './workoutMetrics';
-import { formatSet } from './weightFormat';
+import { DEFAULT_WEIGHT_UNIT, formatSetInUnit } from './weightUnit';
 import { MAX_WORKING, fromCompact, parseRowTarget, plannedOf, plannedTarget, plannedTechnique, toInt, workingOf } from './plannedSets';
 
 // Funzione Plus e Pro che sblocca cambio e aggiunta (vedi user_features() nel backend)
@@ -98,12 +98,12 @@ export const slotWeight = (exercise, slotIndex, { suggested = '', current = '' }
 
 // Serie dell'ultima sessione per le chip "Ultima volta": [{ label, technique }]
 // repsLabel(reps) scrive le ripetizioni di una serie senza peso: il testo lo dà il chiamante (lingua).
-export const lastSessionSets = (lastSession, locale, repsLabel) => {
+export const lastSessionSets = (lastSession, locale, repsLabel, unit = DEFAULT_WEIGHT_UNIT) => {
   if (!lastSession || !Array.isArray(lastSession.sets)) return [];
   return lastSession.sets.filter(isWorkingSet).map((s) => {
     const w = parseFloat(s.weight) || 0;
     return {
-      label: w > 0 ? formatSet(w, s.reps, locale) : repsLabel(s.reps),
+      label: w > 0 ? formatSetInUnit(w, s.reps, unit, locale) : repsLabel(s.reps),
       technique: s.intensity_technique || '',
     };
   });

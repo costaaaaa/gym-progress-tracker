@@ -12,7 +12,9 @@ import { isKeyboardFocus } from '../utils/focus';
 
 // jsdom dà :focus-visible a ogni focus: la distinzione tastiera/mouse si sostituisce (il resto del modulo resta vero)
 vi.mock('../utils/focus', async (importOriginal) => ({ ...(await importOriginal()), isKeyboardFocus: vi.fn(() => true) }));
-vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ isLoggedIn: true, loading: false }) }));
+// Unità di peso dell'utente: kg salvo i test che la cambiano
+const account = vi.hoisted(() => ({ isLoggedIn: true, loading: false, weightUnit: 'kg' }));
+vi.mock('../context/AuthContext', () => ({ useAuth: () => account }));
 
 const GREY = 'rgb(107, 102, 99)';
 const RED = 'rgb(213, 0, 0)';
@@ -48,6 +50,7 @@ beforeEach(() => {
   )));
 });
 afterEach(() => {
+  account.weightUnit = 'kg';
   isKeyboardFocus.mockReset(); // un valore rimasto in coda non passa al test dopo
   vi.useRealTimers();
   vi.unstubAllGlobals();
@@ -456,5 +459,19 @@ describe('struttura accessibile', () => {
     const list = screen.getByRole('list');
     expect(list.children).toHaveLength(2);
     expect(strayListChildren(list)).toEqual([]);
+  });
+});
+
+describe('pesi nell\'unità dell\'utente', () => {
+  it('in kg le serie sono scritte come prima', async () => {
+    await mount();
+    expect(screen.getAllByText('60 kg × 8')).toHaveLength(3);
+  });
+
+  it('in lb le serie sono mostrate in libbre (60 kg = 132,25 lb), i dati restano in kg', async () => {
+    account.weightUnit = 'lb';
+    await mount();
+    expect(screen.getAllByText('132,25 lb × 8')).toHaveLength(3);
+    expect(screen.queryByText(/kg/)).toBeNull();
   });
 });
