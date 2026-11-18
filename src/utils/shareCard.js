@@ -7,7 +7,7 @@
 // ============================================================================
 
 import { isClockString, localDate } from './calendarDay';
-import { kgToShareDisplay, kgToTotal, weightUnitLabel } from './weightUnit';
+import { DEFAULT_WEIGHT_UNIT, kgToShareDisplay, kgToTotal, weightUnitLabel } from './weightUnit';
 import { extractReps, estimateOneRepMax, summarizeSets, buildExerciseHistoryIndex, detectPersonalRecords, isWorkingSet } from './workoutMetrics';
 
 // Formato della card: dimensioni in px. Storia per le storie, Quadrato per feed e chat.
@@ -753,7 +753,7 @@ const photoUnderlay = (format, hasPhoto) => {
  */
 export const layoutShareCard = (stats, templateId, {
   hasPhoto = false, photoBackground, strings = STRINGS_IT, format = FORMAT_STORIA, preset = DEFAULT_PRESET,
-  blocks: customBlocks, hideWeights = false, showBestVolume = false, weightUnit = 'kg',
+  blocks: customBlocks, hideWeights = false, showBestVolume = false, weightUnit = DEFAULT_WEIGHT_UNIT,
 } = {}) => {
   if (!showBestVolume) stats = { ...stats, recordList: stats.recordList.filter((r) => r.type !== 'volume') };
   const theme = THEMES[templateId] || THEMES.scuro;

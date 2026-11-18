@@ -3,8 +3,9 @@ import i18n from './index';
 import { achievementCatalog } from '../utils/gamificationLevels';
 import { achievementLabel } from './labels';
 
-// Nomi approvati dei 19 traguardi (stessi di backend/lang). achievementCatalog in utils/gamificationLevels.js resta solo perché
-// quel file è condiviso con un altro client: il web non lo usa, qui serve a controllare le chiavi e i nomi italiani
+// Nomi approvati dei 19 traguardi (stessi di backend/lang). achievementCatalog in utils/gamificationLevels.js è il catalogo
+// condiviso con un altro client: achievementLabel (labels.js) ne legge le soglie di forza, qui serve a controllare le chiavi
+// e i nomi italiani
 const EN = {
   sessions_10: 'First 10 sessions', sessions_50: '50 sessions', sessions_100: 'Centurion', sessions_250: '250 sessions',
   tonnage_auto: '1.5 t — a car', tonnage_elephant: '6 t — an elephant', tonnage_bus: '15 t — a city bus',

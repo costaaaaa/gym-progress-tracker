@@ -43,10 +43,10 @@ const progressOf = (t, cat, data, achievement, unit) => {
   return { pct: Math.min(100, (current / achievement.threshold) * 100), label: t('profile.achievements.progress', { current: text[0], target: text[1] }) };
 };
 
-const AchievementCard = ({ achievement, isNext, progress }) => {
+const AchievementCard = ({ achievement, isNext, progress, weightUnit }) => {
   const { t } = useTranslation();
   const { locked, unlocked_at } = achievement;
-  const label = achievementLabel(achievement.key, achievement.label);
+  const label = achievementLabel(achievement.key, achievement.label, weightUnit);
   return (
     <Card sx={{
       ...BORDERED, borderRadius: radius.lg, p: '16px 12px', textAlign: 'center', height: '100%',
@@ -212,7 +212,7 @@ const ProfileSummary = () => {
             <Grid container spacing={1.5}>
               {items.map(a => (
                 <Grid item xs={6} sm={3} key={a.key}>
-                  <AchievementCard achievement={a} isNext={a === next} progress={a === next ? progressOf(t, cat, data, a, weightUnit) : null} />
+                  <AchievementCard achievement={a} isNext={a === next} weightUnit={weightUnit} progress={a === next ? progressOf(t, cat, data, a, weightUnit) : null} />
                 </Grid>
               ))}
             </Grid>
