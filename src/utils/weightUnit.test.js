@@ -310,3 +310,32 @@ describe('kgToTenthKgOrQuarterLb (card di condivisione)', () => {
     expect(kgDeltaToTenthKgOrQuarterLb(0.05, 'kg')).toBe(0.1);
   });
 });
+
+describe('stabilità lb → kg (0,01) → lb: tutto l\'intervallo, fino al limite', () => {
+  it('peso corporeo: ogni 0,1 lb da 0 a 2204,5 (e quindi fino al tetto di 1102,3 lb)', () => {
+    const bad = [];
+    for (let tenths = 0; tenths <= 22045; tenths++) {
+      const lb = tenths / 10;
+      const shown = kgToDisplay(inputToKg(String(lb), 'lb'), 'lb', BODY_LB_DIVISIONS);
+      if (shown !== lb) bad.push([lb, shown]);
+    }
+    expect(bad).toEqual([]);
+  });
+
+  it('pesi delle serie: ogni quarto di libbra da 0 a 2204,5 lb', () => {
+    const bad = [];
+    for (let quarters = 0; quarters <= 8818; quarters++) {
+      const lb = quarters / 4;
+      const shown = kgToDisplay(inputToKg(String(lb), 'lb'), 'lb');
+      if (shown !== lb) bad.push([lb, shown]);
+    }
+    expect(bad).toEqual([]);
+    expect(2204.5 * 4).toBe(8818);
+  });
+
+  it('una variazione di peso corporeo che in kg non è «stabile» non si mostra mai come ±0 lb', () => {
+    // la soglia di bodyStatsPeriod è 0,05 kg: a 0,05 kg sono 0,11 lb, quindi +0,1 lb
+    expect(formatWeightInUnit(0.05, 'lb', 'en-US', { lbDivisions: BODY_LB_DIVISIONS, signed: true, maxDecimals: 1 })).toBe(`+0.1${NB}lb`);
+    expect(formatWeightInUnit(-0.05, 'lb', 'en-US', { lbDivisions: BODY_LB_DIVISIONS, signed: true, maxDecimals: 1 })).toBe(`-0.1${NB}lb`);
+  });
+});

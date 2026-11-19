@@ -33,6 +33,7 @@ import DateLocalization from '../i18n/DateLocalization';
 import { formatDate, formatMeasureText, intlLocale } from '../i18n/format';
 import { useAuth } from '../context/AuthContext';
 import { BODY_LB_DIVISIONS, fieldTextToKgText, formatWeightInUnit, kgToDisplay, maxWeightInUnit, weightUnitLabel } from '../utils/weightUnit';
+import { fieldTextToCmText, formatLengthInUnit, lengthUnitLabel, maxLengthInUnit } from '../utils/lengthUnit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import FavoriteIcon from '@mui/icons-material/Favorite';
@@ -67,7 +68,9 @@ const StatValue = ({ row, field, weightUnit }) => {
   if (!row[field]) return '-';
   return (
     <>
-      {field === 'weight' ? formatWeightInUnit(row[field], weightUnit, intlLocale(), { lbDivisions: BODY_LB_DIVISIONS, unit: false }) : formatMeasureText(row[field])}
+      {field === 'weight' ? formatWeightInUnit(row[field], weightUnit, intlLocale(), { lbDivisions: BODY_LB_DIVISIONS, unit: false })
+        : LENGTH_FIELDS.includes(field) ? formatLengthInUnit(row[field], weightUnit, intlLocale(), { unit: false })
+          : formatMeasureText(row[field])}
       {isFromHealth(row, field) && <HealthMark />}
     </>
   );
@@ -78,12 +81,19 @@ const BODY_COMPOSITION_SERIES = [
   { key: 'body_fat_percentage', label: 'body.fat', unit: '%' },
   { key: 'muscle_mass_percentage', label: 'body.muscle', unit: '%' },
 ];
+// Circonferenze: i dati sono in cm, si mostrano nell'unità dell'account (cm con kg, pollici con lb)
 const CIRCUMFERENCE_SERIES = [
-  { key: 'chest_size', label: 'body.chest', unit: ' cm' },
-  { key: 'waist_size', label: 'body.waist', unit: ' cm' },
-  { key: 'arm_size', label: 'body.arm', unit: ' cm' },
-  { key: 'leg_size', label: 'body.leg', unit: ' cm' },
+  { key: 'chest_size', label: 'body.chest', isLength: true },
+  { key: 'waist_size', label: 'body.waist', isLength: true },
+  { key: 'arm_size', label: 'body.arm', isLength: true },
+  { key: 'leg_size', label: 'body.leg', isLength: true },
 ];
+const LENGTH_FIELDS = CIRCUMFERENCE_SERIES.map((s) => s.key);
+
+// Valore di una misura con la sua unità: percentuale attaccata al numero, lunghezza con uno spazio e cm o in
+const measureText = (series, value, weightUnit) => (series.isLength
+  ? `${formatLengthInUnit(value, weightUnit, intlLocale(), { unit: false })} ${lengthUnitLabel(weightUnit)}`
+  : `${formatMeasureText(value)}${series.unit}`);
 const HISTORY_SERIES = [...BODY_COMPOSITION_SERIES, ...CIRCUMFERENCE_SERIES];
 
 // Linea dei grafici del corpo (peso e altre misure): neutra, il rosso del marchio non è un dato
@@ -102,7 +112,7 @@ const SPARK_W = 120;
 const SPARK_H = 36;
 
 // Una misura: nome, mini grafico con la sua scala (da 2 punti) e ultimo valore
-const MeasureRow = ({ series, data, domain }) => {
+const MeasureRow = ({ series, data, domain, weightUnit }) => {
   const { t } = useTranslation();
   const value = lastValueOf(data, series.key);
   const points = data.filter((d) => hasValue(d[series.key])).map((d) => ({ x: d.day, value: Number(d[series.key]) }));
@@ -118,16 +128,16 @@ const MeasureRow = ({ series, data, domain }) => {
         </Box>
       )}
       <Typography variant="statNumber" sx={{ fontSize: 16, minWidth: { xs: 72, md: 96 }, textAlign: 'right' }}>
-        {value !== null ? `${formatMeasureText(value)}${series.unit}` : '—'}
+        {value !== null ? measureText(series, value, weightUnit) : '—'}
       </Typography>
     </Box>
   );
 };
 
-const MeasureCard = ({ title, series, data, domain }) => (
+const MeasureCard = ({ title, series, data, domain, weightUnit }) => (
   <Card sx={{ p: '22px' }}>
     <Typography variant="cardTitle" sx={{ mb: 0.5 }}>{title}</Typography>
-    {series.map((s) => <MeasureRow key={s.key} series={s} data={data} domain={domain} />)}
+    {series.map((s) => <MeasureRow key={s.key} series={s} data={data} domain={domain} weightUnit={weightUnit} />)}
   </Card>
 );
 
@@ -186,7 +196,7 @@ const HistoryList = ({ rows, empty, onDelete, weightUnit }) => {
                 <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
                   {others.map((s, i) => (
                     <Fragment key={s.key}>
-                      {i > 0 && ' · '}{t(s.label)} {formatMeasureText(row[s.key])}{s.unit}{isFromHealth(row, s.key) && <HealthMark />}
+                      {i > 0 && ' · '}{t(s.label)} {measureText(s, row[s.key], weightUnit)}{isFromHealth(row, s.key) && <HealthMark />}
                     </Fragment>
                   ))}
                 </Typography>
@@ -241,7 +251,7 @@ const BodyStats = ({ isEmbedded = false }) => {
 
   // Proprietà comuni dei sette campi numerici del modulo; l'errore passa da error + helperText (aria-describedby)
   const numberField = (name, labelKey) => ({
-    label: t(labelKey, { unit: weightUnitLabel(weightUnit) }), name, type: 'number', fullWidth: true, value: formData[name], onChange: handleInputChange, sx: numberFieldSx,
+    label: t(labelKey, { unit: LENGTH_FIELDS.includes(name) ? lengthUnitLabel(weightUnit) : weightUnitLabel(weightUnit) }), name, type: 'number', fullWidth: true, value: formData[name], onChange: handleInputChange, sx: numberFieldSx,
     error: !!fieldErrors[name], helperText: fieldErrors[name], inputRef: fieldRef(name),
   });
 
@@ -290,17 +300,26 @@ const BodyStats = ({ isEmbedded = false }) => {
     if (fieldErrors.date) setFieldErrors(({ date: _removed, ...others }) => others);
   };
 
-  // Il tetto del peso si mostra nell'unità dell'utente, gli altri com'è
-  const rangeMax = (name, max) => (name === 'weight' ? formatMeasureText(maxWeightInUnit(max, weightUnit, BODY_LB_DIVISIONS)) : max);
+  // Il tetto del peso e delle circonferenze si mostra nell'unità dell'utente, gli altri com'è
+  const rangeMax = (name, max) => {
+    if (name === 'weight') return formatMeasureText(maxWeightInUnit(max, weightUnit, BODY_LB_DIVISIONS));
+    return LENGTH_FIELDS.includes(name) ? formatMeasureText(maxLengthInUnit(max, weightUnit)) : max;
+  };
+
+  // Il testo di un campo, nell'unità scelta, in kg (peso) o cm (circonferenze) per le regole e il payload; gli altri com'è
+  const baseText = (name) => {
+    if (name === 'weight') return fieldTextToKgText(formData.weight, weightUnit);
+    return LENGTH_FIELDS.includes(name) ? fieldTextToCmText(formData[name], weightUnit) : formData[name];
+  };
 
   const handleSubmit = async () => {
     const errors = {};
     // Data cancellata o incompleta (si digita con il puntatore preciso): arriva null o una data non valida
     if (!isValid(formData.date)) errors.date = t('body.error.date');
-    // Il peso si scrive nell'unità dell'utente; le regole e il payload sono in kg
-    const weightKgText = fieldTextToKgText(formData.weight, weightUnit);
+    // Peso e circonferenze si scrivono nell'unità dell'utente; le regole e il payload sono in kg e cm
+    const base = Object.fromEntries(Object.keys(BODY_LIMITS).map((name) => [name, baseText(name)]));
     Object.entries(BODY_LIMITS).forEach(([name, max]) => {
-      const value = name === 'weight' ? weightKgText : formData[name];
+      const value = base[name];
       if (value === null || isValueOutOfRange(value, max)) errors[name] = t('body.error.range', { max: rangeMax(name, max) });
     });
     if (Object.keys(errors).length > 0) {
@@ -311,13 +330,13 @@ const BodyStats = ({ isEmbedded = false }) => {
       const formattedData = {
         ...formData,
         date: format(formData.date, 'yyyy-MM-dd'),
-        weight: weightKgText || null,
+        weight: base.weight || null,
         body_fat_percentage: formData.body_fat_percentage || null,
         muscle_mass_percentage: formData.muscle_mass_percentage || null,
-        chest_size: formData.chest_size || null,
-        arm_size: formData.arm_size || null,
-        waist_size: formData.waist_size || null,
-        leg_size: formData.leg_size || null,
+        chest_size: base.chest_size || null,
+        arm_size: base.arm_size || null,
+        waist_size: base.waist_size || null,
+        leg_size: base.leg_size || null,
       };
 
       const response = await fetch(`${API_BASE_URL}api/user_stats/create.php`, {
@@ -462,12 +481,12 @@ const BodyStats = ({ isEmbedded = false }) => {
 
               {/* Composizione corporea */}
               <Grid item xs={12} md={6}>
-                <MeasureCard title={t('body.composition')} series={BODY_COMPOSITION_SERIES} data={chartData} domain={chartDomain} />
+                <MeasureCard title={t('body.composition')} series={BODY_COMPOSITION_SERIES} data={chartData} domain={chartDomain} weightUnit={weightUnit} />
               </Grid>
 
               {/* Circonferenze */}
               <Grid item xs={12} md={6}>
-                <MeasureCard title={t('body.circumferences')} series={CIRCUMFERENCE_SERIES} data={chartData} domain={chartDomain} />
+                <MeasureCard title={t('body.circumferences', { unit: lengthUnitLabel(weightUnit) })} series={CIRCUMFERENCE_SERIES} data={chartData} domain={chartDomain} weightUnit={weightUnit} />
               </Grid>
             </>
           )}
@@ -485,10 +504,10 @@ const BodyStats = ({ isEmbedded = false }) => {
                       <TableCell align="right" sx={headCellSx}>{t('body.col.weight_kg', { unit: weightUnitLabel(weightUnit) })}</TableCell>
                       <TableCell align="right" sx={headCellSx}>{t('body.col.fat')}</TableCell>
                       <TableCell align="right" sx={headCellSx}>{t('body.col.muscle')}</TableCell>
-                      <TableCell align="right" sx={headCellSx}>{t('body.chest')}</TableCell>
-                      <TableCell align="right" sx={headCellSx}>{t('body.arm')}</TableCell>
-                      <TableCell align="right" sx={headCellSx}>{t('body.waist')}</TableCell>
-                      <TableCell align="right" sx={headCellSx}>{t('body.leg')}</TableCell>
+                      <TableCell align="right" sx={headCellSx}>{t('body.col.length', { label: t('body.chest'), unit: lengthUnitLabel(weightUnit) })}</TableCell>
+                      <TableCell align="right" sx={headCellSx}>{t('body.col.length', { label: t('body.arm'), unit: lengthUnitLabel(weightUnit) })}</TableCell>
+                      <TableCell align="right" sx={headCellSx}>{t('body.col.length', { label: t('body.waist'), unit: lengthUnitLabel(weightUnit) })}</TableCell>
+                      <TableCell align="right" sx={headCellSx}>{t('body.col.length', { label: t('body.leg'), unit: lengthUnitLabel(weightUnit) })}</TableCell>
                       <TableCell align="center" sx={headCellSx}>{t('body.col.actions')}</TableCell>
                     </TableRow>
                   </TableHead>
@@ -499,10 +518,10 @@ const BodyStats = ({ isEmbedded = false }) => {
                         <TableCell align="right" sx={{ ...bodyCellSx, fontWeight: 700 }}><StatValue row={row} field="weight" weightUnit={weightUnit} /></TableCell>
                         <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="body_fat_percentage" /></TableCell>
                         <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="muscle_mass_percentage" /></TableCell>
-                        <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="chest_size" /></TableCell>
-                        <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="arm_size" /></TableCell>
-                        <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="waist_size" /></TableCell>
-                        <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="leg_size" /></TableCell>
+                        <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="chest_size" weightUnit={weightUnit} /></TableCell>
+                        <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="arm_size" weightUnit={weightUnit} /></TableCell>
+                        <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="waist_size" weightUnit={weightUnit} /></TableCell>
+                        <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="leg_size" weightUnit={weightUnit} /></TableCell>
                         <TableCell align="center">
                           <IconButton size="small" aria-label={t('common.delete')} onClick={() => handleDelete(row.id)} sx={{ color: 'text.secondary' }}>
                             <DeleteIcon fontSize="small" />

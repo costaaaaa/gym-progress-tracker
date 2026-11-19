@@ -350,7 +350,7 @@ describe('storico', () => {
   it('da tablet è una tabella con intestazioni in sentence case da 16px e celle da 16px', async () => {
     await mount(themed);
     const headers = within(history()).getAllByRole('columnheader');
-    expect(headers.map((h) => h.textContent)).toEqual(['Data', 'Peso (kg)', 'Grasso %', 'Muscolo %', 'Torace', 'Braccio', 'Vita', 'Gamba', 'Azioni']);
+    expect(headers.map((h) => h.textContent)).toEqual(['Data', 'Peso (kg)', 'Grasso %', 'Muscolo %', 'Torace (cm)', 'Braccio (cm)', 'Vita (cm)', 'Gamba (cm)', 'Azioni']);
     headers.forEach((h) => {
       expect(style(h).textTransform).not.toBe('uppercase');
       expect(style(h).fontSize).toBe('16px');
@@ -692,5 +692,146 @@ describe('unità di peso dell\'account: kg, il peso inviato resta come scritto',
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Salva' }));
     const post = fetch.mock.calls.find(([, init]) => init?.method === 'POST');
     expect(JSON.parse(post[1].body).weight).toBe('80.5');
+  });
+});
+
+describe('circonferenze: utente in lb (pollici)', () => {
+  beforeEach(() => { account.weightUnit = 'lb'; records = measured(); });
+  const field = (label) => screen.getByRole('spinbutton', { name: label });
+  const type = (label, value) => fireEvent.change(field(label), { target: { value } });
+  const posts = () => fetch.mock.calls.filter(([, init]) => init?.method === 'POST');
+  const open = async () => {
+    await mount();
+    fireEvent.click(screen.getByRole('button', { name: 'Nuova misurazione' }));
+    await screen.findByRole('dialog');
+  };
+  const save = () => fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Salva' }));
+  const lastBody = () => JSON.parse(posts().at(-1)[1].body);
+
+  it('titolo della card e valori delle righe sono in pollici a un decimale', async () => {
+    await mount();
+    expect(screen.getByText('Circonferenze (in)')).toBeTruthy();
+    expect(screen.queryByText('Circonferenze (cm)')).toBeNull();
+    expect(within(measureRow('Torace')).getByText('40,2 in')).toBeTruthy(); // 102 cm = 40,16
+    expect(within(measureRow('Vita')).getByText('32,7 in')).toBeTruthy(); // 83 cm = 32,68
+  });
+
+  it('la tabella dello storico mostra i pollici, le percentuali restano come sono', async () => {
+    await mount();
+    const cells = within(tableRows()[0]).getAllByRole('cell').map((c) => c.textContent);
+    expect(cells.slice(2, 4)).toEqual(['18,5', '41']);
+    expect(cells.slice(4, 8)).toEqual(['40,2', '-', '32,7', '-']); // torace, braccio, vita, gamba
+  });
+
+  it('le colonne delle circonferenze nello storico dichiarano i pollici', async () => {
+    await mount();
+    const headers = within(history()).getAllByRole('columnheader');
+    expect(headers.slice(4, 8).map((h) => h.textContent)).toEqual(['Torace (in)', 'Braccio (in)', 'Vita (in)', 'Gamba (in)']);
+  });
+
+  it('sul telefono la seconda linea dello storico scrive i pollici', async () => {
+    const original = window.matchMedia;
+    window.matchMedia = (query) => ({
+      matches: true, media: query, onchange: null,
+      addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false,
+    });
+    await mount();
+    const detail = within(screen.getAllByRole('listitem')[0]).getByText(/Grasso 18,5%/);
+    expect(detail.textContent).toBe('Grasso 18,5% · Muscolo 41% · Torace 40,2 in · Vita 32,7 in');
+    window.matchMedia = original;
+  });
+
+  it('nessuna misura salvata cambia: i dati restano in cm (la mini-linea è la stessa della versione in cm)', async () => {
+    await mount();
+    const lb = polylineY(measureRow('Torace'));
+    account.weightUnit = 'kg';
+    document.body.innerHTML = '';
+    await mount();
+    expect(polylineY(measureRow('Torace'))).toEqual(lb);
+  });
+
+  it('i campi sono in pollici e il valore parte in cm a 0,01', async () => {
+    await open();
+    type('Torace (in)', '39.4');
+    type('Braccio (in)', '14');
+    type('Vita (in)', '32.8');
+    type('Gamba (in)', '22.5');
+    save();
+    expect(posts()).toHaveLength(1);
+    expect(lastBody()).toMatchObject({ chest_size: '100.08', arm_size: '35.56', waist_size: '83.31', leg_size: '57.15' });
+  });
+
+  it('un campo non compilato parte null', async () => {
+    await open();
+    type('Torace (in)', '39.4');
+    save();
+    expect(lastBody()).toMatchObject({ chest_size: '100.08', arm_size: null, waist_size: null, leg_size: null });
+  });
+
+  it('il tetto è mostrato in pollici: 300 cm = 118,1 in, 150 cm = 59 in, 200 cm = 78,7 in', async () => {
+    await open();
+    type('Torace (in)', '119');
+    type('Braccio (in)', '60');
+    type('Gamba (in)', '79');
+    save();
+    expect(posts()).toHaveLength(0);
+    expect(describedBy(field('Torace (in)'))).toBe('Il valore deve essere tra 0 e 118,1, estremi inclusi.');
+    expect(describedBy(field('Braccio (in)'))).toBe('Il valore deve essere tra 0 e 59, estremi inclusi.');
+    expect(describedBy(field('Gamba (in)'))).toBe('Il valore deve essere tra 0 e 78,7, estremi inclusi.');
+  });
+
+  it('il massimo scritto in pollici è accettato e parte entro il limite in cm', async () => {
+    await open();
+    type('Torace (in)', '118.1');
+    type('Braccio (in)', '59');
+    type('Vita (in)', '118.1');
+    type('Gamba (in)', '78.7');
+    save();
+    expect(posts()).toHaveLength(1);
+    const body = lastBody();
+    expect([body.chest_size, body.arm_size, body.waist_size, body.leg_size]).toEqual(['299.97', '149.86', '299.97', '199.9']);
+  });
+
+  it('un testo non valido in pollici dà l\'errore sotto il campo e non parte', async () => {
+    await open();
+    type('Vita (in)', '1e2');
+    await act(async () => { save(); });
+    expect(describedBy(field('Vita (in)'))).toBe('Il valore deve essere tra 0 e 118,1, estremi inclusi.');
+    expect(posts()).toHaveLength(0);
+  });
+
+  it('un errore del server sulla vita (max in cm) è mostrato in pollici', async () => {
+    await open();
+    type('Vita (in)', '30');
+    fetch.mockImplementation((url, init) => Promise.resolve(init?.method === 'POST'
+      ? { ok: false, status: 400, json: async () => ({ message: 'Vita: fuori scala', field: 'waist_size', max: 300 }) }
+      : { ok: true, json: async () => ({ records }) }));
+    await act(async () => { save(); });
+    expect(describedBy(field('Vita (in)'))).toBe('Il valore deve essere tra 0 e 118,1, estremi inclusi.');
+  });
+
+  it('peso e circonferenze insieme: entrambi convertiti, percentuali com\'erano', async () => {
+    await open();
+    type('Peso (lb)', '176.4');
+    type('Grasso (%)', '18.5');
+    type('Torace (in)', '39.4');
+    save();
+    expect(lastBody()).toMatchObject({ weight: '80.01', body_fat_percentage: '18.5', chest_size: '100.08' });
+  });
+});
+
+describe('circonferenze: utente in kg, tutto com\'era', () => {
+  const field = (label) => screen.getByRole('spinbutton', { name: label });
+  it('etichette in cm e valore inviato come scritto', async () => {
+    records = measured();
+    await mount();
+    expect(screen.getByText('Circonferenze (cm)')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Nuova misurazione' }));
+    await screen.findByRole('dialog');
+    fireEvent.change(field('Torace (cm)'), { target: { value: '102.5' } });
+    fireEvent.change(field('Vita (cm)'), { target: { value: '83,25' } });
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Salva' }));
+    const post = fetch.mock.calls.find(([, init]) => init?.method === 'POST');
+    expect(JSON.parse(post[1].body)).toMatchObject({ chest_size: '102.5', arm_size: null, leg_size: null });
   });
 });
