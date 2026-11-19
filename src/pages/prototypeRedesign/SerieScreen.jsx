@@ -12,6 +12,7 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import Sheet from './Sheet';
 import { radius } from '../../theme/radius';
 import { TITLE_FONT_FAMILY, TABULAR } from '../../utils/fonts';
+import { BELOW_360 } from '../../theme/narrowScreens';
 
 const TECHNIQUES = ['Drop set', 'Rest pause', 'Myo-reps', 'Negative'];
 const INITIAL_SETS = [
@@ -126,7 +127,7 @@ const SerieScreen = ({ tecniche, strumenti, bozza, onExit }) => {
           )}
         </Box>
 
-        <Box sx={{ display: 'flex', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', gap: 1.5, [BELOW_360]: { flexDirection: 'column', gap: 1 } }}>
           <Stepper label="Peso (kg)" value={weight} onChange={setWeight} step={2.5} decimal />
           <Stepper label="Ripetizioni" value={reps} onChange={setReps} step={1} />
         </Box>
@@ -186,10 +187,12 @@ const SerieScreen = ({ tecniche, strumenti, bozza, onExit }) => {
               <Typography sx={TABULAR}>{fmt(s.w)} kg × {s.r}</Typography>
             </ButtonBase>
             {editIdx === i && (
-              <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end', py: 1 }}>
-                <Stepper label="Peso (kg)" value={edit.w} onChange={(w) => setEdit((e) => ({ ...e, w }))} step={2.5} decimal />
-                <Stepper label="Ripetizioni" value={edit.r} onChange={(r) => setEdit((e) => ({ ...e, r }))} step={1} />
-                <Button variant="contained" onClick={saveEdit} sx={{ minHeight: 44 }}>Salva</Button>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, py: 1 }}>
+                <Box sx={{ display: 'flex', gap: 1.5, [BELOW_360]: { flexDirection: 'column', gap: 1 } }}>
+                  <Stepper label="Peso (kg)" value={edit.w} onChange={(w) => setEdit((e) => ({ ...e, w }))} step={2.5} decimal />
+                  <Stepper label="Ripetizioni" value={edit.r} onChange={(r) => setEdit((e) => ({ ...e, r }))} step={1} />
+                </Box>
+                <Button variant="contained" onClick={saveEdit} sx={{ minHeight: 44, alignSelf: 'flex-end' }}>Salva</Button>
               </Box>
             )}
           </Box>

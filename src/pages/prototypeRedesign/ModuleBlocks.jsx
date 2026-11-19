@@ -71,7 +71,7 @@ const Big = ({ id }) => {
         {RECOVERY.map(([name, state, text]) => (
           <Box component="li" key={name} sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
             <Box aria-hidden="true" sx={{ width: 10, height: 10, borderRadius: '50%', flex: '0 0 auto', bgcolor: `recovery.${state}` }} />
-            <Typography variant="body2" noWrap><b>{name}</b> {text}</Typography>
+            <Typography variant="body2"><b>{name}</b> {text}</Typography>
           </Box>
         ))}
       </Box>
@@ -107,7 +107,7 @@ const ModuleCard = ({ id, size }) => {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minHeight: 40 }}>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 600, fontSize: big ? '1rem' : '0.95rem' }}>{MODULES[id]}</Typography>
-          {!big && <Typography variant="body2" color="text.secondary" noWrap sx={TABULAR}>{SMALL[id]}</Typography>}
+          {!big && <Typography variant="body2" color="text.secondary" sx={TABULAR}>{SMALL[id]}</Typography>}
         </Box>
         {!big && id === 'peso' && <Box sx={{ width: 56, flex: '0 0 auto' }}><Spark height={24} /></Box>}
         <ChevronRightIcon sx={{ color: 'text.secondary', flex: '0 0 auto' }} />
