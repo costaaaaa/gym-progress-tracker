@@ -8,6 +8,7 @@ import LogoMark from '../../components/LogoMark';
 import ModuleCard, { MODULES } from './ModuleBlocks';
 import { radius } from '../../theme/radius';
 import { TITLE_FONT_FAMILY, TABULAR } from '../../utils/fonts';
+import { ACTIVE_MODULES } from './useProto';
 
 const cardSx = { bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: radius.xxl, p: 2 };
 const labelSx = { fontSize: 11, fontWeight: 700, letterSpacing: 1, color: 'text.secondary', textTransform: 'uppercase' };
@@ -36,10 +37,10 @@ const Toolbar = ({ index, count, block, onMove, onHide, onSize }) => (
 );
 
 const HomeScreen = ({ moduli, bozza, onStart }) => {
-  const attiviIniziali = moduli === 'tutti' ? Object.keys(MODULES) : [];
+  const attiviIniziali = ACTIVE_MODULES[moduli];
   const [blocks, setBlocks] = useState(() => [{ id: 'ultimo', size: 'small', hidden: false }, ...attiviIniziali.map((id) => ({ id, size: 'small', hidden: false }))]);
   const [editing, setEditing] = useState(false);
-  const [proposta, setProposta] = useState(() => ['peso', ...Object.keys(MODULES)].find((id) => !attiviIniziali.includes(id)) ?? null);
+  const [proposta, setProposta] = useState(() => ['peso', 'cardio', 'livello', 'gruppi', 'recupero'].find((id) => !attiviIniziali.includes(id)) ?? null);
 
   const update = (id, patch) => setBlocks((bs) => bs.map((b) => (b.id === id ? { ...b, ...patch } : b)));
   const move = (index, delta) => setBlocks((bs) => {

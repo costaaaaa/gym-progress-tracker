@@ -15,16 +15,16 @@ const Row = ({ Icon, label, onClick }) => (
   </ButtonBase>
 );
 
-const CenterMenu = ({ open, onClose, onStart, bozza, moduli }) => (
+const CenterMenu = ({ open, onClose, onStart, bozza, voci }) => (
   <Sheet open={open} onClose={onClose} title="Cosa vuoi fare">
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
       <Button variant="contained" size="large" startIcon={<PlayArrowIcon />} onClick={onStart} sx={{ py: 1.75, mb: 1, fontWeight: 700, borderRadius: radius.xl, justifyContent: 'flex-start', textAlign: 'left' }}>
         {bozza ? 'Riprendi allenamento · Giorno B, serie 7 di 18' : 'Inizia allenamento'}
       </Button>
       <Row Icon={EditCalendarOutlinedIcon} label="Registra allenamento passato" onClick={onClose} />
-      {moduli && <Row Icon={DirectionsRunIcon} label="Cardio" onClick={onClose} />}
-      {moduli && <Row Icon={StraightenIcon} label="Nuova misura" onClick={onClose} />}
-      {moduli && <Row Icon={AutoAwesomeOutlinedIcon} label="Chiedi al Coach" onClick={onClose} />}
+      {voci.cardio && <Row Icon={DirectionsRunIcon} label="Cardio" onClick={onClose} />}
+      {voci.misura && <Row Icon={StraightenIcon} label="Nuova misura" onClick={onClose} />}
+      {voci.coach && <Row Icon={AutoAwesomeOutlinedIcon} label="Chiedi al Coach" onClick={onClose} />}
     </Box>
   </Sheet>
 );

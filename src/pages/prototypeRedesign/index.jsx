@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import { useThemeMode } from '../../context/ThemeModeContext';
-import { useProto } from './useProto';
+import { useProto, MENU_VOCI } from './useProto';
 import ProtoSwitcher from './ProtoSwitcher';
 import HomeScreen, { Header } from './HomeScreen';
 import BottomBar from './BottomBar';
@@ -24,7 +24,7 @@ const PrototypeRedesign = () => {
   }, [values.tema, mode, toggleThemeMode]);
 
   const start = () => { setAperto(false); set('s', 'serie'); };
-  const modules = values.moduli === 'tutti';
+  const voci = MENU_VOCI[values.moduli];
 
   return (
     <Box sx={{ minHeight: '100dvh', bgcolor: (t) => (t.palette.mode === 'dark' ? '#000' : '#e4e2df'), display: 'flex', justifyContent: 'center', alignItems: 'center', '@media (min-width:500px)': { py: 2 } }}>
@@ -52,8 +52,8 @@ const PrototypeRedesign = () => {
             </Box>
             <BottomBar tab={tab} onTab={(t) => { setAperto(false); setTab(t); }} logo={values.logo} open={aperto && values.menu === 'ventaglio'} onCenter={() => setAperto((o) => !o)} />
             {values.menu === 'pannello'
-              ? <CenterMenu open={aperto} onClose={() => setAperto(false)} onStart={start} bozza={values.bozza === '1'} moduli={modules} />
-              : <Fan compact={values.tondi === 'compatti'} open={aperto} onClose={() => setAperto(false)} onStart={start} bozza={values.bozza === '1'} moduli={modules} />}
+              ? <CenterMenu open={aperto} onClose={() => setAperto(false)} onStart={start} bozza={values.bozza === '1'} voci={voci} />
+              : <Fan variant={values.tondi} open={aperto} onClose={() => setAperto(false)} onStart={start} bozza={values.bozza === '1'} voci={voci} />}
           </>
         )}
       </Box>
