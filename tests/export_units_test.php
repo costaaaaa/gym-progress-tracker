@@ -1,8 +1,6 @@
 <?php
 // Eseguito da tests/export_units.sh (serve un database con lo schema del repo).
 // Argomenti: cartella backend da provare, fase.
-// Fase `dump` (invece di `run`): stampa tra DUMP_BEGIN e DUMP_END l'export dell'utente in kg, per confrontarlo con
-// quello di un'altra versione del backend (diff dopo aver tolto `units`, `exported_at` e `devices`).
 //
 // Due utenti con gli stessi dati in kg, uno con unità kg e uno con lb. Per l'utente in lb ogni peso e ogni
 // circonferenza dell'export è convertito (valori attesi calcolati a mano con le regole dell'app); per quello in kg
@@ -62,12 +60,13 @@ check('export in kg: 200', $kg[0] === 200 && ($kg[1]['success'] ?? null) === tru
 check('export in lb: 200', $lb[0] === 200 && ($lb[1]['success'] ?? null) === true, $lb[2]);
 $K = $kg[1];
 $L = $lb[1];
-if (($argv[2] ?? '') === 'dump') echo "DUMP_BEGIN\n" . json_encode($K, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\nDUMP_END\n";
 
 echo "Intestazione\n";
 eq('kg: units = kg e cm', ['weight' => 'kg', 'length' => 'cm'], $K['units'] ?? null);
 eq('lb: units = lb e in', ['weight' => 'lb', 'length' => 'in'], $L['units'] ?? null);
 eq('units è la prima chiave dopo success', ['success', 'units'], array_slice(array_keys($K), 0, 2));
+
+eq('profile non contiene weight_unit', false, array_key_exists('weight_unit', $K['profile']) || array_key_exists('weight_unit', $L['profile']));
 
 echo "Pesi delle serie (quarto di libbra, testo a due decimali)\n";
 $kgWeights = array_column($K['workouts'][0]['sets'], 'weight');

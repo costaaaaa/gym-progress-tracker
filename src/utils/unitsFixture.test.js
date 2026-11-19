@@ -17,9 +17,17 @@ const fromCents = (cents) => Number((cents / 100).toFixed(2));
 
 const grid = (convert) => Array.from({ length: GRID_MAX_CENTS + 1 }, (_, cents) => convert(fromCents(cents)));
 
+// Oltre i 300: una serie arriva a 999,99 kg e il peso corporeo a 500 kg. Griglia rada, passo 0,07
+const SPARSE_STEP_CENTS = 7;
+const sparse = (fromCents, toCents, convert) => ({
+  from_cents: fromCents,
+  step_cents: SPARSE_STEP_CENTS,
+  expected: Array.from({ length: Math.floor((toCents - fromCents) / SPARSE_STEP_CENTS) + 1 }, (_, i) => convert(fromCents + i * SPARSE_STEP_CENTS)),
+});
+
 const POINT_VALUES = [0, 0.01, 0.11, 0.12, 0.13, 0.5, 1, 1.27, 2.54, 2.55, 20, 45.36, 60, 83.25, 100, 100.5, 226.8, 300, 999.99];
 
-export const buildCases = () => ({
+const buildCases = () => ({
   note: 'Generato da src/utils/unitsFixture.test.js dai moduli JS: non modificare a mano.',
   points: [
     ...POINT_VALUES.map((input) => ({ kind: 'weight_quarter', input, expected: kgToDisplay(input, 'lb', QUARTER) })),
@@ -32,15 +40,22 @@ export const buildCases = () => ({
     weight_tenth: grid((kg) => kgToDisplay(kg, 'lb', BODY_LB_DIVISIONS)),
     length_tenth: grid((cm) => cmToDisplay(cm, 'lb')),
   },
+  sparse: {
+    description: 'input = (from_cents + indice * step_cents) / 100; expected[indice] = valore convertito',
+    weight_quarter: sparse(GRID_MAX_CENTS + 1, 99999, (cents) => kgToDisplay(fromCents(cents), 'lb', QUARTER)),
+    weight_tenth: sparse(GRID_MAX_CENTS + 1, 50000, (cents) => kgToDisplay(fromCents(cents), 'lb', BODY_LB_DIVISIONS)),
+  },
 });
 
 // Un valore per riga di griglia sarebbe enorme: una riga per griglia
 const serialize = (cases) => {
-  const { grids, points, ...rest } = cases;
+  const { grids, sparse: sparseGrids, points, ...rest } = cases;
   const { description, ...lists } = grids;
   const gridLines = Object.entries(lists).map(([name, values]) => `    ${JSON.stringify(name)}: ${JSON.stringify(values)}`);
+  const { description: sparseDescription, ...sparseLists } = sparseGrids;
+  const sparseLines = Object.entries(sparseLists).map(([name, g]) => `    ${JSON.stringify(name)}: ${JSON.stringify(g)}`);
   const pointLines = points.map((p) => `    ${JSON.stringify(p)}`);
-  return `{\n  "note": ${JSON.stringify(rest.note)},\n  "points": [\n${pointLines.join(',\n')}\n  ],\n  "grids": {\n    "description": ${JSON.stringify(description)},\n${gridLines.join(',\n')}\n  }\n}\n`;
+  return `{\n  "note": ${JSON.stringify(rest.note)},\n  "points": [\n${pointLines.join(',\n')}\n  ],\n  "grids": {\n    "description": ${JSON.stringify(description)},\n${gridLines.join(',\n')}\n  },\n  "sparse": {\n    "description": ${JSON.stringify(sparseDescription)},\n${sparseLines.join(',\n')}\n  }\n}\n`;
 };
 
 describe('fixture delle conversioni', () => {

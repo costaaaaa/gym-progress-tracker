@@ -13,7 +13,8 @@ const UNITS_QUARTER_LB = 4;
 const UNITS_TENTH_LB = 10;
 
 // Math.round di JavaScript: i mezzi vanno verso +infinito (PHP round() va via dallo zero e, prima della 8.4,
-// pre-arrotonda). floor() e la differenza sono esatti sui double.
+// pre-arrotonda). floor() e la differenza sono esatti sui double. Vale per x >= 0, l'unico caso possibile (pesi e
+// lunghezze non sono negativi): per un x negativo i mezzi non sono garantiti.
 function units_js_round($x)
 {
     $floor = floor($x);
@@ -33,6 +34,9 @@ function units_cm_to_in($cm)
     return units_js_round($tenths) / 10;
 }
 
+// Le funzioni di conversione si aspettano null o una stringa decimale come la restituisce PDO (decimal(5,2)): non
+// validano altro.
+
 // Un'unità sconosciuta vale kg, come nell'app
 function units_normalize($unit)
 {
@@ -46,14 +50,16 @@ function units_export_header($unit)
 }
 
 // Peso da esportare. In kg il valore com'è (il testo del database, stesso tipo e formato di sempre); in lb un testo
-// con due decimali, come le colonne decimal(5,2), così il tipo non cambia con l'unità. Nullo resta nullo.
+// con due decimali, come le colonne decimal(5,2), così il tipo non cambia con l'unità. I due decimali sono solo il
+// formato (stessa forma delle stringhe decimali dei kg), non la precisione: quella è il quarto o il decimo di libbra
+// di units_kg_to_lb(). Nullo resta nullo.
 function units_export_weight($kg, $unit, $divisions = UNITS_QUARTER_LB)
 {
     if ($kg === null || units_normalize($unit) !== 'lb') return $kg;
     return number_format(units_kg_to_lb($kg, $divisions), 2, '.', '');
 }
 
-// Circonferenza da esportare: come units_export_weight, cm → pollici al decimo
+// Circonferenza da esportare: come units_export_weight, cm → pollici al decimo (due decimali in uscita: solo formato)
 function units_export_length($cm, $unit)
 {
     if ($cm === null || units_normalize($unit) !== 'lb') return $cm;

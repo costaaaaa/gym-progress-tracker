@@ -46,14 +46,16 @@ function export_rows($db, $sql, $params)
 
 try {
     $profile = export_rows($db,
-        "SELECT username, email, email_verified_at, pending_email, birth_date, gender, training_start_date, rest_timer_enabled, time_zone,
+        "SELECT weight_unit, username, email, email_verified_at, pending_email, birth_date, gender, training_start_date, rest_timer_enabled, time_zone,
                 created_at, password_changed_at, last_login_at
          FROM gym_users WHERE id = ?", array($user_id));
     if (!$profile) {
         api_json_response(array('success' => false, 'message' => t_server('common.user_not_found')), 404);
     }
 
-    $unit = units_normalize(export_rows($db, "SELECT weight_unit FROM gym_users WHERE id = ?", array($user_id))[0]['weight_unit']);
+    // L'unita' serve all'export ma non ne fa parte: la sezione profile resta quella di sempre
+    $unit = units_normalize($profile[0]['weight_unit']);
+    unset($profile[0]['weight_unit']);
 
     // Schede -> giorni -> esercizi
     $plans = export_rows($db,
