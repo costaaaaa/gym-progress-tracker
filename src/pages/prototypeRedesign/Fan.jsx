@@ -15,7 +15,15 @@ const ORIGIN_ABOVE = 10;
 const ANGLES_FIVE = [148, 119, 90, 61, 32];
 const ANGLES_TWO = [90, 61];
 
-const Fan = ({ open, onClose, onStart, bozza, moduli }) => {
+// Regola unica del ventaglio compatto: n voci a passo costante, simmetriche rispetto a 90°;
+// «Inizia» sta nella posizione di mezzo (con n pari, quella subito a destra del centro)
+const COMPACT_RADIUS = 120;
+// Arco compatto centrato 28 px sopra il bordo del velo: le etichette basse restano a oltre 8 px dalla barra
+const COMPACT_ORIGIN_ABOVE = 28;
+const COMPACT_STEP = 40;
+const compactAngles = (n) => Array.from({ length: n }, (_, i) => 90 + ((n - 1) / 2 - i) * COMPACT_STEP);
+
+const Fan = ({ open, onClose, onStart, bozza, moduli, compact }) => {
   const [shown, setShown] = useState(false);
 
   useEffect(() => {
@@ -33,18 +41,22 @@ const Fan = ({ open, onClose, onStart, bozza, moduli }) => {
   const cardio = { key: 'cardio', short: 'Cardio', full: 'Cardio', Icon: DirectionsRunIcon, action: onClose };
   const misura = { key: 'misura', short: 'Misura', full: 'Nuova misura', Icon: StraightenIcon, action: onClose };
   const coach = { key: 'coach', short: 'Coach', full: 'Chiedi al Coach', Icon: AutoAwesomeOutlinedIcon, action: onClose };
-  const items = moduli ? [registra, cardio, inizia, misura, coach] : [inizia, registra];
-  const angles = moduli ? ANGLES_FIVE : ANGLES_TWO;
+  const items = moduli ? [registra, cardio, inizia, misura, coach] : (compact ? [registra, inizia] : [inizia, registra]);
+  const angles = compact ? compactAngles(items.length) : (moduli ? ANGLES_FIVE : ANGLES_TWO);
+  const radius = compact ? COMPACT_RADIUS : RADIUS;
+  const originAbove = compact ? COMPACT_ORIGIN_ABOVE : ORIGIN_ABOVE;
+  const labelGap = compact ? 4 : 5;
 
   return (
     <Box sx={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 64, zIndex: 20 }}>
-      <Box onClick={onClose} data-testid="fan-veil" sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(0,0,0,0.45)' }} />
+      <Box onClick={onClose} data-testid="fan-veil" sx={{ position: 'absolute', inset: 0, bgcolor: compact ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.45)' }} />
       <Box role="group" aria-label="Cosa vuoi fare">
         {items.map((it, i) => {
           const a = (angles[i] * Math.PI) / 180;
-          const x = Math.cos(a) * RADIUS;
-          const y = Math.sin(a) * RADIUS + ORIGIN_ABOVE;
-          const size = it.main ? 64 : 52;
+          const x = Math.cos(a) * radius;
+          const y = Math.sin(a) * radius + originAbove;
+          const size = compact ? (it.main ? 56 : 44) : (it.main ? 64 : 52);
+          const iconSize = compact ? (it.main ? 26 : 20) : (it.main ? 30 : 24);
           return (
             <Box
               key={it.key}
@@ -62,14 +74,16 @@ const Fan = ({ open, onClose, onStart, bozza, moduli }) => {
                 sx={{
                   position: 'absolute', left: -size / 2, top: -size / 2, width: size, height: size, borderRadius: '50%',
                   bgcolor: it.main ? 'primary.main' : 'background.paper', color: it.main ? 'common.white' : 'text.primary',
-                  border: '1px solid', borderColor: it.main ? 'primary.main' : 'divider', boxShadow: '0 4px 14px rgba(0,0,0,0.3)',
+                  ...(compact
+                    ? { '&::after': { content: '""', position: 'absolute', inset: '-6px' } }
+                    : { border: '1px solid', borderColor: it.main ? 'primary.main' : 'divider', boxShadow: '0 4px 14px rgba(0,0,0,0.3)' }),
                 }}
               >
-                <it.Icon sx={{ fontSize: it.main ? 30 : 24 }} />
+                <it.Icon sx={{ fontSize: iconSize }} />
               </ButtonBase>
               <Box
                 aria-hidden="true"
-                sx={{ position: 'absolute', top: size / 2 + 5, left: 0, transform: 'translateX(-50%)', px: 0.75, py: '1px', borderRadius: '999px', bgcolor: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}
+                sx={{ position: 'absolute', top: size / 2 + labelGap, left: 0, transform: 'translateX(-50%)', color: '#fff', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', ...(compact ? {} : { px: 0.75, py: '1px', borderRadius: '999px', bgcolor: 'rgba(0,0,0,0.6)' }) }}
               >
                 {it.short}
               </Box>

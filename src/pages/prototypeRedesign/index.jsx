@@ -53,7 +53,7 @@ const PrototypeRedesign = () => {
             <BottomBar tab={tab} onTab={(t) => { setAperto(false); setTab(t); }} logo={values.logo} open={aperto && values.menu === 'ventaglio'} onCenter={() => setAperto((o) => !o)} />
             {values.menu === 'pannello'
               ? <CenterMenu open={aperto} onClose={() => setAperto(false)} onStart={start} bozza={values.bozza === '1'} moduli={modules} />
-              : <Fan open={aperto} onClose={() => setAperto(false)} onStart={start} bozza={values.bozza === '1'} moduli={modules} />}
+              : <Fan compact={values.tondi === 'compatti'} open={aperto} onClose={() => setAperto(false)} onStart={start} bozza={values.bozza === '1'} moduli={modules} />}
           </>
         )}
       </Box>
