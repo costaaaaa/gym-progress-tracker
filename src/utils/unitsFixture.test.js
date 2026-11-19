@@ -19,10 +19,10 @@ const grid = (convert) => Array.from({ length: GRID_MAX_CENTS + 1 }, (_, cents) 
 
 // Oltre i 300: una serie arriva a 999,99 kg e il peso corporeo a 500 kg. Griglia rada, passo 0,07
 const SPARSE_STEP_CENTS = 7;
-const sparse = (fromCents, toCents, convert) => ({
-  from_cents: fromCents,
+const sparse = (startCents, toCents, convert) => ({
+  from_cents: startCents,
   step_cents: SPARSE_STEP_CENTS,
-  expected: Array.from({ length: Math.floor((toCents - fromCents) / SPARSE_STEP_CENTS) + 1 }, (_, i) => convert(fromCents + i * SPARSE_STEP_CENTS)),
+  expected: Array.from({ length: Math.floor((toCents - startCents) / SPARSE_STEP_CENTS) + 1 }, (_, i) => convert(startCents + i * SPARSE_STEP_CENTS)),
 });
 
 const POINT_VALUES = [0, 0.01, 0.11, 0.12, 0.13, 0.5, 1, 1.27, 2.54, 2.55, 20, 45.36, 60, 83.25, 100, 100.5, 226.8, 300, 999.99];

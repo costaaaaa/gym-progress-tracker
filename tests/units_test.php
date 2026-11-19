@@ -57,12 +57,12 @@ foreach ($converters as $name => $convert) {
 }
 
 echo "Griglie rade oltre i 300\n";
-foreach (array('weight_quarter' => 'weight_quarter', 'weight_tenth' => 'weight_tenth') as $name => $kind) {
+foreach (array('weight_quarter', 'weight_tenth') as $name) {
     $g = $fixture['sparse'][$name];
     $bad = array();
     foreach ($g['expected'] as $i => $want) {
         $cents = $g['from_cents'] + $i * $g['step_cents'];
-        $got = $converters[$kind]((float)db_text($cents));
+        $got = $converters[$name]((float)db_text($cents));
         if ($got !== (float)$want) {
             $bad[] = db_text($cents) . ': atteso ' . $want . ', ottenuto ' . var_export($got, true);
             if (count($bad) >= 5) break;
