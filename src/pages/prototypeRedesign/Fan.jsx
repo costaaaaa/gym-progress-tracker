@@ -73,7 +73,7 @@ const Fan = ({ open, onClose, onStart, bozza, moduli, compact }) => {
                 aria-label={it.full}
                 sx={{
                   position: 'absolute', left: -size / 2, top: -size / 2, width: size, height: size, borderRadius: '50%',
-                  bgcolor: it.main ? 'primary.main' : 'background.paper', color: it.main ? 'common.white' : 'text.primary',
+                  bgcolor: it.main ? 'primary.main' : (compact ? '#f2f2f2' : 'background.paper'), color: it.main ? 'common.white' : (compact ? '#111' : 'text.primary'),
                   ...(compact
                     ? { '&::after': { content: '""', position: 'absolute', inset: '-6px' } }
                     : { border: '1px solid', borderColor: it.main ? 'primary.main' : 'divider', boxShadow: '0 4px 14px rgba(0,0,0,0.3)' }),
