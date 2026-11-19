@@ -97,7 +97,14 @@ export function formatSetInUnit(weight, reps, unit, locale) {
 
 // A 0,01 con i mezzi per eccesso: lo spostamento è sul testo decimale (1.005 → 1.01), non su kg * 100, che in
 // virgola mobile dà 100.49999… e sbaglia.
-const roundCents = (n) => Number(`${Math.round(Number(`${n.toFixed(10)}e2`))}e-2`);
+export const roundCents = (n) => Number(`${Math.round(Number(`${n.toFixed(10)}e2`))}e-2`);
+
+// Il testo di un campo numerico → numero, o null se non è un decimale semplice (vedi inputToKg per le regole). Condiviso
+// con le lunghezze (lengthUnit.js).
+export function parseDecimalText(text) {
+  const s = String(text ?? '').trim();
+  return /^\d+(?:[.,]\d+)?$/.test(s) ? Number(s.replace(',', '.')) : null;
+}
 
 // Testo scritto dall'utente nella sua unità → kg arrotondati a 0,01. Dopo il trim solo cifre con al più un
 // separatore decimale (virgola o punto) seguito da cifre: tutto il resto (12abc, 1e3, 0x10, 1.000,5, -0, .5, 5.)
@@ -108,9 +115,8 @@ export function inputToKg(text, unit) {
     n = text;
     if (!Number.isFinite(n) || n < 0 || Object.is(n, -0)) return null;
   } else {
-    const s = String(text ?? '').trim();
-    if (!/^\d+(?:[.,]\d+)?$/.test(s)) return null;
-    n = Number(s.replace(',', '.'));
+    n = parseDecimalText(text);
+    if (n === null) return null;
   }
   const kg = roundCents(unit === 'lb' ? n * LB_IN_KG : n);
   return Number.isFinite(kg) ? kg : null; // oltre 1e21 l'arrotondamento non è più un numero
