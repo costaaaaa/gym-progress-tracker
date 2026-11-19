@@ -27,7 +27,13 @@ const GRANDI_TWO = [90, 61];
 const STRETTI_FIVE = [{ x: -92, y: 36 }, { x: -56, y: 78, above: true }, { x: 0, y: 96 }, { x: 56, y: 78, above: true }, { x: 92, y: 36 }];
 const STRETTI_ORIGIN = 14;
 
+// Ventaglio medio con cinque voci: via di mezzo tra compatti e stretti, etichette tutte sotto il tondo.
+// I tondi esterni stanno appena oltre le etichette di Cardio e Misura (6 px), quelli interni appena oltre «Riprendi»
+const MEDI_FIVE = [{ x: -104, y: 40 }, { x: -56, y: 92 }, { x: 0, y: 112 }, { x: 56, y: 92 }, { x: 104, y: 40 }];
+const MEDI_ORIGIN = 12;
+
 const layoutFor = (variant, n) => {
+  if (variant === 'medi') return n === 5 ? MEDI_FIVE.map((q) => ({ ...q, y: q.y + MEDI_ORIGIN })) : polar(arcAngles(n, 40), 110, MEDI_ORIGIN);
   if (variant === 'grandi') {
     const angles = n === 5 ? GRANDI_FIVE : n === 2 ? GRANDI_TWO : arcAngles(n, 29);
     return polar(angles, 140, 10);
