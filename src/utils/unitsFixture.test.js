@@ -46,7 +46,7 @@ const serialize = (cases) => {
 describe('fixture delle conversioni', () => {
   it('tests/fixtures/units_cases.json è quella che generano i moduli JS', () => {
     const fresh = serialize(buildCases());
-    if (process.env.UPDATE_UNITS_FIXTURE) writeFileSync(FIXTURE_PATH, fresh);
+    if (globalThis.process?.env.UPDATE_UNITS_FIXTURE) writeFileSync(FIXTURE_PATH, fresh);
     expect(readFileSync(FIXTURE_PATH, 'utf8')).toBe(fresh);
   });
 
