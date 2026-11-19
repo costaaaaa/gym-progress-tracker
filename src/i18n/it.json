@@ -335,6 +335,7 @@
   "body.col.date": "Data",
   "body.col.weight": "Peso",
   "body.col.weight_kg": "Peso ({{unit}})",
+  "body.col.length": "{{label}} ({{unit}})",
   "body.col.fat": "Grasso %",
   "body.col.muscle": "Muscolo %",
   "body.col.actions": "Azioni",

@@ -83,15 +83,15 @@ const BODY_COMPOSITION_SERIES = [
 ];
 // Circonferenze: i dati sono in cm, si mostrano nell'unità dell'account (cm con kg, pollici con lb)
 const CIRCUMFERENCE_SERIES = [
-  { key: 'chest_size', label: 'body.chest', length: true },
-  { key: 'waist_size', label: 'body.waist', length: true },
-  { key: 'arm_size', label: 'body.arm', length: true },
-  { key: 'leg_size', label: 'body.leg', length: true },
+  { key: 'chest_size', label: 'body.chest', isLength: true },
+  { key: 'waist_size', label: 'body.waist', isLength: true },
+  { key: 'arm_size', label: 'body.arm', isLength: true },
+  { key: 'leg_size', label: 'body.leg', isLength: true },
 ];
 const LENGTH_FIELDS = CIRCUMFERENCE_SERIES.map((s) => s.key);
 
 // Valore di una misura con la sua unità: percentuale attaccata al numero, lunghezza con uno spazio e cm o in
-const measureText = (series, value, weightUnit) => (series.length
+const measureText = (series, value, weightUnit) => (series.isLength
   ? `${formatLengthInUnit(value, weightUnit, intlLocale(), { unit: false })} ${lengthUnitLabel(weightUnit)}`
   : `${formatMeasureText(value)}${series.unit}`);
 const HISTORY_SERIES = [...BODY_COMPOSITION_SERIES, ...CIRCUMFERENCE_SERIES];
@@ -504,10 +504,10 @@ const BodyStats = ({ isEmbedded = false }) => {
                       <TableCell align="right" sx={headCellSx}>{t('body.col.weight_kg', { unit: weightUnitLabel(weightUnit) })}</TableCell>
                       <TableCell align="right" sx={headCellSx}>{t('body.col.fat')}</TableCell>
                       <TableCell align="right" sx={headCellSx}>{t('body.col.muscle')}</TableCell>
-                      <TableCell align="right" sx={headCellSx}>{t('body.chest')}</TableCell>
-                      <TableCell align="right" sx={headCellSx}>{t('body.arm')}</TableCell>
-                      <TableCell align="right" sx={headCellSx}>{t('body.waist')}</TableCell>
-                      <TableCell align="right" sx={headCellSx}>{t('body.leg')}</TableCell>
+                      <TableCell align="right" sx={headCellSx}>{t('body.col.length', { label: t('body.chest'), unit: lengthUnitLabel(weightUnit) })}</TableCell>
+                      <TableCell align="right" sx={headCellSx}>{t('body.col.length', { label: t('body.arm'), unit: lengthUnitLabel(weightUnit) })}</TableCell>
+                      <TableCell align="right" sx={headCellSx}>{t('body.col.length', { label: t('body.waist'), unit: lengthUnitLabel(weightUnit) })}</TableCell>
+                      <TableCell align="right" sx={headCellSx}>{t('body.col.length', { label: t('body.leg'), unit: lengthUnitLabel(weightUnit) })}</TableCell>
                       <TableCell align="center" sx={headCellSx}>{t('body.col.actions')}</TableCell>
                     </TableRow>
                   </TableHead>

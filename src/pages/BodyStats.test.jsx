@@ -350,7 +350,7 @@ describe('storico', () => {
   it('da tablet è una tabella con intestazioni in sentence case da 16px e celle da 16px', async () => {
     await mount(themed);
     const headers = within(history()).getAllByRole('columnheader');
-    expect(headers.map((h) => h.textContent)).toEqual(['Data', 'Peso (kg)', 'Grasso %', 'Muscolo %', 'Torace', 'Braccio', 'Vita', 'Gamba', 'Azioni']);
+    expect(headers.map((h) => h.textContent)).toEqual(['Data', 'Peso (kg)', 'Grasso %', 'Muscolo %', 'Torace (cm)', 'Braccio (cm)', 'Vita (cm)', 'Gamba (cm)', 'Azioni']);
     headers.forEach((h) => {
       expect(style(h).textTransform).not.toBe('uppercase');
       expect(style(h).fontSize).toBe('16px');
@@ -723,6 +723,12 @@ describe('circonferenze: utente in lb (pollici)', () => {
     expect(cells.slice(4, 8)).toEqual(['40,2', '-', '32,7', '-']); // torace, braccio, vita, gamba
   });
 
+  it('le colonne delle circonferenze nello storico dichiarano i pollici', async () => {
+    await mount();
+    const headers = within(history()).getAllByRole('columnheader');
+    expect(headers.slice(4, 8).map((h) => h.textContent)).toEqual(['Torace (in)', 'Braccio (in)', 'Vita (in)', 'Gamba (in)']);
+  });
+
   it('sul telefono la seconda linea dello storico scrive i pollici', async () => {
     const original = window.matchMedia;
     window.matchMedia = (query) => ({
@@ -783,8 +789,7 @@ describe('circonferenze: utente in lb (pollici)', () => {
     save();
     expect(posts()).toHaveLength(1);
     const body = lastBody();
-    expect([body.chest_size, body.arm_size, body.waist_size, body.leg_size].map(Number).every((cm, i) => cm <= [300, 150, 300, 200][i])).toBe(true);
-    expect(body.chest_size).toBe('299.97');
+    expect([body.chest_size, body.arm_size, body.waist_size, body.leg_size]).toEqual(['299.97', '149.86', '299.97', '199.9']);
   });
 
   it('un testo non valido in pollici dà l\'errore sotto il campo e non parte', async () => {

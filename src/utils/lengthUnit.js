@@ -9,7 +9,7 @@ import { parseDecimalText, roundCents } from './weightUnit';
 
 const NBSP = ' ';
 
-export const CM_PER_IN = 2.54;
+const CM_PER_IN = 2.54;
 
 // 'cm' o 'in'; l'unità è quella dei pesi (kg | lb), un valore non valido vale kg
 export const lengthUnitLabel = (unit) => (unit === 'lb' ? 'in' : 'cm');
@@ -20,15 +20,16 @@ const toNumber = (value) => {
   return Number.isFinite(n) ? n : null;
 };
 
-// Decimi di pollice da centesimi di cm, in interi: cm / 0,254 = centesimi × 5 / 127. 127 è dispari, quindi un cm a 0,01
-// non cade mai esattamente a metà di un decimo di pollice e l'arrotondamento non dipende dalla virgola mobile.
-const tenthsOfInchFromCm = (cm) => Math.round((Math.round(cm * 100) * 5) / 127);
+// Decimi di pollice (non arrotondati) da cm, passando per i centesimi interi: cm / 0,254 = centesimi × 5 / 127. 127 è
+// dispari, quindi un cm a 0,01 non cade mai esattamente a metà di un decimo di pollice e l'arrotondamento non dipende
+// dalla virgola mobile.
+const tenthsOfInch = (cm) => (Math.round(cm * 100) * 5) / 127;
 
 // cm → numero da mostrare: cm come sono, pollici a un decimale. null se il valore manca.
 export function cmToDisplay(cm, unit) {
   const n = toNumber(cm);
   if (n === null) return null;
-  return unit === 'lb' ? tenthsOfInchFromCm(n) / 10 : n;
+  return unit === 'lb' ? Math.round(tenthsOfInch(n)) / 10 : n;
 }
 
 // "83,25 cm" / "32,8 in": numero nella lingua dell'utente, senza zeri inutili, spazio non separabile prima dell'unità.
@@ -61,4 +62,4 @@ export const fieldTextToCmText = (text, unit) => {
 // Limite di un campo lunghezza nell'unità dell'utente: in cm `maxCm`, in pollici il decimo più alto sotto di esso
 // (300 cm → 118,1 in), così il massimo scrivibile è sempre accettato dal server.
 export const maxLengthInUnit = (maxCm, unit) =>
-  (unit === 'lb' ? Math.floor((Math.round(maxCm * 100) * 5) / 127) / 10 : maxCm);
+  (unit === 'lb' ? Math.floor(tenthsOfInch(maxCm)) / 10 : maxCm);

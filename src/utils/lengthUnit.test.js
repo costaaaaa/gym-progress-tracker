@@ -1,16 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
-  CM_PER_IN, lengthUnitLabel, cmToDisplay, formatLengthInUnit, lengthInputToCm, fieldTextToCmText, maxLengthInUnit,
+  lengthUnitLabel, cmToDisplay, formatLengthInUnit, lengthInputToCm, fieldTextToCmText, maxLengthInUnit,
 } from './lengthUnit';
 import { BODY_LIMITS } from './bodyStatsRules';
 
 const NB = ' ';
 
 describe('costanti e etichetta', () => {
-  it('1 in = 2,54 cm esatti', () => {
-    expect(CM_PER_IN).toBe(2.54);
-  });
-
   it('cm con kg (e con un valore non valido), in con lb', () => {
     expect(lengthUnitLabel('kg')).toBe('cm');
     expect(lengthUnitLabel('lb')).toBe('in');
@@ -120,20 +116,7 @@ describe('maxLengthInUnit', () => {
 });
 
 describe('stabilità: pollici → cm (0,01) → pollici', () => {
-  it('ogni decimo di pollice da 0 al massimo di ogni misura torna uguale (tutto l\'intervallo)', () => {
-    const bad = [];
-    const maxTenths = Math.round(maxLengthInUnit(Math.max(...Object.entries(BODY_LIMITS).filter(([n]) => n.endsWith('_size')).map(([, m]) => m)), 'lb') * 10);
-    for (let tenths = 0; tenths <= maxTenths; tenths++) {
-      const inches = tenths / 10;
-      const cm = lengthInputToCm(String(inches), 'lb');
-      const back = cmToDisplay(cm, 'lb');
-      if (back !== inches) bad.push([inches, cm, back]);
-    }
-    expect(bad).toEqual([]);
-    expect(maxTenths).toBe(1181);
-  });
-
-  it('e oltre, fino a 400 in, per non dipendere dai limiti di oggi', () => {
+  it('ogni decimo di pollice da 0 a 400 in torna uguale (tutto l\'intervallo, oltre i limiti di oggi)', () => {
     const bad = [];
     for (let tenths = 0; tenths <= 4000; tenths++) {
       const inches = tenths / 10;
