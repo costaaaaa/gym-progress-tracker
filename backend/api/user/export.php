@@ -8,12 +8,17 @@ include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/WorkoutExercise.php';
 require_once '../../lib/gamification_rules.php';
+require_once '../../lib/units.php';
 
 $database = new Database();
 $db = $database->getConnection();
 
 // Dal giorno 8 senza email confermata resta raggiungibile: il diritto di accesso ai dati non si sospende
 $user_id = require_authenticated_user($db, ALLOW_UNVERIFIED);
+
+// Pesi e circonferenze escono nell'unita' dell'account (kg e cm, oppure lb e pollici): vedi lib/units.php. L'intestazione
+// `units` del file la dichiara. I campi con l'unita' nel nome (lifetime_volume_kg) restano in kg per tutti.
+const EXPORT_BODY_LENGTH_COLUMNS = array('chest_size', 'arm_size', 'waist_size', 'leg_size');
 
 // Colonne data+ora che il database tiene nel fuso del server: nell'export diventano ISO 8601 con
 // offset. Una colonna nuova di questo tipo va aggiunta qui. Le colonne DATE (date, birth_date, ...)
@@ -47,6 +52,8 @@ try {
     if (!$profile) {
         api_json_response(array('success' => false, 'message' => t_server('common.user_not_found')), 404);
     }
+
+    $unit = units_normalize(export_rows($db, "SELECT weight_unit FROM gym_users WHERE id = ?", array($user_id))[0]['weight_unit']);
 
     // Schede -> giorni -> esercizi
     $plans = export_rows($db,
@@ -106,6 +113,7 @@ try {
     foreach ($sets as $row) {
         $historyId = $row['workout_history_id'];
         unset($row['workout_history_id']);
+        $row['weight'] = units_export_weight($row['weight'], $unit);
         $setsByHistory[$historyId][] = $row;
     }
     $workouts = array();
@@ -122,14 +130,19 @@ try {
 
     $export = array(
         'success' => true,
+        'units' => units_export_header($unit),
         'exported_at' => date('c'),
         'profile' => $profile[0],
         'plans' => $planList,
         'workouts' => $workouts,
-        'body_stats' => export_rows($db,
+        'body_stats' => array_map(function ($row) use ($unit) {
+            $row['weight'] = units_export_weight($row['weight'], $unit, UNITS_TENTH_LB);
+            foreach (EXPORT_BODY_LENGTH_COLUMNS as $column) $row[$column] = units_export_length($row[$column], $unit);
+            return $row;
+        }, export_rows($db,
             "SELECT date, weight, body_fat_percentage, muscle_mass_percentage, chest_size, arm_size, waist_size, leg_size,
                     health_fields AS from_health, created_at
-             FROM gym_user_stats WHERE user_id = ? ORDER BY date", array($user_id)),
+             FROM gym_user_stats WHERE user_id = ? ORDER BY date", array($user_id))),
         'gamification' => array(
             'profile' => export_rows($db,
                 "SELECT current_streak_weeks, longest_streak_weeks, last_completed_week, total_xp, level, lifetime_volume_kg
