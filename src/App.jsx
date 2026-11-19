@@ -25,6 +25,8 @@ const Groups = lazy(() => import('./pages/Groups'));
 const GroupDetail = lazy(() => import('./pages/GroupDetail'));
 const JoinGroup = lazy(() => import('./pages/JoinGroup'));
 const Admin = lazy(() => import('./pages/Admin'));
+// Prototipo da buttare: esiste solo in sviluppo (o nella build dedicata con DEV forzato)
+const PrototypeRedesign = import.meta.env.DEV ? lazy(() => import('./pages/prototypeRedesign')) : null;
 
 // Fallback component while loading chunks
 const PageLoader = () => (
@@ -43,6 +45,8 @@ function App() {
               {/* Focus mode — full-screen senza Navbar */}
               <Route path="/focus" element={<EmailBlockGuard><FocusWorkout /></EmailBlockGuard>} />
               
+              {import.meta.env.DEV && <Route path="/prototype/redesign" element={<PrototypeRedesign />} />}
+
               {/* Tutte le altre pagine con Layout (Navbar + Container) */}
               <Route element={<Layout />}>
                 <Route path="/" element={<Home />} />
