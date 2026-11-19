@@ -116,7 +116,10 @@ const Fan = ({ open, onClose, onStart, bozza, voci, variant }) => {
                 } : {})}
                 sx={{
                   position: 'absolute', left: -size / 2, top: -size / 2, width: size, height: size, borderRadius: '50%',
-                  bgcolor: it.main ? 'primary.main' : (grandi ? 'background.paper' : '#f2f2f2'), color: it.main ? 'common.white' : (grandi ? 'text.primary' : '#111'),
+                  bgcolor: it.main ? 'primary.main' : (grandi ? 'background.paper' : (t) => (t.palette.mode === 'dark' ? '#2e2e30' : '#f2f2f2')),
+                  color: it.main ? 'common.white' : (grandi ? 'text.primary' : (t) => (t.palette.mode === 'dark' ? '#fff' : '#111')),
+                  // Tema scuro: tondo scuro, staccato dal velo da un bordo chiaro sottile
+                  ...(!it.main && !grandi ? { boxShadow: (t) => (t.palette.mode === 'dark' ? 'inset 0 0 0 1px rgba(255,255,255,0.22)' : 'none') } : {}),
                   userSelect: 'none', WebkitTouchCallout: 'none',
                   ...(grandi
                     ? { border: '1px solid', borderColor: it.main ? 'primary.main' : 'divider', boxShadow: '0 4px 14px rgba(0,0,0,0.3)' }
