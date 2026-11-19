@@ -82,7 +82,7 @@ const mount = async () => {
 const button = (name) => screen.getByRole('button', { name });
 
 describe('unità di peso', () => {
-  const unitSelect = () => screen.getByLabelText('Unità di peso');
+  const unitSelect = () => screen.getByLabelText('Unità di misura');
   const savedBodies = () => fetch.mock.calls.filter(([url]) => url.includes('update_settings.php')).map(([, init]) => JSON.parse(init.body));
   const choose = async (label) => {
     fireEvent.mouseDown(unitSelect());
@@ -92,18 +92,18 @@ describe('unità di peso', () => {
   it('parte dall\'unità salvata sull\'account', async () => {
     stubFetch({ weight_unit: 'lb' });
     await mount();
-    await waitFor(() => expect(unitSelect().textContent).toBe('lb'));
-    expect(screen.getByText(/restano salvati in kg/)).toBeTruthy();
+    await waitFor(() => expect(unitSelect().textContent).toBe('Imperiali (lb, in)'));
+    expect(screen.getByText(/restano salvati in kg e cm: cambia solo come si mostrano e si inseriscono/)).toBeTruthy();
   });
 
   it('salva la scelta e aggiorna il contesto', async () => {
     stubFetch({ settings: () => json({ success: true, weight_unit: 'lb' }) });
     await mount();
-    await waitFor(() => expect(unitSelect().textContent).toBe('kg'));
-    await choose('lb');
+    await waitFor(() => expect(unitSelect().textContent).toBe('Metriche (kg, cm)'));
+    await choose('Imperiali (lb, in)');
     await waitFor(() => expect(updateUser).toHaveBeenCalledWith({ weight_unit: 'lb' }));
     expect(savedBodies()).toEqual([{ weight_unit: 'lb' }]);
-    expect(unitSelect().textContent).toBe('lb');
+    expect(unitSelect().textContent).toBe('Imperiali (lb, in)');
   });
 
   it.each([
@@ -112,10 +112,10 @@ describe('unità di peso', () => {
   ])('%s: la scelta torna al valore precedente e si mostra l\'errore', async (_, settings) => {
     stubFetch({ weight_unit: 'lb', settings });
     await mount();
-    await waitFor(() => expect(unitSelect().textContent).toBe('lb'));
-    await choose('kg');
-    await screen.findByText('Errore nel salvataggio dell\'unità di peso');
-    expect(unitSelect().textContent).toBe('lb');
+    await waitFor(() => expect(unitSelect().textContent).toBe('Imperiali (lb, in)'));
+    await choose('Metriche (kg, cm)');
+    await screen.findByText('Errore nel salvataggio dell\'unità di misura');
+    expect(unitSelect().textContent).toBe('Imperiali (lb, in)');
     expect(updateUser).not.toHaveBeenCalled();
   });
 });

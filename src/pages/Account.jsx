@@ -798,8 +798,8 @@ const Account = ({ isEmbedded = false }) => {
                   }
                 }}
               >
-                <MenuItem value="kg">kg</MenuItem>
-                <MenuItem value="lb">lb</MenuItem>
+                <MenuItem value="kg">{t('units.metric')}</MenuItem>
+                <MenuItem value="lb">{t('units.imperial')}</MenuItem>
               </Select>
             </Box>
 

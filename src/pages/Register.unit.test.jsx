@@ -54,7 +54,7 @@ const goToStep2 = async (labels = { confirm: /^Conferma password/, next: 'Avanti
   fireEvent.click(screen.getByRole('button', { name: labels.next }));
   await screen.findByText(labels.title);
 };
-const unitField = (name = /^Unità di peso/) => screen.getByRole('combobox', { name });
+const unitField = (name = /^Unità di misura/) => screen.getByRole('combobox', { name });
 const pick = (field, option) => {
   fireEvent.mouseDown(field);
   fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: option }));
@@ -80,7 +80,7 @@ describe('unità di peso nel modulo di registrazione', () => {
   it('preimpostato kg, e kg parte nel corpo di register.php', async () => {
     renderAt();
     await goToStep2();
-    expect(unitField().textContent).toBe('kg');
+    expect(unitField().textContent).toBe('Metriche (kg, cm)');
     await submit();
     expect(registerBodies()[0].weight_unit).toBe('kg');
   });
@@ -89,7 +89,7 @@ describe('unità di peso nel modulo di registrazione', () => {
     suggestion = () => Promise.resolve(answer({ success: true, suggested_weight_unit: 'lb' }));
     renderAt();
     await goToStep2();
-    await waitFor(() => expect(unitField().textContent).toBe('lb'));
+    await waitFor(() => expect(unitField().textContent).toBe('Imperiali (lb, in)'));
     await submit();
     expect(registerBodies()[0].weight_unit).toBe('lb');
   });
@@ -97,8 +97,8 @@ describe('unità di peso nel modulo di registrazione', () => {
   it('la scelta dell\'utente vale: da kg a lb nel corpo', async () => {
     renderAt();
     await goToStep2();
-    pick(unitField(), 'lb');
-    expect(unitField().textContent).toBe('lb');
+    pick(unitField(), 'Imperiali (lb, in)');
+    expect(unitField().textContent).toBe('Imperiali (lb, in)');
     await submit();
     expect(registerBodies()[0].weight_unit).toBe('lb');
   });
@@ -108,10 +108,10 @@ describe('unità di peso nel modulo di registrazione', () => {
     suggestion = () => new Promise((resolve) => { resolveSuggestion = resolve; });
     renderAt();
     await goToStep2();
-    expect(unitField().textContent).toBe('kg');
-    pick(unitField(), 'kg'); // anche riscegliere kg è un tocco
+    expect(unitField().textContent).toBe('Metriche (kg, cm)');
+    pick(unitField(), 'Metriche (kg, cm)'); // anche riscegliere kg è un tocco
     await act(async () => { resolveSuggestion(answer({ success: true, suggested_weight_unit: 'lb' })); });
-    expect(unitField().textContent).toBe('kg');
+    expect(unitField().textContent).toBe('Metriche (kg, cm)');
     await submit();
     expect(registerBodies()[0].weight_unit).toBe('kg');
   });
@@ -121,9 +121,9 @@ describe('unità di peso nel modulo di registrazione', () => {
     suggestion = () => new Promise((resolve) => { resolveSuggestion = resolve; });
     renderAt();
     await goToStep2();
-    pick(unitField(), 'lb');
+    pick(unitField(), 'Imperiali (lb, in)');
     await act(async () => { resolveSuggestion(answer({ success: true, suggested_weight_unit: 'kg' })); });
-    expect(unitField().textContent).toBe('lb');
+    expect(unitField().textContent).toBe('Imperiali (lb, in)');
   });
 
   it.each([
@@ -137,7 +137,7 @@ describe('unità di peso nel modulo di registrazione', () => {
     await goToStep2();
     await waitFor(() => expect(suggestionCalls()).toHaveLength(1)); // la proposta è stata chiesta, poi la risposta si scarta
     await act(async () => {});
-    expect(unitField().textContent).toBe('kg');
+    expect(unitField().textContent).toBe('Metriche (kg, cm)');
     await submit();
     expect(registerBodies()[0].weight_unit).toBe('kg');
   });
@@ -146,7 +146,7 @@ describe('unità di peso nel modulo di registrazione', () => {
     suggestion = () => Promise.resolve(answer({ success: true, suggested_weight_unit: 'lb' }));
     renderAt('/register?code=PRIMAVERA-26');
     await goToStep2();
-    await waitFor(() => expect(unitField().textContent).toBe('lb'));
+    await waitFor(() => expect(unitField().textContent).toBe('Imperiali (lb, in)'));
     await submit();
     expect(registerBodies()[0]).toMatchObject({ weight_unit: 'lb', signup_code: 'PRIMAVERA-26' });
   });
@@ -156,7 +156,7 @@ describe('unità di peso nel modulo di registrazione', () => {
     suggestion = () => Promise.resolve(answer({ success: true, suggested_weight_unit: 'lb' }));
     renderAt('/en/register');
     await goToStep2({ confirm: /^Confirm password/, next: 'Next', title: 'Your profile' });
-    await waitFor(() => expect(unitField(/^Weight unit/).textContent).toBe('lb'));
+    await waitFor(() => expect(unitField(/^Units/).textContent).toBe('Imperial (lb, in)'));
     await submit({ gender: /Male/, sex: /Sex/, birth: /^Date of birth/, birthFormat: 'MM/dd/yyyy', register: 'Sign up' });
     expect(registerBodies()[0].weight_unit).toBe('lb');
   });

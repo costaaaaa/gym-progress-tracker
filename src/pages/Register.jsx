@@ -432,8 +432,8 @@ const Register = () => {
                   onOpen={() => { weightUnitTouched.current = true; }}
                   onChange={(e) => { weightUnitTouched.current = true; setWeightUnit(e.target.value); }}
                 >
-                  <MenuItem value="kg">kg</MenuItem>
-                  <MenuItem value="lb">lb</MenuItem>
+                  <MenuItem value="kg">{t('units.metric')}</MenuItem>
+                  <MenuItem value="lb">{t('units.imperial')}</MenuItem>
                 </Select>
               </FormControl>
               <LabeledDatePicker
