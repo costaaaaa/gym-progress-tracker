@@ -39,7 +39,7 @@ const HomeScreen = ({ moduli, bozza, onStart }) => {
   const attiviIniziali = moduli === 'tutti' ? Object.keys(MODULES) : [];
   const [blocks, setBlocks] = useState(() => [{ id: 'ultimo', size: 'small', hidden: false }, ...attiviIniziali.map((id) => ({ id, size: 'small', hidden: false }))]);
   const [editing, setEditing] = useState(false);
-  const [proposta, setProposta] = useState(() => Object.keys(MODULES).find((id) => !attiviIniziali.includes(id)) ?? null);
+  const [proposta, setProposta] = useState(() => ['peso', ...Object.keys(MODULES)].find((id) => !attiviIniziali.includes(id)) ?? null);
 
   const update = (id, patch) => setBlocks((bs) => bs.map((b) => (b.id === id ? { ...b, ...patch } : b)));
   const move = (index, delta) => setBlocks((bs) => {
@@ -107,7 +107,7 @@ const HomeScreen = ({ moduli, bozza, onStart }) => {
       {proposta && (
         <Box sx={{ ...cardSx, borderStyle: 'dashed' }}>
           <Typography sx={labelSx}>Prova anche…</Typography>
-          <Typography sx={{ ...titleSx, mt: 0.5 }}>{MODULES[proposta]}</Typography>
+          <Typography sx={{ ...titleSx, mt: 0.5 }}>{proposta === 'peso' ? 'Peso e misure' : MODULES[proposta]}</Typography>
           <Typography color="text.secondary" sx={{ mb: 1 }}>Un blocco in più nella Home, quando vuoi puoi spegnerlo.</Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button variant="contained" onClick={activate} sx={{ minHeight: 44 }}>Attiva</Button>

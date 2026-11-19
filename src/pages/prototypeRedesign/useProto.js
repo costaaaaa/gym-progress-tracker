@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 
 export const OPTIONS = {
   s: ['home', 'serie'],
+  menu: ['ventaglio', 'pannello'],
   logo: ['centro', 'alto'],
   moduli: ['tutti', 'nessuno'],
   bozza: ['0', '1'],
@@ -10,7 +11,7 @@ export const OPTIONS = {
   strumenti: ['nessuno', 'tutti'],
   tema: ['chiaro', 'scuro'],
 };
-const DEFAULTS = { s: 'home', logo: 'centro', moduli: 'tutti', bozza: '0', tecniche: 'scorri', strumenti: 'nessuno', tema: null };
+const DEFAULTS = { s: 'home', menu: 'ventaglio', logo: 'centro', moduli: 'tutti', bozza: '0', tecniche: 'scorri', strumenti: 'nessuno', tema: null };
 
 export const useProto = () => {
   const [params, setParams] = useSearchParams();

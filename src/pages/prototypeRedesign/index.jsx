@@ -7,6 +7,7 @@ import ProtoSwitcher from './ProtoSwitcher';
 import HomeScreen, { Header } from './HomeScreen';
 import BottomBar from './BottomBar';
 import CenterMenu from './CenterMenu';
+import Fan from './Fan';
 import SerieScreen from './SerieScreen';
 
 const TAB_NAMES = { schede: 'Schede', storico: 'Storico', progressi: 'Progressi' };
@@ -15,14 +16,14 @@ const PrototypeRedesign = () => {
   const { values, set } = useProto();
   const { mode, toggleThemeMode } = useThemeMode();
   const [tab, setTab] = useState('home');
-  const [menu, setMenu] = useState(false);
+  const [aperto, setAperto] = useState(false);
 
   // Il parametro tema (chiaro|scuro) porta il tema dell'app a quel valore
   useEffect(() => {
     if (values.tema && (values.tema === 'scuro') !== (mode === 'dark')) toggleThemeMode();
   }, [values.tema, mode, toggleThemeMode]);
 
-  const start = () => { setMenu(false); set('s', 'serie'); };
+  const start = () => { setAperto(false); set('s', 'serie'); };
   const modules = values.moduli === 'tutti';
 
   return (
@@ -49,8 +50,10 @@ const PrototypeRedesign = () => {
                 </Box>
               )}
             </Box>
-            <BottomBar tab={tab} onTab={setTab} logo={values.logo} onCenter={() => setMenu(true)} />
-            <CenterMenu open={menu} onClose={() => setMenu(false)} onStart={start} bozza={values.bozza === '1'} moduli={modules} />
+            <BottomBar tab={tab} onTab={(t) => { setAperto(false); setTab(t); }} logo={values.logo} open={aperto && values.menu === 'ventaglio'} onCenter={() => setAperto((o) => !o)} />
+            {values.menu === 'pannello'
+              ? <CenterMenu open={aperto} onClose={() => setAperto(false)} onStart={start} bozza={values.bozza === '1'} moduli={modules} />
+              : <Fan open={aperto} onClose={() => setAperto(false)} onStart={start} bozza={values.bozza === '1'} moduli={modules} />}
           </>
         )}
       </Box>

@@ -5,6 +5,7 @@ import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
 import HistoryIcon from '@mui/icons-material/History';
 import EqualizerIcon from '@mui/icons-material/Equalizer';
+import CloseIcon from '@mui/icons-material/Close';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import LogoMark from '../../components/LogoMark';
 
@@ -20,7 +21,7 @@ const Item = ({ label, Icon, active, onClick }) => (
   </ButtonBase>
 );
 
-const BottomBar = ({ tab, onTab, logo, onCenter }) => {
+const BottomBar = ({ tab, onTab, logo, onCenter, open }) => {
   const theme = useTheme();
   return (
     <Box
@@ -34,6 +35,7 @@ const BottomBar = ({ tab, onTab, logo, onCenter }) => {
         onClick={onCenter}
         disableRipple
         aria-label="Cosa vuoi fare"
+        aria-expanded={open}
         sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', borderRadius: 0, '&.Mui-focusVisible': { outlineOffset: '-4px' } }}
       >
         <Box
@@ -42,7 +44,7 @@ const BottomBar = ({ tab, onTab, logo, onCenter }) => {
             transform: 'translateY(-14px)', boxShadow: `0 8px 18px ${alpha(theme.palette.primary.main, 0.4)}`, border: '4px solid', borderColor: 'background.default',
           }}
         >
-          {logo === 'centro' ? <LogoMark width={26} /> : <PlayArrowIcon sx={{ fontSize: 26 }} />}
+          {open ? <CloseIcon sx={{ fontSize: 26 }} /> : logo === 'centro' ? <LogoMark width={26} /> : <PlayArrowIcon sx={{ fontSize: 26 }} />}
         </Box>
       </ButtonBase>
       <Item label="Storico" Icon={HistoryIcon} active={tab === 'storico'} onClick={() => onTab('storico')} />
