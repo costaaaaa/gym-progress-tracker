@@ -44,7 +44,7 @@ const RecuperoScreen = ({ wk, tools, onDone }) => {
           <Typography sx={{ fontWeight: 700, fontSize: '1.1rem' }}>Esercizio completato</Typography>
         ) : (
           <>
-            <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', ...TABULAR }}>Prossima: serie {wk.sets[next].label} di {work} · {wk.weight} kg × {wk.reps}</Typography>
+            <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', ...TABULAR }}>Prossima: serie {wk.sets[next].label} di {work} · {`${wk.weight}\u00a0kg\u00a0×\u00a0${wk.reps}`}</Typography>
             {tools.dischi && <Typography color="text.secondary" sx={TABULAR}>Per lato: {platesText(wk.weight)} kg</Typography>}
           </>
         )}

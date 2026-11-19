@@ -1,6 +1,6 @@
 // PROTOTIPO (da buttare): struttura nuova. Rotta /prototype/redesign, solo in sviluppo. Dati finti, nessun backend.
 import { useEffect, useState } from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box } from '@mui/material';
 import { useThemeMode } from '../../context/ThemeModeContext';
 import { useProto, MENU_VOCI, FLAGS } from './useProto';
 import ProtoSwitcher from './ProtoSwitcher';
@@ -12,6 +12,10 @@ import PrimaScreen from './PrimaScreen';
 import SerieScreen from './SerieScreen';
 import RecuperoScreen from './RecuperoScreen';
 import RiepilogoScreen from './RiepilogoScreen';
+import SchedePage from './SchedePage';
+import StoricoPage from './StoricoPage';
+import ProgressiPage from './ProgressiPage';
+import AccountPage from './AccountPage';
 
 const INITIAL_SETS = [
   { label: 'R', w: 20, r: 12 },
@@ -85,10 +89,12 @@ const PrototypeRedesign = () => {
               {values.s === 'home' ? (
                 <HomeScreen key={values.moduli} moduli={values.moduli} bozza={bozza} onStart={start} />
               ) : (
-                <Box sx={{ p: 3, textAlign: 'center' }}>
-                  <Typography sx={{ fontWeight: 700, mb: 0.5 }}>{values.s}</Typography>
-                  <Typography color="text.secondary">Nel prossimo giro</Typography>
-                </Box>
+                <>
+                  {values.s === 'schede' && <SchedePage detail={detail} setMany={setMany} />}
+                  {values.s === 'storico' && <StoricoPage values={values} flags={flags} detail={detail} set={set} setMany={setMany} />}
+                  {values.s === 'progressi' && <ProgressiPage values={values} flags={flags} detail={detail} set={set} setMany={setMany} />}
+                  {values.s === 'account' && <AccountPage values={values} detail={detail} setMany={setMany} />}
+                </>
               )}
             </Box>
             <BottomBar tab={tab} onTab={(t) => { setAperto(false); setMany({ s: t, ...NAV_RESET }); }} logo={values.logo} open={aperto && values.menu === 'ventaglio'} onCenter={() => setAperto((o) => !o)} />
