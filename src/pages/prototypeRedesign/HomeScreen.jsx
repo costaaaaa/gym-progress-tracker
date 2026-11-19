@@ -1,6 +1,6 @@
 // PROTOTIPO (da buttare): Home con blocchi fissi, blocchi dei moduli e «Modifica Home»
 import { useState } from 'react';
-import { Avatar, Box, Button, IconButton, Typography } from '@mui/material';
+import { Avatar, Box, Button, ButtonBase, IconButton, Typography } from '@mui/material';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import CheckIcon from '@mui/icons-material/Check';
@@ -17,13 +17,15 @@ const DAYS = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
 const DONE = [0, 2];
 const TODAY = 3;
 
-export const Header = ({ logo }) => (
+export const Header = ({ logo, onAvatar }) => (
   <Box component="header" sx={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, height: 56, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
       {logo === 'alto' && <LogoMark width={22} />}
       <Typography component="span" sx={{ ...titleSx, fontSize: '1.15rem', fontWeight: 700 }}>Liftindex</Typography>
     </Box>
-    <Avatar aria-label="Account" sx={{ width: 34, height: 34, bgcolor: 'secondary.main', color: 'background.paper', fontSize: 15, fontWeight: 700 }}>A</Avatar>
+    <ButtonBase onClick={onAvatar} aria-label="Account" sx={{ borderRadius: '50%', p: '5px', m: '-5px' }}>
+      <Avatar sx={{ width: 34, height: 34, bgcolor: 'secondary.main', color: 'background.paper', fontSize: 15, fontWeight: 700 }}>A</Avatar>
+    </ButtonBase>
   </Box>
 );
 

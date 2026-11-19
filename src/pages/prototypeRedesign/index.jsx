@@ -1,30 +1,73 @@
-// PROTOTIPO (da buttare): struttura nuova, giro 1. Rotta /prototype/redesign, solo in sviluppo. Dati finti, nessun backend.
+// PROTOTIPO (da buttare): struttura nuova. Rotta /prototype/redesign, solo in sviluppo. Dati finti, nessun backend.
 import { useEffect, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import { useThemeMode } from '../../context/ThemeModeContext';
-import { useProto, MENU_VOCI } from './useProto';
+import { useProto, MENU_VOCI, FLAGS } from './useProto';
 import ProtoSwitcher from './ProtoSwitcher';
 import HomeScreen, { Header } from './HomeScreen';
 import BottomBar from './BottomBar';
 import CenterMenu from './CenterMenu';
 import Fan from './Fan';
+import PrimaScreen from './PrimaScreen';
 import SerieScreen from './SerieScreen';
+import RecuperoScreen from './RecuperoScreen';
+import RiepilogoScreen from './RiepilogoScreen';
 
-const TAB_NAMES = { schede: 'Schede', storico: 'Storico', progressi: 'Progressi' };
+const INITIAL_SETS = [
+  { label: 'R', w: 20, r: 12 },
+  { label: '1', w: 60, r: 10 },
+  { label: '2', w: 60, r: 10 },
+  { label: '3' },
+  { label: '4' },
+];
+const INITIAL_TOOLS = { timer: true, suggerito: true, nota: false, dischi: false, rir: false };
+const FULL_SCREEN = ['prima', 'serie', 'recupero', 'riepilogo'];
+const NAV_RESET = { scheda: null, allenamento: null, esercizio: null, pagina: null };
 
 const PrototypeRedesign = () => {
-  const { values, set } = useProto();
+  const { values, set, setMany, detail } = useProto();
   const { mode, toggleThemeMode } = useThemeMode();
-  const [tab, setTab] = useState('home');
   const [aperto, setAperto] = useState(false);
+  const [sets, setSets] = useState(INITIAL_SETS);
+  const [weight, setWeight] = useState('62,5');
+  const [reps, setReps] = useState('10');
+  const [tools, setTools] = useState(INITIAL_TOOLS);
+  const wk = { sets, setSets, weight, setWeight, reps, setReps };
 
   // Il parametro tema (chiaro|scuro) porta il tema dell'app a quel valore
   useEffect(() => {
     if (values.tema && (values.tema === 'scuro') !== (mode === 'dark')) toggleThemeMode();
   }, [values.tema, mode, toggleThemeMode]);
 
-  const start = () => { setAperto(false); set('s', 'serie'); };
+  // Il parametro strumenti (nessuno|tutti) accende o spegne nota, dischi e RIR/RPE; gli interruttori fanno il contrario
+  useEffect(() => {
+    setTools((t) => {
+      const any = t.nota || t.dischi || t.rir;
+      if (values.strumenti === 'tutti' && !any) return { ...t, nota: true, dischi: true, rir: true };
+      if (values.strumenti === 'nessuno' && any) return { ...t, nota: false, dischi: false, rir: false };
+      return t;
+    });
+  }, [values.strumenti]);
+  const setTool = (key, value) => {
+    const next = { ...tools, [key]: value };
+    setTools(next);
+    set('strumenti', next.nota || next.dischi || next.rir ? 'tutti' : 'nessuno');
+  };
+
+  const bozza = values.bozza === '1';
+  const go = (screen) => set('s', screen);
+  const start = () => { setAperto(false); go(bozza ? 'serie' : 'prima'); };
   const voci = MENU_VOCI[values.moduli];
+  const flags = FLAGS[values.moduli];
+  const tab = ['home', 'schede', 'storico', 'progressi'].includes(values.s) ? values.s : null;
+  const full = FULL_SCREEN.includes(values.s);
+
+  const screen = () => {
+    if (values.s === 'prima') return <PrimaScreen tools={tools} setTool={setTool} giorno={Number(detail('giorno') ?? 1)} onExit={() => go('home')} onStart={() => go('serie')} />;
+    if (values.s === 'serie') return <SerieScreen wk={wk} tools={tools} tecniche={values.tecniche} bozza={bozza} onExit={() => go('home')} go={go} />;
+    if (values.s === 'recupero') return <RecuperoScreen wk={wk} tools={tools} onDone={() => go('serie')} />;
+    return <RiepilogoScreen wk={wk} flags={flags} onDone={() => go('home')} />;
+  };
 
   return (
     <Box sx={{ minHeight: '100dvh', bgcolor: (t) => (t.palette.mode === 'dark' ? '#000' : '#e4e2df'), display: 'flex', justifyContent: 'center', alignItems: 'center', '@media (min-width:500px)': { py: 2 } }}>
@@ -35,25 +78,23 @@ const PrototypeRedesign = () => {
           '@media (min-width:500px)': { width: 390, height: 844, border: '1px solid', borderColor: 'text.secondary', borderRadius: '28px' },
         }}
       >
-        {values.s === 'serie' ? (
-          <SerieScreen tecniche={values.tecniche} strumenti={values.strumenti} bozza={values.bozza === '1'} onExit={() => set('s', 'home')} />
-        ) : (
+        {full ? screen() : (
           <>
-            <Header logo={values.logo} />
+            <Header logo={values.logo} onAvatar={() => setMany({ s: 'account', ...NAV_RESET })} />
             <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-              {tab === 'home' ? (
-                <HomeScreen key={values.moduli} moduli={values.moduli} bozza={values.bozza === '1'} onStart={start} />
+              {values.s === 'home' ? (
+                <HomeScreen key={values.moduli} moduli={values.moduli} bozza={bozza} onStart={start} />
               ) : (
                 <Box sx={{ p: 3, textAlign: 'center' }}>
-                  <Typography sx={{ fontWeight: 700, mb: 0.5 }}>{TAB_NAMES[tab]}</Typography>
+                  <Typography sx={{ fontWeight: 700, mb: 0.5 }}>{values.s}</Typography>
                   <Typography color="text.secondary">Nel prossimo giro</Typography>
                 </Box>
               )}
             </Box>
-            <BottomBar tab={tab} onTab={(t) => { setAperto(false); setTab(t); }} logo={values.logo} open={aperto && values.menu === 'ventaglio'} onCenter={() => setAperto((o) => !o)} />
+            <BottomBar tab={tab} onTab={(t) => { setAperto(false); setMany({ s: t, ...NAV_RESET }); }} logo={values.logo} open={aperto && values.menu === 'ventaglio'} onCenter={() => setAperto((o) => !o)} />
             {values.menu === 'pannello'
-              ? <CenterMenu open={aperto} onClose={() => setAperto(false)} onStart={start} bozza={values.bozza === '1'} voci={voci} />
-              : <Fan variant={values.tondi} open={aperto} onClose={() => setAperto(false)} onStart={start} bozza={values.bozza === '1'} voci={voci} />}
+              ? <CenterMenu open={aperto} onClose={() => setAperto(false)} onStart={start} bozza={bozza} voci={voci} />
+              : <Fan variant={values.tondi} open={aperto} onClose={() => setAperto(false)} onStart={start} bozza={bozza} voci={voci} />}
           </>
         )}
       </Box>

@@ -4,52 +4,20 @@ import { Box, Button, ButtonBase, IconButton, LinearProgress, TextField, Typogra
 import CloseIcon from '@mui/icons-material/Close';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import CheckIcon from '@mui/icons-material/Check';
-import AddIcon from '@mui/icons-material/Add';
-import RemoveIcon from '@mui/icons-material/Remove';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import DonutLargeIcon from '@mui/icons-material/DonutLarge';
 import SpeedIcon from '@mui/icons-material/Speed';
 import Sheet from './Sheet';
+import Stepper from './Stepper';
+import SetsSheet from './SetsSheet';
+import { toNum, platesText } from './numbers';
+import { iconBtnSx } from './styles';
 import { radius } from '../../theme/radius';
 import { TITLE_FONT_FAMILY, TABULAR } from '../../utils/fonts';
 import { BELOW_360 } from '../../theme/narrowScreens';
 
 const TECHNIQUES = ['Drop set', 'Rest pause', 'Myo-reps', 'Negative'];
-const INITIAL_SETS = [
-  { label: 'R', w: 20, r: 12 },
-  { label: '1', w: 60, r: 10 },
-  { label: '2', w: 60, r: 10 },
-  { label: '3' },
-  { label: '4' },
-];
-const MENU = ['Salta riscaldamento', 'Salta serie', 'Salta esercizio', 'Cambia esercizio', 'Aggiungi esercizio'];
-const fmt = (n) => String(n).replace('.', ',');
-const toNum = (s) => Number(String(s).replace(',', '.'));
-
-const Stepper = ({ label, value, onChange, step, decimal }) => {
-  const bump = (d) => {
-    const n = toNum(value);
-    const next = Math.max(0, Math.round(((Number.isFinite(n) ? n : 0) + d * step) * 100) / 100);
-    onChange(fmt(next));
-  };
-  return (
-    <Box sx={{ flex: 1, minWidth: 0 }}>
-      <Typography variant="caption" color="text.secondary" component="label" htmlFor={`f-${label}`}>{label}</Typography>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-        <IconButton aria-label={`${label} meno`} onClick={() => bump(-1)} sx={{ width: 44, height: 44, border: '1px solid', borderColor: 'divider' }}><RemoveIcon /></IconButton>
-        <TextField
-          id={`f-${label}`}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          slotProps={{ htmlInput: { inputMode: decimal ? 'decimal' : 'numeric', style: { textAlign: 'center', fontSize: '1.7rem', fontWeight: 700, padding: '8px 0', ...TABULAR } } }}
-          sx={{ flex: 1, minWidth: 0 }}
-        />
-        <IconButton aria-label={`${label} più`} onClick={() => bump(1)} sx={{ width: 44, height: 44, border: '1px solid', borderColor: 'divider' }}><AddIcon /></IconButton>
-      </Box>
-    </Box>
-  );
-};
-
+const MENU = ['Salta riscaldamento', 'Salta serie', 'Salta esercizio', 'Cambia esercizio', 'Aggiungi esercizio', 'Termina allenamento'];
 const Dot = ({ set, state }) => (
   <Box
     sx={{
@@ -62,15 +30,11 @@ const Dot = ({ set, state }) => (
   </Box>
 );
 
-const SerieScreen = ({ tecniche, strumenti, bozza, onExit }) => {
-  const [sets, setSets] = useState(INITIAL_SETS);
-  const [weight, setWeight] = useState('62,5');
-  const [reps, setReps] = useState('10');
+const SerieScreen = ({ wk, tools, tecniche, bozza, onExit, go }) => {
+  const { sets, setSets, weight, setWeight, reps, setReps } = wk;
   const [tech, setTech] = useState(null);
   const [suggest, setSuggest] = useState(true);
   const [sheet, setSheet] = useState(null);
-  const [editIdx, setEditIdx] = useState(null);
-  const [edit, setEdit] = useState({ w: '', r: '' });
   const [notice, setNotice] = useState('');
   const [rir, setRir] = useState(null);
 
@@ -87,15 +51,15 @@ const SerieScreen = ({ tecniche, strumenti, bozza, onExit }) => {
     if (allDone) return;
     setSets((ss) => ss.map((s, i) => (i === current ? { ...s, w: toNum(weight), r: toNum(reps) } : s)));
     setTech(null);
-    setNotice('Recupero: nel prossimo giro');
+    if (tools.timer) go('recupero');
+    else setNotice('Serie confermata');
   };
-  const close = () => { setSheet(null); setEditIdx(null); };
-  const startEdit = (i) => { setEditIdx(i); setEdit({ w: fmt(sets[i].w), r: fmt(sets[i].r) }); };
-  const saveEdit = () => {
-    setSets((ss) => ss.map((s, i) => (i === editIdx ? { ...s, w: toNum(edit.w), r: toNum(edit.r) } : s)));
-    setEditIdx(null);
+  const close = () => setSheet(null);
+  const pick = (label) => {
+    close();
+    if (label === 'Termina allenamento') go('riepilogo');
+    else setNotice(`${label}: nel prossimo giro`);
   };
-  const pick = (label) => { close(); setNotice(`${label}: nel prossimo giro`); };
 
   return (
     <Box sx={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'background.default', color: 'text.primary' }}>
@@ -120,7 +84,7 @@ const SerieScreen = ({ tecniche, strumenti, bozza, onExit }) => {
 
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap', bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: radius.lg, px: 1.5, py: 1 }}>
           <Typography variant="body2" color="text.secondary" sx={TABULAR}>Ultima volta: 60 kg × 10</Typography>
-          {suggest && (
+          {suggest && tools.suggerito && (
             <ButtonBase onClick={() => setSheet('perche')} sx={{ minHeight: 36, px: 1, borderRadius: radius.md, color: 'primary.text', fontWeight: 700, fontSize: 14 }}>
               Oggi prova 62,5 kg
             </ButtonBase>
@@ -148,11 +112,11 @@ const SerieScreen = ({ tecniche, strumenti, bozza, onExit }) => {
           })}
         </Box>
 
-        {strumenti === 'tutti' && (
+        {(tools.nota || tools.dischi || tools.rir) && (
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <IconButton aria-label="Nota per la serie" onClick={() => setSheet('nota')} sx={{ width: 44, height: 44, border: '1px solid', borderColor: 'divider' }}><EditNoteIcon /></IconButton>
-            <IconButton aria-label="Dischi" onClick={() => setSheet('dischi')} sx={{ width: 44, height: 44, border: '1px solid', borderColor: 'divider' }}><DonutLargeIcon /></IconButton>
-            <IconButton aria-label="RIR e RPE" onClick={() => setSheet('rir')} sx={{ width: 44, height: 44, border: '1px solid', borderColor: 'divider' }}><SpeedIcon /></IconButton>
+            {tools.nota && <IconButton aria-label="Nota per la serie" onClick={() => setSheet('nota')} sx={iconBtnSx}><EditNoteIcon /></IconButton>}
+            {tools.dischi && <IconButton aria-label="Dischi" onClick={() => setSheet('dischi')} sx={iconBtnSx}><DonutLargeIcon /></IconButton>}
+            {tools.rir && <IconButton aria-label="RIR e RPE" onClick={() => setSheet('rir')} sx={iconBtnSx}><SpeedIcon /></IconButton>}
           </Box>
         )}
       </Box>
@@ -179,26 +143,7 @@ const SerieScreen = ({ tecniche, strumenti, bozza, onExit }) => {
         ))}
       </Sheet>
 
-      <Sheet open={sheet === 'fatte'} onClose={close} title="Serie fatte">
-        {sets.map((s, i) => s.w == null ? null : (
-          <Box key={i} sx={{ mb: 0.5 }}>
-            <ButtonBase onClick={() => startEdit(i)} sx={{ width: '100%', justifyContent: 'space-between', minHeight: 48, px: 1.5, borderRadius: radius.lg, bgcolor: 'background.subtle' }}>
-              <Typography sx={{ fontWeight: 600 }}>{s.label === 'R' ? 'Riscaldamento' : `Serie ${s.label}`}</Typography>
-              <Typography sx={TABULAR}>{fmt(s.w)} kg × {s.r}</Typography>
-            </ButtonBase>
-            {editIdx === i && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, py: 1 }}>
-                <Box sx={{ display: 'flex', gap: 1.5, [BELOW_360]: { flexDirection: 'column', gap: 1 } }}>
-                  <Stepper label="Peso (kg)" value={edit.w} onChange={(w) => setEdit((e) => ({ ...e, w }))} step={2.5} decimal />
-                  <Stepper label="Ripetizioni" value={edit.r} onChange={(r) => setEdit((e) => ({ ...e, r }))} step={1} />
-                </Box>
-                <Button variant="contained" onClick={saveEdit} sx={{ minHeight: 44, alignSelf: 'flex-end' }}>Salva</Button>
-              </Box>
-            )}
-          </Box>
-        ))}
-        <Typography variant="caption" color="text.secondary">Tocca una serie per correggere peso e ripetizioni.</Typography>
-      </Sheet>
+      {sheet === 'fatte' && <SetsSheet sets={sets} onChange={setSets} onClose={close} />}
 
       <Sheet open={sheet === 'perche'} onClose={close} title="Perché 62,5 kg">
         <Typography sx={{ mb: 2 }}>L'ultima volta hai chiuso tutte le serie a 10 ripetizioni.</Typography>
@@ -214,7 +159,7 @@ const SerieScreen = ({ tecniche, strumenti, bozza, onExit }) => {
 
       <Sheet open={sheet === 'dischi'} onClose={close} title="Dischi">
         <Typography sx={TABULAR}>{weight} kg con il bilanciere da 20 kg</Typography>
-        <Typography sx={{ fontWeight: 700, mt: 1 }}>Per lato: 20 + 1,25 kg</Typography>
+        <Typography sx={{ fontWeight: 700, mt: 1 }}>Per lato: {platesText(weight)} kg</Typography>
       </Sheet>
 
       <Sheet open={sheet === 'rir'} onClose={close} title="Ripetizioni in riserva (RIR)">
