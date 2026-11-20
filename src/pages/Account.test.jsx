@@ -120,6 +120,44 @@ describe('unità di peso', () => {
   });
 });
 
+describe('moduli', () => {
+  const ALL = { body: true, recovery: true, levels: true, groups: true, ai: true };
+
+  it('la card «Moduli» sta subito dopo quella del profilo e del piano, prima della sicurezza', async () => {
+    await mount();
+    const modules = screen.getByRole('heading', { name: 'Moduli' });
+    const security = screen.getByText('Password');
+    expect(screen.getByText('atleta_con_un_nome_molto_lungo').compareDocumentPosition(modules) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(modules.compareDocumentPosition(security) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getAllByRole('switch', { name: /^(Misure|Recupero e serie per muscolo|Livelli e traguardi|Gruppi)$/ })).toHaveLength(4);
+  });
+
+  it('cambiare un modulo salva subito, aggiorna il contesto e lo annuncia nella notifica della pagina', async () => {
+    stubFetch({ settings: () => json({ success: true, modules: { ...ALL, body: false } }) });
+    await mount();
+    fireEvent.click(screen.getByRole('switch', { name: 'Misure' }));
+    await waitFor(() => expect(updateUser).toHaveBeenCalledWith({ modules: { ...ALL, body: false } }));
+    expect(fetch.mock.calls.filter(([url]) => url.includes('update_settings.php')).map(([, init]) => JSON.parse(init.body)))
+      .toEqual([{ modules: { body: false } }]);
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(screen.getByText('Misure: non attivo')).toBeTruthy();
+  });
+
+  it('se il salvataggio fallisce l\'errore si vede nella notifica e l\'interruttore resta com\'era', async () => {
+    stubFetch({ settings: () => json({ success: false }, 500) });
+    await mount();
+    fireEvent.click(screen.getByRole('switch', { name: 'Gruppi' }));
+    await screen.findByText('Errore nel salvataggio dei moduli');
+    expect(screen.getByRole('switch', { name: 'Gruppi' }).checked).toBe(true);
+  });
+
+  it('la card del consenso per i dati di salute e quella della visibilità nei gruppi restano sempre', async () => {
+    await mount();
+    expect(screen.getByText('Gruppi e visibilità')).toBeTruthy();
+    expect(screen.getByLabelText('Consenso al trattamento delle misure corporee')).toBeTruthy();
+  });
+});
+
 describe('obiettivo settimanale', () => {
   it('i pulsanti sono in Lexend 500, come i chip che si premono', async () => {
     render(<MemoryRouter><ThemeModeProvider><Account /></ThemeModeProvider></MemoryRouter>);
