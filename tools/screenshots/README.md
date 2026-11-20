@@ -104,7 +104,7 @@ fermarla, poi servire l'altra build sulla stessa porta e rifare lo screenshot.
 - Lo script stampa "Pagine NON riuscite" con il motivo ed esce con 1. Un'immagine mancante non viene
   salvata: non va confrontata come se fosse valida.
 - Gli "Avvisi" sono errori di console e testo sospetto (es. "errore nel caricamento"). Vanno letti:
-  non sono per forza bloccanti, ma indicano una pagina con dati finti incompleti.
+  indicano una pagina con dati finti incompleti, anche se non sempre bloccano.
 - Lo spinner di attesa esclude le barre di avanzamento determinate (`aria-valuenow`), che restano visibili
   di proposito. Se una pagina resta bloccata, lo script riporta quale elemento è ancora in caricamento.
 
