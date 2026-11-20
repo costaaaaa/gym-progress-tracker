@@ -4,6 +4,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import CloseIcon from '@mui/icons-material/Close';
 import { fanLayout } from './fanLayout';
+import { radius } from '../../theme/radius';
 
 // La barra in basso è alta 64 px; il centro del pulsante centrale sta 18 px sotto il bordo basso del velo
 const BAR_HEIGHT = 64;
@@ -104,7 +105,7 @@ const CenterFan = ({ open, onClose, items }) => {
                     gap: '4px',
                     alignItems: 'center',
                     justifyContent: 'flex-start',
-                    borderRadius: '12px',
+                    borderRadius: radius.lg,
                     color: 'common.white',
                     // Sul velo il contorno scuro del tema non si vede: bianco
                     '&.Mui-focusVisible': { outline: '2px solid', outlineColor: 'common.white', outlineOffset: '2px' },

@@ -134,7 +134,7 @@ describe('tab sconosciuta', () => {
 describe('nomi accessibili', () => {
   it('l\'elenco dei tab ha un nome in italiano', async () => {
     await mount();
-    expect(screen.getByRole('tablist', { name: 'Sezioni di Progressi' })).toBeTruthy();
+    expect(screen.getByRole('tablist', { name: 'Sezioni dei progressi' })).toBeTruthy();
   });
 
   it('il titolo del documento segue il tab: «tab · Progressi | LiftIndex»', async () => {
