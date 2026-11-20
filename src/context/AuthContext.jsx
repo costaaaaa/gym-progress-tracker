@@ -25,6 +25,9 @@ const emailStateFrom = (data) => ({
   outcome: '',
 });
 
+// `modules` di user/read.php: un oggetto (se non lo è, il server è vecchio o la risposta è rovinata e non si tocca nulla)
+const isModules = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+
 // Provider che avvolgerà l'applicazione
 export const AuthProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -54,9 +57,12 @@ export const AuthProvider = ({ children }) => {
         const data = await response.json();
         if (data.success && mine === lastRead.current) {
           setEmailState({ ...emailStateFrom(data), outcome });
-          // Il login risponde senza l'unità di peso: la rilettura la porta
+          // Il login risponde senza l'unità di peso e senza i moduli: la rilettura li porta
           if (isWeightUnit(data.weight_unit)) {
             setUser((prev) => (prev && prev.weight_unit !== data.weight_unit ? { ...prev, weight_unit: data.weight_unit } : prev));
+          }
+          if (isModules(data.modules)) {
+            setUser((prev) => (prev && JSON.stringify(prev.modules) !== JSON.stringify(data.modules) ? { ...prev, modules: data.modules } : prev));
           }
         }
       } catch (error) {
