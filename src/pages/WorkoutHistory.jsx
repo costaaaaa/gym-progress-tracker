@@ -122,6 +122,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null, recordRequest =
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [activePlan, setActivePlan] = useState(null);
   const [planLoaded, setPlanLoaded] = useState(false);
+  const [planReadFailed, setPlanReadFailed] = useState(false);
   const [openRecordDialog, setOpenRecordDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState(null);
@@ -160,15 +161,19 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null, recordRequest =
       if (data.records) {
         const active = data.records.find(plan => plan.is_active);
         setActivePlan(active || null);
+      } else {
+        setPlanReadFailed(true);
       }
     } catch (error) {
       console.error('Error fetching active plan:', error);
+      setPlanReadFailed(true);
     } finally {
       setPlanLoaded(true);
     }
   };
 
   useOncePerRequest(recordRequest, planLoaded, () => {
+    if (planReadFailed) return; // la scheda non si è letta: non si sa se manca, niente avviso
     if (activePlan) setOpenRecordDialog(true);
     else setSnackbar({ open: true, message: t('history.record_needs_plan'), severity: 'info' });
   });

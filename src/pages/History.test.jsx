@@ -127,6 +127,20 @@ describe('«Registra allenamento passato» dal ventaglio', () => {
     expect(avviso.closest('.MuiAlert-root').className).toContain('MuiAlert-colorInfo');
   });
 
+  it.each([
+    ['la rete è giù', () => Promise.reject(new Error('rete'))],
+    ['la risposta non è valida', () => Promise.resolve(json({ success: false }))],
+  ])('se la lettura delle schede fallisce (%s) non dice «serve una scheda attiva» e non apre nulla', async (_, failure) => {
+    const errore = vi.spyOn(console, 'error').mockImplementation(() => {});
+    fetchMock.mockImplementation((url) => (url.includes('read_plans.php') ? failure() : Promise.resolve(json({ records: [] }))));
+    await mount({ pathname: '/storico', state: { openRecord: true } });
+    await waitFor(() => expect(screen.getByTestId('state').textContent).toBe('null'));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.queryByText('Per registrare un allenamento serve una scheda attiva.')).toBeNull();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    errore.mockRestore();
+  });
+
   it('l\'avviso della mancanza di scheda attiva compare una volta per richiesta', async () => {
     plans = [{ ...plan, is_active: false }];
     await mount({ pathname: '/storico', state: { openRecord: true } });
