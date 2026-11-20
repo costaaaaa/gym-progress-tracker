@@ -31,6 +31,9 @@ class User
     const MODULES = array('body', 'recovery', 'levels', 'groups', 'ai');
     public $modules = array('body' => true, 'recovery' => true, 'levels' => true, 'groups' => true, 'ai' => true);
     public $modules_chosen = false; // true se l'utente ha già fatto la sua scelta (modules_chosen_at pieno)
+    // Visibilità nei gruppi (colonne group_show_<chiave>), valori salvati: chiave => mostrato agli altri membri
+    const GROUP_VISIBILITY = array('workouts', 'volume', 'streak', 'level');
+    public $group_visibility = array('workouts' => true, 'volume' => true, 'streak' => true, 'level' => true);
 
     // Helper per calcolare l'età dalla data di nascita
     public function calculateAge()
@@ -70,6 +73,26 @@ class User
         foreach (self::MODULES as $key) {
             $this->modules[$key] = (bool)$row['module_' . $key];
         }
+    }
+
+    // Le colonne della visibilità nei gruppi per una SELECT: «group_show_workouts, group_show_volume, ...»
+    public static function groupVisibilityColumns()
+    {
+        return implode(', ', array_map(function ($key) { return 'group_show_' . $key; }, self::GROUP_VISIBILITY));
+    }
+
+    // Valori effettivi della visibilità nei gruppi da una riga con le colonne di groupVisibilityColumns() e module_levels:
+    // il volume vale solo con gli allenamenti mostrati, streak e livello solo con il modulo Livelli attivo.
+    // I valori salvati non cambiano quando cambia il dato da cui dipendono.
+    public static function effectiveGroupVisibility(array $row)
+    {
+        $levels = (bool)$row['module_levels'];
+        return array(
+            'workouts' => (bool)$row['group_show_workouts'],
+            'volume' => (bool)$row['group_show_workouts'] && (bool)$row['group_show_volume'],
+            'streak' => $levels && (bool)$row['group_show_streak'],
+            'level' => $levels && (bool)$row['group_show_level'],
+        );
     }
 
     // Create new user record
@@ -387,7 +410,7 @@ class User
     }
     public function readById($id)
     {
-        $query = "SELECT id, username, email, created_at, rest_timer_enabled, birth_date, gender, training_start_date, locale, weight_unit, " . self::moduleColumns() . ", modules_chosen_at, password_changed_at FROM " . $this->table_name . " WHERE id = ? LIMIT 1";
+        $query = "SELECT id, username, email, created_at, rest_timer_enabled, birth_date, gender, training_start_date, locale, weight_unit, " . self::moduleColumns() . ", modules_chosen_at, " . self::groupVisibilityColumns() . ", password_changed_at FROM " . $this->table_name . " WHERE id = ? LIMIT 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(1, $id);
         $stmt->execute();
@@ -406,6 +429,9 @@ class User
             $this->weight_unit = $row['weight_unit'];
             $this->setModulesFromRow($row);
             $this->modules_chosen = $row['modules_chosen_at'] !== null;
+            foreach (self::GROUP_VISIBILITY as $key) {
+                $this->group_visibility[$key] = (bool)$row['group_show_' . $key];
+            }
             $this->password_changed_at = $row['password_changed_at'];
             
             // Calcolo dinamico per il frontend
@@ -418,7 +444,7 @@ class User
 
     // Aggiorna le impostazioni del profilo dell'utente. Aggiornamento parziale: si scrivono
     // solo le chiavi presenti in $fields (rest_timer_enabled, birth_date, gender,
-    // training_start_date, locale, weight_unit, module_<chiave>); quelle assenti restano come sono.
+    // training_start_date, locale, weight_unit, module_<chiave>, group_show_<chiave>); quelle assenti restano come sono.
     // 'modules_chosen' => true scrive modules_chosen_at = NOW() solo se è ancora NULL (nella stessa UPDATE dei moduli).
     public function updateProfile(array $fields)
     {
@@ -432,6 +458,10 @@ class User
         foreach (self::MODULES as $key) {
             $allowed[] = 'module_' . $key;
             $flags[] = 'module_' . $key;
+        }
+        foreach (self::GROUP_VISIBILITY as $key) {
+            $allowed[] = 'group_show_' . $key;
+            $flags[] = 'group_show_' . $key;
         }
         $sets = array();
         $values = array();

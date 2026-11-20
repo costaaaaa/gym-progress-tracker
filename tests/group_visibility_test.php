@@ -17,6 +17,7 @@ foreach (['RL_REGISTER_MAX', 'RL_LOGIN_IP_MAX', 'RL_LOGIN_USER_MAX', 'RL_LOGIN_A
     putenv("$v=1000");
 }
 putenv('MAIL_DRIVER=log');
+putenv('GYM_API_SECRET=prova-gruppi-visibilita-segreto');
 
 startServer($backend, PORT_A, '/tmp/gv-a.log', []);
 
@@ -221,7 +222,7 @@ $res = read('gvb');
 check('B: board vuota nella settimana', ($res['board'] ?? null) === [], json_encode($res['board'] ?? null));
 check('B: visibility.workouts e volume false (anche con group_show_volume a 1), streak e level true',
     ($res['visibility'] ?? null) === ['workouts' => false, 'volume' => false, 'streak' => true, 'level' => true], json_encode($res['visibility'] ?? null));
-check('B: members completo, con le stesse chiavi', memberNames($res) === ['gva', 'gvb', 'gvc'] && array_keys($res['members'][1]) === array_keys($membersAll[1]), json_encode($res['members'] ?? null));
+check('B: members completo, con le stesse chiavi', memberNames($res) === ['gva', 'gvb', 'gvc'] && array_keys($res['members'][1]) === ['username', 'role', 'joined_at', 'is_me'], json_encode($res['members'] ?? null));
 $res = read('gvb', 'streak');
 $rowA = rowOf($res, 'gva');
 check('B: la classifica streak c\'è, con i campi della settimana a null per tutti',
