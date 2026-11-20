@@ -115,16 +115,38 @@ describe('salvataggio', () => {
     expect(sw('Livelli e traguardi').checked).toBe(true);
   });
 
-  it('l\'interruttore mostra subito il nuovo stato e resta fermo finché il salvataggio non finisce', async () => {
+  it('l\'interruttore mostra subito il nuovo stato; durante il salvataggio non è disattivato, tiene il fuoco e un altro clic è ignorato', async () => {
     let finish;
     settings = () => new Promise((resolve) => { finish = () => resolve(json({ success: true, modules: { ...ALL, body: false } })); });
     render(<Harness initial={{ id: 1, modules: ALL }} />);
+    sw('Misure').focus();
     fireEvent.click(sw('Misure'));
     expect(sw('Misure').checked).toBe(false);
-    expect(sw('Misure').disabled).toBe(true);
+    expect(sw('Misure').disabled).toBe(false);
+    expect(sw('Misure').getAttribute('aria-busy')).toBe('true');
+    expect(document.activeElement).toBe(sw('Misure'));
+    fireEvent.click(sw('Misure'));
+    expect(fetch.mock.calls.filter(([url]) => url.includes('update_settings.php'))).toHaveLength(1);
     finish();
-    await waitFor(() => expect(sw('Misure').disabled).toBe(false));
+    await waitFor(() => expect(sw('Misure').getAttribute('aria-busy')).not.toBe('true'));
     expect(sw('Misure').checked).toBe(false);
+    expect(document.activeElement).toBe(sw('Misure'));
+  });
+
+  it('due interruttori cambiati di seguito con le risposte in ordine inverso: ogni risposta aggiorna solo la sua chiave', async () => {
+    const finish = [];
+    settings = () => new Promise((resolve) => { finish.push(resolve); });
+    render(<Harness initial={{ id: 1, modules: ALL }} />);
+    fireEvent.click(sw('Misure'));
+    fireEvent.click(sw('Recupero e serie per muscolo'));
+    // Il server li ha applicati in ordine: la seconda risposta li ha entrambi, la prima solo il primo, ma arriva dopo
+    finish[1](json({ success: true, modules: { ...ALL, body: false, recovery: false } }));
+    await waitFor(() => expect(notify).toHaveBeenCalledTimes(1));
+    finish[0](json({ success: true, modules: { ...ALL, body: false } }));
+    await waitFor(() => expect(notify).toHaveBeenCalledTimes(2));
+    expect(sw('Misure').checked).toBe(false);
+    expect(sw('Recupero e serie per muscolo').checked).toBe(false);
+    expect(updateUser).toHaveBeenLastCalledWith({ modules: { ...ALL, body: false, recovery: false } });
   });
 
   it('se il salvataggio fallisce l\'interruttore torna indietro e l\'errore si vede', async () => {
@@ -133,7 +155,6 @@ describe('salvataggio', () => {
     fireEvent.click(sw('Misure'));
     await waitFor(() => expect(notify).toHaveBeenCalledWith('Errore nel salvataggio dei moduli', 'error'));
     expect(sw('Misure').checked).toBe(true);
-    expect(sw('Misure').disabled).toBe(false);
     expect(updateUser).not.toHaveBeenCalled();
   });
 
@@ -158,6 +179,16 @@ describe('avviso dei Gruppi', () => {
     // Non blocca: il modulo è non attivo
     expect(sw('Gruppi').checked).toBe(false);
     expect(savedBodies()).toEqual([{ modules: { groups: false } }]);
+  });
+
+  it('l\'avviso sta in una regione annunciata, presente nel DOM anche prima che compaia', async () => {
+    groups = [{ id: 1 }];
+    mount();
+    const region = within(screen.getAllByRole('listitem')[3]).getByRole('status');
+    expect(region.textContent).toBe('');
+    fireEvent.click(sw('Gruppi'));
+    await waitFor(() => expect(region.textContent).toMatch(/Resti nel tuo gruppo/));
+    expect(within(screen.getAllByRole('listitem')[3]).getByRole('status')).toBe(region);
   });
 
   it('con un gruppo solo il testo è al singolare', async () => {

@@ -3,7 +3,6 @@ import { Box, Tabs, Tab, CircularProgress, Typography } from '@mui/material';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
 import StraightenIcon from '@mui/icons-material/Straighten';
-import { useSearchParams } from 'react-router-dom';
 import { useTabbedPage } from '../hooks/useTabbedPage';
 import { useModule } from '../hooks/useModule';
 import { ModuleInactive } from '../components/ModuleGate';
@@ -30,8 +29,7 @@ const TAB_ICONS = {
 
 const Dashboard = () => {
   const { t } = useTranslation();
-  const { currentTab, visitedTabs } = useTabbedPage(TABS, { title: t('dashboard.title'), description: t('dashboard.meta.description') });
-  const [, setSearchParams] = useSearchParams();
+  const { currentTab, visitedTabs, handleTabChange } = useTabbedPage(TABS, { title: t('dashboard.title'), description: t('dashboard.meta.description') });
   const modules = { recovery: useModule('recovery'), body: useModule('body') };
   // Una tab di un modulo non attivo sparisce dalla riga; se l'indirizzo la chiede, al suo posto c'è la pagina «non attivo»
   const visibleTabs = TABS.filter((tab) => !tab.module || modules[tab.module]);
@@ -43,8 +41,8 @@ const Dashboard = () => {
       <Typography variant="pageTitle" gutterBottom>{t('dashboard.title')}</Typography>
       <Box sx={{ borderBottom: '1px solid', borderColor: 'divider', mb: 2 }}>
         <Tabs
-          value={inactive ? false : visibleTabs.findIndex((tab) => tab.id === currentTab)}
-          onChange={(event, index) => setSearchParams({ tab: visibleTabs[index].id })}
+          value={inactive ? false : Math.max(visibleTabs.findIndex((tab) => tab.id === currentTab), 0)}
+          onChange={(event, index) => handleTabChange(event, TABS.indexOf(visibleTabs[index]))}
           aria-label={t('dashboard.tabs_aria')}
           {...INK_TABS}
         >

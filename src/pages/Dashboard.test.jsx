@@ -12,6 +12,14 @@ const auth = vi.hoisted(() => ({ value: null }));
 vi.mock('../context/AuthContext', () => ({ useAuth: () => auth.value }));
 auth.value = { isLoggedIn: true, loading: false };
 
+// Registra il valore che arriva alle Tabs a ogni render (un -1 non è un valore valido)
+const tabValues = vi.hoisted(() => []);
+vi.mock('@mui/material', async (importOriginal) => {
+  const mui = await importOriginal();
+  const Tabs = (props) => { tabValues.push(props.value); return <mui.Tabs {...props} />; };
+  return { ...mui, Tabs };
+});
+
 const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
 
@@ -105,6 +113,21 @@ describe('tab Muscoli', () => {
     expect(tab.getAttribute('aria-selected')).toBe('true');
     await screen.findByText(/serie allenanti/); // la scheda Muscoli ha caricato i suoi dati
     expect(screen.getByText('Petto').closest('li').textContent).toContain('3');
+  });
+});
+
+describe('tab sconosciuta', () => {
+  it('?tab=foo apre la prima tab, senza che le Tabs ricevano mai un valore non valido', async () => {
+    tabValues.length = 0;
+    render(
+      <ThemeModeProvider>
+        <MemoryRouter initialEntries={['/dashboard?tab=foo']}><Dashboard /></MemoryRouter>
+      </ThemeModeProvider>,
+    );
+    const tab = await screen.findByRole('tab', { name: 'Esercizi' });
+    expect(tab.getAttribute('aria-selected')).toBe('true');
+    expect(tabValues.length).toBeGreaterThan(0);
+    expect(tabValues.every((value) => value === 0)).toBe(true);
   });
 });
 

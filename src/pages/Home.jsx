@@ -286,9 +286,9 @@ const Home = () => {
 
             {weeklySummary}
 
-            {/* Stato Muscolare: se l'altra card della riga non c'è, occupa tutta la riga */}
+            {/* Stato Muscolare */}
             {recoveryOn && (
-              <Grid item xs={12} md={groupsOn ? 6 : 12}>
+              <Grid item xs={12} md={6}>
                 <Card sx={{ height: '100%', p: '22px' }}>
                   <BodyVisualizer recoveryData={dashboardStats?.recovery} detail={dashboardStats?.detail} />
                   <Button component={RouterLink} to="/dashboard?tab=muscles" size="small" sx={{ mt: 1.5, px: 0 }}>
@@ -300,7 +300,7 @@ const Home = () => {
 
             {/* Gruppi */}
             {groupsOn && (
-              <Grid item xs={12} md={recoveryOn ? 6 : 12}>
+              <Grid item xs={12} md={6}>
                 <GroupsHomeCard />
               </Grid>
             )}

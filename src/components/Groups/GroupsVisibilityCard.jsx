@@ -5,10 +5,12 @@ import { errorMessage, leaveGroup, listGroups, roleLabel } from '../../api/group
 import { track } from '../../utils/analytics';
 import { useTranslation } from 'react-i18next';
 import { NEUTRAL_TEXT } from '../../utils/buttonStyles';
+import { useModule } from '../../hooks/useModule';
 
 // Impostazioni account: in quali gruppi sei, cosa vedono gli altri, uscita con un clic
 const GroupsVisibilityCard = () => {
   const { t } = useTranslation();
+  const groupsActive = useModule('groups');
   const [groups, setGroups] = useState(null);
   const [error, setError] = useState('');
 
@@ -28,7 +30,7 @@ const GroupsVisibilityCard = () => {
   };
 
   return (
-    <Card id="groups-visibility" tabIndex={-1} sx={{ p: '24px', '&:focus': { outline: 'none' } }}>
+    <Card id="groups-visibility" tabIndex={-1} sx={{ p: '24px', '&:focus-visible': { outline: '2px solid', outlineColor: 'text.primary', outlineOffset: '2px' } }}>
       <Typography variant="cardTitle">{t('groups.visibility.title')}</Typography>
       <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5, mb: 1.5, maxWidth: 560 }}>
         {t('groups.visibility.text')}
@@ -36,7 +38,9 @@ const GroupsVisibilityCard = () => {
       {error && <Typography sx={{ fontSize: 16, color: 'error.main', mb: 1 }}>{error}</Typography>}
       {groups?.length === 0 && (
         <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
-          {t('groups.visibility.none')} <Link component={RouterLink} to="/gruppi">{t('groups.visibility.go')}</Link>
+          {t('groups.visibility.none')}
+          {/* A Gruppi non attivo il collegamento porterebbe alla pagina «non attivo» */}
+          {groupsActive && <> <Link component={RouterLink} to="/gruppi">{t('groups.visibility.go')}</Link></>}
         </Typography>
       )}
       {groups?.map((g) => (

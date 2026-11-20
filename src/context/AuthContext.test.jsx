@@ -467,6 +467,18 @@ describe('AuthProvider: moduli', () => {
     await waitFor(() => expect(screen.getByTestId('modules').textContent).toBe(JSON.stringify(MODULES)));
   });
 
+  it('la rilettura scrive moduli e unità anche nella copia in localStorage', async () => {
+    readReturns({ id: 1, username: 'a', modules: MODULES, weight_unit: 'lb' });
+    const Login = () => {
+      const { login } = useAuth();
+      return <button onClick={() => login({ id: 1, username: 'a' })}>entra</button>;
+    };
+    render(<AuthProvider><Modules /><Login /></AuthProvider>);
+    fireEvent.click(screen.getByText('entra'));
+    await waitFor(() => expect(screen.getByTestId('modules').textContent).toBe(JSON.stringify(MODULES)));
+    expect(JSON.parse(localStorage.getItem('user'))).toMatchObject({ modules: MODULES, weight_unit: 'lb' });
+  });
+
   it('un server senza moduli lascia user senza modules (e il resto dell\'app li legge tutti attivi)', async () => {
     readReturns({ id: 1, username: 'a' });
     localStorage.setItem('isLoggedIn', 'true');

@@ -3,23 +3,15 @@ import { Link as RouterLink } from 'react-router-dom';
 import { Box, Card, Link, Switch, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
-import { isModuleActive, MODULE_KEYS } from '../../hooks/useModule';
-import { saveModules } from '../../api/modules';
+import { isModuleActive, MODULE_KEYS, MODULE_PATHS, useSaveModules } from '../../hooks/useModule';
 import { listGroups } from '../../api/groups';
-
-// Pagina di oggi di ogni modulo: dove porta «Apri»
-const OPEN_PATH = {
-  body: '/dashboard?tab=body',
-  recovery: '/dashboard?tab=muscles',
-  levels: '/profilo',
-  groups: '/gruppi',
-};
 
 // Card «Moduli» dell'Account: cosa vedere in LiftIndex. Il cambio si salva subito; `notify(messaggio, gravità)`
 // lo annuncia (e mostra l'errore) nella notifica della pagina.
 const ModulesCard = ({ notify }) => {
   const { t } = useTranslation();
-  const { user, updateUser } = useAuth();
+  const { user } = useAuth();
+  const save = useSaveModules();
   // Valore atteso di un modulo mentre il suo salvataggio è in corso: l'interruttore lo mostra subito
   const [pending, setPending] = useState({});
   const [groupsCount, setGroupsCount] = useState(null);
@@ -41,10 +33,11 @@ const ModulesCard = ({ notify }) => {
   }, [groupsActive]);
 
   const toggle = async (key, next) => {
+    // Mentre il salvataggio di questa chiave è in corso un altro cambio è ignorato (l'interruttore non si disattiva: il fuoco resta)
+    if (key in pending) return;
     setPending((p) => ({ ...p, [key]: next }));
-    const res = await saveModules({ [key]: next });
+    const res = await save({ [key]: next });
     if (res.ok) {
-      updateUser({ modules: res.modules });
       notify(t('modules.changed', { name: t(`modules.${key}.name`), state: t(next ? 'modules.on' : 'modules.off') }), 'success');
     } else {
       notify(t('modules.save_error'), 'error');
@@ -76,7 +69,7 @@ const ModulesCard = ({ notify }) => {
                   <Box sx={{ display: 'flex', alignItems: 'center', columnGap: 2, flexWrap: 'wrap', mt: 0.25 }}>
                     <Typography id={`module-state-${key}`} sx={{ fontSize: 16, fontWeight: 600 }}>{t(on ? 'modules.on' : 'modules.off')}</Typography>
                     {on && (
-                      <Link component={RouterLink} to={OPEN_PATH[key]} aria-label={t('modules.open_aria', { name })}
+                      <Link component={RouterLink} to={MODULE_PATHS[key]} aria-label={t('modules.open_aria', { name })}
                         sx={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, fontSize: 16, fontWeight: 600, color: 'text.primary' }}>
                         {t('modules.open')}
                       </Link>
@@ -90,18 +83,22 @@ const ModulesCard = ({ notify }) => {
                 >
                   <Switch
                     checked={on}
-                    disabled={key in pending}
                     onChange={(e) => toggle(key, e.target.checked)}
-                    inputProps={{ role: 'switch', 'aria-label': name, 'aria-describedby': `module-state-${key}` }}
+                    inputProps={{ role: 'switch', 'aria-label': name, 'aria-busy': key in pending, 'aria-describedby': `module-state-${key}` }}
                   />
                 </Box>
               </Box>
-              {key === 'groups' && !on && groupsCount > 0 && (
-                <Box sx={{ mt: 1 }}>
-                  <Typography sx={{ fontSize: 16 }}>{t('modules.groups_warning', { count: groupsCount })}</Typography>
-                  <Link href="#groups-visibility" onClick={showGroups} sx={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, fontSize: 16, fontWeight: 600, color: 'text.primary' }}>
-                    {t('modules.groups_manage')}
-                  </Link>
+              {key === 'groups' && (
+                // Sempre nel DOM: l'avviso arriva dopo una lettura asincrona e così viene annunciato
+                <Box role="status" sx={{ mt: !on && groupsCount > 0 ? 1 : 0 }}>
+                  {!on && groupsCount > 0 && (
+                    <>
+                      <Typography sx={{ fontSize: 16 }}>{t('modules.groups_warning', { count: groupsCount })}</Typography>
+                      <Link href="#groups-visibility" onClick={showGroups} sx={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, fontSize: 16, fontWeight: 600, color: 'text.primary' }}>
+                        {t('modules.groups_manage')}
+                      </Link>
+                    </>
+                  )}
                 </Box>
               )}
             </Box>

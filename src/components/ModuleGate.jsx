@@ -1,26 +1,22 @@
 import { useState } from 'react';
 import { Alert, Box, Button, Card, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../context/AuthContext';
-import { useModule } from '../hooks/useModule';
-import { saveModules } from '../api/modules';
+import { useModule, useSaveModules } from '../hooks/useModule';
 import ButtonSpinner from './ButtonSpinner';
 
 // «Il modulo X non è attivo»: al posto di una pagina (o di una tab) di un modulo non attivo. I dati sono rimasti;
 // «Attiva» salva e la destinazione richiesta compare subito. Mai un'attivazione automatica.
 export const ModuleInactive = ({ module, heading = 'h1' }) => {
   const { t } = useTranslation();
-  const { updateUser } = useAuth();
+  const save = useSaveModules();
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
 
   const turnOn = async () => {
     setSaving(true);
     setFailed(false);
-    const res = await saveModules({ [module]: true });
-    if (res.ok) {
-      updateUser({ modules: res.modules });
-    } else {
+    const res = await save({ [module]: true });
+    if (!res.ok) {
       setFailed(true);
       setSaving(false);
     }

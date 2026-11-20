@@ -12,7 +12,7 @@ import { BELOW_360 } from '../../theme/narrowScreens';
 import { isAuthPath, stripLangPrefix, useLocalizedPath } from '../../i18n/paths';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 import LogoMark from '../LogoMark';
-import { useModule } from '../../hooks/useModule';
+import { isModuleActive } from '../../hooks/useModule';
 
 // Voci del centro nav desktop: Home / Allenamenti / Dashboard / Gruppi.
 // Su mobile la navigazione vive in BottomNav.jsx (Home/Allenamenti/Focus/Dashboard/Profilo);
@@ -56,8 +56,7 @@ const Navbar = () => {
   // Con l'app bloccata dalla conferma dell'email le voci porterebbero a pagine che rispondono 403
   const showAppNav = isLoggedIn && emailState?.blocked !== true;
   // La voce di un modulo non attivo non si mostra
-  const groupsActive = useModule('groups');
-  const visibleNavItems = navItems.filter((item) => item.module !== 'groups' || groupsActive);
+  const visibleNavItems = navItems.filter((item) => !item.module || isModuleActive(user, item.module));
 
   // Accedi e Registrati conservano la pagina a cui tornare: il ?next= già presente
   // su login e registrazione, oppure il link di invito che si sta guardando.
