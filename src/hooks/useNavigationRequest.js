@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 /**
@@ -33,7 +33,8 @@ export const useNavigationRequest = (key) => {
 export const useOncePerRequest = (request, ready, handle) => {
   const handled = useRef(null);
   const latest = useRef(handle);
-  latest.current = handle;
+  // Il layout effect gira prima dell'effetto qui sotto: `handle` è quello dell'ultimo render
+  useLayoutEffect(() => { latest.current = handle; });
   useEffect(() => {
     if (!request || !ready || handled.current === request) return;
     handled.current = request;
