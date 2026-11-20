@@ -176,17 +176,17 @@ describe('schermata «Cosa ti interessa?» dopo la conferma', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Scrivi il codice' }));
     const dialog = await screen.findByRole('dialog', { name: 'Conferma la tua email' });
     fireEvent.change(within(dialog).getByLabelText(/^Codice di 6 cifre/), { target: { value: '123456' } });
-    // Da qui in poi la finestra dei moduli non deve mai essere nel documento finché l'avviso c'è
-    let seenBeforeNotice = false;
+    // Da qui fino alla chiusura dell'avviso la finestra dei moduli non deve mai essere nel documento, nemmeno per un render
+    let seenWithNotice = false;
     const observer = new MutationObserver(() => {
-      if (choice() && !screen.queryByText('Email confermata.')) seenBeforeNotice = true;
+      if (choice()) seenWithNotice = true;
     });
     observer.observe(document.body, { childList: true, subtree: true, attributes: true });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Conferma' }));
     expect(await screen.findByText('Email confermata.')).toBeTruthy();
     await new Promise((resolve) => { setTimeout(resolve, 50); });
     observer.disconnect();
-    expect(seenBeforeNotice).toBe(false);
+    expect(seenWithNotice).toBe(false);
     expect(choice()).toBeNull();
     fireEvent.click(await screen.findByRole('button', { name: /chiudi|close/i }));
     expect(await screen.findByRole('dialog', { name: 'Cosa ti interessa?' })).toBeTruthy();

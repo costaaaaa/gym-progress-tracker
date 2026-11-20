@@ -217,6 +217,18 @@ describe('Focus e avviso di esito', () => {
   });
 });
 
+describe('avviso che arriva a finestra già decisa', () => {
+  it('aperta, poi arriva l\'avviso (sparisce), parte un Focus, l\'avviso finisce: non ricompare', async () => {
+    const { rerender } = mount(baseState());
+    expect(dialog()).toBeTruthy();
+    rerender(<Harness initial={baseState()} waiting />);
+    await waitFor(() => expect(dialog()).toBeNull()); // l'uscita della finestra ha una transizione
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({ selectedDay: 'A', startTime: Date.now() }));
+    rerender(<Harness initial={baseState()} waiting={false} />);
+    expect(dialog()).toBeNull();
+  });
+});
+
 describe('uscita se il salvataggio fallisce', () => {
   const fail = async () => {
     settings = () => json({ success: false }, 500);

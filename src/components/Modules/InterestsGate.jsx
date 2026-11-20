@@ -32,8 +32,9 @@ const InterestsDialog = ({ waiting }) => {
   // Si decide quando la finestra sta per diventare visibile (non durante l'avviso di esito: nel frattempo può partire un Focus)
   useEffect(() => {
     if (!due) return;
-    if (waiting) setDecision((prev) => (prev === 'now' ? null : prev));
-    else if (decision === null) setDecision(hasFocusSessionInProgress() ? 'next-open' : 'now');
+    if (waiting) {
+      if (decision === 'now') setDecision(null);
+    } else if (decision === null) setDecision(hasFocusSessionInProgress() ? 'next-open' : 'now');
   }, [due, waiting, decision]);
 
   // Aspetta che l'avviso di esito della conferma si chiuda, per non coprirlo
