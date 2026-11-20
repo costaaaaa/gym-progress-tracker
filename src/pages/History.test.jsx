@@ -1,7 +1,7 @@
 // Pagina Storico: titolo di pagina, cronologia di prima, rilettura a fine allenamento e finestra «Registra» aperta una volta dal ventaglio.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter, Link, useLocation } from 'react-router-dom';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { MemoryRouter, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import History from './History';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { json, expectNoNestedContainer } from '../test/dom';
@@ -79,10 +79,33 @@ describe('rilettura a fine allenamento', () => {
 });
 
 describe('«Registra allenamento passato» dal ventaglio', () => {
-  it('con una scheda attiva apre la finestra e consuma lo stato: non si riapre tornando indietro', async () => {
+  it('con una scheda attiva apre la finestra e consuma lo stato', async () => {
     await mount({ pathname: '/storico', state: { openRecord: true } });
     await waitFor(() => expect(dialogTitle()).toBeTruthy());
     expect(screen.getByTestId('state').textContent).toBe('null');
+  });
+
+  it('giro vero: aperta la finestra, si va in un\'altra pagina e si torna indietro, e la finestra non si riapre', async () => {
+    let navigate;
+    const Nav = () => { navigate = useNavigate(); return null; };
+    render(
+      <ThemeModeProvider>
+        <MemoryRouter initialEntries={[{ pathname: '/storico', state: { openRecord: true } }]}>
+          <Nav />
+          <Routes>
+            <Route path="/storico" element={<History />} />
+            <Route path="/altrove" element={<p>Altra pagina</p>} />
+          </Routes>
+        </MemoryRouter>
+      </ThemeModeProvider>,
+    );
+    await waitFor(() => expect(dialogTitle()).toBeTruthy());
+    act(() => navigate('/altrove'));
+    await screen.findByText('Altra pagina');
+    act(() => navigate(-1));
+    await screen.findByText('Nessun allenamento registrato');
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(dialogTitle()).toBeNull();
   });
 
   it('chiusa la finestra non si riapre da sola', async () => {

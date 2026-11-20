@@ -2,8 +2,8 @@
 // Colori del tema chiaro scritti a mano: text.primary #1a1816, text.secondary #6b6663.
 import { useState } from 'react';
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { MemoryRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import Dashboard from './Dashboard';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { json } from '../test/dom';
@@ -227,11 +227,36 @@ describe('«Nuova misura» dal ventaglio', () => {
   };
   const dialogTitle = () => screen.queryByText('Aggiungi misurazioni');
 
-  it('apre la finestra «Aggiungi misurazioni» e consuma lo stato: tornando indietro non si riapre', async () => {
+  it('apre la finestra «Aggiungi misurazioni» e consuma lo stato', async () => {
     openWith({ openMeasure: true });
     expect(await screen.findByRole('dialog')).toBeTruthy();
     expect(dialogTitle()).toBeTruthy();
     expect(screen.getByTestId('state').textContent).toBe('null');
+  });
+
+  it('giro vero: aperta la finestra, si va in un\'altra pagina e si torna indietro, e la finestra non si riapre', async () => {
+    let navigate;
+    const Nav = () => { navigate = useNavigate(); return null; };
+    auth.value = { isLoggedIn: true, loading: false, weightUnit: 'kg', user: { id: 1, modules: { body: true, recovery: true } } };
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(json({ records: [], consent_required: false }))));
+    render(
+      <ThemeModeProvider>
+        <MemoryRouter initialEntries={[{ pathname: '/dashboard', search: '?tab=body', state: { openMeasure: true } }]}>
+          <Nav />
+          <Routes>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/altrove" element={<p>Altra pagina</p>} />
+          </Routes>
+        </MemoryRouter>
+      </ThemeModeProvider>,
+    );
+    await screen.findByRole('dialog');
+    act(() => navigate('/altrove'));
+    await screen.findByText('Altra pagina');
+    act(() => navigate(-1));
+    await screen.findByRole('button', { name: 'Nuova misurazione' });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('chiusa la finestra non si riapre da sola', async () => {
