@@ -2,6 +2,10 @@ import { useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { saveGroupVisibility } from '../api/groupVisibility';
 
+// Un dato è mostrato nei gruppi se l'account non dice il contrario: senza `group_visibility` (copia vecchia in cache,
+// risposta non ancora arrivata) è tutto mostrato, come per i moduli.
+export const isGroupShown = (user, key) => user?.group_visibility?.[key] !== false;
+
 // Il solo punto che salva la visibilità nei gruppi: `save(patch)` torna `{ ok, groupVisibility }` come
 // saveGroupVisibility. A salvataggio riuscito l'account riceve solo le chiavi di `patch`, sopra quelle che ha già:
 // con due salvataggi in volo, la risposta più vecchia (che arriva per ultima) ha l'altra chiave ancora com'era e

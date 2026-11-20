@@ -3,6 +3,8 @@ import { Box, Card, Link, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { MODULE_KEYS, MODULE_PATHS } from '../../hooks/useModule';
 import { listGroups } from '../../api/groups';
+import { scrollToAndFocus } from '../../utils/focus';
+import { INK_LINK } from '../../utils/buttonStyles';
 import ModuleRow from './ModuleRow';
 
 // Avviso sotto la riga dei Gruppi: a Gruppi non attivo serve sapere se si è ancora in qualche gruppo
@@ -22,11 +24,10 @@ const GroupsNotice = ({ on }) => {
     return () => { cancelled = true; };
   }, [on]);
 
-  const showGroups = (event) => {
+  // I collegamenti portano a un punto della card «Gruppi e visibilità» della stessa pagina, col fuoco
+  const goTo = (id) => (event) => {
     event.preventDefault();
-    const card = document.getElementById('groups-visibility');
-    card?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-    card?.focus();
+    scrollToAndFocus(id);
   };
 
   return (
@@ -35,9 +36,10 @@ const GroupsNotice = ({ on }) => {
       {!on && groupsCount > 0 && (
         <>
           <Typography sx={{ fontSize: 16 }}>{t('modules.groups_warning', { count: groupsCount })}</Typography>
-          <Link href="#groups-visibility" onClick={showGroups} sx={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, fontSize: 16, fontWeight: 600, color: 'text.primary' }}>
-            {t('modules.groups_manage')}
-          </Link>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 2 }}>
+            <Link href="#groups-shown" onClick={goTo('groups-shown')} sx={INK_LINK}>{t('modules.groups_show')}</Link>
+            <Link href="#groups-list" onClick={goTo('groups-list')} sx={INK_LINK}>{t('modules.groups_leave')}</Link>
+          </Box>
         </>
       )}
     </Box>

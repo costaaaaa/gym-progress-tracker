@@ -15,3 +15,10 @@ export const focusedElement = () => {
   const active = document.activeElement;
   return active && active !== document.body ? active : null;
 };
+
+// Porta alla vista un punto della pagina (per id) e gli dà il fuoco: per i collegamenti che puntano a un blocco già presente
+export const scrollToAndFocus = (id) => {
+  const target = document.getElementById(id);
+  target?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  target?.focus();
+};

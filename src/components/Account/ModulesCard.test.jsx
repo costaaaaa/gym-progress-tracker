@@ -29,7 +29,7 @@ const savedBodies = () => fetch.mock.calls.filter(([url]) => url.includes('updat
 const Harness = ({ initial }) => {
   const [user, setUser] = useState(initial);
   auth.value = { user, updateUser: (patch) => { updateUser(patch); setUser((u) => ({ ...u, ...patch })); } };
-  return <MemoryRouter><ThemeModeProvider><ModulesCard notify={notify} /><section id="groups-visibility" tabIndex={-1}>Visibilità</section></ThemeModeProvider></MemoryRouter>;
+  return <MemoryRouter><ThemeModeProvider><ModulesCard notify={notify} /><section id="groups-visibility" tabIndex={-1}><div id="groups-shown" tabIndex={-1}>Cosa mostro qui</div><div id="groups-list" tabIndex={-1}>Elenco</div></section></ThemeModeProvider></MemoryRouter>;
 };
 const mount = (modules = ALL, user = { id: 1, modules }) => {
   settings = okSettings(modules);
@@ -179,12 +179,14 @@ describe('salvataggio', () => {
 describe('avviso dei Gruppi', () => {
   const warning = (text) => screen.queryByText(text);
 
-  it('spegnendo Gruppi stando in 2 gruppi: «Resti nei tuoi 2 gruppi…», con il collegamento «Gestisci i gruppi»', async () => {
+  it('spegnendo Gruppi stando in 2 gruppi: «Resti nei tuoi 2 gruppi…», con i collegamenti «Cosa mostro» ed «Esci dai gruppi»', async () => {
     groups = [{ id: 1 }, { id: 2 }];
     mount();
     fireEvent.click(sw('Gruppi'));
-    expect(await screen.findByText('Resti nei tuoi 2 gruppi e gli altri membri continuano a vedere i tuoi dati.')).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Gestisci i gruppi' })).toBeTruthy();
+    expect(await screen.findByText('Resti nei tuoi 2 gruppi e gli altri membri continuano a vedere ciò che hai scelto di mostrare.')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Cosa mostro' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Esci dai gruppi' })).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Gestisci i gruppi' })).toBeNull();
     // Non blocca: il modulo è non attivo
     expect(sw('Gruppi').checked).toBe(false);
     expect(savedBodies()).toEqual([{ modules: { groups: false } }]);
@@ -204,7 +206,7 @@ describe('avviso dei Gruppi', () => {
     groups = [{ id: 1 }];
     mount();
     fireEvent.click(sw('Gruppi'));
-    expect(await screen.findByText('Resti nel tuo gruppo e gli altri membri continuano a vedere i tuoi dati.')).toBeTruthy();
+    expect(await screen.findByText('Resti nel tuo gruppo e gli altri membri continuano a vedere ciò che hai scelto di mostrare.')).toBeTruthy();
   });
 
   it('senza gruppi non c\'è nessun avviso', async () => {
@@ -225,7 +227,7 @@ describe('avviso dei Gruppi', () => {
   it('con Gruppi già non attivo e un gruppo, l\'avviso c\'è anche alla riapertura della pagina', async () => {
     groups = [{ id: 1 }, { id: 2 }, { id: 3 }];
     mount({ ...ALL, groups: false });
-    expect(await screen.findByText('Resti nei tuoi 3 gruppi e gli altri membri continuano a vedere i tuoi dati.')).toBeTruthy();
+    expect(await screen.findByText('Resti nei tuoi 3 gruppi e gli altri membri continuano a vedere ciò che hai scelto di mostrare.')).toBeTruthy();
   });
 
   it('riattivando Gruppi l\'avviso sparisce', async () => {
@@ -236,14 +238,22 @@ describe('avviso dei Gruppi', () => {
     await waitFor(() => expect(warning(/Resti nel/)).toBeNull());
   });
 
-  it('«Gestisci i gruppi» porta alla card della visibilità nei gruppi, spostandoci il fuoco', async () => {
+  it.each([['Cosa mostro', 'groups-shown'], ['Esci dai gruppi', 'groups-list']])('«%s» porta al suo punto della card, spostandoci il fuoco', async (name, id) => {
     groups = [{ id: 1 }];
     const scrollIntoView = vi.fn();
     Element.prototype.scrollIntoView = scrollIntoView;
     mount({ ...ALL, groups: false });
-    fireEvent.click(await screen.findByRole('link', { name: 'Gestisci i gruppi' }));
-    expect(document.activeElement).toBe(document.getElementById('groups-visibility'));
+    fireEvent.click(await screen.findByRole('link', { name }));
+    expect(document.activeElement).toBe(document.getElementById(id));
     expect(scrollIntoView).toHaveBeenCalled();
     delete Element.prototype.scrollIntoView;
+  });
+
+  it('i due collegamenti hanno un bersaglio di almeno 44 px', async () => {
+    groups = [{ id: 1 }];
+    mount({ ...ALL, groups: false });
+    for (const name of ['Cosa mostro', 'Esci dai gruppi']) {
+      expect(parseInt(getComputedStyle(await screen.findByRole('link', { name })).minHeight, 10)).toBeGreaterThanOrEqual(44);
+    }
   });
 });

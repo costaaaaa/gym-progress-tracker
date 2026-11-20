@@ -1,20 +1,24 @@
 import { useState } from 'react';
 import {
-  Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Link, Typography,
+  Alert, Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Link, Typography,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 import { legalPaths } from '../../i18n/paths';
-import { weightUnitLabel } from '../../utils/weightUnit';
+import GroupVisibilityOptions from './GroupVisibilityOptions';
 
-// Consenso all'ingresso in un gruppo: cosa vedranno gli altri membri e cosa no.
+// Consenso all'ingresso in un gruppo: cosa vedranno gli altri membri e cosa no. Lo username si vede sempre; il resto sono
+// le opzioni dell'account, che qui si cambiano e si salvano subito (valgono per tutti i gruppi).
 // Senza la spunta il server rifiuta l'ingresso (join.php, code consent_required).
-const ShareConsentDialog = ({ open, groupName, username, loading, weightUnit, onClose, onConfirm }) => {
+const ShareConsentDialog = ({ open, groupName, username, loading, onClose, onConfirm }) => {
   const { t, i18n } = useTranslation();
   const [accepted, setAccepted] = useState(false);
+  // Esito dell'ultimo cambio di un'opzione: { message, severity }
+  const [note, setNote] = useState(null);
 
   const close = () => {
     setAccepted(false);
+    setNote(null);
     onClose();
   };
 
@@ -25,9 +29,14 @@ const ShareConsentDialog = ({ open, groupName, username, loading, weightUnit, on
         <Typography sx={{ fontWeight: 600, mb: 0.5 }}>{t('groups.consent.sees')}</Typography>
         <Box component="ul" sx={{ mt: 0, mb: 2, pl: 2.5, fontSize: 14 }}>
           <li>{username ? t('groups.consent.sees_username_named', { username }) : t('groups.consent.sees_username')}</li>
-          <li>{t('groups.consent.sees_level')}</li>
-          <li>{t('groups.consent.sees_week', { unit: weightUnitLabel(weightUnit) })}</li>
         </Box>
+        <Typography sx={{ fontWeight: 600, mb: 0.5 }}>{t('groups.consent.optional')}</Typography>
+        <Typography sx={{ fontSize: 14, color: 'text.secondary', mb: 0.5 }}>{t('groups.shown.applies_to_all')}</Typography>
+        <GroupVisibilityOptions notify={(message, severity) => setNote({ message, severity })} idPrefix="consent-shown" />
+        <Box role="status" sx={{ mt: 1 }}>
+          {note?.severity === 'success' && <Typography sx={{ fontSize: 14, mb: 1 }}>{note.message}</Typography>}
+        </Box>
+        {note?.severity === 'error' && <Alert severity="error" sx={{ mb: 2 }}>{note.message}</Alert>}
         <Typography sx={{ fontWeight: 600, mb: 0.5 }}>{t('groups.consent.not_sees')}</Typography>
         <Box component="ul" sx={{ mt: 0, mb: 2, pl: 2.5, fontSize: 14 }}>
           <li>{t('groups.consent.not_personal')}</li>

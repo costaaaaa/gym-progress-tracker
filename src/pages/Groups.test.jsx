@@ -330,6 +330,17 @@ describe('visibilità nella classifica del gruppo', () => {
     expect(screen.getByText('luca')).toBeTruthy(); // elenco dei membri
     expect(tabs()).toContain('Settimana');
     expect(screen.getByText(NO_WORKOUTS).closest('[aria-hidden="true"]')).toBeNull();
+    // Sotto il testo, il collegamento al blocco «Cosa mostro» dell'Account
+    const link = screen.getByRole('link', { name: 'Cosa mostro' });
+    expect(link.getAttribute('href')).toBe('/profilo?tab=settings#groups-shown');
+    expect(parseInt(getComputedStyle(link).minHeight, 10)).toBeGreaterThanOrEqual(44);
+  });
+
+  it('senza il collegamento «Cosa mostro» quando mostri gli allenamenti, anche se streak e livello non ci sono perché li hai nascosti', async () => {
+    stubRead(vis({ streak: false, level: false }));
+    routes('/gruppi/7', ALL);
+    await screen.findAllByText('luca');
+    expect(screen.queryByRole('link', { name: 'Cosa mostro' })).toBeNull();
   });
 
   it('risposta senza visibility (server vecchio): tutto come oggi, secondo il modulo Livelli', async () => {

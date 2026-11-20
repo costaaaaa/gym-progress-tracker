@@ -188,7 +188,7 @@ describe('bottoni', () => {
 
   it('«Gestisci» e «Esci» dei gruppi sono in inchiostro, non rosso del marchio né errore', async () => {
     await mount();
-    const card = screen.getByText('Gruppi e visibilità', { selector: 'p' }).closest('.MuiCard-root');
+    const card = screen.getByText('Gruppi e visibilità', { selector: 'h2' }).closest('.MuiCard-root');
     expect(getComputedStyle(within(card).getByRole('link', { name: 'Gestisci' })).color).toBe(INK);
     expect(getComputedStyle(within(card).getByRole('button', { name: 'Esci' })).color).toBe(INK);
   });
