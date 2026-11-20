@@ -23,19 +23,19 @@ const saved = () => fetch.mock.calls.filter(([url]) => url.includes('update_sett
 // Ciò che la Home legge: un modulo attivo si vede
 const Probe = () => <p>{`misure ${useModule('body') ? 'si' : 'no'}, livelli ${useModule('levels') ? 'si' : 'no'}, gruppi ${useModule('groups') ? 'si' : 'no'}`}</p>;
 
-const Harness = ({ initial }) => {
+const Harness = ({ initial, waiting = false }) => {
   const [state, setState] = useState(initial);
   auth.set = (patch) => setState((s) => ({ ...s, ...patch }));
   auth.value = {
     ...state,
     updateUser: (patch) => { updateUser(patch); setState((s) => ({ ...s, user: { ...s.user, ...patch } })); },
   };
-  return <ThemeModeProvider><InterestsGate /><Probe /></ThemeModeProvider>;
+  return <ThemeModeProvider><InterestsGate waiting={waiting} /><Probe /></ThemeModeProvider>;
 };
 const baseState = (user = {}, emailState = verified) => ({
   isLoggedIn: true, emailState, user: { id: 1, modules: NONE, modules_chosen: false, ...user },
 });
-const mount = (state = baseState()) => render(<Harness initial={state} />);
+const mount = (state = baseState(), props = {}) => render(<Harness initial={state} {...props} />);
 const dialog = () => screen.queryByRole('dialog', { name: 'Cosa ti interessa?' });
 
 beforeEach(() => {
@@ -163,5 +163,71 @@ describe('scelta', () => {
     fireEvent.click(document.querySelector('.MuiBackdrop-root'));
     expect(dialog()).toBeTruthy();
     expect(saved()).toEqual([]);
+  });
+});
+
+describe("un account dopo l'altro nello stesso montaggio", () => {
+  const newUser = (id) => ({ user: { id, modules: NONE, modules_chosen: false } });
+
+  it("dopo un salvataggio dell'utente A, l'utente B vede la finestra vuota e con i pulsanti che rispondono", async () => {
+    mount();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Peso e misure' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Continua' }));
+    await waitFor(() => expect(dialog()).toBeNull());
+    act(() => auth.set(newUser(2)));
+    expect(dialog()).toBeTruthy();
+    screen.getAllByRole('checkbox').forEach((b) => expect(b.checked).toBe(false));
+    fetch.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'Salta' }));
+    await waitFor(() => expect(dialog()).toBeNull());
+    expect(saved()).toEqual([{ modules_chosen: true }]);
+  });
+
+  it("con il Focus in corso per A (rimandata), l'utente B senza Focus vede la finestra", () => {
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({ selectedDay: 'A', startTime: Date.now() }));
+    mount();
+    expect(dialog()).toBeNull();
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
+    act(() => auth.set(newUser(2)));
+    expect(dialog()).toBeTruthy();
+  });
+});
+
+describe("in fila con l'avviso di esito", () => {
+  it("non si apre finché c'è un avviso in corso, poi sì", () => {
+    const { rerender } = mount(baseState(), { waiting: true });
+    expect(dialog()).toBeNull();
+    rerender(<Harness initial={baseState()} waiting={false} />);
+    expect(dialog()).toBeTruthy();
+  });
+});
+
+describe('uscita se il salvataggio fallisce', () => {
+  const fail = async () => {
+    settings = () => json({ success: false }, 500);
+    mount();
+    fireEvent.click(screen.getByRole('button', { name: 'Continua' }));
+    await screen.findByRole('alert');
+  };
+
+  it("senza errore non c'è «Più tardi» e Esc non chiude", () => {
+    mount();
+    expect(screen.queryByRole('button', { name: 'Più tardi' })).toBeNull();
+    fireEvent.keyDown(dialog(), { key: 'Escape', code: 'Escape' });
+    expect(dialog()).toBeTruthy();
+  });
+
+  it('dopo un errore «Più tardi» chiude e non parte nessuna chiamata', async () => {
+    await fail();
+    fetch.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'Più tardi' }));
+    await waitFor(() => expect(dialog()).toBeNull());
+    expect(saved()).toEqual([]);
+  });
+
+  it('dopo un errore anche Esc chiude', async () => {
+    await fail();
+    fireEvent.keyDown(dialog(), { key: 'Escape', code: 'Escape' });
+    await waitFor(() => expect(dialog()).toBeNull());
   });
 });

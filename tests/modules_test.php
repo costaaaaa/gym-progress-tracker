@@ -62,6 +62,11 @@ api('POST', '/api/user/register.php', null, regBody('mopart'));
 $conn->exec("INSERT INTO gym_users (username, email, password, modules_chosen_at) VALUES ('moold', 'moold@example.test', " . $conn->quote(password_hash(PASSWORD, PASSWORD_BCRYPT)) . ", NOW())");
 check('un account esistente (default delle colonne) ha tutto attivo e la scelta già fatta', stored('moold') === '11111');
 
+echo "Login di un account appena registrato\n";
+$r = api('POST', '/api/user/login.php', null, ['username' => 'mopart', 'password' => PASSWORD]);
+check('login web subito dopo la registrazione: user.modules tutti false e user.modules_chosen false',
+    $r[0] === 200 && ($r[1]['user']['modules'] ?? null) === array_fill_keys(KEYS, false) && ($r[1]['user']['modules_chosen'] ?? null) === false, $r[2]);
+
 echo "Lettura\n";
 $a = bearer('mofull');
 $r = api('GET', '/api/user/read.php', $a);
@@ -84,7 +89,9 @@ check('login web: user.modules come in read.php (groups non attivo, il resto att
 check('login web: user.modules_chosen false (nessuna scelta ancora)', ($r[1]['user']['modules_chosen'] ?? null) === false, $r[2]);
 check('login web: id, username e locale come prima', ($r[1]['user']['username'] ?? null) === 'mofull' && isset($r[1]['user']['id'], $r[1]['user']['locale']), $r[2]);
 $r = api('POST', '/api/user/mobile_login.php', null, ['username' => 'mofull', 'password' => PASSWORD]);
-check('login mobile: la risposta non cambia (nessun modules)', $r[0] === 200 && !array_key_exists('modules', $r[1]['user'] ?? []) && !array_key_exists('modules', $r[1]), $r[2]);
+check('login mobile: la risposta non cambia (nessun modules né modules_chosen)', $r[0] === 200
+    && !array_key_exists('modules', $r[1]['user'] ?? []) && !array_key_exists('modules', $r[1])
+    && !array_key_exists('modules_chosen', $r[1]['user'] ?? []) && !array_key_exists('modules_chosen', $r[1]), $r[2]);
 $conn->exec("UPDATE gym_users SET module_groups = 1 WHERE username = 'mofull'");
 
 echo "Impostazioni\n";

@@ -1,6 +1,6 @@
 // L'intercettore di fetch controlla l'indirizzo anche quando fetch riceve un Request o un URL, non solo una stringa.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { AuthProvider, useAuth } from './AuthContext';
 import { isModuleActive } from '../hooks/useModule';
 import EmailGate from '../components/EmailVerification/EmailGate';
@@ -531,5 +531,53 @@ describe('AuthProvider: moduli', () => {
     fireEvent.click(screen.getByText('rileggi'));
     await waitFor(() => expect(screen.getByTestId('email').textContent).toBe('riletta@example.com'));
     expect(screen.getByTestId('modules').textContent).toBe(JSON.stringify(MODULES));
+  });
+
+  it('una rilettura partita prima del salvataggio e arrivata dopo non riporta indietro modules e modules_chosen', async () => {
+    const OLD = { body: false, recovery: false, levels: false, groups: false, ai: false };
+    const NEW = { ...OLD, body: true };
+    readReturns({ id: 1, username: 'a', modules: OLD, modules_chosen: false });
+    localStorage.setItem('isLoggedIn', 'true');
+    const Tools = () => {
+      const { refreshEmailState, updateUser, user } = useAuth();
+      return (
+        <>
+          <button onClick={refreshEmailState}>rileggi</button>
+          <button onClick={() => updateUser({ modules: NEW, modules_chosen: true })}>salva</button>
+          <div data-testid="chosen">{String(user?.modules_chosen)}</div>
+        </>
+      );
+    };
+    render(<AuthProvider><Modules /><Tools /></AuthProvider>);
+    await waitFor(() => expect(screen.getByTestId('modules').textContent).toBe(JSON.stringify(OLD)));
+    // Una lettura che resta in volo
+    let release;
+    backend.mockImplementation(() => new Promise((resolve) => {
+      release = () => resolve(new Response(JSON.stringify({ success: true, id: 1, username: 'a', modules: OLD, modules_chosen: false }), { status: 200 }));
+    }));
+    fireEvent.click(screen.getByText('rileggi'));
+    fireEvent.click(screen.getByText('salva'));
+    await waitFor(() => expect(screen.getByTestId('chosen').textContent).toBe('true'));
+    await act(async () => { release(); });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.getByTestId('modules').textContent).toBe(JSON.stringify(NEW));
+    expect(screen.getByTestId('chosen').textContent).toBe('true');
+    expect(JSON.parse(localStorage.getItem('user'))).toMatchObject({ modules: NEW, modules_chosen: true });
+  });
+
+  it('una rilettura partita dopo il salvataggio vale', async () => {
+    const OLD = { body: false, recovery: false, levels: false, groups: false, ai: false };
+    readReturns({ id: 1, username: 'a', modules: OLD, modules_chosen: false });
+    localStorage.setItem('isLoggedIn', 'true');
+    const Tools = () => {
+      const { refreshEmailState, updateUser } = useAuth();
+      return (<><button onClick={refreshEmailState}>rileggi</button><button onClick={() => updateUser({ modules_chosen: true })}>salva</button></>);
+    };
+    render(<AuthProvider><Modules /><Tools /></AuthProvider>);
+    await waitFor(() => expect(screen.getByTestId('modules').textContent).toBe(JSON.stringify(OLD)));
+    fireEvent.click(screen.getByText('salva'));
+    readReturns({ id: 1, username: 'a', modules: { ...OLD, groups: true }, modules_chosen: true });
+    fireEvent.click(screen.getByText('rileggi'));
+    await waitFor(() => expect(screen.getByTestId('modules').textContent).toBe(JSON.stringify({ ...OLD, groups: true })));
   });
 });

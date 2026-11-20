@@ -1,7 +1,7 @@
 // Finestra del codice, promemoria del giorno, striscia e avviso di esito. Lo stato di AuthContext è finto: qui
 // conta cosa fanno i componenti con quello che il contesto dice.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import EmailGate from './EmailGate';
 import EmailStrip from './EmailStrip';
 import { textBelow } from '../../test/minText';
@@ -271,5 +271,28 @@ describe('avviso di esito', () => {
     auth.emailState = state({ verified: true, daysLeft: null, pendingEmail: null });
     view.rerender(<EmailGate />);
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+describe("schermata «Cosa ti interessa?» in fila con l'avviso di esito", () => {
+  const choice = () => screen.queryByRole('dialog', { name: 'Cosa ti interessa?' });
+
+  it("alla conferma si vede l'avviso e la finestra non c'è; chiuso l'avviso, la finestra si apre", async () => {
+    auth.user = { id: 7, modules: {}, modules_chosen: false };
+    const view = mountGate();
+    expect(choice()).toBeNull();
+    auth.emailState = state({ verified: true, daysLeft: null });
+    view.rerender(<EmailGate />);
+    expect(screen.getByText('Email confermata.')).toBeTruthy();
+    expect(choice()).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /chiudi|close/i }));
+    await waitFor(() => expect(choice()).toBeTruthy());
+  });
+
+  it('senza nessun avviso in corso (pagina ricaricata) si apre subito', () => {
+    auth.user = { id: 7, modules: {}, modules_chosen: false };
+    auth.emailState = state({ verified: true, daysLeft: null });
+    mountGate();
+    expect(choice()).toBeTruthy();
   });
 });
