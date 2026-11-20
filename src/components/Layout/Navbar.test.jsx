@@ -132,3 +132,27 @@ describe('barra in alto: bottone del tema', () => {
     expect(parseInt(style.height, 10)).toBeGreaterThanOrEqual(40);
   });
 });
+
+// Moduli: la voce «Gruppi» c'è solo a modulo attivo (un account senza moduli li ha tutti attivi)
+describe('barra in alto: voce Gruppi', () => {
+  afterEach(() => {
+    auth.value = { user: null, isLoggedIn: false, loading: false };
+  });
+  const links = (user) => {
+    auth.value = { user, isLoggedIn: true, loading: false };
+    render(<MemoryRouter initialEntries={['/']}><ThemeModeProvider><Navbar /></ThemeModeProvider></MemoryRouter>);
+    return ['Home', 'Allenamenti', 'Dashboard', 'Gruppi'].filter((name) => screen.queryByRole('link', { name }));
+  };
+
+  it('con Gruppi attivo la voce c\'è', () => {
+    expect(links({ username: 'atleta_demo', modules: { groups: true } })).toEqual(['Home', 'Allenamenti', 'Dashboard', 'Gruppi']);
+  });
+
+  it('con Gruppi non attivo la voce non c\'è e le altre restano', () => {
+    expect(links({ username: 'atleta_demo', modules: { groups: false } })).toEqual(['Home', 'Allenamenti', 'Dashboard']);
+  });
+
+  it('un account senza moduli ha la voce', () => {
+    expect(links({ username: 'atleta_demo' })).toContain('Gruppi');
+  });
+});
