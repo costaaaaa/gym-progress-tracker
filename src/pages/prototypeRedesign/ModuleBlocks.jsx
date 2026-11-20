@@ -1,6 +1,7 @@
 // PROTOTIPO (da buttare): blocchi dei moduli della Home, in misura piccola (una riga) e grande (card piena)
 import { Box, Collapse, LinearProgress, Typography, useMediaQuery } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import { radius } from '../../theme/radius';
 import { TITLE_FONT_FAMILY, TABULAR } from '../../utils/fonts';
 import { LevelStreakBig, RecoveryBars } from './HomeParts';
@@ -112,6 +113,7 @@ const ModuleCard = ({ id, size, rich = false }) => {
           <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 600, fontSize: big ? '1rem' : '0.95rem' }}>{MODULES[id]}</Typography>
           {!big && <Typography variant="body2" color="text.secondary" sx={TABULAR}>{SMALL[id]}</Typography>}
         </Box>
+        {!big && id === 'livello' && <LocalFireDepartmentIcon aria-hidden="true" sx={{ fontSize: 26, color: 'warning.text', flex: '0 0 auto' }} />}
         {!big && id === 'peso' && <Box sx={{ width: 56, flex: '0 0 auto' }}><Spark height={24} /></Box>}
         <ChevronRightIcon sx={{ color: 'text.secondary', flex: '0 0 auto' }} />
       </Box>
