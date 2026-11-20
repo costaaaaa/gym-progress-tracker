@@ -1143,7 +1143,7 @@
   "modules.inactive.text": "I tuoi dati sono rimasti dove li avevi lasciati: appena lo attivi li ritrovi.",
   "modules.inactive.turn_on_error": "Non sono riuscito ad attivare il modulo. Riprova.",
   "interests.title": "Cosa ti interessa?",
-  "interests.intro": "Scegli cosa vedere nell'app. Puoi cambiare idea quando vuoi dalla sezione moduli dell'account.",
+  "interests.intro": "Scegli cosa vedere nell'app. Puoi cambiare idea quando vuoi dalle impostazioni del profilo.",
   "interests.body.name": "Peso e misure",
   "interests.body.help": "Peso, grasso e circonferenze nel tempo.",
   "interests.groups.name": "Amici o palestra",

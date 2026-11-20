@@ -1143,7 +1143,7 @@
   "modules.inactive.text": "Your data is still where you left it: turn the module on and it's all there.",
   "modules.inactive.turn_on_error": "Couldn't turn the module on. Try again.",
   "interests.title": "What are you interested in?",
-  "interests.intro": "Choose what to see in the app. You can change your mind any time in the modules section of your account.",
+  "interests.intro": "Choose what to see in the app. You can change your mind any time in your profile settings.",
   "interests.body.name": "Weight and measurements",
   "interests.body.help": "Weight, body fat and measurements over time.",
   "interests.groups.name": "Friends or gym",
