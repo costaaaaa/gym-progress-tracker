@@ -84,10 +84,10 @@ const PrototypeRedesign = () => {
       >
         {full ? screen() : (
           <>
-            <Header logo={values.logo} onAvatar={() => setMany({ s: 'account', ...NAV_RESET })} />
+            <Header logo={values.logo} onColor={values.s === 'home' && values.home === 'colore'} onAvatar={() => setMany({ s: 'account', ...NAV_RESET })} />
             <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
               {values.s === 'home' ? (
-                <HomeScreen key={values.moduli} moduli={values.moduli} bozza={bozza} onStart={start} />
+                <HomeScreen key={`${values.moduli}-${values.home}`} moduli={values.moduli} home={values.home} bozza={bozza} onStart={start} />
               ) : (
                 <>
                   {values.s === 'schede' && <SchedePage detail={detail} setMany={setMany} />}

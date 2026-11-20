@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { OPTIONS } from './useProto';
 
-const LABELS = { s: 'Schermata', menu: 'Menu centrale', tondi: 'Tondi del ventaglio', logo: 'Logo', moduli: 'Moduli', bozza: 'Bozza', tecniche: 'Tecniche', strumenti: 'Strumenti', vista: 'Storico: vista', tab: 'Progressi: tab', account: 'Account: forma', tema: 'Tema' };
+const LABELS = { s: 'Schermata', home: 'Home', menu: 'Menu centrale', tondi: 'Tondi del ventaglio', logo: 'Logo', moduli: 'Moduli', bozza: 'Bozza', tecniche: 'Tecniche', strumenti: 'Strumenti', vista: 'Storico: vista', tab: 'Progressi: tab', account: 'Account: forma', tema: 'Tema' };
 const SHOWN = { bozza: { 0: 'no', 1: 'sì' } };
 
 const ProtoSwitcher = ({ values, set }) => {

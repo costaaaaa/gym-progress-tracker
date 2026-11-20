@@ -3,6 +3,7 @@ import { Box, Collapse, LinearProgress, Typography, useMediaQuery } from '@mui/m
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { radius } from '../../theme/radius';
 import { TITLE_FONT_FAMILY, TABULAR } from '../../utils/fonts';
+import { LevelStreakBig, RecoveryBars } from './HomeParts';
 
 export const MODULES = {
   livello: 'Livello e streak',
@@ -40,7 +41,9 @@ const SMALL = {
   cardio: '2 sessioni · 1 h 05 questa settimana',
 };
 
-const Big = ({ id }) => {
+export const Big = ({ id, rich }) => {
+  if (rich && id === 'livello') return <LevelStreakBig />;
+  if (rich && id === 'recupero') return <RecoveryBars />;
   if (id === 'livello') {
     return (
       <Box>
@@ -99,7 +102,7 @@ const Big = ({ id }) => {
   );
 };
 
-const ModuleCard = ({ id, size }) => {
+const ModuleCard = ({ id, size, rich = false }) => {
   const reduce = useMediaQuery('(prefers-reduced-motion: reduce)');
   const big = size === 'big';
   return (
@@ -113,7 +116,7 @@ const ModuleCard = ({ id, size }) => {
         <ChevronRightIcon sx={{ color: 'text.secondary', flex: '0 0 auto' }} />
       </Box>
       <Collapse in={big} timeout={reduce ? 0 : 250} unmountOnExit>
-        <Box sx={{ pt: 1.5, pb: 0.5 }}><Big id={id} /></Box>
+        <Box sx={{ pt: 1.5, pb: 0.5 }}><Big id={id} rich={rich} /></Box>
       </Collapse>
     </Box>
   );
