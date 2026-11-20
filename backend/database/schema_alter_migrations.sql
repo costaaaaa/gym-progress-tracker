@@ -1131,3 +1131,31 @@ SET @q = IF(@fresh,
      ADD COLUMN `group_show_level` TINYINT(1) NOT NULL DEFAULT 1 AFTER `group_show_streak`',
   'DO 0');
 PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
+
+
+-- ------------------------------------------------------------------------------
+-- 44. Home: il giorno di scheda dell'allenamento (gym_workout_history.day_id) e le preferenze della Home su
+--     gym_users (home_layout = ordine, blocchi nascosti e misura, JSON; module_offers_declined = moduli
+--     proposti e rifiutati, JSON; module_offer_at = ultima risposta a una proposta). day_id non ha chiave
+--     esterna: un giorno eliminato non deve cancellare né bloccare lo storico (resta il numero, senza nome).
+--     Gli allenamenti esistenti restano con day_id NULL. Solo aggiunte: il rollback del codice resta possibile
+--     (il codice vecchio ignora le colonne). La sezione si rilancia senza cambiare nulla.
+-- ------------------------------------------------------------------------------
+
+SET @fresh = (SELECT COUNT(*) = 0 FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = 'gym_workout_history' AND column_name = 'day_id');
+SET @q = IF(@fresh,
+  'ALTER TABLE `gym_workout_history`
+     ADD COLUMN `day_id` INT NULL AFTER `time_zone`',
+  'DO 0');
+PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
+
+SET @fresh = (SELECT COUNT(*) = 0 FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = 'gym_users' AND column_name = 'home_layout');
+SET @q = IF(@fresh,
+  'ALTER TABLE `gym_users`
+     ADD COLUMN `home_layout` JSON NULL AFTER `group_show_level`,
+     ADD COLUMN `module_offers_declined` JSON NULL AFTER `home_layout`,
+     ADD COLUMN `module_offer_at` DATETIME NULL AFTER `module_offers_declined`',
+  'DO 0');
+PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;

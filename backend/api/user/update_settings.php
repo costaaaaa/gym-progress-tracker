@@ -122,6 +122,27 @@ try {
         }
         $fields['modules_chosen'] = true;
     }
+    // Layout della Home: null = torna al predefinito, altrimenti elenco di {key, hidden, large} (vedi home_layout_valid)
+    if (property_exists($data, 'home_layout')) {
+        $layout = $data->home_layout === null ? null : home_layout_valid($data->home_layout);
+        if ($layout === false) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => t_server('settings.home_layout_invalid')]);
+            exit;
+        }
+        $fields['home_layout'] = $layout;
+    }
+    // Risposta alla proposta di un modulo: {key, accepted}
+    if (property_exists($data, 'module_offer_answer')) {
+        $answer = $data->module_offer_answer;
+        if (!is_object($answer) || !isset($answer->key) || !is_string($answer->key) || !in_array($answer->key, User::MODULE_OFFERS, true)
+            || !isset($answer->accepted) || !is_bool($answer->accepted)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => t_server('settings.module_offer_invalid')]);
+            exit;
+        }
+        $fields['module_offer_answer'] = ['key' => $answer->key, 'accepted' => $answer->accepted];
+    }
     // Obiettivo settimanale: da 1 a 7 allenamenti, null = torna al default (giorni della scheda attiva)
     $weekly_goal_given = property_exists($data, 'weekly_goal');
     if ($weekly_goal_given) {
@@ -169,6 +190,8 @@ try {
             'modules' => $user->modules,
             'modules_chosen' => $user->modules_chosen,
             'group_visibility' => $user->group_visibility,
+            'home_layout' => $user->home_layout,
+            'module_offer' => $user->module_offer,
             'age' => $user->age,
             'experience_years' => $user->experience_years
         ] + weekly_goal_settings($db, $user_id));

@@ -3,7 +3,7 @@
 // e proposta di un modulo. Nessun database. Si lancia con tests/home_rules.sh. Esce con 1 se un controllo fallisce.
 
 require __DIR__ . '/../backend/models/User.php';
-require __DIR__ . '/../backend/lib/home_rules.php';
+require_once __DIR__ . '/../backend/lib/home_rules.php';
 
 $fails = 0;
 $checks = 0;
@@ -34,6 +34,21 @@ check('dopo il secondo: il terzo', $days[2], next_plan_day($days, 11));
 check('dopo l\'ultimo si ricomincia dal primo', $days[0], next_plan_day($days, 12));
 check('ultimo giorno di un\'altra scheda (o eliminato): il primo', $days[0], next_plan_day($days, 99));
 check('un solo giorno: sempre quello', $days[0], next_plan_day(array($days[0]), 10));
+
+echo "Giorno dell'allenamento (workout_records_day)\n";
+function recs($json)
+{
+    return json_decode($json);
+}
+check('tutti lo stesso giorno', 10, workout_records_day(recs('[{"exercise_id":1,"day_id":10},{"exercise_id":2,"day_id":10}]')));
+check('giorno come stringa di cifre', 10, workout_records_day(recs('[{"exercise_id":1,"day_id":"10"}]')));
+check('giorni diversi: null', null, workout_records_day(recs('[{"exercise_id":1,"day_id":10},{"exercise_id":2,"day_id":11}]')));
+check('un elemento senza giorno: null', null, workout_records_day(recs('[{"exercise_id":1,"day_id":10},{"exercise_id":2}]')));
+check('nessun giorno (app vecchie, allenamento passato): null', null, workout_records_day(recs('[{"exercise_id":1}]')));
+check('giorno non valido: null', null, workout_records_day(recs('[{"exercise_id":1,"day_id":"abc"}]')));
+check('giorno zero o negativo: null', null, workout_records_day(recs('[{"exercise_id":1,"day_id":0}]')));
+check('gli elementi senza esercizio non contano', 10, workout_records_day(recs('[{"exercise_id":1,"day_id":10},{"day_id":99}]')));
+check('elenco vuoto: null', null, workout_records_day(array()));
 
 echo "Giorni della settimana (week_day_flags)\n";
 $mon = '2026-11-16';

@@ -7,6 +7,7 @@ include_once '../../models/WorkoutHistory.php';
 include_once '../../models/WorkoutSet.php';
 include_once '../../models/Exercise.php';
 require_once '../../lib/id_rules.php';
+require_once '../../lib/home_rules.php';
 require_once '../../lib/workout_gamification.php';
 
 // Allenamento già salvato con la stessa chiave: per il client è un successo, senza nuovi XP.
@@ -146,6 +147,17 @@ try {
         }
     }
 
+    // Giorno di scheda dell'allenamento: quello indicato da tutti gli elementi, se è di una scheda dell'utente;
+    // altrimenti NULL (app vecchie, allenamento passato, giorni diversi). Mai un errore.
+    $workout_day_id = workout_records_day($data->workout_records);
+    if ($workout_day_id !== null) {
+        $stmt_day = $db->prepare(
+            "SELECT 1 FROM gym_workout_days d JOIN gym_workout_plans p ON p.id = d.plan_id WHERE d.id = ? AND p.user_id = ?"
+        );
+        $stmt_day->execute(array($workout_day_id, $user_id));
+        if (!$stmt_day->fetchColumn()) $workout_day_id = null;
+    }
+
     // Data dell'allenamento: start_time se l'inizio è entro 4 ore, altrimenti adesso. È l'ora locale
     // del luogo ($time_zone: quello del payload se valido, altrimenti il fuso del dispositivo).
     // Bozza ripresa in ritardo: il client manda backdated=true, start_time sul giorno scelto e
@@ -216,6 +228,7 @@ try {
         $workout_history->duration_seconds = $duration_seconds;
         $workout_history->notes = isset($data->notes) ? $data->notes : '';
         $workout_history->idempotency_key = $idempotency_key;
+        $workout_history->day_id = $workout_day_id;
 
         if (!$workout_history->create()) {
             throw new Exception("Impossibile registrare l'allenamento");

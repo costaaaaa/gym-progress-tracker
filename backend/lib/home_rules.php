@@ -1,6 +1,7 @@
 <?php
 // Regole della Home (funzioni pure, provate da tests/home_rules_test.php): giorno proposto, giorni della
 // settimana, layout dei blocchi e proposta di un modulo. Servono le costanti di models/User.php.
+require_once __DIR__ . '/id_rules.php';
 
 // Giorni di pausa fra la scelta dei moduli e la prima proposta, e fra una risposta e la successiva
 const MODULE_OFFER_PAUSE_DAYS = 7;
@@ -80,4 +81,19 @@ function module_to_offer(array $modules, ?string $chosen_at, array $declined, ?s
         if (empty($modules[$key]) && !in_array($key, $declined, true)) return $key;
     }
     return null;
+}
+
+// Il giorno di scheda di un allenamento da workout_records (elementi con exercise_id e, dai client, day_id): il
+// giorno se tutti gli elementi con un esercizio indicano lo stesso, altrimenti null (giorni diversi, giorno
+// mancante o non valido, app vecchie, allenamento passato). Se il giorno è davvero di una scheda dell'utente lo
+// controlla il chiamante.
+function workout_records_day(array $records): ?int {
+    $day = null;
+    foreach ($records as $record) {
+        if (!is_object($record) || !isset($record->exercise_id) || empty($record->exercise_id)) continue;
+        $id = isset($record->day_id) ? parse_positive_id($record->day_id) : null;
+        if ($id === null || ($day !== null && $id !== $day)) return null;
+        $day = $id;
+    }
+    return $day;
 }

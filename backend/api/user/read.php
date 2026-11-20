@@ -46,6 +46,9 @@ try {
             // Moduli facoltativi {body, recovery, levels, groups, ai}: «non attivo» è solo visualizzazione
             'modules' => $user->modules,
             'modules_chosen' => $user->modules_chosen,
+            // Home: l'elenco salvato [{key, hidden, large}] (null = predefinito) e il modulo da proporre ora (null = nessuno)
+            'home_layout' => $user->home_layout,
+            'module_offer' => $user->module_offer,
             // Visibilità nei gruppi {workouts, volume, streak, level}: i valori salvati, non quelli effettivi
             'group_visibility' => $user->group_visibility,
             'experience_years' => $user->experience_years,
