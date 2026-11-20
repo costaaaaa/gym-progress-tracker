@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Box, ButtonBase, Modal, useMediaQuery } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import CloseIcon from '@mui/icons-material/Close';
 import { fanLayout } from './fanLayout';
 import { BAR_HEIGHT, BUTTON_BELOW, CIRCLE, TARGET_WIDTH, LABEL_SPACE } from './barMetrics';
 import { radius } from '../../theme/radius';
+import { centerActionProps } from '../../hooks/useCenterActions';
 
 const ICON = { main: 26, other: 20 };
 const STAGGER_MS = 30;
@@ -39,7 +39,8 @@ const CenterFan = ({ open, onClose, items }) => {
 
   return (
     <Modal open={open} onClose={onClose} hideBackdrop disableRestoreFocus>
-      {/* Ogni tocco (velo, voce, chiusura) arriva qui e chiude; la voce intanto naviga col suo collegamento (una voce con onSelect è un pulsante: chiude e poi chiama onSelect) */}
+      {/* Ogni tocco sul velo o sulla chiusura arriva qui e chiude; una voce chiude da sé (centerActionProps),
+          poi naviga o chiama onSelect */}
       <Box
         role="dialog"
         aria-modal="true"
@@ -72,9 +73,7 @@ const CenterFan = ({ open, onClose, items }) => {
                 }}
               >
                 <ButtonBase
-                  {...(item.onSelect
-                    ? { onClick: (event) => { event.stopPropagation(); onClose(); item.onSelect(); } }
-                    : { component: RouterLink, to: item.to, state: item.state })}
+                  {...centerActionProps(item, onClose)}
                   aria-label={item.label}
                   ref={item.main ? focusStart : undefined}
                   sx={{

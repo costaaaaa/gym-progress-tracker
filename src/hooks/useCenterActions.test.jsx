@@ -1,5 +1,5 @@
 // L'elenco delle azioni del pulsante centrale (telefono) e del pulsante diviso (desktop): un solo punto lo costruisce.
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
 import { useCenterActions, registerCenterAction } from './useCenterActions';
@@ -53,35 +53,49 @@ describe('azioni del pulsante centrale', () => {
 });
 
 describe('azioni aggiunte da fuori', () => {
-  const cardio = { key: 'cardio', label: 'Cardio', shortLabel: 'Cardio', Icon: DirectionsRunIcon, onSelect: () => {} };
-  const yoga = { key: 'yoga', label: 'Yoga', shortLabel: 'Yoga', Icon: DirectionsRunIcon, onSelect: () => {} };
+  const action = (key) => ({ key, label: key, shortLabel: key, Icon: DirectionsRunIcon, onSelect: () => {} });
+  // Il registro è uno solo per tutto il file: ogni voce registrata si toglie a fine test, anche se il test fallisce
+  const removers = [];
+  const register = (item) => {
+    const remove = registerCenterAction(item);
+    removers.push(remove);
+    return remove;
+  };
+  afterEach(() => { act(() => removers.splice(0).forEach((remove) => remove())); });
 
   it('una voce registrata segue quelle di base e si toglie con la funzione restituita', () => {
     const { result } = renderHook(() => useCenterActions());
     let remove;
-    act(() => { remove = registerCenterAction(cardio); });
+    act(() => { remove = register(action('cardio')); });
     expect(keys(result.current)).toEqual(['start', 'record', 'measure', 'cardio']);
-    expect(result.current[3]).toMatchObject({ key: 'cardio', label: 'Cardio', shortLabel: 'Cardio', Icon: DirectionsRunIcon });
+    expect(result.current[3]).toMatchObject({ key: 'cardio', label: 'cardio', shortLabel: 'cardio', Icon: DirectionsRunIcon });
     act(() => remove());
     expect(keys(result.current)).toEqual(['start', 'record', 'measure']);
   });
 
   it('le voci registrate restano in ordine di registrazione', () => {
     const { result } = renderHook(() => useCenterActions());
-    let removeCardio;
-    let removeYoga;
-    act(() => { removeCardio = registerCenterAction(cardio); removeYoga = registerCenterAction(yoga); });
+    act(() => { register(action('cardio')); register(action('yoga')); });
     expect(keys(result.current).slice(3)).toEqual(['cardio', 'yoga']);
-    act(() => { removeCardio(); removeYoga(); });
   });
 
   it('togliere due volte la stessa voce non toglie le altre', () => {
     const { result } = renderHook(() => useCenterActions());
     let removeCardio;
-    let removeYoga;
-    act(() => { removeCardio = registerCenterAction(cardio); removeYoga = registerCenterAction(yoga); });
+    act(() => { removeCardio = register(action('cardio')); register(action('yoga')); });
     act(() => { removeCardio(); removeCardio(); });
     expect(keys(result.current).slice(3)).toEqual(['yoga']);
-    act(() => removeYoga());
+  });
+
+  it('l\'elenco non supera mai le 5 voci: le registrate oltre la quinta non si mostrano', () => {
+    const { result } = renderHook(() => useCenterActions());
+    act(() => { register(action('a')); register(action('b')); register(action('c')); });
+    expect(keys(result.current)).toEqual(['start', 'record', 'measure', 'a', 'b']);
+  });
+
+  it('una voce registrata non è mai la principale, anche se lo dice', () => {
+    const { result } = renderHook(() => useCenterActions());
+    act(() => { register({ ...action('cardio'), main: true }); });
+    expect(result.current.filter((item) => item.main).map((item) => item.key)).toEqual(['start']);
   });
 });

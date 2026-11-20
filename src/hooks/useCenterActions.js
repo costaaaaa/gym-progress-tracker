@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link as RouterLink } from 'react-router-dom';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import EditCalendarOutlinedIcon from '@mui/icons-material/EditCalendarOutlined';
 import StraightenIcon from '@mui/icons-material/Straighten';
@@ -13,12 +14,15 @@ const subscribe = (listener) => {
   listeners.add(listener);
   return () => listeners.delete(listener);
 };
+const MAX_ACTIONS = 5;
 const getRegistered = () => registered;
 
 // Aggiunge una voce in coda all'elenco e restituisce la funzione che la toglie.
 // Come le voci di base ha `key`, `label`, `shortLabel`, `Icon` e, al posto di `to`, può avere `onSelect`: la voce allora è un pulsante.
+// Una voce registrata non è mai la principale (`main` si ignora). L'elenco non supera le 5 voci (tetto del ventaglio):
+// le registrate oltre la quinta non si mostrano.
 export const registerCenterAction = (action) => {
-  const entry = { ...action };
+  const entry = { ...action, main: false };
   registered = [...registered, entry];
   listeners.forEach((listener) => listener());
   return () => {
@@ -30,7 +34,8 @@ export const registerCenterAction = (action) => {
 
 // Le azioni del pulsante centrale (ventaglio sul telefono) e del pulsante diviso (barra in alto sul desktop): l'unico elenco.
 // `main` è la voce principale (sempre la prima); `state` dice alla pagina di arrivo di aprire la sua finestra, una volta.
-// Una voce in più costa una riga qui; il ventaglio la dispone da solo (fanLayout, da 2 a 5 voci in tutto).
+// Le voci di base stanno qui, le altre si aggiungono da fuori con registerCenterAction; il ventaglio le dispone da solo
+// (fanLayout, da 2 a 5 voci in tutto).
 // La bozza del Focus si rilegge a ogni render: chi mostra l'elenco si aggiorna quando si apre il menu o si cambia pagina.
 export const useCenterActions = () => {
   const { t } = useTranslation();
@@ -62,7 +67,18 @@ export const useCenterActions = () => {
       to: '/dashboard?tab=body',
       state: { openMeasure: true },
     },
-  ].filter(Boolean).concat(extra);
+  ].filter(Boolean).concat(extra).slice(0, MAX_ACTIONS);
 };
 
 export default useCenterActions;
+
+// Come si comporta una voce nel ventaglio e nel menu: collegamento (`to`, `state`) oppure pulsante (`onSelect`).
+// Alla scelta chiude (`close`) e poi, se c'è, chiama `onSelect`; il clic non sale al contenitore, che altrimenti chiuderebbe una seconda volta.
+export const centerActionProps = (action, close) => ({
+  ...(action.onSelect ? {} : { component: RouterLink, to: action.to, state: action.state }),
+  onClick: (event) => {
+    event.stopPropagation();
+    close();
+    action.onSelect?.();
+  },
+});

@@ -13,7 +13,7 @@ import { BELOW_360 } from '../../theme/narrowScreens';
 import { isAuthPath, stripLangPrefix, useLocalizedPath } from '../../i18n/paths';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 import LogoMark from '../LogoMark';
-import { useCenterActions } from '../../hooks/useCenterActions';
+import { useCenterActions, centerActionProps } from '../../hooks/useCenterActions';
 
 // Voci del centro nav desktop: Home / Schede / Storico / Progressi; a destra il pulsante diviso
 // «Inizia allenamento ▾», il tema e l'avatar. Su mobile la navigazione vive in BottomNav.jsx
@@ -204,12 +204,7 @@ const Navbar = () => {
               </ButtonGroup>
               <Menu anchorEl={moreAnchor} open={Boolean(moreAnchor)} onClose={() => setMoreAnchor(null)}>
                 {actions.filter((action) => !action.main).map((action) => (
-                  <MenuItem
-                    key={action.key}
-                    {...(action.onSelect
-                      ? { onClick: () => { setMoreAnchor(null); action.onSelect(); } }
-                      : { component: RouterLink, to: action.to, state: action.state, onClick: () => setMoreAnchor(null) })}
-                  >
+                  <MenuItem key={action.key} {...centerActionProps(action, () => setMoreAnchor(null))}>
                     <ListItemIcon><action.Icon fontSize="small" /></ListItemIcon>
                     <ListItemText>{action.label}</ListItemText>
                   </MenuItem>

@@ -1,9 +1,11 @@
 // Barra di navigazione mobile: Home · Schede · pulsante centrale · Storico · Progressi. Il rosso della voce attiva è un testo,
 // in scuro il rosso chiaro; il pulsante centrale apre il ventaglio.
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, act, within } from '@testing-library/react';
 import { MemoryRouter, useNavigate } from 'react-router-dom';
 import BottomNav from './BottomNav';
+import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
+import { registerCenterAction } from '../../hooks/useCenterActions';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
 import { DRAFT_STORAGE_KEY } from '../../utils/focusDraft';
 
@@ -207,5 +209,32 @@ describe('ventaglio che resta aperto', () => {
     resizeTo(true);
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(centerButton().getAttribute('aria-expanded')).toBe('false');
+  });
+});
+
+describe('barra mobile: voce aggiunta da fuori', () => {
+  const onSelect = vi.fn();
+  let remove;
+  beforeEach(() => {
+    onSelect.mockClear();
+    remove = registerCenterAction({ key: 'cardio', label: 'Cardio', shortLabel: 'Cardio', Icon: DirectionsRunIcon, onSelect });
+  });
+  afterEach(() => remove());
+
+  it('il ventaglio ha quattro voci e la nuova è un pulsante', () => {
+    renderNav();
+    fireEvent.click(centerButton());
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getAllByRole('link')).toHaveLength(3);
+    expect(within(dialog).getByRole('button', { name: 'Cardio' })).toBeTruthy();
+  });
+
+  it('scegliendola il ventaglio si chiude, onSelect parte una volta e il fuoco torna al pulsante centrale', () => {
+    renderNav();
+    fireEvent.click(centerButton());
+    fireEvent.click(screen.getByRole('button', { name: 'Cardio' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe(centerButton());
   });
 });

@@ -189,4 +189,14 @@ describe('ventaglio: voce che non naviga (onSelect)', () => {
     const controls = [...screen.getByRole('dialog').querySelectorAll('a, button')].map((el) => el.getAttribute('aria-label'));
     expect(controls).toEqual([...items.map((item) => item.label), 'Chiudi']);
   });
+
+  it('la trappola del fuoco gira anche con una voce onSelect: dal segnaposto di fondo a «Inizia», da quello d\'inizio a «Chiudi»', () => {
+    const action = { key: 'cardio', label: 'Cardio', shortLabel: 'Cardio', Icon: DirectionsRunIcon, onSelect: () => {} };
+    mount([start, record, measure, action]);
+    act(() => screen.getByTestId('sentinelEnd').focus());
+    expect(document.activeElement).toBe(screen.getByRole('link', { name: 'Inizia allenamento' }));
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    act(() => screen.getByTestId('sentinelStart').focus());
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Chiudi' }));
+  });
 });
