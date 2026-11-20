@@ -1,13 +1,16 @@
+import { useEffect, useRef, useState } from 'react';
 import { Box, ButtonBase, useMediaQuery, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import HistoryIcon from '@mui/icons-material/History';
 import EqualizerIcon from '@mui/icons-material/Equalizer';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { TITLE_FONT_FAMILY } from '../../utils/fonts';
+import LogoMark from '../LogoMark';
+import CenterFan from './CenterFan';
+import { useCenterActions } from '../../hooks/useCenterActions';
 
 // Voce di navigazione standard (icona + etichetta), come link/bottone accessibile
 // (component=RouterLink su ButtonBase: focus da tastiera, aria-current sulla voce attiva).
@@ -41,15 +44,25 @@ const NavItem = ({ path, label, Icon, active }) => (
   </ButtonBase>
 );
 
-// Barra di navigazione mobile fissa in basso: Home / Allenamenti / Focus (FAB rialzato) /
-// Dashboard / Profilo. Sostituisce il menu hamburger di Navbar.jsx su mobile, che restava
-// l'unico accesso a queste destinazioni: qui è sempre visibile durante l'uso dell'app.
+// Barra di navigazione mobile fissa in basso: Home / Schede / pulsante centrale (apre il ventaglio:
+// Inizia o Riprendi, Registra, Misura) / Storico / Progressi. Sostituisce il menu hamburger di Navbar.jsx su mobile:
+// qui è sempre visibile durante l'uso dell'app. Il Profilo si apre dall'avatar in alto.
 const BottomNav = () => {
   const location = useLocation();
   const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { isLoggedIn, user, emailState } = useAuth();
+  const { isLoggedIn, emailState } = useAuth();
+  const actions = useCenterActions();
+  const [fanOpen, setFanOpen] = useState(false);
+  const centerRef = useRef(null);
+  const wasOpen = useRef(false);
+
+  // A ventaglio chiuso il fuoco torna al pulsante centrale (Safari e Firefox su Mac non lo danno al clic)
+  useEffect(() => {
+    if (wasOpen.current && !fanOpen) centerRef.current?.focus();
+    wasOpen.current = fanOpen;
+  }, [fanOpen]);
 
   // Con l'app bloccata dalla conferma dell'email le voci porterebbero a pagine che rispondono 403
   if (!isMobile || !isLoggedIn || emailState?.blocked === true) return null;
@@ -58,8 +71,6 @@ const BottomNav = () => {
   if (location.pathname === '/focus') return null;
 
   const isActive = (path) => location.pathname === path;
-  const initials = user?.username ? user.username.charAt(0).toUpperCase() : '?';
-  const profileActive = isActive('/profilo');
 
   return (
     <Box
@@ -81,14 +92,16 @@ const BottomNav = () => {
       }}
     >
       <NavItem path="/" label={t('nav.home')} Icon={HomeOutlinedIcon} active={isActive('/')} />
-      <NavItem path="/workouts" label={t('nav.workouts')} Icon={CalendarTodayOutlinedIcon} active={isActive('/workouts')} />
+      <NavItem path="/schede" label={t('nav.plans')} Icon={CalendarTodayOutlinedIcon} active={isActive('/schede')} />
 
       <ButtonBase
-        component={RouterLink}
-        to="/focus"
+        ref={centerRef}
+        onClick={() => setFanOpen(true)}
         disableRipple
-        aria-label={t('nav.focus_aria')}
-        sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', borderRadius: 0, ...FOCUS_INSIDE }}
+        aria-label={t('nav.center_aria')}
+        aria-haspopup="dialog"
+        aria-expanded={fanOpen}
+        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', borderRadius: 0, ...FOCUS_INSIDE }}
       >
         <Box
           sx={{
@@ -96,6 +109,7 @@ const BottomNav = () => {
             height: 56,
             borderRadius: '50%',
             bgcolor: 'primary.main',
+            color: 'common.white',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -105,43 +119,14 @@ const BottomNav = () => {
             borderColor: 'background.default',
           }}
         >
-          <PlayArrowIcon sx={{ color: 'common.white', fontSize: 22 }} />
-        </Box>
-        <Box component="span" sx={{ fontSize: '10.5px', fontWeight: 700, color: 'primary.text', transform: 'translateY(-10px)' }}>
-          Focus
+          <LogoMark width={26} />
         </Box>
       </ButtonBase>
 
-      <NavItem path="/dashboard" label={t('nav.dashboard')} Icon={EqualizerIcon} active={isActive('/dashboard')} />
+      <NavItem path="/storico" label={t('nav.history')} Icon={HistoryIcon} active={isActive('/storico')} />
+      <NavItem path="/dashboard" label={t('nav.progress')} Icon={EqualizerIcon} active={isActive('/dashboard')} />
 
-      <ButtonBase
-        component={RouterLink}
-        to="/profilo"
-        disableRipple
-        aria-current={profileActive ? 'page' : undefined}
-        sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', height: '100%', borderRadius: 0, ...FOCUS_INSIDE }}
-      >
-        <Box
-          sx={{
-            width: 20,
-            height: 20,
-            borderRadius: '50%',
-            bgcolor: profileActive ? 'primary.main' : 'text.primary',
-            color: 'common.white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontFamily: TITLE_FONT_FAMILY,
-            fontSize: '9.5px',
-            fontWeight: 700,
-          }}
-        >
-          {initials}
-        </Box>
-        <Box component="span" sx={{ fontSize: '10.5px', fontWeight: profileActive ? 700 : 500, color: profileActive ? 'primary.text' : 'text.secondary' }}>
-          {t('nav.profile')}
-        </Box>
-      </ButtonBase>
+      <CenterFan open={fanOpen} onClose={() => setFanOpen(false)} items={actions} />
     </Box>
   );
 };

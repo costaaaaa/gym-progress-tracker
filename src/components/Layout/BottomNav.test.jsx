@@ -1,45 +1,175 @@
-// Barra di navigazione mobile: il rosso della voce attiva e dell'etichetta Focus è un testo, in scuro il rosso chiaro.
+// Barra di navigazione mobile: Home · Schede · pulsante centrale · Storico · Progressi. Il rosso della voce attiva è un testo,
+// in scuro il rosso chiaro; il pulsante centrale apre il ventaglio.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import BottomNav from './BottomNav';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
+import { DRAFT_STORAGE_KEY } from '../../utils/focusDraft';
 
-vi.mock('../../context/AuthContext', () => ({
-  useAuth: () => ({ user: { username: 'atleta_demo' }, isLoggedIn: true, loading: false }),
-}));
+const auth = vi.hoisted(() => ({ value: null }));
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth.value }));
 
+let mobile = true;
 beforeEach(() => {
+  mobile = true;
+  localStorage.clear();
+  auth.value = { user: { username: 'atleta_demo' }, isLoggedIn: true, loading: false };
   window.matchMedia = (query) => ({
-    matches: query.includes('max-width'), media: query, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {},
+    matches: query.includes('max-width') && mobile, media: query, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {},
   });
 });
 
-const renderNav = (mode) => {
+const renderNav = (mode = 'light', path = '/') => {
   localStorage.setItem('themeMode', mode);
-  render(<MemoryRouter initialEntries={['/']}><ThemeModeProvider><BottomNav /></ThemeModeProvider></MemoryRouter>);
+  return render(<MemoryRouter initialEntries={[path]}><ThemeModeProvider><BottomNav /></ThemeModeProvider></MemoryRouter>);
 };
 const labelColor = (label) => getComputedStyle(screen.getByText(label)).color;
+const centerButton = () => screen.getByRole('button', { name: 'Cosa vuoi fare' });
+const current = () => screen.queryAllByRole('link').filter((a) => a.getAttribute('aria-current') === 'page').map((a) => a.textContent);
 
 describe.each([
   ['light', 'rgb(213, 0, 0)'],
   ['dark', 'rgb(255, 82, 82)'],
 ])('barra mobile in %s', (mode, red) => {
-  it('la voce attiva e l\'etichetta Focus hanno il rosso dei testi', () => {
+  it('la voce attiva ha il rosso dei testi', () => {
     renderNav(mode);
     expect(labelColor('Home')).toBe(red);
-    expect(labelColor('Focus')).toBe(red);
+  });
+});
+
+describe('barra mobile: voci', () => {
+  it('quattro voci e il pulsante centrale, nell\'ordine Home, Schede, Storico, Progressi', () => {
+    renderNav();
+    const nav = screen.getByRole('navigation', { name: 'Navigazione principale' });
+    expect([...nav.querySelectorAll('a')].map((a) => [a.textContent, a.getAttribute('href')])).toEqual([
+      ['Home', '/'], ['Schede', '/schede'], ['Storico', '/storico'], ['Progressi', '/dashboard'],
+    ]);
+    expect(centerButton()).toBeTruthy();
+  });
+
+  it('il Profilo non è nella barra: si apre dall\'avatar in alto', () => {
+    renderNav();
+    expect(screen.queryByRole('link', { name: 'Profilo' })).toBeNull();
+    expect(screen.queryByText('Profilo')).toBeNull();
+  });
+
+  it.each([
+    ['/', 'Home'],
+    ['/schede', 'Schede'],
+    ['/storico', 'Storico'],
+    ['/dashboard', 'Progressi'],
+  ])('su %s la voce attiva è «%s», e solo quella', (path, name) => {
+    renderNav('light', path);
+    expect(current()).toEqual([name]);
+  });
+
+  it('con il Profilo aperto nessuna voce della barra è attiva', () => {
+    renderNav('light', '/profilo');
+    expect(current()).toEqual([]);
+  });
+
+  it('non compare per gli ospiti, con l\'app bloccata, su /focus e sul desktop', () => {
+    auth.value = { user: null, isLoggedIn: false, loading: false };
+    const guest = renderNav();
+    expect(guest.container.querySelector('nav')).toBeNull();
+    guest.unmount();
+
+    auth.value = { user: { username: 'atleta_demo' }, isLoggedIn: true, emailState: { blocked: true } };
+    const blocked = renderNav();
+    expect(blocked.container.querySelector('nav')).toBeNull();
+    blocked.unmount();
+
+    auth.value = { user: { username: 'atleta_demo' }, isLoggedIn: true };
+    const focus = renderNav('light', '/focus');
+    expect(focus.container.querySelector('nav')).toBeNull();
+    focus.unmount();
+
+    mobile = false;
+    const desktop = renderNav();
+    expect(desktop.container.querySelector('nav')).toBeNull();
   });
 });
 
 // Ogni voce riempie la sua cella fino al bordo dello schermo: il contorno del focus sta dentro la cella, non fuori
 describe('barra mobile: focus da tastiera', () => {
-  it.each(['Home', 'Focus', 'Profilo'])('la voce %s ha il contorno del tema dentro la cella', (name) => {
+  it.each(['Home', 'Storico'])('la voce %s ha il contorno del tema dentro la cella', (name) => {
     renderNav('light');
     const link = screen.getAllByRole('link').find((a) => a.textContent.includes(name));
     fireEvent.keyDown(document.body, { key: 'Tab' });
     act(() => link.focus());
     expect(getComputedStyle(link).outline).toBe('2px solid #1a1816');
     expect(getComputedStyle(link).outlineOffset).toBe('-4px');
+  });
+
+  it('il pulsante centrale ha il contorno del tema dentro la cella', () => {
+    renderNav('light');
+    fireEvent.keyDown(document.body, { key: 'Tab' });
+    act(() => centerButton().focus());
+    expect(getComputedStyle(centerButton()).outline).toBe('2px solid #1a1816');
+    expect(getComputedStyle(centerButton()).outlineOffset).toBe('-4px');
+  });
+});
+
+describe('pulsante centrale', () => {
+  it('ha il simbolo del logo, nessuna scritta, un bersaglio di almeno 44 px e annuncia una finestra', () => {
+    renderNav();
+    const button = centerButton();
+    expect(button.querySelector('[data-testid="logo-mark"]')).toBeTruthy();
+    expect(button.textContent).toBe('');
+    expect(button.getAttribute('aria-haspopup')).toBe('dialog');
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    expect(parseFloat(getComputedStyle(button).height)).toBeGreaterThanOrEqual(44);
+  });
+
+  it('un tocco apre il ventaglio, anche con due sole voci, e aria-expanded diventa true', () => {
+    auth.value = { user: { username: 'atleta_demo', modules: { body: false } }, isLoggedIn: true };
+    renderNav();
+    fireEvent.click(centerButton());
+    const dialog = screen.getByRole('dialog', { name: 'Cosa vuoi fare' });
+    expect(dialog.querySelectorAll('a')).toHaveLength(2);
+    // Aperto, il resto della pagina (pulsante compreso) è nascosto al lettore di schermo
+    expect(screen.getByRole('button', { name: 'Cosa vuoi fare', hidden: true }).getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('con il modulo Misure attivo le voci sono tre: Inizia, Registra, Misura', () => {
+    renderNav();
+    fireEvent.click(centerButton());
+    expect([...screen.getByRole('dialog').querySelectorAll('a')].map((a) => a.textContent)).toEqual(['Inizia', 'Registra', 'Misura']);
+  });
+
+  it('Esc chiude il ventaglio e il fuoco torna al pulsante centrale', () => {
+    renderNav();
+    fireEvent.click(centerButton());
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.activeElement).toBe(centerButton());
+    expect(centerButton().getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('il tocco sul velo chiude e riporta il fuoco al pulsante centrale', () => {
+    renderNav();
+    fireEvent.click(centerButton());
+    fireEvent.click(screen.getByTestId('fan-veil'));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.activeElement).toBe(centerButton());
+  });
+
+  it('scegliendo una voce il ventaglio si chiude', () => {
+    renderNav();
+    fireEvent.click(centerButton());
+    fireEvent.click(screen.getByRole('link', { name: 'Registra allenamento passato' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('con un allenamento a metà la prima voce è «Riprendi», riletto a ogni apertura', () => {
+    renderNav();
+    fireEvent.click(centerButton());
+    expect(screen.getByRole('link', { name: 'Inizia allenamento' })).toBeTruthy();
+    fireEvent.click(screen.getByTestId('fan-veil'));
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({ selectedDay: { id: 1 }, startTime: 1 }));
+    fireEvent.click(centerButton());
+    expect(screen.getByRole('link', { name: 'Riprendi allenamento' }).textContent).toBe('Riprendi');
+    expect(screen.queryByRole('link', { name: 'Inizia allenamento' })).toBeNull();
   });
 });
