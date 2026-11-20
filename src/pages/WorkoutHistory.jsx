@@ -107,7 +107,9 @@ const newestFirst = (a, b) => clockDate(b.date) - clockDate(a.date);
 
 const DAY_FORMAT = { weekday: 'long', day: 'numeric', month: 'long' };
 
-const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
+// `recordRequest`: un numero che cresce a ogni richiesta di aprire «Registra allenamento» (dal ventaglio); si apre
+// una volta per numero, e solo con una scheda attiva (come il pulsante della pagina)
+const WorkoutHistory = ({ isEmbedded = false, refreshKey = null, recordRequest = null }) => {
   const { t } = useTranslation();
   const { isLoggedIn, loading: authLoading, weightUnit, user } = useAuth();
   // Punti, streak e traguardi nelle anteprime sono del modulo Livelli: non attivo = non si mostrano
@@ -118,6 +120,8 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
   const [loading, setLoading] = useState(true);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [activePlan, setActivePlan] = useState(null);
+  const [planLoaded, setPlanLoaded] = useState(false);
+  const handledRecordRequest = useRef(null);
   const [openRecordDialog, setOpenRecordDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState(null);
@@ -159,8 +163,16 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
       }
     } catch (error) {
       console.error('Error fetching active plan:', error);
+    } finally {
+      setPlanLoaded(true);
     }
   };
+
+  useEffect(() => {
+    if (!recordRequest || !planLoaded || handledRecordRequest.current === recordRequest) return;
+    handledRecordRequest.current = recordRequest;
+    if (activePlan) setOpenRecordDialog(true);
+  }, [recordRequest, planLoaded, activePlan]);
 
   const fetchWorkoutHistory = async () => {
     setLoading(true);

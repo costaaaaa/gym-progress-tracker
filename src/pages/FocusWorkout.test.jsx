@@ -150,6 +150,18 @@ describe('flusso completo e salvataggio', () => {
     expect(mockTrack).toHaveBeenCalledWith('workout_saved');
   });
 
+  it('dopo il salvataggio «Vai allo storico» porta a /storico e chiede di rileggere l\'elenco', async () => {
+    await startDay('Push');
+    doSet();
+    click('Salta timer');
+    doSet('62.5', '7');
+    await act(async () => { click('Salva allenamento'); });
+    await advance(0);
+
+    click('Vai allo storico');
+    expect(mockNavigate).toHaveBeenCalledWith('/storico', { state: { refreshHistory: expect.any(Number) } });
+  });
+
   it('il cronometro dell\'allenamento avanza ogni secondo, senza toccare niente', async () => {
     await startDay('Push');
     expect(screen.getByText('00:00')).toBeTruthy();
@@ -1367,7 +1379,7 @@ describe('scelta del giorno con una scheda appena creata', () => {
     expect(screen.getByRole('button', { name: 'Inizia allenamento' }).disabled).toBe(true);
     expect(screen.getByText(/Questo giorno non ha esercizi\./)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Schede' }));
-    expect(mockNavigate).toHaveBeenCalledWith('/workouts?tab=plans');
+    expect(mockNavigate).toHaveBeenCalledWith('/schede');
   });
 
   it('il messaggio non compare finché non c\'è un giorno scelto né quando ha esercizi', async () => {

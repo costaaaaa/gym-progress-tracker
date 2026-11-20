@@ -44,13 +44,13 @@ const CallsServer = () => (
   <button onClick={() => window.fetch('/backend/api/page.php')}>carica</button>
 );
 
-const mount = (path = '/workouts') => render(
+const mount = (path = '/schede') => render(
   <MemoryRouter initialEntries={[path]}>
     <ThemeModeProvider>
       <AuthProvider>
         <Routes>
           <Route element={<Layout />}>
-            <Route path="/workouts" element={<><Page /><CallsServer /></>} />
+            <Route path="/schede" element={<><Page /><CallsServer /></>} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/en/login" element={<LoginPage />} />
           </Route>

@@ -258,7 +258,7 @@ const Home = () => {
           <Typography sx={{ color: 'text.secondary', fontSize: 14, lineHeight: 1.5, mb: 2 }}>
             {t('home.start_here.text')}
           </Typography>
-          <Button variant="outlined" component={RouterLink} to="/workouts?tab=plans" sx={{ borderRadius: radius.lg, fontWeight: 700 }}>
+          <Button variant="outlined" component={RouterLink} to="/schede" sx={{ borderRadius: radius.lg, fontWeight: 700 }}>
             {t('home.start_here.cta')}
           </Button>
         </Card>
@@ -309,7 +309,7 @@ const Home = () => {
             {/* Ultimo Allenamento */}
             <Grid item xs={12} md={6}>
               <Card sx={{ height: '100%' }}>
-                <CardActionArea component={RouterLink} to="/workouts?tab=history" sx={{ height: '100%', p: '26px' }}>
+                <CardActionArea component={RouterLink} to="/storico" sx={{ height: '100%', p: '26px' }}>
                   <Typography component="h2" variant="cardTitle" sx={{ mb: 2.5 }}>{t('home.last.title')}</Typography>
                   {lastWorkout ? (
                     <>
@@ -345,7 +345,7 @@ const Home = () => {
             {/* Piano Attivo */}
             <Grid item xs={12} md={6}>
               <Card sx={{ height: '100%' }}>
-                <CardActionArea component={RouterLink} to="/workouts?tab=plans" sx={{ height: '100%', p: '26px' }}>
+                <CardActionArea component={RouterLink} to="/schede" sx={{ height: '100%', p: '26px' }}>
                   <Typography component="h2" variant="cardTitle" sx={{ mb: 2.5 }}>{t('home.plan.title')}</Typography>
                   {activePlan ? (
                     <>
@@ -383,7 +383,7 @@ const Home = () => {
                 {bodyOn && (
                   <QuickActionPill to="/dashboard?tab=body" icon={<StraightenOutlined />} label={t('home.quick.measures')} />
                 )}
-                <QuickActionPill to="/workouts?tab=history" icon={<CalendarTodayOutlined />} label={t('home.quick.history')} />
+                <QuickActionPill to="/storico" icon={<CalendarTodayOutlined />} label={t('home.quick.history')} />
                 <QuickActionPill to="/profilo?tab=settings" icon={<HealthAndSafetyOutlined />} label={t('home.quick.settings')} />
               </Box>
             </Grid>
