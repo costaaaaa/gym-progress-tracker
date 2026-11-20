@@ -9,6 +9,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import PersonRemoveOutlined from '@mui/icons-material/PersonRemoveOutlined';
 import { usePageMeta } from '../hooks/usePageMeta';
 import RequireLogin from '../components/Groups/RequireLogin';
+import ModuleGate from '../components/ModuleGate';
 import LeaderboardTable from '../components/Groups/LeaderboardTable';
 import ReportDialog from '../components/Groups/ReportDialog';
 import {
@@ -17,6 +18,7 @@ import {
 import { track } from '../utils/analytics';
 import { Trans, useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
+import { useModule } from '../hooks/useModule';
 import { intlLocale } from '../i18n/format';
 import { NEUTRAL_TEXT, DANGER_TEXT } from '../utils/buttonStyles';
 import { INK_TABS } from '../utils/inkTabs';
@@ -100,7 +102,11 @@ const GroupDetailContent = () => {
   const { weightUnit } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
-  const [board, setBoard] = useState('week');
+  // A Livelli non attivo le classifiche di streak e livello non si mostrano: resta quella della settimana
+  const levels = useModule('levels');
+  const boards = levels ? BOARDS : ['week'];
+  const [chosenBoard, setBoard] = useState('week');
+  const board = boards.includes(chosenBoard) ? chosenBoard : 'week';
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
@@ -186,9 +192,11 @@ const GroupDetailContent = () => {
                 {t('groups.detail.week_range', { from: formatDay(week.from), to: formatDay(week.to) })}
               </Typography>
             </Box>
-            <Tabs value={board} onChange={(e, v) => setBoard(v)} {...INK_TABS} sx={[INK_TABS.sx, { mb: 1 }]}>
-              {BOARDS.map((b) => <Tab key={b} value={b} label={t(`groups.detail.board.${b}`)} />)}
-            </Tabs>
+            {boards.length > 1 && (
+              <Tabs value={board} onChange={(e, v) => setBoard(v)} {...INK_TABS} sx={[INK_TABS.sx, { mb: 1 }]}>
+                {boards.map((b) => <Tab key={b} value={b} label={t(`groups.detail.board.${b}`)} />)}
+              </Tabs>
+            )}
             <Typography sx={{ fontSize: 16, color: 'text.secondary', mb: 1 }}>{t(`groups.detail.board.${board}_hint`)}</Typography>
             <LeaderboardTable rows={data.board} board={data.board_type} weightUnit={weightUnit} />
           </Card>
@@ -301,7 +309,7 @@ const GroupDetailContent = () => {
 const GroupDetail = () => {
   const { t } = useTranslation();
   usePageMeta(t('groups.detail.meta_title'), t('groups.detail.meta_description'));
-  return <RequireLogin><GroupDetailContent /></RequireLogin>;
+  return <RequireLogin><ModuleGate module="groups"><GroupDetailContent /></ModuleGate></RequireLogin>;
 };
 
 export default GroupDetail;
