@@ -1,15 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { Box, Button, Card, Link, Typography } from '@mui/material';
 import { errorMessage, leaveGroup, listGroups, roleLabel } from '../../api/groups';
 import { track } from '../../utils/analytics';
 import { useTranslation } from 'react-i18next';
 import { NEUTRAL_TEXT } from '../../utils/buttonStyles';
 import { useModule } from '../../hooks/useModule';
+import GroupVisibilityOptions from './GroupVisibilityOptions';
 
-// Impostazioni account: in quali gruppi sei, cosa vedono gli altri, uscita con un clic
-const GroupsVisibilityCard = () => {
+const FOCUS_RING = (theme) => ({
+  '&:focus-visible': { outline: `2px solid ${theme.palette.text.primary}`, outlineOffset: '2px' },
+});
+
+// Impostazioni account: cosa mostro agli altri membri (sempre visibile: è un comando di privacy), in quali gruppi sei,
+// uscita con un clic. `notify(messaggio, gravità)` annuncia l'esito dei cambi (la notifica della pagina).
+const GroupsVisibilityCard = ({ notify }) => {
   const { t } = useTranslation();
+  const { hash } = useLocation();
   const groupsActive = useModule('groups');
   const [groups, setGroups] = useState(null);
   const [error, setError] = useState('');
@@ -17,6 +24,14 @@ const GroupsVisibilityCard = () => {
   useEffect(() => {
     listGroups().then((res) => setGroups(res.ok ? res.data.groups : []));
   }, []);
+
+  // Chi arriva da un collegamento a «Cosa mostro» trova il fuoco sul blocco
+  useEffect(() => {
+    if (hash !== '#groups-shown') return;
+    const block = document.getElementById('groups-shown');
+    block?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+    block?.focus();
+  }, [hash]);
 
   const leave = async (group) => {
     if (!window.confirm(t('groups.leave_confirm', { name: group.name }))) return;
@@ -30,15 +45,17 @@ const GroupsVisibilityCard = () => {
   };
 
   return (
-    <Card id="groups-visibility" tabIndex={-1} sx={(theme) => ({
-      p: '24px',
-      '&:focus-visible': { outline: `2px solid ${theme.palette.text.primary}`, outlineOffset: '2px' },
-    })}>
+    <Card id="groups-visibility" tabIndex={-1} sx={(theme) => ({ p: '24px', ...FOCUS_RING(theme) })}>
       <Typography variant="cardTitle">{t('groups.visibility.title')}</Typography>
       <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5, mb: 1.5, maxWidth: 560 }}>
         {t('groups.visibility.text')}
       </Typography>
+      <Box id="groups-shown" role="group" aria-labelledby="groups-shown-title" tabIndex={-1} sx={(theme) => ({ mb: 1.5, ...FOCUS_RING(theme) })}>
+        <Typography id="groups-shown-title" component="h3" sx={{ fontSize: 16, fontWeight: 700 }}>{t('groups.shown.title')}</Typography>
+        <GroupVisibilityOptions notify={notify} />
+      </Box>
       {error && <Typography sx={{ fontSize: 16, color: 'error.main', mb: 1 }}>{error}</Typography>}
+      <Box id="groups-list" role="group" aria-label={t('groups.visibility.list')} tabIndex={-1} sx={FOCUS_RING}>
       {groups?.length === 0 && (
         <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
           {t('groups.visibility.none')}
@@ -59,6 +76,7 @@ const GroupsVisibilityCard = () => {
           )}
         </Box>
       ))}
+      </Box>
     </Card>
   );
 };
