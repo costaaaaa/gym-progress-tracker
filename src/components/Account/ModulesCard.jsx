@@ -49,10 +49,7 @@ const ModulesCard = ({ notify }) => {
     } else {
       notify(t('modules.save_error'), 'error');
     }
-    setPending((p) => {
-      const { [key]: _done, ...rest } = p;
-      return rest;
-    });
+    setPending((p) => Object.fromEntries(Object.entries(p).filter(([k]) => k !== key)));
   };
 
   const showGroups = (event) => {
