@@ -1,10 +1,13 @@
 // Barra in alto vista dall'utente: il link alla home porta il marchio LiftIndex, il nome accessibile è uno solo.
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Navbar from './Navbar';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
 import { mediaStyle } from '../../test/mediaStyle';
+import { DRAFT_STORAGE_KEY } from '../../utils/focusDraft';
+
+const realMatchMedia = window.matchMedia;
 
 const auth = vi.hoisted(() => ({ value: { user: null, isLoggedIn: false, loading: false } }));
 vi.mock('../../context/AuthContext', () => ({
@@ -133,26 +136,109 @@ describe('barra in alto: bottone del tema', () => {
   });
 });
 
-// Moduli: la voce «Gruppi» c'è solo a modulo attivo (un account senza moduli li ha tutti attivi)
-describe('barra in alto: voce Gruppi', () => {
+// Desktop: Home · Schede · Storico · Progressi (senza Gruppi, che si apre dalla card in Home e da «Apri» nei Moduli),
+// pulsante diviso «Inizia allenamento ▾», tema, avatar
+describe('barra in alto: desktop', () => {
+  beforeEach(() => localStorage.clear());
   afterEach(() => {
     auth.value = { user: null, isLoggedIn: false, loading: false };
   });
-  const links = (user) => {
+  const mount = (user = { username: 'atleta_demo' }, path = '/') => {
     auth.value = { user, isLoggedIn: true, loading: false };
-    render(<MemoryRouter initialEntries={['/']}><ThemeModeProvider><Navbar /></ThemeModeProvider></MemoryRouter>);
-    return ['Home', 'Allenamenti', 'Dashboard', 'Gruppi'].filter((name) => screen.queryByRole('link', { name }));
+    return render(<MemoryRouter initialEntries={[path]}><ThemeModeProvider><Navbar /></ThemeModeProvider></MemoryRouter>);
+  };
+  const currentLinks = () => screen.getAllByRole('link').filter((a) => a.getAttribute('aria-current') === 'page').map((a) => a.getAttribute('aria-label') || a.textContent);
+
+  it('le voci sono Home, Schede, Storico, Progressi, senza Gruppi anche a modulo attivo', () => {
+    mount({ username: 'atleta_demo', modules: { groups: true } });
+    const items = ['Home', 'Schede', 'Storico', 'Progressi'].map((name) => screen.getByRole('link', { name }).getAttribute('href'));
+    expect(items).toEqual(['/', '/schede', '/storico', '/dashboard']);
+    expect(screen.queryByRole('link', { name: 'Gruppi' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Allenamenti' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Dashboard' })).toBeNull();
+  });
+
+  it.each([['/', 'Home'], ['/schede', 'Schede'], ['/storico', 'Storico'], ['/dashboard', 'Progressi']])('su %s la voce attiva è «%s»', (path, name) => {
+    mount(undefined, path);
+    expect(currentLinks()).toEqual([name]);
+  });
+
+  it('il pulsante diviso ha due bersagli: «Inizia allenamento» porta al Focus, «Altre azioni» apre il menu', () => {
+    mount();
+    expect(screen.getByRole('link', { name: 'Inizia allenamento' }).getAttribute('href')).toBe('/focus');
+    const more = screen.getByRole('button', { name: 'Altre azioni' });
+    expect(more.getAttribute('aria-haspopup')).toBe('menu');
+    expect(more.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(more);
+    expect(more.getAttribute('aria-expanded')).toBe('true');
+    const items = screen.getAllByRole('menuitem');
+    expect(items.map((item) => [item.textContent, item.getAttribute('href')])).toEqual([
+      ['Registra allenamento passato', '/storico'], ['Nuova misura', '/dashboard?tab=body'],
+    ]);
+  });
+
+  it('senza il modulo Misure il menu ha solo «Registra allenamento passato»', () => {
+    mount({ username: 'atleta_demo', modules: { body: false } });
+    fireEvent.click(screen.getByRole('button', { name: 'Altre azioni' }));
+    expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual(['Registra allenamento passato']);
+  });
+
+  it('con un allenamento a metà il pulsante è «Riprendi allenamento»', () => {
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({ selectedDay: { id: 1 }, startTime: 1 }));
+    mount();
+    expect(screen.getByRole('link', { name: 'Riprendi allenamento' }).getAttribute('href')).toBe('/focus');
+    expect(screen.queryByRole('link', { name: 'Inizia allenamento' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Altre azioni' }));
+    expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).not.toContain('Riprendi allenamento');
+  });
+
+  it('l\'avatar apre il Profilo e ha aria-current solo con il Profilo aperto', () => {
+    mount();
+    expect(screen.getByRole('link', { name: 'Profilo' }).getAttribute('href')).toBe('/profilo');
+    expect(screen.getByRole('link', { name: 'Profilo' }).getAttribute('aria-current')).toBeNull();
+  });
+
+  it('con il Profilo aperto l\'avatar è la pagina corrente e nessuna voce della barra lo è', () => {
+    mount(undefined, '/profilo');
+    expect(currentLinks()).toEqual(['Profilo']);
+  });
+
+  it('il pulsante diviso non c\'è per gli ospiti', () => {
+    auth.value = { user: null, isLoggedIn: false, loading: false };
+    render(<MemoryRouter><ThemeModeProvider><Navbar /></ThemeModeProvider></MemoryRouter>);
+    expect(screen.queryByRole('link', { name: 'Inizia allenamento' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Altre azioni' })).toBeNull();
+  });
+});
+
+// Telefono: in alto solo il nome scritto (il simbolo sta nel pulsante centrale della barra in basso), il tema e l'avatar
+describe('barra in alto: telefono', () => {
+  afterEach(() => {
+    auth.value = { user: null, isLoggedIn: false, loading: false };
+    window.matchMedia = realMatchMedia;
+  });
+  const mountPhone = () => {
+    window.matchMedia = (query) => ({ matches: query.includes('max-width'), media: query, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
+    auth.value = { user: { username: 'atleta_demo' }, isLoggedIn: true, loading: false };
+    render(<MemoryRouter><ThemeModeProvider><Navbar /></ThemeModeProvider></MemoryRouter>);
   };
 
-  it('con Gruppi attivo la voce c\'è', () => {
-    expect(links({ username: 'atleta_demo', modules: { groups: true } })).toEqual(['Home', 'Allenamenti', 'Dashboard', 'Gruppi']);
+  it('il nome LiftIndex è scritto, senza il simbolo nel quadrato rosso', () => {
+    mountPhone();
+    const homeLink = screen.getByRole('link', { name: 'LiftIndex' });
+    expect(within(homeLink).queryByTestId('logo-mark')).toBeNull();
   });
 
-  it('con Gruppi non attivo la voce non c\'è e le altre restano', () => {
-    expect(links({ username: 'atleta_demo', modules: { groups: false } })).toEqual(['Home', 'Allenamenti', 'Dashboard']);
+  it('il nome resta visibile anche sotto 360 px (non c\'è il simbolo a tenere il posto)', () => {
+    mountPhone();
+    expect(mediaStyle(screen.getByText('LiftIndex'), 359.95, 'max').position).not.toBe('absolute');
   });
 
-  it('un account senza moduli ha la voce', () => {
-    expect(links({ username: 'atleta_demo' })).toContain('Gruppi');
+  it('restano il selettore del tema e l\'avatar; né voci né pulsante diviso (stanno nella barra in basso)', () => {
+    mountPhone();
+    expect(screen.getByRole('button', { name: 'Modalità scura' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Profilo' })).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Schede' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Altre azioni' })).toBeNull();
   });
 });

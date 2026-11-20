@@ -104,8 +104,8 @@ describe('email non confermata dal giorno 8', () => {
   it('non ci sono voci di navigazione verso pagine che darebbero 403', async () => {
     mount();
     await screen.findByRole('heading', { level: 1, name: 'Conferma la tua email per continuare' });
-    expect(screen.queryByRole('link', { name: 'Allenamenti' })).toBeNull();
-    expect(screen.queryByRole('link', { name: 'Dashboard' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Schede' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Progressi' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Profilo' })).toBeNull();
     expect(screen.queryByRole('navigation', { name: 'Navigazione principale' })).toBeNull();
   });
