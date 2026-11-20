@@ -7,9 +7,9 @@ import { isModuleActive, useSaveModules } from '../../hooks/useModule';
 
 // Una riga della card «Moduli»: nome, descrizione, stato, «Apri» (solo se attivo) e interruttore. Il cambio si salva
 // subito; `notify(messaggio, gravità)` lo annuncia (e mostra l'errore). `name` e `help` sono già tradotti, così una
-// riga può stare anche per un modulo fuori dall'elenco. `children` è facoltativo: una funzione `(on) => nodo` per ciò
+// riga può stare anche per un modulo fuori dall'elenco. `below` è facoltativo: una funzione `(on) => nodo` per ciò
 // che va sotto la riga, con `on` lo stato mostrato dall'interruttore (anche quello atteso durante il salvataggio).
-const ModuleRow = ({ moduleKey, name, help, openPath, first = false, notify, children }) => {
+const ModuleRow = ({ moduleKey, name, help, openPath, first = false, notify, below }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const save = useSaveModules();
@@ -59,7 +59,7 @@ const ModuleRow = ({ moduleKey, name, help, openPath, first = false, notify, chi
           />
         </Box>
       </Box>
-      {children?.(on)}
+      {below?.(on)}
     </Box>
   );
 };

@@ -63,9 +63,8 @@ const ModulesCard = ({ notify }) => {
             openPath={MODULE_PATHS[key]}
             first={index === 0}
             notify={notify}
-          >
-            {key === 'groups' ? (on) => <GroupsNotice on={on} /> : undefined}
-          </ModuleRow>
+            below={key === 'groups' ? (on) => <GroupsNotice on={on} /> : undefined}
+          />
         ))}
       </Box>
     </Card>

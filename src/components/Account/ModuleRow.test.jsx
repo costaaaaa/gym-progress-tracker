@@ -11,14 +11,14 @@ const auth = vi.hoisted(() => ({ value: null }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth.value }));
 
 const notify = vi.fn();
-const Harness = ({ modules, children }) => {
+const Harness = ({ modules, below }) => {
   const [user, setUser] = useState({ id: 1, modules });
   auth.value = { user, updateUser: (patch) => setUser((u) => ({ ...u, ...patch })) };
   return (
     <MemoryRouter>
       <ThemeModeProvider>
         <ul>
-          <ModuleRow moduleKey="ai" name="Modulo extra" help="Una riga in più" openPath="/extra" first notify={notify}>{children}</ModuleRow>
+          <ModuleRow moduleKey="ai" name="Modulo extra" help="Una riga in più" openPath="/extra" first notify={notify} below={below} />
         </ul>
       </ThemeModeProvider>
     </MemoryRouter>
@@ -60,7 +60,7 @@ describe('ModuleRow', () => {
   it('i figli ricevono lo stato mostrato, anche quello atteso durante il salvataggio', async () => {
     let release;
     fetch.mockImplementation(() => new Promise((resolve) => { release = () => resolve(json({ success: true, modules: { ai: false } })); }));
-    render(<Harness modules={{ ai: true }}>{(on) => <p>figli {on ? 'on' : 'off'}</p>}</Harness>);
+    render(<Harness modules={{ ai: true }} below={(on) => <p>figli {on ? 'on' : 'off'}</p>} />);
     expect(screen.getByText('figli on')).toBeTruthy();
     fireEvent.click(screen.getByRole('switch', { name: 'Modulo extra' }));
     expect(screen.getByText('figli off')).toBeTruthy();
