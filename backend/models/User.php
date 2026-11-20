@@ -31,6 +31,10 @@ class User
     const MODULES = array('body', 'recovery', 'levels', 'groups', 'ai');
     public $modules = array('body' => true, 'recovery' => true, 'levels' => true, 'groups' => true, 'ai' => true);
     public $modules_chosen = false; // true se l'utente ha già fatto la sua scelta (modules_chosen_at pieno)
+    // Blocchi della Home che l'utente può spostare e nascondere (home_layout), e moduli che la Home può proporre,
+    // nell'ordine in cui si propongono (module_offers_declined = quelli rifiutati)
+    const HOME_BLOCKS = array('last', 'levels', 'groups', 'recovery', 'body');
+    const MODULE_OFFERS = array('body', 'levels', 'groups', 'recovery');
     // Visibilità nei gruppi (colonne group_show_<chiave>), valori salvati: chiave => mostrato agli altri membri
     const GROUP_VISIBILITY = array('workouts', 'volume', 'streak', 'level');
     public $group_visibility = array('workouts' => true, 'volume' => true, 'streak' => true, 'level' => true);
