@@ -8,7 +8,8 @@ export const OPTIONS = {
   logo: ['centro', 'alto'],
   moduli: ['tutti', 'misure-cardio', 'misure', 'nessuno'],
   bozza: ['0', '1'],
-  tecniche: ['scorri', 'capo'],
+  tecniche: ['riga', 'scorri', 'capo'],
+  pari: ['rombo', 'lati'],
   strumenti: ['nessuno', 'tutti'],
   home: ['stato', 'saluto', 'colore', 'oggi', 'righe'],
   stato: ['dafare', 'fatto', 'obiettivo'],
@@ -17,7 +18,7 @@ export const OPTIONS = {
   account: ['elenco', 'pagina'],
   tema: ['chiaro', 'scuro'],
 };
-const DEFAULTS = { s: 'home', home: 'stato', stato: 'dafare', menu: 'ventaglio', tondi: 'medi', logo: 'centro', moduli: 'tutti', bozza: '0', tecniche: 'scorri', strumenti: 'nessuno', vista: 'elenco', tab: 'esercizi', account: 'elenco', tema: null };
+const DEFAULTS = { s: 'home', home: 'stato', stato: 'dafare', menu: 'ventaglio', tondi: 'medi', logo: 'centro', moduli: 'tutti', bozza: '0', tecniche: 'riga', pari: 'rombo', strumenti: 'nessuno', vista: 'elenco', tab: 'esercizi', account: 'elenco', tema: null };
 
 export const useProto = () => {
   const [params, setParams] = useSearchParams();

@@ -100,7 +100,7 @@ const PrototypeRedesign = () => {
             <BottomBar tab={tab} onTab={(t) => { setAperto(false); setMany({ s: t, ...NAV_RESET }); }} logo={values.logo} open={aperto && values.menu === 'ventaglio'} onCenter={() => setAperto((o) => !o)} />
             {values.menu === 'pannello'
               ? <CenterMenu open={aperto} onClose={() => setAperto(false)} onStart={start} bozza={bozza} voci={voci} />
-              : <Fan variant={values.tondi} open={aperto} onClose={() => setAperto(false)} onStart={start} bozza={bozza} voci={voci} />}
+              : <Fan variant={values.tondi} pari={values.pari} open={aperto} onClose={() => setAperto(false)} onStart={start} bozza={bozza} voci={voci} />}
           </>
         )}
       </Box>

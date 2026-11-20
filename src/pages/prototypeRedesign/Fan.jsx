@@ -29,11 +29,32 @@ const STRETTI_ORIGIN = 14;
 
 // Ventaglio medio con cinque voci: via di mezzo tra compatti e stretti, etichette tutte sotto il tondo.
 // I tondi esterni stanno appena oltre le etichette di Cardio e Misura (6 px), quelli interni appena oltre «Riprendi»
-const MEDI_FIVE = [{ x: -104, y: 40 }, { x: -56, y: 92 }, { x: 0, y: 112 }, { x: 56, y: 92 }, { x: 104, y: 40 }];
-const MEDI_ORIGIN = 12;
+// «Inizia» (o «Riprendi») sta sempre nello stesso punto, in alto al centro: y misurata dal bordo basso del velo
+const MEDI_INIZIA_Y = 146;
+const MEDI_FIVE = [{ x: -108, y: 54 }, { x: -56, y: 112 }, { x: 0, y: MEDI_INIZIA_Y }, { x: 56, y: 112 }, { x: 108, y: 54 }];
 
-const layoutFor = (variant, n) => {
-  if (variant === 'medi') return n === 5 ? MEDI_FIVE.map((q) => ({ ...q, y: q.y + MEDI_ORIGIN })) : polar(arcAngles(n, 40), 110, MEDI_ORIGIN);
+// Ventaglio medio con 2, 3 o 4 voci: «Inizia» in alto al centro, le altre sotto di lui.
+// Rombo (solo con 2 o 4 voci): la voce di «Registra» in basso al centro, quelle dei moduli a mezza altezza ai lati.
+// Lati: le altre voci sull'arco, una in più a sinistra se sono dispari
+const mediLayout = (items, pari) => {
+  const n = items.length;
+  const top = { x: 0, y: MEDI_INIZIA_Y };
+  if (n === 2) return items.map((it) => (it.main ? top : pari === 'rombo' ? { x: 0, y: 62 } : { x: -56, y: 112 }));
+  if (n === 4 && pari === 'rombo') {
+    const sides = [{ x: -84, y: 104 }, { x: 84, y: 104 }];
+    let s = 0;
+    return items.map((it) => (it.main ? top : it.key === 'registra' ? { x: 0, y: 62 } : sides[s++]));
+  }
+  if (n === 4) {
+    const slots = [{ x: -108, y: 54 }, { x: -56, y: 112 }, { x: 56, y: 112 }];
+    let s = 0;
+    return items.map((it) => (it.main ? top : slots[s++]));
+  }
+  return items.map((it, i) => (it.main ? top : { x: i < items.findIndex((q) => q.main) ? -82 : 82, y: 104 }));
+};
+
+const layoutFor = (variant, n, items, pari) => {
+  if (variant === 'medi') return n === 5 ? MEDI_FIVE : mediLayout(items, pari);
   if (variant === 'grandi') {
     const angles = n === 5 ? GRANDI_FIVE : n === 2 ? GRANDI_TWO : arcAngles(n, 29);
     return polar(angles, 140, 10);
@@ -44,7 +65,7 @@ const layoutFor = (variant, n) => {
   return polar(arcAngles(n, 40), 96, STRETTI_ORIGIN);
 };
 
-const Fan = ({ open, onClose, onStart, bozza, voci, variant }) => {
+const Fan = ({ open, onClose, onStart, bozza, voci, variant, pari }) => {
   const [shown, setShown] = useState(false);
   const [tip, setTip] = useState(null);
   const timer = useRef(null);
@@ -66,7 +87,7 @@ const Fan = ({ open, onClose, onStart, bozza, voci, variant }) => {
   const misura = { key: 'misura', short: 'Misura', full: 'Nuova misura', Icon: StraightenIcon, action: onClose };
   const coach = { key: 'coach', short: 'Coach', full: 'Chiedi al Coach', Icon: AutoAwesomeOutlinedIcon, action: onClose };
   const items = [registra, voci.cardio && cardio, inizia, voci.misura && misura, voci.coach && coach].filter(Boolean);
-  const positions = layoutFor(variant, items.length);
+  const positions = layoutFor(variant, items.length, items, pari);
   const grandi = variant === 'grandi';
   const icone = variant === 'icone';
 

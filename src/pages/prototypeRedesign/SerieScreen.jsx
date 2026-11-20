@@ -96,7 +96,17 @@ const SerieScreen = ({ wk, tools, tecniche, bozza, onExit, go }) => {
           <Stepper label="Ripetizioni" value={reps} onChange={setReps} step={1} />
         </Box>
 
-        <Box role="group" aria-label="Tecnica" sx={{ display: 'flex', gap: 1, flexWrap: tecniche === 'capo' ? 'wrap' : 'nowrap', overflowX: tecniche === 'capo' ? 'visible' : 'auto', mx: tecniche === 'capo' ? 0 : -2, px: tecniche === 'capo' ? 0 : 2, flex: '0 0 auto', pb: 0.25 }}>
+        <Box
+          role="group"
+          aria-label="Tecnica"
+          sx={{
+            display: tecniche === 'riga' ? 'grid' : 'flex', gap: tecniche === 'riga' ? '6px' : 1, flex: '0 0 auto', pb: 0.25,
+            ...(tecniche === 'riga' ? { gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' } : {
+              flexWrap: tecniche === 'capo' ? 'wrap' : 'nowrap', overflowX: tecniche === 'capo' ? 'visible' : 'auto', mx: tecniche === 'capo' ? 0 : -2, px: tecniche === 'capo' ? 0 : 2,
+              scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' },
+            }),
+          }}
+        >
           {TECHNIQUES.map((t) => {
             const on = tech === t;
             return (
@@ -104,7 +114,7 @@ const SerieScreen = ({ wk, tools, tecniche, bozza, onExit, go }) => {
                 key={t}
                 aria-pressed={on}
                 onClick={() => setTech(on ? null : t)}
-                sx={{ flex: '0 0 auto', minHeight: 40, px: 1.75, borderRadius: radius.pill, fontSize: 14, fontWeight: 600, border: '1px solid', borderColor: on ? 'text.primary' : 'divider', bgcolor: on ? 'text.primary' : 'transparent', color: on ? 'background.default' : 'text.primary' }}
+                sx={{ flex: '0 0 auto', minHeight: tecniche === 'riga' ? 44 : 40, px: tecniche === 'riga' ? 0.25 : 1.75, minWidth: 0, borderRadius: radius.pill, fontSize: tecniche === 'riga' ? 12 : 14, whiteSpace: 'nowrap', fontWeight: 600, border: '1px solid', borderColor: on ? 'text.primary' : 'divider', bgcolor: on ? 'text.primary' : 'transparent', color: on ? 'background.default' : 'text.primary' }}
               >
                 {t}
               </ButtonBase>
