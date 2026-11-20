@@ -57,7 +57,8 @@ $r = api('POST', '/api/user/register.php', null, regBody('mofull'));
 check('registrazione: 201', $r[0] === 201, $r[2]);
 check('un account nuovo ha tutti i moduli non attivi e modules_chosen_at NULL',
     stored('mofull') === '00000' && scalar("SELECT modules_chosen_at IS NULL FROM gym_users WHERE username = 'mofull'") == 1);
-api('POST', '/api/user/register.php', null, regBody('mopart'));
+$r = api('POST', '/api/user/register.php', null, regBody('mopart'));
+check('registrazione di mopart: 201', $r[0] === 201, $r[2]);
 // Un account che esisteva prima (inserito a mano: default delle colonne) resta com'è
 $conn->exec("INSERT INTO gym_users (username, email, password, modules_chosen_at) VALUES ('moold', 'moold@example.test', " . $conn->quote(password_hash(PASSWORD, PASSWORD_BCRYPT)) . ", NOW())");
 check('un account esistente (default delle colonne) ha tutto attivo e la scelta già fatta', stored('moold') === '11111');

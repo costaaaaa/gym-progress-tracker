@@ -559,7 +559,9 @@ describe('AuthProvider: moduli', () => {
     fireEvent.click(screen.getByText('salva'));
     await waitFor(() => expect(screen.getByTestId('chosen').textContent).toBe('true'));
     await act(async () => { release(); });
-    await new Promise((r) => setTimeout(r, 20));
+    // La lettura vecchia ha finito: il suo risultato (e la rilettura dell'email) è già nel contesto
+    await waitFor(() => expect(backend).toHaveBeenCalledTimes(2));
+    await act(async () => { await Promise.resolve(); });
     expect(screen.getByTestId('modules').textContent).toBe(JSON.stringify(NEW));
     expect(screen.getByTestId('chosen').textContent).toBe('true');
     expect(JSON.parse(localStorage.getItem('user'))).toMatchObject({ modules: NEW, modules_chosen: true });

@@ -36,6 +36,12 @@ const baseState = (user = {}, emailState = verified) => ({
   isLoggedIn: true, emailState, user: { id: 1, modules: NONE, modules_chosen: false, ...user },
 });
 const mount = (state = baseState(), props = {}) => render(<Harness initial={state} {...props} />);
+// Clic fuori dalla finestra: sul contenitore, come lo riceve MUI
+const clickOutside = () => {
+  const container = document.querySelector('.MuiDialog-container');
+  fireEvent.mouseDown(container);
+  fireEvent.click(container);
+};
 const dialog = () => screen.queryByRole('dialog', { name: 'Cosa ti interessa?' });
 
 beforeEach(() => {
@@ -160,7 +166,7 @@ describe('scelta', () => {
   it('Esc e il clic fuori non chiudono la finestra', () => {
     mount();
     fireEvent.keyDown(dialog(), { key: 'Escape', code: 'Escape' });
-    fireEvent.click(document.querySelector('.MuiBackdrop-root'));
+    clickOutside();
     expect(dialog()).toBeTruthy();
     expect(saved()).toEqual([]);
   });
@@ -202,6 +208,15 @@ describe("in fila con l'avviso di esito", () => {
   });
 });
 
+describe('Focus e avviso di esito', () => {
+  it('dovuta durante l\'avviso: se parte un Focus prima che l\'avviso finisca, la finestra non compare', () => {
+    const { rerender } = mount(baseState(), { waiting: true });
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({ selectedDay: 'A', startTime: Date.now() }));
+    rerender(<Harness initial={baseState()} waiting={false} />);
+    expect(dialog()).toBeNull();
+  });
+});
+
 describe('uscita se il salvataggio fallisce', () => {
   const fail = async () => {
     settings = () => json({ success: false }, 500);
@@ -229,5 +244,11 @@ describe('uscita se il salvataggio fallisce', () => {
     await fail();
     fireEvent.keyDown(dialog(), { key: 'Escape', code: 'Escape' });
     await waitFor(() => expect(dialog()).toBeNull());
+  });
+
+  it('dopo un errore il clic fuori non chiude', async () => {
+    await fail();
+    clickOutside();
+    expect(dialog()).toBeTruthy();
   });
 });
