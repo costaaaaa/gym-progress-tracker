@@ -38,6 +38,6 @@ export const DANGER_TEXT = {
 };
 
 // Collegamento di testo con bersaglio da almeno 44 px, in inchiostro (es. «Cosa mostro»)
-export const LINK_TARGET = {
+export const INK_LINK = {
   display: 'inline-flex', alignItems: 'center', minHeight: 44, fontSize: 16, fontWeight: 600, color: 'text.primary',
 };

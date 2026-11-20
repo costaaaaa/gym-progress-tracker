@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { MODULE_KEYS, MODULE_PATHS } from '../../hooks/useModule';
 import { listGroups } from '../../api/groups';
 import { scrollToAndFocus } from '../../utils/focus';
-import { LINK_TARGET } from '../../utils/buttonStyles';
+import { INK_LINK } from '../../utils/buttonStyles';
 import ModuleRow from './ModuleRow';
 
 // Avviso sotto la riga dei Gruppi: a Gruppi non attivo serve sapere se si è ancora in qualche gruppo
@@ -37,8 +37,8 @@ const GroupsNotice = ({ on }) => {
         <>
           <Typography sx={{ fontSize: 16 }}>{t('modules.groups_warning', { count: groupsCount })}</Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 2 }}>
-            <Link href="#groups-shown" onClick={goTo('groups-shown')} sx={LINK_TARGET}>{t('modules.groups_show')}</Link>
-            <Link href="#groups-list" onClick={goTo('groups-list')} sx={LINK_TARGET}>{t('modules.groups_leave')}</Link>
+            <Link href="#groups-shown" onClick={goTo('groups-shown')} sx={INK_LINK}>{t('modules.groups_show')}</Link>
+            <Link href="#groups-list" onClick={goTo('groups-list')} sx={INK_LINK}>{t('modules.groups_leave')}</Link>
           </Box>
         </>
       )}
