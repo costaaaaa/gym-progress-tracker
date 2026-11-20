@@ -108,7 +108,7 @@ const newestFirst = (a, b) => clockDate(b.date) - clockDate(a.date);
 const DAY_FORMAT = { weekday: 'long', day: 'numeric', month: 'long' };
 
 // `recordRequest`: un numero che cresce a ogni richiesta di aprire «Registra allenamento» (dal ventaglio); si apre
-// una volta per numero, e solo con una scheda attiva (come il pulsante della pagina)
+// una volta per numero, e solo con una scheda attiva (come il pulsante della pagina); senza, un avviso lo dice
 const WorkoutHistory = ({ isEmbedded = false, refreshKey = null, recordRequest = null }) => {
   const { t } = useTranslation();
   const { isLoggedIn, loading: authLoading, weightUnit, user } = useAuth();
@@ -172,7 +172,8 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null, recordRequest =
     if (!recordRequest || !planLoaded || handledRecordRequest.current === recordRequest) return;
     handledRecordRequest.current = recordRequest;
     if (activePlan) setOpenRecordDialog(true);
-  }, [recordRequest, planLoaded, activePlan]);
+    else setSnackbar({ open: true, message: t('history.record_needs_plan'), severity: 'info' });
+  }, [t, recordRequest, planLoaded, activePlan]);
 
   const fetchWorkoutHistory = async () => {
     setLoading(true);

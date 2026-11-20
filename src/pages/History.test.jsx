@@ -94,12 +94,27 @@ describe('«Registra allenamento passato» dal ventaglio', () => {
     expect(dialogTitle()).toBeNull();
   });
 
-  it('senza scheda attiva si arriva sulla pagina e basta, e lo stato è comunque consumato', async () => {
+  it('senza scheda attiva non si apre la finestra, lo stato è consumato e un avviso spiega perché', async () => {
     plans = [{ ...plan, is_active: false }];
     await mount({ pathname: '/storico', state: { openRecord: true } });
     await waitFor(() => expect(screen.getByTestId('state').textContent).toBe('null'));
     expect(dialogTitle()).toBeNull();
     expect(screen.queryByRole('dialog')).toBeNull();
+    const avviso = await screen.findByText('Per registrare un allenamento serve una scheda attiva.');
+    expect(avviso.closest('.MuiAlert-root').className).toContain('MuiAlert-colorInfo');
+  });
+
+  it('l\'avviso della mancanza di scheda attiva compare una volta per richiesta', async () => {
+    plans = [{ ...plan, is_active: false }];
+    await mount({ pathname: '/storico', state: { openRecord: true } });
+    const testo = 'Per registrare un allenamento serve una scheda attiva.';
+    const avviso = await screen.findByText(testo);
+    fireEvent.click(avviso.closest('.MuiAlert-root').querySelector('button'));
+    await waitFor(() => expect(screen.queryByText(testo)).toBeNull());
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.queryByText(testo)).toBeNull();
+    fireEvent.click(screen.getByRole('link', { name: 'Registra dal ventaglio' }));
+    expect(await screen.findByText(testo)).toBeTruthy();
   });
 
   it('senza lo stato la finestra non si apre', async () => {

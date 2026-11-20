@@ -1000,6 +1000,7 @@
   "profile.meta.description": "Manage your profile, your achievements and your LiftIndex account settings.",
   "plans.meta.description": "Create and manage your gym workout plans, with custom exercises.",
   "history.meta.description": "Review your logged workouts: sets, reps and loads, with sharing and date correction.",
+  "history.record_needs_plan": "You need an active plan to log a workout.",
   "consent.load_error": "Error loading consents",
   "consent.failed": "Operation failed",
   "profile.tab_summary": "Summary",

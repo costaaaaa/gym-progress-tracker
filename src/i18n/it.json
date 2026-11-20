@@ -1000,6 +1000,7 @@
   "profile.meta.description": "Gestisci il tuo profilo, i traguardi raggiunti e le impostazioni del tuo account LiftIndex.",
   "plans.meta.description": "Crea e gestisci le tue schede di allenamento in palestra, con esercizi personalizzati.",
   "history.meta.description": "Rivedi gli allenamenti registrati: serie, ripetizioni e carichi, con condivisione e correzione della data.",
+  "history.record_needs_plan": "Per registrare un allenamento serve una scheda attiva.",
   "consent.load_error": "Errore nel caricamento dei consensi",
   "consent.failed": "Operazione non riuscita",
   "profile.tab_summary": "Riepilogo",
