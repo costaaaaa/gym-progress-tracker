@@ -10,6 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import LogoMark from '../LogoMark';
 import CenterFan from './CenterFan';
+import { BAR_HEIGHT, CIRCLE } from './barMetrics';
 import { useCenterActions } from '../../hooks/useCenterActions';
 
 // Voce di navigazione standard (icona + etichetta), come link/bottone accessibile
@@ -87,7 +88,7 @@ const BottomNav = () => {
         zIndex: 1000,
         display: { xs: 'grid', md: 'none' },
         gridTemplateColumns: '1fr 1fr 68px 1fr 1fr',
-        height: '64px',
+        height: `${BAR_HEIGHT}px`,
         bgcolor: 'background.paper',
         borderTop: '1px solid',
         borderColor: 'divider',
@@ -108,8 +109,8 @@ const BottomNav = () => {
       >
         <Box
           sx={{
-            width: 56,
-            height: 56,
+            width: CIRCLE.main,
+            height: CIRCLE.main,
             borderRadius: '50%',
             bgcolor: 'primary.main',
             color: 'common.white',

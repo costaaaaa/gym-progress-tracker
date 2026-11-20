@@ -4,17 +4,10 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import CloseIcon from '@mui/icons-material/Close';
 import { fanLayout } from './fanLayout';
+import { BAR_HEIGHT, BUTTON_BELOW, CIRCLE, TARGET_WIDTH, LABEL_SPACE } from './barMetrics';
 import { radius } from '../../theme/radius';
 
-// La barra in basso è alta 64 px; il centro del pulsante centrale sta 18 px sotto il bordo basso del velo
-const BAR_HEIGHT = 64;
-const BUTTON_BELOW = 18;
-const CIRCLE = { main: 56, other: 44 };
 const ICON = { main: 26, other: 20 };
-// Larghezza del bersaglio di una voce (tondo + testo): due voci vicine non si sovrappongono nemmeno a 320 px
-const TARGET_WIDTH = 56;
-// Altezza sotto il tondo: spazio e riga del testo
-const LABEL_SPACE = 20;
 const STAGGER_MS = 30;
 
 // Ventaglio di tondi sopra il pulsante centrale, su un velo scuro. Finestra modale: il fuoco parte da «Inizia» e resta
@@ -139,10 +132,10 @@ const CenterFan = ({ open, onClose, items }) => {
           sx={{
             position: 'absolute',
             left: '50%',
-            ml: '-28px',
+            ml: `${-CIRCLE.main / 2}px`,
             bottom: `calc(${BUTTON_BELOW}px + env(safe-area-inset-bottom) / 2)`,
-            width: 56,
-            height: 56,
+            width: CIRCLE.main,
+            height: CIRCLE.main,
             borderRadius: '50%',
             bgcolor: 'primary.main',
             color: 'common.white',

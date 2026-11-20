@@ -6,7 +6,7 @@ export const START_POSITION = { x: 0, y: 146 };
 const BELOW_START = { x: 0, y: 62 };
 const THREE_SIDES = [{ x: -82, y: 104 }, { x: 82, y: 104 }];
 const DIAMOND_SIDES = [{ x: -84, y: 104 }, { x: 84, y: 104 }];
-const FIVE_SLOTS = [{ x: -108, y: 54 }, { x: -56, y: 112 }, { x: 56, y: 112 }, { x: 108, y: 54 }];
+const FIVE_SLOTS = [{ x: -120, y: 54 }, { x: -60, y: 112 }, { x: 60, y: 112 }, { x: 120, y: 54 }];
 
 const othersSlots = (count) => {
   if (count === 1) return [BELOW_START];
@@ -16,6 +16,7 @@ const othersSlots = (count) => {
 };
 
 export const fanLayout = (items) => {
+  if (items.length < 2 || items.length > 5) throw new Error(`Il ventaglio ha da 2 a 5 voci, ne ha ${items.length}`);
   const slots = othersSlots(items.length - 1);
   let next = 0;
   return items.map((item) => (item.main ? START_POSITION : slots[next++]));

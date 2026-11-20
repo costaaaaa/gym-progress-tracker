@@ -1,6 +1,7 @@
 // Posizioni dei tondi del ventaglio: «Inizia» sempre nello stesso punto, le altre voci in arco o a rombo.
 import { describe, it, expect } from 'vitest';
 import { fanLayout, START_POSITION } from './fanLayout';
+import { CIRCLE, TARGET_WIDTH, LABEL_SPACE } from './barMetrics';
 
 const main = { key: 'start', main: true };
 const record = { key: 'record' };
@@ -11,7 +12,7 @@ const at = (items) => Object.fromEntries(items.map((item, i) => [item.key, fanLa
 
 describe('ventaglio: posizioni', () => {
   it('«Inizia» sta sempre in alto al centro, qualunque sia il numero di voci', () => {
-    for (const others of [[], [record], [record, measure], [record, cardio, measure], [record, cardio, measure, coach]]) {
+    for (const others of [[record], [record, measure], [record, cardio, measure], [record, cardio, measure, coach]]) {
       expect(at([main, ...others]).start).toEqual(START_POSITION);
     }
     expect(START_POSITION.x).toBe(0);
@@ -55,9 +56,43 @@ describe('ventaglio: posizioni', () => {
     expect(fanLayout(items)[1]).toEqual(START_POSITION);
   });
 
-  it('le posizioni stanno in 320 px: i testi sotto i tondi non escono dallo schermo', () => {
-    for (const items of [[main, record, cardio, measure, coach], [main, record, cardio, measure]]) {
-      for (const { x } of fanLayout(items)) expect(Math.abs(x) + 32).toBeLessThanOrEqual(160);
+});
+
+// Il bersaglio vero di una voce, come lo disegna CenterFan: largo TARGET_WIDTH, centrato su x; alto tondo + LABEL_SPACE,
+// con il tondo che sta sopra il punto y e il testo sotto
+const target = (item, { x, y }) => {
+  const size = item.main ? CIRCLE.main : CIRCLE.other;
+  return { left: x - TARGET_WIDTH / 2, right: x + TARGET_WIDTH / 2, top: y + size / 2, bottom: y - size / 2 - LABEL_SPACE };
+};
+const touch = (a, b) => a.left <= b.right && b.left <= a.right && a.bottom <= b.top && b.bottom <= a.top;
+
+describe.each([
+  ['2', [main, record]],
+  ['3', [main, record, measure]],
+  ['4', [main, record, cardio, measure]],
+  ['5', [main, record, cardio, measure, coach]],
+])('ventaglio a %s voci: bersagli veri', (_, items) => {
+  const boxes = () => fanLayout(items).map((position, i) => target(items[i], position));
+
+  it('stanno dentro lo schermo largo 320 px (160 px per lato dal centro) e sopra la barra', () => {
+    for (const box of boxes()) {
+      expect(box.left).toBeGreaterThanOrEqual(-160);
+      expect(box.right).toBeLessThanOrEqual(160);
+      expect(box.bottom).toBeGreaterThanOrEqual(0);
     }
+  });
+
+  it('non si toccano tra loro', () => {
+    const all = boxes();
+    for (let a = 0; a < all.length; a += 1) {
+      for (let b = a + 1; b < all.length; b += 1) expect(touch(all[a], all[b]), `${items[a].key} e ${items[b].key}`).toBe(false);
+    }
+  });
+});
+
+describe('ventaglio: numero di voci', () => {
+  it.each([[0], [1], [6]])('con %s voci lancia un errore chiaro', (count) => {
+    const items = Array.from({ length: count }, (_, i) => ({ key: `k${i}`, main: i === 0 }));
+    expect(() => fanLayout(items)).toThrow('da 2 a 5 voci');
   });
 });
