@@ -136,7 +136,7 @@ describe('moduli', () => {
     stubFetch({ settings: () => json({ success: true, modules: { ...ALL, body: false } }) });
     await mount();
     fireEvent.click(screen.getByRole('switch', { name: 'Misure' }));
-    await waitFor(() => expect(updateUser).toHaveBeenCalledWith({ modules: { ...ALL, body: false } }));
+    await waitFor(() => expect(updateUser).toHaveBeenCalledWith({ modules: { body: false } }));
     expect(fetch.mock.calls.filter(([url]) => url.includes('update_settings.php')).map(([, init]) => JSON.parse(init.body)))
       .toEqual([{ modules: { body: false } }]);
     expect(await screen.findByRole('alert')).toBeTruthy();
