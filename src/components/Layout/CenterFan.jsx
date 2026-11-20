@@ -34,16 +34,6 @@ const CenterFan = ({ open, onClose, items }) => {
     return () => clearTimeout(id);
   }, [open]);
 
-  // Tab e Maiusc+Tab girano dentro la finestra: dall'ultimo controllo al primo e viceversa
-  const keepFocusInside = (event) => {
-    if (event.key !== 'Tab') return;
-    const controls = [...event.currentTarget.querySelectorAll('a[href], button')];
-    const edge = event.shiftKey ? controls[0] : controls.at(-1);
-    if (document.activeElement !== edge) return;
-    event.preventDefault();
-    (event.shiftKey ? controls.at(-1) : controls[0]).focus();
-  };
-
   const positions = fanLayout(items);
   const settled = shown || reduceMotion;
 
@@ -55,7 +45,6 @@ const CenterFan = ({ open, onClose, items }) => {
         aria-modal="true"
         aria-label={t('nav.center_aria')}
         onClick={onClose}
-        onKeyDown={keepFocusInside}
         sx={{ position: 'fixed', inset: 0, outline: 'none' }}
       >
         <Box

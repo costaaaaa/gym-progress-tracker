@@ -1,6 +1,6 @@
 // Il ventaglio del pulsante centrale: finestra modale con i tondi sopra il pulsante, su un velo scuro.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import EditCalendarOutlinedIcon from '@mui/icons-material/EditCalendarOutlined';
@@ -79,21 +79,36 @@ describe('ventaglio: finestra', () => {
     expect(onClose).toHaveBeenCalledTimes(4);
   });
 
-  it('il Tab gira tra le voci e la chiusura, anche all\'indietro', () => {
+  // Il Tab vero lo gestisce la trappola del fuoco del Modal di MUI: dall'ultimo controllo il Tab arriva al segnaposto di
+  // fondo (e dal primo, con Maiusc, a quello d'inizio), che rimanda al capo opposto. jsdom non sposta il fuoco col Tab,
+  // quindi qui il fuoco si porta sui segnaposto, come farebbe il browser.
+  it('la trappola del fuoco del Modal fa girare il Tab: dal segnaposto di fondo a «Inizia», da quello d\'inizio a «Chiudi»', () => {
     mount([start, record, measure]);
-    const dialog = screen.getByRole('dialog');
     const first = screen.getByRole('link', { name: 'Inizia allenamento' });
     const close = screen.getByRole('button', { name: 'Chiudi' });
-    close.focus();
-    fireEvent.keyDown(dialog, { key: 'Tab' });
+    act(() => screen.getByTestId('sentinelEnd').focus());
     expect(document.activeElement).toBe(first);
-    fireEvent.keyDown(dialog, { key: 'Tab', shiftKey: true });
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    act(() => screen.getByTestId('sentinelStart').focus());
     expect(document.activeElement).toBe(close);
   });
 
   it('il resto della pagina non scorre mentre il ventaglio è aperto', () => {
     mount([start, record]);
     expect(document.body.style.overflow).toBe('hidden');
+  });
+});
+
+describe('ventaglio: con 4 e 5 voci finte', () => {
+  it.each([
+    ['4', [start, record, cardio, measure]],
+    ['5', [start, record, cardio, measure, coach]],
+  ])('con %s voci: fuoco su «Inizia» e ordine di lettura come l\'elenco, poi la chiusura', (_, items) => {
+    mount(items);
+    expect(document.activeElement).toBe(screen.getByRole('link', { name: 'Inizia allenamento' }));
+    const controls = [...screen.getByRole('dialog').querySelectorAll('a, button')].map((el) => el.getAttribute('aria-label'));
+    expect(controls).toEqual([...items.map((item) => item.label), 'Chiudi']);
+    expect(screen.getAllByRole('link').map((a) => a.textContent)).toEqual(items.map((item) => item.shortLabel));
   });
 });
 
