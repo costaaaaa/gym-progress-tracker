@@ -176,7 +176,7 @@ describe('primo accesso', () => {
     renderHome();
     expect(await screen.findByText('Inizia da qui')).toBeTruthy();
     const link = screen.getByRole('link', { name: 'Crea la tua prima scheda' });
-    expect(link.getAttribute('href')).toBe('/workouts?tab=plans');
+    expect(link.getAttribute('href')).toBe('/schede');
   });
 
   it('"Inizia da qui" non c\'è se c\'è una scheda attiva', async () => {
@@ -250,7 +250,7 @@ describe('home dopo il login', () => {
   it('Ultimo allenamento porta alla cronologia e mostra data ed esercizi', async () => {
     renderHome();
     const link = await screen.findByRole('link', { name: /Ultimo allenamento/ });
-    expect(link.getAttribute('href')).toBe('/workouts?tab=history');
+    expect(link.getAttribute('href')).toBe('/storico');
     expect(link.textContent).toContain('20 ottobre 2026');
     expect(link.textContent).toContain('Panca piana');
     expect(link.textContent).toContain('Squat');
@@ -259,7 +259,7 @@ describe('home dopo il login', () => {
   it('Scheda attiva porta alle schede e mostra il nome', async () => {
     renderHome();
     const link = await screen.findByRole('link', { name: /Scheda attiva/ });
-    expect(link.getAttribute('href')).toBe('/workouts?tab=plans');
+    expect(link.getAttribute('href')).toBe('/schede');
     expect(link.textContent).toContain('Push Pull Legs');
   });
 
@@ -426,7 +426,7 @@ describe('moduli non attivi', () => {
   it('Misure non attivo: la scorciatoia Misure non c\'è, le altre sì', async () => {
     await mountWith(['body']);
     expect(screen.queryByRole('link', { name: 'Misure' })).toBeNull();
-    expect(screen.getByRole('link', { name: 'Cronologia' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Storico' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Progressi' })).toBeTruthy();
   });
 
@@ -441,7 +441,7 @@ describe('moduli non attivi', () => {
     await mountWith(['body', 'recovery', 'levels', 'groups']);
     ['Streak', 'Livello', 'Stato muscolare', 'I tuoi gruppi'].forEach((text) => expect(screen.queryByText(text)).toBeNull());
     ['Riepilogo settimanale', 'Ultimo allenamento', 'Scheda attiva'].forEach((text) => expect(screen.getByText(text)).toBeTruthy());
-    expect(screen.getByRole('link', { name: 'Cronologia' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Storico' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Inizia allenamento' })).toBeTruthy();
   });
 });

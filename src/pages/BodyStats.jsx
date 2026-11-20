@@ -49,6 +49,7 @@ import HealthAppHint from '../components/HealthAppHint';
 import { DEFAULT_PERIOD, PERIODS, PERIOD_UI, filterByPeriod, periodStart, periodWeightDelta, weightTrend, sortByDate, paginate } from '../utils/bodyStatsPeriod';
 import { radius } from '../theme/radius';
 import useFocusField from '../hooks/useFocusField';
+import { useOncePerRequest } from '../hooks/useNavigationRequest';
 import { BODY_LIMITS, isValueOutOfRange } from '../utils/bodyStatsRules';
 
 // Cuore accanto a un valore arrivato da Apple Salute / Health Connect
@@ -220,7 +221,9 @@ const numberFieldSx = {
   '& input[type=number]': { MozAppearance: 'textfield' },
 };
 
-const BodyStats = ({ isEmbedded = false }) => {
+// `openRequest`: un numero che cresce a ogni richiesta di aprire «Nuova misurazione» (dal ventaglio); si apre una volta
+// per numero, a dati caricati e solo con il consenso ai dati sulla salute (come il pulsante della pagina)
+const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
   const { t } = useTranslation();
   const { weightUnit } = useAuth();
   const isPhone = useMediaQuery(useTheme().breakpoints.down('sm'));
@@ -294,6 +297,8 @@ const BodyStats = ({ isEmbedded = false }) => {
     setFieldErrors({});
     setIsDialogOpen(true);
   };
+
+  useOncePerRequest(openRequest, !isLoading, () => { if (!consentRequired) openDialog(); });
 
   const handleDateChange = (date) => {
     setFormData({ ...formData, date });

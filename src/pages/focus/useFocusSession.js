@@ -832,7 +832,7 @@ export default function useFocusSession() {
     onDayChange: handleDayChange,
     onStart: handleStartWorkout,
     onBack: () => navigate('/'),
-    onGoToPlans: () => navigate('/workouts?tab=plans'),
+    onGoToPlans: () => navigate('/schede'),
   };
   const restTimer = {
     timerDuration,
@@ -891,7 +891,7 @@ export default function useFocusSession() {
     savedResult,
     onSave: handleSave,
     onQuit: handleQuit,
-    onGoHistory: () => navigate('/workouts?tab=history', { state: { refreshHistory: Date.now() } }),
+    onGoHistory: () => navigate('/storico', { state: { refreshHistory: Date.now() } }),
     onGoHome: () => navigate('/'),
     canEditSession,
     onAddExercise: () => openPicker('add', 'summary'),

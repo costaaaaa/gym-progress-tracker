@@ -47,6 +47,7 @@ import { track } from '../utils/analytics';
 import { focusedElement } from '../utils/focus';
 import { useAuth } from '../context/AuthContext';
 import { isModuleActive } from '../hooks/useModule';
+import { useOncePerRequest } from '../hooks/useNavigationRequest';
 import { API_BASE_URL } from '../config';
 import { radius } from '../theme/radius';
 import { intlLocale, formatDate, formatClockTime, formatSetText } from '../i18n/format';
@@ -107,7 +108,9 @@ const newestFirst = (a, b) => clockDate(b.date) - clockDate(a.date);
 
 const DAY_FORMAT = { weekday: 'long', day: 'numeric', month: 'long' };
 
-const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
+// `recordRequest`: un numero che cresce a ogni richiesta di aprire «Registra allenamento» (dal ventaglio); si apre
+// una volta per numero, e solo con una scheda attiva (come il pulsante della pagina); senza, un avviso lo dice
+const WorkoutHistory = ({ isEmbedded = false, refreshKey = null, recordRequest = null }) => {
   const { t } = useTranslation();
   const { isLoggedIn, loading: authLoading, weightUnit, user } = useAuth();
   // Punti, streak e traguardi nelle anteprime sono del modulo Livelli: non attivo = non si mostrano
@@ -118,6 +121,8 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
   const [loading, setLoading] = useState(true);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [activePlan, setActivePlan] = useState(null);
+  const [planLoaded, setPlanLoaded] = useState(false);
+  const [planReadFailed, setPlanReadFailed] = useState(false);
   const [openRecordDialog, setOpenRecordDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState(null);
@@ -156,11 +161,22 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
       if (data.records) {
         const active = data.records.find(plan => plan.is_active);
         setActivePlan(active || null);
+      } else {
+        setPlanReadFailed(true);
       }
     } catch (error) {
       console.error('Error fetching active plan:', error);
+      setPlanReadFailed(true);
+    } finally {
+      setPlanLoaded(true);
     }
   };
+
+  useOncePerRequest(recordRequest, planLoaded, () => {
+    if (planReadFailed) return; // la scheda non si è letta: non si sa se manca, niente avviso
+    if (activePlan) setOpenRecordDialog(true);
+    else setSnackbar({ open: true, message: t('history.record_needs_plan'), severity: 'info' });
+  });
 
   const fetchWorkoutHistory = async () => {
     setLoading(true);

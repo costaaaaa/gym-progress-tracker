@@ -10,10 +10,12 @@ import Layout from './components/Layout';
 import { AuthProvider } from './context/AuthContext';
 import LocaleSync from './i18n/LocaleSync';
 import EmailBlockGuard from './components/EmailVerification/EmailBlockGuard';
+import LegacyWorkoutsRedirect from './pages/LegacyWorkoutsRedirect';
 
 // Lazy load Pages
 const Home = lazy(() => import('./pages/Home'));
-const Workouts = lazy(() => import('./pages/Workouts'));
+const Plans = lazy(() => import('./pages/Plans'));
+const History = lazy(() => import('./pages/History'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
@@ -46,7 +48,8 @@ function App() {
               {/* Tutte le altre pagine con Layout (Navbar + Container) */}
               <Route element={<Layout />}>
                 <Route path="/" element={<Home />} />
-                <Route path="/workouts" element={<Workouts />} />
+                <Route path="/schede" element={<Plans />} />
+                <Route path="/storico" element={<History />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profilo" element={<Profile />} />
                 <Route path="/gruppi" element={<Groups />} />
@@ -70,8 +73,9 @@ function App() {
                 
                 {/* Redirect per retrocompatibilità */}
                 <Route path="/account" element={<Navigate to="/profilo?tab=settings" replace />} />
-                <Route path="/workout-plans" element={<Navigate to="/workouts?tab=plans" replace />} />
-                <Route path="/workout-history" element={<Navigate to="/workouts?tab=history" replace />} />
+                <Route path="/workouts" element={<LegacyWorkoutsRedirect />} />
+                <Route path="/workout-plans" element={<LegacyWorkoutsRedirect to="/schede" />} />
+                <Route path="/workout-history" element={<LegacyWorkoutsRedirect to="/storico" />} />
                 <Route path="/progress" element={<Navigate to="/dashboard?tab=progress" replace />} />
                 <Route path="/body-stats" element={<Navigate to="/dashboard?tab=body" replace />} />
                 

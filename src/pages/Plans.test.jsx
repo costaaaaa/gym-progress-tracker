@@ -1,9 +1,9 @@
-// Pagina Allenamenti vista dall'utente: titolo unico sopra i tab, tab attivo in inchiostro, nessun titolo ripetuto sotto.
+// Pagina Schede vista dall'utente: titolo di pagina unico, poi le schede (nessuna scheda interna).
 // Colori del tema chiaro scritti a mano: text.primary #1a1816, text.secondary #6b6663.
-import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import Workouts from './Workouts';
+import Plans from './Plans';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { json, expectNoNestedContainer } from '../test/dom';
 import { plannedSets, times } from '../test/plannedSets';
@@ -18,9 +18,6 @@ const pullDay = { id: 2, name: 'Pull', exercises: [{ id: 12, exercise_name: 'Tra
 const plan = { id: 5, name: 'Push Pull', description: 'Spinta e tirata', is_active: true, days: [day, pullDay] };
 const otherPlan = { id: 6, name: 'Full body', description: 'Tre giorni a settimana', is_active: false, days: [day] };
 
-// Le tab sono lazy: il primo import della Cronologia (con i suoi dialoghi) è lento, lo scaldiamo prima dei test
-beforeAll(() => import('./WorkoutHistory'), 30000);
-
 beforeEach(() => {
   localStorage.setItem('themeMode', 'light');
   vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
@@ -32,47 +29,33 @@ afterEach(() => vi.unstubAllGlobals());
 const mount = async () => {
   render(
     <ThemeModeProvider>
-      <MemoryRouter initialEntries={['/workouts']}><Workouts /></MemoryRouter>
+      <MemoryRouter initialEntries={['/schede']}><Plans /></MemoryRouter>
     </ThemeModeProvider>,
   );
   await screen.findByText('Push Pull');
 };
 
-describe('shell di Allenamenti', () => {
+describe('pagina Schede', () => {
   it('Layout ha già il Container: la pagina non ne apre un secondo', async () => {
     await mount();
     expectNoNestedContainer();
   });
 
-  it('un solo h1 "Allenamenti" nello stile titolo di pagina, sopra i tab', async () => {
+  it('un solo h1 "Schede" nello stile titolo di pagina, senza schede interne', async () => {
     await mount();
     const h1s = screen.getAllByRole('heading', { level: 1 });
-    expect(h1s.map((h) => h.textContent)).toEqual(['Allenamenti']);
+    expect(h1s.map((h) => h.textContent)).toEqual(['Schede']);
     const style = getComputedStyle(h1s[0]);
     expect(style.fontSize).toBe('28px');
     expect(style.fontWeight).toBe('800');
-    expect(h1s[0].compareDocumentPosition(screen.getByRole('tablist')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByRole('tablist')).toBeNull();
+    expect(screen.queryByRole('tab')).toBeNull();
   });
 
-  it('il titolo della tab non si ripete sotto i tab, né per le schede né per la cronologia', async () => {
+  it('il titolo della pagina non si ripete sotto, e l\'elenco delle schede è quello di prima', async () => {
     await mount();
-    expect(screen.getAllByText('Le tue schede')).toHaveLength(1);
-    fireEvent.click(screen.getByRole('tab', { name: 'Cronologia' }));
-    await screen.findByText('Nessun allenamento registrato');
-    expect(screen.queryByText('Cronologia allenamenti')).toBeNull();
-    expect(screen.getAllByText('Cronologia')).toHaveLength(1);
-  });
-
-  it('la tab attiva è in inchiostro con indicatore da 2px e icona grigia, senza rosso', async () => {
-    await mount();
-    const tab = screen.getByRole('tab', { name: 'Le tue schede' });
-    expect(tab.getAttribute('aria-selected')).toBe('true');
-    expect(getComputedStyle(tab).color).toBe(INK);
-    expect(getComputedStyle(tab).fontWeight).toBe('600');
-    const indicator = document.querySelector('.MuiTabs-indicator');
-    expect(getComputedStyle(indicator).backgroundColor).toBe(INK);
-    expect(getComputedStyle(indicator).height).toBe('2px');
-    expect(getComputedStyle(tab.querySelector('svg')).color).toBe(GREY);
+    expect(screen.getAllByText('Schede')).toHaveLength(1);
+    expect(screen.getByText('Full body')).toBeTruthy();
   });
 });
 
@@ -135,16 +118,9 @@ describe('schede', () => {
   });
 });
 
-describe('nomi accessibili', () => {
-  it('l\'elenco dei tab ha un nome in italiano', async () => {
+describe('titolo del documento', () => {
+  it('è «Schede | LiftIndex»', async () => {
     await mount();
-    expect(screen.getByRole('tablist', { name: 'Sezioni di allenamenti' })).toBeTruthy();
-  });
-
-  it('il titolo del documento segue il tab: «tab · Allenamenti | LiftIndex»', async () => {
-    await mount();
-    expect(document.title).toBe('Le tue schede · Allenamenti | LiftIndex');
-    fireEvent.click(screen.getByRole('tab', { name: 'Cronologia' }));
-    await waitFor(() => expect(document.title).toBe('Cronologia · Allenamenti | LiftIndex'));
+    expect(document.title).toBe('Schede | LiftIndex');
   });
 });
