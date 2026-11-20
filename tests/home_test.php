@@ -208,17 +208,25 @@ addWorkout($k['id'], '2026-03-02 10:00:00', $k1);
 addWorkout($k['id'], '2026-03-03 10:00:00', $k2);
 addWorkout($k['id'], '2026-03-01 10:00:00', $k3);
 check('inserito dopo ma con data precedente: next_day segue la data più recente (B, quindi C)', dashboard($k)['next_day']['id'] === $k3, json_encode(dashboard($k)['next_day']));
-// Stessa data e ora: vale l'ultimo inserito
+// A pari data e ora vale l'ultimo inserito. Guardia del comportamento: da soli questi due casi non distinguono
+// `id DESC` dall'ordine dell'indice (user_id, date), che a pari data dà già gli id più alti per primi
 $t1 = newUser('honexttie1');
 [$t11, $t12, $t13] = newPlan($t1['id'], ['A', 'B', 'C']);
 addWorkout($t1['id'], '2026-03-03 10:00:00', $t11);
 addWorkout($t1['id'], '2026-03-03 10:00:00', $t12);
-check('stessa data e ora: vale l\'ultimo inserito (B, quindi C)', dashboard($t1)['next_day']['id'] === $t13);
+check('guardia, pari data e ora: vale l\'ultimo inserito (B, quindi C)', dashboard($t1)['next_day']['id'] === $t13);
 $t2 = newUser('honexttie2');
 [$t21, $t22, $t23] = newPlan($t2['id'], ['A', 'B', 'C']);
 addWorkout($t2['id'], '2026-03-03 10:00:00', $t22);
 addWorkout($t2['id'], '2026-03-03 10:00:00', $t21);
-check('stessa data e ora, ordine inverso: vale l\'ultimo inserito (A, quindi B)', dashboard($t2)['next_day']['id'] === $t22);
+check('guardia, pari data e ora, ordine inverso: vale l\'ultimo inserito (A, quindi B)', dashboard($t2)['next_day']['id'] === $t22);
+
+// Stesso giorno di calendario, ore diverse: conta l'ora, non l'ordine di inserimento
+$h = newUser('honexthours');
+[$h1, $h2, $h3] = newPlan($h['id'], ['A', 'B', 'C']);
+addWorkout($h['id'], '2026-03-03 18:00:00', $h2);
+addWorkout($h['id'], '2026-03-03 08:00:00', $h1);
+check('stesso giorno, 18:00 inserito prima e 08:00 dopo: next_day segue le 18:00 (B, quindi C)', dashboard($h)['next_day']['id'] === $h3, json_encode(dashboard($h)['next_day']));
 
 // Giorno eliminato dopo l'allenamento (a livello di endpoint)
 $g = newUser('honextgone');
@@ -441,11 +449,21 @@ $r = settings($s, ['modules' => ['body' => false], 'module_offer_answer' => ['ke
 check('anche con un valore opposto (modules false, risposta sì): 400 e nessuna modifica', $r[0] === 400 && modulesOf($s) === '00000', $r[2]);
 $r = settings($s, ['modules' => ['recovery' => true], 'module_offer_answer' => ['key' => 'body', 'accepted' => true]]);
 check('modules su un\'altra chiave nella stessa richiesta: 200, entrambi applicati', $r[0] === 200 && modulesOf($s) === '10010', $r[2]);
+$stateOf = function () use ($s, $conn) {
+    return json_encode(dbRows($conn, "SELECT module_offer_at, module_offers_declined, module_body, module_levels, module_groups, module_recovery, module_ai, home_layout FROM gym_users WHERE id = ?", [$s['id']]));
+};
+$stateBefore = $stateOf();
 $r = settings($s, ['module_offer_answer' => ['key' => 'levels', 'accepted' => false]]);
-check('seconda risposta subito dopo la prima: 400 (pausa di sette giorni)', $r[0] === 400 && scalar("SELECT module_offers_declined IS NULL FROM gym_users WHERE id = ?", [$s['id']]) == 1, $r[2]);
+check('seconda risposta subito dopo la prima: 400 (pausa di sette giorni) e non cambia nulla (module_offer_at, rifiutati, moduli)', $r[0] === 400 && $stateOf() === $stateBefore, $r[2] . ' ' . $stateOf());
 sql("UPDATE gym_users SET module_offer_at = NULL, module_body = 1, module_recovery = 0 WHERE id = ?", [$s['id']]);
 $r = settings($s, ['home_layout' => layout('last')]);
 check('layout e moduli nella stessa richiesta: 200', $r[0] === 200 && ($r[1]['home_layout'] ?? null) === layout('last') && ($r[1]['modules']['body'] ?? null) === true, $r[2]);
+
+$at = newUser('hoatomic');
+setState($at, 10, null);
+$r = settings($at, ['home_layout' => layout('last'), 'module_offer_answer' => ['key' => 'levels', 'accepted' => true]]);
+check('risposta non valida per la proposta in corso insieme a un home_layout valido: 400 e il layout non si salva', $r[0] === 400
+    && scalar("SELECT home_layout IS NULL AND module_offer_at IS NULL FROM gym_users WHERE id = ?", [$at['id']]) == 1 && modulesOf($at) === '00000', $r[2]);
 
 echo "Modello: chiave non valida in module_offer_answer\n";
 require $backend . '/models/User.php';
@@ -456,6 +474,17 @@ $model->id = $inj['id'];
 $model->updateProfile(['module_offer_answer' => ['key' => "ai = 1, tier = 'plus' -- ", 'accepted' => true]]);
 check('una chiave fuori da MODULE_OFFERS non arriva al testo SQL (il livello non cambia)', scalar("SELECT tier FROM gym_users WHERE id = ?", [$inj['id']]) === 'free');
 check('e non si scrive nulla (module_offer_at resta NULL)', scalar("SELECT module_offer_at IS NULL FROM gym_users WHERE id = ?", [$inj['id']]) == 1);
+// Una chiave che non è un modulo proponibile (ai) non deve attivare la colonna: fallisce di sicuro senza il controllo
+sql("UPDATE gym_users SET module_ai = 0 WHERE id = ?", [$inj['id']]);
+$model->updateProfile(['module_offer_answer' => ['key' => 'ai', 'accepted' => true]]);
+check('key ai (non è in MODULE_OFFERS): module_ai resta 0 e module_offer_at resta NULL',
+    scalar("SELECT module_ai = 0 AND module_offer_at IS NULL FROM gym_users WHERE id = ?", [$inj['id']]) == 1);
+// Lo stesso rifiuto due volte: una sola voce nell'elenco dei rifiutati
+$model->updateProfile(['module_offer_answer' => ['key' => 'body', 'accepted' => false]]);
+$model->updateProfile(['module_offer_answer' => ['key' => 'body', 'accepted' => false]]);
+check('lo stesso rifiuto due volte (modello): una sola voce in module_offers_declined', scalar("SELECT module_offers_declined FROM gym_users WHERE id = ?", [$inj['id']]) === '["body"]');
+$model->updateProfile(['module_offer_answer' => ['key' => 'levels', 'accepted' => false]]);
+check('un rifiuto diverso si aggiunge', scalar("SELECT module_offers_declined FROM gym_users WHERE id = ?", [$inj['id']]) === '["body", "levels"]');
 
 echo "Esportazione\n";
 settings($s, ['module_offer_answer' => ['key' => 'levels', 'accepted' => false]]);
