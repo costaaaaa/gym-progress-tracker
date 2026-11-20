@@ -1,4 +1,4 @@
-import { Fragment, useState, useEffect, useRef } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import {
   Typography,
   Grid,
@@ -49,6 +49,7 @@ import HealthAppHint from '../components/HealthAppHint';
 import { DEFAULT_PERIOD, PERIODS, PERIOD_UI, filterByPeriod, periodStart, periodWeightDelta, weightTrend, sortByDate, paginate } from '../utils/bodyStatsPeriod';
 import { radius } from '../theme/radius';
 import useFocusField from '../hooks/useFocusField';
+import { useOncePerRequest } from '../hooks/useNavigationRequest';
 import { BODY_LIMITS, isValueOutOfRange } from '../utils/bodyStatsRules';
 
 // Cuore accanto a un valore arrivato da Apple Salute / Health Connect
@@ -235,7 +236,6 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
   // true se il consenso era stato dato a una versione precedente del testo
   const [consentUpdated, setConsentUpdated] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const handledOpenRequest = useRef(null);
   // Messaggio d'errore sotto ogni campo sbagliato; il focus va sul primo
   const [fieldErrors, setFieldErrors] = useState({});
   const { fieldRef, focusField } = useFocusField();
@@ -298,14 +298,7 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
     setIsDialogOpen(true);
   };
 
-  useEffect(() => {
-    if (!openRequest || isLoading || handledOpenRequest.current === openRequest) return;
-    handledOpenRequest.current = openRequest;
-    if (!consentRequired) {
-      setFieldErrors({});
-      setIsDialogOpen(true);
-    }
-  }, [openRequest, isLoading, consentRequired]);
+  useOncePerRequest(openRequest, !isLoading, () => { if (!consentRequired) openDialog(); });
 
   const handleDateChange = (date) => {
     setFormData({ ...formData, date });

@@ -47,6 +47,7 @@ import { track } from '../utils/analytics';
 import { focusedElement } from '../utils/focus';
 import { useAuth } from '../context/AuthContext';
 import { isModuleActive } from '../hooks/useModule';
+import { useOncePerRequest } from '../hooks/useNavigationRequest';
 import { API_BASE_URL } from '../config';
 import { radius } from '../theme/radius';
 import { intlLocale, formatDate, formatClockTime, formatSetText } from '../i18n/format';
@@ -121,7 +122,6 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null, recordRequest =
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [activePlan, setActivePlan] = useState(null);
   const [planLoaded, setPlanLoaded] = useState(false);
-  const handledRecordRequest = useRef(null);
   const [openRecordDialog, setOpenRecordDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState(null);
@@ -168,12 +168,10 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null, recordRequest =
     }
   };
 
-  useEffect(() => {
-    if (!recordRequest || !planLoaded || handledRecordRequest.current === recordRequest) return;
-    handledRecordRequest.current = recordRequest;
+  useOncePerRequest(recordRequest, planLoaded, () => {
     if (activePlan) setOpenRecordDialog(true);
     else setSnackbar({ open: true, message: t('history.record_needs_plan'), severity: 'info' });
-  }, [t, recordRequest, planLoaded, activePlan]);
+  });
 
   const fetchWorkoutHistory = async () => {
     setLoading(true);

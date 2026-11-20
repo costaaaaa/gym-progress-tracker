@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 /**
@@ -23,6 +23,22 @@ export const useNavigationRequest = (key) => {
   }, [asked, key, pathname, search, hash, state, navigate]);
 
   return request;
+};
+
+/**
+ * Chiama `handle` una volta per ogni numero di richiesta, appena `ready` (i dati che servono a decidere sono arrivati).
+ * `handle` vede sempre lo stato dell'ultimo render; se non può aprire nulla, lo dice o sta zitta, ma la richiesta è comunque
+ * spesa: non si ripresenta quando cambia altro.
+ */
+export const useOncePerRequest = (request, ready, handle) => {
+  const handled = useRef(null);
+  const latest = useRef(handle);
+  latest.current = handle;
+  useEffect(() => {
+    if (!request || !ready || handled.current === request) return;
+    handled.current = request;
+    latest.current();
+  }, [request, ready]);
 };
 
 export default useNavigationRequest;
