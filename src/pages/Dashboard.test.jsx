@@ -1,5 +1,6 @@
 // Pagina Dashboard vista dall'utente: titolo unico sopra i tab, tab attivo in inchiostro come in Allenamenti.
 // Colori del tema chiaro scritti a mano: text.primary #1a1816, text.secondary #6b6663.
+import { useState } from 'react';
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -7,7 +8,17 @@ import Dashboard from './Dashboard';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { json } from '../test/dom';
 
-vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ isLoggedIn: true, loading: false }) }));
+const auth = vi.hoisted(() => ({ value: null }));
+vi.mock('../context/AuthContext', () => ({ useAuth: () => auth.value }));
+auth.value = { isLoggedIn: true, loading: false };
+
+// Registra il valore che arriva alle Tabs a ogni render (un -1 non è un valore valido)
+const tabValues = vi.hoisted(() => []);
+vi.mock('@mui/material', async (importOriginal) => {
+  const mui = await importOriginal();
+  const Tabs = (props) => { tabValues.push(props.value); return <mui.Tabs {...props} />; };
+  return { ...mui, Tabs };
+});
 
 const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
@@ -16,6 +27,7 @@ const GREY = 'rgb(107, 102, 99)';
 beforeAll(() => import('./Progress'), 30000);
 
 beforeEach(() => {
+  auth.value = { isLoggedIn: true, loading: false };
   localStorage.setItem('themeMode', 'light');
   vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(json({ records: [] }))));
 });
@@ -104,6 +116,21 @@ describe('tab Muscoli', () => {
   });
 });
 
+describe('tab sconosciuta', () => {
+  it('?tab=foo apre la prima tab, senza che le Tabs ricevano mai un valore non valido', async () => {
+    tabValues.length = 0;
+    render(
+      <ThemeModeProvider>
+        <MemoryRouter initialEntries={['/dashboard?tab=foo']}><Dashboard /></MemoryRouter>
+      </ThemeModeProvider>,
+    );
+    const tab = await screen.findByRole('tab', { name: 'Esercizi' });
+    expect(tab.getAttribute('aria-selected')).toBe('true');
+    expect(tabValues.length).toBeGreaterThan(0);
+    expect(tabValues.every((value) => value === 0)).toBe(true);
+  });
+});
+
 describe('nomi accessibili', () => {
   it('l\'elenco dei tab ha un nome in italiano', async () => {
     await mount();
@@ -115,5 +142,73 @@ describe('nomi accessibili', () => {
     expect(document.title).toBe('Esercizi · Dashboard | LiftIndex');
     fireEvent.click(screen.getByRole('tab', { name: 'Muscoli' }));
     await waitFor(() => expect(document.title).toBe('Muscoli · Dashboard | LiftIndex'));
+  });
+});
+
+// Moduli: Recupero non attivo toglie la tab Muscoli, Misure non attivo la tab Misure; Esercizi resta sempre
+describe('moduli non attivi', () => {
+  const ALL = { body: true, recovery: true, levels: true, groups: true, ai: true };
+  const Switchable = ({ modules, path }) => {
+    const [user, setUser] = useState({ id: 1, modules });
+    auth.value = { isLoggedIn: true, loading: false, user, updateUser: (patch) => setUser((u) => ({ ...u, ...patch })) };
+    return <MemoryRouter initialEntries={[path]}><Dashboard /></MemoryRouter>;
+  };
+  const open = (modules, path = '/dashboard') => render(<ThemeModeProvider><Switchable modules={modules} path={path} /></ThemeModeProvider>);
+  const tabNames = () => screen.getAllByRole('tab').map((tab) => tab.textContent);
+
+  it('con tutto attivo le tab sono Esercizi · Muscoli · Misure', async () => {
+    open(ALL);
+    await screen.findByText(/Nessun dato di allenamento/);
+    expect(tabNames()).toEqual(['Esercizi', 'Muscoli', 'Misure']);
+  });
+
+  it('Misure non attivo: restano Esercizi e Muscoli, e la tab Muscoli si apre', async () => {
+    open({ ...ALL, body: false });
+    await screen.findByText(/Nessun dato di allenamento/);
+    expect(tabNames()).toEqual(['Esercizi', 'Muscoli']);
+    fireEvent.click(screen.getByRole('tab', { name: 'Muscoli' }));
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Muscoli' }).getAttribute('aria-selected')).toBe('true'));
+  });
+
+  it('Recupero non attivo: restano Esercizi e Misure, e la tab Misure si apre (non quella che aveva il suo posto)', async () => {
+    open({ ...ALL, recovery: false });
+    await screen.findByText(/Nessun dato di allenamento/);
+    expect(tabNames()).toEqual(['Esercizi', 'Misure']);
+    fireEvent.click(screen.getByRole('tab', { name: 'Misure' }));
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Misure' }).getAttribute('aria-selected')).toBe('true'));
+    expect(document.title).toBe('Misure · Dashboard | LiftIndex');
+  });
+
+  it('Recupero e Misure non attivi: resta solo Esercizi, valida e selezionata', async () => {
+    open({ ...ALL, recovery: false, body: false });
+    await screen.findByText(/Nessun dato di allenamento/);
+    expect(tabNames()).toEqual(['Esercizi']);
+    expect(screen.getByRole('tab', { name: 'Esercizi' }).getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('?tab=body con Misure non attivo: «Il modulo Misure non è attivo» con «Attiva», nessuna tab selezionata, nessun errore', async () => {
+    open({ ...ALL, body: false }, '/dashboard?tab=body');
+    expect(await screen.findByRole('heading', { level: 2, name: 'Il modulo Misure non è attivo' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Attiva' })).toBeTruthy();
+    expect(tabNames()).toEqual(['Esercizi', 'Muscoli']);
+    screen.getAllByRole('tab').forEach((tab) => expect(tab.getAttribute('aria-selected')).toBe('false'));
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual(['Dashboard']);
+  });
+
+  it('?tab=muscles con Recupero non attivo: «Il modulo Recupero e serie per muscolo non è attivo»', async () => {
+    open({ ...ALL, recovery: false }, '/dashboard?tab=muscles');
+    expect(await screen.findByRole('heading', { name: 'Il modulo Recupero e serie per muscolo non è attivo' })).toBeTruthy();
+  });
+
+  it('«Attiva» salva e mostra la tab richiesta, selezionata', async () => {
+    vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
+      String(url).includes('update_settings.php') ? json({ success: true, modules: ALL }) : json({ records: [] }),
+    )));
+    open({ ...ALL, body: false }, '/dashboard?tab=body');
+    fireEvent.click(await screen.findByRole('button', { name: 'Attiva' }));
+    const tab = await screen.findByRole('tab', { name: 'Misure' });
+    expect(tab.getAttribute('aria-selected')).toBe('true');
+    expect(screen.queryByRole('heading', { name: 'Il modulo Misure non è attivo' })).toBeNull();
   });
 });

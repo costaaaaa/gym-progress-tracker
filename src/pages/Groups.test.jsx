@@ -2,6 +2,7 @@
 // principale e a quella che non si annulla («Elimina il gruppo», con il bottone di conferma pieno rosso), il resto è
 // inchiostro, grigio o verde. La fetch è il confine. Colori del tema chiaro scritti a mano:
 // text.primary #1a1816, text.secondary #6b6663, success #15803d, primary/error #d50000, action.selected rgba(0,0,0,.08).
+import { useState } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -12,10 +13,10 @@ import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { textBelow } from '../test/minText';
 import { json, colorOf, expectNoNestedContainer } from '../test/dom';
 
-vi.mock('../context/AuthContext', () => {
-  const auth = { user: { id: 1, username: 'mario88' }, isLoggedIn: true, loading: false };
-  return { useAuth: () => auth };
-});
+const auth = vi.hoisted(() => ({ value: null }));
+vi.mock('../context/AuthContext', () => ({ useAuth: () => auth.value }));
+const mario = () => ({ id: 1, username: 'mario88' });
+auth.value = { user: mario(), isLoggedIn: true, loading: false };
 
 const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
@@ -46,6 +47,7 @@ const stub = ({ myRole = 'owner' } = {}) => vi.stubGlobal('fetch', vi.fn((url) =
 )));
 
 beforeEach(() => {
+  auth.value = { user: mario(), isLoggedIn: true, loading: false };
   localStorage.setItem('themeMode', 'light');
   stub();
 });
@@ -207,5 +209,75 @@ describe('invito', () => {
     const icon = document.querySelector('[data-testid="GroupsOutlinedIcon"]');
     expect(icon).not.toBeNull();
     expect(colorOf(icon)).toBe(GREY);
+  });
+});
+
+// Moduli: Gruppi non attivo = la pagina «non attivo» al posto delle tre rotte; Livelli non attivo = solo la classifica della settimana
+const ALL = { body: true, recovery: true, levels: true, groups: true, ai: true };
+const Switchable = ({ modules, page: Page }) => {
+  const [user, setUser] = useState({ ...mario(), modules });
+  auth.value = { user, isLoggedIn: true, loading: false, updateUser: (patch) => setUser((u) => ({ ...u, ...patch })) };
+  return <Page />;
+};
+const routes = (initial, modules) => render(
+  <MemoryRouter initialEntries={[initial]}>
+    <ThemeModeProvider>
+      <Routes>
+        <Route path="/gruppi" element={<Switchable modules={modules} page={Groups} />} />
+        <Route path="/gruppi/:id" element={<Switchable modules={modules} page={GroupDetail} />} />
+        <Route path="/entra" element={<Switchable modules={modules} page={JoinGroup} />} />
+      </Routes>
+    </ThemeModeProvider>
+  </MemoryRouter>,
+);
+
+describe('Gruppi non attivo', () => {
+  const off = { ...ALL, groups: false };
+  const fetched = (part) => fetch.mock.calls.some(([url]) => String(url).includes(part));
+
+  it.each([
+    ['/gruppi', 'groups/list.php'],
+    ['/gruppi/7', 'groups/read.php'],
+    ['/entra?codice=K7M2QX9PHD', 'groups/preview.php'],
+  ])('%s: «Il modulo Gruppi non è attivo» con «Attiva», senza errore e senza leggere i gruppi', (path, endpoint) => {
+    routes(path, off);
+    expect(screen.getByRole('heading', { name: 'Il modulo Gruppi non è attivo' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Attiva' })).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(fetched(endpoint)).toBe(false);
+  });
+
+  it('«Attiva» su un invito salva e l\'invito prosegue da dove era: compare l\'anteprima del gruppo', async () => {
+    vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
+      url.includes('update_settings.php') ? json({ success: true, modules: ALL })
+        : url.includes('groups/preview.php') ? json({ success: true, group: group({ already_member: false, is_full: false }) })
+          : json({ success: true }),
+    )));
+    routes('/entra?codice=K7M2QX9PHD', off);
+    fireEvent.click(screen.getByRole('button', { name: 'Attiva' }));
+    expect(await screen.findByText('Palestra Rossi')).toBeTruthy();
+    expect(String(fetch.mock.calls.find(([url]) => url.includes('groups/preview.php'))[0])).toContain('K7M2QX9PHD');
+    expect(screen.queryByRole('heading', { name: 'Il modulo Gruppi non è attivo' })).toBeNull();
+  });
+
+  it('con Gruppi attivo l\'elenco si vede come sempre', async () => {
+    routes('/gruppi', ALL);
+    expect(await screen.findByText('Palestra Rossi')).toBeTruthy();
+  });
+});
+
+describe('Livelli non attivo: classifica del gruppo', () => {
+  it('con Livelli attivo le schede sono Settimana · Streak · Livello', async () => {
+    routes('/gruppi/7', ALL);
+    await screen.findAllByText('luca');
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Settimana', 'Streak', 'Livello']);
+  });
+
+  it('con Livelli non attivo non ci sono le schede Streak e Livello: resta la classifica della settimana', async () => {
+    routes('/gruppi/7', { ...ALL, levels: false });
+    await screen.findAllByText('luca');
+    expect(screen.queryByRole('tab', { name: 'Streak' })).toBeNull();
+    expect(screen.queryByRole('tab', { name: 'Livello' })).toBeNull();
+    expect(fetch.mock.calls.filter(([url]) => String(url).includes('groups/read.php')).every(([url]) => String(url).includes('board=week'))).toBe(true);
   });
 });

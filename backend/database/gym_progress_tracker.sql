@@ -25,6 +25,12 @@ CREATE TABLE IF NOT EXISTS `gym_users` (
   `tier_until` datetime DEFAULT NULL, -- UTC; NULL = senza scadenza, passata = free
   `locale` varchar(5) NOT NULL DEFAULT 'it',
   `weight_unit` enum('kg','lb') NOT NULL DEFAULT 'kg', -- come i client mostrano i pesi; i dati restano sempre in kg
+  `module_body` tinyint(1) NOT NULL DEFAULT 1, -- moduli facoltativi: 0 = non attivo (solo visualizzazione, i dati restano)
+  `module_recovery` tinyint(1) NOT NULL DEFAULT 1,
+  `module_levels` tinyint(1) NOT NULL DEFAULT 1,
+  `module_groups` tinyint(1) NOT NULL DEFAULT 1,
+  `module_ai` tinyint(1) NOT NULL DEFAULT 1,
+  `modules_chosen_at` datetime DEFAULT NULL, -- quando l'utente ha scelto i moduli; NULL = non ancora
   `time_zone` varchar(64) DEFAULT NULL, -- ultimo fuso IANA visto dal dispositivo (header X-Timezone)
   `password_changed_at` datetime DEFAULT NULL,
   `last_login_at` datetime DEFAULT NULL,

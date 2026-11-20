@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { AuthProvider, useAuth } from './AuthContext';
+import { isModuleActive } from '../hooks/useModule';
 import EmailGate from '../components/EmailVerification/EmailGate';
 
 const original = window.fetch;
@@ -438,5 +439,97 @@ describe('AuthProvider: unità di peso', () => {
     await waitFor(() => expect(backend).toHaveBeenCalled());
     fireEvent.click(screen.getByText('cambia'));
     await waitFor(() => expect(screen.getByTestId('unit').textContent).toBe('lb'));
+  });
+});
+
+// Moduli facoltativi: da user/read.php dentro `user`; chi non li ha (login, server vecchio) li ha tutti attivi
+describe('AuthProvider: moduli', () => {
+  const Modules = () => {
+    const { user } = useAuth();
+    return <div data-testid="modules">{user ? JSON.stringify(user.modules ?? null) : 'nessun utente'}</div>;
+  };
+  const MODULES = { body: true, recovery: false, levels: true, groups: false, ai: true };
+
+  it('user.modules arriva da user/read.php', async () => {
+    readReturns({ id: 1, username: 'a', modules: MODULES, modules_chosen: true });
+    localStorage.setItem('isLoggedIn', 'true');
+    render(<AuthProvider><Modules /></AuthProvider>);
+    await waitFor(() => expect(screen.getByTestId('modules').textContent).toBe(JSON.stringify(MODULES)));
+  });
+
+  it('dopo il login (che risponde senza moduli) la rilettura li porta', async () => {
+    readReturns({ id: 1, username: 'a', modules: MODULES });
+    const Login = () => {
+      const { login } = useAuth();
+      return <button onClick={() => login({ id: 1, username: 'a' })}>entra</button>;
+    };
+    render(<AuthProvider><Modules /><Login /></AuthProvider>);
+    fireEvent.click(screen.getByText('entra'));
+    await waitFor(() => expect(screen.getByTestId('modules').textContent).toBe(JSON.stringify(MODULES)));
+  });
+
+  it('la rilettura scrive moduli e unità anche nella copia in localStorage', async () => {
+    readReturns({ id: 1, username: 'a', modules: MODULES, weight_unit: 'lb' });
+    const Login = () => {
+      const { login } = useAuth();
+      return <button onClick={() => login({ id: 1, username: 'a' })}>entra</button>;
+    };
+    render(<AuthProvider><Modules /><Login /></AuthProvider>);
+    fireEvent.click(screen.getByText('entra'));
+    await waitFor(() => expect(screen.getByTestId('modules').textContent).toBe(JSON.stringify(MODULES)));
+    expect(JSON.parse(localStorage.getItem('user'))).toMatchObject({ modules: MODULES, weight_unit: 'lb' });
+  });
+
+  it('il login porta già i moduli: un modulo non attivo lo è subito, senza aspettare la rilettura', async () => {
+    backend.mockImplementation(() => new Promise(() => {})); // la rilettura non arriva
+    const Login = () => {
+      const { login, user } = useAuth();
+      return (
+        <>
+          <button onClick={() => login({ id: 1, username: 'a', modules: MODULES })}>entra</button>
+          <div data-testid="groups">{String(isModuleActive(user, 'groups'))}</div>
+        </>
+      );
+    };
+    render(<AuthProvider><Login /></AuthProvider>);
+    fireEvent.click(screen.getByText('entra'));
+    await waitFor(() => expect(screen.getByTestId('groups').textContent).toBe('false'));
+  });
+
+  it('un server senza moduli lascia user senza modules (e il resto dell\'app li legge tutti attivi)', async () => {
+    readReturns({ id: 1, username: 'a' });
+    localStorage.setItem('isLoggedIn', 'true');
+    render(<AuthProvider><Modules /></AuthProvider>);
+    await waitFor(() => expect(screen.getByTestId('modules').textContent).toBe('null'));
+  });
+
+  it('updateUser({ modules }) cambia i moduli e li scrive nella copia in localStorage', async () => {
+    readReturns({ id: 1, username: 'a', modules: MODULES });
+    localStorage.setItem('isLoggedIn', 'true');
+    const Change = () => {
+      const { updateUser } = useAuth();
+      return <button onClick={() => updateUser({ modules: { ...MODULES, groups: true } })}>cambia</button>;
+    };
+    render(<AuthProvider><Modules /><Change /></AuthProvider>);
+    await waitFor(() => expect(screen.getByTestId('modules').textContent).toBe(JSON.stringify(MODULES)));
+    fireEvent.click(screen.getByText('cambia'));
+    await waitFor(() => expect(screen.getByTestId('modules').textContent).toBe(JSON.stringify({ ...MODULES, groups: true })));
+    expect(JSON.parse(localStorage.getItem('user')).modules.groups).toBe(true);
+  });
+
+  it('una rilettura con moduli non validi non cancella quelli già letti', async () => {
+    readReturns({ id: 1, username: 'a', modules: MODULES });
+    localStorage.setItem('isLoggedIn', 'true');
+    const Reread = () => {
+      const { refreshEmailState } = useAuth();
+      return <button onClick={refreshEmailState}>rileggi</button>;
+    };
+    const Email = () => <div data-testid="email">{useAuth().emailState?.email ?? ''}</div>;
+    render(<AuthProvider><Modules /><Email /><Reread /></AuthProvider>);
+    await waitFor(() => expect(screen.getByTestId('modules').textContent).toBe(JSON.stringify(MODULES)));
+    readReturns({ id: 1, username: 'a', email: 'riletta@example.com', modules: 'tutti' });
+    fireEvent.click(screen.getByText('rileggi'));
+    await waitFor(() => expect(screen.getByTestId('email').textContent).toBe('riletta@example.com'));
+    expect(screen.getByTestId('modules').textContent).toBe(JSON.stringify(MODULES));
   });
 });

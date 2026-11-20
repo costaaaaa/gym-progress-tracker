@@ -25,6 +25,15 @@ const emailStateFrom = (data) => ({
   outcome: '',
 });
 
+// `modules` di user/read.php: un oggetto (se non lo è, il server è vecchio o la risposta è rovinata e non si tocca nulla)
+const isModules = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+
+// Scrive la copia dell'utente in localStorage e restituisce lo stesso valore, da usare dentro setUser: tutte le modifiche passano da qui
+const cacheUser = (next) => {
+  localStorage.setItem('user', JSON.stringify(next));
+  return next;
+};
+
 // Provider che avvolgerà l'applicazione
 export const AuthProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -54,9 +63,12 @@ export const AuthProvider = ({ children }) => {
         const data = await response.json();
         if (data.success && mine === lastRead.current) {
           setEmailState({ ...emailStateFrom(data), outcome });
-          // Il login risponde senza l'unità di peso: la rilettura la porta
+          // Il login risponde senza l'unità di peso (i moduli li porta già): la rilettura porta l'unità e allinea i moduli
           if (isWeightUnit(data.weight_unit)) {
-            setUser((prev) => (prev && prev.weight_unit !== data.weight_unit ? { ...prev, weight_unit: data.weight_unit } : prev));
+            setUser((prev) => (prev && prev.weight_unit !== data.weight_unit ? cacheUser({ ...prev, weight_unit: data.weight_unit }) : prev));
+          }
+          if (isModules(data.modules)) {
+            setUser((prev) => (prev && JSON.stringify(prev.modules) !== JSON.stringify(data.modules) ? cacheUser({ ...prev, modules: data.modules }) : prev));
           }
         }
       } catch (error) {
@@ -122,7 +134,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('isLoggedIn', 'true');
     setIsLoggedIn(true);
     setUser(userData);
-    // Il login risponde con id, username e lingua: lo stato della conferma si legge subito
+    // Il login risponde con id, username, lingua e moduli: lo stato della conferma si legge subito
     refreshEmailState();
   };
 
@@ -201,9 +213,7 @@ export const AuthProvider = ({ children }) => {
   // Aggiorna campi dell'utente già salvati sul server (es. la lingua)
   const updateUser = (patch) => {
     setUser((prev) => {
-      const next = { ...prev, ...patch };
-      localStorage.setItem('user', JSON.stringify(next));
-      return next;
+      return cacheUser({ ...prev, ...patch });
     });
   };
 

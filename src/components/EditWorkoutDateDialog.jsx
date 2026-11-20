@@ -28,7 +28,7 @@ const ERROR_KEYS = {
   not_found: 'history.date.error_not_found',
 };
 
-const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess, weightUnit }) => {
+const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess, weightUnit, showLevels = true }) => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -153,19 +153,20 @@ const EditWorkoutDateDialog = ({ open, onClose, workout, onUpdateSuccess, weight
             fullWidth
             inputProps={{ min: minDate, max: maxDate }}
           />
-          {preview?.xp_delta > 0 && (
+          {/* Punti, streak e traguardi sono del modulo Livelli: non attivo = non si mostrano */}
+          {showLevels && preview?.xp_delta > 0 && (
             <Typography variant="body2">{t('history.date.gain_xp', { xp: preview.xp_delta })}</Typography>
           )}
-          {preview?.xp_delta < 0 && (
+          {showLevels && preview?.xp_delta < 0 && (
             <Typography variant="body2">{t('history.date.lose_xp', { xp: -preview.xp_delta })}</Typography>
           )}
-          {preview && preview.streak_before !== preview.streak_after && (
+          {showLevels && preview && preview.streak_before !== preview.streak_after && (
             <Typography variant="body2">{t('history.streak_change', { from: preview.streak_before, to: preview.streak_after })}</Typography>
           )}
-          {(preview?.achievements_unlocked ?? []).map(key => (
+          {(showLevels ? (preview?.achievements_unlocked ?? []) : []).map(key => (
             <Typography key={key} variant="body2">{t('history.date.gain_achievement', { label: achievementLabel(key, undefined, weightUnit) })}</Typography>
           ))}
-          {(preview?.achievements_removed ?? []).map(key => (
+          {(showLevels ? (preview?.achievements_removed ?? []) : []).map(key => (
             <Typography key={key} variant="body2">{t('history.delete.lose_achievement', { label: achievementLabel(key, undefined, weightUnit) })}</Typography>
           ))}
           {workout.health_written && (

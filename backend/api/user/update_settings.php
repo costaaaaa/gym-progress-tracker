@@ -78,6 +78,24 @@ try {
         }
         $fields['weight_unit'] = $data->weight_unit;
     }
+    // Moduli: oggetto parziale {chiave: booleano}, cambiano solo le chiavi presenti; chiave sconosciuta o valore
+    // non booleano = 400 e nessuna modifica
+    if (property_exists($data, 'modules')) {
+        $modules = $data->modules;
+        if (!is_object($modules)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => t_server('settings.modules_invalid')]);
+            exit;
+        }
+        foreach ($modules as $key => $value) {
+            if (!in_array((string)$key, User::MODULES, true) || !is_bool($value)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => t_server('settings.modules_invalid')]);
+                exit;
+            }
+            $fields['module_' . $key] = $value;
+        }
+    }
     // Obiettivo settimanale: da 1 a 7 allenamenti, null = torna al default (giorni della scheda attiva)
     $weekly_goal_given = property_exists($data, 'weekly_goal');
     if ($weekly_goal_given) {
@@ -122,6 +140,7 @@ try {
             'training_start_date' => $user->training_start_date,
             'locale' => $user->locale,
             'weight_unit' => $user->weight_unit,
+            'modules' => $user->modules,
             'age' => $user->age,
             'experience_years' => $user->experience_years
         ] + weekly_goal_settings($db, $user_id));

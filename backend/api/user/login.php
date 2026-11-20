@@ -36,7 +36,8 @@ try {
         "user" => array(
             "id" => $user->id,
             "username" => $user->username,
-            "locale" => request_locale()
+            "locale" => request_locale(),
+            "modules" => $user->modules
         )
     ));
 } catch (Throwable $e) {

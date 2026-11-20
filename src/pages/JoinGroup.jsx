@@ -4,6 +4,7 @@ import { Alert, Box, Button, Card, CircularProgress, Container, Typography } fro
 import GroupsOutlined from '@mui/icons-material/GroupsOutlined';
 import { usePageMeta } from '../hooks/usePageMeta';
 import RequireLogin from '../components/Groups/RequireLogin';
+import ModuleGate from '../components/ModuleGate';
 import ShareConsentDialog from '../components/Groups/ShareConsentDialog';
 import { errorMessage, groupTypeLabel, joinGroup, previewGroup } from '../api/groups';
 import { useAuth } from '../context/AuthContext';
@@ -103,7 +104,7 @@ const JoinGroupContent = () => {
 const JoinGroup = () => {
   const { t } = useTranslation();
   usePageMeta(t('groups.join.meta_title'), t('groups.join.meta_description'));
-  return <RequireLogin><JoinGroupContent /></RequireLogin>;
+  return <RequireLogin><ModuleGate module="groups"><JoinGroupContent /></ModuleGate></RequireLogin>;
 };
 
 export default JoinGroup;

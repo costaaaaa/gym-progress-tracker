@@ -57,6 +57,7 @@ import useConfirmPassword from '../hooks/useConfirmPassword';
 import ConfirmPasswordField from '../components/Auth/ConfirmPasswordField';
 import { loginWithNext } from '../utils/safeNext';
 import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
+import ModulesCard from '../components/Account/ModulesCard';
 import AccountTier from '../components/Account/AccountTier';
 import PasswordToggle from '../components/Auth/PasswordToggle';
 import ButtonSpinner from '../components/ButtonSpinner';
@@ -835,6 +836,9 @@ const Account = ({ isEmbedded = false }) => {
           </Box>
         </Collapse>
       </Card>
+
+      {/* Card Moduli */}
+      <ModulesCard notify={(message, severity) => setSnackbar({ open: true, message, severity })} />
 
       {/* Card Sicurezza */}
       <Card sx={{ p: '24px' }}>

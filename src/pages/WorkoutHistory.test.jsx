@@ -13,7 +13,7 @@ import { isKeyboardFocus } from '../utils/focus';
 // jsdom dà :focus-visible a ogni focus: la distinzione tastiera/mouse si sostituisce (il resto del modulo resta vero)
 vi.mock('../utils/focus', async (importOriginal) => ({ ...(await importOriginal()), isKeyboardFocus: vi.fn(() => true) }));
 // Unità di peso dell'utente: kg salvo i test che la cambiano
-const account = vi.hoisted(() => ({ isLoggedIn: true, loading: false, weightUnit: 'kg' }));
+const account = vi.hoisted(() => ({ isLoggedIn: true, loading: false, weightUnit: 'kg', user: undefined }));
 vi.mock('../context/AuthContext', () => ({ useAuth: () => account }));
 
 const GREY = 'rgb(107, 102, 99)';
@@ -51,6 +51,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   account.weightUnit = 'kg';
+  account.user = undefined;
   isKeyboardFocus.mockReset(); // un valore rimasto in coda non passa al test dopo
   vi.useRealTimers();
   vi.unstubAllGlobals();
@@ -473,5 +474,36 @@ describe('pesi nell\'unità dell\'utente', () => {
     await mount();
     expect(screen.getAllByText('132,25 lb × 8')).toHaveLength(3);
     expect(screen.queryByText(/kg/)).toBeNull();
+  });
+});
+
+describe('modulo Livelli non attivo: anteprima dell\'eliminazione', () => {
+  const apriConferma = async () => {
+    vi.stubGlobal('fetch', vi.fn((url, init) => Promise.resolve(
+      url.includes('read_plans.php') ? json({ records: [plan] })
+        : url.includes('workout_history/read.php') ? json({ records: [workout] })
+          : url.includes('workout_history/delete.php') && JSON.parse(init.body).preview
+            ? json({ success: true, xp_removed: 30, streak_before: 3, streak_after: 2, achievements_removed: ['strength_100'] })
+            : json({ success: true }),
+    )));
+    await mount();
+    fireEvent.click(await screen.findByRole('button', { name: /^Elimina allenamento/ }));
+    await screen.findByText('Conferma eliminazione');
+    await act(async () => {});
+  };
+
+  it('attivo: punti, streak e traguardi che si perdono', async () => {
+    await apriConferma();
+    expect(screen.getByText('Perderai 30 XP.')).toBeTruthy();
+    expect(screen.getByText(/Lo streak passa da 3 a 2/)).toBeTruthy();
+  });
+
+  it('non attivo: niente di tutto questo', async () => {
+    account.user = { modules: { body: true, recovery: true, levels: false, groups: true, ai: true } };
+    await apriConferma();
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).queryByText(/XP/)).toBeNull();
+    expect(within(dialog).queryByText(/streak/i)).toBeNull();
+    expect(within(dialog).queryByText(/100 kg/)).toBeNull();
   });
 });

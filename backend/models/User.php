@@ -27,6 +27,10 @@ class User
     public $training_start_date;
     public $locale = 'it';
     public $weight_unit = 'kg';
+    // Moduli facoltativi (colonne module_<chiave>): chiave => attivo. «Non attivo» è solo visualizzazione.
+    const MODULES = array('body', 'recovery', 'levels', 'groups', 'ai');
+    public $modules = array('body' => true, 'recovery' => true, 'levels' => true, 'groups' => true, 'ai' => true);
+    public $modules_chosen = false; // true se l'utente ha già fatto la sua scelta (modules_chosen_at pieno)
 
     // Helper per calcolare l'età dalla data di nascita
     public function calculateAge()
@@ -52,6 +56,20 @@ class User
     public function __construct($db)
     {
         $this->conn = $db;
+    }
+
+    // Le colonne dei moduli per una SELECT: «module_body, module_recovery, ...»
+    public static function moduleColumns()
+    {
+        return implode(', ', array_map(function ($key) { return 'module_' . $key; }, self::MODULES));
+    }
+
+    // Riempie $modules da una riga con le colonne di moduleColumns()
+    private function setModulesFromRow(array $row)
+    {
+        foreach (self::MODULES as $key) {
+            $this->modules[$key] = (bool)$row['module_' . $key];
+        }
     }
 
     // Create new user record
@@ -198,7 +216,7 @@ class User
     public function login()
     {
         // Query to read single record
-        $query = "SELECT id, username, email, password, password_legacy
+        $query = "SELECT id, username, email, password, password_legacy, " . self::moduleColumns() . "
                 FROM " . $this->table_name . "
                 WHERE username = ?
                 LIMIT 0,1";
@@ -220,6 +238,7 @@ class User
             $this->id = $row['id'];
             $this->username = $row['username'];
             $this->email = $row['email'];
+            $this->setModulesFromRow($row);
 
             if ($this->verifyPassword($this->password, $row['password'], (bool)$row['password_legacy'])) {
                 // Hash legacy (bcrypt di SHA-256): al primo accesso torna a un bcrypt normale
@@ -364,7 +383,7 @@ class User
     }
     public function readById($id)
     {
-        $query = "SELECT id, username, email, created_at, rest_timer_enabled, birth_date, gender, training_start_date, locale, weight_unit, password_changed_at FROM " . $this->table_name . " WHERE id = ? LIMIT 1";
+        $query = "SELECT id, username, email, created_at, rest_timer_enabled, birth_date, gender, training_start_date, locale, weight_unit, " . self::moduleColumns() . ", modules_chosen_at, password_changed_at FROM " . $this->table_name . " WHERE id = ? LIMIT 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(1, $id);
         $stmt->execute();
@@ -381,6 +400,8 @@ class User
             $this->training_start_date = $row['training_start_date'];
             $this->locale = $row['locale'];
             $this->weight_unit = $row['weight_unit'];
+            $this->setModulesFromRow($row);
+            $this->modules_chosen = $row['modules_chosen_at'] !== null;
             $this->password_changed_at = $row['password_changed_at'];
             
             // Calcolo dinamico per il frontend
@@ -393,7 +414,7 @@ class User
 
     // Aggiorna le impostazioni del profilo dell'utente. Aggiornamento parziale: si scrivono
     // solo le chiavi presenti in $fields (rest_timer_enabled, birth_date, gender,
-    // training_start_date, locale, weight_unit); quelle assenti restano come sono.
+    // training_start_date, locale, weight_unit, module_<chiave>); quelle assenti restano come sono.
     public function updateProfile(array $fields)
     {
         if (!$this->id) {
@@ -402,12 +423,17 @@ class User
         }
 
         $allowed = array('rest_timer_enabled', 'birth_date', 'gender', 'training_start_date', 'locale', 'weight_unit');
+        $flags = array('rest_timer_enabled');
+        foreach (self::MODULES as $key) {
+            $allowed[] = 'module_' . $key;
+            $flags[] = 'module_' . $key;
+        }
         $sets = array();
         $values = array();
         foreach ($allowed as $column) {
             if (array_key_exists($column, $fields)) {
                 $sets[] = "$column = :$column";
-                $values[$column] = ($column === 'rest_timer_enabled')
+                $values[$column] = in_array($column, $flags, true)
                     ? ($fields[$column] ? 1 : 0)
                     : $fields[$column];
             }
@@ -419,7 +445,7 @@ class User
         $query = "UPDATE " . $this->table_name . " SET " . implode(', ', $sets) . ", updated_at = NOW() WHERE id = :id";
         $stmt = $this->conn->prepare($query);
         foreach ($values as $column => $value) {
-            $stmt->bindValue(":$column", $value, $column === 'rest_timer_enabled' ? PDO::PARAM_INT : PDO::PARAM_STR);
+            $stmt->bindValue(":$column", $value, in_array($column, $flags, true) ? PDO::PARAM_INT : PDO::PARAM_STR);
         }
         $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
 

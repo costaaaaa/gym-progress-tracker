@@ -11,6 +11,7 @@ import StreakCard from '../components/StreakCard';
 import LevelCard from '../components/LevelCard';
 import GroupsHomeCard from '../components/Groups/GroupsHomeCard';
 import { useAuth } from '../context/AuthContext';
+import { isModuleActive } from '../hooks/useModule';
 import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
 import { API_BASE_URL } from '../config';
 import { useTranslation, Trans } from 'react-i18next';
@@ -53,6 +54,11 @@ const QuickActionPill = ({ to, icon, label }) => (
 
 const Home = () => {
   const { isLoggedIn, user, weightUnit } = useAuth();
+  // Moduli facoltativi: ciò che non è attivo non si mostra (i dati restano)
+  const levelsOn = isModuleActive(user, 'levels');
+  const recoveryOn = isModuleActive(user, 'recovery');
+  const bodyOn = isModuleActive(user, 'body');
+  const groupsOn = isModuleActive(user, 'groups');
   const { t } = useTranslation();
   usePageMeta(null, t('meta.description'));
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -192,17 +198,27 @@ const Home = () => {
             </Typography>
             <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.volume')}</Typography>
           </Box>
-          <CardActionArea
-            component={RouterLink}
-            to="/dashboard?tab=muscles"
-            sx={{ flex: 1, borderRadius: radius.xxl, mx: -1, px: 1, width: 'auto' }}
-          >
-            <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
-              {formatNumber(weeklySets)}
-              <Box component="span" sx={{ fontSize: 15, fontWeight: 600, ml: 0.5, color: 'primary.text' }}>›</Box>
-            </Typography>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.sets')}</Typography>
-          </CardActionArea>
+          {/* Senza il modulo Recupero la tab dei muscoli non c'è: il numero resta, senza il link */}
+          {recoveryOn ? (
+            <CardActionArea
+              component={RouterLink}
+              to="/dashboard?tab=muscles"
+              sx={{ flex: 1, borderRadius: radius.xxl, mx: -1, px: 1, width: 'auto' }}
+            >
+              <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
+                {formatNumber(weeklySets)}
+                <Box component="span" sx={{ fontSize: 15, fontWeight: 600, ml: 0.5, color: 'primary.text' }}>›</Box>
+              </Typography>
+              <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.sets')}</Typography>
+            </CardActionArea>
+          ) : (
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
+                {formatNumber(weeklySets)}
+              </Typography>
+              <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.sets')}</Typography>
+              </Box>
+          )}
         </Box>
       </Card>
     </Grid>
@@ -258,29 +274,37 @@ const Home = () => {
         ) : (
           <>
             {/* Streak / Livello */}
-            <Grid item xs={12} md={6}>
-              <StreakCard />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <LevelCard />
-            </Grid>
+            {levelsOn && (
+              <>
+                <Grid item xs={12} md={6}>
+                  <StreakCard />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <LevelCard />
+                </Grid>
+              </>
+            )}
 
             {weeklySummary}
 
             {/* Stato Muscolare */}
-            <Grid item xs={12} md={6}>
-              <Card sx={{ height: '100%', p: '22px' }}>
-                <BodyVisualizer recoveryData={dashboardStats?.recovery} detail={dashboardStats?.detail} />
-                <Button component={RouterLink} to="/dashboard?tab=muscles" size="small" sx={{ mt: 1.5, px: 0 }}>
-                  {t('home.recovery_link')}
-                </Button>
-              </Card>
-            </Grid>
+            {recoveryOn && (
+              <Grid item xs={12} md={6}>
+                <Card sx={{ height: '100%', p: '22px' }}>
+                  <BodyVisualizer recoveryData={dashboardStats?.recovery} detail={dashboardStats?.detail} />
+                  <Button component={RouterLink} to="/dashboard?tab=muscles" size="small" sx={{ mt: 1.5, px: 0 }}>
+                    {t('home.recovery_link')}
+                  </Button>
+                </Card>
+              </Grid>
+            )}
 
             {/* Gruppi */}
-            <Grid item xs={12} md={6}>
-              <GroupsHomeCard />
-            </Grid>
+            {groupsOn && (
+              <Grid item xs={12} md={6}>
+                <GroupsHomeCard />
+              </Grid>
+            )}
 
             {/* Ultimo Allenamento */}
             <Grid item xs={12} md={6}>
@@ -356,7 +380,9 @@ const Home = () => {
               </Typography>
               <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
                 <QuickActionPill to="/dashboard?tab=progress" icon={<AssessmentOutlined />} label={t('home.quick.progress')} />
-                <QuickActionPill to="/dashboard?tab=body" icon={<StraightenOutlined />} label={t('home.quick.measures')} />
+                {bodyOn && (
+                  <QuickActionPill to="/dashboard?tab=body" icon={<StraightenOutlined />} label={t('home.quick.measures')} />
+                )}
                 <QuickActionPill to="/workouts?tab=history" icon={<CalendarTodayOutlined />} label={t('home.quick.history')} />
                 <QuickActionPill to="/profilo?tab=settings" icon={<HealthAndSafetyOutlined />} label={t('home.quick.settings')} />
               </Box>

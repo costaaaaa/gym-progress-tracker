@@ -8,6 +8,7 @@ import GroupsOutlined from '@mui/icons-material/GroupsOutlined';
 import AddIcon from '@mui/icons-material/Add';
 import { usePageMeta } from '../hooks/usePageMeta';
 import RequireLogin from '../components/Groups/RequireLogin';
+import ModuleGate from '../components/ModuleGate';
 import { createGroup, errorMessage, groupTypeLabel, listGroups, roleLabel } from '../api/groups';
 import { track } from '../utils/analytics';
 import { useTranslation } from 'react-i18next';
@@ -164,7 +165,7 @@ const GroupsContent = () => {
 const Groups = () => {
   const { t } = useTranslation();
   usePageMeta(t('groups.meta.title'), t('groups.meta.description'));
-  return <RequireLogin><GroupsContent /></RequireLogin>;
+  return <RequireLogin><ModuleGate module="groups"><GroupsContent /></ModuleGate></RequireLogin>;
 };
 
 export default Groups;

@@ -20,6 +20,7 @@ import { formatSetText } from '../../i18n/format';
 import { radius } from '../../theme/radius';
 import LockedButton from './LockedButton';
 import ButtonSpinner from '../../components/ButtonSpinner';
+import { useModule } from '../../hooks/useModule';
 
 const XP_WITHHELD_KEYS = {
   incomplete: 'focus.xp_incomplete',
@@ -48,9 +49,11 @@ export default function SummaryPhase({
 }) {
   const { t } = useTranslation();
   const { colors } = useFocusColors();
+  // Senza il modulo Livelli il server conta comunque punti e streak: qui non si mostrano
+  const levelsOn = useModule('levels');
 
   const xpWithheldText = (result) => {
-    if (!result || result.xp_session_awarded !== false) return '';
+    if (!levelsOn || !result || result.xp_session_awarded !== false) return '';
     const key = XP_WITHHELD_KEYS[result.xp_session_reason];
     return key ? t(key, { pct: result.completion_pct ?? 0 }) : '';
   };
@@ -132,7 +135,7 @@ export default function SummaryPhase({
         {savedResult ? (
           <>
             {/* Streak banner */}
-            {(savedResult.week_completed_now || savedResult.streak_milestone || savedResult.new_longest) && (
+            {levelsOn && (savedResult.week_completed_now || savedResult.streak_milestone || savedResult.new_longest) && (
               <Paper sx={{
                 bgcolor: colors.bgElevated,
                 border: `1px solid ${colors.border}`,
@@ -180,7 +183,7 @@ export default function SummaryPhase({
                   durationSec: elapsedSeconds,
                   title: `${activePlan?.name || ''}${selectedDay?.name ? ' · ' + selectedDay.name : ''}`,
                   records: sessionRecords(cardExercises, historyIndex),
-                  streakWeeks: savedResult.current_streak_weeks,
+                  streakWeeks: levelsOn ? savedResult.current_streak_weeks : undefined,
                 }));
                 track('workout_card', { action: 'open', from: 'summary' });
               };
@@ -206,7 +209,7 @@ export default function SummaryPhase({
                       {t('focus.best_volume_list', { list: volumeList.join(', ') })}
                     </Typography>
                   )}
-                  {savedResult.current_streak_weeks > 0 && (
+                  {levelsOn && savedResult.current_streak_weeks > 0 && (
                     <Typography variant="body2" sx={{ color: colors.text }}>
                       🔥 {t('focus.streak_line_plain', { count: savedResult.current_streak_weeks })}
                     </Typography>

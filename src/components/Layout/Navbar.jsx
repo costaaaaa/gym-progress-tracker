@@ -12,6 +12,7 @@ import { BELOW_360 } from '../../theme/narrowScreens';
 import { isAuthPath, stripLangPrefix, useLocalizedPath } from '../../i18n/paths';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 import LogoMark from '../LogoMark';
+import { isModuleActive } from '../../hooks/useModule';
 
 // Voci del centro nav desktop: Home / Allenamenti / Dashboard / Gruppi.
 // Su mobile la navigazione vive in BottomNav.jsx (Home/Allenamenti/Focus/Dashboard/Profilo);
@@ -24,7 +25,7 @@ const navItems = [
   { label: 'nav.home', path: '/' },
   { label: 'nav.workouts', path: '/workouts' },
   { label: 'nav.dashboard', path: '/dashboard' },
-  { label: 'nav.groups', path: '/gruppi' },
+  { label: 'nav.groups', path: '/gruppi', module: 'groups' },
 ];
 
 
@@ -54,6 +55,8 @@ const Navbar = () => {
   const { isLoggedIn, user, loading, emailState } = useAuth();
   // Con l'app bloccata dalla conferma dell'email le voci porterebbero a pagine che rispondono 403
   const showAppNav = isLoggedIn && emailState?.blocked !== true;
+  // La voce di un modulo non attivo non si mostra
+  const visibleNavItems = navItems.filter((item) => !item.module || isModuleActive(user, item.module));
 
   // Accedi e Registrati conservano la pagina a cui tornare: il ?next= già presente
   // su login e registrazione, oppure il link di invito che si sta guardando.
@@ -146,7 +149,7 @@ const Navbar = () => {
         {/* Centro: nav desktop, nascosta su mobile (su mobile la navigazione è in BottomNav) */}
         {!isMobile && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, justifySelf: 'center' }}>
-            {authVerified && showAppNav && navItems.map((item) => (
+            {authVerified && showAppNav && visibleNavItems.map((item) => (
               <Button
                 key={item.path}
                 component={RouterLink}
