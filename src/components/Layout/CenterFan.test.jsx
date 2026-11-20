@@ -162,3 +162,41 @@ describe('ventaglio: movimento', () => {
     expect(box.style.opacity).toBe('1');
   });
 });
+
+describe('ventaglio: voce che non naviga (onSelect)', () => {
+  it('è un pulsante, non un collegamento, con lo stesso nome e testo; la scelta chiude e chiama onSelect una volta', () => {
+    const onSelect = vi.fn();
+    const onClose = vi.fn();
+    const calls = [];
+    onClose.mockImplementation(() => calls.push('close'));
+    onSelect.mockImplementation(() => calls.push('select'));
+    const action = { key: 'cardio', label: 'Cardio', shortLabel: 'Cardio', Icon: DirectionsRunIcon, onSelect };
+    mount([start, record, measure, action], onClose);
+    expect(screen.queryByRole('link', { name: 'Cardio' })).toBeNull();
+    const button = screen.getByRole('button', { name: 'Cardio' });
+    expect(button.textContent).toBe('Cardio');
+    fireEvent.click(button);
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(calls).toEqual(['close', 'select']);
+  });
+
+  it('con una voce onSelect il fuoco parte da «Inizia» e l\'ordine di lettura è quello dell\'elenco', () => {
+    const action = { key: 'cardio', label: 'Cardio', shortLabel: 'Cardio', Icon: DirectionsRunIcon, onSelect: () => {} };
+    const items = [start, record, measure, action];
+    mount(items);
+    expect(document.activeElement).toBe(screen.getByRole('link', { name: 'Inizia allenamento' }));
+    const controls = [...screen.getByRole('dialog').querySelectorAll('a, button')].map((el) => el.getAttribute('aria-label'));
+    expect(controls).toEqual([...items.map((item) => item.label), 'Chiudi']);
+  });
+
+  it('la trappola del fuoco gira anche con una voce onSelect: dal segnaposto di fondo a «Inizia», da quello d\'inizio a «Chiudi»', () => {
+    const action = { key: 'cardio', label: 'Cardio', shortLabel: 'Cardio', Icon: DirectionsRunIcon, onSelect: () => {} };
+    mount([start, record, measure, action]);
+    act(() => screen.getByTestId('sentinelEnd').focus());
+    expect(document.activeElement).toBe(screen.getByRole('link', { name: 'Inizia allenamento' }));
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    act(() => screen.getByTestId('sentinelStart').focus());
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Chiudi' }));
+  });
+});
