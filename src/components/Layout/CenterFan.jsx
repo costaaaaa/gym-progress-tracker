@@ -39,7 +39,7 @@ const CenterFan = ({ open, onClose, items }) => {
 
   return (
     <Modal open={open} onClose={onClose} hideBackdrop disableRestoreFocus>
-      {/* Ogni tocco (velo, voce, chiusura) arriva qui e chiude; la voce intanto naviga col suo collegamento */}
+      {/* Ogni tocco (velo, voce, chiusura) arriva qui e chiude; la voce intanto naviga col suo collegamento (una voce con onSelect è un pulsante: chiude e poi chiama onSelect) */}
       <Box
         role="dialog"
         aria-modal="true"
@@ -72,9 +72,9 @@ const CenterFan = ({ open, onClose, items }) => {
                 }}
               >
                 <ButtonBase
-                  component={RouterLink}
-                  to={item.to}
-                  state={item.state}
+                  {...(item.onSelect
+                    ? { onClick: (event) => { event.stopPropagation(); onClose(); item.onSelect(); } }
+                    : { component: RouterLink, to: item.to, state: item.state })}
                   aria-label={item.label}
                   ref={item.main ? focusStart : undefined}
                   sx={{

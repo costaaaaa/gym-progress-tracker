@@ -1,7 +1,8 @@
 // L'elenco delle azioni del pulsante centrale (telefono) e del pulsante diviso (desktop): un solo punto lo costruisce.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook } from '@testing-library/react';
-import { useCenterActions } from './useCenterActions';
+import { renderHook, act } from '@testing-library/react';
+import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
+import { useCenterActions, registerCenterAction } from './useCenterActions';
 import { DRAFT_STORAGE_KEY } from '../utils/focusDraft';
 
 const auth = vi.hoisted(() => ({ user: { username: 'atleta_demo' } }));
@@ -48,5 +49,39 @@ describe('azioni del pulsante centrale', () => {
     localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({ selectedDay: { id: 1 }, startTime: 1 }));
     rerender();
     expect(result.current[0].shortLabel).toBe('Riprendi');
+  });
+});
+
+describe('azioni aggiunte da fuori', () => {
+  const cardio = { key: 'cardio', label: 'Cardio', shortLabel: 'Cardio', Icon: DirectionsRunIcon, onSelect: () => {} };
+  const yoga = { key: 'yoga', label: 'Yoga', shortLabel: 'Yoga', Icon: DirectionsRunIcon, onSelect: () => {} };
+
+  it('una voce registrata segue quelle di base e si toglie con la funzione restituita', () => {
+    const { result } = renderHook(() => useCenterActions());
+    let remove;
+    act(() => { remove = registerCenterAction(cardio); });
+    expect(keys(result.current)).toEqual(['start', 'record', 'measure', 'cardio']);
+    expect(result.current[3]).toMatchObject({ key: 'cardio', label: 'Cardio', shortLabel: 'Cardio', Icon: DirectionsRunIcon });
+    act(() => remove());
+    expect(keys(result.current)).toEqual(['start', 'record', 'measure']);
+  });
+
+  it('le voci registrate restano in ordine di registrazione', () => {
+    const { result } = renderHook(() => useCenterActions());
+    let removeCardio;
+    let removeYoga;
+    act(() => { removeCardio = registerCenterAction(cardio); removeYoga = registerCenterAction(yoga); });
+    expect(keys(result.current).slice(3)).toEqual(['cardio', 'yoga']);
+    act(() => { removeCardio(); removeYoga(); });
+  });
+
+  it('togliere due volte la stessa voce non toglie le altre', () => {
+    const { result } = renderHook(() => useCenterActions());
+    let removeCardio;
+    let removeYoga;
+    act(() => { removeCardio = registerCenterAction(cardio); removeYoga = registerCenterAction(yoga); });
+    act(() => { removeCardio(); removeCardio(); });
+    expect(keys(result.current).slice(3)).toEqual(['yoga']);
+    act(() => removeYoga());
   });
 });

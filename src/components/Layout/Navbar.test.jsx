@@ -1,11 +1,13 @@
 // Barra in alto vista dall'utente: il link alla home porta il marchio LiftIndex, il nome accessibile è uno solo.
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { render, screen, within, fireEvent } from '@testing-library/react';
+import { render, screen, within, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Navbar from './Navbar';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
 import { mediaStyle } from '../../test/mediaStyle';
 import { DRAFT_STORAGE_KEY } from '../../utils/focusDraft';
+import { registerCenterAction } from '../../hooks/useCenterActions';
+import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
 
 const realMatchMedia = window.matchMedia;
 
@@ -175,6 +177,26 @@ describe('barra in alto: desktop', () => {
     expect(items.map((item) => [item.textContent, item.getAttribute('href')])).toEqual([
       ['Registra allenamento passato', '/storico'], ['Nuova misura', '/dashboard?tab=body'],
     ]);
+  });
+
+  it('una voce aggiunta da fuori con onSelect è nel menu come pulsante: la scelta chiude il menu e la chiama una volta', () => {
+    const onSelect = vi.fn();
+    const remove = registerCenterAction({ key: 'cardio', label: 'Cardio', shortLabel: 'Cardio', Icon: DirectionsRunIcon, onSelect });
+    try {
+      mount();
+      fireEvent.click(screen.getByRole('button', { name: 'Altre azioni' }));
+      const item = screen.getByRole('menuitem', { name: 'Cardio' });
+      expect(item.getAttribute('href')).toBeNull();
+      fireEvent.click(item);
+      expect(onSelect).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('button', { name: 'Altre azioni' }).getAttribute('aria-expanded')).toBe('false');
+    } finally {
+      remove();
+    }
+    cleanup();
+    mount();
+    fireEvent.click(screen.getByRole('button', { name: 'Altre azioni' }));
+    expect(screen.queryByRole('menuitem', { name: 'Cardio' })).toBeNull();
   });
 
   it('senza il modulo Misure il menu ha solo «Registra allenamento passato»', () => {

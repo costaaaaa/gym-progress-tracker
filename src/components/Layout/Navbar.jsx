@@ -204,7 +204,12 @@ const Navbar = () => {
               </ButtonGroup>
               <Menu anchorEl={moreAnchor} open={Boolean(moreAnchor)} onClose={() => setMoreAnchor(null)}>
                 {actions.filter((action) => !action.main).map((action) => (
-                  <MenuItem key={action.key} component={RouterLink} to={action.to} state={action.state} onClick={() => setMoreAnchor(null)}>
+                  <MenuItem
+                    key={action.key}
+                    {...(action.onSelect
+                      ? { onClick: () => { setMoreAnchor(null); action.onSelect(); } }
+                      : { component: RouterLink, to: action.to, state: action.state, onClick: () => setMoreAnchor(null) })}
+                  >
                     <ListItemIcon><action.Icon fontSize="small" /></ListItemIcon>
                     <ListItemText>{action.label}</ListItemText>
                   </MenuItem>
