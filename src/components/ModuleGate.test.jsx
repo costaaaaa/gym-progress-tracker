@@ -15,10 +15,10 @@ const ALL = { body: true, recovery: true, levels: true, groups: true, ai: true }
 let settings;
 const updateUser = vi.fn();
 
-const Harness = ({ modules, module = 'groups' }) => {
+const Harness = ({ modules, module = 'groups', name }) => {
   const [user, setUser] = useState({ id: 1, modules });
   auth.value = { user, updateUser: (patch) => { updateUser(patch); setUser((u) => ({ ...u, ...patch })); } };
-  return <MemoryRouter><ThemeModeProvider><ModuleGate module={module}><p>Contenuto della pagina</p></ModuleGate></ThemeModeProvider></MemoryRouter>;
+  return <MemoryRouter><ThemeModeProvider><ModuleGate module={module} name={name}><p>Contenuto della pagina</p></ModuleGate></ThemeModeProvider></MemoryRouter>;
 };
 const savedBodies = () => fetch.mock.calls.map(([, init]) => JSON.parse(init.body));
 
@@ -43,6 +43,11 @@ describe('modulo attivo', () => {
 });
 
 describe('modulo non attivo', () => {
+  it('con name il titolo usa quel nome', () => {
+    render(<Harness modules={{ ...ALL, groups: false }} name="Modulo extra" />);
+    expect(screen.getByRole('heading', { name: 'Il modulo Modulo extra non è attivo' })).toBeTruthy();
+  });
+
   const off = { ...ALL, groups: false };
 
   it('al posto della pagina c\'è «Il modulo Gruppi non è attivo», con una riga sui dati rimasti e «Attiva»', () => {

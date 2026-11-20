@@ -6,7 +6,8 @@ import ButtonSpinner from './ButtonSpinner';
 
 // «Il modulo X non è attivo»: al posto di una pagina (o di una tab) di un modulo non attivo. I dati sono rimasti;
 // «Attiva» salva e la destinazione richiesta compare subito. Mai un'attivazione automatica.
-export const ModuleInactive = ({ module, heading = 'h1' }) => {
+// `name` (già tradotto) è facoltativo: se manca vale il nome del modulo.
+export const ModuleInactive = ({ module, name, heading = 'h1' }) => {
   const { t } = useTranslation();
   const save = useSaveModules();
   const [saving, setSaving] = useState(false);
@@ -25,7 +26,7 @@ export const ModuleInactive = ({ module, heading = 'h1' }) => {
   return (
     <Card sx={{ p: { xs: 3, sm: 4 }, maxWidth: 560, mx: 'auto' }}>
       <Typography component={heading} variant="pageTitle" gutterBottom>
-        {t('modules.inactive.title', { name: t(`modules.${module}.name`) })}
+        {t('modules.inactive.title', { name: name ?? t(`modules.${module}.name`) })}
       </Typography>
       <Typography sx={{ fontSize: 16, color: 'text.secondary', mb: 2 }}>{t('modules.inactive.text')}</Typography>
       {failed && <Alert severity="error" sx={{ mb: 2 }}>{t('modules.inactive.turn_on_error')}</Alert>}
@@ -39,6 +40,6 @@ export const ModuleInactive = ({ module, heading = 'h1' }) => {
 };
 
 // Mostra i figli solo se il modulo è attivo, altrimenti la pagina «non attivo»
-const ModuleGate = ({ module, children }) => (useModule(module) ? children : <ModuleInactive module={module} />);
+const ModuleGate = ({ module, name, children }) => (useModule(module) ? children : <ModuleInactive module={module} name={name} />);
 
 export default ModuleGate;
