@@ -25,7 +25,7 @@ const emailStateFrom = (data) => ({
   outcome: '',
 });
 
-// `modules` di user/read.php: un oggetto (se non lo è, il server è vecchio o la risposta è rovinata e non si tocca nulla)
+// `modules` e `group_visibility` di user/read.php: un oggetto (se non lo è, il server è vecchio o la risposta è rovinata e non si tocca nulla)
 const isModules = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 
 // Scrive la copia dell'utente in localStorage e restituisce lo stesso valore, da usare dentro setUser: tutte le modifiche passano da qui
@@ -47,6 +47,8 @@ export const AuthProvider = ({ children }) => {
   const lastRead = useRef(0);
   // Numero dell'ultima lettura già partita quando i moduli sono stati salvati: le letture fino a quel numero hanno i moduli di prima
   const modulesSavedAt = useRef(0);
+  // Lo stesso per la visibilità nei gruppi
+  const groupVisibilitySavedAt = useRef(0);
 
   // Rilegge lo stato della conferma. Non fa mai uscire l'utente: se la lettura non riesce, resta lo stato di prima.
   // `outcome`: il messaggio del server quando la conferma ha anche deciso il codice di registrazione («Plus attivo
@@ -65,7 +67,7 @@ export const AuthProvider = ({ children }) => {
         const data = await response.json();
         if (data.success && mine === lastRead.current) {
           setEmailState({ ...emailStateFrom(data), outcome });
-          // Campi di user riletti da read.php: il login risponde senza l'unità di peso (i moduli li porta già).
+          // Campi di user riletti da read.php: il login risponde senza l'unità di peso (i moduli li porta già) e senza la visibilità nei gruppi.
           // I moduli di una lettura partita prima dell'ultimo salvataggio dei moduli sono vecchi: non lo sovrascrivono.
           const fresh = {};
           if (isWeightUnit(data.weight_unit)) fresh.weight_unit = data.weight_unit;
@@ -73,6 +75,7 @@ export const AuthProvider = ({ children }) => {
             if (isModules(data.modules)) fresh.modules = data.modules;
             if (typeof data.modules_chosen === 'boolean') fresh.modules_chosen = data.modules_chosen;
           }
+          if (mine > groupVisibilitySavedAt.current && isModules(data.group_visibility)) fresh.group_visibility = data.group_visibility;
           setUser((prev) => {
             if (!prev) return prev;
             const changed = Object.keys(fresh).some((key) => JSON.stringify(prev[key]) !== JSON.stringify(fresh[key]));
@@ -221,6 +224,7 @@ export const AuthProvider = ({ children }) => {
   // Aggiorna campi dell'utente già salvati sul server (es. la lingua)
   const updateUser = (patch) => {
     if ('modules' in patch || 'modules_chosen' in patch) modulesSavedAt.current = lastRead.current;
+    if ('group_visibility' in patch) groupVisibilitySavedAt.current = lastRead.current;
     setUser((prev) => {
       return cacheUser({ ...prev, ...patch });
     });

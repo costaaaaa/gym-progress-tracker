@@ -547,6 +547,7 @@
   "groups.detail.load_error": "Impossibile caricare il gruppo.",
   "groups.detail.board.week": "Settimana",
   "groups.detail.board.week_hint": "Allenamenti fatti rispetto al proprio obiettivo settimanale.",
+  "groups.detail.board.week_hidden": "Non mostri gli allenamenti della settimana, quindi non vedi la classifica.",
   "groups.detail.board.streak": "Streak",
   "groups.detail.board.streak_hint": "Settimane consecutive con l'obiettivo raggiunto.",
   "groups.detail.board.level": "Livello",

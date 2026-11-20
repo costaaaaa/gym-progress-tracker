@@ -593,15 +593,14 @@ describe('AuthProvider: visibilità nei gruppi', () => {
   const OLD = { workouts: true, volume: true, streak: true, level: true };
   const NEW = { ...OLD, volume: false };
 
-  it('user.group_visibility arriva da user/read.php e finisce nella copia locale', async () => {
+  it('user.group_visibility arriva da user/read.php', async () => {
     readReturns({ id: 1, username: 'a', group_visibility: NEW });
     localStorage.setItem('isLoggedIn', 'true');
     render(<AuthProvider><Vis /></AuthProvider>);
     await waitFor(() => expect(screen.getByTestId('vis').textContent).toBe(JSON.stringify(NEW)));
-    expect(JSON.parse(localStorage.getItem('user')).group_visibility).toEqual(NEW);
   });
 
-  it('dopo il login (che risponde senza) la rilettura la porta', async () => {
+  it('dopo il login (che risponde senza) la rilettura la porta, anche nella copia locale', async () => {
     readReturns({ id: 1, username: 'a', group_visibility: NEW });
     const Login = () => {
       const { login } = useAuth();
@@ -610,6 +609,7 @@ describe('AuthProvider: visibilità nei gruppi', () => {
     render(<AuthProvider><Vis /><Login /></AuthProvider>);
     fireEvent.click(screen.getByText('entra'));
     await waitFor(() => expect(screen.getByTestId('vis').textContent).toBe(JSON.stringify(NEW)));
+    expect(JSON.parse(localStorage.getItem('user')).group_visibility).toEqual(NEW);
   });
 
   it('un server senza il campo lascia user senza group_visibility', async () => {

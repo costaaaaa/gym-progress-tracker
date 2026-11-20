@@ -102,12 +102,14 @@ const GroupDetailContent = () => {
   const { weightUnit } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
-  // A Livelli non attivo le classifiche di streak e livello non si mostrano: resta quella della settimana
   const levels = useModule('levels');
-  const boards = levels ? BOARDS : ['week'];
   const [chosenBoard, setBoard] = useState('week');
-  const board = boards.includes(chosenBoard) ? chosenBoard : 'week';
   const [data, setData] = useState(null);
+  // Le schede seguono `visibility` della risposta (i dati che chi guarda mostra, e con loro quelli che vede; contiene già
+  // il modulo Livelli). Un server vecchio non la manda: allora streak e livello dipendono solo dal modulo, come prima.
+  const { visibility } = data ?? {};
+  const boards = BOARDS.filter((b) => (visibility ? b === 'week' || visibility[b] : levels || b === 'week'));
+  const board = boards.includes(chosenBoard) ? chosenBoard : 'week';
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
   const [confirm, setConfirm] = useState(null);
@@ -197,8 +199,14 @@ const GroupDetailContent = () => {
                 {boards.map((b) => <Tab key={b} value={b} label={t(`groups.detail.board.${b}`)} />)}
               </Tabs>
             )}
-            <Typography sx={{ fontSize: 16, color: 'text.secondary', mb: 1 }}>{t(`groups.detail.board.${board}_hint`)}</Typography>
-            <LeaderboardTable rows={data.board} board={data.board_type} weightUnit={weightUnit} />
+            {board === 'week' && visibility?.workouts === false ? (
+              <Typography sx={{ color: 'text.secondary', py: 2 }}>{t('groups.detail.board.week_hidden')}</Typography>
+            ) : (
+              <>
+                <Typography sx={{ fontSize: 16, color: 'text.secondary', mb: 1 }}>{t(`groups.detail.board.${board}_hint`)}</Typography>
+                <LeaderboardTable rows={data.board} board={data.board_type} weightUnit={weightUnit} />
+              </>
+            )}
           </Card>
         </Grid>
 
