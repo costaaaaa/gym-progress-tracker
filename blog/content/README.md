@@ -1,17 +1,17 @@
 # Contenuti del blog
 
-Gli articoli vivono qui come file Markdown, **uno per articolo**, e il nome del
+Gli articoli vivono qui come file Markdown, uno per articolo, e il nome del
 file dà lo slug dell'URL: `come-tracciare-progressi-palestra.md` viene servito su
 `/blog/come-tracciare-progressi-palestra`.
 
 Il nome può iniziare con un numero d'ordine di tre cifre, che serve solo a tenere i
-file in ordine nella cartella e **non entra nell'URL**:
+file in ordine nella cartella e non entra nell'URL:
 `001-come-tracciare-progressi-palestra.md` va sempre su
 `/blog/come-tracciare-progressi-palestra` (`blog_slug_from_file()`). Quindi:
 
 - il numero si può cambiare quando si vuole, l'URL resta lo stesso;
-- la parte dopo il numero **non si cambia** dopo l'uscita: cambierebbe l'URL;
-- `/blog/001-…` risponde 404, l'URL con il numero non esiste;
+- la parte dopo il numero **non si cambia** dopo l'uscita, perché cambierebbe l'URL;
+- `/blog/001-…` risponde 404 (l'URL con il numero non esiste);
 - due file con lo stesso slug (es. `001-x.md` e `002-x.md`) sono un errore: nessuno
   dei due esce (404, fuori da elenco e sitemap) e il log PHP dice quali sono;
 - uno slug che inizia lui stesso con tre cifre e un trattino (`100-esercizi`) vuole
@@ -24,12 +24,12 @@ articoli è contenuto editoriale di brand e resta fuori dal repo pubblico, anche
 per evitare che GitHub ne indicizzi una copia in concorrenza con la pagina
 pubblicata.
 
-**Dove stanno:** nel repo privato `gym-content`, cartella `blog/articoli/`
-(con piano editoriale, brief e regole di scrittura). La build delle immagini in
-Il repo dell'infrastruttura li copia qui dentro l'immagine: per pubblicare un articolo si fa il
+Gli articoli stanno nel repo privato `gym-content`, cartella `blog/articoli/`
+(con piano editoriale, brief e regole di scrittura). La build delle immagini, nel repo
+dell'infrastruttura, li copia qui dentro l'immagine: per pubblicare un articolo si fa il
 commit in `gym-content`, poi build e deploy.
 
-**Conseguenze pratiche:**
+In pratica:
 - Un articolo con `date` futura resta nascosto (listing, pagina e sitemap) fino
   a quel giorno, in ora italiana: più articoli possono entrare con una sola
   build e ognuno esce alla sua data.
@@ -65,15 +65,15 @@ Testo.
 | `date` | sì | `YYYY-MM-DD`. Ordina il listing e popola `datePublished` nel JSON-LD. |
 | `author` | no | Se presente, aggiunge `author` (Person) allo schema `BlogPosting`. |
 
-Il campo `slug` non serve: **il nome del file (senza numero) è la fonte di verità** per l'URL.
+Il campo `slug` non serve: l'URL viene dal nome del file, senza il numero.
 
 ## Prima di pubblicare
 
 - Il testo di riferimento per ogni articolo sta in `gym-content`, `blog/briefs/`.
 - Niente anno nel titolo (`(2026)`): la data sta nel campo `date`, così
-  l'articolo non porta con sé un impegno implicito di aggiornamento annuale.
-- L'articolo pillar va pubblicato **prima** dei satelliti, e ogni articolo deve
-  linkare gli altri del cluster — è ciò che fa funzionare il topic cluster.
+  l'articolo non si porta dietro un impegno implicito di aggiornamento annuale.
+- L'articolo pillar va pubblicato prima dei satelliti, e ogni articolo deve
+  linkare gli altri del cluster: sono i link a far funzionare il topic cluster.
 - Un link verso un articolo con data futura risponde 404 finché quell'articolo non
   esce: gli articoli che si linkano a vicenda devono uscire insieme, o i link vanno
   aggiunti quando esce l'articolo di arrivo.

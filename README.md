@@ -6,82 +6,82 @@
 
 ## Description
 
-**LiftIndex** (repository `gym-progress-tracker`) is a web application for people who want to track their gym workouts in a simple, flexible, and detailed way.
+LiftIndex (repository `gym-progress-tracker`) is a web application for people who want to track their gym workouts in a simple and flexible way, with plenty of detail.
 
 With it you can:
 
-* Create and manage **workout plans** (Free allows 2 workout plans, 4 days per plan and 10 personal exercises; Plus and Pro allow 50, 14 and 30; above the limits of its tier a workout plan becomes read-only, never deleted);
-* Use **Focus Mode** for an immersive, real-time workout with built-in rest timers;
+* Create and manage workout plans (Free allows 2 workout plans, 4 days per plan and 10 personal exercises; Plus and Pro allow 50, 14 and 30; above the limits of its tier a workout plan becomes read-only, never deleted);
+* Use Focus Mode for an immersive, real-time workout with built-in rest timers;
 * Add exercises and training sessions to the active plan;
-* View **detailed statistics** on the progress of exercises over time;
-* Calculate useful metrics such as:
+* View detailed statistics on the progress of exercises over time;
+* Calculate metrics such as:
 
   * Total volume
   * Total repetitions
   * Volume per set
   * Volume per repetition
-  * **Estimated 1RM** and personal records (PR) for each exercise;
-* Explore your data through **interactive and clear charts**;
-* Train together with friends in **groups** and share your workout as an image.
+  * Estimated 1RM and personal records (PR) for each exercise;
+* Explore your data with interactive charts;
+* Train together with friends in groups and share your workout as an image.
 
-## Key Features
+## Key features
 
-* ✅ Multi-plan management
-* 🔥 **Focus Mode**: immersive interface for real-time workout tracking with rest timers and haptic feedback
-* ⏭️ **Flexible sessions**: "last time" sets with their intensity techniques, skip a single set, warm-up sets from the plan (with "Skip warm-up"); *(Premium)* swap or add an exercise mid-workout (this session only)
-* 💾 **Autosave**: local persistence to prevent data loss in Focus Mode
-* ⏱️ **Workout duration**: saved with each session
-* 📈 **Advanced Dashboard**: hub-based interface with interactive charts (Workout Progress & Body Stats)
-* 📊 **Global Stats**: track workout frequency (weekly) and total volume (monthly)
-* 🗓️ **History**: browse past workouts by month; edit the date or delete a session
-* 👤 **Body Stats**: track body measurements, circumferences, and visualize progress
-* 🏆 **Gamification**: XP points, athlete levels, per-exercise mastery, weekly streaks, and unlockable achievements
-* 👥 **Groups**: create a group for friends or your gym, invite people with a code or link, and compete on a weekly leaderboard
-* 🖼️ **Share card**: turn a workout into an image, with templates and your own photo (move and zoom it)
-* ➕ **Personal exercises**: can't find an exercise? Create it; the app suggests similar names ("Did you mean…") to avoid duplicates. A personal exercise is visible only to you until an admin approves it for everyone
-* 🛠️ **Admin page** (`/admin`): moderation queue for personal exercises. Admins are granted from the command line only (`backend/tools/admin.php`)
-* 🩺 **Muscle Recovery Visualizer**: anatomical map displaying muscle fatigue and recovery state
-* 🍎 **Apple Health & Health Connect** *(mobile app)*: two-way sync of weight, body fat and waist; Focus Mode workouts are saved to Health. On the web, Body Stats links to the app
-* 🏋️ Add and edit exercises with intensity techniques (Drop sets, Rest-pause, Super sets)
-* 🎯 **Smart Progress**: overview of all your exercises grouped by muscle, with estimated 1RM, trend, personal records and favorites; tap an exercise for its detailed chart and history
-* 📌 Ability to select an active workout plan
-* 🔒 **Secure Authentication**: session-based login (the session cookie lasts 30 days with "Stay signed in", otherwise until the browser closes) with server-side **bcrypt** password hashing, a single password policy, rate limiting and **password recovery by email**
-* 🛡️ **Privacy by design**: informed consents (terms, health data), privacy policy and terms pages, full **data export**, **account deletion**, periodic purge of data that is no longer needed
-* 📱 **Mobile-ready API**: the same PHP backend also serves a native mobile client via Bearer tokens
-* 📝 **Blog**: server-rendered PHP blog engine (Markdown articles, SEO meta and JSON-LD)
-* 🌓 **Dark & Light Mode**: custom theme with persistent appearance toggle
+* Multi-plan management
+* Focus Mode: immersive interface for real-time workout tracking with rest timers and haptic feedback
+* Flexible sessions: "last time" sets with their intensity techniques, skip a single set, warm-up sets from the plan (with "Skip warm-up"); (Premium) swap or add an exercise mid-workout (this session only)
+* Autosave: local persistence to prevent data loss in Focus Mode
+* Workout duration: saved with each session
+* Advanced Dashboard: hub-based interface with interactive charts (Workout Progress & Body Stats)
+* Global Stats: track workout frequency (weekly) and total volume (monthly)
+* History: browse past workouts by month; edit the date or delete a session
+* Body Stats: track body measurements, circumferences, and visualize progress
+* Gamification: XP points, athlete levels, per-exercise mastery, weekly streaks, and unlockable achievements
+* Groups: create a group for friends or your gym, invite people with a code or link, and compete on a weekly leaderboard
+* Share card: turn a workout into an image, with templates and your own photo (move and zoom it)
+* Personal exercises: can't find an exercise? Create it; the app suggests similar names ("Did you mean…") to avoid duplicates. A personal exercise is visible only to you until an admin approves it for everyone
+* Admin page (`/admin`): moderation queue for personal exercises. Admins are granted from the command line only (`backend/tools/admin.php`)
+* Muscle Recovery Visualizer: anatomical map showing muscle fatigue and recovery state
+* Apple Health & Health Connect *(mobile app)*: two-way sync of weight, body fat and waist; Focus Mode workouts are saved to Health. On the web, Body Stats links to the app
+* Add and edit exercises with intensity techniques (Drop sets, Rest-pause, Super sets)
+* Smart Progress: overview of all your exercises grouped by muscle, with estimated 1RM, trend, personal records and favorites; tap an exercise for its detailed chart and history
+* Active workout plan selection
+* Secure authentication: session-based login (the session cookie lasts 30 days with "Stay signed in", otherwise until the browser closes) with server-side bcrypt password hashing, a single password policy, rate limiting and password recovery by email
+* Privacy by design: informed consents (terms, health data), privacy policy and terms pages, full data export, account deletion, periodic purge of data that is no longer needed
+* Mobile-ready API: the same PHP backend also serves a native mobile client via Bearer tokens
+* Blog: server-rendered PHP blog engine (Markdown articles, SEO meta and JSON-LD)
+* Dark & Light Mode: custom theme with persistent appearance toggle
 
-## Technologies Used
+## Technologies used
 
-* **React (v18)** with **Vite**
-* **Material UI (MUI)** for the user interface
-* **Recharts** for data visualization
-* **PHP** (PDO REST API architecture)
-* **MySQL** for data storage
-* **ESLint** for frontend linting
-* **Umami** (self-hosted, cookieless) for privacy-friendly analytics, only when configured
+* React (v18) with Vite
+* Material UI (MUI) for the user interface
+* Recharts for data visualization
+* PHP (PDO REST API architecture)
+* MySQL for data storage
+* ESLint for frontend linting
+* Umami (self-hosted, cookieless) for privacy-friendly analytics, only when configured
 
 ## Security
 
-* **Passwords are hashed server-side with bcrypt** (`password_hash` / `password_verify`); the plaintext is sent only over HTTPS and is never stored.
-* **Transparent migration**: accounts created with older hashes are automatically re-hashed to bcrypt on their next successful login (`backend/tools/wrap_legacy_hashes.php` wraps the old hashes in one go).
-* **Session-based authentication** via PHP sessions for the web app; every request uses `credentials: 'include'`. The session is created at login only (no cookie, no session file for anonymous visits); the "Stay signed in for 30 days" checkbox makes the cookie last 30 days, otherwise it ends with the browser. The login, and any write made with an existing web session, get 403 when the request comes from an `Origin` that is not allowed.
-* **Bearer tokens** for the mobile client (`backend/api/user/mobile_login.php` and `mobile_logout.php`): only the SHA-256 hash of the token is stored, with a 30-day sliding expiration.
-* **Rate limiting** on authentication, password recovery, group, exercise-creation and similar-exercise suggestion endpoints to mitigate abuse.
-* **Data retention**: `backend/tools/purge.php` (run daily from cron) deletes expired tokens, used or expired reset links, expired email-confirmation codes and expired rate-limit counters. It also handles accounts that never confirmed their email: a notice at day 30 and another at day 35 after sign-up, deletion on the first run after 37 days (and at least 47 hours after the second notice); admins are never deleted. One step per account per night. It exits with status 1 if any account failed (a notice that could not be sent, a deletion that failed), so the cron log shows it. Deleting an account (by the user or by this purge) keeps only the applied uses of a sign-up code, with `user_id` NULL, because they count the code's places; pending and missed uses are deleted with the account.
+* Passwords are hashed server-side with bcrypt (`password_hash` / `password_verify`); the plaintext is sent only over HTTPS and is never stored.
+* The migration is transparent: accounts created with older hashes are automatically re-hashed to bcrypt on their next successful login (`backend/tools/wrap_legacy_hashes.php` wraps the old hashes in one go).
+* The web app uses PHP sessions; every request uses `credentials: 'include'`. The session is created at login only (no cookie, no session file for anonymous visits); the "Stay signed in for 30 days" checkbox makes the cookie last 30 days, otherwise it ends with the browser. The login, and any write made with an existing web session, get 403 when the request comes from an `Origin` that is not allowed.
+* The mobile client uses Bearer tokens (`backend/api/user/mobile_login.php` and `mobile_logout.php`): only the SHA-256 hash of the token is stored, with a 30-day sliding expiration.
+* Rate limiting on authentication, password recovery, group, exercise-creation and similar-exercise suggestion endpoints mitigates abuse.
+* Data retention: `backend/tools/purge.php` (run daily from cron) deletes expired tokens, used or expired reset links, expired email-confirmation codes and expired rate-limit counters. It also handles accounts that never confirmed their email: a notice at day 30 and another at day 35 after sign-up, deletion on the first run after 37 days (and at least 47 hours after the second notice); admins are never deleted. One step per account per night. It exits with status 1 if any account failed (a notice that could not be sent, a deletion that failed), so the cron log shows it. Deleting an account (by the user or by this purge) keeps only the applied uses of a sign-up code, with `user_id` NULL, because they count the code's places; pending and missed uses are deleted with the account.
 
-## Try it Out
+## Try it out
 
-You can test the app directly here: 👉 [LiftIndex](https://liftindex.app/)
+You can try the app at [LiftIndex](https://liftindex.app/).
 
-## Local Installation (Optional)
+## Local installation (optional)
 
 ### Requirements
 
 * Node.js and npm
 * PHP 7.4+ and MySQL (e.g., via XAMPP, MAMP)
 
-### Installation Guide
+### Installation guide
 
 1. Clone the repository:
 
@@ -95,8 +95,8 @@ You can test the app directly here: 👉 [LiftIndex](https://liftindex.app/)
    npm install
    npm run build
    ```
-3. Import the MySQL database — see [Database setup & updates](#database-setup--updates) below.
-4. Configure database access in the `backend/config/database.php` file (copy from `backend/config/database.php.example`);
+3. Import the MySQL database: see [Database setup & updates](#database-setup--updates) below.
+4. Configure database access in the `backend/config/database.php` file (copy from `backend/config/database.php.example`).
 5. Launch a local server (e.g., with XAMPP) and make sure the PHP files are correctly served. In development Vite forwards `/backend/` to `http://localhost/gym-progress-tracker/backend/` (proxy in `vite.config.js`), so the repository folder must be reachable at that path; for a backend elsewhere set `BACKEND_URL` (e.g. `BACKEND_URL=http://localhost:8080/backend/ npm run dev`).
 6. Start the React app (Vite on port 3000):
    ```bash
@@ -124,7 +124,41 @@ Under `backend/tools/` (CLI only, they answer 404 over HTTP): `admin.php list|gr
 
 ### Tests
 
-`tests/*.sh` are integration checks (access rules for personal exercises and groups, and the Apple Health / Health Connect sync rules) run against a live instance, for example `tests/groups_access.sh http://localhost/gym-progress-tracker/backend/`. They register throwaway accounts and delete them at the end: run them on a local or test instance, **never on a production one**. The ones with a `tests/*_test.php` next to them (`achievement_labels`, `admin_notify`, `blog_calculator`, `blog_mcp`, `blog_plans`, `client_ip`, `client_time`, `gamification_rules`, `muscle_rules`, `recovery_rules`, `signup_code_rules`, `tier_limits`, `tier_rules`, `units`, `validation_limits`, `web_session`, `weekly_sets`) are different: they run that file with the PHP of the web image, in Docker, and need no live instance or database. `forgot_parallel.sh` also needs neither: it starts a throwaway MySQL and the backend in Docker by itself. So does `workout_plan_active.sh` (model-level check of plan activation, with its own `_test.php`), and `delete_cascade.sh` (starts its own throwaway MySQL and checks that deleting a plan or an account leaves no orphan rows), and `schema_avanzi.sh` (starts its own throwaway MySQL and the backend, calls the real endpoints and checks that saving, history, date change, delete and export work with `gym_workout_history.exercises` optional and again after migration 38, which drops the unused columns and the `gym_progress` table, and that the other data is left untouched), and `plan_consistency.sh` (same setup, calls the plan endpoints and checks that `create_days.php` saves all the days or none when one insert fails midway, that creating a plan with `is_active` leaves only one active plan, and that `update_plan.php` without `is_active` leaves the plan's state as it was), and `achievement_endpoints.sh` (starts its own throwaway MySQL and the backend and checks that the achievement names in `gamification/profile.php` and in the `unlocked_achievements` after a save come out in the language of the account, even against the `X-Locale` header: English for an English account, Italian for an Italian one or one with the default language; `achievement_labels.sh`, in the list above, checks that every achievement has its Italian and English name in `backend/lang`) and `email_verify.sh` (starts its own throwaway MySQL and the backend and checks email confirmation: migration 39, the 6-digit code (30 minutes, 5 attempts, resend limits), the `403 email_unverified` block from day 8 and the endpoints that stay open, `user/confirm_email.php`, `user/resend_email_code.php`, `user/change_email.php`, `user/cancel_email_change.php`, and the nightly purge of unconfirmed accounts; `email_verify_rules.sh` checks the pure rules in four time zones and needs no database) and `signup_codes.sh` (starts its own throwaway MySQL and the backend with several PHP processes and checks the sign-up codes: migration 40 (also re-run and interrupted halfway), `signup_code` in `user/register.php` (three spellings of one code, invalid/disabled/expired/exhausted codes with no account created, the limit of 10 unusable codes per hour per IP, the last place fought over by parallel sign-ups), the early check in `user/check_availability.php`, the hook into email confirmation (`user/confirm_email.php` and password recovery: within and after the 7 days, code turned off meanwhile, account already on a better tier or with a later end date: the code never makes an account worse, and the response of `user/confirm_email.php` then describes the account's tier and last day; address change that applies nothing; two late confirmations on the last place; note that `signup_code.tier` and `duration_days` in `user/read.php` are the code's own, to show a pending code, while in `user/confirm_email.php` with `applied`, `signup_code.tier` and `tier_last_day` describe the account), places freed or kept when an account is deleted, the nightly purge, `signup_code`/`tier_until`/`tier_last_day` in `user/read.php`, the export and `api/admin/signup_codes.php` (paged list, detail, create, edit, delete); `signup_code_rules.sh` checks the pure rules in four time zones and needs no database) and `free_limits.sh` (starts its own throwaway MySQL and the backend and checks the Free limits of 2 workout plans, 4 days and 10 personal exercises, the Plus and Pro ones, the read-only workout plans after moving to a lower tier, `workout/delete_day.php`, `tier`/`limits`/`features` in `user/read.php` and the reduced `dashboard.php`) and `weight_unit.sh` (starts its own throwaway MySQL and the backend and checks the weight unit of the account: migration 41 (also re-run), `weight_unit` (`kg` or `lb`, default `kg`) in `user/read.php`, `user/update_settings.php` (invalid value: 400) and `user/register.php` (missing: `kg`; invalid: 400 and no account created), and `user/suggested_unit.php`, which proposes `lb` only when the first tag of `Accept-Language` has region US, with its per-IP limit, and that the weight limit message of `workout/record_workout.php` states the limit in the user's unit (999.99 kg, or 2204.5 lb for an account in `lb`; the limit itself does not change); data stay in kg) and `export_units.sh` (same setup, checks that `user/export.php` follows the account's unit: the `units` header, set weights, body weight and circumferences in lb and inches for an account in `lb` and unchanged for one in `kg`, `lifetime_volume_kg` always in kg; the conversions themselves are checked by `units.sh`, in the list above, against a fixture generated from the JS modules) and `modules.sh` (starts its own throwaway MySQL and the backend and checks the optional modules of the account: migration 42 (on a database with users, also re-run: existing accounts get `modules_chosen_at`, nothing changes the second time), `modules` and `modules_chosen` in `user/read.php` (a new account is registered with all five modules off, an existing one has them all on), `modules` and `modules_chosen` in the response of `user/login.php` and of `user/mobile_login.php`, `user/update_settings.php` with a partial `modules` object (unknown key or non-boolean value: 400 and no change) and `modules_chosen: true`, which closes the first-use screen "What are you interested in?" (shown once, after the email is confirmed; the date is written only the first time; any other value: 400) and the module columns in `user/export.php`; no endpoint is blocked by a module, "off" is display only) and `group_visibility.sh` (starts its own throwaway MySQL and the backend and checks the visibility of the account in groups: migration 43 (also re-run), `group_visibility` in `user/read.php` (the saved values) and `user/update_settings.php` (partial object, unknown key or non-boolean value: 400 and no change), and the leaderboard of `groups/read.php`: `visibility` is what the viewer sees (volume only with workouts shown, streak and level only with the Levels module on), a board the viewer cannot see is empty, the rows are only the members who show that datum, a datum hidden by the viewer or by the member is `null` in the row, and the list of members never changes). Throwaway accounts are on Free: the shell tests that go over the Free limits or read the full dashboard (`write_limits.sh`, `exercises_access.sh`, `recovery.sh`, `primary_muscle.sh`, `warmup_sets.sh`, `time_zone.sh`, `first_use.sh`) move their accounts to Plus with direct SQL and need `DB_SQL_CMD` (a command that reads SQL from stdin on the database of the instance under test, as in `admin_tiers.sh`; see `tests/lib/tier.sh`). `legal_pages.sh` needs no instance or Docker either: it reads `public/` and checks that the Italian and English privacy policy and terms keep the same structure (sections, anchors, numbers, dates, alternates).
+`tests/*.sh` are integration checks (access rules for personal exercises and groups, and the Apple Health / Health Connect sync rules) run against a live instance, for example `tests/groups_access.sh http://localhost/gym-progress-tracker/backend/`. They register throwaway accounts and delete them at the end: run them on a local or test instance, **never on a production one**.
+
+Some tests are different and need no live instance:
+
+* The ones with a `tests/*_test.php` next to them (`achievement_labels`, `admin_notify`, `blog_calculator`, `blog_mcp`, `blog_plans`, `client_ip`, `client_time`, `gamification_rules`, `muscle_rules`, `recovery_rules`, `signup_code_rules`, `tier_limits`, `tier_rules`, `units`, `validation_limits`, `web_session`, `weekly_sets`) run that file with the PHP of the web image, in Docker, and need no live instance or database.
+* `forgot_parallel.sh` needs no live instance or database either: it starts a throwaway MySQL and the backend in Docker by itself.
+* `workout_plan_active.sh` is a model-level check of plan activation, with its own `_test.php`. It needs neither a live instance nor a database either.
+* `delete_cascade.sh` starts its own throwaway MySQL and checks that deleting a plan or an account leaves no orphan rows.
+* `schema_avanzi.sh` starts its own throwaway MySQL and the backend, calls the real endpoints and checks that saving, history, date change, delete and export work with `gym_workout_history.exercises` optional and again after migration 38, which drops the unused columns and the `gym_progress` table, and that the other data is left untouched.
+* `plan_consistency.sh` has the same setup, calls the plan endpoints and checks that `create_days.php` saves all the days or none when one insert fails midway, that creating a plan with `is_active` leaves only one active plan, and that `update_plan.php` without `is_active` leaves the plan's state as it was.
+* `achievement_endpoints.sh` starts its own throwaway MySQL and the backend and checks that the achievement names in `gamification/profile.php` and in the `unlocked_achievements` after a save come out in the language of the account, even against the `X-Locale` header: English for an English account, Italian for an Italian one or one with the default language. `achievement_labels.sh`, in the list above, checks that every achievement has its Italian and English name in `backend/lang`.
+* `email_verify.sh` starts its own throwaway MySQL and the backend and checks email confirmation: migration 39, the 6-digit code (30 minutes, 5 attempts, resend limits), the `403 email_unverified` block from day 8 and the endpoints that stay open, `user/confirm_email.php`, `user/resend_email_code.php`, `user/change_email.php`, `user/cancel_email_change.php`, and the nightly purge of unconfirmed accounts. `email_verify_rules.sh` checks the pure rules in four time zones and needs no database.
+* `signup_codes.sh` starts its own throwaway MySQL and the backend with several PHP processes and checks the sign-up codes:
+  * migration 40 (also re-run and interrupted halfway);
+  * `signup_code` in `user/register.php` (three spellings of one code, invalid/disabled/expired/exhausted codes with no account created, the limit of 10 unusable codes per hour per IP, the last place fought over by parallel sign-ups);
+  * the early check in `user/check_availability.php`;
+  * the hook into email confirmation (`user/confirm_email.php` and password recovery): within and after the 7 days, code turned off meanwhile, account already on a better tier or with a later end date (the code never makes an account worse, and the response of `user/confirm_email.php` then describes the account's tier and last day), address change that applies nothing, two late confirmations on the last place. Note: `signup_code.tier` and `duration_days` in `user/read.php` are the code's own, to show a pending code, while in `user/confirm_email.php` with `applied`, `signup_code.tier` and `tier_last_day` describe the account;
+  * places freed or kept when an account is deleted, the nightly purge, `signup_code`/`tier_until`/`tier_last_day` in `user/read.php`, the export and `api/admin/signup_codes.php` (paged list, detail, create, edit, delete).
+
+  `signup_code_rules.sh` checks the pure rules in four time zones and needs no database.
+* `free_limits.sh` starts its own throwaway MySQL and the backend and checks the Free limits of 2 workout plans, 4 days and 10 personal exercises, the Plus and Pro ones, the read-only workout plans after moving to a lower tier, `workout/delete_day.php`, `tier`/`limits`/`features` in `user/read.php` and the reduced `dashboard.php`.
+* `weight_unit.sh` starts its own throwaway MySQL and the backend and checks the weight unit of the account: migration 41 (also re-run), `weight_unit` (`kg` or `lb`, default `kg`) in `user/read.php`, `user/update_settings.php` (invalid value: 400) and `user/register.php` (missing: `kg`; invalid: 400 and no account created), and `user/suggested_unit.php`, which proposes `lb` only when the first tag of `Accept-Language` has region US, with its per-IP limit. It also checks that the weight limit message of `workout/record_workout.php` states the limit in the user's unit (999.99 kg, or 2204.5 lb for an account in `lb`; the limit itself does not change). Data stay in kg.
+* `export_units.sh` has the same setup and checks that `user/export.php` follows the account's unit: the `units` header, set weights, body weight and circumferences in lb and inches for an account in `lb` and unchanged for one in `kg`, `lifetime_volume_kg` always in kg. The conversions themselves are checked by `units.sh`, in the list above, against a fixture generated from the JS modules.
+* `modules.sh` starts its own throwaway MySQL and the backend and checks the optional modules of the account:
+  * migration 42 (on a database with users, also re-run: existing accounts get `modules_chosen_at`, nothing changes the second time);
+  * `modules` and `modules_chosen` in `user/read.php` (a new account is registered with all five modules off, an existing one has them all on);
+  * `modules` and `modules_chosen` in the response of `user/login.php` and of `user/mobile_login.php`;
+  * `user/update_settings.php` with a partial `modules` object (unknown key or non-boolean value: 400 and no change) and `modules_chosen: true`, which closes the first-use screen "What are you interested in?" (shown once, after the email is confirmed; the date is written only the first time; any other value: 400);
+  * the module columns in `user/export.php`.
+
+  No endpoint is blocked by a module: "off" is display only.
+* `group_visibility.sh` starts its own throwaway MySQL and the backend and checks the visibility of the account in groups: migration 43 (also re-run), `group_visibility` in `user/read.php` (the saved values) and `user/update_settings.php` (partial object, unknown key or non-boolean value: 400 and no change), and the leaderboard of `groups/read.php`. `visibility` is what the viewer sees (volume only with workouts shown, streak and level only with the Levels module on), a board the viewer cannot see is empty, the rows are only the members who show that datum, a datum hidden by the viewer or by the member is `null` in the row, and the list of members never changes.
+* `legal_pages.sh` needs no instance or Docker either: it reads `public/` and checks that the Italian and English privacy policy and terms keep the same structure (sections, anchors, numbers, dates, alternates).
+
+Throwaway accounts are on Free: the shell tests that go over the Free limits or read the full dashboard (`write_limits.sh`, `exercises_access.sh`, `recovery.sh`, `primary_muscle.sh`, `warmup_sets.sh`, `time_zone.sh`, `first_use.sh`) move their accounts to Plus with direct SQL and need `DB_SQL_CMD` (a command that reads SQL from stdin on the database of the instance under test, as in `admin_tiers.sh`; see `tests/lib/tier.sh`).
 
 ### Blog (optional)
 
@@ -134,13 +168,13 @@ The PHP engine lives in `blog/`; articles are Markdown files in `blog/content/`,
 
 ### Fresh install (cloned from scratch)
 
-Import **`backend/database/gym_progress_tracker.sql`** and you are done. It includes the complete unified schema: auth (including mobile API tokens and password recovery), workout plans, history, relational sets, body stats, gamification (weekly streak, XP, levels, exercise progression, achievements), groups, user consents, rate limiting, and default exercises.
+Import `backend/database/gym_progress_tracker.sql` and you are done. It includes the complete unified schema: auth (including mobile API tokens and password recovery), workout plans, history, relational sets, body stats, gamification (weekly streak, XP, levels, exercise progression, achievements), groups, user consents, rate limiting, and default exercises.
 
 ### Updating an existing database
 
 To upgrade an older database instance, execute:
 
-* **`backend/database/schema_alter_migrations.sql`**: numbered, cumulative sections. They contain the `ALTER TABLE` statements (user profile and recovery fields, notes, intensity techniques, gamification, password change timestamps, last login, data from Apple Health / Health Connect, workout duration, personal exercises with approval status, admin flag), plus idempotent `CREATE TABLE IF NOT EXISTS` statements for tables introduced after the initial release (history/sets, gamification, rate limiting, mobile API tokens, password recovery, consents, groups). Run each section once: the `ALTER` statements are not idempotent.
+* `backend/database/schema_alter_migrations.sql`: numbered, cumulative sections. They contain the `ALTER TABLE` statements (user profile and recovery fields, notes, intensity techniques, gamification, password change timestamps, last login, data from Apple Health / Health Connect, workout duration, personal exercises with approval status, admin flag), plus idempotent `CREATE TABLE IF NOT EXISTS` statements for tables introduced after the initial release (history/sets, gamification, rate limiting, mobile API tokens, password recovery, consents, groups). Run each section once: the `ALTER` statements are not idempotent.
 
 When a release adds a section, only add columns and tables and remove the old ones in a later release: this way the previous version keeps working with the new schema.
 
@@ -167,73 +201,73 @@ If you find this project useful, consider giving it a ⭐ on GitHub!
 
 ## Descrizione
 
-**LiftIndex** (repository `gym-progress-tracker`) è un'applicazione web pensata per chi desidera tenere traccia dei propri allenamenti in palestra in modo semplice, flessibile e dettagliato.
+LiftIndex (repository `gym-progress-tracker`) è un'applicazione web pensata per chi desidera tenere traccia dei propri allenamenti in palestra in modo semplice e flessibile, nel dettaglio.
 
 Con questo strumento è possibile:
 
-* Creare e gestire **schede di allenamento** (il piano Gratis ammette 2 schede, 4 giorni per scheda e 10 esercizi personali; Plus e Pro 50, 14 e 30; sopra i limiti del piano una scheda diventa di sola lettura, non viene mai cancellata);
-* Utilizzare la **Modalità Focus** per un'esperienza immersiva durante l'allenamento con timer di recupero integrati;
+* Creare e gestire schede di allenamento (il piano Gratis ammette 2 schede, 4 giorni per scheda e 10 esercizi personali; Plus e Pro 50, 14 e 30; sopra i limiti del piano una scheda diventa di sola lettura, non viene mai cancellata);
+* Utilizzare la Modalità Focus per un'esperienza immersiva durante l'allenamento con timer di recupero integrati;
 * Aggiungere esercizi e sessioni di allenamento alla scheda attiva;
-* Visualizzare **statistiche approfondite** sull'andamento degli esercizi nel tempo;
-* Calcolare metriche utili come:
+* Visualizzare statistiche approfondite sull'andamento degli esercizi nel tempo;
+* Calcolare metriche come:
 
   * Volume totale
   * Ripetizioni totali
   * Volume per serie
   * Volume per ripetizione
-  * **1RM stimato** e record personali (PR) per ogni esercizio;
-* Esplorare i dati tramite **grafici interattivi** e chiari;
-* Allenarsi insieme agli amici nei **gruppi** e condividere l'allenamento come immagine.
+  * 1RM stimato e record personali (PR) per ogni esercizio;
+* Esplorare i dati tramite grafici interattivi;
+* Allenarsi insieme agli amici nei gruppi e condividere l'allenamento come immagine.
 
 ## Funzionalità principali
 
-* ✅ Gestione multi-scheda
-* 🔥 **Modalità Focus**: interfaccia dedicata per l'allenamento in tempo reale con timer di recupero integrati e feedback aptico
-* ⏭️ **Sessione flessibile**: serie dell'ultima volta con le tecniche di intensità, salto di una singola serie, serie di riscaldamento dalla scheda (con "Salta riscaldamento"); *(Premium)* cambio o aggiunta di un esercizio durante l'allenamento (solo per la sessione)
-* 💾 **Autosave**: salvataggio locale automatico per non perdere mai i progressi in Focus Mode
-* ⏱️ **Durata dell'allenamento**: salvata con ogni sessione
-* 📈 **Dashboard Avanzata**: interfaccia a hub per una consultazione rapida e chiara (Progressi Workout e Misure Corporee)
-* 📊 **Statistiche Globali**: tracciamento frequenza (settimanale) e volume totale (mensile)
-* 🗓️ **Cronologia**: allenamenti passati per mese; si può cambiare la data o eliminare una sessione
-* 👤 **Body Stats**: tracciamento delle misure corporee, circonferenze e visualizzazione grafica
-* 🏆 **Gamification**: punti XP, livello atleta, maestria per singolo esercizio, streak settimanale e achievement sbloccabili
-* 👥 **Gruppi**: crea un gruppo di amici o della palestra, invita con un codice o un link e confrontatevi nella classifica settimanale
-* 🖼️ **Card da condividere**: l'allenamento diventa un'immagine, con template e una tua foto (si sposta e si ingrandisce)
-* ➕ **Esercizi personali**: non trovi un esercizio? Crealo; l'app suggerisce nomi simili ("Forse cercavi…") per evitare doppioni. Un esercizio personale lo vedi solo tu finché un admin non lo approva per tutti
-* 🛠️ **Pagina admin** (`/admin`): coda di moderazione degli esercizi personali. Gli admin si assegnano solo da riga di comando (`backend/tools/admin.php`)
-* 🩺 **Visualizzatore Recupero Muscolare**: mappa anatomica per monitorare l'affaticamento e il recupero dei gruppi muscolari
-* 🍎 **Apple Salute e Health Connect** *(app mobile)*: peso, % grasso e girovita sincronizzati nei due sensi; gli allenamenti in Focus finiscono in Salute. Sul web, Misure Corporee rimanda all'app
-* 🏋️ Aggiunta e modifica di esercizi con supporto a tecniche di intensità (Drop set, Rest-pause, Super set)
-* 🎯 **Progressi Mirati**: panoramica di tutti gli esercizi divisi per muscolo, con 1RM stimato, andamento, record personali e preferiti; tocca un esercizio per grafico e cronologia di dettaglio
-* 📌 Possibilità di selezionare una scheda attiva
-* 🔒 **Autenticazione sicura**: login basato su sessione (il cookie dura 30 giorni con «Resta collegato», altrimenti fino alla chiusura del browser) con hashing **bcrypt** lato server, un'unica regola per le password, rate limiting e **recupero password via email**
-* 🛡️ **Privacy fin dal progetto**: consensi informati (termini, dati sulla salute), pagine di privacy policy e termini, **export completo dei dati**, **eliminazione dell'account**, pulizia periodica dei dati non più necessari
-* 📱 **API pronte per il mobile**: lo stesso backend PHP serve anche un client mobile nativo tramite token Bearer
-* 📝 **Blog**: motore blog in PHP renderizzato lato server (articoli in Markdown, meta SEO e JSON-LD)
-* 🌓 **Tema Chiaro / Scuro**: supporto al cambio tema personalizzato persistente
+* Gestione multi-scheda
+* Modalità Focus: interfaccia dedicata per l'allenamento in tempo reale con timer di recupero integrati e feedback aptico
+* Sessione flessibile: serie dell'ultima volta con le tecniche di intensità, salto di una singola serie, serie di riscaldamento dalla scheda (con "Salta riscaldamento"); (Premium) cambio o aggiunta di un esercizio durante l'allenamento (solo per la sessione)
+* Autosave: salvataggio locale automatico per non perdere i progressi in Focus Mode
+* Durata dell'allenamento: salvata con ogni sessione
+* Dashboard Avanzata: interfaccia a hub per una consultazione rapida e chiara (Progressi Workout e Misure Corporee)
+* Statistiche Globali: tracciamento frequenza (settimanale) e volume totale (mensile)
+* Cronologia: allenamenti passati per mese; si può cambiare la data o eliminare una sessione
+* Body Stats: tracciamento delle misure corporee, circonferenze e visualizzazione grafica
+* Gamification: punti XP, livello atleta, maestria per singolo esercizio, streak settimanale e achievement sbloccabili
+* Gruppi: crea un gruppo di amici o della palestra, invita con un codice o un link e confrontatevi nella classifica settimanale
+* Card da condividere: l'allenamento diventa un'immagine, con template e una tua foto (si sposta e si ingrandisce)
+* Esercizi personali: non trovi un esercizio? Crealo; l'app suggerisce nomi simili ("Forse cercavi…") per evitare doppioni. Un esercizio personale lo vedi solo tu finché un admin non lo approva per tutti
+* Pagina admin (`/admin`): coda di moderazione degli esercizi personali. Gli admin si assegnano solo da riga di comando (`backend/tools/admin.php`)
+* Visualizzatore Recupero Muscolare: mappa anatomica per monitorare l'affaticamento e il recupero dei gruppi muscolari
+* Apple Salute e Health Connect *(app mobile)*: peso, % grasso e girovita sincronizzati nei due sensi; gli allenamenti in Focus finiscono in Salute. Sul web, Misure Corporee rimanda all'app
+* Aggiunta e modifica di esercizi con supporto a tecniche di intensità (Drop set, Rest-pause, Super set)
+* Progressi Mirati: panoramica di tutti gli esercizi divisi per muscolo, con 1RM stimato, andamento, record personali e preferiti; tocca un esercizio per grafico e cronologia di dettaglio
+* Selezione della scheda attiva
+* Autenticazione sicura: login basato su sessione (il cookie dura 30 giorni con «Resta collegato», altrimenti fino alla chiusura del browser) con hashing bcrypt lato server, un'unica regola per le password, rate limiting e recupero password via email
+* Privacy fin dal progetto: consensi informati (termini, dati sulla salute), pagine di privacy policy e termini, export completo dei dati, eliminazione dell'account, pulizia periodica dei dati non più necessari
+* API pronte per il mobile: lo stesso backend PHP serve anche un client mobile nativo tramite token Bearer
+* Blog: motore blog in PHP renderizzato lato server (articoli in Markdown, meta SEO e JSON-LD)
+* Tema Chiaro / Scuro: supporto al cambio tema personalizzato persistente
 
 ## Tecnologie utilizzate
 
-* **React (v18)** con **Vite**
-* **Material UI (MUI)** per l'interfaccia utente
-* **Recharts** per la visualizzazione dei dati
-* **PHP** (Architettura REST API con PDO)
-* **MySQL** per il salvataggio dei dati utente
-* **ESLint** per il lint del frontend
-* **Umami** (self-hosted, senza cookie) per statistiche di utilizzo rispettose della privacy, solo se configurato
+* React (v18) con Vite
+* Material UI (MUI) per l'interfaccia utente
+* Recharts per la visualizzazione dei dati
+* PHP (Architettura REST API con PDO)
+* MySQL per il salvataggio dei dati utente
+* ESLint per il lint del frontend
+* Umami (self-hosted, senza cookie) per statistiche di utilizzo rispettose della privacy, solo se configurato
 
 ## Sicurezza
 
-* **Le password sono hashate lato server con bcrypt** (`password_hash` / `password_verify`); il testo in chiaro viaggia solo su HTTPS e non viene mai memorizzato.
-* **Migrazione trasparente**: gli account con hash più vecchi vengono ri-hashati automaticamente in bcrypt al primo login andato a buon fine (`backend/tools/wrap_legacy_hashes.php` avvolge i vecchi hash in un colpo solo).
-* **Autenticazione basata su sessione** tramite sessioni PHP per l'app web; ogni richiesta usa `credentials: 'include'`. La sessione nasce solo al login (nessun cookie né file di sessione per le visite anonime); la casella «Resta collegato per 30 giorni» fa durare il cookie 30 giorni, altrimenti finisce con il browser. Il login, e ogni scrittura fatta con una sessione web già aperta, ricevono 403 se la richiesta arriva da un `Origin` non consentito.
-* **Token Bearer** per il client mobile (`backend/api/user/mobile_login.php` e `mobile_logout.php`): nel database finisce solo l'hash SHA-256 del token, con scadenza scorrevole di 30 giorni.
-* **Rate limiting** sugli endpoint di autenticazione, recupero password, gruppi, creazione di esercizi e suggerimenti di esercizi simili per mitigare gli abusi.
-* **Conservazione dei dati**: `backend/tools/purge.php` (da lanciare ogni giorno dal cron) elimina token scaduti, link di reset usati o scaduti, codici di conferma dell'email scaduti e contatori del rate limiter scaduti. Si occupa anche degli account che non hanno mai confermato l'email: un avviso al giorno 30 e uno al giorno 35 dalla registrazione, eliminazione alla prima pulizia dopo 37 giorni (e almeno 47 ore dopo il secondo avviso); gli admin non si eliminano mai. Un passo per account a notte. Esce con stato 1 se un account è fallito (avviso che non è partito, eliminazione non riuscita), così il log del cron lo mostra. Eliminando un account (dall'utente o da questa pulizia) restano solo gli usi applicati di un codice di registrazione, con `user_id` NULL, perché contano i posti del codice; gli usi in attesa o mancati vanno via con l'account.
+* Le password sono hashate lato server con bcrypt (`password_hash` / `password_verify`); il testo in chiaro viaggia solo su HTTPS e non viene mai memorizzato.
+* La migrazione è trasparente: gli account con hash più vecchi vengono ri-hashati automaticamente in bcrypt al primo login andato a buon fine (`backend/tools/wrap_legacy_hashes.php` avvolge i vecchi hash in un colpo solo).
+* L'app web usa le sessioni PHP; ogni richiesta usa `credentials: 'include'`. La sessione nasce solo al login (nessun cookie né file di sessione per le visite anonime); la casella «Resta collegato per 30 giorni» fa durare il cookie 30 giorni, altrimenti finisce con il browser. Il login, e ogni scrittura fatta con una sessione web già aperta, ricevono 403 se la richiesta arriva da un `Origin` non consentito.
+* Il client mobile usa token Bearer (`backend/api/user/mobile_login.php` e `mobile_logout.php`): nel database finisce solo l'hash SHA-256 del token, con scadenza scorrevole di 30 giorni.
+* Il rate limiting sugli endpoint di autenticazione, recupero password, gruppi, creazione di esercizi e suggerimenti di esercizi simili mitiga gli abusi.
+* Conservazione dei dati: `backend/tools/purge.php` (da lanciare ogni giorno dal cron) elimina token scaduti, link di reset usati o scaduti, codici di conferma dell'email scaduti e contatori del rate limiter scaduti. Si occupa anche degli account che non hanno mai confermato l'email: un avviso al giorno 30 e uno al giorno 35 dalla registrazione, eliminazione alla prima pulizia dopo 37 giorni (e almeno 47 ore dopo il secondo avviso); gli admin non si eliminano mai. Un passo per account a notte. Esce con stato 1 se un account è fallito (avviso che non è partito, eliminazione non riuscita), così il log del cron lo mostra. Eliminando un account (dall'utente o da questa pulizia) restano solo gli usi applicati di un codice di registrazione, con `user_id` NULL, perché contano i posti del codice; gli usi in attesa o mancati vanno via con l'account.
 
 ## Come provarlo
 
-Puoi testare l'app direttamente al seguente link: 👉 [LiftIndex](https://liftindex.app/)
+Puoi provare l'app su [LiftIndex](https://liftindex.app/).
 
 ## Installazione locale (facoltativa)
 
@@ -256,8 +290,8 @@ Puoi testare l'app direttamente al seguente link: 👉 [LiftIndex](https://lifti
    npm install
    npm run build
    ```
-3. Importa il database MySQL — vedi [Setup e aggiornamento del database](#setup-e-aggiornamento-del-database) più sotto.
-4. Configura i dati di accesso al database nel file `backend/config/database.php` (copiando da `backend/config/database.php.example`);
+3. Importa il database MySQL: vedi [Setup e aggiornamento del database](#setup-e-aggiornamento-del-database) più sotto.
+4. Configura i dati di accesso al database nel file `backend/config/database.php` (copiando da `backend/config/database.php.example`).
 5. Avvia il server locale (es. con XAMPP) e assicurati che i file PHP siano serviti correttamente. In sviluppo Vite gira `/backend/` a `http://localhost/gym-progress-tracker/backend/` (proxy in `vite.config.js`), quindi la cartella del repo deve essere raggiungibile a quel percorso; per un backend altrove imposta `BACKEND_URL` (es. `BACKEND_URL=http://localhost:8080/backend/ npm run dev`).
 6. Avvia l'app React (Vite sulla porta 3000):
    ```bash
@@ -285,7 +319,40 @@ In `backend/tools/` (solo CLI, via HTTP rispondono 404): `admin.php list|grant|r
 
 ### Test
 
-`tests/*.sh` sono controlli di integrazione (regole di accesso a esercizi personali e gruppi, regole della sincronizzazione con Apple Salute / Health Connect) da lanciare contro un'istanza attiva, per esempio `tests/groups_access.sh http://localhost/gym-progress-tracker/backend/`. Registrano account usa e getta e li cancellano alla fine: vanno usati su un'istanza locale o di prova, **mai in produzione**. Fanno eccezione quelli con accanto un `tests/*_test.php` (`achievement_labels`, `admin_notify`, `blog_calculator`, `blog_mcp`, `blog_plans`, `client_ip`, `client_time`, `gamification_rules`, `muscle_rules`, `recovery_rules`, `signup_code_rules`, `tier_limits`, `tier_rules`, `units`, `validation_limits`, `web_session`, `weekly_sets`): eseguono quel file con il PHP dell'immagine web, in Docker, e non richiedono un'istanza attiva né un database. Anche `forgot_parallel.sh` non ne richiede: avvia da solo in Docker un MySQL usa e getta e il backend. Lo stesso vale per `workout_plan_active.sh` (controllo a livello di modello dell'attivazione delle schede, con il suo `_test.php`) e per `delete_cascade.sh` (avvia un suo MySQL usa e getta e controlla che cancellare una scheda o un account non lasci righe orfane) e `schema_avanzi.sh` (avvia un suo MySQL usa e getta e il backend, chiama gli endpoint veri e controlla che salvataggio, storico, cambio data, cancellazione ed esportazione funzionino con `gym_workout_history.exercises` facoltativa e di nuovo dopo la migrazione 38, che elimina le colonne non più usate e la tabella `gym_progress`, e che gli altri dati restino intatti) e `plan_consistency.sh` (stessa preparazione, chiama gli endpoint delle schede e controlla che `create_days.php` salvi tutti i giorni o nessuno se un inserimento fallisce a metà, che creare una scheda con `is_active` lasci una sola scheda attiva e che `update_plan.php` senza `is_active` lasci com'era lo stato della scheda) e `achievement_endpoints.sh` (avvia un suo MySQL usa e getta e il backend e controlla che i nomi dei traguardi in `gamification/profile.php` e negli `unlocked_achievements` dopo un salvataggio escano nella lingua dell'account, anche contro l'header `X-Locale`: inglese per un account inglese, italiano per uno italiano o con la lingua predefinita; `achievement_labels.sh`, nell'elenco sopra, controlla che ogni traguardo abbia il nome italiano e inglese in `backend/lang`) e `email_verify.sh` (avvia un suo MySQL usa e getta e il backend e controlla la conferma dell'email: migrazione 39, codice a 6 cifre (30 minuti, 5 tentativi, limiti di reinvio), blocco `403 email_unverified` dal giorno 8 e endpoint che restano aperti, `user/confirm_email.php`, `user/resend_email_code.php`, `user/change_email.php`, `user/cancel_email_change.php` e pulizia notturna degli account non confermati; `email_verify_rules.sh` controlla le regole pure in quattro fusi orari e non richiede database) e `signup_codes.sh` (avvia un suo MySQL usa e getta e il backend con più processi PHP e controlla i codici di registrazione: migrazione 40 (anche rilanciata e interrotta a metà), `signup_code` in `user/register.php` (tre grafie dello stesso codice, codici non validi/spenti/scaduti/esauriti senza account creato, limite di 10 codici non utilizzabili all'ora per IP, ultimo posto conteso da registrazioni parallele), controllo anticipato in `user/check_availability.php`, aggancio alla conferma dell'email (`user/confirm_email.php` e recupero password: entro e dopo i 7 giorni, codice spento nel frattempo, account già a un livello migliore o con una scadenza più lontana: il codice non peggiora mai l'account, e la risposta di `user/confirm_email.php` descrive allora il livello e l'ultimo giorno dell'account; cambio di indirizzo che non riapplica nulla; due conferme tardive sull'ultimo posto; nota: `signup_code.tier` e `duration_days` in `user/read.php` sono quelli del codice, per mostrare un codice in attesa, mentre in `user/confirm_email.php` con `applied` `signup_code.tier` e `tier_last_day` descrivono l'account), posti liberati o mantenuti quando si elimina un account, pulizia notturna, `signup_code`/`tier_until`/`tier_last_day` in `user/read.php`, esportazione e `api/admin/signup_codes.php` (elenco a pagine, dettaglio, crea, modifica, elimina); `signup_code_rules.sh` controlla le regole pure in quattro fusi orari e non richiede database) e `free_limits.sh` (avvia un suo MySQL usa e getta e il backend e controlla i limiti del piano Gratis di 2 schede, 4 giorni e 10 esercizi personali, quelli di Plus e Pro, le schede di sola lettura passando a un piano inferiore, `workout/delete_day.php`, `tier`/`limits`/`features` in `user/read.php` e il `dashboard.php` ridotto) e `weight_unit.sh` (avvia un suo MySQL usa e getta e il backend e controlla l'unità di peso dell'account: migrazione 41 (anche rilanciata), `weight_unit` (`kg` o `lb`, default `kg`) in `user/read.php`, `user/update_settings.php` (valore non valido: 400) e `user/register.php` (assente: `kg`; non valido: 400 e nessun account creato), e `user/suggested_unit.php`, che propone `lb` solo se il primo tag di `Accept-Language` ha regione US, con il suo limite per IP, e che il messaggio sul limite di peso di `workout/record_workout.php` dica il limite nell'unità dell'utente (999,99 kg, oppure 2204,5 lb per un account in `lb`; il limite applicato non cambia); i dati restano in kg) e `export_units.sh` (stessa preparazione, controlla che `user/export.php` segua l'unità dell'account: l'intestazione `units`, pesi delle serie, peso corporeo e circonferenze in lb e pollici per un account in `lb` e invariati per uno in `kg`, `lifetime_volume_kg` sempre in kg; le conversioni in sé le controlla `units.sh`, nell'elenco sopra, contro una fixture generata dai moduli JS) e `modules.sh` (avvia un suo MySQL usa e getta e il backend e controlla i moduli facoltativi dell'account: migrazione 42 (su un database con utenti, anche rilanciata: gli account esistenti ricevono `modules_chosen_at`, la seconda volta non cambia nulla), `modules` e `modules_chosen` in `user/read.php` (un account nuovo si registra con tutti e cinque i moduli non attivi, uno esistente li ha tutti attivi), `modules` e `modules_chosen` nella risposta di `user/login.php` e di `user/mobile_login.php`, `user/update_settings.php` con un oggetto `modules` parziale (chiave sconosciuta o valore non booleano: 400 e nessuna modifica) e `modules_chosen: true`, che chiude la schermata «Cosa ti interessa?» (compare una volta sola, dopo la conferma dell'email; la data si scrive solo la prima volta; qualsiasi altro valore: 400) e le colonne dei moduli in `user/export.php`; nessun endpoint è bloccato da un modulo, «non attivo» è solo visualizzazione) e `group_visibility.sh` (avvia un suo MySQL usa e getta e il backend e controlla la visibilità dell'account nei gruppi: migrazione 43 (anche rilanciata), `group_visibility` in `user/read.php` (i valori salvati) e `user/update_settings.php` (oggetto parziale, chiave sconosciuta o valore non booleano: 400 e nessuna modifica), e la classifica di `groups/read.php`: `visibility` è ciò che vede chi guarda (volume solo con gli allenamenti mostrati, streak e livello solo con il modulo Livelli attivo), una classifica che chi guarda non può vedere è vuota, le righe sono solo i membri che mostrano quel dato, un dato nascosto da chi guarda o dal membro è `null` nella riga e l'elenco dei membri non cambia). Gli account di prova sono sul piano Gratis: i test di shell che superano i limiti del piano Gratis o leggono il dashboard completo (`write_limits.sh`, `exercises_access.sh`, `recovery.sh`, `primary_muscle.sh`, `warmup_sets.sh`, `time_zone.sh`, `first_use.sh`) portano i loro account a Plus con SQL diretto e richiedono `DB_SQL_CMD` (comando che legge SQL da stdin sul database dell'istanza provata, come in `admin_tiers.sh`; vedi `tests/lib/tier.sh`).
+`tests/*.sh` sono controlli di integrazione (regole di accesso a esercizi personali e gruppi, regole della sincronizzazione con Apple Salute / Health Connect) da lanciare contro un'istanza attiva, per esempio `tests/groups_access.sh http://localhost/gym-progress-tracker/backend/`. Registrano account usa e getta e li cancellano alla fine: vanno usati su un'istanza locale o di prova, **mai in produzione**.
+
+Alcuni test fanno eccezione e non richiedono un'istanza attiva:
+
+* Quelli con accanto un `tests/*_test.php` (`achievement_labels`, `admin_notify`, `blog_calculator`, `blog_mcp`, `blog_plans`, `client_ip`, `client_time`, `gamification_rules`, `muscle_rules`, `recovery_rules`, `signup_code_rules`, `tier_limits`, `tier_rules`, `units`, `validation_limits`, `web_session`, `weekly_sets`) eseguono quel file con il PHP dell'immagine web, in Docker, e non richiedono un'istanza attiva né un database.
+* Neanche `forgot_parallel.sh` richiede un'istanza attiva o un database: avvia da solo in Docker un MySQL usa e getta e il backend.
+* `workout_plan_active.sh` è un controllo a livello di modello dell'attivazione delle schede, con il suo `_test.php`. Neanche questo richiede un'istanza attiva o un database.
+* `delete_cascade.sh` avvia un suo MySQL usa e getta e controlla che cancellare una scheda o un account non lasci righe orfane.
+* `schema_avanzi.sh` avvia un suo MySQL usa e getta e il backend, chiama gli endpoint veri e controlla che salvataggio, storico, cambio data, cancellazione ed esportazione funzionino con `gym_workout_history.exercises` facoltativa e di nuovo dopo la migrazione 38, che elimina le colonne non più usate e la tabella `gym_progress`, e che gli altri dati restino intatti.
+* `plan_consistency.sh` ha la stessa preparazione, chiama gli endpoint delle schede e controlla che `create_days.php` salvi tutti i giorni o nessuno se un inserimento fallisce a metà, che creare una scheda con `is_active` lasci una sola scheda attiva e che `update_plan.php` senza `is_active` lasci com'era lo stato della scheda.
+* `achievement_endpoints.sh` avvia un suo MySQL usa e getta e il backend e controlla che i nomi dei traguardi in `gamification/profile.php` e negli `unlocked_achievements` dopo un salvataggio escano nella lingua dell'account, anche contro l'header `X-Locale`: inglese per un account inglese, italiano per uno italiano o con la lingua predefinita. `achievement_labels.sh`, nell'elenco sopra, controlla che ogni traguardo abbia il nome italiano e inglese in `backend/lang`.
+* `email_verify.sh` avvia un suo MySQL usa e getta e il backend e controlla la conferma dell'email: migrazione 39, codice a 6 cifre (30 minuti, 5 tentativi, limiti di reinvio), blocco `403 email_unverified` dal giorno 8 e endpoint che restano aperti, `user/confirm_email.php`, `user/resend_email_code.php`, `user/change_email.php`, `user/cancel_email_change.php` e pulizia notturna degli account non confermati. `email_verify_rules.sh` controlla le regole pure in quattro fusi orari e non richiede database.
+* `signup_codes.sh` avvia un suo MySQL usa e getta e il backend con più processi PHP e controlla i codici di registrazione:
+  * migrazione 40 (anche rilanciata e interrotta a metà);
+  * `signup_code` in `user/register.php` (tre grafie dello stesso codice, codici non validi/spenti/scaduti/esauriti senza account creato, limite di 10 codici non utilizzabili all'ora per IP, ultimo posto conteso da registrazioni parallele);
+  * controllo anticipato in `user/check_availability.php`;
+  * aggancio alla conferma dell'email (`user/confirm_email.php` e recupero password): entro e dopo i 7 giorni, codice spento nel frattempo, account già a un livello migliore o con una scadenza più lontana (il codice non peggiora mai l'account, e la risposta di `user/confirm_email.php` descrive allora il livello e l'ultimo giorno dell'account), cambio di indirizzo che non riapplica nulla, due conferme tardive sull'ultimo posto. Nota: `signup_code.tier` e `duration_days` in `user/read.php` sono quelli del codice, per mostrare un codice in attesa, mentre in `user/confirm_email.php` con `applied`, `signup_code.tier` e `tier_last_day` descrivono l'account;
+  * posti liberati o mantenuti quando si elimina un account, pulizia notturna, `signup_code`/`tier_until`/`tier_last_day` in `user/read.php`, esportazione e `api/admin/signup_codes.php` (elenco a pagine, dettaglio, crea, modifica, elimina).
+
+  `signup_code_rules.sh` controlla le regole pure in quattro fusi orari e non richiede database.
+* `free_limits.sh` avvia un suo MySQL usa e getta e il backend e controlla i limiti del piano Gratis di 2 schede, 4 giorni e 10 esercizi personali, quelli di Plus e Pro, le schede di sola lettura passando a un piano inferiore, `workout/delete_day.php`, `tier`/`limits`/`features` in `user/read.php` e il `dashboard.php` ridotto.
+* `weight_unit.sh` avvia un suo MySQL usa e getta e il backend e controlla l'unità di peso dell'account: migrazione 41 (anche rilanciata), `weight_unit` (`kg` o `lb`, default `kg`) in `user/read.php`, `user/update_settings.php` (valore non valido: 400) e `user/register.php` (assente: `kg`; non valido: 400 e nessun account creato), e `user/suggested_unit.php`, che propone `lb` solo se il primo tag di `Accept-Language` ha regione US, con il suo limite per IP. Controlla anche che il messaggio sul limite di peso di `workout/record_workout.php` dica il limite nell'unità dell'utente (999,99 kg, oppure 2204,5 lb per un account in `lb`; il limite applicato non cambia). I dati restano in kg.
+* `export_units.sh` ha la stessa preparazione e controlla che `user/export.php` segua l'unità dell'account: l'intestazione `units`, pesi delle serie, peso corporeo e circonferenze in lb e pollici per un account in `lb` e invariati per uno in `kg`, `lifetime_volume_kg` sempre in kg. Le conversioni in sé le controlla `units.sh`, nell'elenco sopra, contro una fixture generata dai moduli JS.
+* `modules.sh` avvia un suo MySQL usa e getta e il backend e controlla i moduli facoltativi dell'account:
+  * migrazione 42 (su un database con utenti, anche rilanciata: gli account esistenti ricevono `modules_chosen_at`, la seconda volta non cambia nulla);
+  * `modules` e `modules_chosen` in `user/read.php` (un account nuovo si registra con tutti e cinque i moduli non attivi, uno esistente li ha tutti attivi);
+  * `modules` e `modules_chosen` nella risposta di `user/login.php` e di `user/mobile_login.php`;
+  * `user/update_settings.php` con un oggetto `modules` parziale (chiave sconosciuta o valore non booleano: 400 e nessuna modifica) e `modules_chosen: true`, che chiude la schermata «Cosa ti interessa?» (compare una volta sola, dopo la conferma dell'email; la data si scrive solo la prima volta; qualsiasi altro valore: 400);
+  * le colonne dei moduli in `user/export.php`.
+
+  Nessun endpoint è bloccato da un modulo: «non attivo» è solo visualizzazione.
+* `group_visibility.sh` avvia un suo MySQL usa e getta e il backend e controlla la visibilità dell'account nei gruppi: migrazione 43 (anche rilanciata), `group_visibility` in `user/read.php` (i valori salvati) e `user/update_settings.php` (oggetto parziale, chiave sconosciuta o valore non booleano: 400 e nessuna modifica), e la classifica di `groups/read.php`. `visibility` è ciò che vede chi guarda (volume solo con gli allenamenti mostrati, streak e livello solo con il modulo Livelli attivo), una classifica che chi guarda non può vedere è vuota, le righe sono solo i membri che mostrano quel dato, un dato nascosto da chi guarda o dal membro è `null` nella riga e l'elenco dei membri non cambia.
+
+Gli account di prova sono sul piano Gratis: i test di shell che superano i limiti del piano Gratis o leggono il dashboard completo (`write_limits.sh`, `exercises_access.sh`, `recovery.sh`, `primary_muscle.sh`, `warmup_sets.sh`, `time_zone.sh`, `first_use.sh`) portano i loro account a Plus con SQL diretto e richiedono `DB_SQL_CMD` (comando che legge SQL da stdin sul database dell'istanza provata, come in `admin_tiers.sh`; vedi `tests/lib/tier.sh`).
 
 ### Blog (facoltativo)
 
@@ -295,13 +362,13 @@ Il motore PHP sta in `blog/`; gli articoli sono file Markdown in `blog/content/`
 
 ### Installazione pulita (repo scaricata da zero)
 
-Importa **`backend/database/gym_progress_tracker.sql`** e basta. Contiene lo schema unificato completo: autenticazione (inclusi i token API mobile e il recupero password), schede, storico, serie relazionali, body stats, gamification (streak settimanale, XP, livelli, progressione per esercizio, achievement), gruppi, consensi dell'utente, rate limiting ed esercizi di base.
+Importa `backend/database/gym_progress_tracker.sql` e basta. Contiene lo schema unificato completo: autenticazione (inclusi i token API mobile e il recupero password), schede, storico, serie relazionali, body stats, gamification (streak settimanale, XP, livelli, progressione per esercizio, achievement), gruppi, consensi dell'utente, rate limiting ed esercizi di base.
 
 ### Aggiornare un database esistente
 
 Per aggiornare un database preesistente creato con le versioni precedenti, esegui:
 
-* **`backend/database/schema_alter_migrations.sql`**: sezioni numerate e cumulative. Contiene gli `ALTER TABLE` (campi profilo utente e recupero, note, tecniche di intensità, gamification, timestamp cambio password, ultimo accesso, dati da Apple Salute / Health Connect, durata dell'allenamento, esercizi personali con stato di approvazione, ruolo admin), più i `CREATE TABLE IF NOT EXISTS` idempotenti per le tabelle introdotte dopo la release iniziale (cronologia/set, gamification, rate limiting, token API mobile, recupero password, consensi, gruppi). Ogni sezione va eseguita una volta sola: gli `ALTER` non sono idempotenti.
+* `backend/database/schema_alter_migrations.sql`: sezioni numerate e cumulative. Contiene gli `ALTER TABLE` (campi profilo utente e recupero, note, tecniche di intensità, gamification, timestamp cambio password, ultimo accesso, dati da Apple Salute / Health Connect, durata dell'allenamento, esercizi personali con stato di approvazione, ruolo admin), più i `CREATE TABLE IF NOT EXISTS` idempotenti per le tabelle introdotte dopo la release iniziale (cronologia/set, gamification, rate limiting, token API mobile, recupero password, consensi, gruppi). Ogni sezione va eseguita una volta sola: gli `ALTER` non sono idempotenti.
 
 Quando un rilascio aggiunge una sezione, si aggiungono solo colonne e tabelle e si tolgono le vecchie in un rilascio successivo: così la versione precedente continua a funzionare con lo schema nuovo.
 

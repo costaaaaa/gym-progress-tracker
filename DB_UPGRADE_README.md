@@ -1,31 +1,31 @@
 # Aggiornamento della struttura del database per Gym Progress Tracker
 
-> **Documento storico.** Descrive la migrazione una tantum verso `gym_workout_sets`. Oggi la
+> Questo documento è storico: descrive la migrazione una tantum verso `gym_workout_sets`. Oggi la
 > tabella è già nello schema completo (`backend/database/gym_progress_tracker.sql`) e nelle
 > migrazioni cumulative (`backend/database/schema_alter_migrations.sql`): per installare o
 > aggiornare il database segui la sezione "Setup e aggiornamento del database" del
 > [README](README.md). Il file `database_update.sql` citato qui sotto non esiste più.
 
-Questo aggiornamento risolve il problema degli ID inconsistenti degli esercizi tra le tabelle `gym_exercises` e `gym_workout_history` implementando una struttura relazionale più robusta.
+Questo aggiornamento corregge gli ID inconsistenti degli esercizi tra le tabelle `gym_exercises` e `gym_workout_history` con una struttura relazionale.
 
 ## Panoramica dei cambiamenti
 
-1. **Nuova tabella `gym_workout_sets`**
+1. Nuova tabella `gym_workout_sets`
    - Memorizza ogni set di esercizi in modo relazionale
    - Si collega direttamente agli ID corretti in `gym_exercises`
 
-2. **Modifica alle API**
+2. Modifica alle API
    - L'API di registrazione degli allenamenti ora utilizza la nuova struttura
    - L'API di lettura supporta sia il vecchio che il nuovo formato (retrocompatibilità)
 
-3. **Nuovo modello per i set di allenamento**
+3. Nuovo modello per i set di allenamento
    - Aggiunto `WorkoutSet.php` per gestire i set di allenamento
 
 ## Istruzioni per l'aggiornamento
 
 ### 1. Backup del database
 
-**IMPORTANTE**: Prima di procedere, esegui un backup completo del database.
+**IMPORTANTE**: prima di procedere, esegui un backup completo del database.
 
 ```sql
 mysqldump -u username -p database_name > backup_before_upgrade.sql
@@ -88,9 +88,9 @@ Aggiunge `gym_workout_rewards` e `gym_workout_exercise_rewards`: ogni allenament
 gli XP che ha dato, così cancellarlo li toglie (XP generali, XP e livello degli esercizi, volume,
 achievement di sessioni, tonnellaggio e forza; il cooldown delle sessioni con XP riparte dall'ultima rimasta).
 
-- **Allenamenti salvati prima del rilascio** non hanno righe nel registro: cancellarli **non cambia gli XP**.
+- Gli allenamenti salvati prima del rilascio non hanno righe nel registro: cancellarli **non cambia gli XP**.
   Il volume e gli achievement invece si ricalcolano dalle serie, come per gli altri.
-- **Record**: un esercizio dà XP di record al massimo **una volta al giorno** (giorno dell'allenamento
+- Un esercizio dà XP di record al massimo una volta al giorno (giorno dell'allenamento
   al salvataggio). Gli allenamenti già salvati non hanno righe, quindi il tetto vale dal primo
   salvataggio dopo il rilascio.
 - Lo streak e i suoi achievement non si toccano qui: li segue la sezione 22.
@@ -100,27 +100,27 @@ achievement di sessioni, tonnellaggio e forza; il cooldown delle sessioni con XP
 Aggiunge `gym_streak_weeks` (una riga per settimana chiusa, con l'obiettivo di quel momento) e la colonna
 `gym_user_gamification.streak_floor_weeks`. Lo streak si ricava dalle settimane chiuse: cancellare o
 spostare un allenamento può riaprire una settimana (−30 XP, streak ricalcolato, achievement di streak
-tolti se non più raggiunti); salvarlo in ritardo o spostarlo può chiuderne una passata (+30 XP, lo
+tolti se non più raggiunti). Salvarlo in ritardo o spostarlo può chiuderne una passata (+30 XP, lo
 streak si riattacca). Il cambio data è ammesso solo entro 30 giorni, sia da dove parte sia dove arriva.
 
-- **Ricostruzione**: non c'è uno script da lanciare. Il primo salvataggio, cancellazione o cambio data
+- Per la ricostruzione non c'è uno script da lanciare: il primo salvataggio, cancellazione o cambio data
   di ogni utente dopo il rilascio ricostruisce il suo registro (`streak_floor_weeks` NULL → valorizzato):
   tutta la serie in corso, le settimane degli ultimi 30 giorni che raggiungono l'obiettivo attuale e,
   come minimo dello streak massimo, quello salvato se viene da una serie vecchia. Nessun XP cambia.
-- **Rollback del codice** sotto questa versione: il codice vecchio aggiorna lo streak senza il registro,
-  che resta indietro. Tornando alla versione nuova va riallineato, così si ricostruisce da solo:
+- Con il rollback del codice a una versione precedente, il codice vecchio aggiorna lo streak senza il registro,
+  che resta indietro. Tornando alla versione nuova il registro **va riallineato**, così si ricostruisce da solo:
   `DELETE FROM gym_streak_weeks; UPDATE gym_user_gamification SET streak_floor_weeks = NULL;`
 
 ## Sezione 23: obiettivo settimanale scelto dall'utente
 
 Aggiunge `gym_weekly_goal_changes`: l'utente può impostare da 1 a 7 allenamenti a settimana al posto del
-default (giorni della scheda attiva, 3 senza scheda) e tornare al default. Un cambio fatto **lunedì o
-martedì** vale dalla settimana in corso (e chiude subito la settimana se la raggiunge già); uno fatto da
-mercoledì a domenica vale dal **lunedì successivo**, così non si abbassa l'obiettivo solo per salvare lo streak.
+default (giorni della scheda attiva, 3 senza scheda) e tornare al default. Un cambio fatto di lunedì o
+martedì vale dalla settimana in corso (e chiude subito la settimana se la raggiunge già); uno fatto da
+mercoledì a domenica vale dal lunedì successivo, così non si abbassa l'obiettivo solo per salvare lo streak.
 
 - Nessuna riga = default: gli utenti esistenti non cambiano. Alzare l'obiettivo non riapre settimane già
   chiuse (vale il minore fra obiettivo alla chiusura e attuale, come nella sezione 22).
-- **Rollback del codice** sotto questa versione: la tabella resta, inutilizzata, e l'obiettivo torna il default.
+- Con il rollback del codice a una versione precedente la tabella resta, inutilizzata, e l'obiettivo torna il default.
 
 ## Risoluzione dei problemi
 
