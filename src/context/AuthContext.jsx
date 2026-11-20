@@ -45,6 +45,8 @@ export const AuthProvider = ({ children }) => {
   const refreshing = useRef(null);
   // Numero dell'ultima rilettura partita: solo quella scrive lo stato (una più vecchia, risolta dopo, non copre la nuova)
   const lastRead = useRef(0);
+  // Numero dell'ultima lettura già partita quando i moduli sono stati salvati: le letture fino a quel numero hanno i moduli di prima
+  const modulesSavedAt = useRef(0);
 
   // Rilegge lo stato della conferma. Non fa mai uscire l'utente: se la lettura non riesce, resta lo stato di prima.
   // `outcome`: il messaggio del server quando la conferma ha anche deciso il codice di registrazione («Plus attivo
@@ -63,16 +65,19 @@ export const AuthProvider = ({ children }) => {
         const data = await response.json();
         if (data.success && mine === lastRead.current) {
           setEmailState({ ...emailStateFrom(data), outcome });
-          // Il login risponde senza l'unità di peso (i moduli li porta già): la rilettura porta l'unità e allinea i moduli
-          if (isWeightUnit(data.weight_unit)) {
-            setUser((prev) => (prev && prev.weight_unit !== data.weight_unit ? cacheUser({ ...prev, weight_unit: data.weight_unit }) : prev));
+          // Campi di user riletti da read.php: il login risponde senza l'unità di peso (i moduli li porta già).
+          // I moduli di una lettura partita prima dell'ultimo salvataggio dei moduli sono vecchi: non lo sovrascrivono.
+          const fresh = {};
+          if (isWeightUnit(data.weight_unit)) fresh.weight_unit = data.weight_unit;
+          if (mine > modulesSavedAt.current) {
+            if (isModules(data.modules)) fresh.modules = data.modules;
+            if (typeof data.modules_chosen === 'boolean') fresh.modules_chosen = data.modules_chosen;
           }
-          if (isModules(data.modules)) {
-            setUser((prev) => (prev && JSON.stringify(prev.modules) !== JSON.stringify(data.modules) ? cacheUser({ ...prev, modules: data.modules }) : prev));
-          }
-          if (typeof data.modules_chosen === 'boolean') {
-            setUser((prev) => (prev && prev.modules_chosen !== data.modules_chosen ? cacheUser({ ...prev, modules_chosen: data.modules_chosen }) : prev));
-          }
+          setUser((prev) => {
+            if (!prev) return prev;
+            const changed = Object.keys(fresh).some((key) => JSON.stringify(prev[key]) !== JSON.stringify(fresh[key]));
+            return changed ? cacheUser({ ...prev, ...fresh }) : prev;
+          });
         }
       } catch (error) {
         console.error('Errore lettura stato email:', error);
@@ -215,6 +220,7 @@ export const AuthProvider = ({ children }) => {
 
   // Aggiorna campi dell'utente già salvati sul server (es. la lingua)
   const updateUser = (patch) => {
+    if ('modules' in patch || 'modules_chosen' in patch) modulesSavedAt.current = lastRead.current;
     setUser((prev) => {
       return cacheUser({ ...prev, ...patch });
     });

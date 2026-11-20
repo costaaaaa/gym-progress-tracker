@@ -7,24 +7,22 @@ import { useSaveModules } from '../../hooks/useModule';
 import { hasFocusSessionInProgress } from '../../utils/focusDraft';
 import { radius } from '../../theme/radius';
 
-// Le tre scelte della schermata, con la chiave del modulo che attivano
+// Le chiavi dei moduli proposte nella schermata, nell'ordine in cui compaiono
 const CHOICES = ['body', 'groups', 'levels'];
 const TITLE_ID = 'interests-title';
 const INTRO_ID = 'interests-intro';
 
-// Montato una volta sola nel layout, fuori dalla pagina. «Cosa ti interessa?» compare da sola a un account nuovo
-// (`modules_chosen === false`) dopo la conferma dell'email, e non torna: la scelta si rifà da Account > Moduli.
-// Con `modules_chosen` assente (copia vecchia, server vecchio) vale «già scelto». Con un allenamento Focus in corso
-// non compare: aspetta l'apertura successiva dell'app. Esc e il clic fuori non la chiudono: si esce solo con
-// «Continua» e «Salta», così la scelta non si perde per sbaglio.
-const InterestsGate = () => {
+// Lo stato della finestra (scelte, salvataggio, rinvio) appartiene all'utente: `key` lo azzera a ogni account,
+// perché login e registrazione stanno dentro il layout e il componente non si smonta al cambio di account.
+const InterestsDialog = ({ waiting }) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const { isLoggedIn, user, emailState } = useAuth();
   const save = useSaveModules();
-  // null = non ancora deciso in questa apertura; 'show' = la schermata è dovuta; 'later' = rimandata (Focus in corso)
-  const [turn, setTurn] = useState(null);
+  // null = non ancora deciso in questa apertura; 'now' = la schermata è dovuta; 'next-open' = rimandata
+  // all'apertura successiva (Focus in corso, oppure «Più tardi» dopo un errore)
+  const [decision, setDecision] = useState(null);
   const [picked, setPicked] = useState({});
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -33,29 +31,30 @@ const InterestsGate = () => {
 
   // Si decide una volta sola, quando la schermata diventa dovuta
   useEffect(() => {
-    if (due && turn === null) setTurn(hasFocusSessionInProgress() ? 'later' : 'show');
-  }, [due, turn]);
+    if (due && decision === null) setDecision(hasFocusSessionInProgress() ? 'next-open' : 'now');
+  }, [due, decision]);
 
-  const open = due && turn === 'show';
+  // Aspetta che l'avviso di esito della conferma si chiuda, per non coprirlo
+  const open = due && decision === 'now' && !waiting;
 
-  // Una sola chiamata: i moduli scelti (nessuno per «Salta») e la chiusura. Con un salvataggio in corso i pulsanti non rispondono.
+  // Una sola chiamata per «Continua» e «Salta»: i moduli scelti (nessuno per «Salta») e la chiusura, in una chiamata.
+  // Con un salvataggio in corso i pulsanti non rispondono. A salvataggio riuscito `user.modules_chosen` diventa vero e la finestra si chiude.
   const send = async (patch) => {
     if (busy) return;
     setBusy(true);
     setFailed(false);
-    const res = await save(patch, true);
-    if (!res.ok) {
-      setFailed(true);
-      setBusy(false);
-    }
+    const res = await save(patch, { chosen: true });
+    if (!res.ok) setFailed(true);
+    setBusy(false);
   };
   const pickedPatch = () => Object.fromEntries(CHOICES.filter((key) => picked[key]).map((key) => [key, true]));
+  const later = () => setDecision('next-open');
 
   return (
     <Dialog
       open={open}
-      onClose={() => {}}
-      disableEscapeKeyDown
+      // Esc e il clic fuori non chiudono, a meno che il salvataggio non sia fallito: allora c'è l'uscita «Più tardi»
+      onClose={() => { if (failed) later(); }}
       fullScreen={fullScreen}
       fullWidth
       maxWidth="xs"
@@ -98,7 +97,11 @@ const InterestsGate = () => {
             );
           })}
         </Box>
-        {failed && <Alert severity="error" sx={{ mt: 2 }}>{t('interests.error')}</Alert>}
+        {failed && (
+          <Alert severity="error" sx={{ mt: 2 }} action={<Button type="button" color="inherit" onClick={later} sx={{ minHeight: 44, fontSize: 16 }}>{t('interests.later')}</Button>}>
+            {t('interests.error')}
+          </Alert>
+        )}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
         <Button type="button" onClick={() => send({})} aria-busy={busy} sx={{ minHeight: 44, fontSize: 16 }}>{t('interests.skip')}</Button>
@@ -106,6 +109,16 @@ const InterestsGate = () => {
       </DialogActions>
     </Dialog>
   );
+};
+
+// Montato una volta sola nel layout, fuori dalla pagina. «Cosa ti interessa?» compare da sola a un account nuovo
+// (`modules_chosen === false`) dopo la conferma dell'email, e non torna: la scelta si rifà da Account > Moduli.
+// Con `modules_chosen` assente (copia vecchia, server vecchio) vale «già scelto». Con un allenamento Focus in corso
+// non compare: aspetta l'apertura successiva dell'app. Esc e il clic fuori non la chiudono: si esce solo con
+// «Continua» e «Salta» (dopo un salvataggio fallito anche con «Più tardi»). `waiting`: c'è un avviso in corso, la finestra attende.
+const InterestsGate = ({ waiting = false }) => {
+  const { user } = useAuth();
+  return <InterestsDialog key={user?.id ?? 'ospite'} waiting={waiting} />;
 };
 
 export default InterestsGate;

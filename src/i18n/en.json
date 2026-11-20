@@ -1151,5 +1151,6 @@
   "interests.levels.help": "Points, levels and days in a row.",
   "interests.continue": "Continue",
   "interests.skip": "Skip",
+  "interests.later": "Not now",
   "interests.error": "Couldn't save your choice. Try again."
 }
