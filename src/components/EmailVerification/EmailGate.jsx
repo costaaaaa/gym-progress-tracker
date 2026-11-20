@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Snackbar } from '@mui/material';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { hasFocusSessionInProgress } from '../../utils/focusDraft';
-import InterestsGate from '../Modules/InterestsGate';
 import EmailConfirmDialog from './EmailConfirmDialog';
 
 // Giorno di calendario locale dell'ultima volta che la finestra del codice è stata mostrata, per utente
@@ -32,13 +31,18 @@ const markShownToday = (userId) => {
 // Montato una volta sola nel layout, fuori dalla pagina. Tiene:
 //  - la finestra del codice (aperta dal contesto: registrazione, striscia, Account, promemoria);
 //  - il promemoria all'apertura dell'app, al massimo una volta per giorno e mai su un allenamento Focus in corso;
-//  - la schermata «Cosa ti interessa?», che aspetta la chiusura dell'avviso di esito;
 //  - l'avviso di esito (con un codice di registrazione, il messaggio del server), quando lo stato passa a «confermata» o l'indirizzo in attesa diventa quello dell'account.
 // Con l'app bloccata non c'è la finestra: il codice si scrive nella schermata di blocco.
-const EmailGate = () => {
+// `onNoticeOpenChange(aperto)`, facoltativa: dice al layout quando l'avviso di esito compare e quando si chiude.
+const EmailGate = ({ onNoticeOpenChange }) => {
   const { t } = useTranslation();
   const { isLoggedIn, user, emailState, emailDialogOpen, openEmailDialog, closeEmailDialog, claimEmailReminder } = useAuth();
-  const [notice, setNotice] = useState('');
+  const [notice, setNoticeState] = useState('');
+  // Mostra o chiude l'avviso e lo comunica al layout nello stesso punto
+  const setNotice = useCallback((message) => {
+    setNoticeState(message);
+    onNoticeOpenChange?.(Boolean(message));
+  }, [onNoticeOpenChange]);
 
   const userId = user?.id;
   const needsCode = Boolean(emailState && (!emailState.verified || emailState.pendingEmail));
@@ -74,7 +78,7 @@ const EmailGate = () => {
     } else if (before.pendingEmail && !emailState.pendingEmail && emailState.email === before.pendingEmail) {
       setNotice(t('emailconfirm.done_changed', { email: emailState.email }));
     }
-  }, [emailState, t]);
+  }, [emailState, t, setNotice]);
 
   return (
     <>
@@ -89,8 +93,6 @@ const EmailGate = () => {
       >
         <Alert onClose={() => setNotice('')} severity="success" sx={{ width: '100%' }}>{notice}</Alert>
       </Snackbar>
-      {/* «Cosa ti interessa?» arriva dopo l'avviso di esito: si apre quando l'avviso si è chiuso */}
-      <InterestsGate waiting={Boolean(notice)} />
     </>
   );
 };

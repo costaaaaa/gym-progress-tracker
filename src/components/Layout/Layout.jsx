@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Container, Box, Link, Typography } from '@mui/material';
 import Navbar from './Navbar';
 import BottomNav from './BottomNav';
@@ -10,6 +11,7 @@ import { isEnPath, isAccessPath, stripLangPrefix, withLangPrefix, legalPaths, bl
 import { setLanguageChoice } from '../../i18n';
 import EmailStrip from '../EmailVerification/EmailStrip';
 import EmailGate from '../EmailVerification/EmailGate';
+import InterestsGate from '../Modules/InterestsGate';
 import EmailBlockedScreen from '../EmailVerification/EmailBlockedScreen';
 
 const MAIN_ID = 'main-content';
@@ -36,6 +38,8 @@ const Layout = () => {
   // Utilizziamo il context di autenticazione - questo forza il re-render quando cambia lo stato di autenticazione
   const { isLoggedIn, emailState } = useAuth();
   const { t, i18n } = useTranslation();
+  // C'è un avviso di esito della conferma dell'email: «Cosa ti interessa?» attende che si chiuda
+  const [noticeOpen, setNoticeOpen] = useState(false);
   const { pathname, search } = useLocation();
   const otherLang = isEnPath(pathname) ? 'it' : 'en';
   // Dal giorno 8 senza email confermata, al posto di ogni pagina dell'app c'è la schermata di conferma (le pagine di accesso restano)
@@ -106,7 +110,8 @@ const Layout = () => {
           )}
         </Typography>
       </Box>
-      <EmailGate />
+      <EmailGate onNoticeOpenChange={setNoticeOpen} />
+      <InterestsGate waiting={noticeOpen} />
       <BottomNav />
     </Box>
   );

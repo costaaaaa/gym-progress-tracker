@@ -30,13 +30,13 @@ export const useSaveModules = () => {
   const { user, updateUser } = useAuth();
   const current = useRef(user?.modules);
   current.current = user?.modules;
-  return async (patch, { chosen = false } = {}) => {
-    const res = await saveModules(patch, { chosen });
+  return async (patch, options = {}) => {
+    const res = await saveModules(patch, options);
     if (res.ok) {
       const merged = current.current ? { ...current.current } : { ...res.modules };
       Object.keys(patch).forEach((key) => { merged[key] = res.modules[key]; });
       current.current = merged;
-      updateUser(chosen ? { modules: merged, modules_chosen: true } : { modules: merged });
+      updateUser(options.chosen ? { modules: merged, modules_chosen: true } : { modules: merged });
     }
     return res;
   };

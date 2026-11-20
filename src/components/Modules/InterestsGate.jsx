@@ -29,23 +29,28 @@ const InterestsDialog = ({ waiting }) => {
 
   const due = Boolean(isLoggedIn && emailState?.verified && !emailState.blocked && user?.modules_chosen === false);
 
-  // Si decide una volta sola, quando la schermata diventa dovuta
+  // Si decide quando la finestra sta per diventare visibile (non durante l'avviso di esito: nel frattempo può partire un Focus)
   useEffect(() => {
-    if (due && decision === null) setDecision(hasFocusSessionInProgress() ? 'next-open' : 'now');
-  }, [due, decision]);
+    if (!due) return;
+    if (waiting) setDecision((prev) => (prev === 'now' ? null : prev));
+    else if (decision === null) setDecision(hasFocusSessionInProgress() ? 'next-open' : 'now');
+  }, [due, waiting, decision]);
 
   // Aspetta che l'avviso di esito della conferma si chiuda, per non coprirlo
   const open = due && decision === 'now' && !waiting;
 
-  // Una sola chiamata per «Continua» e «Salta»: i moduli scelti (nessuno per «Salta») e la chiusura, in una chiamata.
-  // Con un salvataggio in corso i pulsanti non rispondono. A salvataggio riuscito `user.modules_chosen` diventa vero e la finestra si chiude.
+  // «Continua» e «Salta»: i moduli scelti (nessuno per «Salta») e la chiusura, in una sola chiamata. Con un salvataggio
+  // in corso i pulsanti non rispondono. A salvataggio riuscito `user.modules_chosen` diventa vero e la finestra si chiude.
   const send = async (patch) => {
     if (busy) return;
     setBusy(true);
     setFailed(false);
     const res = await save(patch, { chosen: true });
-    if (!res.ok) setFailed(true);
-    setBusy(false);
+    // Se riesce, `modules_chosen` diventa vero e la finestra si chiude: `busy` non serve più
+    if (!res.ok) {
+      setFailed(true);
+      setBusy(false);
+    }
   };
   const pickedPatch = () => Object.fromEntries(CHOICES.filter((key) => picked[key]).map((key) => [key, true]));
   const later = () => setDecision('next-open');
@@ -53,8 +58,8 @@ const InterestsDialog = ({ waiting }) => {
   return (
     <Dialog
       open={open}
-      // Esc e il clic fuori non chiudono, a meno che il salvataggio non sia fallito: allora c'è l'uscita «Più tardi»
-      onClose={() => { if (failed) later(); }}
+      // Prima di un errore si esce solo con «Continua» e «Salta»; dopo un errore anche con Esc (il clic fuori non chiude mai)
+      onClose={(_event, reason) => { if (failed && reason === 'escapeKeyDown') later(); }}
       fullScreen={fullScreen}
       fullWidth
       maxWidth="xs"
@@ -111,11 +116,12 @@ const InterestsDialog = ({ waiting }) => {
   );
 };
 
-// Montato una volta sola nel layout, fuori dalla pagina. «Cosa ti interessa?» compare da sola a un account nuovo
-// (`modules_chosen === false`) dopo la conferma dell'email, e non torna: la scelta si rifà da Account > Moduli.
-// Con `modules_chosen` assente (copia vecchia, server vecchio) vale «già scelto». Con un allenamento Focus in corso
-// non compare: aspetta l'apertura successiva dell'app. Esc e il clic fuori non la chiudono: si esce solo con
-// «Continua» e «Salta» (dopo un salvataggio fallito anche con «Più tardi»). `waiting`: c'è un avviso in corso, la finestra attende.
+// Montato una volta sola nel layout, accanto a EmailGate, fuori dalla pagina. «Cosa ti interessa?» compare da sola a un
+// account nuovo (`modules_chosen === false`) dopo la conferma dell'email, e non torna: la scelta si rifà da Account > Moduli.
+// Con `modules_chosen` assente (copia vecchia, server vecchio) vale «già scelto». Con un allenamento Focus in corso non
+// compare: aspetta l'apertura successiva dell'app. Prima di un errore di salvataggio si esce solo con «Continua» e
+// «Salta»; dopo un errore anche con «Più tardi» ed Esc (nessun clic fuori chiude). `waiting`: c'è un avviso di esito in
+// corso, la finestra attende che si chiuda.
 const InterestsGate = ({ waiting = false }) => {
   const { user } = useAuth();
   return <InterestsDialog key={user?.id ?? 'ospite'} waiting={waiting} />;

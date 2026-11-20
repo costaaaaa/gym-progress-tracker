@@ -188,7 +188,7 @@ describe('schermata «Cosa ti interessa?» dopo la conferma', () => {
     observer.disconnect();
     expect(seenBeforeNotice).toBe(false);
     expect(choice()).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: /chiudi|close/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /chiudi|close/i }));
     expect(await screen.findByRole('dialog', { name: 'Cosa ti interessa?' })).toBeTruthy();
   });
 
