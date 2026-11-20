@@ -544,7 +544,7 @@
   "groups.shown.level.name": "Livello",
   "groups.shown.level.help": "Il tuo livello e i punti esperienza (XP).",
   "groups.shown.volume_needs_workouts": "Si mostra solo insieme agli allenamenti della settimana.",
-  "groups.shown.levels_off": "Il modulo livelli e traguardi non è attivo: streak e livello non si mostrano.",
+  "groups.shown.levels_off": "Il modulo {{name}} non è attivo: streak e livello non si mostrano.",
   "groups.shown.on": "mostro",
   "groups.shown.off": "non mostro",
   "groups.shown.changed": "{{name}}: {{state}}",

@@ -544,7 +544,7 @@
   "groups.shown.level.name": "Level",
   "groups.shown.level.help": "Your level and experience points (XP).",
   "groups.shown.volume_needs_workouts": "Shown only together with this week's workouts.",
-  "groups.shown.levels_off": "The levels and achievements module is not active: streak and level are not shown.",
+  "groups.shown.levels_off": "The {{name}} module is not active: streak and level are not shown.",
   "groups.shown.on": "I show",
   "groups.shown.off": "I don't show",
   "groups.shown.changed": "{{name}}: {{state}}",

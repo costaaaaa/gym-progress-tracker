@@ -235,6 +235,9 @@ const Account = ({ isEmbedded = false }) => {
     severity: 'info'
   });
 
+  // Esito dei cambi nelle card Moduli e Gruppi: annuncio e errore nella notifica della pagina
+  const notify = (message, severity) => setSnackbar({ open: true, message, severity });
+
   // Funzione per recuperare i dati completi dell'utente
   const fetchUserData = useCallback(async () => {
     setLoading(true);
@@ -838,7 +841,7 @@ const Account = ({ isEmbedded = false }) => {
       </Card>
 
       {/* Card Moduli */}
-      <ModulesCard notify={(message, severity) => setSnackbar({ open: true, message, severity })} />
+      <ModulesCard notify={notify} />
 
       {/* Card Sicurezza */}
       <Card sx={{ p: '24px' }}>
@@ -902,7 +905,7 @@ const Account = ({ isEmbedded = false }) => {
         </Typography>
       </Card>
 
-      <GroupsVisibilityCard notify={(message, severity) => setSnackbar({ open: true, message, severity })} />
+      <GroupsVisibilityCard notify={notify} />
 
       {userData?.is_admin && (
         <Card sx={{ p: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>

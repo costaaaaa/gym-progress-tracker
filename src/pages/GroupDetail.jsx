@@ -20,7 +20,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useModule } from '../hooks/useModule';
 import { intlLocale } from '../i18n/format';
-import { NEUTRAL_TEXT, DANGER_TEXT } from '../utils/buttonStyles';
+import { NEUTRAL_TEXT, DANGER_TEXT, LINK_TARGET } from '../utils/buttonStyles';
 import { INK_TABS } from '../utils/inkTabs';
 
 const BOARDS = ['week', 'streak', 'level'];
@@ -202,8 +202,7 @@ const GroupDetailContent = () => {
             {board === 'week' && visibility?.workouts === false ? (
               <Box sx={{ py: 2 }}>
                 <Typography sx={{ color: 'text.secondary' }}>{t('groups.detail.board.week_hidden')}</Typography>
-                <Link component={RouterLink} to="/profilo?tab=settings#groups-shown"
-                  sx={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, fontSize: 16, fontWeight: 600, color: 'text.primary' }}>
+                <Link component={RouterLink} to="/profilo?tab=settings#groups-shown" sx={LINK_TARGET}>
                   {t('groups.detail.board.week_hidden_link')}
                 </Link>
               </Box>

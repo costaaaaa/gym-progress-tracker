@@ -148,11 +148,31 @@ describe('dipendenze', () => {
       expect(sw(name).disabled).toBe(true);
       expect(sw(name).checked).toBe(false);
       expect(document.getElementById(sw(name).getAttribute('aria-describedby')).textContent)
-        .toContain('Il modulo livelli e traguardi non è attivo: streak e livello non si mostrano.');
+        .toContain('Il modulo Livelli e traguardi non è attivo: streak e livello non si mostrano.');
     });
-    expect(screen.getAllByText(/Il modulo livelli e traguardi non è attivo/)).toHaveLength(1);
+    expect(screen.getAllByText(/Il modulo Livelli e traguardi non è attivo/)).toHaveLength(1);
     expect(sw('Volume').disabled).toBe(false);
     expect(saved()).toEqual([]);
+  });
+});
+
+describe('struttura', () => {
+  it('il titolo della card è un\'intestazione di livello 2 e «Cosa mostro» di livello 3', () => {
+    mount({ groups: true });
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Gruppi e visibilità');
+    expect(screen.getByRole('heading', { level: 3 }).textContent).toBe('Cosa mostro');
+  });
+
+  it('i punti di arrivo dei collegamenti dell\'avviso dei moduli esistono nella card vera e prendono il fuoco', async () => {
+    mount({ groups: true });
+    await screen.findByText(/Non sei in nessun gruppo/);
+    ['groups-shown', 'groups-list'].forEach((id) => {
+      const el = document.getElementById(id);
+      expect(el).toBeTruthy();
+      expect(el.closest('#groups-visibility')).toBeTruthy();
+      el.focus();
+      expect(document.activeElement).toBe(el);
+    });
   });
 });
 

@@ -3,6 +3,8 @@ import { Box, Card, Link, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { MODULE_KEYS, MODULE_PATHS } from '../../hooks/useModule';
 import { listGroups } from '../../api/groups';
+import { scrollToAndFocus } from '../../utils/focus';
+import { LINK_TARGET } from '../../utils/buttonStyles';
 import ModuleRow from './ModuleRow';
 
 // Avviso sotto la riga dei Gruppi: a Gruppi non attivo serve sapere se si è ancora in qualche gruppo
@@ -25,11 +27,8 @@ const GroupsNotice = ({ on }) => {
   // I collegamenti portano a un punto della card «Gruppi e visibilità» della stessa pagina, col fuoco
   const goTo = (id) => (event) => {
     event.preventDefault();
-    const target = document.getElementById(id);
-    target?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-    target?.focus();
+    scrollToAndFocus(id);
   };
-  const linkSx = { display: 'inline-flex', alignItems: 'center', minHeight: 44, fontSize: 16, fontWeight: 600, color: 'text.primary' };
 
   return (
     // Sempre nel DOM: l'avviso arriva dopo una lettura asincrona e così viene annunciato
@@ -38,8 +37,8 @@ const GroupsNotice = ({ on }) => {
         <>
           <Typography sx={{ fontSize: 16 }}>{t('modules.groups_warning', { count: groupsCount })}</Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 2 }}>
-            <Link href="#groups-shown" onClick={goTo('groups-shown')} sx={linkSx}>{t('modules.groups_show')}</Link>
-            <Link href="#groups-list" onClick={goTo('groups-list')} sx={linkSx}>{t('modules.groups_leave')}</Link>
+            <Link href="#groups-shown" onClick={goTo('groups-shown')} sx={LINK_TARGET}>{t('modules.groups_show')}</Link>
+            <Link href="#groups-list" onClick={goTo('groups-list')} sx={LINK_TARGET}>{t('modules.groups_leave')}</Link>
           </Box>
         </>
       )}

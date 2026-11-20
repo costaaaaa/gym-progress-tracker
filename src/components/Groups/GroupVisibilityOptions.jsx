@@ -77,7 +77,7 @@ const GroupVisibilityOptions = ({ notify, idPrefix = 'groups-shown' }) => {
         })}
       </Box>
       {!levelsActive && (
-        <Typography id={`${idPrefix}-levels-off`} sx={{ fontSize: 16, mt: 0.5 }}>{t('groups.shown.levels_off')}</Typography>
+        <Typography id={`${idPrefix}-levels-off`} sx={{ fontSize: 16, mt: 0.5 }}>{t('groups.shown.levels_off', { name: t('modules.levels.name') })}</Typography>
       )}
     </Box>
   );
