@@ -30,6 +30,11 @@ class User
     // Moduli facoltativi (colonne module_<chiave>): chiave => attivo. «Non attivo» è solo visualizzazione.
     const MODULES = array('body', 'recovery', 'levels', 'groups', 'ai');
     public $modules = array('body' => true, 'recovery' => true, 'levels' => true, 'groups' => true, 'ai' => true);
+    // Le colonne dei moduli per una SELECT: «module_body, module_recovery, ...»
+    public static function moduleColumns()
+    {
+        return implode(', ', array_map(function ($key) { return 'module_' . $key; }, self::MODULES));
+    }
     public $modules_chosen = false; // true se l'utente ha già fatto la sua scelta (modules_chosen_at pieno)
 
     // Helper per calcolare l'età dalla data di nascita
@@ -368,7 +373,7 @@ class User
     }
     public function readById($id)
     {
-        $query = "SELECT id, username, email, created_at, rest_timer_enabled, birth_date, gender, training_start_date, locale, weight_unit, module_body, module_recovery, module_levels, module_groups, module_ai, modules_chosen_at, password_changed_at FROM " . $this->table_name . " WHERE id = ? LIMIT 1";
+        $query = "SELECT id, username, email, created_at, rest_timer_enabled, birth_date, gender, training_start_date, locale, weight_unit, " . self::moduleColumns() . ", modules_chosen_at, password_changed_at FROM " . $this->table_name . " WHERE id = ? LIMIT 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(1, $id);
         $stmt->execute();

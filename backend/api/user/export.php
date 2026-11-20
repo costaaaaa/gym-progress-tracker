@@ -7,6 +7,7 @@ include_once '../../config/cors_headers.php';
 include_once '../../config/database.php';
 include_once '../../config/api_helpers.php';
 include_once '../../models/WorkoutExercise.php';
+include_once '../../models/User.php';
 require_once '../../lib/gamification_rules.php';
 require_once '../../lib/units.php';
 
@@ -47,7 +48,7 @@ function export_rows($db, $sql, $params)
 try {
     $profile = export_rows($db,
         "SELECT weight_unit, username, email, email_verified_at, pending_email, birth_date, gender, training_start_date, rest_timer_enabled, time_zone,
-                module_body, module_recovery, module_levels, module_groups, module_ai, modules_chosen_at,
+                " . User::moduleColumns() . ", modules_chosen_at,
                 created_at, password_changed_at, last_login_at
          FROM gym_users WHERE id = ?", array($user_id));
     if (!$profile) {
