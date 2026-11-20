@@ -33,6 +33,11 @@ Piano Gratis (account finto con `tier: free`, tetti di 2 schede e 4 giorni, risp
 `focus-plus-allenamento`, `focus-plus-dialogo`. Tutte le altre pagine usano un account senza tetti
 (`tier: pro`, `dashboard` completo). Per scattare solo le nuove: terzo parametro con i loro nomi e cartella `after-gratis`.
 
+Barra di navigazione: `barra-ventaglio-2` (senza modulo Misure: due voci), `barra-ventaglio-3` (tre voci),
+`barra-ventaglio-riprendi` (con un allenamento in corso: «Riprendi»), tutte con il bottone centrale aperto e
+solo sotto i 900 px; `barra-desktop-menu` (menu «Altre azioni» del bottone diviso, solo 1440). Le pagine
+Schede e Storico stanno su `/schede` e `/storico`.
+
 ## Prerequisiti
 
 - Node.js e Docker.

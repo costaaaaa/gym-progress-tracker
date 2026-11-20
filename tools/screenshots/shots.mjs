@@ -196,7 +196,7 @@ const TIER_STATES = {
   missed: { tier: 'free', tier_until: null, tier_last_day: null, signup_code: { status: 'missed', tier: 'plus', duration_days: 90 } },
   gratis: { tier: 'free', tier_until: null, tier_last_day: null, signup_code: null },
 };
-const user = ({ admin, gratis, email, tierState }) => ({
+const user = ({ admin, gratis, email, tierState, modules }) => ({
   ...(EMAIL_STATES[email ?? 'confermata']),
   success: true, id: 1, username: 'atleta_demo', email: 'atleta@example.com',
   created_at: stamp(-900, '10:00:00'), password_changed_at: stamp(-140, '09:00:00'),
@@ -205,6 +205,7 @@ const user = ({ admin, gratis, email, tierState }) => ({
   tier: gratis ? 'free' : 'pro', tier_until: null, tier_last_day: null, signup_code: null,
   ...(tierState ? TIER_STATES[tierState] : {}),
   limits: gratis ? LIMITS.gratis : LIMITS.pro,
+  ...(modules ? { modules } : {}),
 });
 
 // Codici di registrazione per la sezione admin (nomi e assegnatari inventati)
@@ -378,11 +379,13 @@ async function openPage(vp, theme, opts, tag) {
     colorScheme: theme, locale: 'it-IT', timezoneId: 'Europe/Rome',
   });
   await ctx.clock.setFixedTime(NOW);
-  await ctx.addInitScript(({ mode, loggedIn, reminder, today }) => {
+  await ctx.addInitScript(({ mode, loggedIn, reminder, today, draft }) => {
     localStorage.setItem('themeMode', mode);
     localStorage.setItem('lx_locale', 'it');
     localStorage.setItem('lx_lang_choice', 'it');
     localStorage.removeItem('gym_focus_workout_draft');
+    // Allenamento in corso su questo browser (il ventaglio propone «Riprendi»)
+    if (draft) localStorage.setItem('gym_focus_workout_draft', JSON.stringify({ selectedDay: { id: 10, name: 'Giorno 1' }, selectedDayId: 10, startTime: Date.now() - 600000 }));
     // Promemoria dell'email già mostrato oggi (orologio fisso 2026-10-23), salvo `reminder`: la finestra non copre la pagina
     if (!reminder) localStorage.setItem('lx_email_reminder_1', today);
     if (loggedIn) {
@@ -392,11 +395,11 @@ async function openPage(vp, theme, opts, tag) {
       localStorage.removeItem('isLoggedIn');
       localStorage.removeItem('user');
     }
-  }, { mode: theme, loggedIn: opts.loggedIn, reminder: opts.reminder === true, today: TODAY });
+  }, { mode: theme, loggedIn: opts.loggedIn, reminder: opts.reminder === true, today: TODAY, draft: opts.draft === true });
   await ctx.route('**/backend/**', (route) => {
     const url = route.request().url();
     const hit = fixtures.find(([key]) => url.includes(key));
-    const body = hit ? hit[1]({ admin: opts.admin === true, gratis: opts.gratis === true, email: opts.email, tierState: opts.tierState, codice: opts.codice, url, plans: opts.plans, u: UTENTI[opts.utente ?? 'attivo'] }) : fallback;
+    const body = hit ? hit[1]({ admin: opts.admin === true, gratis: opts.gratis === true, email: opts.email, tierState: opts.tierState, codice: opts.codice, modules: opts.modules, url, plans: opts.plans, u: UTENTI[opts.utente ?? 'attivo'] }) : fallback;
     const { __status: status = 200, ...payload } = body;
     route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(payload) });
   });
@@ -417,9 +420,9 @@ const SHOT_LIST = [
   ['profilo', '/profilo', { loggedIn: true }],
   ['gruppi', '/gruppi', { loggedIn: true }],
   ['gruppo-dettaglio', '/gruppi/1', { loggedIn: true }],
-  ['allenamenti-piani', '/workouts?tab=plans', { loggedIn: true }],
-  ['allenamenti-piani-ricche', '/workouts?tab=plans', { loggedIn: true, plans: 'ricche' }],
-  ['allenamenti-cronologia', '/workouts?tab=history', { loggedIn: true }],
+  ['allenamenti-piani', '/schede', { loggedIn: true }],
+  ['allenamenti-piani-ricche', '/schede', { loggedIn: true, plans: 'ricche' }],
+  ['allenamenti-cronologia', '/storico', { loggedIn: true }],
   ['admin', '/admin', { loggedIn: true, admin: true }],
 ];
 
@@ -459,7 +462,7 @@ for (const vp of viewports) {
       await attempt(tag, PLANS_OPEN_SHOT, async () => {
         const { ctx, page } = await openPage(vp, theme, { loggedIn: true, plans: 'ricche' }, tag);
         try {
-          await page.goto(`${base}/workouts?tab=plans`, { waitUntil: 'domcontentloaded' });
+          await page.goto(`${base}/schede`, { waitUntil: 'domcontentloaded' });
           await page.getByRole('button', { name: /^(Mostra dettagli|Mostra giorni)$/ }).first().click();
           await page.getByText('Nessun esercizio aggiunto').first().waitFor();
           await snap(page, PLANS_OPEN_SHOT, tag);
@@ -519,7 +522,7 @@ for (const vp of viewports) {
     if (want(...Object.values(PLAN_EDITOR_SHOTS))) await attempt(tag, 'piani-editor', async () => {
       const { ctx, page } = await openPage(vp, theme, { loggedIn: true }, tag);
       try {
-        await page.goto(`${base}/workouts?tab=plans`, { waitUntil: 'domcontentloaded' });
+        await page.goto(`${base}/schede`, { waitUntil: 'domcontentloaded' });
         await page.getByRole('button', { name: /^(Mostra dettagli|Mostra giorni)$/ }).first().click();
         await page.getByRole('button', { name: 'Dettagli', exact: true }).first().click();
         await page.getByRole('button', { name: 'Dettagli', exact: true }).first().click();
@@ -584,7 +587,7 @@ for (const vp of viewports) {
       await attempt(tag, name, async () => {
         const { ctx, page } = await openPage(vp, theme, { loggedIn: true, gratis: true, plans }, tag);
         try {
-          await page.goto(`${base}/workouts?tab=plans`, { waitUntil: 'domcontentloaded' });
+          await page.goto(`${base}/schede`, { waitUntil: 'domcontentloaded' });
           await page.getByRole('button', { name: 'Nuova scheda' }).waitFor();
           // la scheda in sola lettura (l'ultima) aperta: senza i comandi di modifica
           if (expand) await page.getByRole('button', { name: /^(Mostra dettagli|Mostra giorni)$/ }).last().click();
@@ -597,7 +600,7 @@ for (const vp of viewports) {
     if (want('allenamenti-piani-nuova-gratis')) await attempt(tag, 'allenamenti-piani-nuova-gratis', async () => {
       const { ctx, page } = await openPage(vp, theme, { loggedIn: true, gratis: true, plans: 'gratis-nuova' }, tag);
       try {
-        await page.goto(`${base}/workouts?tab=plans`, { waitUntil: 'domcontentloaded' });
+        await page.goto(`${base}/schede`, { waitUntil: 'domcontentloaded' });
         await page.setViewportSize({ width: vp.w, height: 1600 });
         await page.getByRole('button', { name: 'Nuova scheda' }).click();
         await page.getByRole('dialog').waitFor();
@@ -609,7 +612,7 @@ for (const vp of viewports) {
     if (want('allenamenti-piani-elimina-giorno')) await attempt(tag, 'allenamenti-piani-elimina-giorno', async () => {
       const { ctx, page } = await openPage(vp, theme, { loggedIn: true, gratis: true, plans: 'gratis-elimina' }, tag);
       try {
-        await page.goto(`${base}/workouts?tab=plans`, { waitUntil: 'domcontentloaded' });
+        await page.goto(`${base}/schede`, { waitUntil: 'domcontentloaded' });
         await page.setViewportSize({ width: vp.w, height: 1600 });
         await page.getByRole('button', { name: /^(Mostra dettagli|Mostra giorni)$/ }).first().click();
         await page.getByRole('button', { name: /^Elimina giorno/ }).first().click();
@@ -733,6 +736,41 @@ for (const vp of viewports) {
           if (name === 'codici-admin-dettaglio') await page.getByRole('button', { name: 'Apri il codice AMICI-90' }).click();
           await page.getByRole('heading', { name: 'Codici di registrazione' }).scrollIntoViewIfNeeded();
           await snap(page, name, tag, codesCard(page));
+        } finally {
+          await ctx.close();
+        }
+      });
+    }
+
+    // Barra nuova: ventaglio del bottone centrale (telefono) e menu «Inizia allenamento ▾» (desktop)
+    const FANS = [
+      ['barra-ventaglio-2', { loggedIn: true, modules: { body: false } }],
+      ['barra-ventaglio-3', { loggedIn: true }],
+      ['barra-ventaglio-riprendi', { loggedIn: true, draft: true }],
+    ];
+    for (const [name, opts] of FANS) {
+      if (!want(name) || vp.w >= 900) continue;
+      await attempt(tag, name, async () => {
+        const { ctx, page } = await openPage(vp, theme, opts, tag);
+        try {
+          await page.goto(`${base}/`, { waitUntil: 'domcontentloaded' });
+          await page.getByRole('button', { name: 'Cosa vuoi fare' }).click();
+          await page.getByRole('dialog', { name: 'Cosa vuoi fare' }).waitFor();
+          await snap(page, name, tag);
+        } finally {
+          await ctx.close();
+        }
+      });
+    }
+
+    if (want('barra-desktop-menu') && vp.w >= 1440) {
+      await attempt(tag, 'barra-desktop-menu', async () => {
+        const { ctx, page } = await openPage(vp, theme, { loggedIn: true }, tag);
+        try {
+          await page.goto(`${base}/`, { waitUntil: 'domcontentloaded' });
+          await page.getByRole('button', { name: 'Altre azioni' }).click();
+          await page.getByRole('menu').waitFor();
+          await snap(page, 'barra-desktop-menu', tag);
         } finally {
           await ctx.close();
         }
