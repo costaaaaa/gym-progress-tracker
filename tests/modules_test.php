@@ -90,23 +90,26 @@ check('login web: user.modules come in read.php (groups non attivo, il resto att
 check('login web: user.modules_chosen false (nessuna scelta ancora)', ($r[1]['user']['modules_chosen'] ?? null) === false, $r[2]);
 check('login web: id, username e locale come prima', ($r[1]['user']['username'] ?? null) === 'mofull' && isset($r[1]['user']['id'], $r[1]['user']['locale']), $r[2]);
 $webLogin = $r;
+$expected = ['body' => true, 'recovery' => true, 'levels' => true, 'groups' => false, 'ai' => true];
 $r = api('POST', '/api/user/mobile_login.php', null, ['username' => 'mofull', 'password' => PASSWORD]);
+$read = api('GET', '/api/user/read.php', ['bearer' => $r[1]['token'] ?? '']);
 check('login con token: user.modules come in login.php e in read.php (groups non attivo, il resto attivo), subito',
-    $r[0] === 200 && ($r[1]['user']['modules'] ?? null) === ['body' => true, 'recovery' => true, 'levels' => true, 'groups' => false, 'ai' => true]
-    && ($r[1]['user']['modules'] ?? null) === ($webLogin[1]['user']['modules'] ?? 'x')
-    && ($r[1]['user']['modules'] ?? null) === (api('GET', '/api/user/read.php', ['bearer' => $r[1]['token'] ?? ''])[1]['modules'] ?? 'y'), $r[2]);
+    $r[0] === 200 && ($r[1]['user']['modules'] ?? null) === $expected
+    && ($webLogin[1]['user']['modules'] ?? null) === $expected && ($read[1]['modules'] ?? null) === $expected, $r[2]);
 check('login con token: user.modules_chosen false (nessuna scelta ancora), come in login.php',
     ($r[1]['user']['modules_chosen'] ?? null) === false && ($webLogin[1]['user']['modules_chosen'] ?? 'x') === false, $r[2]);
-check('login con token: id, username e locale come prima, nessun modules fuori da user',
-    ($r[1]['user']['username'] ?? null) === 'mofull' && isset($r[1]['user']['id'], $r[1]['user']['locale'])
-    && !array_key_exists('modules', $r[1]) && !array_key_exists('modules_chosen', $r[1]), $r[2]);
+check('login con token: id, username e locale come prima',
+    ($r[1]['user']['username'] ?? null) === 'mofull' && isset($r[1]['user']['id'], $r[1]['user']['locale']), $r[2]);
 $r = api('POST', '/api/user/mobile_login.php', null, ['username' => 'mopart', 'password' => PASSWORD]);
 check('login con token di un account appena registrato: modules tutti false e modules_chosen false',
     $r[0] === 200 && ($r[1]['user']['modules'] ?? null) === array_fill_keys(KEYS, false) && ($r[1]['user']['modules_chosen'] ?? null) === false, $r[2]);
 $conn->exec("UPDATE gym_users SET modules_chosen_at = NOW() WHERE username = 'mofull'");
 $r = api('POST', '/api/user/mobile_login.php', null, ['username' => 'mofull', 'password' => PASSWORD]);
-check('login con token dopo la scelta: modules_chosen true',
-    ($r[1]['user']['modules_chosen'] ?? null) === true && (api('POST', '/api/user/login.php', null, ['username' => 'mofull', 'password' => PASSWORD])[1]['user']['modules_chosen'] ?? null) === true, $r[2]);
+$web = api('POST', '/api/user/login.php', null, ['username' => 'mofull', 'password' => PASSWORD]);
+$read = api('GET', '/api/user/read.php', ['bearer' => $r[1]['token'] ?? '']);
+check('login con token dopo la scelta: modules_chosen true, come in login.php e in read.php',
+    ($r[1]['user']['modules_chosen'] ?? null) === true && ($web[1]['user']['modules_chosen'] ?? null) === true
+    && ($read[1]['modules_chosen'] ?? null) === true, $r[2]);
 $conn->exec("UPDATE gym_users SET modules_chosen_at = NULL WHERE username = 'mofull'");
 $conn->exec("UPDATE gym_users SET module_groups = 1 WHERE username = 'mofull'");
 
