@@ -483,14 +483,15 @@ class User
             $sets[] = "home_layout = :home_layout";
             $values['home_layout'] = $fields['home_layout'] === null ? null : json_encode($fields['home_layout']);
         }
-        if (!empty($fields['module_offer_answer'])) {
-            $answer = $fields['module_offer_answer'];
+        // La chiave finisce nel testo SQL: si riscontra qui con MODULE_OFFERS (un valore diverso non scrive nulla)
+        $answer = $fields['module_offer_answer'] ?? null;
+        if (!empty($answer) && in_array($answer['key'] ?? null, self::MODULE_OFFERS, true)) {
             $sets[] = "module_offer_at = NOW()";
             if ($answer['accepted']) {
                 $sets[] = "module_" . $answer['key'] . " = 1";
             } else {
-                $declined = "COALESCE(module_offers_declined, JSON_ARRAY())";
-                $sets[] = "module_offers_declined = IF(JSON_CONTAINS($declined, JSON_QUOTE(:offer_key_a)), $declined, JSON_ARRAY_APPEND($declined, '$', :offer_key_b))";
+                $declined_sql = "COALESCE(module_offers_declined, JSON_ARRAY())";
+                $sets[] = "module_offers_declined = IF(JSON_CONTAINS($declined_sql, JSON_QUOTE(:offer_key_a)), $declined_sql, JSON_ARRAY_APPEND($declined_sql, '$', :offer_key_b))";
                 $values['offer_key_a'] = $values['offer_key_b'] = $answer['key'];
             }
         }

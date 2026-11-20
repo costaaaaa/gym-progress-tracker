@@ -141,6 +141,15 @@ try {
             echo json_encode(['success' => false, 'message' => t_server('settings.module_offer_invalid')]);
             exit;
         }
+        // Si risponde solo al modulo che il server propone adesso a questo utente, e non insieme a `modules` sulla
+        // stessa chiave (due scritture della stessa colonna nella stessa richiesta)
+        $current = new User($db);
+        if (!$current->readById($user_id) || $current->module_offer !== $answer->key
+            || (property_exists($data, 'modules') && is_object($data->modules) && property_exists($data->modules, $answer->key))) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => t_server('settings.module_offer_invalid')]);
+            exit;
+        }
         $fields['module_offer_answer'] = ['key' => $answer->key, 'accepted' => $answer->accepted];
     }
     // Obiettivo settimanale: da 1 a 7 allenamenti, null = torna al default (giorni della scheda attiva)

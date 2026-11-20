@@ -188,21 +188,45 @@ addWorkout($n['id'], '2026-03-05 10:00:00', $n1);
 check('conta l\'ultimo allenamento, non i precedenti', dashboard($n)['next_day']['id'] === $n2);
 addWorkout($n['id'], '2026-03-06 10:00:00', $b1);
 check('ultimo allenamento con un giorno di un\'altra scheda (o utente): il primo', dashboard($n)['next_day']['id'] === $n1);
-addWorkout($n['id'], '2026-03-06 10:00:00', $n3);
-sql("UPDATE gym_workout_history SET date = '2026-03-07 09:00:00' WHERE user_id = ? AND day_id = ?", [$n['id'], $n3]);
-check('stessa data di un altro: vale il più recente per ora', dashboard($n)['next_day']['id'] === $n1);
 $m = newUser('homnext2');
 check('un altro utente non vede la scheda di honext', dashboard($m)['next_day'] === null);
 [$m1] = newPlan($m['id'], ['Solo']);
 check('un solo giorno: sempre quello', dashboard($m)['next_day']['id'] === $m1);
 addWorkout($m['id'], '2026-03-01 10:00:00', $m1);
 check('un solo giorno, già fatto: ancora quello', dashboard($m)['next_day']['id'] === $m1);
-check('il giorno eliminato dopo l\'allenamento: il primo della scheda', (function () use ($m, $n) {
+check('ultimo allenamento in un\'altra scheda dello stesso utente: il primo della scheda attiva', (function () use ($m) {
     $x = newPlan($m['id'], ['Z1', 'Z2'], 0);
     sql("UPDATE gym_workout_plans SET is_active = 0 WHERE user_id = ?", [$m['id']]);
     sql("UPDATE gym_workout_plans SET is_active = 1 WHERE id = (SELECT plan_id FROM gym_workout_days WHERE id = ?)", [$x[0]]);
     return dashboard($m)['next_day']['id'] === $x[0];
 })());
+
+// Ultimo allenamento = il più recente per data, non l'ultimo inserito
+$k = newUser('honextdate');
+[$k1, $k2, $k3] = newPlan($k['id'], ['A', 'B', 'C']);
+addWorkout($k['id'], '2026-03-02 10:00:00', $k1);
+addWorkout($k['id'], '2026-03-03 10:00:00', $k2);
+addWorkout($k['id'], '2026-03-01 10:00:00', $k3);
+check('inserito dopo ma con data precedente: next_day segue la data più recente (B, quindi C)', dashboard($k)['next_day']['id'] === $k3, json_encode(dashboard($k)['next_day']));
+// Stessa data e ora: vale l'ultimo inserito
+$t1 = newUser('honexttie1');
+[$t11, $t12, $t13] = newPlan($t1['id'], ['A', 'B', 'C']);
+addWorkout($t1['id'], '2026-03-03 10:00:00', $t11);
+addWorkout($t1['id'], '2026-03-03 10:00:00', $t12);
+check('stessa data e ora: vale l\'ultimo inserito (B, quindi C)', dashboard($t1)['next_day']['id'] === $t13);
+$t2 = newUser('honexttie2');
+[$t21, $t22, $t23] = newPlan($t2['id'], ['A', 'B', 'C']);
+addWorkout($t2['id'], '2026-03-03 10:00:00', $t22);
+addWorkout($t2['id'], '2026-03-03 10:00:00', $t21);
+check('stessa data e ora, ordine inverso: vale l\'ultimo inserito (A, quindi B)', dashboard($t2)['next_day']['id'] === $t22);
+
+// Giorno eliminato dopo l'allenamento (a livello di endpoint)
+$g = newUser('honextgone');
+[$g1, $g2, $g3] = newPlan($g['id'], ['Z1', 'Z2', 'Z3']);
+addWorkout($g['id'], '2026-03-03 10:00:00', $g2);
+check('prima dell\'eliminazione: dopo Z2 viene Z3', dashboard($g)['next_day']['id'] === $g3);
+sql("DELETE FROM gym_workout_days WHERE id = ?", [$g2]);
+check('giorno dell\'ultimo allenamento eliminato: next_day torna al primo giorno', dashboard($g)['next_day']['id'] === $g1);
 
 echo "Dashboard: today, trained_today, week_days nei quattro fusi\n";
 foreach (ZONES as $zone) {
@@ -237,7 +261,8 @@ foreach (ZONES as $zone) {
     $expected = array_fill(0, 7, false);
     if ($idx > 0) $expected[$idx - 1] = true;
     check("$zone: ieri compare nella settimana solo se non è domenica scorsa", $d['week_days'] === $expected, json_encode($d['week_days']));
-    check("$zone: week_days e weekly_workouts concordano su ieri", count(array_filter($d['week_days'])) === $d['weekly_workouts'] || $idx === 0);
+    // Di lunedì ieri è domenica scorsa: fuori dalla settimana, per entrambi i numeri
+    check("$zone: week_days e weekly_workouts concordano su ieri", count(array_filter($d['week_days'])) === $d['weekly_workouts'] && $d['weekly_workouts'] === ($idx > 0 ? 1 : 0), json_encode($d));
 
     // Lo stesso allenamento (data scritta in UTC) visto da fusi diversi: conta il giorno del fuso della richiesta
     $x = newUser("hos$tag");
@@ -252,7 +277,6 @@ foreach (ZONES as $zone) {
     addWorkout($y['id'], (clone $monday)->modify('+6 days')->format('Y-m-d') . ' 23:59:59');
     $d = dashboard($y, $zone);
     $expected = [true, false, false, false, false, false, true];
-    $sundayInFuture = (clone $monday)->modify('+6 days')->format('Y-m-d') . ' 23:59:59' > $now->format('Y-m-d H:i:s');
     check("$zone: lunedì 00:00:00 e domenica 23:59:59 sono il primo e l'ultimo giorno", $d['week_days'] === $expected, json_encode($d['week_days']));
     check("$zone: weekly_workouts conta entrambi", $d['weekly_workouts'] === 2);
     $z = newUser("hon$tag");
@@ -368,7 +392,11 @@ check('la risposta riporta modules invariati', ($r[1]['modules'] ?? null) === ['
 sql("UPDATE gym_users SET module_offer_at = NOW() - INTERVAL 8 DAY WHERE id = ?", [$o['id']]);
 check('dopo sette giorni: il successivo (levels)', offerOf($o) === 'levels');
 $r = settings($o, ['module_offer_answer' => ['key' => 'body', 'accepted' => false]]);
-check('lo stesso rifiuto due volte: nessun doppione', $r[0] === 200 && scalar("SELECT module_offers_declined FROM gym_users WHERE id = ?", [$o['id']]) === '["body"]');
+check('rispondere a un modulo già rifiutato (non è quello proposto): 400, elenco invariato', $r[0] === 400 && scalar("SELECT module_offers_declined FROM gym_users WHERE id = ?", [$o['id']]) === '["body"]', $r[2]);
+$offerAt = scalar("SELECT module_offer_at FROM gym_users WHERE id = ?", [$o['id']]);
+$r = settings($o, ['module_offer_answer' => ['key' => 'groups', 'accepted' => true]]);
+check('rispondere a un modulo diverso da quello proposto (levels): 400, nessuna scrittura', $r[0] === 400 && ($r[1]['success'] ?? null) === false
+    && modulesOf($o) === '00000' && scalar("SELECT module_offer_at FROM gym_users WHERE id = ?", [$o['id']]) === $offerAt, $r[2]);
 sql("UPDATE gym_users SET module_offer_at = NOW() - INTERVAL 8 DAY WHERE id = ?", [$o['id']]);
 $r = settings($o, ['module_offer_answer' => ['key' => 'levels', 'accepted' => false]]);
 check('un altro rifiuto si aggiunge in coda', $r[0] === 200 && scalar("SELECT module_offers_declined FROM gym_users WHERE id = ?", [$o['id']]) === '["body", "levels"]');
@@ -383,6 +411,9 @@ settings($o, ['module_offer_answer' => ['key' => 'recovery', 'accepted' => true]
 sql("UPDATE gym_users SET module_offer_at = NOW() - INTERVAL 8 DAY WHERE id = ?", [$o['id']]);
 check('tutti attivi o rifiutati: null', offerOf($o) === null);
 $before = scalar("SELECT module_offer_at FROM gym_users WHERE id = ?", [$o['id']]);
+$r = settings($o, ['module_offer_answer' => ['key' => 'body', 'accepted' => true]]);
+check('nessuna proposta in corso (chiave valida): 400, nessuna scrittura', $r[0] === 400 && modulesOf($o) === '00110'
+    && scalar("SELECT module_offer_at FROM gym_users WHERE id = ?", [$o['id']]) === $before, $r[2]);
 $badAnswers = [
     'chiave sconosciuta' => ['key' => 'zzz', 'accepted' => true],
     'assistenti AI' => ['key' => 'ai', 'accepted' => true],
@@ -401,11 +432,30 @@ foreach ($badAnswers as $name => $value) {
 }
 $s = newUser('hoanswer2');
 setState($s, 10, null);
-settings($o, ['module_offer_answer' => ['key' => 'body', 'accepted' => true]]);
-check('un altro utente non è toccato dalla risposta di hoanswer', modulesOf($s) === '00000' && offerOf($s) === 'body'
+check('un altro utente non è toccato dalle risposte di hoanswer', modulesOf($s) === '00000' && offerOf($s) === 'body'
     && scalar("SELECT module_offers_declined IS NULL AND module_offer_at IS NULL FROM gym_users WHERE id = ?", [$s['id']]) == 1);
-$r = settings($s, ['modules' => ['body' => true], 'home_layout' => layout('last')]);
+$r = settings($s, ['modules' => ['body' => true], 'module_offer_answer' => ['key' => 'body', 'accepted' => false]]);
+check('risposta e modules sulla stessa chiave nella stessa richiesta: 400 e nessuna modifica', $r[0] === 400 && ($r[1]['success'] ?? null) === false
+    && modulesOf($s) === '00000' && scalar("SELECT module_offer_at IS NULL AND module_offers_declined IS NULL FROM gym_users WHERE id = ?", [$s['id']]) == 1, $r[2]);
+$r = settings($s, ['modules' => ['body' => false], 'module_offer_answer' => ['key' => 'body', 'accepted' => true]]);
+check('anche con un valore opposto (modules false, risposta sì): 400 e nessuna modifica', $r[0] === 400 && modulesOf($s) === '00000', $r[2]);
+$r = settings($s, ['modules' => ['recovery' => true], 'module_offer_answer' => ['key' => 'body', 'accepted' => true]]);
+check('modules su un\'altra chiave nella stessa richiesta: 200, entrambi applicati', $r[0] === 200 && modulesOf($s) === '10010', $r[2]);
+$r = settings($s, ['module_offer_answer' => ['key' => 'levels', 'accepted' => false]]);
+check('seconda risposta subito dopo la prima: 400 (pausa di sette giorni)', $r[0] === 400 && scalar("SELECT module_offers_declined IS NULL FROM gym_users WHERE id = ?", [$s['id']]) == 1, $r[2]);
+sql("UPDATE gym_users SET module_offer_at = NULL, module_body = 1, module_recovery = 0 WHERE id = ?", [$s['id']]);
+$r = settings($s, ['home_layout' => layout('last')]);
 check('layout e moduli nella stessa richiesta: 200', $r[0] === 200 && ($r[1]['home_layout'] ?? null) === layout('last') && ($r[1]['modules']['body'] ?? null) === true, $r[2]);
+
+echo "Modello: chiave non valida in module_offer_answer\n";
+require $backend . '/models/User.php';
+$inj = newUser('hoinject');
+sql("UPDATE gym_users SET tier = 'free' WHERE id = ?", [$inj['id']]);
+$model = new User($conn);
+$model->id = $inj['id'];
+$model->updateProfile(['module_offer_answer' => ['key' => "ai = 1, tier = 'plus' -- ", 'accepted' => true]]);
+check('una chiave fuori da MODULE_OFFERS non arriva al testo SQL (il livello non cambia)', scalar("SELECT tier FROM gym_users WHERE id = ?", [$inj['id']]) === 'free');
+check('e non si scrive nulla (module_offer_at resta NULL)', scalar("SELECT module_offer_at IS NULL FROM gym_users WHERE id = ?", [$inj['id']]) == 1);
 
 echo "Esportazione\n";
 settings($s, ['module_offer_answer' => ['key' => 'levels', 'accepted' => false]]);
