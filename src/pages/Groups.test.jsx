@@ -281,3 +281,71 @@ describe('Livelli non attivo: classifica del gruppo', () => {
     expect(fetch.mock.calls.filter(([url]) => String(url).includes('groups/read.php')).every(([url]) => String(url).includes('board=week'))).toBe(true);
   });
 });
+
+// Visibilità nei gruppi: la risposta di groups/read.php dice quali dati vede chi guarda (`visibility`)
+describe('visibilità nella classifica del gruppo', () => {
+  const NO_WORKOUTS = 'Non mostri gli allenamenti della settimana, quindi non vedi la classifica.';
+  const vis = (over = {}) => ({ workouts: true, volume: true, streak: true, level: true, ...over });
+  const stubRead = (visibility, board = rows) => vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
+    url.includes('groups/read.php')
+      ? json({ success: true, group: group(), week, members, board, board_type: 'week', ...(visibility && { visibility }) })
+      : json({ success: true }),
+  )));
+  const tabs = () => screen.queryAllByRole('tab').map((tab) => tab.textContent);
+
+  it('visibility tutta vera: Settimana · Streak · Livello', async () => {
+    stubRead(vis());
+    routes('/gruppi/7', ALL);
+    await screen.findAllByText('luca');
+    expect(tabs()).toEqual(['Settimana', 'Streak', 'Livello']);
+  });
+
+  it('streak e level false: restano solo le righe della settimana, senza schede, senza leggere le altre classifiche', async () => {
+    stubRead(vis({ streak: false, level: false }));
+    routes('/gruppi/7', ALL);
+    await screen.findAllByText('luca');
+    expect(tabs()).toEqual([]);
+    expect(fetch.mock.calls.filter(([url]) => String(url).includes('groups/read.php')).every(([url]) => String(url).includes('board=week'))).toBe(true);
+  });
+
+  it('solo streak false: Settimana · Livello', async () => {
+    stubRead(vis({ streak: false }));
+    routes('/gruppi/7', ALL);
+    await screen.findAllByText('luca');
+    expect(tabs()).toEqual(['Settimana', 'Livello']);
+  });
+
+  it('visibility vince sul modulo del client: modulo Livelli non attivo ma visibility vera = come manda il server', async () => {
+    stubRead(vis());
+    routes('/gruppi/7', { ...ALL, levels: false });
+    await screen.findAllByText('luca');
+    expect(tabs()).toEqual(['Settimana', 'Streak', 'Livello']);
+  });
+
+  it('workouts false: al posto della classifica c\'è la riga di testo, i membri restano, la scheda Settimana resta', async () => {
+    stubRead(vis({ workouts: false, volume: false }), []);
+    routes('/gruppi/7', ALL);
+    expect(await screen.findByText(NO_WORKOUTS)).toBeTruthy();
+    expect(screen.queryByText('Nessun membro in classifica.')).toBeNull();
+    expect(screen.getByText('luca')).toBeTruthy(); // elenco dei membri
+    expect(tabs()).toContain('Settimana');
+    expect(screen.getByText(NO_WORKOUTS).closest('[aria-hidden="true"]')).toBeNull();
+  });
+
+  it('risposta senza visibility (server vecchio): tutto come oggi, secondo il modulo Livelli', async () => {
+    stubRead(null);
+    routes('/gruppi/7', { ...ALL, levels: false });
+    await screen.findAllByText('luca');
+    expect(tabs()).toEqual([]);
+    expect(screen.queryByText(NO_WORKOUTS)).toBeNull();
+  });
+
+  it('una riga senza volume mostra gli allenamenti e basta', async () => {
+    stubRead(vis(), [{ ...rows[0], volume_kg: null }, rows[1]]);
+    routes('/gruppi/7', ALL);
+    await screen.findAllByText('luca');
+    const row = screen.getAllByText('luca')[0].closest('li');
+    expect(row.textContent).toContain('3/3');
+    expect(row.textContent).not.toMatch(/kg|undefined|null/);
+  });
+});

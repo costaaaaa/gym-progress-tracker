@@ -1,6 +1,6 @@
 // Classifica del gruppo: la riga «tu» in scuro deve avere almeno 4.5 : 1 per il testo secondario sul suo fondo.
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import LeaderboardTable from './LeaderboardTable';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
 
@@ -43,5 +43,44 @@ describe('unità di peso', () => {
     expect(screen.getByText('11.464 lb')).toBeTruthy(); // 5200 kg
     expect(screen.getByText('10.626 lb')).toBeTruthy(); // 4820 kg
     expect(screen.queryByText(/kg/)).toBeNull();
+  });
+});
+
+// Dati nascosti: il server manda null nei campi che chi guarda o il membro non mostra
+describe('campi nascosti (null)', () => {
+  const week = (over) => ({ rank: 1, username: 'luca', is_me: false, workouts: 3, goal: 3, volume_kg: 5200, adherence: 1, streak_weeks: null, level: null, total_xp: null, ...over });
+  const renderBoard = (props) => render(<ThemeModeProvider><LeaderboardTable {...props} /></ThemeModeProvider>);
+
+  it('settimana: una riga senza volume mostra gli allenamenti e la barra, ma né volume né «undefined» né zero finto', () => {
+    renderBoard({ rows: [week(), week({ rank: 2, username: 'anna', volume_kg: null, workouts: 2, adherence: 0.66 })], board: 'week' });
+    const row = screen.getByText('anna').closest('li');
+    expect(row.textContent).toContain('2/3');
+    expect(row.textContent).not.toMatch(/undefined|null|NaN|kg|—|nascost/i);
+    expect(within(row).getByRole('progressbar')).toBeTruthy();
+    expect(screen.getByText('5200 kg')).toBeTruthy();
+  });
+
+  it('settimana: se nessuna riga ha il volume, non compare nessun volume', () => {
+    renderBoard({ rows: [week({ volume_kg: null }), week({ rank: 2, username: 'anna', volume_kg: null })], board: 'week' });
+    expect(document.body.textContent).not.toMatch(/kg|lb|undefined|null/);
+    expect(screen.getAllByRole('progressbar')).toHaveLength(2);
+  });
+
+  it('settimana: la riga con il volume resta nella stessa colonna di quella senza (stessa larghezza minima)', () => {
+    renderBoard({ rows: [week(), week({ rank: 2, username: 'anna', volume_kg: null })], board: 'week' });
+    const bars = screen.getAllByRole('progressbar').map((bar) => bar.parentElement.parentElement);
+    expect(getComputedStyle(bars[0]).minWidth).toBe(getComputedStyle(bars[1]).minWidth);
+  });
+
+  it('livello: una riga senza xp mostra solo il livello', () => {
+    renderBoard({ rows: [week({ level: 4, total_xp: null })], board: 'level' });
+    expect(screen.getByText('Livello 4')).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/XP|undefined|null/);
+  });
+
+  it('streak: una riga con streak null non mostra «undefined» né un numero', () => {
+    renderBoard({ rows: [week({ streak_weeks: null })], board: 'streak' });
+    expect(document.body.textContent).not.toMatch(/undefined|null|NaN/);
+    expect(screen.getByText('luca')).toBeTruthy();
   });
 });

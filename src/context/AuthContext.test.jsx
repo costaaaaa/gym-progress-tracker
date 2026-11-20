@@ -583,3 +583,68 @@ describe('AuthProvider: moduli', () => {
     await waitFor(() => expect(screen.getByTestId('modules').textContent).toBe(JSON.stringify({ ...OLD, groups: true })));
   });
 });
+
+// Visibilità nei gruppi: da user/read.php dentro `user`; chi non la ha (login, server vecchio) mostra tutto
+describe('AuthProvider: visibilità nei gruppi', () => {
+  const Vis = () => {
+    const { user } = useAuth();
+    return <div data-testid="vis">{user ? JSON.stringify(user.group_visibility ?? null) : 'nessun utente'}</div>;
+  };
+  const OLD = { workouts: true, volume: true, streak: true, level: true };
+  const NEW = { ...OLD, volume: false };
+
+  it('user.group_visibility arriva da user/read.php e finisce nella copia locale', async () => {
+    readReturns({ id: 1, username: 'a', group_visibility: NEW });
+    localStorage.setItem('isLoggedIn', 'true');
+    render(<AuthProvider><Vis /></AuthProvider>);
+    await waitFor(() => expect(screen.getByTestId('vis').textContent).toBe(JSON.stringify(NEW)));
+    expect(JSON.parse(localStorage.getItem('user')).group_visibility).toEqual(NEW);
+  });
+
+  it('dopo il login (che risponde senza) la rilettura la porta', async () => {
+    readReturns({ id: 1, username: 'a', group_visibility: NEW });
+    const Login = () => {
+      const { login } = useAuth();
+      return <button onClick={() => login({ id: 1, username: 'a' })}>entra</button>;
+    };
+    render(<AuthProvider><Vis /><Login /></AuthProvider>);
+    fireEvent.click(screen.getByText('entra'));
+    await waitFor(() => expect(screen.getByTestId('vis').textContent).toBe(JSON.stringify(NEW)));
+  });
+
+  it('un server senza il campo lascia user senza group_visibility', async () => {
+    readReturns({ id: 1, username: 'a' });
+    localStorage.setItem('isLoggedIn', 'true');
+    render(<AuthProvider><Vis /></AuthProvider>);
+    await waitFor(() => expect(backend).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByTestId('vis').textContent).toBe('null'));
+  });
+
+  it('una rilettura partita prima del salvataggio e arrivata dopo non riporta indietro group_visibility', async () => {
+    readReturns({ id: 1, username: 'a', group_visibility: OLD });
+    localStorage.setItem('isLoggedIn', 'true');
+    const Tools = () => {
+      const { refreshEmailState, updateUser } = useAuth();
+      return (
+        <>
+          <button onClick={refreshEmailState}>rileggi</button>
+          <button onClick={() => updateUser({ group_visibility: NEW })}>salva</button>
+        </>
+      );
+    };
+    render(<AuthProvider><Vis /><Tools /></AuthProvider>);
+    await waitFor(() => expect(screen.getByTestId('vis').textContent).toBe(JSON.stringify(OLD)));
+    let release;
+    backend.mockImplementation(() => new Promise((resolve) => {
+      release = () => resolve(new Response(JSON.stringify({ success: true, id: 1, username: 'a', group_visibility: OLD }), { status: 200 }));
+    }));
+    fireEvent.click(screen.getByText('rileggi'));
+    fireEvent.click(screen.getByText('salva'));
+    await waitFor(() => expect(screen.getByTestId('vis').textContent).toBe(JSON.stringify(NEW)));
+    await act(async () => { release(); });
+    await waitFor(() => expect(backend).toHaveBeenCalledTimes(2));
+    await act(async () => { await Promise.resolve(); });
+    expect(screen.getByTestId('vis').textContent).toBe(JSON.stringify(NEW));
+    expect(JSON.parse(localStorage.getItem('user')).group_visibility).toEqual(NEW);
+  });
+});
