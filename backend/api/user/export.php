@@ -25,7 +25,7 @@ const EXPORT_BODY_LENGTH_COLUMNS = array('chest_size', 'arm_size', 'waist_size',
 // restano com'erano.
 const EXPORT_DATETIME_COLUMNS = array(
     'created_at', 'email_verified_at', 'password_changed_at', 'last_login_at', 'unlocked_at', 'expires_at', 'revoked_at',
-    'granted_at', 'share_consent_at', 'joined_at', 'decided_at', 'applied_at',
+    'granted_at', 'share_consent_at', 'joined_at', 'decided_at', 'applied_at', 'modules_chosen_at',
 );
 
 // Esegue una query con parametri e ritorna tutte le righe
@@ -47,6 +47,7 @@ function export_rows($db, $sql, $params)
 try {
     $profile = export_rows($db,
         "SELECT weight_unit, username, email, email_verified_at, pending_email, birth_date, gender, training_start_date, rest_timer_enabled, time_zone,
+                module_body, module_recovery, module_levels, module_groups, module_ai, modules_chosen_at,
                 created_at, password_changed_at, last_login_at
          FROM gym_users WHERE id = ?", array($user_id));
     if (!$profile) {

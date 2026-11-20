@@ -43,6 +43,9 @@ try {
             'training_start_date' => $user->training_start_date,
             'locale' => $user->locale,
             'weight_unit' => $user->weight_unit,
+            // Moduli facoltativi {body, recovery, levels, groups, ai}: «non attivo» è solo visualizzazione
+            'modules' => $user->modules,
+            'modules_chosen' => $user->modules_chosen,
             'experience_years' => $user->experience_years,
             'password_changed_at' => server_time_iso($user->password_changed_at),
             'is_admin' => user_is_admin($db, $user_id),

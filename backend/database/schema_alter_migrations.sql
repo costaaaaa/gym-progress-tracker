@@ -1082,3 +1082,31 @@ SET @q = IF(@fresh,
   'ALTER TABLE `gym_users` ADD COLUMN `weight_unit` ENUM(''kg'',''lb'') NOT NULL DEFAULT ''kg'' AFTER `locale`',
   'DO 0');
 PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
+
+
+-- ------------------------------------------------------------------------------
+-- 42. Moduli facoltativi dell'account: cinque flag su gym_users (module_body = Misure, module_recovery =
+--     Recupero e serie per muscolo, module_levels = Livelli e traguardi, module_groups = Gruppi,
+--     module_ai = Assistenti AI), tutti attivi di default, e modules_chosen_at = quando l'utente ha fatto la
+--     sua scelta (NULL = non l'ha ancora fatta). «Non attivo» è solo visualizzazione: i dati restano e
+--     continuano ad aggiornarsi. Gli account che esistono adesso hanno tutto attivo e modules_chosen_at = ora
+--     (per loro la scelta iniziale non arriverà mai): l'ADD COLUMN riempie le righe esistenti con il default
+--     temporaneo CURRENT_TIMESTAMP, poi il default si toglie. La sezione si rilancia senza cambiare nulla (anche
+--     se interrotta tra i due passaggi: il secondo è sempre eseguito). Solo aggiunte: il rollback del codice
+--     resta possibile (il codice vecchio ignora le colonne).
+-- ------------------------------------------------------------------------------
+
+SET @fresh = (SELECT COUNT(*) = 0 FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = 'gym_users' AND column_name = 'modules_chosen_at');
+SET @q = IF(@fresh,
+  'ALTER TABLE `gym_users`
+     ADD COLUMN `module_body` TINYINT(1) NOT NULL DEFAULT 1 AFTER `weight_unit`,
+     ADD COLUMN `module_recovery` TINYINT(1) NOT NULL DEFAULT 1 AFTER `module_body`,
+     ADD COLUMN `module_levels` TINYINT(1) NOT NULL DEFAULT 1 AFTER `module_recovery`,
+     ADD COLUMN `module_groups` TINYINT(1) NOT NULL DEFAULT 1 AFTER `module_levels`,
+     ADD COLUMN `module_ai` TINYINT(1) NOT NULL DEFAULT 1 AFTER `module_groups`,
+     ADD COLUMN `modules_chosen_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP AFTER `module_ai`',
+  'DO 0');
+PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
+
+ALTER TABLE `gym_users` ALTER COLUMN `modules_chosen_at` DROP DEFAULT;

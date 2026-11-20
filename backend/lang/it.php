@@ -125,6 +125,7 @@ return array(
     'settings.updated' => 'Profilo aggiornato con successo.',
     'settings.locale_invalid' => 'Lingua non supportata.',
     'settings.weight_unit_invalid' => 'Unità di peso non supportata.',
+    'settings.modules_invalid' => 'Modulo non supportato.',
     'settings.weekly_goal_invalid' => 'Obiettivo settimanale non valido: da 1 a 7 allenamenti.',
     'settings.update_error' => "Errore durante l'aggiornamento delle impostazioni.",
     'account.password_required' => 'La password è obbligatoria.',
