@@ -31,6 +31,10 @@ CREATE TABLE IF NOT EXISTS `gym_users` (
   `module_groups` tinyint(1) NOT NULL DEFAULT 1,
   `module_ai` tinyint(1) NOT NULL DEFAULT 1,
   `modules_chosen_at` datetime DEFAULT NULL, -- quando l'utente ha scelto i moduli; NULL = non ancora
+  `group_show_workouts` tinyint(1) NOT NULL DEFAULT 1, -- visibilità nei gruppi: 0 = nasconde il dato e non vede quello degli altri
+  `group_show_volume` tinyint(1) NOT NULL DEFAULT 1,
+  `group_show_streak` tinyint(1) NOT NULL DEFAULT 1,
+  `group_show_level` tinyint(1) NOT NULL DEFAULT 1,
   `time_zone` varchar(64) DEFAULT NULL, -- ultimo fuso IANA visto dal dispositivo (header X-Timezone)
   `password_changed_at` datetime DEFAULT NULL,
   `last_login_at` datetime DEFAULT NULL,

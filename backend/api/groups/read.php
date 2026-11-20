@@ -1,5 +1,6 @@
 <?php
-// GET ?group_id=&board=week|streak|level → dati del gruppo, membri e classifica.
+// GET ?group_id=&board=week|streak|level → dati del gruppo, membri e classifica (vuota se chi guarda
+// ne nasconde il dato: reciprocità).
 // Solo per i membri (404 agli altri). Codice invito e riferimenti dei membri solo a owner e admin.
 require_once __DIR__ . '/_common.php';
 
@@ -35,6 +36,8 @@ try {
         $payload['name_locked_until'] = server_time_iso($lock['until'] ?? null);
     }
 
+    $leaderboard = $group->leaderboard($group_id, $user_id, $board, $now);
+
     api_json_response(array(
         'success' => true,
         'group' => $payload,
@@ -44,7 +47,9 @@ try {
             'to' => $sunday->format('Y-m-d'),
         ),
         'board_type' => $board,
-        'board' => $group->leaderboard($group_id, $user_id, $board, $now),
+        // Quali dati vede chi guarda (e quindi quali classifiche): i suoi valori effettivi
+        'visibility' => $leaderboard['visibility'],
+        'board' => $leaderboard['board'],
         'members' => $group->members($group_id, $user_id, $can_manage),
     ));
 } catch (Throwable $e) {

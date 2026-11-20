@@ -1110,3 +1110,24 @@ SET @q = IF(@fresh,
 PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
 
 ALTER TABLE `gym_users` ALTER COLUMN `modules_chosen_at` SET DEFAULT NULL;
+
+
+-- ------------------------------------------------------------------------------
+-- 43. Visibilità nei gruppi: quattro opzioni dell'account, valide per tutti i suoi gruppi, su gym_users
+--     (group_show_workouts = allenamenti della settimana, group_show_volume = volume, group_show_streak =
+--     streak, group_show_level = livello). Tutte accese di default: chi è già in un gruppo continua a
+--     mostrare tutto. Sono i valori salvati: quelli effettivi (volume solo con gli allenamenti accesi, streak e
+--     livello solo con il modulo Livelli attivo) si calcolano in lettura. Solo aggiunte: il rollback del codice
+--     resta possibile (il codice vecchio ignora le colonne). La sezione si rilancia senza cambiare nulla.
+-- ------------------------------------------------------------------------------
+
+SET @fresh = (SELECT COUNT(*) = 0 FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = 'gym_users' AND column_name = 'group_show_workouts');
+SET @q = IF(@fresh,
+  'ALTER TABLE `gym_users`
+     ADD COLUMN `group_show_workouts` TINYINT(1) NOT NULL DEFAULT 1 AFTER `modules_chosen_at`,
+     ADD COLUMN `group_show_volume` TINYINT(1) NOT NULL DEFAULT 1 AFTER `group_show_workouts`,
+     ADD COLUMN `group_show_streak` TINYINT(1) NOT NULL DEFAULT 1 AFTER `group_show_volume`,
+     ADD COLUMN `group_show_level` TINYINT(1) NOT NULL DEFAULT 1 AFTER `group_show_streak`',
+  'DO 0');
+PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;

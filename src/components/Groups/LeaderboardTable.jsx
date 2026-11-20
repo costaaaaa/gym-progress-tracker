@@ -7,12 +7,14 @@ import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 import { radius } from '../../theme/radius';
 
 // Classifica del gruppo. Le righe arrivano già ordinate e con la posizione dal server
-// (api/groups/read.php); qui cambia solo cosa si mostra per ogni scheda.
+// (api/groups/read.php); qui cambia solo cosa si mostra per ogni scheda. Un campo null è un dato che chi guarda
+// o quel membro non mostra: non si scrive nulla al suo posto.
 const MEDALS = { 1: 'medal.gold', 2: 'medal.silver', 3: 'medal.bronze' };
 
 const Metric = ({ row, board, weightUnit }) => {
   const { t } = useTranslation();
   if (board === 'streak') {
+    if (row.streak_weeks == null) return null;
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
         <LocalFireDepartmentIcon sx={{ fontSize: 18, color: 'warning.text' }} />
@@ -23,25 +25,28 @@ const Metric = ({ row, board, weightUnit }) => {
     );
   }
   if (board === 'level') {
+    if (row.level == null) return null;
     return (
       <Box sx={{ textAlign: 'right' }}>
         <Typography sx={{ fontWeight: 700 }}>{t('groups.board.level', { level: row.level })}</Typography>
-        <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{row.total_xp.toLocaleString(intlLocale())} XP</Typography>
+        {row.total_xp != null && <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{row.total_xp.toLocaleString(intlLocale())} XP</Typography>}
       </Box>
     );
   }
   return (
     <Box sx={{ minWidth: 150 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-        <Typography sx={{ fontSize: 16, fontWeight: 700 }}>{row.workouts}/{row.goal}</Typography>
-        <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{formatTotalInUnit(row.volume_kg, weightUnit, intlLocale())}</Typography>
+        {row.workouts != null && <Typography sx={{ fontSize: 16, fontWeight: 700 }}>{row.workouts}/{row.goal}</Typography>}
+        {row.volume_kg != null && <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{formatTotalInUnit(row.volume_kg, weightUnit, intlLocale())}</Typography>}
       </Box>
-      <LinearProgress
-        variant="determinate"
-        value={Math.round(row.adherence * 100)}
-        aria-label={t('groups.board.progress_label', { done: row.workouts, goal: row.goal })}
-        sx={{ height: 8, borderRadius: 4 }}
-      />
+      {row.adherence != null && (
+        <LinearProgress
+          variant="determinate"
+          value={Math.round(row.adherence * 100)}
+          aria-label={t('groups.board.progress_label', { done: row.workouts, goal: row.goal })}
+          sx={{ height: 8, borderRadius: 4 }}
+        />
+      )}
     </Box>
   );
 };

@@ -547,6 +547,7 @@
   "groups.detail.load_error": "Couldn't load the group.",
   "groups.detail.board.week": "Week",
   "groups.detail.board.week_hint": "Workouts done against your own weekly goal.",
+  "groups.detail.board.week_hidden": "You are not showing your workouts for the week, so you can't see the leaderboard.",
   "groups.detail.board.streak": "Streak",
   "groups.detail.board.streak_hint": "Consecutive weeks with the goal reached.",
   "groups.detail.board.level": "Level",

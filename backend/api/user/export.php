@@ -48,7 +48,7 @@ function export_rows($db, $sql, $params)
 try {
     $profile = export_rows($db,
         "SELECT weight_unit, username, email, email_verified_at, pending_email, birth_date, gender, training_start_date, rest_timer_enabled, time_zone,
-                " . User::moduleColumns() . ", modules_chosen_at,
+                " . User::moduleColumns() . ", modules_chosen_at, " . User::groupVisibilityColumns() . ",
                 created_at, password_changed_at, last_login_at
          FROM gym_users WHERE id = ?", array($user_id));
     if (!$profile) {

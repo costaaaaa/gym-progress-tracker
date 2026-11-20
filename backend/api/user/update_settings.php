@@ -96,6 +96,23 @@ try {
             $fields['module_' . $key] = $value;
         }
     }
+    // Visibilità nei gruppi: oggetto parziale {chiave: booleano}, come i moduli
+    if (property_exists($data, 'group_visibility')) {
+        $visibility = $data->group_visibility;
+        if (!is_object($visibility)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => t_server('settings.group_visibility_invalid')]);
+            exit;
+        }
+        foreach ($visibility as $key => $value) {
+            if (!in_array((string)$key, User::GROUP_VISIBILITY, true) || !is_bool($value)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => t_server('settings.group_visibility_invalid')]);
+                exit;
+            }
+            $fields['group_show_' . $key] = $value;
+        }
+    }
     // Chiusura della scelta dei moduli: solo `true` (una volta sola; la data si scrive se è ancora vuota)
     if (property_exists($data, 'modules_chosen')) {
         if ($data->modules_chosen !== true) {
@@ -151,6 +168,7 @@ try {
             'weight_unit' => $user->weight_unit,
             'modules' => $user->modules,
             'modules_chosen' => $user->modules_chosen,
+            'group_visibility' => $user->group_visibility,
             'age' => $user->age,
             'experience_years' => $user->experience_years
         ] + weekly_goal_settings($db, $user_id));

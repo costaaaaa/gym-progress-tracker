@@ -3,6 +3,7 @@
 // Nessuna risposta verso gli altri membri contiene user_id o email: il nome mostrato
 // è lo username. La classifica si calcola in lettura, senza scrivere nel database.
 require_once __DIR__ . '/../lib/weekly_stats.php';
+require_once __DIR__ . '/User.php';
 
 class Group
 {
@@ -208,11 +209,14 @@ class Group
         return null;
     }
 
-    // Classifica della settimana ISO di $now. Quattro query in tutto, non per membro.
+    // Classifica della settimana ISO di $now, con la visibilità effettiva di chi guarda (User::effectiveGroupVisibility):
+    // ritorna {board, visibility}. Una classifica che chi guarda non può vedere è vuota; altrimenti ha solo i
+    // membri che mostrano quel dato, e in ogni riga un dato è null se chi guarda o il membro lo nasconde.
+    // Quattro query in tutto, non per membro.
     public function leaderboard($group_id, $viewer_id, $board, DateTime $now)
     {
         $stmt = $this->conn->prepare(
-            "SELECT m.user_id, u.username,
+            "SELECT m.user_id, u.username, u.module_levels, " . User::groupVisibilityColumns() . ",
                     COALESCE(g.current_streak_weeks, 0) AS current_streak_weeks,
                     g.last_completed_week,
                     COALESCE(g.level, 1) AS level,
@@ -226,6 +230,21 @@ class Group
         $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $ids = array_map(function ($m) { return (int)$m['user_id']; }, $members);
 
+        $shown = array();
+        foreach ($members as $m) {
+            $shown[(int)$m['user_id']] = User::effectiveGroupVisibility($m);
+        }
+        $mine = $shown[(int)$viewer_id] ?? array_fill_keys(User::GROUP_VISIBILITY, false);
+
+        // Il dato che regge ogni classifica
+        $boardData = array('week' => 'workouts', 'streak' => 'streak', 'level' => 'level');
+        if (!$mine[$boardData[$board]]) {
+            return array('board' => array(), 'visibility' => $mine);
+        }
+        $members = array_values(array_filter($members, function ($m) use ($shown, $boardData, $board) {
+            return $shown[(int)$m['user_id']][$boardData[$board]];
+        }));
+
         $counts = weekly_workout_counts($this->conn, $ids, $now);
         $goals = weekly_goals($this->conn, $ids);
         $volumes = weekly_volumes($this->conn, $ids, $now);
@@ -233,18 +252,19 @@ class Group
         $rows = array();
         foreach ($members as $m) {
             $id = (int)$m['user_id'];
+            $visible = function ($key) use ($mine, $shown, $id) { return $mine[$key] && $shown[$id][$key]; };
             $workouts = $counts[$id];
             $goal = $goals[$id];
             $rows[] = array(
                 'username' => $m['username'],
                 'is_me' => $id === (int)$viewer_id,
-                'workouts' => $workouts,
-                'goal' => $goal,
-                'adherence' => round(min($workouts / $goal, 1), 2),
-                'volume_kg' => (int)round($volumes[$id]),
-                'streak_weeks' => effectiveStreakWeeks((int)$m['current_streak_weeks'], $m['last_completed_week'], $now),
-                'level' => (int)$m['level'],
-                'total_xp' => (int)$m['total_xp'],
+                'workouts' => $visible('workouts') ? $workouts : null,
+                'goal' => $visible('workouts') ? $goal : null,
+                'adherence' => $visible('workouts') ? round(min($workouts / $goal, 1), 2) : null,
+                'volume_kg' => $visible('volume') ? (int)round($volumes[$id]) : null,
+                'streak_weeks' => $visible('streak') ? effectiveStreakWeeks((int)$m['current_streak_weeks'], $m['last_completed_week'], $now) : null,
+                'level' => $visible('level') ? (int)$m['level'] : null,
+                'total_xp' => $visible('level') ? (int)$m['total_xp'] : null,
             );
         }
 
@@ -269,7 +289,7 @@ class Group
             $r['rank'] = $rank;
         }
         unset($r);
-        return $rows;
+        return array('board' => $rows, 'visibility' => $mine);
     }
 
     public function rename($group_id, $name)

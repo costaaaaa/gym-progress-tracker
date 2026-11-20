@@ -46,6 +46,8 @@ try {
             // Moduli facoltativi {body, recovery, levels, groups, ai}: «non attivo» è solo visualizzazione
             'modules' => $user->modules,
             'modules_chosen' => $user->modules_chosen,
+            // Visibilità nei gruppi {workouts, volume, streak, level}: i valori salvati, non quelli effettivi
+            'group_visibility' => $user->group_visibility,
             'experience_years' => $user->experience_years,
             'password_changed_at' => server_time_iso($user->password_changed_at),
             'is_admin' => user_is_admin($db, $user_id),
