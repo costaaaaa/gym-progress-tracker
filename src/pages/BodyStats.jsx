@@ -1,4 +1,4 @@
-import { Fragment, useState, useEffect } from 'react';
+import { Fragment, useState, useEffect, useRef } from 'react';
 import {
   Typography,
   Grid,
@@ -220,7 +220,9 @@ const numberFieldSx = {
   '& input[type=number]': { MozAppearance: 'textfield' },
 };
 
-const BodyStats = ({ isEmbedded = false }) => {
+// `openRequest`: un numero che cresce a ogni richiesta di aprire «Nuova misurazione» (dal ventaglio); si apre una volta
+// per numero, a dati caricati e solo con il consenso ai dati sulla salute (come il pulsante della pagina)
+const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
   const { t } = useTranslation();
   const { weightUnit } = useAuth();
   const isPhone = useMediaQuery(useTheme().breakpoints.down('sm'));
@@ -233,6 +235,7 @@ const BodyStats = ({ isEmbedded = false }) => {
   // true se il consenso era stato dato a una versione precedente del testo
   const [consentUpdated, setConsentUpdated] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const handledOpenRequest = useRef(null);
   // Messaggio d'errore sotto ogni campo sbagliato; il focus va sul primo
   const [fieldErrors, setFieldErrors] = useState({});
   const { fieldRef, focusField } = useFocusField();
@@ -294,6 +297,15 @@ const BodyStats = ({ isEmbedded = false }) => {
     setFieldErrors({});
     setIsDialogOpen(true);
   };
+
+  useEffect(() => {
+    if (!openRequest || isLoading || handledOpenRequest.current === openRequest) return;
+    handledOpenRequest.current = openRequest;
+    if (!consentRequired) {
+      setFieldErrors({});
+      setIsDialogOpen(true);
+    }
+  }, [openRequest, isLoading, consentRequired]);
 
   const handleDateChange = (date) => {
     setFormData({ ...formData, date });

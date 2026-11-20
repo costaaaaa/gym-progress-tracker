@@ -1,9 +1,9 @@
-// Pagina Dashboard vista dall'utente: titolo unico sopra i tab, tab attivo in inchiostro come in Allenamenti.
+// Pagina Progressi (indirizzo /dashboard) vista dall'utente: titolo unico sopra i tab, tab attivo in inchiostro.
 // Colori del tema chiaro scritti a mano: text.primary #1a1816, text.secondary #6b6663.
 import { useState } from 'react';
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import Dashboard from './Dashboard';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { json } from '../test/dom';
@@ -42,11 +42,11 @@ const mount = async () => {
   await screen.findByText(/Nessun dato di allenamento/);
 };
 
-describe('shell di Dashboard', () => {
-  it('un solo h1 "Dashboard" nello stile titolo di pagina, sopra i tab', async () => {
+describe('shell di Progressi', () => {
+  it('un solo h1 "Progressi" nello stile titolo di pagina, sopra i tab', async () => {
     await mount();
     const h1s = screen.getAllByRole('heading', { level: 1 });
-    expect(h1s.map((h) => h.textContent)).toEqual(['Dashboard']);
+    expect(h1s.map((h) => h.textContent)).toEqual(['Progressi']);
     const style = getComputedStyle(h1s[0]);
     expect(style.fontSize).toBe('28px');
     expect(style.fontWeight).toBe('800');
@@ -134,14 +134,14 @@ describe('tab sconosciuta', () => {
 describe('nomi accessibili', () => {
   it('l\'elenco dei tab ha un nome in italiano', async () => {
     await mount();
-    expect(screen.getByRole('tablist', { name: 'Sezioni della dashboard' })).toBeTruthy();
+    expect(screen.getByRole('tablist', { name: 'Sezioni di Progressi' })).toBeTruthy();
   });
 
-  it('il titolo del documento segue il tab: «tab · Dashboard | LiftIndex»', async () => {
+  it('il titolo del documento segue il tab: «tab · Progressi | LiftIndex»', async () => {
     await mount();
-    expect(document.title).toBe('Esercizi · Dashboard | LiftIndex');
+    expect(document.title).toBe('Esercizi · Progressi | LiftIndex');
     fireEvent.click(screen.getByRole('tab', { name: 'Muscoli' }));
-    await waitFor(() => expect(document.title).toBe('Muscoli · Dashboard | LiftIndex'));
+    await waitFor(() => expect(document.title).toBe('Muscoli · Progressi | LiftIndex'));
   });
 });
 
@@ -176,7 +176,7 @@ describe('moduli non attivi', () => {
     expect(tabNames()).toEqual(['Esercizi', 'Misure']);
     fireEvent.click(screen.getByRole('tab', { name: 'Misure' }));
     await waitFor(() => expect(screen.getByRole('tab', { name: 'Misure' }).getAttribute('aria-selected')).toBe('true'));
-    expect(document.title).toBe('Misure · Dashboard | LiftIndex');
+    expect(document.title).toBe('Misure · Progressi | LiftIndex');
   });
 
   it('Recupero e Misure non attivi: resta solo Esercizi, valida e selezionata', async () => {
@@ -193,7 +193,7 @@ describe('moduli non attivi', () => {
     expect(tabNames()).toEqual(['Esercizi', 'Muscoli']);
     screen.getAllByRole('tab').forEach((tab) => expect(tab.getAttribute('aria-selected')).toBe('false'));
     expect(screen.queryByRole('alert')).toBeNull();
-    expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual(['Dashboard']);
+    expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual(['Progressi']);
   });
 
   it('?tab=muscles con Recupero non attivo: «Il modulo Recupero e serie per muscolo non è attivo»', async () => {
@@ -210,5 +210,50 @@ describe('moduli non attivi', () => {
     const tab = await screen.findByRole('tab', { name: 'Misure' });
     expect(tab.getAttribute('aria-selected')).toBe('true');
     expect(screen.queryByRole('heading', { name: 'Il modulo Misure non è attivo' })).toBeNull();
+  });
+});
+
+// «Nuova misura» dal ventaglio: arriva con lo stato `openMeasure` e la scheda Misure apre la finestra, una volta
+describe('«Nuova misura» dal ventaglio', () => {
+  const Probe = () => <p data-testid="state">{JSON.stringify(useLocation().state)}</p>;
+  const openWith = (state, consentRequired = false) => {
+    auth.value = { isLoggedIn: true, loading: false, weightUnit: 'kg', user: { id: 1, modules: { body: true, recovery: true } } };
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(json({ records: [], consent_required: consentRequired }))));
+    render(
+      <ThemeModeProvider>
+        <MemoryRouter initialEntries={[{ pathname: '/dashboard', search: '?tab=body', state }]}><Probe /><Dashboard /></MemoryRouter>
+      </ThemeModeProvider>,
+    );
+  };
+  const dialogTitle = () => screen.queryByText('Aggiungi misurazioni');
+
+  it('apre la finestra «Aggiungi misurazioni» e consuma lo stato: tornando indietro non si riapre', async () => {
+    openWith({ openMeasure: true });
+    expect(await screen.findByRole('dialog')).toBeTruthy();
+    expect(dialogTitle()).toBeTruthy();
+    expect(screen.getByTestId('state').textContent).toBe('null');
+  });
+
+  it('chiusa la finestra non si riapre da sola', async () => {
+    openWith({ openMeasure: true });
+    await screen.findByRole('dialog');
+    fireEvent.click(screen.getByRole('button', { name: 'Annulla' }));
+    await waitFor(() => expect(dialogTitle()).toBeNull());
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(dialogTitle()).toBeNull();
+  });
+
+  it('senza il consenso ai dati sulla salute si vede la card del consenso e non si apre nulla; lo stato è consumato', async () => {
+    openWith({ openMeasure: true }, true);
+    await waitFor(() => expect(screen.getByTestId('state').textContent).toBe('null'));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Nuova misurazione' })).toBeNull();
+  });
+
+  it('senza lo stato la finestra non si apre', async () => {
+    openWith(null);
+    await screen.findByRole('button', { name: 'Nuova misurazione' });
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });

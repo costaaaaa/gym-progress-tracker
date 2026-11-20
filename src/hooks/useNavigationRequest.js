@@ -17,7 +17,8 @@ export const useNavigationRequest = (key) => {
   useEffect(() => {
     if (!asked) return;
     setRequest((current) => (current ?? 0) + 1);
-    const { [key]: _consumed, ...rest } = state;
+    const rest = { ...state };
+    delete rest[key];
     navigate({ pathname, search, hash }, { replace: true, state: Object.keys(rest).length > 0 ? rest : null });
   }, [asked, key, pathname, search, hash, state, navigate]);
 

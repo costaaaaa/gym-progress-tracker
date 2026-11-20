@@ -5,6 +5,7 @@ import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import { useTabbedPage } from '../hooks/useTabbedPage';
 import { useModule } from '../hooks/useModule';
+import { useNavigationRequest } from '../hooks/useNavigationRequest';
 import { ModuleInactive } from '../components/ModuleGate';
 import { useTranslation } from 'react-i18next';
 import { INK_TABS } from '../utils/inkTabs';
@@ -30,6 +31,8 @@ const TAB_ICONS = {
 const Dashboard = () => {
   const { t } = useTranslation();
   const { currentTab, visitedTabs, handleTabChange } = useTabbedPage(TABS, { title: t('dashboard.title'), description: t('dashboard.meta.description') });
+  // «Nuova misura» dal ventaglio (stato di navigazione): la scheda Misure apre la sua finestra, una volta
+  const measureRequest = useNavigationRequest('openMeasure');
   const modules = { recovery: useModule('recovery'), body: useModule('body') };
   // Una tab di un modulo non attivo sparisce dalla riga; se l'indirizzo la chiede, al suo posto c'è la pagina «non attivo»
   const visibleTabs = TABS.filter((tab) => !tab.module || modules[tab.module]);
@@ -77,7 +80,7 @@ const Dashboard = () => {
           )}
           {visitedTabs.body && modules.body && (
             <Box sx={{ display: currentTab === 'body' ? 'block' : 'none' }}>
-              <BodyStats isEmbedded={true} />
+              <BodyStats isEmbedded={true} openRequest={measureRequest} />
             </Box>
           )}
         </Suspense>
