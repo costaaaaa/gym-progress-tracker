@@ -104,5 +104,19 @@ check('ultima risposta sette giorni fa: si propone', 'levels', module_to_offer($
 check('la scelta recente blocca anche con ultima risposta vecchia', null, module_to_offer($none, '2026-11-20 00:00:00', array(), '2026-10-01 00:00:00', $now));
 check('chiavi sconosciute tra i rifiutati si ignorano', 'body', module_to_offer($none, '2026-11-01 00:00:00', array('zzz'), null, $now));
 
+echo "Proposta di un modulo: date del database senza fuso (cambio d'ora)\n";
+$defaultZone = date_default_timezone_get();
+// Il cambio d'ora cade dentro i sette giorni: contano 168 ore di calendario del database (UTC), non ore reali del fuso di PHP
+foreach (array('Europe/Rome' => array('2026-10-20 12:00:00', '2026-10-27 12:00:00'), 'America/Los_Angeles' => array('2026-10-28 12:00:00', '2026-11-04 12:00:00')) as $zone => $dates) {
+    date_default_timezone_set($zone);
+    $at = new DateTimeImmutable($dates[1]);
+    $before = new DateTimeImmutable(date('Y-m-d H:i:s', strtotime($dates[1]) - 1));
+    check("$zone: sette giorni esatti a cavallo del cambio d'ora: si propone", 'body', module_to_offer($none, $dates[0], array(), null, $at));
+    check("$zone: un secondo prima: no", null, module_to_offer($none, $dates[0], array(), null, $before));
+    check("$zone: stesso confine per l'ultima risposta", null, module_to_offer($none, '2026-01-01 00:00:00', array(), $dates[0], $before));
+    check("$zone: stesso confine per l'ultima risposta (esatto)", 'body', module_to_offer($none, '2026-01-01 00:00:00', array(), $dates[0], $at));
+}
+date_default_timezone_set($defaultZone);
+
 echo "\n$checks controlli, $fails falliti\n";
 exit($fails ? 1 : 0);
