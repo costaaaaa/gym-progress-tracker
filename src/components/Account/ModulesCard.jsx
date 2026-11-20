@@ -22,12 +22,14 @@ const GroupsNotice = ({ on }) => {
     return () => { cancelled = true; };
   }, [on]);
 
-  const showGroups = (event) => {
+  // I collegamenti portano a un punto della card «Gruppi e visibilità» della stessa pagina, col fuoco
+  const goTo = (id) => (event) => {
     event.preventDefault();
-    const card = document.getElementById('groups-visibility');
-    card?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-    card?.focus();
+    const target = document.getElementById(id);
+    target?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+    target?.focus();
   };
+  const linkSx = { display: 'inline-flex', alignItems: 'center', minHeight: 44, fontSize: 16, fontWeight: 600, color: 'text.primary' };
 
   return (
     // Sempre nel DOM: l'avviso arriva dopo una lettura asincrona e così viene annunciato
@@ -35,9 +37,10 @@ const GroupsNotice = ({ on }) => {
       {!on && groupsCount > 0 && (
         <>
           <Typography sx={{ fontSize: 16 }}>{t('modules.groups_warning', { count: groupsCount })}</Typography>
-          <Link href="#groups-visibility" onClick={showGroups} sx={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, fontSize: 16, fontWeight: 600, color: 'text.primary' }}>
-            {t('modules.groups_manage')}
-          </Link>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 2 }}>
+            <Link href="#groups-shown" onClick={goTo('groups-shown')} sx={linkSx}>{t('modules.groups_show')}</Link>
+            <Link href="#groups-list" onClick={goTo('groups-list')} sx={linkSx}>{t('modules.groups_leave')}</Link>
+          </Box>
         </>
       )}
     </Box>

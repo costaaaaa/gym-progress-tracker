@@ -902,7 +902,7 @@ const Account = ({ isEmbedded = false }) => {
         </Typography>
       </Card>
 
-      <GroupsVisibilityCard />
+      <GroupsVisibilityCard notify={(message, severity) => setSnackbar({ open: true, message, severity })} />
 
       {userData?.is_admin && (
         <Card sx={{ p: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>

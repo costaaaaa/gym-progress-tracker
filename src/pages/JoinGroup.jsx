@@ -18,7 +18,7 @@ const JoinGroupContent = () => {
   const [searchParams] = useSearchParams();
   const code = (searchParams.get('codice') || '').replace(/\s+/g, '').toUpperCase();
   const navigate = useNavigate();
-  const { user, weightUnit } = useAuth();
+  const { user } = useAuth();
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState('');
   const [errorCode, setErrorCode] = useState('');
@@ -93,7 +93,6 @@ const JoinGroupContent = () => {
         groupName={preview?.name}
         username={user?.username}
         loading={joining}
-        weightUnit={weightUnit}
         onClose={() => setConsentOpen(false)}
         onConfirm={join}
       />

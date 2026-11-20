@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import {
   Alert, Box, Button, Card, Chip, CircularProgress, Dialog, DialogActions, DialogContent,
-  DialogContentText, DialogTitle, Grid, IconButton, Snackbar, Switch, FormControlLabel, Tab, Tabs, TextField, Tooltip, Typography,
+  DialogContentText, DialogTitle, Grid, IconButton, Link, Snackbar, Switch, FormControlLabel, Tab, Tabs, TextField, Tooltip, Typography,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -200,7 +200,13 @@ const GroupDetailContent = () => {
               </Tabs>
             )}
             {board === 'week' && visibility?.workouts === false ? (
-              <Typography sx={{ color: 'text.secondary', py: 2 }}>{t('groups.detail.board.week_hidden')}</Typography>
+              <Box sx={{ py: 2 }}>
+                <Typography sx={{ color: 'text.secondary' }}>{t('groups.detail.board.week_hidden')}</Typography>
+                <Link component={RouterLink} to="/profilo?tab=settings#groups-shown"
+                  sx={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, fontSize: 16, fontWeight: 600, color: 'text.primary' }}>
+                  {t('groups.detail.board.week_hidden_link')}
+                </Link>
+              </Box>
             ) : (
               <>
                 <Typography sx={{ fontSize: 16, color: 'text.secondary', mb: 1 }}>{t(`groups.detail.board.${board}_hint`)}</Typography>
