@@ -25,8 +25,8 @@ const emailStateFrom = (data) => ({
   outcome: '',
 });
 
-// `modules` e `group_visibility` di user/read.php: un oggetto (se non lo è, il server è vecchio o la risposta è rovinata e non si tocca nulla)
-const isModules = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+// `modules` e `group_visibility` di user/read.php: un oggetto semplice (se non lo è, il server è vecchio o la risposta è rovinata e non si tocca nulla)
+const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 
 // Scrive la copia dell'utente in localStorage e restituisce lo stesso valore, da usare dentro setUser: tutte le modifiche passano da qui
 const cacheUser = (next) => {
@@ -72,10 +72,10 @@ export const AuthProvider = ({ children }) => {
           const fresh = {};
           if (isWeightUnit(data.weight_unit)) fresh.weight_unit = data.weight_unit;
           if (mine > modulesSavedAt.current) {
-            if (isModules(data.modules)) fresh.modules = data.modules;
+            if (isPlainObject(data.modules)) fresh.modules = data.modules;
             if (typeof data.modules_chosen === 'boolean') fresh.modules_chosen = data.modules_chosen;
           }
-          if (mine > groupVisibilitySavedAt.current && isModules(data.group_visibility)) fresh.group_visibility = data.group_visibility;
+          if (mine > groupVisibilitySavedAt.current && isPlainObject(data.group_visibility)) fresh.group_visibility = data.group_visibility;
           setUser((prev) => {
             if (!prev) return prev;
             const changed = Object.keys(fresh).some((key) => JSON.stringify(prev[key]) !== JSON.stringify(fresh[key]));

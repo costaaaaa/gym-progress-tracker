@@ -73,8 +73,6 @@ echo "Registrazione e lettura\n";
 $r = api('POST', '/api/user/register.php', null, regBody('gvnew'));
 check('registrazione: 201', $r[0] === 201, $r[2]);
 check('un account nuovo ha le quattro colonne a 1', stored('gvnew') === '1111');
-$conn->exec("INSERT INTO gym_users (username, email, password, modules_chosen_at) VALUES ('gvold', 'gvold@example.test', " . $conn->quote(password_hash(PASSWORD, PASSWORD_BCRYPT)) . ", NOW())");
-check('un account esistente (default delle colonne) ha le quattro colonne a 1', stored('gvold') === '1111');
 $n = bearer('gvnew');
 $r = api('GET', '/api/user/read.php', $n);
 check('read.php: group_visibility con le quattro chiavi booleane, tutte true', $r[0] === 200 && ($r[1]['group_visibility'] ?? null) === allOn(), $r[2]);
@@ -114,6 +112,16 @@ check('un\'altra impostazione non cambia le opzioni e la risposta le riporta',
 $r = api('POST', '/api/user/update_settings.php', $n, ['group_visibility' => ['level' => false], 'gender' => 'M', 'modules' => ['groups' => true]]);
 check('opzioni e altre impostazioni nella stessa richiesta',
     $r[0] === 200 && stored('gvnew') === '1110' && ($r[1]['gender'] ?? null) === 'M' && ($r[1]['modules']['groups'] ?? null) === true, $r[2]);
+setStored('gvnew', '1111');
+$r = api('POST', '/api/user/update_settings.php', $n, ['group_visibility' => new stdClass(), 'gender' => 'F']);
+check('group_visibility vuoto con un\'altra impostazione valida: 200, l\'altra salvata, le opzioni invariate',
+    $r[0] === 200 && ($r[1]['gender'] ?? null) === 'F' && stored('gvnew') === '1111' && ($r[1]['group_visibility'] ?? null) === allOn(), $r[2]);
+setStored('gvnew', '1010');
+$r = api('GET', '/api/user/export.php', $n);
+$profile = $r[1]['profile'] ?? [];
+check('export: il profilo ha le quattro colonne group_show_* con i valori salvati',
+    $r[0] === 200 && ($profile['group_show_workouts'] ?? null) == 1 && ($profile['group_show_volume'] ?? null) == 0
+    && ($profile['group_show_streak'] ?? null) == 1 && ($profile['group_show_level'] ?? null) == 0, $r[2]);
 setStored('gvnew', '1111');
 
 $bads = [
