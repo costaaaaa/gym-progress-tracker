@@ -443,7 +443,7 @@ class User
             $this->home_layout = home_layout_stored($row['home_layout']);
             $declined = json_decode((string) $row['module_offers_declined'], true);
             $this->module_offer = module_to_offer($this->modules, $row['modules_chosen_at'], is_array($declined) ? $declined : array(),
-                $row['module_offer_at'], new DateTimeImmutable($row['db_now']));
+                $row['module_offer_at'], $row['db_now']);
             $this->password_changed_at = $row['password_changed_at'];
             
             // Calcolo dinamico per il frontend

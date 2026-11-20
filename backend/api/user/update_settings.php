@@ -145,7 +145,7 @@ try {
         // stessa chiave (due scritture della stessa colonna nella stessa richiesta)
         $current = new User($db);
         if (!$current->readById($user_id) || $current->module_offer !== $answer->key
-            || (property_exists($data, 'modules') && is_object($data->modules) && property_exists($data->modules, $answer->key))) {
+            || (property_exists($data, 'modules') && property_exists($data->modules, $answer->key))) {
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => t_server('settings.module_offer_invalid')]);
             exit;

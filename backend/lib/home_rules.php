@@ -7,9 +7,10 @@ require_once __DIR__ . '/id_rules.php';
 const MODULE_OFFER_PAUSE_DAYS = 7;
 
 // Il giorno della scheda da proporre ora: $days è l'elenco dei giorni della scheda attiva in ordine
-// ({id, name, exercises}, una lista con indici da 0: i chiamanti la costruiscono così), $last_day_id il giorno dell'ultimo allenamento (null se non c'è). Dopo il giorno
-// dell'ultimo allenamento viene il successivo, dopo l'ultimo si ricomincia dal primo; se $last_day_id non è
-// un giorno di questa scheda vale il primo. null se la scheda non ha giorni.
+// ({id, name, exercises}, una lista con indici da 0: i chiamanti la costruiscono così), $last_day_id il giorno
+// dell'ultimo allenamento (null se non c'è). Dopo il giorno dell'ultimo allenamento viene il successivo, dopo
+// l'ultimo si ricomincia dal primo; se $last_day_id non è un giorno di questa scheda vale il primo. null se la
+// scheda non ha giorni.
 function next_plan_day(array $days, ?int $last_day_id): ?array {
     if (empty($days)) return null;
     foreach ($days as $i => $day) {
@@ -70,16 +71,16 @@ function home_layout_stored(?string $json): ?array {
 // Il modulo da proporre adesso, o null. Il primo di User::MODULE_OFFERS che non è attivo ($modules: chiave =>
 // attivo) e non è tra i rifiutati; solo se la scelta dei moduli è fatta ($chosen_at non null) e sono passati
 // almeno MODULE_OFFER_PAUSE_DAYS giorni sia da $chosen_at sia da $offer_at (l'ultima risposta, se c'è). Le date
-// sono quelle del database ('Y-m-d H:i:s'), $now è «adesso».
-function module_to_offer(array $modules, ?string $chosen_at, array $declined, ?string $offer_at, DateTimeInterface $now): ?string {
+// sono quelle del database ('Y-m-d H:i:s', senza fuso), e così $now, «adesso» letto dal database.
+function module_to_offer(array $modules, ?string $chosen_at, array $declined, ?string $offer_at, string $now): ?string {
     if ($chosen_at === null) return null;
-    // Le date del database non hanno fuso: tutte e tre si leggono come UTC (anche «adesso», dal suo orario a
-    // muro), così il calcolo non dipende dal fuso di PHP né da un cambio d'ora
+    // Le date del database non hanno fuso: tutte e tre si leggono come UTC, così il calcolo non dipende dal fuso
+    // di PHP né da un cambio d'ora
     $utc = new DateTimeZone('UTC');
-    $ts = function ($date) use ($utc) { return (new DateTimeImmutable($date, $utc))->getTimestamp(); };
-    $limit = $ts($now->format('Y-m-d H:i:s')) - MODULE_OFFER_PAUSE_DAYS * 86400;
-    if ($ts($chosen_at) > $limit) return null;
-    if ($offer_at !== null && $ts($offer_at) > $limit) return null;
+    $utc_ts = function ($date) use ($utc) { return (new DateTimeImmutable($date, $utc))->getTimestamp(); };
+    $limit = $utc_ts($now) - MODULE_OFFER_PAUSE_DAYS * 86400;
+    if ($utc_ts($chosen_at) > $limit) return null;
+    if ($offer_at !== null && $utc_ts($offer_at) > $limit) return null;
     foreach (User::MODULE_OFFERS as $key) {
         if (empty($modules[$key]) && !in_array($key, $declined, true)) return $key;
     }

@@ -87,7 +87,7 @@ check('stored: valore non valido', null, home_layout_stored(json_encode(array(ar
 
 echo "Proposta di un modulo (module_to_offer)\n";
 $none = array('body' => false, 'recovery' => false, 'levels' => false, 'groups' => false, 'ai' => false);
-$now = new DateTimeImmutable('2026-11-21 12:00:00');
+$now = '2026-11-21 12:00:00';
 check('modulo con ordine: Peso e misure per primo', 'body', module_to_offer($none, '2026-11-10 12:00:00', array(), null, $now));
 check('meno di sette giorni dalla scelta: null', null, module_to_offer($none, '2026-11-14 12:00:01', array(), null, $now));
 check('esattamente sette giorni: si propone', 'body', module_to_offer($none, '2026-11-14 12:00:00', array(), null, $now));
@@ -109,8 +109,8 @@ $defaultZone = date_default_timezone_get();
 // Il cambio d'ora cade dentro i sette giorni: contano 168 ore di calendario del database (UTC), non ore reali del fuso di PHP
 foreach (array('Europe/Rome' => array('2026-10-20 12:00:00', '2026-10-27 12:00:00'), 'America/Los_Angeles' => array('2026-10-28 12:00:00', '2026-11-04 12:00:00')) as $zone => $dates) {
     date_default_timezone_set($zone);
-    $at = new DateTimeImmutable($dates[1]);
-    $before = new DateTimeImmutable(date('Y-m-d H:i:s', strtotime($dates[1]) - 1));
+    $at = $dates[1];
+    $before = date('Y-m-d H:i:s', strtotime($dates[1]) - 1);
     check("$zone: sette giorni esatti a cavallo del cambio d'ora: si propone", 'body', module_to_offer($none, $dates[0], array(), null, $at));
     check("$zone: un secondo prima: no", null, module_to_offer($none, $dates[0], array(), null, $before));
     check("$zone: stesso confine per l'ultima risposta", null, module_to_offer($none, '2026-01-01 00:00:00', array(), $dates[0], $before));
