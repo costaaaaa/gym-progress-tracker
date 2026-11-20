@@ -6,9 +6,9 @@ import { renderToString } from 'react-dom/server';
 import Home from './Home';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 
-const auth = vi.hoisted(() => ({ isLoggedIn: true, weightUnit: 'kg' }));
+const auth = vi.hoisted(() => ({ isLoggedIn: true, weightUnit: 'kg', modules: undefined }));
 vi.mock('../context/AuthContext', () => ({
-  useAuth: () => ({ user: { username: 'mario88' }, isLoggedIn: auth.isLoggedIn, loading: false, weightUnit: auth.weightUnit }),
+  useAuth: () => ({ user: { username: 'mario88', modules: auth.modules }, isLoggedIn: auth.isLoggedIn, loading: false, weightUnit: auth.weightUnit }),
 }));
 
 const responses = {
@@ -70,6 +70,7 @@ beforeEach(() => {
 afterEach(() => {
   auth.isLoggedIn = true;
   auth.weightUnit = 'kg';
+  auth.modules = undefined;
   vi.unstubAllGlobals();
   Object.assign(responses, original);
 });
@@ -378,5 +379,69 @@ describe('volume della settimana nell\'unità dell\'account', () => {
     auth.weightUnit = 'lb';
     renderHome();
     expect(await volumeText()).toBe('9259lb' + 'Volumetotale'); // 4200 kg = 9259,4 lb
+  });
+});
+
+// Moduli: ciò che non è attivo sparisce dalla Home, senza buchi; il resto resta
+describe('moduli non attivi', () => {
+  const ALL = { body: true, recovery: true, levels: true, groups: true, ai: true };
+  const fetched = (part) => fakeFetch.mock.calls.some(([url]) => String(url).includes(part));
+  const mountWith = async (off) => {
+    fakeFetch.mockClear();
+    auth.modules = { ...ALL, ...Object.fromEntries(off.map((key) => [key, false])) };
+    renderHome();
+    await screen.findByRole('link', { name: 'Inizia allenamento' });
+    await screen.findByText('Scheda attiva');
+  };
+
+  it('con tutto attivo ci sono streak, livello, recupero, gruppi e la scorciatoia Misure', async () => {
+    await mountWith([]);
+    expect(await screen.findByText('Streak')).toBeTruthy();
+    expect(screen.getByText('Livello')).toBeTruthy();
+    expect(screen.getByText('Stato muscolare')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Serie e recupero per muscolo ›' })).toBeTruthy();
+    expect(await screen.findByText('I tuoi gruppi')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Misure' }).getAttribute('href')).toBe('/dashboard?tab=body');
+  });
+
+  it('Livelli non attivo: né la card dello streak né quella del livello, e il server dei livelli non si chiama', async () => {
+    await mountWith(['levels']);
+    expect(screen.queryByText('Streak')).toBeNull();
+    expect(screen.queryByText('Livello')).toBeNull();
+    expect(fetched('gamification/')).toBe(false);
+    expect(screen.getByText('Riepilogo settimanale')).toBeTruthy();
+    expect(screen.getByText('Stato muscolare')).toBeTruthy();
+  });
+
+  it('Recupero non attivo: niente card dello stato muscolare; le serie della settimana restano, senza il link ai muscoli', async () => {
+    await mountWith(['recovery']);
+    expect(screen.queryByText('Stato muscolare')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Serie e recupero per muscolo ›' })).toBeNull();
+    expect(screen.getByText('Serie allenanti')).toBeTruthy();
+    expect(screen.getByText('8')).toBeTruthy();
+    expect(screen.queryByRole('link', { name: /Serie allenanti/ })).toBeNull();
+    expect(screen.getByText('Streak')).toBeTruthy();
+  });
+
+  it('Misure non attivo: la scorciatoia Misure non c\'è, le altre sì', async () => {
+    await mountWith(['body']);
+    expect(screen.queryByRole('link', { name: 'Misure' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Cronologia' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Progressi' })).toBeTruthy();
+  });
+
+  it('Gruppi non attivo: niente card dei gruppi e l\'elenco non si legge', async () => {
+    await mountWith(['groups']);
+    expect(screen.queryByText('I tuoi gruppi')).toBeNull();
+    expect(fetched('groups/list.php')).toBe(false);
+    expect(screen.getByText('Ultimo allenamento')).toBeTruthy();
+  });
+
+  it('tutti non attivi: restano saluto, riepilogo settimanale, ultimo allenamento, scheda attiva e azioni rapide', async () => {
+    await mountWith(['body', 'recovery', 'levels', 'groups']);
+    ['Streak', 'Livello', 'Stato muscolare', 'I tuoi gruppi'].forEach((text) => expect(screen.queryByText(text)).toBeNull());
+    ['Riepilogo settimanale', 'Ultimo allenamento', 'Scheda attiva'].forEach((text) => expect(screen.getByText(text)).toBeTruthy());
+    expect(screen.getByRole('link', { name: 'Cronologia' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Inizia allenamento' })).toBeTruthy();
   });
 });
