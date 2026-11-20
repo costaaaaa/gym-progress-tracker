@@ -124,9 +124,10 @@ export const ColorField = ({ bozza, onStart }) => (
 // Streak e livello nella misura grande della variante saluto
 export const LevelStreakBig = () => (
   <Box>
-    <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <LocalFireDepartmentIcon aria-hidden="true" sx={{ fontSize: 36, color: 'warning.text' }} />
       <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 40, lineHeight: 1 }}>4</Typography>
-      <Typography sx={{ fontWeight: 600 }}>settimane di fila</Typography>
+      <Typography sx={{ fontWeight: 600, alignSelf: 'flex-end', pb: '3px' }}>settimane di fila</Typography>
     </Box>
     <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2, mb: 0.75 }}>
       <Typography sx={{ fontWeight: 700 }}>Livello 12</Typography>
