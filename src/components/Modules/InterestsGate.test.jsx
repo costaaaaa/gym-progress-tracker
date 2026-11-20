@@ -58,7 +58,7 @@ describe('quando compare', () => {
     mount();
     const d = dialog();
     expect(d).toBeTruthy();
-    expect(screen.getByText("Scegli cosa vedere nell'app. Puoi cambiare idea quando vuoi dalla sezione moduli dell'account.")).toBeTruthy();
+    expect(screen.getByText("Scegli cosa vedere nell'app. Puoi cambiare idea quando vuoi dalle impostazioni del profilo.")).toBeTruthy();
     const boxes = screen.getAllByRole('checkbox');
     expect(boxes.map((b) => b.getAttribute('aria-label') ?? b.closest('label')?.textContent ?? '')).toHaveLength(3);
     expect(screen.getByRole('checkbox', { name: 'Peso e misure' }).checked).toBe(false);
