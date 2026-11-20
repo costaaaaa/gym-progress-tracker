@@ -459,13 +459,14 @@ sql("UPDATE gym_users SET module_offer_at = NULL, module_body = 1, module_recove
 $r = settings($s, ['home_layout' => layout('last')]);
 check('layout e moduli nella stessa richiesta: 200', $r[0] === 200 && ($r[1]['home_layout'] ?? null) === layout('last') && ($r[1]['modules']['body'] ?? null) === true, $r[2]);
 
+// Una richiesta respinta non salva nemmeno gli altri campi validi che porta con sé
 $at = newUser('hoatomic');
 setState($at, 10, null);
 $r = settings($at, ['home_layout' => layout('last'), 'module_offer_answer' => ['key' => 'levels', 'accepted' => true]]);
 check('risposta non valida per la proposta in corso insieme a un home_layout valido: 400 e il layout non si salva', $r[0] === 400
     && scalar("SELECT home_layout IS NULL AND module_offer_at IS NULL FROM gym_users WHERE id = ?", [$at['id']]) == 1 && modulesOf($at) === '00000', $r[2]);
 
-echo "Modello: chiave non valida in module_offer_answer\n";
+echo "Modello: module_offer_answer (chiave non valida, rifiuti senza doppioni)\n";
 require $backend . '/models/User.php';
 $inj = newUser('hoinject');
 sql("UPDATE gym_users SET tier = 'free' WHERE id = ?", [$inj['id']]);
@@ -482,9 +483,9 @@ check('key ai (non è in MODULE_OFFERS): module_ai resta 0 e module_offer_at res
 // Lo stesso rifiuto due volte: una sola voce nell'elenco dei rifiutati
 $model->updateProfile(['module_offer_answer' => ['key' => 'body', 'accepted' => false]]);
 $model->updateProfile(['module_offer_answer' => ['key' => 'body', 'accepted' => false]]);
-check('lo stesso rifiuto due volte (modello): una sola voce in module_offers_declined', scalar("SELECT module_offers_declined FROM gym_users WHERE id = ?", [$inj['id']]) === '["body"]');
+check('lo stesso rifiuto due volte (modello): una sola voce in module_offers_declined', json_decode(scalar("SELECT module_offers_declined FROM gym_users WHERE id = ?", [$inj['id']]), true) === ['body']);
 $model->updateProfile(['module_offer_answer' => ['key' => 'levels', 'accepted' => false]]);
-check('un rifiuto diverso si aggiunge', scalar("SELECT module_offers_declined FROM gym_users WHERE id = ?", [$inj['id']]) === '["body", "levels"]');
+check('un rifiuto diverso si aggiunge', json_decode(scalar("SELECT module_offers_declined FROM gym_users WHERE id = ?", [$inj['id']]), true) === ['body', 'levels']);
 
 echo "Esportazione\n";
 settings($s, ['module_offer_answer' => ['key' => 'levels', 'accepted' => false]]);
