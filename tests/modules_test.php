@@ -126,7 +126,7 @@ check('il profilo dei livelli si legge lo stesso (200)', $r[0] === 200, $r[2]);
 
 echo "Esportazione\n";
 $r = api('GET', '/api/user/export.php', $p);
-$profile = $r[1]['profile'][0] ?? [];
+$profile = $r[1]['profile'] ?? [];
 check('export: la sezione profile elenca i moduli e modules_chosen_at',
     $r[0] === 200 && array_key_exists('module_body', $profile) && array_key_exists('module_ai', $profile) && array_key_exists('modules_chosen_at', $profile), $r[2]);
 check('export: valori dei moduli come nel database (non attivi = 0)', ($profile['module_groups'] ?? null) == 0 && ($profile['module_body'] ?? null) == 0);

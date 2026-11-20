@@ -1091,7 +1091,7 @@ PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
 --     sua scelta (NULL = non l'ha ancora fatta). «Non attivo» è solo visualizzazione: i dati restano e
 --     continuano ad aggiornarsi. Gli account che esistono adesso hanno tutto attivo e modules_chosen_at = ora
 --     (per loro la scelta iniziale non arriverà mai): l'ADD COLUMN riempie le righe esistenti con il default
---     temporaneo CURRENT_TIMESTAMP, poi il default si toglie. La sezione si rilancia senza cambiare nulla (anche
+--     temporaneo CURRENT_TIMESTAMP, poi il default torna NULL. La sezione si rilancia senza cambiare nulla (anche
 --     se interrotta tra i due passaggi: il secondo è sempre eseguito). Solo aggiunte: il rollback del codice
 --     resta possibile (il codice vecchio ignora le colonne).
 -- ------------------------------------------------------------------------------
@@ -1109,4 +1109,4 @@ SET @q = IF(@fresh,
   'DO 0');
 PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
 
-ALTER TABLE `gym_users` ALTER COLUMN `modules_chosen_at` DROP DEFAULT;
+ALTER TABLE `gym_users` ALTER COLUMN `modules_chosen_at` SET DEFAULT NULL;
