@@ -156,6 +156,13 @@ export const ThemeModeProvider = ({ children }) => {
             bg: mode === 'light' ? '#f7f6f5' : 'rgba(255, 255, 255, 0.06)',
             hover: mode === 'light' ? '#ececea' : 'rgba(255, 255, 255, 0.12)',
           },
+          // Ventaglio del pulsante centrale: velo scuro sulla pagina (testo bianco sopra, 5.7 : 1 anche sul bianco);
+          // tondi chiari in chiaro, scuri con un bordo sottile in scuro, per staccarli dal velo
+          fan: {
+            veil: 'rgba(0, 0, 0, 0.6)',
+            item: mode === 'light' ? '#f2f2f2' : '#2e2e30',
+            itemBorder: mode === 'light' ? 'transparent' : 'rgba(255, 255, 255, 0.22)',
+          },
           // Avatar di navbar e account: inchiostro e testo sopra, come nell'app.
           // Bordo a riposo dei campi (3:1): lo usano anche i campi di Focus che ridisegnano il bordo con sx.
           fieldBorder: FIELD_BORDER[mode],
