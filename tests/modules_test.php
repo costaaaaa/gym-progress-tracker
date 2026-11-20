@@ -59,7 +59,7 @@ check('un account nuovo ha tutti i moduli non attivi e modules_chosen_at NULL',
     stored('mofull') === '00000' && scalar("SELECT modules_chosen_at IS NULL FROM gym_users WHERE username = 'mofull'") == 1);
 api('POST', '/api/user/register.php', null, regBody('mopart'));
 // Un account che esisteva prima (inserito a mano: default delle colonne) resta com'è
-$conn->exec("INSERT INTO gym_users (username, email, password, modules_chosen_at) VALUES ('moold', 'moold@example.test', 'x', NOW())");
+$conn->exec("INSERT INTO gym_users (username, email, password, modules_chosen_at) VALUES ('moold', 'moold@example.test', " . $conn->quote(password_hash(PASSWORD, PASSWORD_BCRYPT)) . ", NOW())");
 check('un account esistente (default delle colonne) ha tutto attivo e la scelta già fatta', stored('moold') === '11111');
 
 echo "Lettura\n";
@@ -158,6 +158,7 @@ $r = api('POST', '/api/user/update_settings.php', $p, ['modules' => ['body' => f
 check('seconda chiamata con modules: i moduli cambiano, la data no', $r[0] === 200 && stored('mopart') === '00100'
     && scalar("SELECT modules_chosen_at FROM gym_users WHERE username = 'mopart'") === '2026-01-02 03:04:05', $r[2]);
 $q = bearer('mofull');
+$conn->exec("UPDATE gym_users SET module_body = 0, module_recovery = 0, module_levels = 0, module_groups = 0, module_ai = 0, modules_chosen_at = NULL WHERE username = 'mofull'");
 $r = api('POST', '/api/user/update_settings.php', $q, ['modules_chosen' => true]);
 check('modules_chosen da solo su un account nuovo: 200, moduli non attivi, data scritta',
     $r[0] === 200 && stored('mofull') === '00000' && scalar("SELECT modules_chosen_at IS NOT NULL FROM gym_users WHERE username = 'mofull'") == 1, $r[2]);
