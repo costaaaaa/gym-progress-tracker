@@ -96,6 +96,15 @@ try {
             $fields['module_' . $key] = $value;
         }
     }
+    // Chiusura della scelta dei moduli: solo `true` (una volta sola; la data si scrive se è ancora vuota)
+    if (property_exists($data, 'modules_chosen')) {
+        if ($data->modules_chosen !== true) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => t_server('settings.modules_invalid')]);
+            exit;
+        }
+        $fields['modules_chosen'] = true;
+    }
     // Obiettivo settimanale: da 1 a 7 allenamenti, null = torna al default (giorni della scheda attiva)
     $weekly_goal_given = property_exists($data, 'weekly_goal');
     if ($weekly_goal_given) {
@@ -141,6 +150,7 @@ try {
             'locale' => $user->locale,
             'weight_unit' => $user->weight_unit,
             'modules' => $user->modules,
+            'modules_chosen' => $user->modules_chosen,
             'age' => $user->age,
             'experience_years' => $user->experience_years
         ] + weekly_goal_settings($db, $user_id));

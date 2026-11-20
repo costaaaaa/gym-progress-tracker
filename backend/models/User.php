@@ -107,7 +107,8 @@ class User
                         gender = :gender,
                         training_start_date = :training_start_date,
                         locale = :locale,
-                        weight_unit = :weight_unit";
+                        weight_unit = :weight_unit,
+                        " . implode(', ', array_map(function ($key) { return 'module_' . $key . ' = 0'; }, self::MODULES)) . "";
 
             // Prepare query
             $stmt = $this->conn->prepare($query);
@@ -125,6 +126,8 @@ class User
             // Execute query
             if ($stmt->execute()) {
                 $this->id = $this->conn->lastInsertId();
+                // Un account nuovo nasce con tutti i moduli non attivi (i default delle colonne restano 1: servono agli account esistenti)
+                $this->modules = array_fill_keys(self::MODULES, false);
                 return true;
             }
 
@@ -216,7 +219,7 @@ class User
     public function login()
     {
         // Query to read single record
-        $query = "SELECT id, username, email, password, password_legacy, " . self::moduleColumns() . "
+        $query = "SELECT id, username, email, password, password_legacy, " . self::moduleColumns() . ", modules_chosen_at
                 FROM " . $this->table_name . "
                 WHERE username = ?
                 LIMIT 0,1";
@@ -239,6 +242,7 @@ class User
             $this->username = $row['username'];
             $this->email = $row['email'];
             $this->setModulesFromRow($row);
+            $this->modules_chosen = $row['modules_chosen_at'] !== null;
 
             if ($this->verifyPassword($this->password, $row['password'], (bool)$row['password_legacy'])) {
                 // Hash legacy (bcrypt di SHA-256): al primo accesso torna a un bcrypt normale
@@ -415,6 +419,7 @@ class User
     // Aggiorna le impostazioni del profilo dell'utente. Aggiornamento parziale: si scrivono
     // solo le chiavi presenti in $fields (rest_timer_enabled, birth_date, gender,
     // training_start_date, locale, weight_unit, module_<chiave>); quelle assenti restano come sono.
+    // 'modules_chosen' => true scrive modules_chosen_at = NOW() solo se è ancora NULL (nella stessa UPDATE dei moduli).
     public function updateProfile(array $fields)
     {
         if (!$this->id) {
@@ -437,6 +442,9 @@ class User
                     ? ($fields[$column] ? 1 : 0)
                     : $fields[$column];
             }
+        }
+        if (!empty($fields['modules_chosen'])) {
+            $sets[] = "modules_chosen_at = COALESCE(modules_chosen_at, NOW())";
         }
         if (empty($sets)) {
             return true;

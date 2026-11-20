@@ -165,3 +165,37 @@ describe('email confermata o non ancora letta', () => {
   });
 });
 
+// «Cosa ti interessa?» arriva dopo la conferma dell'email e dopo l'avviso di esito, mai sotto l'avviso
+describe('schermata «Cosa ti interessa?» dopo la conferma', () => {
+  const choice = () => screen.queryByRole('dialog', { name: 'Cosa ti interessa?' });
+
+  it('subito dopo la conferma non compare nemmeno per un render; chiuso l\'avviso, compare', async () => {
+    server.read = { ...server.read, ...unverified, modules_chosen: false };
+    localStorage.setItem('lx_email_reminder_7', today());
+    mount();
+    fireEvent.click(await screen.findByRole('button', { name: 'Scrivi il codice' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Conferma la tua email' });
+    fireEvent.change(within(dialog).getByLabelText(/^Codice di 6 cifre/), { target: { value: '123456' } });
+    // Da qui fino alla chiusura dell'avviso la finestra dei moduli non deve mai essere nel documento, nemmeno per un render
+    let seenWithNotice = false;
+    const observer = new MutationObserver(() => {
+      if (choice()) seenWithNotice = true;
+    });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Conferma' }));
+    expect(await screen.findByText('Email confermata.')).toBeTruthy();
+    await new Promise((resolve) => { setTimeout(resolve, 50); });
+    observer.disconnect();
+    expect(seenWithNotice).toBe(false);
+    expect(choice()).toBeNull();
+    fireEvent.click(await screen.findByRole('button', { name: /chiudi|close/i }));
+    expect(await screen.findByRole('dialog', { name: 'Cosa ti interessa?' })).toBeTruthy();
+  });
+
+  it('senza nessun avviso in corso (pagina ricaricata) si apre subito', async () => {
+    server.read = { ...server.read, modules_chosen: false };
+    mount();
+    expect(await screen.findByRole('dialog', { name: 'Cosa ti interessa?' })).toBeTruthy();
+  });
+});
+
