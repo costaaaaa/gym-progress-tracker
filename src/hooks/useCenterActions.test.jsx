@@ -87,7 +87,7 @@ describe('azioni aggiunte da fuori', () => {
     expect(keys(result.current).slice(3)).toEqual(['yoga']);
   });
 
-  it('l\'elenco non supera mai le 5 voci: le registrate oltre la quinta non si mostrano', () => {
+  it('l\'elenco non supera mai le 5 voci: contando quelle di base, le voci oltre la quinta non si mostrano', () => {
     const { result } = renderHook(() => useCenterActions());
     act(() => { register(action('a')); register(action('b')); register(action('c')); });
     expect(keys(result.current)).toEqual(['start', 'record', 'measure', 'a', 'b']);

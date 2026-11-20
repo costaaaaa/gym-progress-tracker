@@ -219,7 +219,7 @@ describe('barra mobile: voce aggiunta da fuori', () => {
     onSelect.mockClear();
     remove = registerCenterAction({ key: 'cardio', label: 'Cardio', shortLabel: 'Cardio', Icon: DirectionsRunIcon, onSelect });
   });
-  afterEach(() => remove());
+  afterEach(() => act(() => remove()));
 
   it('il ventaglio ha quattro voci e la nuova è un pulsante', () => {
     renderNav();

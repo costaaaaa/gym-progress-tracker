@@ -14,13 +14,13 @@ const subscribe = (listener) => {
   listeners.add(listener);
   return () => listeners.delete(listener);
 };
-const MAX_ACTIONS = 5;
+const MAX_ACTIONS = 5; // lo stesso tetto di fanLayout
 const getRegistered = () => registered;
 
 // Aggiunge una voce in coda all'elenco e restituisce la funzione che la toglie.
 // Come le voci di base ha `key`, `label`, `shortLabel`, `Icon` e, al posto di `to`, può avere `onSelect`: la voce allora è un pulsante.
 // Una voce registrata non è mai la principale (`main` si ignora). L'elenco non supera le 5 voci (tetto del ventaglio):
-// le registrate oltre la quinta non si mostrano.
+// contando anche quelle di base, le voci oltre la quinta non si mostrano.
 export const registerCenterAction = (action) => {
   const entry = { ...action, main: false };
   registered = [...registered, entry];
