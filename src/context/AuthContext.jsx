@@ -70,6 +70,9 @@ export const AuthProvider = ({ children }) => {
           if (isModules(data.modules)) {
             setUser((prev) => (prev && JSON.stringify(prev.modules) !== JSON.stringify(data.modules) ? cacheUser({ ...prev, modules: data.modules }) : prev));
           }
+          if (typeof data.modules_chosen === 'boolean') {
+            setUser((prev) => (prev && prev.modules_chosen !== data.modules_chosen ? cacheUser({ ...prev, modules_chosen: data.modules_chosen }) : prev));
+          }
         }
       } catch (error) {
         console.error('Errore lettura stato email:', error);

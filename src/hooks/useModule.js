@@ -25,17 +25,18 @@ export const useModule = (key) => isModuleActive(useAuth().user, key);
 // l'account riceve solo le chiavi di `patch`, sopra i moduli che ha già: con due salvataggi in volo, la risposta
 // più vecchia (che arriva per ultima) ha l'altro modulo ancora com'era e non deve riportarlo indietro. Se l'account
 // non ha ancora un elenco (subito dopo il login), si parte da quello intero restituito dal server.
+// Con `chosen` il salvataggio chiude anche la scelta iniziale dei moduli (`modules_chosen` dell'account diventa vero).
 export const useSaveModules = () => {
   const { user, updateUser } = useAuth();
   const current = useRef(user?.modules);
   current.current = user?.modules;
-  return async (patch) => {
-    const res = await saveModules(patch);
+  return async (patch, chosen = false) => {
+    const res = await saveModules(patch, chosen);
     if (res.ok) {
       const merged = current.current ? { ...current.current } : { ...res.modules };
       Object.keys(patch).forEach((key) => { merged[key] = res.modules[key]; });
       current.current = merged;
-      updateUser({ modules: merged });
+      updateUser(chosen ? { modules: merged, modules_chosen: true } : { modules: merged });
     }
     return res;
   };

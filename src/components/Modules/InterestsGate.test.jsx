@@ -59,7 +59,7 @@ describe('quando compare', () => {
     expect(screen.getByRole('checkbox', { name: 'Amici o palestra' }).checked).toBe(false);
     expect(screen.getByRole('checkbox', { name: 'Livelli, traguardi e streak' }).checked).toBe(false);
     expect(screen.getByRole('checkbox', { name: 'Peso e misure' }).getAttribute('aria-describedby')).toBeTruthy();
-    expect(screen.getByText('Peso, circonferenze e foto dei progressi.')).toBeTruthy();
+    expect(screen.getByText('Peso, grasso e circonferenze nel tempo.')).toBeTruthy();
     expect(screen.getByText('Gruppi con classifica della settimana.')).toBeTruthy();
     expect(screen.getByText('Punti, livelli e giorni di fila.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Continua' })).toBeTruthy();

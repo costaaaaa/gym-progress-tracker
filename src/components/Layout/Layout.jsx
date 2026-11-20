@@ -10,6 +10,7 @@ import { isEnPath, isAccessPath, stripLangPrefix, withLangPrefix, legalPaths, bl
 import { setLanguageChoice } from '../../i18n';
 import EmailStrip from '../EmailVerification/EmailStrip';
 import EmailGate from '../EmailVerification/EmailGate';
+import InterestsGate from '../Modules/InterestsGate';
 import EmailBlockedScreen from '../EmailVerification/EmailBlockedScreen';
 
 const MAIN_ID = 'main-content';
@@ -107,6 +108,7 @@ const Layout = () => {
         </Typography>
       </Box>
       <EmailGate />
+      <InterestsGate />
       <BottomNav />
     </Box>
   );

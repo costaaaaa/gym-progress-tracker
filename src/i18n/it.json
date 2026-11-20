@@ -1140,5 +1140,16 @@
   "modules.groups_manage": "Gestisci i gruppi",
   "modules.inactive.title": "Il modulo {{name}} non è attivo",
   "modules.inactive.text": "I tuoi dati sono rimasti dove li avevi lasciati: appena lo attivi li ritrovi.",
-  "modules.inactive.turn_on_error": "Non sono riuscito ad attivare il modulo. Riprova."
+  "modules.inactive.turn_on_error": "Non sono riuscito ad attivare il modulo. Riprova.",
+  "interests.title": "Cosa ti interessa?",
+  "interests.intro": "Scegli cosa vedere nell'app. Puoi cambiare idea quando vuoi da Account > Moduli.",
+  "interests.body.name": "Peso e misure",
+  "interests.body.help": "Peso, grasso e circonferenze nel tempo.",
+  "interests.groups.name": "Amici o palestra",
+  "interests.groups.help": "Gruppi con classifica della settimana.",
+  "interests.levels.name": "Livelli, traguardi e streak",
+  "interests.levels.help": "Punti, livelli e giorni di fila.",
+  "interests.continue": "Continua",
+  "interests.skip": "Salta",
+  "interests.error": "Non sono riuscito a salvare la scelta. Riprova."
 }
