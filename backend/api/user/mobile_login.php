@@ -1,6 +1,7 @@
 <?php
 // Login per client mobile (React Native): stessa validazione credenziali e stesso rate
 // limiting di login.php, ma risponde con un token Bearer invece di creare una sessione.
+// In user anche modules e modules_chosen, come in login.php.
 include_once '../../config/cors_headers.php';
 
 include_once '../../config/database.php';
@@ -41,7 +42,9 @@ try {
         "user" => array(
             "id" => $user->id,
             "username" => $user->username,
-            "locale" => request_locale()
+            "locale" => request_locale(),
+            "modules" => $user->modules,
+            "modules_chosen" => $user->modules_chosen
         )
     ));
 } catch (Exception $e) {

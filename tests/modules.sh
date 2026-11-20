@@ -3,10 +3,10 @@
 # modules.sh — moduli facoltativi dell'account (gym_users.module_body, module_recovery, module_levels, module_groups,
 # module_ai e modules_chosen_at), lato server: migrazione 42 (su un database con utenti, rilanciata: gli account
 # esistenti hanno tutto attivo e modules_chosen_at pieno, un rilancio non tocca scelte né account nuovi), default
-# degli account nuovi, user/read.php (modules e modules_chosen), user/login.php (modules; mobile_login.php no),
-# user/update_settings.php (oggetto parziale, chiave sconosciuta, valore non booleano, forma sbagliata: 400 e nessuna
-# modifica) e la sezione del profilo di user/export.php. Nessun endpoint blocca nulla in base ai moduli: qui si
-# controlla solo la preferenza. Le prove sono in tests/modules_test.php.
+# degli account nuovi, user/read.php (modules e modules_chosen), user/login.php e user/mobile_login.php (modules e
+# modules_chosen, come in read.php), user/update_settings.php (oggetto parziale, chiave sconosciuta, valore non booleano,
+# forma sbagliata: 400 e nessuna modifica) e la sezione del profilo di user/export.php. Nessun endpoint blocca nulla in
+# base ai moduli: qui si controlla solo la preferenza. Le prove sono in tests/modules_test.php.
 #
 #   tests/modules.sh
 #
