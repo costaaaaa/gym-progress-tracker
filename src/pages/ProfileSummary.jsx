@@ -7,6 +7,7 @@ import { API_BASE_URL } from '../config';
 import { xpIntoLevel, xpForNextLevel } from '../utils/gamificationLevels';
 import { formatDate, formatNumber, intlLocale } from '../i18n/format';
 import { useAuth } from '../context/AuthContext';
+import { isModuleActive } from '../hooks/useModule';
 import { formatTotalInUnit, kgToTotal, usesTonnes, weightUnitLabel } from '../utils/weightUnit';
 import { achievementLabel } from '../i18n/labels';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
@@ -74,7 +75,9 @@ const AchievementCard = ({ achievement, isNext, progress, weightUnit }) => {
 
 const ProfileSummary = () => {
   const { t } = useTranslation();
-  const { weightUnit } = useAuth();
+  const { weightUnit, user } = useAuth();
+  // Senza il modulo Livelli restano solo sessioni e volume: livello, punti e traguardi non si mostrano
+  const levelsOn = isModuleActive(user, 'levels');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -121,33 +124,38 @@ const ProfileSummary = () => {
   const statTiles = [
     { value: formatNumber(total_sessions), label: t('profile.stat.sessions') },
     { value: formatNumber(Math.round(kgToTotal(lifetime_volume_kg, weightUnit))), label: t('profile.stat.volume', { unit: weightUnitLabel(weightUnit) }) },
-    { value: formatNumber(longest_streak), label: t('profile.stat.streak') },
+    ...(levelsOn ? [{ value: formatNumber(longest_streak), label: t('profile.stat.streak') }] : []),
   ];
 
   return (
     <Box sx={{ pb: 4 }}>
       {/* Card livello */}
       <Card sx={{ ...BORDERED, p: { xs: 2.5, sm: '26px' }, mb: 3 }}>
-        <Box sx={{ mb: 2.5 }}>
-          <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 26, lineHeight: 1 }}>
-            {t('profile.level', { level })}
-          </Typography>
-          <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
-            {t('level.total_xp', { xp: formatNumber(total_xp) })}
-          </Typography>
-        </Box>
-
-        <Box sx={{ mb: 2.5 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
-            <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{t('profile.xp_current', { xp: xp_into_level })}</Typography>
-            <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
-              {t('profile.xp_to_next', { xp: xp_for_next_level, level: level + 1 })}
+        {levelsOn && (
+          <>
+          <Box sx={{ mb: 2.5 }}>
+            <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 26, lineHeight: 1 }}>
+              {t('profile.level', { level })}
+            </Typography>
+            <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
+              {t('level.total_xp', { xp: formatNumber(total_xp) })}
             </Typography>
           </Box>
-          <LinearProgress variant="determinate" value={progress} aria-label={t('level.progress_aria', { level: level + 1 })} sx={solidBar(9)} />
-        </Box>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', justifyContent: 'start', columnGap: { xs: 2, sm: 3, md: 5 } }}>
+          <Box sx={{ mb: 2.5 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
+              <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{t('profile.xp_current', { xp: xp_into_level })}</Typography>
+              <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
+                {t('profile.xp_to_next', { xp: xp_for_next_level, level: level + 1 })}
+              </Typography>
+            </Box>
+            <LinearProgress variant="determinate" value={progress} aria-label={t('level.progress_aria', { level: level + 1 })} sx={solidBar(9)} />
+          </Box>
+
+          </>
+        )}
+
+        <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${statTiles.length}, auto)`, justifyContent: 'start', columnGap: { xs: 2, sm: 3, md: 5 } }}>
           {statTiles.map((stat) => (
             <Box key={stat.label} sx={{ minWidth: 0 }}>
               <Typography variant="statNumber">{stat.value}</Typography>
@@ -158,7 +166,7 @@ const ProfileSummary = () => {
       </Card>
 
       {/* Livelli per esercizio — precede i traguardi */}
-      {exercises.length > 0 && (
+      {levelsOn && exercises.length > 0 && (
         <Box sx={{ mb: 3 }}>
           <Typography variant="cardTitle" sx={{ mb: 2 }}>
             {t('profile.exercises_title')}
@@ -194,31 +202,35 @@ const ProfileSummary = () => {
         </Box>
       )}
 
-      {/* Traguardi — solo sessions / tonnage / streak, "strength" esclusa dal rendering */}
-      <Typography variant="cardTitle" sx={{ mb: 2 }}>
-        {t('profile.achievements.title')}
-      </Typography>
-      {CATEGORY_ORDER.filter(cat => byCategory[cat]?.length).map(cat => {
-        const items = byCategory[cat];
-        const next = items.find((a) => a.locked);
-        return (
-          <Box key={cat} sx={{ mb: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1.25 }}>
-              <Typography variant="cardTitle" sx={{ fontSize: 16 }}>{t(`profile.achievements.category.${cat}`)}</Typography>
-              <Typography sx={{ fontSize: 16, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
-                {t('profile.achievements.count', { earned: items.filter((a) => !a.locked).length, total: items.length })}
-              </Typography>
+      {levelsOn && (
+        <>
+        {/* Traguardi — solo sessions / tonnage / streak, "strength" esclusa dal rendering */}
+        <Typography variant="cardTitle" sx={{ mb: 2 }}>
+          {t('profile.achievements.title')}
+        </Typography>
+        {CATEGORY_ORDER.filter(cat => byCategory[cat]?.length).map(cat => {
+          const items = byCategory[cat];
+          const next = items.find((a) => a.locked);
+          return (
+            <Box key={cat} sx={{ mb: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1.25 }}>
+                <Typography variant="cardTitle" sx={{ fontSize: 16 }}>{t(`profile.achievements.category.${cat}`)}</Typography>
+                <Typography sx={{ fontSize: 16, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
+                  {t('profile.achievements.count', { earned: items.filter((a) => !a.locked).length, total: items.length })}
+                </Typography>
+              </Box>
+              <Grid container spacing={1.5}>
+                {items.map(a => (
+                  <Grid item xs={6} sm={3} key={a.key}>
+                    <AchievementCard achievement={a} isNext={a === next} weightUnit={weightUnit} progress={a === next ? progressOf(t, cat, data, a, weightUnit) : null} />
+                  </Grid>
+                ))}
+              </Grid>
             </Box>
-            <Grid container spacing={1.5}>
-              {items.map(a => (
-                <Grid item xs={6} sm={3} key={a.key}>
-                  <AchievementCard achievement={a} isNext={a === next} weightUnit={weightUnit} progress={a === next ? progressOf(t, cat, data, a, weightUnit) : null} />
-                </Grid>
-              ))}
-            </Grid>
-          </Box>
-        );
-      })}
+          );
+        })}
+        </>
+      )}
     </Box>
   );
 };
