@@ -61,8 +61,10 @@ try {
     unset($profile[0]['weight_unit']);
 
     // Le preferenze della Home sono JSON nel database: nell'export diventano elenchi, non testo
-    foreach (array('home_layout', 'module_offers_declined') as $column) {
-        if ($profile[0][$column] !== null) $profile[0][$column] = json_decode($profile[0][$column], true);
+    // (MySQL riordina le chiavi dei JSON: il layout passa da home_layout_stored, che le rimette in ordine)
+    $profile[0]['home_layout'] = home_layout_stored($profile[0]['home_layout']);
+    if ($profile[0]['module_offers_declined'] !== null) {
+        $profile[0]['module_offers_declined'] = json_decode($profile[0]['module_offers_declined'], true);
     }
 
     // Schede -> giorni -> esercizi

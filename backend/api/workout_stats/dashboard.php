@@ -15,6 +15,7 @@ require_once '../../lib/muscle_rules.php';
 require_once '../../lib/weekly_sets.php';
 require_once '../../lib/recovery_rules.php';
 require_once '../../lib/tier_limits.php';
+require_once '../../lib/home_rules.php';
 include_once '../../models/WorkoutHistory.php';
 include_once '../../models/WorkoutSet.php';
 include_once '../../models/WorkoutPlan.php';
@@ -59,6 +60,32 @@ try {
     $stmt_plan = $db->prepare($query_plan_days);
     $stmt_plan->execute([$user_id]);
     $plan_days_total = intval($stmt_plan->fetch(PDO::FETCH_ASSOC)['days_count'] ?? 0);
+
+    // Home: oggi, giorni allenati della settimana (lunedì-domenica) e giorno della scheda da proporre.
+    // Il giorno di un allenamento è quello della sua data (ora locale del luogo), come per il conteggio sopra.
+    $today = $now->format('Y-m-d');
+    $stmt_dates = $db->prepare("SELECT date FROM gym_workout_history WHERE user_id = ? AND date >= ?");
+    $stmt_dates->execute([$user_id, $monday_str]);
+    $week_dates = $stmt_dates->fetchAll(PDO::FETCH_COLUMN);
+    $week_days = week_day_flags($week_dates, $monday->format('Y-m-d'));
+    $trained_today = $week_days[$dayOfWeek - 1];
+
+    // Scheda attiva: giorni in ordine con il numero di esercizi (la rotazione è in next_plan_day)
+    $stmt_days = $db->prepare("SELECT wd.id, wd.name, COUNT(we.id) AS exercises
+                        FROM gym_workout_plans wp
+                        JOIN gym_workout_days wd ON wd.plan_id = wp.id
+                        LEFT JOIN gym_workout_exercises we ON we.day_id = wd.id
+                        WHERE wp.user_id = ? AND wp.is_active = 1
+                        GROUP BY wd.id, wd.name, wd.day_order
+                        ORDER BY wd.day_order, wd.id");
+    $stmt_days->execute([$user_id]);
+    $plan_days = array_map(function ($row) {
+        return ['id' => (int) $row['id'], 'name' => $row['name'], 'exercises' => (int) $row['exercises']];
+    }, $stmt_days->fetchAll(PDO::FETCH_ASSOC));
+    $stmt_last = $db->prepare("SELECT day_id FROM gym_workout_history WHERE user_id = ? ORDER BY date DESC, id DESC LIMIT 1");
+    $stmt_last->execute([$user_id]);
+    $last_day_id = $stmt_last->fetchColumn();
+    $next_day = next_plan_day($plan_days, $last_day_id === false || $last_day_id === null ? null : (int) $last_day_id);
 
     // Volume settimanale (Recupero grezzo per calcolo sicuro in PHP). Le serie di riscaldamento
     // (#66) non sono allenanti: escluse dal volume.
@@ -146,6 +173,10 @@ try {
         'success' => true,
         'detail' => $detail,
         'weekly_workouts' => $weekly_workouts,
+        'today' => $today,
+        'trained_today' => $trained_today,
+        'week_days' => $week_days,
+        'next_day' => $next_day,
         'plan_days_total' => $plan_days_total,
         'weekly_goal' => weekly_goals($db, [$user_id])[$user_id],
         'weekly_volume' => [
