@@ -48,6 +48,9 @@ describe('/workouts', () => {
 
   it('conserva il resto della query e l\'hash, togliendo solo tab', () => {
     expect(open('/workouts?tab=history&x=1#y')).toBe('/storico?x=1#y null');
+  });
+
+  it('anche con tab=plans e un altro parametro prima', () => {
     expect(open('/workouts?x=1&tab=plans#y')).toBe('/schede?x=1#y null');
   });
 });
