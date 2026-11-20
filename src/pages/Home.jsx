@@ -205,20 +205,21 @@ const Home = () => {
               to="/dashboard?tab=muscles"
               sx={{ flex: 1, borderRadius: radius.xxl, mx: -1, px: 1, width: 'auto' }}
             >
-            <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
-              {formatNumber(weeklySets)}
-              <Box component="span" sx={{ fontSize: 15, fontWeight: 600, ml: 0.5, color: 'primary.text' }}>›</Box>
-            </Typography>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.sets')}</Typography>
+              <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
+                {formatNumber(weeklySets)}
+                <Box component="span" sx={{ fontSize: 15, fontWeight: 600, ml: 0.5, color: 'primary.text' }}>›</Box>
+              </Typography>
+              <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.sets')}</Typography>
             </CardActionArea>
           ) : (
             <Box sx={{ flex: 1 }}>
-            <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
-              {formatNumber(weeklySets)}
-            </Typography>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.sets')}</Typography>
-            </Box>
-          )}        </Box>
+              <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 22 }}>
+                {formatNumber(weeklySets)}
+              </Typography>
+              <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('home.weekly.sets')}</Typography>
+              </Box>
+          )}
+        </Box>
       </Card>
     </Grid>
   );

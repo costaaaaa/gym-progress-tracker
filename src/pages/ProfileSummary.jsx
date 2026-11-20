@@ -133,24 +133,24 @@ const ProfileSummary = () => {
       <Card sx={{ ...BORDERED, p: { xs: 2.5, sm: '26px' }, mb: 3 }}>
         {levelsOn && (
           <>
-          <Box sx={{ mb: 2.5 }}>
-            <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 26, lineHeight: 1 }}>
-              {t('profile.level', { level })}
-            </Typography>
-            <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
-              {t('level.total_xp', { xp: formatNumber(total_xp) })}
-            </Typography>
-          </Box>
-
-          <Box sx={{ mb: 2.5 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
-              <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{t('profile.xp_current', { xp: xp_into_level })}</Typography>
-              <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
-                {t('profile.xp_to_next', { xp: xp_for_next_level, level: level + 1 })}
+            <Box sx={{ mb: 2.5 }}>
+              <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 800, fontSize: 26, lineHeight: 1 }}>
+                {t('profile.level', { level })}
+              </Typography>
+              <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
+                {t('level.total_xp', { xp: formatNumber(total_xp) })}
               </Typography>
             </Box>
-            <LinearProgress variant="determinate" value={progress} aria-label={t('level.progress_aria', { level: level + 1 })} sx={solidBar(9)} />
-          </Box>
+
+            <Box sx={{ mb: 2.5 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
+                <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{t('profile.xp_current', { xp: xp_into_level })}</Typography>
+                <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
+                  {t('profile.xp_to_next', { xp: xp_for_next_level, level: level + 1 })}
+                </Typography>
+              </Box>
+              <LinearProgress variant="determinate" value={progress} aria-label={t('level.progress_aria', { level: level + 1 })} sx={solidBar(9)} />
+            </Box>
 
           </>
         )}
@@ -204,31 +204,31 @@ const ProfileSummary = () => {
 
       {levelsOn && (
         <>
-        {/* Traguardi — solo sessions / tonnage / streak, "strength" esclusa dal rendering */}
-        <Typography variant="cardTitle" sx={{ mb: 2 }}>
-          {t('profile.achievements.title')}
-        </Typography>
-        {CATEGORY_ORDER.filter(cat => byCategory[cat]?.length).map(cat => {
-          const items = byCategory[cat];
-          const next = items.find((a) => a.locked);
-          return (
-            <Box key={cat} sx={{ mb: 3 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1.25 }}>
-                <Typography variant="cardTitle" sx={{ fontSize: 16 }}>{t(`profile.achievements.category.${cat}`)}</Typography>
-                <Typography sx={{ fontSize: 16, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
-                  {t('profile.achievements.count', { earned: items.filter((a) => !a.locked).length, total: items.length })}
-                </Typography>
+          {/* Traguardi — solo sessions / tonnage / streak, "strength" esclusa dal rendering */}
+          <Typography variant="cardTitle" sx={{ mb: 2 }}>
+            {t('profile.achievements.title')}
+          </Typography>
+          {CATEGORY_ORDER.filter(cat => byCategory[cat]?.length).map(cat => {
+            const items = byCategory[cat];
+            const next = items.find((a) => a.locked);
+            return (
+              <Box key={cat} sx={{ mb: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1.25 }}>
+                  <Typography variant="cardTitle" sx={{ fontSize: 16 }}>{t(`profile.achievements.category.${cat}`)}</Typography>
+                  <Typography sx={{ fontSize: 16, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
+                    {t('profile.achievements.count', { earned: items.filter((a) => !a.locked).length, total: items.length })}
+                  </Typography>
+                </Box>
+                <Grid container spacing={1.5}>
+                  {items.map(a => (
+                    <Grid item xs={6} sm={3} key={a.key}>
+                      <AchievementCard achievement={a} isNext={a === next} weightUnit={weightUnit} progress={a === next ? progressOf(t, cat, data, a, weightUnit) : null} />
+                    </Grid>
+                  ))}
+                </Grid>
               </Box>
-              <Grid container spacing={1.5}>
-                {items.map(a => (
-                  <Grid item xs={6} sm={3} key={a.key}>
-                    <AchievementCard achievement={a} isNext={a === next} weightUnit={weightUnit} progress={a === next ? progressOf(t, cat, data, a, weightUnit) : null} />
-                  </Grid>
-                ))}
-              </Grid>
-            </Box>
-          );
-        })}
+            );
+          })}
         </>
       )}
     </Box>
