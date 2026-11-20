@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { AuthProvider, useAuth } from './AuthContext';
+import { isModuleActive } from '../hooks/useModule';
 import EmailGate from '../components/EmailVerification/EmailGate';
 
 const original = window.fetch;
@@ -477,6 +478,22 @@ describe('AuthProvider: moduli', () => {
     fireEvent.click(screen.getByText('entra'));
     await waitFor(() => expect(screen.getByTestId('modules').textContent).toBe(JSON.stringify(MODULES)));
     expect(JSON.parse(localStorage.getItem('user'))).toMatchObject({ modules: MODULES, weight_unit: 'lb' });
+  });
+
+  it('il login porta già i moduli: un modulo non attivo lo è subito, senza aspettare la rilettura', async () => {
+    backend.mockImplementation(() => new Promise(() => {})); // la rilettura non arriva
+    const Login = () => {
+      const { login, user } = useAuth();
+      return (
+        <>
+          <button onClick={() => login({ id: 1, username: 'a', modules: MODULES })}>entra</button>
+          <div data-testid="groups">{String(isModuleActive(user, 'groups'))}</div>
+        </>
+      );
+    };
+    render(<AuthProvider><Login /></AuthProvider>);
+    fireEvent.click(screen.getByText('entra'));
+    await waitFor(() => expect(screen.getByTestId('groups').textContent).toBe('false'));
   });
 
   it('un server senza moduli lascia user senza modules (e il resto dell\'app li legge tutti attivi)', async () => {

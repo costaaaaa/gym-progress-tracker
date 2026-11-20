@@ -30,11 +30,6 @@ class User
     // Moduli facoltativi (colonne module_<chiave>): chiave => attivo. «Non attivo» è solo visualizzazione.
     const MODULES = array('body', 'recovery', 'levels', 'groups', 'ai');
     public $modules = array('body' => true, 'recovery' => true, 'levels' => true, 'groups' => true, 'ai' => true);
-    // Le colonne dei moduli per una SELECT: «module_body, module_recovery, ...»
-    public static function moduleColumns()
-    {
-        return implode(', ', array_map(function ($key) { return 'module_' . $key; }, self::MODULES));
-    }
     public $modules_chosen = false; // true se l'utente ha già fatto la sua scelta (modules_chosen_at pieno)
 
     // Helper per calcolare l'età dalla data di nascita
@@ -61,6 +56,20 @@ class User
     public function __construct($db)
     {
         $this->conn = $db;
+    }
+
+    // Le colonne dei moduli per una SELECT: «module_body, module_recovery, ...»
+    public static function moduleColumns()
+    {
+        return implode(', ', array_map(function ($key) { return 'module_' . $key; }, self::MODULES));
+    }
+
+    // Riempie $modules da una riga con le colonne di moduleColumns()
+    private function setModulesFromRow(array $row)
+    {
+        foreach (self::MODULES as $key) {
+            $this->modules[$key] = (bool)$row['module_' . $key];
+        }
     }
 
     // Create new user record
@@ -207,7 +216,7 @@ class User
     public function login()
     {
         // Query to read single record
-        $query = "SELECT id, username, email, password, password_legacy
+        $query = "SELECT id, username, email, password, password_legacy, " . self::moduleColumns() . "
                 FROM " . $this->table_name . "
                 WHERE username = ?
                 LIMIT 0,1";
@@ -229,6 +238,7 @@ class User
             $this->id = $row['id'];
             $this->username = $row['username'];
             $this->email = $row['email'];
+            $this->setModulesFromRow($row);
 
             if ($this->verifyPassword($this->password, $row['password'], (bool)$row['password_legacy'])) {
                 // Hash legacy (bcrypt di SHA-256): al primo accesso torna a un bcrypt normale
@@ -390,9 +400,7 @@ class User
             $this->training_start_date = $row['training_start_date'];
             $this->locale = $row['locale'];
             $this->weight_unit = $row['weight_unit'];
-            foreach (self::MODULES as $key) {
-                $this->modules[$key] = (bool)$row['module_' . $key];
-            }
+            $this->setModulesFromRow($row);
             $this->modules_chosen = $row['modules_chosen_at'] !== null;
             $this->password_changed_at = $row['password_changed_at'];
             

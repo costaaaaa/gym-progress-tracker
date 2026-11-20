@@ -71,6 +71,16 @@ check('read.php riflette il database: levels false, il resto true',
 check('read.php: modules_chosen true con modules_chosen_at pieno', ($r[1]['modules_chosen'] ?? null) === true, $r[2]);
 $conn->exec("UPDATE gym_users SET module_levels = 1, modules_chosen_at = NULL WHERE username = 'mofull'");
 
+echo "Login\n";
+$conn->exec("UPDATE gym_users SET module_groups = 0 WHERE username = 'mofull'");
+$r = api('POST', '/api/user/login.php', null, ['username' => 'mofull', 'password' => PASSWORD]);
+check('login web: user.modules come in read.php (groups non attivo, il resto attivo), subito, senza rilettura',
+    $r[0] === 200 && ($r[1]['user']['modules'] ?? null) === ['body' => true, 'recovery' => true, 'levels' => true, 'groups' => false, 'ai' => true], $r[2]);
+check('login web: id, username e locale come prima', ($r[1]['user']['username'] ?? null) === 'mofull' && isset($r[1]['user']['id'], $r[1]['user']['locale']), $r[2]);
+$r = api('POST', '/api/user/mobile_login.php', null, ['username' => 'mofull', 'password' => PASSWORD]);
+check('login mobile: la risposta non cambia (nessun modules)', $r[0] === 200 && !array_key_exists('modules', $r[1]['user'] ?? []) && !array_key_exists('modules', $r[1]), $r[2]);
+$conn->exec("UPDATE gym_users SET module_groups = 1 WHERE username = 'mofull'");
+
 echo "Impostazioni\n";
 $p = bearer('mopart');
 $r = api('POST', '/api/user/update_settings.php', $p, ['modules' => ['groups' => false]]);

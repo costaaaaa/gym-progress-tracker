@@ -22,8 +22,9 @@ export const isModuleActive = (user, key) => user?.modules?.[key] !== false;
 export const useModule = (key) => isModuleActive(useAuth().user, key);
 
 // Il solo punto che salva i moduli: `save(patch)` torna `{ ok, modules }` come saveModules. A salvataggio riuscito
-// l'account riceve solo le chiavi di `patch` (a modulo già visto da una risposta più recente): con due salvataggi
-// in volo, una risposta vecchia che arriva per ultima non riporta indietro l'altro modulo.
+// l'account riceve solo le chiavi di `patch`, sopra i moduli che ha già: con due salvataggi in volo, la risposta
+// più vecchia (che arriva per ultima) ha l'altro modulo ancora com'era e non deve riportarlo indietro. Se l'account
+// non ha ancora un elenco (subito dopo il login), si parte da quello intero restituito dal server.
 export const useSaveModules = () => {
   const { user, updateUser } = useAuth();
   const current = useRef(user?.modules);
@@ -31,7 +32,7 @@ export const useSaveModules = () => {
   return async (patch) => {
     const res = await saveModules(patch);
     if (res.ok) {
-      const merged = { ...current.current };
+      const merged = current.current ? { ...current.current } : { ...res.modules };
       Object.keys(patch).forEach((key) => { merged[key] = res.modules[key]; });
       current.current = merged;
       updateUser({ modules: merged });

@@ -28,7 +28,7 @@ const emailStateFrom = (data) => ({
 // `modules` di user/read.php: un oggetto (se non lo è, il server è vecchio o la risposta è rovinata e non si tocca nulla)
 const isModules = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 
-// Aggiorna lo stato dell'utente e la sua copia in localStorage nello stesso modo, ovunque
+// Scrive la copia dell'utente in localStorage e restituisce lo stesso valore, da usare dentro setUser: tutte le modifiche passano da qui
 const cacheUser = (next) => {
   localStorage.setItem('user', JSON.stringify(next));
   return next;
@@ -63,7 +63,7 @@ export const AuthProvider = ({ children }) => {
         const data = await response.json();
         if (data.success && mine === lastRead.current) {
           setEmailState({ ...emailStateFrom(data), outcome });
-          // Il login risponde senza l'unità di peso e senza i moduli: la rilettura li porta
+          // Il login risponde senza l'unità di peso (i moduli li porta già): la rilettura porta l'unità e allinea i moduli
           if (isWeightUnit(data.weight_unit)) {
             setUser((prev) => (prev && prev.weight_unit !== data.weight_unit ? cacheUser({ ...prev, weight_unit: data.weight_unit }) : prev));
           }

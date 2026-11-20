@@ -149,6 +149,15 @@ describe('salvataggio', () => {
     expect(updateUser).toHaveBeenLastCalledWith({ modules: { ...ALL, body: false, recovery: false } });
   });
 
+  it('un account senza elenco dei moduli (subito dopo il login) riceve l\'elenco intero restituito dal server', async () => {
+    const full = { body: false, recovery: true, levels: true, groups: false, ai: true };
+    settings = () => json({ success: true, modules: full });
+    render(<Harness initial={{ id: 1 }} />);
+    fireEvent.click(sw('Misure'));
+    await waitFor(() => expect(updateUser).toHaveBeenCalledWith({ modules: full }));
+    expect(sw('Gruppi').checked).toBe(false);
+  });
+
   it('se il salvataggio fallisce l\'interruttore torna indietro e l\'errore si vede', async () => {
     mount();
     settings = () => json({ success: false, message: 'Errore interno del server.' }, 500);
