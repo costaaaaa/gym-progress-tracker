@@ -64,6 +64,9 @@ const BottomNav = () => {
     wasOpen.current = fanOpen;
   }, [fanOpen]);
 
+  // Il ventaglio non sopravvive a un cambio di indirizzo (indietro del browser, swipe) né al passaggio al desktop
+  useEffect(() => { setFanOpen(false); }, [location.key, isMobile]);
+
   // Con l'app bloccata dalla conferma dell'email le voci porterebbero a pagine che rispondono 403
   if (!isMobile || !isLoggedIn || emailState?.blocked === true) return null;
 

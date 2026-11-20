@@ -2,7 +2,7 @@
 // in scuro il rosso chiaro; il pulsante centrale apre il ventaglio.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useNavigate } from 'react-router-dom';
 import BottomNav from './BottomNav';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
 import { DRAFT_STORAGE_KEY } from '../../utils/focusDraft';
@@ -11,13 +11,22 @@ const auth = vi.hoisted(() => ({ value: null }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth.value }));
 
 let mobile = true;
+const listeners = new Set();
+// Cambia la larghezza della finestra: avvisa chi ascolta il media query, come fa il browser
+const resizeTo = (isMobile) => { mobile = isMobile; act(() => listeners.forEach((listener) => listener())); };
 beforeEach(() => {
   mobile = true;
+  listeners.clear();
   localStorage.clear();
   auth.value = { user: { username: 'atleta_demo' }, isLoggedIn: true, loading: false };
-  window.matchMedia = (query) => ({
-    matches: query.includes('max-width') && mobile, media: query, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {},
-  });
+  const lists = {};
+  // Un solo oggetto per ogni query, con `matches` riletto a ogni lettura (MUI tiene l'oggetto e ascolta `change`)
+  window.matchMedia = (query) => lists[query] ??= {
+    get matches() { return query.includes('max-width') && mobile; },
+    media: query,
+    addEventListener: (_, l) => listeners.add(l), removeEventListener: (_, l) => listeners.delete(l),
+    addListener: (l) => listeners.add(l), removeListener: (l) => listeners.delete(l),
+  };
 });
 
 const renderNav = (mode = 'light', path = '/') => {
@@ -171,5 +180,32 @@ describe('pulsante centrale', () => {
     fireEvent.click(centerButton());
     expect(screen.getByRole('link', { name: 'Riprendi allenamento' }).textContent).toBe('Riprendi');
     expect(screen.queryByRole('link', { name: 'Inizia allenamento' })).toBeNull();
+  });
+});
+
+describe('ventaglio che resta aperto', () => {
+  let navigate;
+  const Spy = () => { navigate = useNavigate(); return null; };
+  const renderTree = () => render(
+    <MemoryRouter initialEntries={['/', '/schede']} initialIndex={1}><ThemeModeProvider><BottomNav /><Spy /></ThemeModeProvider></MemoryRouter>,
+  );
+
+  it('si chiude quando cambia l\'indirizzo (tasto indietro del browser)', () => {
+    renderTree();
+    fireEvent.click(centerButton());
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    act(() => navigate(-1));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(centerButton().getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('si chiude quando la finestra supera la soglia md e, tornando stretta, non ricompare aperto', () => {
+    renderTree();
+    fireEvent.click(centerButton());
+    resizeTo(false);
+    expect(document.querySelector('nav')).toBeNull();
+    resizeTo(true);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(centerButton().getAttribute('aria-expanded')).toBe('false');
   });
 });
