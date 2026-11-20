@@ -44,7 +44,7 @@ With it you can:
 * Apple Health & Health Connect *(mobile app)*: two-way sync of weight, body fat and waist; Focus Mode workouts are saved to Health. On the web, Body Stats links to the app
 * Add and edit exercises with intensity techniques (Drop sets, Rest-pause, Super sets)
 * Smart Progress: overview of all your exercises grouped by muscle, with estimated 1RM, trend, personal records and favorites; tap an exercise for its detailed chart and history
-* Select an active workout plan
+* Active workout plan selection
 * Secure authentication: session-based login (the session cookie lasts 30 days with "Stay signed in", otherwise until the browser closes) with server-side bcrypt password hashing, a single password policy, rate limiting and password recovery by email
 * Privacy by design: informed consents (terms, health data), privacy policy and terms pages, full data export, account deletion, periodic purge of data that is no longer needed
 * Mobile-ready API: the same PHP backend also serves a native mobile client via Bearer tokens
@@ -59,7 +59,7 @@ With it you can:
 * PHP (PDO REST API architecture)
 * MySQL for data storage
 * ESLint for frontend linting
-* **Umami** (self-hosted, cookieless) for privacy-friendly analytics, only when configured
+* Umami (self-hosted, cookieless) for privacy-friendly analytics, only when configured
 
 ## Security
 
@@ -74,14 +74,14 @@ With it you can:
 
 You can try the app at [LiftIndex](https://liftindex.app/).
 
-## Local Installation (Optional)
+## Local installation (optional)
 
 ### Requirements
 
 * Node.js and npm
 * PHP 7.4+ and MySQL (e.g., via XAMPP, MAMP)
 
-### Installation Guide
+### Installation guide
 
 1. Clone the repository:
 
@@ -129,7 +129,7 @@ Under `backend/tools/` (CLI only, they answer 404 over HTTP): `admin.php list|gr
 Some tests are different and need no live instance:
 
 * The ones with a `tests/*_test.php` next to them (`achievement_labels`, `admin_notify`, `blog_calculator`, `blog_mcp`, `blog_plans`, `client_ip`, `client_time`, `gamification_rules`, `muscle_rules`, `recovery_rules`, `signup_code_rules`, `tier_limits`, `tier_rules`, `units`, `validation_limits`, `web_session`, `weekly_sets`) run that file with the PHP of the web image, in Docker, and need no live instance or database.
-* `forgot_parallel.sh` also needs neither: it starts a throwaway MySQL and the backend in Docker by itself.
+* `forgot_parallel.sh` needs no live instance or database either: it starts a throwaway MySQL and the backend in Docker by itself.
 * `workout_plan_active.sh` is a model-level check of plan activation, with its own `_test.php`. It needs neither a live instance nor a database either.
 * `delete_cascade.sh` starts its own throwaway MySQL and checks that deleting a plan or an account leaves no orphan rows.
 * `schema_avanzi.sh` starts its own throwaway MySQL and the backend, calls the real endpoints and checks that saving, history, date change, delete and export work with `gym_workout_history.exercises` optional and again after migration 38, which drops the unused columns and the `gym_progress` table, and that the other data is left untouched.
@@ -140,12 +140,12 @@ Some tests are different and need no live instance:
   * migration 40 (also re-run and interrupted halfway);
   * `signup_code` in `user/register.php` (three spellings of one code, invalid/disabled/expired/exhausted codes with no account created, the limit of 10 unusable codes per hour per IP, the last place fought over by parallel sign-ups);
   * the early check in `user/check_availability.php`;
-  * the hook into email confirmation (`user/confirm_email.php` and password recovery): within and after the 7 days, code turned off meanwhile, account already on a better tier or with a later end date (the code never makes an account worse, and the response of `user/confirm_email.php` then describes the account's tier and last day), address change that applies nothing, two late confirmations on the last place. `signup_code.tier` and `duration_days` in `user/read.php` are the code's own, to show a pending code, while in `user/confirm_email.php` with `applied`, `signup_code.tier` and `tier_last_day` describe the account;
+  * the hook into email confirmation (`user/confirm_email.php` and password recovery): within and after the 7 days, code turned off meanwhile, account already on a better tier or with a later end date (the code never makes an account worse, and the response of `user/confirm_email.php` then describes the account's tier and last day), address change that applies nothing, two late confirmations on the last place. Note: `signup_code.tier` and `duration_days` in `user/read.php` are the code's own, to show a pending code, while in `user/confirm_email.php` with `applied`, `signup_code.tier` and `tier_last_day` describe the account;
   * places freed or kept when an account is deleted, the nightly purge, `signup_code`/`tier_until`/`tier_last_day` in `user/read.php`, the export and `api/admin/signup_codes.php` (paged list, detail, create, edit, delete).
 
   `signup_code_rules.sh` checks the pure rules in four time zones and needs no database.
 * `free_limits.sh` starts its own throwaway MySQL and the backend and checks the Free limits of 2 workout plans, 4 days and 10 personal exercises, the Plus and Pro ones, the read-only workout plans after moving to a lower tier, `workout/delete_day.php`, `tier`/`limits`/`features` in `user/read.php` and the reduced `dashboard.php`.
-* `weight_unit.sh` starts its own throwaway MySQL and the backend and checks the weight unit of the account: migration 41 (also re-run), `weight_unit` (`kg` or `lb`, default `kg`) in `user/read.php`, `user/update_settings.php` (invalid value: 400) and `user/register.php` (missing: `kg`; invalid: 400 and no account created), and `user/suggested_unit.php`, which proposes `lb` only when the first tag of `Accept-Language` has region US, with its per-IP limit. It also checks that the weight limit message of `workout/record_workout.php` states the limit in the user's unit (999.99 kg, or 2204.5 lb for an account in `lb`; the limit itself does not change) and that data stay in kg.
+* `weight_unit.sh` starts its own throwaway MySQL and the backend and checks the weight unit of the account: migration 41 (also re-run), `weight_unit` (`kg` or `lb`, default `kg`) in `user/read.php`, `user/update_settings.php` (invalid value: 400) and `user/register.php` (missing: `kg`; invalid: 400 and no account created), and `user/suggested_unit.php`, which proposes `lb` only when the first tag of `Accept-Language` has region US, with its per-IP limit. It also checks that the weight limit message of `workout/record_workout.php` states the limit in the user's unit (999.99 kg, or 2204.5 lb for an account in `lb`; the limit itself does not change). Data stay in kg.
 * `export_units.sh` has the same setup and checks that `user/export.php` follows the account's unit: the `units` header, set weights, body weight and circumferences in lb and inches for an account in `lb` and unchanged for one in `kg`, `lifetime_volume_kg` always in kg. The conversions themselves are checked by `units.sh`, in the list above, against a fixture generated from the JS modules.
 * `modules.sh` starts its own throwaway MySQL and the backend and checks the optional modules of the account:
   * migration 42 (on a database with users, also re-run: existing accounts get `modules_chosen_at`, nothing changes the second time);
@@ -201,7 +201,7 @@ If you find this project useful, consider giving it a ⭐ on GitHub!
 
 ## Descrizione
 
-LiftIndex (repository `gym-progress-tracker`) è un'applicazione web pensata per chi desidera tenere traccia dei propri allenamenti in palestra in modo semplice e flessibile, con molto dettaglio.
+LiftIndex (repository `gym-progress-tracker`) è un'applicazione web pensata per chi desidera tenere traccia dei propri allenamenti in palestra in modo semplice e flessibile, nel dettaglio.
 
 Con questo strumento è possibile:
 
@@ -254,7 +254,7 @@ Con questo strumento è possibile:
 * PHP (Architettura REST API con PDO)
 * MySQL per il salvataggio dei dati utente
 * ESLint per il lint del frontend
-* **Umami** (self-hosted, senza cookie) per statistiche di utilizzo rispettose della privacy, solo se configurato
+* Umami (self-hosted, senza cookie) per statistiche di utilizzo rispettose della privacy, solo se configurato
 
 ## Sicurezza
 
@@ -324,7 +324,7 @@ In `backend/tools/` (solo CLI, via HTTP rispondono 404): `admin.php list|grant|r
 Alcuni test fanno eccezione e non richiedono un'istanza attiva:
 
 * Quelli con accanto un `tests/*_test.php` (`achievement_labels`, `admin_notify`, `blog_calculator`, `blog_mcp`, `blog_plans`, `client_ip`, `client_time`, `gamification_rules`, `muscle_rules`, `recovery_rules`, `signup_code_rules`, `tier_limits`, `tier_rules`, `units`, `validation_limits`, `web_session`, `weekly_sets`) eseguono quel file con il PHP dell'immagine web, in Docker, e non richiedono un'istanza attiva né un database.
-* Anche `forgot_parallel.sh` non ne richiede: avvia da solo in Docker un MySQL usa e getta e il backend.
+* Neanche `forgot_parallel.sh` richiede un'istanza attiva o un database: avvia da solo in Docker un MySQL usa e getta e il backend.
 * `workout_plan_active.sh` è un controllo a livello di modello dell'attivazione delle schede, con il suo `_test.php`. Neanche questo richiede un'istanza attiva o un database.
 * `delete_cascade.sh` avvia un suo MySQL usa e getta e controlla che cancellare una scheda o un account non lasci righe orfane.
 * `schema_avanzi.sh` avvia un suo MySQL usa e getta e il backend, chiama gli endpoint veri e controlla che salvataggio, storico, cambio data, cancellazione ed esportazione funzionino con `gym_workout_history.exercises` facoltativa e di nuovo dopo la migrazione 38, che elimina le colonne non più usate e la tabella `gym_progress`, e che gli altri dati restino intatti.
@@ -335,12 +335,12 @@ Alcuni test fanno eccezione e non richiedono un'istanza attiva:
   * migrazione 40 (anche rilanciata e interrotta a metà);
   * `signup_code` in `user/register.php` (tre grafie dello stesso codice, codici non validi/spenti/scaduti/esauriti senza account creato, limite di 10 codici non utilizzabili all'ora per IP, ultimo posto conteso da registrazioni parallele);
   * controllo anticipato in `user/check_availability.php`;
-  * aggancio alla conferma dell'email (`user/confirm_email.php` e recupero password): entro e dopo i 7 giorni, codice spento nel frattempo, account già a un livello migliore o con una scadenza più lontana (il codice non peggiora mai l'account, e la risposta di `user/confirm_email.php` descrive allora il livello e l'ultimo giorno dell'account), cambio di indirizzo che non riapplica nulla, due conferme tardive sull'ultimo posto. `signup_code.tier` e `duration_days` in `user/read.php` sono quelli del codice, per mostrare un codice in attesa, mentre in `user/confirm_email.php` con `applied` `signup_code.tier` e `tier_last_day` descrivono l'account;
+  * aggancio alla conferma dell'email (`user/confirm_email.php` e recupero password): entro e dopo i 7 giorni, codice spento nel frattempo, account già a un livello migliore o con una scadenza più lontana (il codice non peggiora mai l'account, e la risposta di `user/confirm_email.php` descrive allora il livello e l'ultimo giorno dell'account), cambio di indirizzo che non riapplica nulla, due conferme tardive sull'ultimo posto. Nota: `signup_code.tier` e `duration_days` in `user/read.php` sono quelli del codice, per mostrare un codice in attesa, mentre in `user/confirm_email.php` con `applied` `signup_code.tier` e `tier_last_day` descrivono l'account;
   * posti liberati o mantenuti quando si elimina un account, pulizia notturna, `signup_code`/`tier_until`/`tier_last_day` in `user/read.php`, esportazione e `api/admin/signup_codes.php` (elenco a pagine, dettaglio, crea, modifica, elimina).
 
   `signup_code_rules.sh` controlla le regole pure in quattro fusi orari e non richiede database.
 * `free_limits.sh` avvia un suo MySQL usa e getta e il backend e controlla i limiti del piano Gratis di 2 schede, 4 giorni e 10 esercizi personali, quelli di Plus e Pro, le schede di sola lettura passando a un piano inferiore, `workout/delete_day.php`, `tier`/`limits`/`features` in `user/read.php` e il `dashboard.php` ridotto.
-* `weight_unit.sh` avvia un suo MySQL usa e getta e il backend e controlla l'unità di peso dell'account: migrazione 41 (anche rilanciata), `weight_unit` (`kg` o `lb`, default `kg`) in `user/read.php`, `user/update_settings.php` (valore non valido: 400) e `user/register.php` (assente: `kg`; non valido: 400 e nessun account creato), e `user/suggested_unit.php`, che propone `lb` solo se il primo tag di `Accept-Language` ha regione US, con il suo limite per IP. Controlla anche che il messaggio sul limite di peso di `workout/record_workout.php` dica il limite nell'unità dell'utente (999,99 kg, oppure 2204,5 lb per un account in `lb`; il limite applicato non cambia) e che i dati restino in kg.
+* `weight_unit.sh` avvia un suo MySQL usa e getta e il backend e controlla l'unità di peso dell'account: migrazione 41 (anche rilanciata), `weight_unit` (`kg` o `lb`, default `kg`) in `user/read.php`, `user/update_settings.php` (valore non valido: 400) e `user/register.php` (assente: `kg`; non valido: 400 e nessun account creato), e `user/suggested_unit.php`, che propone `lb` solo se il primo tag di `Accept-Language` ha regione US, con il suo limite per IP. Controlla anche che il messaggio sul limite di peso di `workout/record_workout.php` dica il limite nell'unità dell'utente (999,99 kg, oppure 2204,5 lb per un account in `lb`; il limite applicato non cambia). I dati restano in kg.
 * `export_units.sh` ha la stessa preparazione e controlla che `user/export.php` segua l'unità dell'account: l'intestazione `units`, pesi delle serie, peso corporeo e circonferenze in lb e pollici per un account in `lb` e invariati per uno in `kg`, `lifetime_volume_kg` sempre in kg. Le conversioni in sé le controlla `units.sh`, nell'elenco sopra, contro una fixture generata dai moduli JS.
 * `modules.sh` avvia un suo MySQL usa e getta e il backend e controlla i moduli facoltativi dell'account:
   * migrazione 42 (su un database con utenti, anche rilanciata: gli account esistenti ricevono `modules_chosen_at`, la seconda volta non cambia nulla);

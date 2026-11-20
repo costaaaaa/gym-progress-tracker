@@ -6,7 +6,7 @@
 > aggiornare il database segui la sezione "Setup e aggiornamento del database" del
 > [README](README.md). Il file `database_update.sql` citato qui sotto non esiste più.
 
-Questo aggiornamento risolve gli ID inconsistenti degli esercizi tra le tabelle `gym_exercises` e `gym_workout_history` con una struttura relazionale.
+Questo aggiornamento corregge gli ID inconsistenti degli esercizi tra le tabelle `gym_exercises` e `gym_workout_history` con una struttura relazionale.
 
 ## Panoramica dei cambiamenti
 
