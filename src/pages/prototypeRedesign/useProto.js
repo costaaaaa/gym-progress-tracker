@@ -10,13 +10,14 @@ export const OPTIONS = {
   bozza: ['0', '1'],
   tecniche: ['scorri', 'capo'],
   strumenti: ['nessuno', 'tutti'],
-  home: ['saluto', 'colore', 'oggi', 'righe'],
+  home: ['stato', 'saluto', 'colore', 'oggi', 'righe'],
+  stato: ['dafare', 'fatto', 'obiettivo'],
   vista: ['elenco', 'calendario'],
   tab: ['esercizi', 'volume', 'corpo'],
   account: ['elenco', 'pagina'],
   tema: ['chiaro', 'scuro'],
 };
-const DEFAULTS = { s: 'home', home: 'saluto', menu: 'ventaglio', tondi: 'medi', logo: 'centro', moduli: 'tutti', bozza: '0', tecniche: 'scorri', strumenti: 'nessuno', vista: 'elenco', tab: 'esercizi', account: 'elenco', tema: null };
+const DEFAULTS = { s: 'home', home: 'stato', stato: 'dafare', menu: 'ventaglio', tondi: 'medi', logo: 'centro', moduli: 'tutti', bozza: '0', tecniche: 'scorri', strumenti: 'nessuno', vista: 'elenco', tab: 'esercizi', account: 'elenco', tema: null };
 
 export const useProto = () => {
   const [params, setParams] = useSearchParams();

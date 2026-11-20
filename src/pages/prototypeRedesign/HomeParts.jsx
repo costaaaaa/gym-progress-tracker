@@ -1,9 +1,10 @@
-// PROTOTIPO (da buttare): pezzi delle tre Home nuove (saluto, colore, oggi). Dati finti, nessuna chiamata al server.
+// PROTOTIPO (da buttare): pezzi delle Home nuove (saluto, colore, stato, oggi). Dati finti, nessuna chiamata al server.
 // BodyVisualizer non è riusato: dipende da i18n e dai dati di recupero veri, quindi qui ne è copiato l'aspetto (righe con barra).
 import { Box, Button, LinearProgress, Typography, useTheme } from '@mui/material';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import StarIcon from '@mui/icons-material/Star';
 import CheckIcon from '@mui/icons-material/Check';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { radius } from '../../theme/radius';
 import { TITLE_FONT_FAMILY, TABULAR } from '../../utils/fonts';
 import { cardSx, labelSx, titleSx } from './styles';
@@ -12,27 +13,36 @@ const DAYS = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
 const DONE = [0, 2];
 const TODAY = 3;
 
-export const sentence = (bozza) => (bozza
-  ? 'Hai un allenamento a metà: Giorno B, serie 7 di 18.'
-  : 'Oggi tocca a Pull. Questa settimana sei a 2 allenamenti su 4.');
+// Con una bozza aperta la Home resta nello stato «dafare», qualunque sia il parametro
+export const effectiveStato = (stato, bozza) => (bozza ? 'dafare' : stato);
+
+export const sentence = (bozza, stato = 'dafare') => {
+  if (bozza) return 'Hai un allenamento a metà: Giorno B, serie 7 di 18.';
+  if (stato === 'fatto') return 'Fatto per oggi. Questa settimana sei a 3 allenamenti su 4.';
+  if (stato === 'obiettivo') return 'Obiettivo della settimana raggiunto: 4 allenamenti su 4.';
+  return 'Oggi tocca a Pull. Questa settimana sei a 2 allenamenti su 4.';
+};
+
+// Giorni fatti e giorno di oggi per ogni stato (nell'obiettivo raggiunto oggi è venerdì, così i quattro giorni fatti sono passati)
+export const WEEK_BY_STATO = { dafare: { done: [0, 2], today: 3 }, fatto: { done: [0, 2, 3], today: 3 }, obiettivo: { done: [0, 1, 2, 3], today: 4 } };
 
 // Sette giorni della settimana; onColor = bianco su campo colorato
-export const WeekDays = ({ onColor = false }) => {
+export const WeekDays = ({ onColor = false, done: doneDays = DONE, today: todayIndex = TODAY, markToday = false }) => {
   const ink = onColor ? '#fff' : undefined;
   return (
     <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.5 }}>
       {DAYS.map((d, i) => {
-        const done = DONE.includes(i);
-        const today = i === TODAY;
+        const done = doneDays.includes(i);
+        const today = i === todayIndex;
         const sx = onColor
           ? { bgcolor: done ? '#fff' : 'transparent', color: 'primary.main', borderColor: done || today ? '#fff' : 'rgba(255,255,255,0.55)' }
           : { bgcolor: done ? 'success.main' : 'transparent', color: 'success.contrastText', borderColor: done ? 'success.main' : today ? 'text.primary' : 'divider' };
         return (
           <Box key={i} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-            <Box role="img" aria-label={`${d}${done ? ': fatto' : today ? ': oggi' : ''}`} sx={{ width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid', ...sx }}>
+            <Box role="img" aria-label={`${d}${today ? ' (oggi)' : ''}${done ? ': fatto' : ''}`} sx={{ width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid', ...sx }}>
               {done && <CheckIcon sx={{ fontSize: 18 }} />}
             </Box>
-            <Typography variant="caption" sx={{ color: ink ?? 'text.secondary' }}>{d}</Typography>
+            <Typography variant="caption" sx={{ color: ink ?? (markToday && today ? 'text.primary' : 'text.secondary'), fontWeight: markToday && today ? 700 : undefined }}>{d}</Typography>
           </Box>
         );
       })}
@@ -56,6 +66,43 @@ export const TodayWeekCard = ({ bozza, onStart }) => (
     </Box>
   </Box>
 );
+
+const secondaryBtnSx = { py: 1.2, fontWeight: 700, borderRadius: radius.xl, minHeight: 48 };
+
+// Card d'apertura neutra dei due stati «fatto» e «obiettivo»: la seduta fatta oppure la prossima, e la settimana
+export const StatoCard = ({ stato, onStart, onSeeWorkout }) => {
+  const fatto = stato === 'fatto';
+  const week = WEEK_BY_STATO[stato];
+  return (
+    <Box sx={cardSx}>
+      <Typography sx={labelSx}>{fatto ? 'Oggi' : 'Prossima seduta'}</Typography>
+      <Typography sx={{ ...titleSx, fontSize: '1.5rem', fontWeight: 700, mt: 0.5 }}>{fatto ? 'Giorno B · Pull' : 'Giorno C · Legs'}</Typography>
+      {fatto ? (
+        <>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.25 }}>
+            <CheckCircleIcon aria-hidden="true" sx={{ fontSize: 20, color: 'success.title' }} />
+            <Typography sx={{ fontWeight: 700, color: 'success.title' }}>Completato</Typography>
+          </Box>
+          <Typography color="text.secondary" sx={{ mb: 1.5, ...TABULAR }}>58 min · 9.420 kg di volume</Typography>
+          <Button variant="outlined" fullWidth size="large" onClick={onSeeWorkout} sx={{ ...secondaryBtnSx, color: 'text.primary', borderColor: 'text.secondary', '&:hover': { borderColor: 'text.primary', bgcolor: 'action.hover' } }}>Vedi allenamento</Button>
+          <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 1.25, textAlign: 'center' }}>Prossima seduta: Giorno C · Legs</Typography>
+        </>
+      ) : (
+        <>
+          <Typography color="text.secondary" sx={{ mb: 1.5 }}>6 esercizi · circa 60 min</Typography>
+          <Button variant="outlined" fullWidth size="large" onClick={onStart} sx={{ ...secondaryBtnSx, color: 'primary.text', borderColor: 'primary.text', '&:hover': { borderColor: 'primary.text', bgcolor: 'action.hover' } }}>Inizia</Button>
+        </>
+      )}
+      <Box sx={{ borderTop: '1px solid', borderColor: 'divider', mt: 2, pt: 1.5 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1.25 }}>
+          <Typography sx={labelSx}>Settimana</Typography>
+          <Typography sx={{ fontWeight: 600 }}>{week.done.length} di 4 allenamenti</Typography>
+        </Box>
+        <WeekDays done={week.done} today={week.today} markToday />
+      </Box>
+    </Box>
+  );
+};
 
 // Campo di colore pieno della variante colore (senza sfumature né ombre)
 export const ColorField = ({ bozza, onStart }) => (

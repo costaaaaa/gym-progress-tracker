@@ -4,7 +4,7 @@ import { Box } from '@mui/material';
 import { useThemeMode } from '../../context/ThemeModeContext';
 import { useProto, MENU_VOCI, FLAGS } from './useProto';
 import ProtoSwitcher from './ProtoSwitcher';
-import HomeScreen, { Header } from './HomeScreen';
+import HomeScreen, { Header, isRedHome } from './HomeScreen';
 import BottomBar from './BottomBar';
 import CenterMenu from './CenterMenu';
 import Fan from './Fan';
@@ -84,10 +84,10 @@ const PrototypeRedesign = () => {
       >
         {full ? screen() : (
           <>
-            <Header logo={values.logo} onColor={values.s === 'home' && values.home === 'colore'} onAvatar={() => setMany({ s: 'account', ...NAV_RESET })} />
+            <Header logo={values.logo} onColor={values.s === 'home' && isRedHome(values.home, values.stato, bozza)} onAvatar={() => setMany({ s: 'account', ...NAV_RESET })} />
             <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
               {values.s === 'home' ? (
-                <HomeScreen key={`${values.moduli}-${values.home}`} moduli={values.moduli} home={values.home} bozza={bozza} onStart={start} />
+                <HomeScreen key={`${values.moduli}-${values.home}`} moduli={values.moduli} home={values.home} stato={values.stato} bozza={bozza} onStart={start} onSeeWorkout={() => setMany({ ...NAV_RESET, s: 'storico', allenamento: 1 })} />
               ) : (
                 <>
                   {values.s === 'schede' && <SchedePage detail={detail} setMany={setMany} />}

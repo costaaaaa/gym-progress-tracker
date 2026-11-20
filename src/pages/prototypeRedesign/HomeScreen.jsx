@@ -9,7 +9,7 @@ import ModuleCard, { Big, MODULES } from './ModuleBlocks';
 import { radius } from '../../theme/radius';
 import { TITLE_FONT_FAMILY, TABULAR } from '../../utils/fonts';
 import { ACTIVE_MODULES } from './useProto';
-import { ColorField, LevelLook, WeekDays, RecoveryBars, StreakLook, TodayWeekCard, sentence } from './HomeParts';
+import { ColorField, LevelLook, WeekDays, RecoveryBars, StreakLook, StatoCard, TodayWeekCard, effectiveStato, sentence } from './HomeParts';
 
 const cardSx = { bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: radius.xxl, p: 2 };
 const labelSx = { fontSize: 11, fontWeight: 700, letterSpacing: 1, color: 'text.secondary', textTransform: 'uppercase' };
@@ -17,6 +17,9 @@ const titleSx = { fontFamily: TITLE_FONT_FAMILY, fontWeight: 600 };
 const DAYS = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
 const DONE = [0, 2];
 const TODAY = 3;
+
+// Vero quando la Home apre su campo rosso (variante colore, o stato «dafare», o bozza aperta)
+export const isRedHome = (home, stato, bozza) => home === 'colore' || (home === 'stato' && effectiveStato(stato, bozza) === 'dafare');
 
 export const Header = ({ logo, onAvatar, onColor = false }) => (
   <Box component="header" sx={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, height: 56, borderBottom: onColor ? 0 : '1px solid', borderColor: 'divider', bgcolor: onColor ? 'primary.main' : 'background.paper', color: onColor ? '#fff' : 'text.primary' }}>
@@ -85,17 +88,25 @@ const OggiHome = ({ moduli, bozza, onStart }) => {
   );
 };
 
-const HomeScreen = ({ moduli, home, bozza, onStart }) => {
-  const rich = home === 'saluto';
+const HomeScreen = ({ moduli, home, stato, bozza, onStart, onSeeWorkout }) => {
+  const rich = home === 'saluto' || home === 'stato';
+  const st = home === 'stato' ? effectiveStato(stato, bozza) : 'dafare';
+  const red = isRedHome(home, stato, bozza);
+  // Nello stato «fatto» l'ultimo allenamento è quello della card d'apertura, quindi il blocco non compare
+  const shown = (blocks) => blocks.filter((b) => !(st === 'fatto' && b.id === 'ultimo'));
   const attiviIniziali = ACTIVE_MODULES[moduli];
   const [blocks, setBlocks] = useState(() => [{ id: 'ultimo', size: 'small', hidden: false }, ...attiviIniziali.map((id) => ({ id, size: rich && (id === 'livello' || id === 'recupero') ? 'big' : 'small', hidden: false }))]);
   const [editing, setEditing] = useState(false);
   const [proposta, setProposta] = useState(() => ['peso', 'cardio', 'livello', 'gruppi', 'recupero'].find((id) => !attiviIniziali.includes(id)) ?? null);
 
   const update = (id, patch) => setBlocks((bs) => bs.map((b) => (b.id === id ? { ...b, ...patch } : b)));
-  const move = (index, delta) => setBlocks((bs) => {
+  const move = (id, delta) => setBlocks((bs) => {
+    const vis = shown(bs);
+    const at = vis.findIndex((b) => b.id === id);
+    const a = bs.indexOf(vis[at]);
+    const b = bs.indexOf(vis[at + delta]);
     const next = [...bs];
-    [next[index], next[index + delta]] = [next[index + delta], next[index]];
+    [next[a], next[b]] = [next[b], next[a]];
     return next;
   });
   const activate = () => {
@@ -143,27 +154,28 @@ const HomeScreen = ({ moduli, home, bozza, onStart }) => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-      {home === 'colore' && <ColorField bozza={bozza} onStart={onStart} />}
+      {(home === 'colore' || (home === 'stato' && red)) && <ColorField bozza={bozza} onStart={onStart} />}
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-        {home === 'saluto' && (
+        {(home === 'saluto' || (home === 'stato' && !red)) && (
           <Box sx={{ pb: 0.5 }}>
             <Typography component="h1" sx={{ ...titleSx, fontWeight: 800, fontSize: 26, lineHeight: 1.2 }}>Ciao, Andrea</Typography>
-            <Typography sx={{ fontSize: 15, color: 'text.primary', mt: 0.5 }}>{sentence(bozza)}</Typography>
+            <Typography sx={{ fontSize: 15, color: 'text.primary', mt: 0.5 }}>{sentence(bozza, st)}</Typography>
           </Box>
         )}
+        {home === 'stato' && !red && <StatoCard stato={st} onStart={onStart} onSeeWorkout={onSeeWorkout} />}
         {home === 'saluto' && <TodayWeekCard bozza={bozza} onStart={onStart} />}
         {home === 'righe' && righeTop}
 
-      {blocks.map((b, i) => {
+      {shown(blocks).map((b, i, vis) => {
         if (b.hidden && !editing) return null;
         return (
           <Box key={b.id} sx={{ opacity: b.hidden ? 0.5 : 1 }}>
-            {editing && <Toolbar index={i} count={blocks.length} block={b} onMove={(d) => move(i, d)} onHide={() => update(b.id, { hidden: !b.hidden })} onSize={() => update(b.id, { size: b.size === 'big' ? 'small' : 'big' })} />}
+            {editing && <Toolbar index={i} count={vis.length} block={b} onMove={(d) => move(b.id, d)} onHide={() => update(b.id, { hidden: !b.hidden })} onSize={() => update(b.id, { size: b.size === 'big' ? 'small' : 'big' })} />}
             {b.id === 'ultimo' ? (
               <Box sx={cardSx}>
                 <Typography sx={labelSx}>Ultimo allenamento</Typography>
-                <Typography sx={{ ...titleSx, mt: 0.5 }}>Giorno A · Push</Typography>
-                <Typography color="text.secondary">Mercoledì 18 novembre</Typography>
+                <Typography sx={{ ...titleSx, mt: 0.5 }}>{st === 'obiettivo' ? 'Giorno B · Pull' : 'Giorno A · Push'}</Typography>
+                <Typography color="text.secondary">{st === 'obiettivo' ? 'Giovedì 19 novembre' : 'Mercoledì 18 novembre'}</Typography>
                 <Typography color="text.secondary" sx={TABULAR}>58 min · 9.420 kg di volume</Typography>
               </Box>
             ) : (
