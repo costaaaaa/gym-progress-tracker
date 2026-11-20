@@ -12,7 +12,7 @@ import { unnamedControls } from '../test/accessibleNames';
 const { mockNavigate, mockTrack } = vi.hoisted(() => ({ mockNavigate: vi.fn(), mockTrack: vi.fn() }));
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => mockNavigate }));
 // Unità di peso dell'utente: kg salvo i test che la cambiano
-const account = vi.hoisted(() => ({ isLoggedIn: true, loading: false, weightUnit: 'kg' }));
+const account = vi.hoisted(() => ({ isLoggedIn: true, loading: false, weightUnit: 'kg', user: undefined }));
 vi.mock('../context/AuthContext', () => ({ useAuth: () => account }));
 vi.mock('../utils/celebrate', () => ({
   celebrate: () => {}, celebratePR: () => {}, celebrateStreak: () => {}, celebrateLevelUp: () => {},
@@ -109,6 +109,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   account.weightUnit = 'kg';
+  account.user = undefined;
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
@@ -952,6 +953,35 @@ describe('riepilogo', () => {
     await act(async () => { click('Salva allenamento'); });
     await advance(0);
     expect(screen.getByText('Nuovo record! 🏆 1 settimana consecutiva')).toBeTruthy();
+  });
+
+  describe('modulo Livelli non attivo', () => {
+    const saveWith = async (result) => {
+      responses['record_workout.php'] = () => json({ success: true, id: 77, ...result });
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...savedDraft, selectedDay: pushDay, selectedDayId: 1, phase: 'summary' }));
+      await mount();
+      click('Riprendi allenamento');
+      await act(async () => { click('Salva allenamento'); });
+      await advance(0);
+    };
+    const award = { new_longest: true, current_streak_weeks: 3, leveled_up: true, new_level: 4, unlocked_achievements: [], xp_session_awarded: false, xp_session_reason: 'too_short' };
+
+    it('attivo: banner della streak, riga della streak e motivo dei punti non assegnati', async () => {
+      await saveWith(award);
+      expect(screen.getByText('Nuovo record! 🏆 3 settimane consecutive')).toBeTruthy();
+      expect(screen.getByText(/Nessun XP di sessione/)).toBeTruthy();
+      expect(screen.getByText(/Livello 4/)).toBeTruthy();
+    });
+
+    it('non attivo: né banner, né riga della streak, né motivo dei punti, né avviso di livello; il salvataggio riesce', async () => {
+      account.user = { modules: { body: true, recovery: true, levels: false, groups: true, ai: true } };
+      await saveWith(award);
+      expect(screen.queryByText(/Nuovo record! 🏆/)).toBeNull();
+      expect(screen.queryByText(/settimane consecutive/)).toBeNull();
+      expect(screen.queryByText(/Nessun XP di sessione/)).toBeNull();
+      expect(screen.queryByText(/Livello 4/)).toBeNull();
+      expect(screen.getByText('Riepilogo sessione')).toBeTruthy();
+    });
   });
 
   it('con la funzione Plus "Aggiungi esercizio" del riepilogo non ha l\'etichetta "Plus" e il nome è semplice', async () => {

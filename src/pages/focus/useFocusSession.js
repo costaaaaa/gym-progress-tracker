@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
+import { isModuleActive } from '../../hooks/useModule';
 import { fieldToKg, fieldToKgText, weightToField } from '../../utils/weightUnit';
 import { API_BASE_URL } from '../../config';
 import { hapticFeedback } from '../../utils/vibration';
@@ -24,7 +25,9 @@ import { DRAFT_STORAGE_KEY } from '../../utils/focusDraft';
 export default function useFocusSession() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { isLoggedIn, loading: authLoading, weightUnit } = useAuth();
+  const { isLoggedIn, loading: authLoading, weightUnit, user } = useAuth();
+  // Senza il modulo Livelli i festeggiamenti di streak, livello e traguardi non si mostrano (il server li conta)
+  const levelsOn = isModuleActive(user, 'levels');
 
   // ================================================
   // STATE
@@ -742,6 +745,8 @@ export default function useFocusSession() {
       }
       track('workout_saved');
       if (data.total_sessions === 1) track('first_workout');
+
+      if (!levelsOn) return;
 
       // Streak/milestone celebration
       if (data.week_completed_now || data.new_longest || data.streak_milestone) {
