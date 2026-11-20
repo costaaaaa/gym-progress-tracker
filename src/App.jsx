@@ -10,7 +10,7 @@ import Layout from './components/Layout';
 import { AuthProvider } from './context/AuthContext';
 import LocaleSync from './i18n/LocaleSync';
 import EmailBlockGuard from './components/EmailVerification/EmailBlockGuard';
-import Workouts from './pages/Workouts';
+import LegacyWorkoutsRedirect from './pages/LegacyWorkoutsRedirect';
 
 // Lazy load Pages
 const Home = lazy(() => import('./pages/Home'));
@@ -73,9 +73,9 @@ function App() {
                 
                 {/* Redirect per retrocompatibilità */}
                 <Route path="/account" element={<Navigate to="/profilo?tab=settings" replace />} />
-                <Route path="/workouts" element={<Workouts />} />
-                <Route path="/workout-plans" element={<Navigate to="/schede" replace />} />
-                <Route path="/workout-history" element={<Navigate to="/storico" replace />} />
+                <Route path="/workouts" element={<LegacyWorkoutsRedirect />} />
+                <Route path="/workout-plans" element={<LegacyWorkoutsRedirect to="/schede" />} />
+                <Route path="/workout-history" element={<LegacyWorkoutsRedirect to="/storico" />} />
                 <Route path="/progress" element={<Navigate to="/dashboard?tab=progress" replace />} />
                 <Route path="/body-stats" element={<Navigate to="/dashboard?tab=body" replace />} />
                 
