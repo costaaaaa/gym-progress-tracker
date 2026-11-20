@@ -1,6 +1,6 @@
 // Dialog «Modifica data»: l'avviso su Salute compare solo per gli allenamenti che il telefono ha scritto in Salute.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import EditWorkoutDateDialog from './EditWorkoutDateDialog';
 import { json } from '../test/dom';
 import { setBrowserTimeZone } from '../test/timeZone';
@@ -109,5 +109,31 @@ describe('traguardi di forza nell\'anteprima, nell\'unità dell\'utente', () => 
   it('in lb la soglia è convertita', async () => {
     await mostra('lb');
     expect(await screen.findByText(/220 lb in un esercizio/)).toBeTruthy();
+  });
+});
+
+describe('modulo Livelli non attivo', () => {
+  const anteprima = async (showLevels) => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(json({
+      success: true, xp_delta: 40, streak_before: 1, streak_after: 2, achievements_unlocked: ['strength_100'], achievements_removed: [],
+    }))));
+    render(<EditWorkoutDateDialog open onClose={() => {}} workout={workout} onUpdateSuccess={() => {}} showLevels={showLevels} />);
+    fireEvent.change(screen.getByLabelText('Nuova data'), { target: { value: '2026-10-19' } });
+  };
+
+  it('attivo: punti, streak e traguardo nell\'anteprima', async () => {
+    await anteprima(true);
+    expect(await screen.findByText('Guadagnerai 40 XP.')).toBeTruthy();
+    expect(screen.getByText(/Lo streak passa da 1 a 2/)).toBeTruthy();
+    expect(screen.getByText(/100 kg in un esercizio/)).toBeTruthy();
+  });
+
+  it('non attivo: nessuna di queste righe', async () => {
+    await anteprima(false);
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+    await act(async () => {});
+    expect(screen.queryByText(/XP/)).toBeNull();
+    expect(screen.queryByText(/streak/i)).toBeNull();
+    expect(screen.queryByText(/100 kg in un esercizio/)).toBeNull();
   });
 });

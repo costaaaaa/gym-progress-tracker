@@ -46,6 +46,7 @@ import { buildShareStats, historyRecords, muscleGroupsTitle } from '../utils/sha
 import { track } from '../utils/analytics';
 import { focusedElement } from '../utils/focus';
 import { useAuth } from '../context/AuthContext';
+import { isModuleActive } from '../hooks/useModule';
 import { API_BASE_URL } from '../config';
 import { radius } from '../theme/radius';
 import { intlLocale, formatDate, formatClockTime, formatSetText } from '../i18n/format';
@@ -108,7 +109,9 @@ const DAY_FORMAT = { weekday: 'long', day: 'numeric', month: 'long' };
 
 const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
   const { t } = useTranslation();
-  const { isLoggedIn, loading: authLoading, weightUnit } = useAuth();
+  const { isLoggedIn, loading: authLoading, weightUnit, user } = useAuth();
+  // Punti, streak e traguardi nelle anteprime sono del modulo Livelli: non attivo = non si mostrano
+  const levelsOn = isModuleActive(user, 'levels');
   const isPhone = useMediaQuery(useTheme().breakpoints.down('sm'));
   const [rowMenu, setRowMenu] = useState(null); // { anchor, workout } del menu "Altre azioni", null = chiuso
   const [workouts, setWorkouts] = useState([]);
@@ -550,15 +553,15 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
         <DialogTitle>{t('history.delete.title')}</DialogTitle>
         <DialogContent>
           {t('history.delete.body')}
-          {deletePreview?.xp_removed > 0 && (
+          {levelsOn && deletePreview?.xp_removed > 0 && (
             <Typography variant="body2" sx={{ mt: 1.5 }}>{t('history.delete.lose_xp', { xp: deletePreview.xp_removed })}</Typography>
           )}
-          {deletePreview && deletePreview.streak_before !== deletePreview.streak_after && (
+          {levelsOn && deletePreview && deletePreview.streak_before !== deletePreview.streak_after && (
             <Typography variant="body2" sx={{ mt: 0.5 }}>
               {t('history.streak_change', { from: deletePreview.streak_before, to: deletePreview.streak_after })}
             </Typography>
           )}
-          {(deletePreview?.achievements_removed ?? []).map(key => (
+          {(levelsOn ? (deletePreview?.achievements_removed ?? []) : []).map(key => (
             <Typography key={key} variant="body2" sx={{ mt: 0.5 }}>
               {t('history.delete.lose_achievement', { label: achievementLabel(key, undefined, weightUnit) })}
             </Typography>
@@ -590,7 +593,7 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null }) => {
         ))}
       </Menu>
       <ShareCardDialog open={!!shareStats} stats={shareStats} weightUnit={weightUnit} onClose={() => setShareStats(null)} />
-      <EditWorkoutDateDialog open={openEditDateDialog} onClose={handleCloseEditDateDialog} workout={workoutToEdit} onUpdateSuccess={handleUpdateDateSuccess} weightUnit={weightUnit} />
+      <EditWorkoutDateDialog open={openEditDateDialog} onClose={handleCloseEditDateDialog} workout={workoutToEdit} onUpdateSuccess={handleUpdateDateSuccess} weightUnit={weightUnit} showLevels={levelsOn} />
       <Snackbar
         open={pendingId !== null}
         message={t('history.delete.removed')}
