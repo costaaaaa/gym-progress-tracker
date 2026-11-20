@@ -35,6 +35,9 @@ CREATE TABLE IF NOT EXISTS `gym_users` (
   `group_show_volume` tinyint(1) NOT NULL DEFAULT 1,
   `group_show_streak` tinyint(1) NOT NULL DEFAULT 1,
   `group_show_level` tinyint(1) NOT NULL DEFAULT 1,
+  `home_layout` json DEFAULT NULL, -- Home: [{key, hidden, large}]; NULL = predefinito
+  `module_offers_declined` json DEFAULT NULL, -- Home: chiavi dei moduli proposti e rifiutati
+  `module_offer_at` datetime DEFAULT NULL, -- Home: ultima risposta a una proposta di modulo
   `time_zone` varchar(64) DEFAULT NULL, -- ultimo fuso IANA visto dal dispositivo (header X-Timezone)
   `password_changed_at` datetime DEFAULT NULL,
   `last_login_at` datetime DEFAULT NULL,
@@ -163,6 +166,7 @@ CREATE TABLE IF NOT EXISTS `gym_workout_history` (
   `idempotency_key` varchar(64) DEFAULT NULL, -- chiave del client contro i doppi invii (NULL = app vecchie)
   `health_written_at` datetime DEFAULT NULL, -- quando il telefono l'ha scritto nell'app Salute (NULL = non è in Salute)
   `time_zone` varchar(64) NOT NULL DEFAULT 'Europe/Rome', -- fuso IANA del luogo in cui si è allenato: `date` è l'ora locale lì
+  `day_id` int(11) DEFAULT NULL, -- giorno di scheda dell'allenamento; senza chiave esterna: un giorno eliminato non cancella né blocca lo storico
   PRIMARY KEY (`id`),
   KEY `idx_user_date` (`user_id`, `date`),
   UNIQUE KEY `uniq_user_idempotency` (`user_id`, `idempotency_key`),

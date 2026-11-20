@@ -1,6 +1,8 @@
 <?php
 // deleteAccount() usa WorkoutPlan::deleteDaysAndExercises()
 require_once __DIR__ . '/WorkoutPlan.php';
+// readById() calcola la proposta di un modulo con module_to_offer()
+require_once __DIR__ . '/../lib/home_rules.php';
 
 class User
 {
@@ -31,6 +33,12 @@ class User
     const MODULES = array('body', 'recovery', 'levels', 'groups', 'ai');
     public $modules = array('body' => true, 'recovery' => true, 'levels' => true, 'groups' => true, 'ai' => true);
     public $modules_chosen = false; // true se l'utente ha già fatto la sua scelta (modules_chosen_at pieno)
+    // Blocchi della Home che l'utente può spostare e nascondere (home_layout), e moduli che la Home può proporre,
+    // nell'ordine in cui si propongono (module_offers_declined = quelli rifiutati)
+    const HOME_BLOCKS = array('last', 'levels', 'groups', 'recovery', 'body');
+    const MODULE_OFFERS = array('body', 'levels', 'groups', 'recovery');
+    public $home_layout = null; // elenco [{key, hidden, large}] salvato, o null = predefinito
+    public $module_offer = null; // la chiave del modulo da proporre ora (module_to_offer), o null
     // Visibilità nei gruppi (colonne group_show_<chiave>), valori salvati: chiave => mostrato agli altri membri
     const GROUP_VISIBILITY = array('workouts', 'volume', 'streak', 'level');
     public $group_visibility = array('workouts' => true, 'volume' => true, 'streak' => true, 'level' => true);
@@ -410,7 +418,7 @@ class User
     }
     public function readById($id)
     {
-        $query = "SELECT id, username, email, created_at, rest_timer_enabled, birth_date, gender, training_start_date, locale, weight_unit, " . self::moduleColumns() . ", modules_chosen_at, " . self::groupVisibilityColumns() . ", password_changed_at FROM " . $this->table_name . " WHERE id = ? LIMIT 1";
+        $query = "SELECT id, username, email, created_at, rest_timer_enabled, birth_date, gender, training_start_date, locale, weight_unit, " . self::moduleColumns() . ", modules_chosen_at, " . self::groupVisibilityColumns() . ", home_layout, module_offers_declined, module_offer_at, NOW() AS db_now, password_changed_at FROM " . $this->table_name . " WHERE id = ? LIMIT 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(1, $id);
         $stmt->execute();
@@ -432,6 +440,10 @@ class User
             foreach (self::GROUP_VISIBILITY as $key) {
                 $this->group_visibility[$key] = (bool)$row['group_show_' . $key];
             }
+            $this->home_layout = home_layout_stored($row['home_layout']);
+            $declined = json_decode((string) $row['module_offers_declined'], true);
+            $this->module_offer = module_to_offer($this->modules, $row['modules_chosen_at'], is_array($declined) ? $declined : array(),
+                $row['module_offer_at'], $row['db_now']);
             $this->password_changed_at = $row['password_changed_at'];
             
             // Calcolo dinamico per il frontend
@@ -445,6 +457,8 @@ class User
     // Aggiorna le impostazioni del profilo dell'utente. Aggiornamento parziale: si scrivono
     // solo le chiavi presenti in $fields (rest_timer_enabled, birth_date, gender,
     // training_start_date, locale, weight_unit, module_<chiave>, group_show_<chiave>); quelle assenti restano come sono.
+    // 'home_layout' => elenco già validato (home_layout_valid) o null; 'module_offer_answer' => ['key' => una di MODULE_OFFERS,
+    // 'accepted' => bool]: scrive module_offer_at = NOW() e attiva il modulo (accettato) o lo aggiunge ai rifiutati, senza doppioni.
     // 'modules_chosen' => true scrive modules_chosen_at = NOW() solo se è ancora NULL (nella stessa UPDATE dei moduli).
     public function updateProfile(array $fields)
     {
@@ -465,6 +479,22 @@ class User
         }
         $sets = array();
         $values = array();
+        if (array_key_exists('home_layout', $fields)) {
+            $sets[] = "home_layout = :home_layout";
+            $values['home_layout'] = $fields['home_layout'] === null ? null : json_encode($fields['home_layout']);
+        }
+        // La chiave finisce nel testo SQL: si riscontra qui con MODULE_OFFERS (un valore diverso non scrive nulla)
+        $answer = $fields['module_offer_answer'] ?? null;
+        if (!empty($answer) && in_array($answer['key'] ?? null, self::MODULE_OFFERS, true)) {
+            $sets[] = "module_offer_at = NOW()";
+            if ($answer['accepted']) {
+                $sets[] = "module_" . $answer['key'] . " = 1";
+            } else {
+                $declined_sql = "COALESCE(module_offers_declined, JSON_ARRAY())";
+                $sets[] = "module_offers_declined = IF(JSON_CONTAINS($declined_sql, JSON_QUOTE(:offer_key_a)), $declined_sql, JSON_ARRAY_APPEND($declined_sql, '$', :offer_key_b))";
+                $values['offer_key_a'] = $values['offer_key_b'] = $answer['key'];
+            }
+        }
         foreach ($allowed as $column) {
             if (array_key_exists($column, $fields)) {
                 $sets[] = "$column = :$column";

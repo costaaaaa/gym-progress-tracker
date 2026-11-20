@@ -13,6 +13,7 @@ class WorkoutHistory
     public $duration_seconds = null;
     public $notes;
     public $idempotency_key = null;
+    public $day_id = null; // giorno di scheda dell'allenamento (null = non noto), senza chiave esterna
 
     // Constructor with database connection
     public function __construct($db)
@@ -34,6 +35,12 @@ class WorkoutHistory
             $key_clause = $this->idempotency_key === null ? "" : ",
                         idempotency_key = :idempotency_key";
 
+            // Come la chiave: day_id entra nella query solo se c'è
+            if ($this->day_id !== null) {
+                $key_clause .= ",
+                        day_id = :day_id";
+            }
+
             // Query to insert record
             $query = "INSERT INTO " . $this->table_name . "
                     SET
@@ -54,6 +61,9 @@ class WorkoutHistory
             $stmt->bindParam(":notes", $this->notes);
             if ($this->idempotency_key !== null) {
                 $stmt->bindValue(":idempotency_key", $this->idempotency_key, PDO::PARAM_STR);
+            }
+            if ($this->day_id !== null) {
+                $stmt->bindValue(":day_id", $this->day_id, PDO::PARAM_INT);
             }
 
             // Execute query
@@ -82,16 +92,21 @@ class WorkoutHistory
     public function readAllByUser()
     {
         // Query to read all records
-        $query = "SELECT id, date, time_zone, duration_seconds, notes, health_written_at
-                FROM " . $this->table_name . "
-                WHERE user_id = ?
-                ORDER BY date DESC";
+        // day_name: il nome del giorno di scheda; NULL se l'allenamento non ha un giorno o se il giorno è stato eliminato.
+        // Il giorno si cerca solo fra quelli delle schede dell'utente.
+        $query = "SELECT wh.id, wh.date, wh.time_zone, wh.duration_seconds, wh.notes, wh.health_written_at, wd.id AS day_id, wd.name AS day_name
+                FROM " . $this->table_name . " wh
+                LEFT JOIN (SELECT d.id, d.name FROM gym_workout_days d JOIN gym_workout_plans p ON p.id = d.plan_id WHERE p.user_id = ?) wd
+                       ON wd.id = wh.day_id
+                WHERE wh.user_id = ?
+                ORDER BY wh.date DESC";
 
         // Prepare query statement
         $stmt = $this->conn->prepare($query);
 
         // Bind user ID
         $stmt->bindParam(1, $this->user_id);
+        $stmt->bindParam(2, $this->user_id);
 
         // Execute query
         $stmt->execute();

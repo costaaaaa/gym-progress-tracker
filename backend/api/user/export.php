@@ -26,7 +26,7 @@ const EXPORT_BODY_LENGTH_COLUMNS = array('chest_size', 'arm_size', 'waist_size',
 // restano com'erano.
 const EXPORT_DATETIME_COLUMNS = array(
     'created_at', 'email_verified_at', 'password_changed_at', 'last_login_at', 'unlocked_at', 'expires_at', 'revoked_at',
-    'granted_at', 'share_consent_at', 'joined_at', 'decided_at', 'applied_at', 'modules_chosen_at',
+    'granted_at', 'share_consent_at', 'joined_at', 'decided_at', 'applied_at', 'modules_chosen_at', 'module_offer_at',
 );
 
 // Esegue una query con parametri e ritorna tutte le righe
@@ -49,6 +49,7 @@ try {
     $profile = export_rows($db,
         "SELECT weight_unit, username, email, email_verified_at, pending_email, birth_date, gender, training_start_date, rest_timer_enabled, time_zone,
                 " . User::moduleColumns() . ", modules_chosen_at, " . User::groupVisibilityColumns() . ",
+                home_layout, module_offers_declined, module_offer_at,
                 created_at, password_changed_at, last_login_at
          FROM gym_users WHERE id = ?", array($user_id));
     if (!$profile) {
@@ -58,6 +59,13 @@ try {
     // L'unita' serve all'export ma non ne fa parte: la sezione profile resta quella di sempre
     $unit = units_normalize($profile[0]['weight_unit']);
     unset($profile[0]['weight_unit']);
+
+    // Le preferenze della Home sono JSON nel database: nell'export diventano elenchi, non testo
+    // (MySQL riordina le chiavi dei JSON: il layout passa da home_layout_stored, che le rimette in ordine)
+    $profile[0]['home_layout'] = home_layout_stored($profile[0]['home_layout']);
+    if ($profile[0]['module_offers_declined'] !== null) {
+        $profile[0]['module_offers_declined'] = json_decode($profile[0]['module_offers_declined'], true);
+    }
 
     // Schede -> giorni -> esercizi
     $plans = export_rows($db,

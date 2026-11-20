@@ -127,6 +127,8 @@ return array(
     'settings.weight_unit_invalid' => 'Weight unit not supported.',
     'settings.modules_invalid' => 'Module not supported.',
     'settings.group_visibility_invalid' => 'Visibility option not supported.',
+    'settings.home_layout_invalid' => 'Home layout not supported.',
+    'settings.module_offer_invalid' => 'Module answer not supported.',
     'settings.weekly_goal_invalid' => 'Invalid weekly goal: 1 to 7 workouts.',
     'settings.update_error' => 'Error while updating settings.',
     'account.password_required' => 'Password is required.',

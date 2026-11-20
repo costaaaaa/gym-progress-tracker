@@ -84,6 +84,9 @@ try {
                 "duration_seconds" => $row['duration_seconds'] !== null ? (int) $row['duration_seconds'] : null,
                 "notes" => $row['notes'],
                 "health_written" => $row['health_written_at'] !== null,
+                // Giorno di scheda dell'allenamento: null se non è noto o se il giorno non esiste più
+                "day_id" => $row['day_id'] !== null ? (int) $row['day_id'] : null,
+                "day_name" => $row['day_name'],
                 "exercises" => isset($sets_by_workout[$row['id']]) ? $sets_by_workout[$row['id']] : []
             );
             array_push($records_arr["records"], $record_item);
