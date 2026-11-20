@@ -134,7 +134,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('isLoggedIn', 'true');
     setIsLoggedIn(true);
     setUser(userData);
-    // Il login risponde con id, username e lingua: lo stato della conferma si legge subito
+    // Il login risponde con id, username, lingua e moduli: lo stato della conferma si legge subito
     refreshEmailState();
   };
 
