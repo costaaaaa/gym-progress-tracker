@@ -3,7 +3,7 @@ import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import { useTranslation } from 'react-i18next';
 import BlockShell from './BlockShell';
 import { useBlockData } from './useBlockData';
-import { readJson, isSuccess } from '../../../api/readJson';
+import { readJson, isSuccess } from '../../../utils/readJson';
 import { formatNumber } from '../../../i18n/format';
 import { TITLE_FONT_FAMILY } from '../../../utils/fonts';
 

@@ -2,7 +2,7 @@ import { Box, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import BlockShell from './BlockShell';
 import { useBlockData } from './useBlockData';
-import { readJson } from '../../../api/readJson';
+import { readJson } from '../../../utils/readJson';
 import { intlLocale } from '../../../i18n/format';
 import { PERIOD_UI, filterByPeriod, periodWeightDelta, sortByDate, weightTrend } from '../../../utils/bodyStatsPeriod';
 import { BODY_LB_DIVISIONS, formatWeightInUnit } from '../../../utils/weightUnit';

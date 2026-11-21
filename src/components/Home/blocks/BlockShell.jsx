@@ -12,9 +12,9 @@ const COLLAPSE_MS = 250;
 // pieno ripete il dato (`contentRepeatsSummary`) quando è grande non disegna in testa né il dato né il segno: resta il titolo.
 // `status`: 'loading' (titolo e segnaposto) | 'error' (titolo e link restano, la riga dice che i dati non ci sono) | 'ok'.
 const BlockShell = ({ title, to, status, summary, sign = null, large = false, contentRepeatsSummary = false, children = null }) => {
-  const headOnlyTitle = large && contentRepeatsSummary;
   const { t } = useTranslation();
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  const headOnlyTitle = large && contentRepeatsSummary;
   const line = (() => {
     if (status === 'loading') return <Skeleton data-testid="block-skeleton" variant="text" width="60%" sx={{ fontSize: 14 }} />;
     if (status === 'error') return <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>{t('home.block.unavailable')}</Typography>;

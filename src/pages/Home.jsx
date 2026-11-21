@@ -4,7 +4,7 @@ import { Link as RouterLink, useOutletContext } from 'react-router-dom';
 import HomeOpening, { Greeting } from '../components/Home/HomeOpening';
 import HomeBlocks from '../components/Home/HomeBlocks';
 import { useAuth } from '../context/AuthContext';
-import { readJson } from '../api/readJson';
+import { readJson, isSuccess } from '../utils/readJson';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { hasFocusSessionInProgress, savedDraftDayName } from '../utils/focusDraft';
@@ -49,7 +49,7 @@ const Home = () => {
     };
     load('api/workout_history/read.php', undefined, (data) => setRecords(data.records || []), setHistoryStatus);
     load('api/workout/read_plans.php', undefined, (data) => setHasPlans((data.records || []).length > 0), setPlansStatus);
-    load('api/workout_stats/dashboard.php', (data) => data.success, setStats, setDashboardStatus);
+    load('api/workout_stats/dashboard.php', isSuccess, setStats, setDashboardStatus);
     return () => { active = false; };
   }, [isLoggedIn]);
 
