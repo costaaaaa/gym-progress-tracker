@@ -123,7 +123,9 @@ export default function SummaryPhase({
                 </Box>
                 <Box role="list" sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                   {sets.map((set) => {
-                    const text = `${formatSetText(set.weight, set.reps, weightUnit)}${set.intensity_technique ? ` · ${techniqueLabel(set.intensity_technique)}` : ''}`;
+                    const setText = formatSetText(set.weight, set.reps, weightUnit);
+                    const technique = set.intensity_technique ? techniqueLabel(set.intensity_technique) : '';
+                    const text = technique ? `${setText} · ${technique}` : setText;
                     const chipSx = {
                       bgcolor: colors.bgElevated, borderRadius: '6px', px: 1.125, py: 0.625,
                       fontSize: 12, fontWeight: 600, color: colors.textSecondary, fontVariantNumeric: 'tabular-nums',
@@ -137,7 +139,7 @@ export default function SummaryPhase({
                         <ButtonBase sx={{ ...chipSx, minHeight: 44, minWidth: 44, justifyContent: 'center' }}
                           aria-label={t('focus.edit_set.open_aria', {
                             exercise: exercise.exercise_name, name: slotLabel(t, setSlot(exercise, set.setNumber - 1), 'name'),
-                            text: `${formatSetText(set.weight, set.reps, weightUnit)}${set.intensity_technique ? `, ${techniqueLabel(set.intensity_technique)}` : ''}`
+                            text: technique ? `${setText}, ${technique}` : setText
                           })}
                           onClick={(e) => { e.currentTarget.focus(); setCorrection({ open: true, exercise, setNumber: set.setNumber }); }}>
                           {content}
