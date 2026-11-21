@@ -863,7 +863,6 @@ export default function useFocusSession() {
     activePlan,
     selectedDayId,
     selectedDay,
-    onNotify: (message, severity) => setSnackbar({ open: true, message, severity }),
     onDayChange: handleDayChange,
     onStart: handleStartWorkout,
     onBack: () => navigate('/'),
@@ -876,22 +875,16 @@ export default function useFocusSession() {
     nextSet: currentSlot,
     onSkip: handleSkipTimer,
   };
-  // «Non suggerire più»: spegne lo strumento per l'account; se il salvataggio non riesce resta acceso e l'errore si dice
-  const disableSuggested = async () => {
-    const res = await saveFocusTool('suggested_weight', false);
-    setSnackbar({
-      open: true,
-      message: res.ok ? t('focus.suggested.disabled', { tools: t('focus.tools.title') }) : t('focus.tools.save_error'),
-      severity: res.ok ? 'success' : 'error',
-    });
-    return res.ok;
-  };
+  // «Non suggerire più»: spegne lo strumento per l'account e dice se è riuscito; se non riesce resta acceso (l'errore lo mostra
+  // la spiegazione). L'avviso di dove si riaccende lo manda la spiegazione a finestra uscita (`onSuggestedOff`).
+  const disableSuggested = async () => (await saveFocusTool('suggested_weight', false)).ok;
   const workout = {
     currentExercise,
     techniqueOn,
     // Nelle serie allenanti, il peso (kg, come stringa) da suggerire: vuoto se spento o senza storico
     suggestedKg: currentExercise && currentSlot && !currentSlot.isWarmup ? getSuggestedWeight(currentExercise) : '',
     onDisableSuggested: disableSuggested,
+    onSuggestedOff: () => setSnackbar({ open: true, message: t('focus.suggested.disabled', { tools: t('focus.tools.title') }), severity: 'success' }),
     currentExerciseIndex,
     totalExercises,
     currentSetIndex,

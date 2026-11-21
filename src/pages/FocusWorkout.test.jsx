@@ -2055,6 +2055,8 @@ describe('strumenti della serie', () => {
       await advance(300);
       const dialog = screen.getByRole('dialog', { name: 'Peso suggerito' });
       await act(async () => { fireEvent.click(within(dialog).getByRole('button', { name: 'Non suggerire più' })); });
+      // L'avviso della pagina arriva solo dopo l'uscita della finestra: prima la pagina è nascosta ai lettori di schermo
+      expect(screen.queryByText('Peso suggerito spento. Si riaccende da Strumenti della serie.')).toBeNull();
       await advance(500);
       expect(settingsBody()).toEqual({ focus_tools: { suggested_weight: false } });
       expect(screen.queryByRole('dialog', { name: 'Peso suggerito' })).toBeNull();
@@ -2092,11 +2094,38 @@ describe('strumenti della serie', () => {
       const dialog = screen.getByRole('dialog', { name: 'Peso suggerito' });
       await act(async () => { fireEvent.click(within(dialog).getByRole('button', { name: 'Non suggerire più' })); });
       await advance(500);
-      expect(screen.getByText('Errore nel salvataggio. Riprova.')).toBeTruthy();
+      // L'errore si legge dentro la finestra (role alert), non nella notifica della pagina
+      expect(within(screen.getByRole('dialog', { name: 'Peso suggerito' })).getByRole('alert').textContent).toBe('Errore nel salvataggio. Riprova.');
+      expect(screen.getAllByText('Errore nel salvataggio. Riprova.')).toHaveLength(1);
       expect(account.user?.focus_tools?.suggested_weight).not.toBe(false);
       // La spiegazione resta aperta (si può riprovare) e il bottone dietro c'è ancora
       expect(screen.getByRole('dialog', { name: 'Peso suggerito' })).toBeTruthy();
       expect(screen.getByRole('button', { name: /^Suggerito:/, hidden: true })).toBeTruthy();
+    });
+  });
+
+  describe('«Non suggerire più» in volo', () => {
+    it('la finestra non si chiude (Esc, «Ok») e il bottone è occupato; a salvataggio finito si chiude', async () => {
+      withDay(pressDay(press([{ min: 8, max: 8 }])));
+      lastTimePress([{ weight: 60, reps: '8' }]);
+      let finish;
+      responses['update_settings.php'] = () => new Promise((resolve) => { finish = () => resolve(json({ success: true, rest_timer_enabled: true, focus_tools: { technique: true, suggested_weight: false } })); });
+      await startDay('Pressa');
+      fireEvent.click(suggestedButton());
+      await advance(300);
+      const dialog = screen.getByRole('dialog', { name: 'Peso suggerito' });
+      await act(async () => { fireEvent.click(within(dialog).getByRole('button', { name: 'Non suggerire più' })); });
+      const disable = within(dialog).getByRole('button', { name: 'Non suggerire più' });
+      expect(disable.disabled).toBe(true);
+      expect(disable.getAttribute('aria-busy')).toBe('true');
+      expect(within(dialog).getByRole('button', { name: 'Ok' }).disabled).toBe(true);
+      fireEvent.keyDown(dialog, { key: 'Escape' });
+      await advance(500);
+      expect(screen.getByRole('dialog', { name: 'Peso suggerito' })).toBeTruthy();
+      await act(async () => { finish(); });
+      await advance(500);
+      expect(screen.queryByRole('dialog', { name: 'Peso suggerito' })).toBeNull();
+      expect(suggestedButton()).toBeNull();
     });
   });
 

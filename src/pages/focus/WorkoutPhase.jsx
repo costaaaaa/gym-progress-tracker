@@ -28,21 +28,33 @@ export default function WorkoutPhase({
   weightInput, weightUnit, weightValid, onWeightChange, repsInput, onRepsChange, intensityTechniqueInput, onIntensityChange,
   onConfirmSet, onSkipSet, onSkipWarmup, onSkipExercise, canEditSession, onOpenPicker, onQuit,
   quitDialogOpen, onCloseQuitDialog, onConfirmQuit, totalCompletedSets,
-  repsConfirmOpen, onCloseRepsConfirm, onConfirmReps, techniqueOn, suggestedKg, onDisableSuggested
+  repsConfirmOpen, onCloseRepsConfirm, onConfirmReps, techniqueOn, suggestedKg, onDisableSuggested, onSuggestedOff
 }) {
   const { t } = useTranslation();
   const { colors } = useFocusColors();
   const [suggestedOpen, setSuggestedOpen] = useState(false);
   const [disabling, setDisabling] = useState(false);
+  // Esito del salvataggio, letto dentro la finestra (la pagina dietro è nascosta ai lettori di schermo)
+  const [disableError, setDisableError] = useState(false);
   const weightRef = useRef(null);
+  // Spento lo strumento, l'avviso va alla pagina solo a finestra uscita, quando la pagina si legge di nuovo
+  const announceOff = useRef(false);
   const disableSuggested = async () => {
     // Un secondo tocco durante il salvataggio è ignorato
     if (disabling) return;
     setDisabling(true);
+    setDisableError(false);
     const ok = await onDisableSuggested();
     setDisabling(false);
-    if (ok) setSuggestedOpen(false);
+    if (ok) {
+      announceOff.current = true;
+      setSuggestedOpen(false);
+    } else {
+      setDisableError(true);
+    }
   };
+  // Durante il salvataggio la finestra non si chiude: il fuoco non finisce su un bottone che poi sparisce
+  const closeSuggested = () => { if (!disabling) setSuggestedOpen(false); };
   const target = slotTarget(currentExercise, currentSetIndex);
   // "a cedimento (min. 6)" non entra nel campo a dimensione piena: placeholder più piccolo
   const failureTarget = plannedSetAt(currentExercise, currentSetIndex)?.to_failure === true;
@@ -135,7 +147,7 @@ export default function WorkoutPhase({
                     })}
                   </Box>
                   {suggestedKg !== '' && (
-                    <ButtonBase onClick={() => setSuggestedOpen(true)} aria-haspopup="dialog"
+                    <ButtonBase onClick={() => { setDisableError(false); setSuggestedOpen(true); }} aria-haspopup="dialog"
                       sx={{
                         mt: 0.75, minHeight: 44, px: 1.25, borderRadius: radius.md, border: `1px solid ${colors.fieldBorder}`,
                         color: colors.text, fontWeight: 700, fontSize: '0.875rem', fontVariantNumeric: 'tabular-nums',
@@ -235,16 +247,23 @@ export default function WorkoutPhase({
         stayLabel={t('focus.quit_continue')} exitLabel={t('focus.quit_exit')} destructive />
 
       {/* Spiegazione del peso suggerito. Se «Non suggerire più» ha tolto il bottone, il fuoco va al campo del peso */}
-      <Dialog open={suggestedOpen} onClose={() => setSuggestedOpen(false)} aria-labelledby="suggested-weight-title"
-        TransitionProps={{ onExited: () => { if (suggestedKg === '') weightRef.current?.focus(); } }}
+      <Dialog open={suggestedOpen} onClose={closeSuggested} aria-labelledby="suggested-weight-title"
+        TransitionProps={{ onExited: () => {
+          if (suggestedKg === '') weightRef.current?.focus();
+          if (announceOff.current) {
+            announceOff.current = false;
+            onSuggestedOff();
+          }
+        } }}
         PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: radius.xxl } }}>
         <DialogTitle id="suggested-weight-title" sx={{ color: colors.text }}>{t('focus.tools.suggested_weight.name')}</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ color: colors.textSecondary }}>{t('focus.suggested.text')}</DialogContentText>
+          <Typography role="alert" sx={{ color: 'error.main', mt: disableError ? 1 : 0 }}>{disableError ? t('focus.tools.save_error') : ''}</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={disableSuggested} disabled={disabling} sx={{ color: colors.textSecondary, minHeight: 44 }}>{t('focus.suggested.disable')}</Button>
-          <Button onClick={() => setSuggestedOpen(false)} sx={{ color: colors.text, minHeight: 44 }}>{t('focus.suggested.ok')}</Button>
+          <Button onClick={disableSuggested} disabled={disabling} aria-busy={disabling} sx={{ color: colors.textSecondary, minHeight: 44 }}>{t('focus.suggested.disable')}</Button>
+          <Button onClick={closeSuggested} disabled={disabling} sx={{ color: colors.text, minHeight: 44 }}>{t('focus.suggested.ok')}</Button>
         </DialogActions>
       </Dialog>
 
