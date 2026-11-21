@@ -873,7 +873,7 @@
   "focus.tools.save_error": "Couldn't save. Try again.",
   "focus.suggested.button": "Suggested: {{weight}}",
   "focus.suggested.text": "It's the heaviest weight you used last time on this exercise.",
-  "focus.suggested.ok": "OK",
+  "focus.suggested.ok": "Ok",
   "focus.suggested.disable": "Stop suggesting",
   "focus.suggested.disabled": "Suggested weight is off. You can turn it back on from {{tools}}.",
   "focus.rest": "Rest",
