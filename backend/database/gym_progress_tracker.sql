@@ -38,6 +38,8 @@ CREATE TABLE IF NOT EXISTS `gym_users` (
   `home_layout` json DEFAULT NULL, -- Home: [{key, hidden, large}]; NULL = predefinito
   `module_offers_declined` json DEFAULT NULL, -- Home: chiavi dei moduli proposti e rifiutati
   `module_offer_at` datetime DEFAULT NULL, -- Home: ultima risposta a una proposta di modulo
+  `focus_tool_technique` tinyint(1) NOT NULL DEFAULT 1, -- strumenti della serie del Focus: 0 = nasconde la riga della tecnica
+  `focus_tool_suggested_weight` tinyint(1) NOT NULL DEFAULT 1, -- 0 = nasconde il peso suggerito
   `time_zone` varchar(64) DEFAULT NULL, -- ultimo fuso IANA visto dal dispositivo (header X-Timezone)
   `password_changed_at` datetime DEFAULT NULL,
   `last_login_at` datetime DEFAULT NULL,

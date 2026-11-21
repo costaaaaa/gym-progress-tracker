@@ -51,6 +51,8 @@ try {
             'module_offer' => $user->module_offer,
             // Visibilità nei gruppi {workouts, volume, streak, level}: i valori salvati, non quelli effettivi
             'group_visibility' => $user->group_visibility,
+            // Strumenti della serie del Focus {technique, suggested_weight}: acceso o spento
+            'focus_tools' => $user->focus_tools,
             'experience_years' => $user->experience_years,
             'password_changed_at' => server_time_iso($user->password_changed_at),
             'is_admin' => user_is_admin($db, $user_id),
