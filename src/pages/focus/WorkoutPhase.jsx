@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import {
-  Container, Box, Typography, Button, ButtonBase, TextField, Paper, LinearProgress,
+  Container, Box, Typography, Button, ButtonBase, TextField, LinearProgress,
   IconButton, Chip, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Fade
 } from '@mui/material';
 import {
@@ -16,10 +16,11 @@ import QuitDialog from './QuitDialog';
 import { slotLabel } from './slotLabel';
 import { MAX_WEIGHT, isValidReps, plannedSetAt, slotTarget, lastSessionSets, setStatus, setSlot } from '../../utils/focusSession';
 import { formatWeightInUnit, maxWeightInUnit, weightStepInUnit, weightUnitLabel } from '../../utils/weightUnit';
-import { intlLocale, formatSetText } from '../../i18n/format';
+import { intlLocale } from '../../i18n/format';
 import { muscleLabel, techniqueLabel } from '../../i18n/labels';
 import { radius } from '../../theme/radius';
 import ActionsMenu from './ActionsMenu';
+import SetsDoneDialog from './SetsDoneDialog';
 import TechniqueRow from './TechniqueRow';
 
 export default function WorkoutPhase({
@@ -33,6 +34,7 @@ export default function WorkoutPhase({
   const { t } = useTranslation();
   const { colors } = useFocusColors();
   const [suggestedOpen, setSuggestedOpen] = useState(false);
+  const [doneOpen, setDoneOpen] = useState(false);
   const [disabling, setDisabling] = useState(false);
   // Esito del salvataggio, letto dentro la finestra (la pagina dietro è nascosta ai lettori di schermo)
   const [disableError, setDisableError] = useState(false);
@@ -56,6 +58,12 @@ export default function WorkoutPhase({
   // Durante il salvataggio la finestra non si chiude: il fuoco non finisce su un bottone che poi sparisce
   const closeSuggested = () => { if (!disabling) setSuggestedOpen(false); };
   const target = slotTarget(currentExercise, currentSetIndex);
+  const dotStatuses = Array.from({ length: Number(totalSlotsForCurrentExercise) || 0 }, (_, idx) => setStatus(idx, currentSetIndex, currentSkippedSets));
+  const doneCount = dotStatuses.filter((status) => status === 'done').length;
+  const skippedCount = dotStatuses.filter((status) => status === 'skipped').length;
+  const doneSetsLabel = skippedCount > 0
+    ? t('focus.done_sets.aria_skipped', { done: doneCount, total: dotStatuses.length, count: skippedCount })
+    : t('focus.done_sets.aria', { done: doneCount, total: dotStatuses.length });
   // "a cedimento (min. 6)" non entra nel campo a dimensione piena: placeholder più piccolo
   const failureTarget = plannedSetAt(currentExercise, currentSetIndex)?.to_failure === true;
   return (
@@ -89,16 +97,16 @@ export default function WorkoutPhase({
             )}
           </Box>
 
-          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1.5, mb: 3 }}>
+          {/* Un solo bottone: i pallini sono disegno, lo stato lo dice il nome. Apre le serie fatte */}
+          <ButtonBase onClick={(e) => { e.currentTarget.focus(); setDoneOpen(true); }} aria-haspopup="dialog" aria-label={doneSetsLabel}
+            sx={{ display: 'flex', justifyContent: 'center', gap: 1.5, minHeight: 44, mb: 3, mx: 'auto', px: 1, borderRadius: radius.md }}>
             {Array.from({ length: Number(totalSlotsForCurrentExercise) || 0 }, (_, idx) => {
               const status = setStatus(idx, currentSetIndex, currentSkippedSets);
               const slot = setSlot(currentExercise, idx);
               // Il riscaldamento ha pallini più piccoli (R1, R2) davanti a quelli delle serie allenanti
               const size = slot.isWarmup ? 32 : 40;
-              const name = slotLabel(t, slot, 'name');
               return (
-                <Box key={idx} role="img" aria-label={t('focus.dot_label', { name, status: t(`focus.dot_${status}`) })}
-                  title={status === 'skipped' ? t('focus.set_skipped') : undefined} sx={{
+                <Box key={idx} aria-hidden="true" sx={{
                   width: size, height: size, alignSelf: 'center', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   border: `2px ${status === 'skipped' ? 'dashed' : 'solid'} ${status === 'done' ? colors.success : status === 'active' ? colors.text : colors.border}`,
                   bgcolor: status === 'done' ? colors.success : status === 'skipped' ? colors.bgElevated : 'transparent',
@@ -109,7 +117,7 @@ export default function WorkoutPhase({
                 </Box>
               );
             })}
-          </Box>
+          </ButtonBase>
 
           <Typography variant="subtitle2" component="p" sx={{ textAlign: 'center', color: colors.textSecondary, mb: 3 }}>
             {slotLabel(t, currentSlot, 'of')}
@@ -185,32 +193,10 @@ export default function WorkoutPhase({
             {t('focus.confirm_set')}
           </Button>
 
-          {currentExerciseSets.length > 0 && (
-            <Paper sx={{ bgcolor: colors.bgCard, overflow: 'hidden', border: `1px solid ${colors.border}` }}>
-              <Box sx={{ px: 2, py: 1.5, bgcolor: colors.bgElevated }}>
-                <Typography variant="subtitle2" component="h2" sx={{ color: colors.textSecondary }}>{t('focus.sets_done')}</Typography>
-              </Box>
-              {currentExerciseSets.map((set, idx) => (
-                <Box key={set.setNumber} sx={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  px: 2, py: 1.25, borderTop: idx > 0 ? `1px solid ${colors.border}` : 'none',
-                }}>
-                  <Typography variant="body2" sx={{ color: colors.textSecondary }}>
-                    {/* setNumber è la posizione (da 1) della serie: si mostra il numero dentro il suo tipo */}
-                    {slotLabel(t, setSlot(currentExercise, set.setNumber - 1), 'name')}
-                  </Typography>
-                  <Box sx={{ textAlign: 'right' }}>
-                    <Typography variant="body2" sx={{ color: colors.text, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{formatSetText(set.weight, set.reps, weightUnit)}</Typography>
-                    {set.intensity_technique && (
-                      <Typography variant="caption" sx={{ color: colors.textSecondary, display: 'block' }}>{techniqueLabel(set.intensity_technique)}</Typography>
-                    )}
-                  </Box>
-                </Box>
-              ))}
-            </Paper>
-          )}
         </Container>
       </Fade>
+
+      <SetsDoneDialog open={doneOpen} onClose={() => setDoneOpen(false)} exercise={currentExercise} sets={currentExerciseSets} weightUnit={weightUnit} />
 
       <QuitDialog open={quitDialogOpen} onClose={onCloseQuitDialog} onConfirm={onConfirmQuit}
         title={t('focus.quit_title')} text={t('focus.quit_text', { count: totalCompletedSets })}

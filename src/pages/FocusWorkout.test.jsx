@@ -8,6 +8,7 @@ import { currentTimeZone } from '../utils/workoutTime';
 import { setBrowserTimeZone } from '../test/timeZone';
 import { DROP, plannedSets, times } from '../test/plannedSets';
 import { unnamedControls } from '../test/accessibleNames';
+import i18n from '../i18n';
 
 const { mockNavigate, mockTrack, mockLocation } = vi.hoisted(() => ({ mockNavigate: vi.fn(), mockTrack: vi.fn(), mockLocation: { state: null } }));
 vi.mock('react-router-dom', async (importOriginal) => ({
@@ -1171,13 +1172,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
 
   it('i pallini del riscaldamento (R1, R2) vengono prima di quelli delle serie', async () => {
     await startDay('Gambe');
-    const dots = screen.getAllByRole('img').filter((d) => d.getAttribute('aria-label')?.includes(', '));
-    expect(dots.map((d) => [d.textContent, d.getAttribute('aria-label')])).toEqual([
-      ['R1', 'Riscaldamento 1, in corso'],
-      ['R2', 'Riscaldamento 2, da fare'],
-      ['1', 'Serie 1, da fare'],
-      ['2', 'Serie 2, da fare'],
-    ]);
+    expect(screen.getByRole('button', { name: /^Serie fatte/ }).textContent).toBe('R1R212');
   });
 
   it('in riscaldamento: sottotitolo dedicato, peso vuoto, nessun obiettivo ripetizioni, niente tecnica né chip evidenziata', async () => {
@@ -1228,7 +1223,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     expect(screen.queryByText('Recupero')).toBeNull();
     expect(screen.getByText('Serie 1 di 2')).toBeTruthy();
     expect(screen.getByLabelText('Peso (kg)').value).toBe('100');
-    expect(screen.getAllByTitle('Serie saltata')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: /^Serie fatte/ }).getAttribute('aria-label')).toBe('Serie fatte: 0 di 4, 2 saltate');
     expect(draft()).toMatchObject({ currentSetIndex: 2, skippedSets: { 11: [0, 1] } });
   });
 
@@ -1345,7 +1340,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     expect(within(screen.getByRole('group', { name: 'Serie' })).getByText('2')).toBeTruthy();
   });
 
-  it('nell\'elenco "Serie completate" la prima serie allenante è "Serie 1", i riscaldamenti "Riscaldamento 1" e "Riscaldamento 2"', async () => {
+  it('nella finestra "Serie fatte" la prima serie allenante è "Serie 1", i riscaldamenti "Riscaldamento 1" e "Riscaldamento 2"', async () => {
     await startDay('Gambe');
     doSet('20', '10');
     click('Salta timer');
@@ -1353,10 +1348,13 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     click('Salta timer');
     doSet('100', '5');
     click('Salta timer');
-    expect(screen.getByText('Riscaldamento 1')).toBeTruthy();
-    expect(screen.getByText('Riscaldamento 2')).toBeTruthy();
-    expect(screen.getByText('Serie 1')).toBeTruthy();
-    expect(screen.queryByText('Serie 3')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /^Serie fatte/ }));
+    await advance(500);
+    const dialog = within(screen.getByRole('dialog', { name: 'Serie fatte' }));
+    expect(dialog.getByText('Riscaldamento 1')).toBeTruthy();
+    expect(dialog.getByText('Riscaldamento 2')).toBeTruthy();
+    expect(dialog.getByText('Serie 1')).toBeTruthy();
+    expect(dialog.queryByText('Serie 3')).toBeNull();
   });
 
   describe('cambio esercizio', () => {
@@ -1415,17 +1413,15 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     expect(within(screen.getByRole('group', { name: 'Esercizi' })).getByText('1')).toBeTruthy();
   });
 
-  it('ogni pallino ha un testo accessibile con numero e stato', async () => {
+  it('il bottone dei pallini dice le serie fatte e quelle saltate', async () => {
     await startDay('Gambe');
-    expect(screen.getByLabelText('Riscaldamento 1, in corso')).toBeTruthy();
-    expect(screen.getByLabelText('Riscaldamento 2, da fare')).toBeTruthy();
-    expect(screen.getByLabelText('Serie 1, da fare')).toBeTruthy();
+    const name = () => screen.getByRole('button', { name: /^Serie fatte/ }).getAttribute('aria-label');
+    expect(name()).toBe('Serie fatte: 0 di 4');
     doSet('20', '10');
     click('Salta timer');
-    expect(screen.getByLabelText('Riscaldamento 1, fatta')).toBeTruthy();
+    expect(name()).toBe('Serie fatte: 1 di 4');
     await chooseAction('Salta riscaldamento');
-    expect(screen.getByLabelText('Riscaldamento 2, saltata')).toBeTruthy();
-    expect(screen.getByLabelText('Serie 1, in corso')).toBeTruthy();
+    expect(name()).toBe('Serie fatte: 1 di 4, 1 saltata');
   });
 });
 
@@ -1880,6 +1876,8 @@ describe('peso in libbre: dati sempre in kg', () => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(savedDraft));
     await mount();
     click('Riprendi allenamento');
+    fireEvent.click(screen.getByRole('button', { name: /^Serie fatte/ }));
+    await advance(500);
     screen.getByText('132,25 lb × 8');
     expect(draft().completedSets[9][0].weight).toBe(60);
   });
@@ -2305,5 +2303,110 @@ describe('barra in alto e menu «⋯» (F3)', () => {
     await advance(500);
     expect(screen.queryByRole('menu')).toBeNull();
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Altre azioni' }));
+  });
+});
+
+describe('pallini e «Serie fatte» (F3)', () => {
+  const squat = {
+    id: 11, exercise_id: 5, exercise_name: 'Squat', rest: 60, muscle_group: 'gambe', equipment: 'bilanciere',
+    planned_sets: plannedSets(1, times(3, { min: 5, max: 5 })),
+  };
+  const legDay = { id: 3, name: 'Gambe', exercises: [squat] };
+  const withLegs = () => { responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Gambe', is_active: true, days: [legDay] }] }); };
+  const doneButton = () => screen.getByRole('button', { name: /^(Serie fatte|Sets done)/ });
+  const doneDialog = () => screen.getByRole('dialog', { name: 'Serie fatte' });
+  const openDone = async () => { fireEvent.click(doneButton()); await advance(500); return within(doneDialog()); };
+  const closeDone = async () => { fireEvent.click(within(doneDialog()).getByRole('button', { name: 'Chiudi' })); await advance(500); };
+  const row = (dialog, name) => dialog.getByRole('button', { name: new RegExp(`^${name}`) });
+
+  describe('il bottone dei pallini', () => {
+    it('è uno solo, sempre presente, con il nome che dice le serie fatte', async () => {
+      await startDay('Push');
+      expect(screen.getAllByRole('button', { name: /^Serie fatte/ })).toHaveLength(1);
+      expect(doneButton().getAttribute('aria-label')).toBe('Serie fatte: 0 di 2');
+      expect(doneButton().getAttribute('aria-haspopup')).toBe('dialog');
+      expect(parseInt(getComputedStyle(doneButton()).minHeight, 10)).toBeGreaterThanOrEqual(44);
+      doSet();
+      click('Salta timer');
+      expect(doneButton().getAttribute('aria-label')).toBe('Serie fatte: 1 di 2');
+    });
+
+    it('con serie saltate le dice a parte, al singolare e al plurale', async () => {
+      withLegs();
+      await startDay('Gambe');
+      await chooseAction('Salta riscaldamento');
+      expect(doneButton().getAttribute('aria-label')).toBe('Serie fatte: 0 di 4, 1 saltata');
+    });
+
+    it('in inglese il nome è in inglese', async () => {
+      await startDay('Push');
+      await act(async () => { await i18n.changeLanguage('en'); });
+      expect(doneButton().getAttribute('aria-label')).toBe('Sets done: 0 of 2');
+    });
+
+    it('i pallini dentro sono solo disegno, non più letti uno per uno', async () => {
+      withLegs();
+      await startDay('Gambe');
+      expect(screen.queryAllByRole('img').filter((d) => d.getAttribute('aria-label')?.includes(', '))).toEqual([]);
+      expect(screen.queryByLabelText('Riscaldamento 1, in corso')).toBeNull();
+      expect(doneButton().querySelectorAll('[aria-hidden="true"]').length).toBeGreaterThanOrEqual(3);
+      expect(screen.getByText('R1')).toBeTruthy();
+    });
+
+    it('la scheda «Serie fatte» in fondo alla pagina non c\'è più', async () => {
+      await startDay('Push');
+      doSet();
+      expect(screen.queryByText('Serie completate')).toBeNull();
+      expect(screen.queryByRole('heading', { name: 'Serie fatte' })).toBeNull();
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+  });
+
+  describe('la finestra', () => {
+    it('senza serie fatte dice che non ce ne sono, e chiusa riporta il fuoco al bottone', async () => {
+      await startDay('Push');
+      const dialog = await openDone();
+      expect(dialog.getByText('Ancora nessuna serie fatta in questo esercizio.')).toBeTruthy();
+      expect(dialog.queryAllByRole('button').map((b) => b.textContent)).toEqual(['Chiudi']);
+      await closeDone();
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(document.activeElement).toBe(doneButton());
+    });
+
+    it('elenca le serie fatte in ordine, con nome, valori e tecnica, senza le saltate', async () => {
+      withLegs();
+      await startDay('Gambe');
+      doSet('20', '10');
+      click('Salta timer');
+      fireEvent.click(screen.getByRole('button', { name: 'Rest pause' }));
+      doSet('60', '5');
+      click('Salta timer');
+      await chooseAction('Salta serie');
+      const dialog = await openDone();
+      const rows = dialog.getAllByRole('button').filter((b) => b.textContent !== 'Chiudi');
+      expect(rows.map((b) => b.textContent.replace(/\s/g, ' '))).toEqual(['Riscaldamento 120 kg × 10', 'Serie 160 kg × 5Rest pause']);
+      expect(dialog.queryByText('Serie 2')).toBeNull();
+      rows.forEach((b) => expect(parseInt(getComputedStyle(b).minHeight, 10)).toBeGreaterThanOrEqual(44));
+      expect(dialog.getByText('Tocca una serie per correggerla.')).toBeTruthy();
+    });
+
+    it('i valori sono nell\'unità dell\'utente', async () => {
+      account.weightUnit = 'lb';
+      await startDay('Push');
+      doSetLb('220', '8');
+      click('Salta timer');
+      const dialog = await openDone();
+      expect(dialog.getByText('Serie 1')).toBeTruthy();
+      expect(dialog.getByText('220 lb × 8')).toBeTruthy();
+    });
+
+    it('Esc chiude la finestra e il fuoco torna ai pallini', async () => {
+      await startDay('Push');
+      await openDone();
+      fireEvent.keyDown(doneDialog(), { key: 'Escape' });
+      await advance(500);
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(document.activeElement).toBe(doneButton());
+    });
   });
 });
