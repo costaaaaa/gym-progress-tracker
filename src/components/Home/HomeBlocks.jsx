@@ -12,6 +12,7 @@ import EditControls from './blocks/EditControls';
 import { BlockEditContext } from './blocks/blockEdit';
 import { effectiveLayout, moveBlock, setHidden, setLarge } from '../../utils/homeLayout';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
+import { DASHED_CARD } from './labelStyle';
 
 // Lo stato delle richieste della Home ('pending' | 'ok' | 'failed') nel vocabolario dei blocchi ('loading' | 'ok' | 'error')
 const BLOCK_STATUS = { pending: 'loading', ok: 'ok', failed: 'error' };
@@ -23,7 +24,7 @@ const TITLE_KEYS = { last: 'home.last.title', levels: 'home.block.levels_title',
 const HiddenBlock = ({ title, controls }) => {
   const { t } = useTranslation();
   return (
-    <Card data-testid="home-block-hidden" sx={{ border: '1px dashed', borderColor: 'text.secondary', boxShadow: 'none' }}>
+    <Card data-testid="home-block-hidden" sx={DASHED_CARD}>
       <Box sx={{ px: 2.5, py: 1.75, minHeight: 44 }}>
         <Typography component="h2" sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 600, fontSize: 16, color: 'text.secondary' }}>{title}</Typography>
         <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>{t('home.edit.hidden')}</Typography>

@@ -4,6 +4,7 @@ import { Link as RouterLink, useOutletContext } from 'react-router-dom';
 import HomeOpening, { Greeting } from '../components/Home/HomeOpening';
 import HomeBlocks from '../components/Home/HomeBlocks';
 import ModuleOffer from '../components/Home/ModuleOffer';
+import { HOME_BUTTON } from '../components/Home/labelStyle';
 import { useAuth } from '../context/AuthContext';
 import { readJson, isSuccess } from '../utils/readJson';
 import { useTranslation } from 'react-i18next';
@@ -177,7 +178,7 @@ const Home = () => {
             </Box>
           )}
           <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
-            <Button onClick={() => setEditing((on) => !on)} sx={{ minHeight: 44, minWidth: 44, fontSize: 14, fontWeight: 700 }}>
+            <Button onClick={() => setEditing((on) => !on)} sx={HOME_BUTTON}>
               {t(editing ? 'home.edit.done' : 'home.edit.start')}
             </Button>
           </Box>

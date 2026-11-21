@@ -71,4 +71,15 @@ describe('ModuleOffer', () => {
     expect(screen.getByRole('button', { name: /^No, grazie/ }).getAttribute('aria-disabled')).toBe('true');
     await act(async () => { answers[0](json({ success: true, modules: MODULES, module_offer: null })); });
   });
+
+  it('in volo i bottoni hanno anche l\'aspetto disabilitato, e due eventi nello stesso giro mandano una sola risposta', async () => {
+    const { fake, answers } = setup(null);
+    const activate = screen.getByRole('button', { name: 'Attiva Gruppi' });
+    expect(getComputedStyle(activate).opacity).not.toBe('0.38');
+    act(() => { activate.click(); activate.click(); });
+    expect(fake).toHaveBeenCalledTimes(1);
+    expect(getComputedStyle(screen.getByRole('button', { name: 'Attiva Gruppi' })).opacity).toBe('0.38');
+    expect(getComputedStyle(screen.getByRole('button', { name: /^No, grazie/ })).opacity).toBe('0.38');
+    await act(async () => { answers[0](json({ success: true, modules: MODULES, module_offer: null })); });
+  });
 });

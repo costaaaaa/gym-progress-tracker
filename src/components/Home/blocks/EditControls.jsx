@@ -2,10 +2,9 @@ import { Box, Button, IconButton } from '@mui/material';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { useTranslation } from 'react-i18next';
+import { DISABLED } from '../labelStyle';
 
 const TOUCH = 44;
-// Disabilitato ai capi ma ancora raggiungibile: dopo uno spostamento il fuoco resta sul bottone premuto
-const DISABLED = { '&[aria-disabled="true"]': { opacity: 0.38, cursor: 'default' } };
 
 // I comandi di un blocco in modifica: sposta su e giù (disabilitati ai capi), nascondi/mostra, grande/piccola (non per
 // «Ultimo allenamento»: `canResize` falso). `onAction(key, 'up' | 'down' | 'hide' | 'large')`. I nomi dicono quale blocco.
