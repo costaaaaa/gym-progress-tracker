@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
 import i18n from '../../i18n';
 import SelectDayPhase from './SelectDayPhase';
+import { json } from '../../test/dom';
 
 const account = vi.hoisted(() => ({ user: undefined }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ user: account.user, updateUser: () => {} }) }));
@@ -15,7 +16,7 @@ const noop = () => {};
 const plan = { id: 1, name: 'Scheda', days: [{ id: 1, name: 'Push', exercises: [] }, { id: 2, name: 'Pull', exercises: [] }] };
 const renderPhase = (selectedDayId) => render(
   <MemoryRouter><ThemeModeProvider>
-    <SelectDayPhase activePlan={plan} selectedDayId={selectedDayId} selectedDay={null} onNotify={noop}
+    <SelectDayPhase activePlan={plan} selectedDayId={selectedDayId} selectedDay={null}
       onDayChange={noop} onStart={noop} onBack={noop} onGoToPlans={noop} />
   </ThemeModeProvider></MemoryRouter>,
 );
@@ -95,5 +96,28 @@ describe('riga degli strumenti della serie', () => {
     fireEvent.keyDown(dialog, { key: 'Escape' });
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     await waitFor(() => expect(document.activeElement).toBe(row()));
+  });
+
+  describe('esito dei cambi nella finestra', () => {
+    afterEach(() => vi.unstubAllGlobals());
+    const openDialog = async () => {
+      renderPhase(1);
+      fireEvent.click(row());
+      return screen.findByRole('dialog');
+    };
+
+    it('l\'esito si legge dentro la finestra, in una regione «status»', async () => {
+      vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(json({ success: true, rest_timer_enabled: true, focus_tools: { technique: false, suggested_weight: true } }))));
+      const dialog = await openDialog();
+      fireEvent.click(within(dialog).getByRole('switch', { name: 'Tecnica di intensità' }));
+      await waitFor(() => expect(within(dialog).getByRole('status').textContent).toBe('Tecnica di intensità: spento'));
+    });
+
+    it('l\'errore si legge dentro la finestra, in una regione «alert»', async () => {
+      vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(json({ success: false }, 500))));
+      const dialog = await openDialog();
+      fireEvent.click(within(dialog).getByRole('switch', { name: 'Peso suggerito' }));
+      await waitFor(() => expect(within(dialog).getByRole('alert').textContent).toBe('Errore nel salvataggio. Riprova.'));
+    });
   });
 });

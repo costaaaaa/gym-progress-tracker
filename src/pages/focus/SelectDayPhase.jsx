@@ -19,7 +19,7 @@ import { radius } from '../../theme/radius';
 import { choiceSx } from './choiceSx';
 
 export default function SelectDayPhase({
-  activePlan, selectedDayId, selectedDay, onNotify, onDayChange, onStart, onBack, onGoToPlans
+  activePlan, selectedDayId, selectedDay, onDayChange, onStart, onBack, onGoToPlans
 }) {
   const { t } = useTranslation();
   const { colors } = useFocusColors();
@@ -185,7 +185,7 @@ export default function SelectDayPhase({
               PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: radius.xxl } }}>
               <DialogTitle id="focus-tools-title" sx={{ color: colors.text }}>{t('focus.tools.title')}</DialogTitle>
               <DialogContent>
-                <FocusToolsOptions notify={onNotify} idPrefix="focus-tools-dialog" />
+                <FocusToolsOptions idPrefix="focus-tools-dialog" />
               </DialogContent>
               <DialogActions>
                 <Button onClick={() => setToolsOpen(false)} sx={{ color: colors.text, minHeight: 44 }}>{t('common.close')}</Button>

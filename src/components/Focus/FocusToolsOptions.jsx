@@ -13,13 +13,19 @@ const TEXTS = {
 };
 
 // I tre strumenti della serie dell'account: una riga con interruttore ciascuno, il cambio si salva subito.
-// `notify(messaggio, gravità)` annuncia l'esito (e mostra l'errore). Usato prima dell'allenamento e in Account.
+// `notify(messaggio, gravità)` annuncia l'esito (e mostra l'errore). Senza `notify` (dentro una finestra, dove la
+// notifica della pagina non si legge) l'esito sta qui sotto: una regione «status» e una «alert», sempre nel DOM.
+// Usato prima dell'allenamento e in Account.
 const FocusToolsOptions = ({ notify, idPrefix }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const save = useSaveFocusTool();
   // Strumenti con un salvataggio in corso, col valore atteso: l'interruttore lo mostra subito
   const [pending, setPending] = useState({});
+  const [inline, setInline] = useState({ status: '', alert: '' });
+  const announce = (message, severity) => (notify
+    ? notify(message, severity)
+    : setInline(severity === 'error' ? { status: '', alert: message } : { status: message, alert: '' }));
 
   const toggle = async (tool, next) => {
     // Mentre il salvataggio è in corso un altro cambio dello stesso strumento è ignorato (il fuoco resta sull'interruttore)
@@ -27,9 +33,9 @@ const FocusToolsOptions = ({ notify, idPrefix }) => {
     setPending((p) => ({ ...p, [tool]: next }));
     const res = await save(tool, next);
     if (res.ok) {
-      notify(t('focus.tools.changed', { name: t(TEXTS[tool].name), state: t(next ? 'focus.tools.on' : 'focus.tools.off') }), 'success');
+      announce(t('focus.tools.changed', { name: t(TEXTS[tool].name), state: t(next ? 'focus.tools.on' : 'focus.tools.off') }), 'success');
     } else {
-      notify(t('focus.tools.save_error'), 'error');
+      announce(t('focus.tools.save_error'), 'error');
     }
     setPending((p) => {
       const rest = { ...p };
@@ -39,6 +45,7 @@ const FocusToolsOptions = ({ notify, idPrefix }) => {
   };
 
   return (
+    <>
     <Box component="ul" aria-label={t('focus.tools.title')} sx={{ listStyle: 'none', m: 0, p: 0 }}>
       {FOCUS_TOOLS.map((tool, index) => {
         const helpId = `${idPrefix}-${tool}-help`;
@@ -61,6 +68,13 @@ const FocusToolsOptions = ({ notify, idPrefix }) => {
         );
       })}
     </Box>
+    {!notify && (
+      <>
+        <Typography role="status" sx={{ fontSize: 16, minHeight: '1.5em' }}>{inline.status}</Typography>
+        <Typography role="alert" sx={{ fontSize: 16, color: 'error.main' }}>{inline.alert}</Typography>
+      </>
+    )}
+    </>
   );
 };
 

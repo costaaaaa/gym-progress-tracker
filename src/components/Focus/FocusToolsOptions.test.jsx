@@ -23,12 +23,13 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
-const Harness = ({ initial }) => {
+const Harness = ({ initial, inline = false }) => {
   const [user, setUser] = useState(initial);
   auth.value = { user, updateUser: (patch) => setUser((u) => ({ ...u, ...patch })) };
-  return <ThemeModeProvider><FocusToolsOptions notify={notify} idPrefix="test-tools" /></ThemeModeProvider>;
+  return <ThemeModeProvider><FocusToolsOptions notify={inline ? undefined : notify} idPrefix="test-tools" /></ThemeModeProvider>;
 };
 const mount = (user = { id: 1 }) => render(<Harness initial={user} />);
+const mountInline = (user = { id: 1 }) => render(<Harness initial={user} inline />);
 const sw = (name) => screen.getByRole('switch', { name });
 const saved = () => fetch.mock.calls.map(([, init]) => JSON.parse(init.body));
 
@@ -95,5 +96,34 @@ describe('salvataggio', () => {
     finish();
     await waitFor(() => expect(sw('Tecnica di intensità').getAttribute('aria-busy')).not.toBe('true'));
     expect(sw('Tecnica di intensità').checked).toBe(false);
+  });
+});
+
+// Dentro una finestra la notifica della pagina non si legge (il resto è nascosto ai lettori di schermo): l'esito sta nel componente
+describe('senza notify: l\'esito si legge dentro il componente', () => {
+  it('le due regioni (esito e errore) ci sono sempre, vuote', () => {
+    mountInline();
+    expect(screen.getByRole('status').textContent).toBe('');
+    expect(screen.getByRole('alert').textContent).toBe('');
+  });
+
+  it('un salvataggio riuscito riempie la regione «status» e non chiama notify', async () => {
+    mountInline();
+    fireEvent.click(sw('Tecnica di intensità'));
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Tecnica di intensità: spento'));
+    expect(screen.getByRole('alert').textContent).toBe('');
+    expect(notify).not.toHaveBeenCalled();
+  });
+
+  it('un errore riempie la regione «alert», svuota l\'esito di prima e il valore torna com\'era', async () => {
+    mountInline();
+    fireEvent.click(sw('Peso suggerito'));
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Peso suggerito: spento'));
+    settings = () => json({ success: false }, 500);
+    fireEvent.click(sw('Tecnica di intensità'));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('Errore nel salvataggio. Riprova.'));
+    expect(screen.getByRole('status').textContent).toBe('');
+    expect(sw('Tecnica di intensità').checked).toBe(true);
+    expect(notify).not.toHaveBeenCalled();
   });
 });
