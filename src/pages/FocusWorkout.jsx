@@ -18,12 +18,13 @@ import { visuallyHidden } from '@mui/utils';
 import FocusExercisePicker from '../components/FocusExercisePicker';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { focusedElement } from '../utils/focus';
+import { clockText } from '../utils/focusSession';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './focus/useFocusColors';
 import useFocusSession from './focus/useFocusSession';
 import ResumePromptPhase from './focus/ResumePromptPhase';
 import SelectDayPhase from './focus/SelectDayPhase';
-import RestTimerPhase, { formatTime } from './focus/RestTimerPhase';
+import RestTimerPhase from './focus/RestTimerPhase';
 import WorkoutPhase from './focus/WorkoutPhase';
 import SummaryPhase from './focus/SummaryPhase';
 import { radius } from '../theme/radius';
@@ -54,8 +55,11 @@ const FocusWorkout = () => {
   }, [loading, phase, saved]);
   // Fine del recupero: l'unico annuncio, niente conto alla rovescia a voce
   const restOver = phase === 'rest_timer' && restTimer.timerDuration > 0 && restTimer.timerRemaining === 0;
-  // Dopo un tocco di ±15 s: quanto resta in quel momento, fermo (non cambia a ogni secondo)
-  const restLeft = phase === 'rest_timer' && restTimer.restNote !== null && !restOver ? t('focus.rest_left', { time: formatTime(restTimer.restNote) }) : '';
+  // Dopo un tocco di ±15 s: quanto resta in quel momento, fermo (non cambia a ogni secondo). Ai tocchi dispari in coda uno spazio a
+  // larghezza zero: due tocchi che lasciano lo stesso tempo cambiano comunque il testo e il lettore di schermo riannuncia.
+  const tap = restTimer.restLeftAtTap;
+  const restLeft = phase === 'rest_timer' && tap && !restOver
+    ? `${t('focus.rest_left', { time: clockText(tap.seconds) })}${tap.taps % 2 ? '\u200b' : ''}` : '';
 
   // ================================================
   // RENDER — CONTENUTO IN BASE ALLA FASE

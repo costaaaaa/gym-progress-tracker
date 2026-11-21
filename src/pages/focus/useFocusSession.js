@@ -84,8 +84,8 @@ export default function useFocusSession() {
   const [timerDuration, setTimerDuration] = useState(0);
   const [timerRemaining, setTimerRemaining] = useState(0);
   const timerRef = useRef(null);
-  // Secondi che restavano all'ultimo tocco di ±15 s: li legge lo stato per i lettori di schermo; null se nessun tocco
-  const [restNote, setRestNote] = useState(null);
+  // Ultimo tocco di ±15 s con tempo rimasto: { seconds: quanto restava, taps: quanti tocchi }; null se nessuno. Lo legge lo stato per i lettori di schermo
+  const [restLeftAtTap, setRestLeftAtTap] = useState(null);
 
   // Summary state
   const [workoutNotes, setWorkoutNotes] = useState('');
@@ -662,7 +662,7 @@ export default function useFocusSession() {
   const startRestTimer = (durationSeconds) => {
     setTimerDuration(durationSeconds);
     setTimerRemaining(durationSeconds);
-    setRestNote(null);
+    setRestLeftAtTap(null);
     setPhase('rest_timer');
     runCountdown();
   };
@@ -674,11 +674,12 @@ export default function useFocusSession() {
     if (next === timerRemaining) return;
     setTimerDuration(timerDuration + next - timerRemaining);
     setTimerRemaining(next);
-    setRestNote(next > 0 ? next : null);
+    setRestLeftAtTap(prev => (next > 0 ? { seconds: next, taps: (prev?.taps ?? 0) + 1 } : null));
     if (next === 0) {
       if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = null;
-    } else {
+    } else if (!timerRef.current) {
+      // Fermo (dopo lo zero): riparte. Con il conto in corso il secondo in corso non si perde
       runCountdown();
     }
   };
@@ -689,7 +690,7 @@ export default function useFocusSession() {
       timerRef.current = null;
     }
     setTimerRemaining(0);
-    setRestNote(null);
+    setRestLeftAtTap(null);
     setPhase('workout');
   };
 
@@ -896,6 +897,7 @@ export default function useFocusSession() {
     onBack: () => navigate('/'),
     onGoToPlans: () => navigate('/schede'),
   };
+  const lastDoneSet = currentExercise ? (completedSets[currentExercise.id] || []).at(-1) : undefined;
   const restTimer = {
     timerDuration,
     timerRemaining,
@@ -904,13 +906,13 @@ export default function useFocusSession() {
     // Serie successiva: la posizione corrente è già quella dopo (goToSlot) e il campo peso è già pronto
     nextWeightKg: phase === 'rest_timer' && currentExercise && currentSetIndex > 0 ? restNextWeight({
       field: weightKgText,
-      previous: (completedSets[currentExercise.id] || []).at(-1)?.weight,
+      previous: lastDoneSet?.weight,
       previousIsWarmup: setSlot(currentExercise, currentSetIndex - 1).isWarmup,
       nextIsWarmup: currentSlot?.isWarmup,
     }) : null,
     nextTarget: phase === 'rest_timer' && currentExercise ? slotTarget(currentExercise, currentSetIndex) : '',
     weightUnit,
-    restNote,
+    restLeftAtTap,
     onAdjust: handleAdjustTimer,
     onSkip: handleSkipTimer,
   };

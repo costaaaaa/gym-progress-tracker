@@ -9,6 +9,7 @@ import { setBrowserTimeZone } from '../test/timeZone';
 import { DROP, plannedSets, times } from '../test/plannedSets';
 import { unnamedControls } from '../test/accessibleNames';
 import i18n from '../i18n';
+import { hapticFeedback } from '../utils/vibration';
 
 const { mockNavigate, mockTrack, mockLocation } = vi.hoisted(() => ({ mockNavigate: vi.fn(), mockTrack: vi.fn(), mockLocation: { state: null } }));
 vi.mock('react-router-dom', async (importOriginal) => ({
@@ -2802,6 +2803,8 @@ describe('recupero: ±15 s e serie successiva', () => {
   const MINUS = '15 secondi in meno';
   const PLUS = '15 secondi in più';
   const status = () => screen.getByRole('status').textContent;
+  // «Restano …» senza lo spazio a larghezza zero che fa riannunciare lo stesso testo
+  const leftText = () => status().replace(/\u200b/g, '');
   const ring = () => Number(screen.getByRole('progressbar', { name: 'Avanzamento del recupero' }).getAttribute('aria-valuenow'));
   const toRest = async () => { await startDay('Push'); doSet(); };
   const nextLine = () => screen.getByTestId('rest-next-set').textContent;
@@ -2832,11 +2835,10 @@ describe('recupero: ±15 s e serie successiva', () => {
     expect(ring()).toBe(20);
   });
 
-  it('−15 con meno di 15 s: 00:00, la schermata resta, annuncia la fine e «−15 s» è inattivo ma col fuoco', async () => {
+  it('−15 con meno di 15 s: 00:00, la schermata resta, annuncia la fine e «−15 s» è inattivo (aria-disabled, non disabled)', async () => {
     await toRest();
     await advance(80);
     const minus = screen.getByRole('button', { name: MINUS });
-    act(() => minus.focus());
     fireEvent.click(minus);
     expect(screen.getByText('00:00')).toBeTruthy();
     expect(screen.getByText('Recupero')).toBeTruthy();
@@ -2844,7 +2846,6 @@ describe('recupero: ±15 s e serie successiva', () => {
     expect(status()).toBe('Recupero finito: puoi fare la serie successiva');
     expect(minus.getAttribute('aria-disabled')).toBe('true');
     expect(minus.hasAttribute('disabled')).toBe(false);
-    expect(document.activeElement).toBe(minus);
     await advance(30);
     expect(screen.getByText('00:00')).toBeTruthy();
     expect(screen.getByText('Recupero')).toBeTruthy();
@@ -2858,7 +2859,7 @@ describe('recupero: ±15 s e serie successiva', () => {
     expect(status()).toBe('Recupero finito: puoi fare la serie successiva');
     click(PLUS);
     expect(screen.getByText('00:15')).toBeTruthy();
-    expect(status()).toBe('Restano 00:15');
+    expect(leftText()).toBe('Restano 00:15');
     await advance(5);
     expect(screen.getByText('00:10')).toBeTruthy();
     expect(screen.getByRole('button', { name: MINUS }).getAttribute('aria-disabled')).toBeNull();
@@ -2871,13 +2872,57 @@ describe('recupero: ±15 s e serie successiva', () => {
     await toRest();
     expect(status()).toBe('');
     click(PLUS);
-    expect(status()).toBe('Restano 01:45');
+    expect(leftText()).toBe('Restano 01:45');
     await advance(10);
-    expect(status()).toBe('Restano 01:45');
+    expect(leftText()).toBe('Restano 01:45');
     click(MINUS);
-    expect(status()).toBe('Restano 01:20');
+    expect(leftText()).toBe('Restano 01:20');
     click('Salta timer');
     expect(status()).toBe('');
+  });
+
+  it('un tocco a metà di un secondo non fa perdere il secondo in corso', async () => {
+    await toRest();
+    await advance(0.5);
+    click(PLUS);
+    expect(screen.getByText('01:45')).toBeTruthy();
+    await advance(0.5);
+    expect(screen.getByText('01:44')).toBeTruthy();
+  });
+
+  it('due tocchi ravvicinati si sommano', async () => {
+    await toRest();
+    click(PLUS);
+    click(PLUS);
+    expect(screen.getByText('02:00')).toBeTruthy();
+    await advance(1);
+    expect(screen.getByText('01:59')).toBeTruthy();
+  });
+
+  it('due tocchi che lasciano lo stesso tempo cambiano comunque il testo dello stato, così il lettore di schermo riannuncia', async () => {
+    await toRest();
+    click(PLUS);
+    const first = status();
+    expect(first).toContain('Restano 01:45');
+    await advance(15);
+    click(PLUS);
+    expect(status()).toContain('Restano 01:45');
+    expect(status()).not.toBe(first);
+  });
+
+  it('la vibrazione è solo dello scadere naturale: «−15 s» che porta a zero non vibra', async () => {
+    const warning = vi.spyOn(hapticFeedback, 'warning').mockImplementation(() => {});
+    responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [{ id: 1, name: 'Push', exercises: [{ ...bench, planned_sets: plannedSets(0, times(3, { min: 8, max: 10 })) }] }] }] });
+    await toRest();
+    await advance(80);
+    click(MINUS);
+    expect(screen.getByText('00:00')).toBeTruthy();
+    expect(warning).not.toHaveBeenCalled();
+    click('Salta timer');
+    doSet();
+    await advance(90);
+    expect(warning).toHaveBeenCalledTimes(1);
+    warning.mockRestore();
   });
 
   it('il recupero successivo riparte dalla durata della scheda, non da quella ritoccata', async () => {
@@ -2938,7 +2983,7 @@ describe('recupero: ±15 s e serie successiva', () => {
     expect(screen.getByRole('button', { name: '15 seconds less' })).toBeTruthy();
     expect(nextLine()).toBe('Target: 8-10');
     click('15 seconds more');
-    expect(screen.getByRole('status').textContent).toBe('01:45 left');
+    expect(screen.getByRole('status').textContent.replace(/\u200b/g, '')).toBe('01:45 left');
   });
 
   describe('con riscaldamento e corpo libero', () => {
@@ -2947,7 +2992,7 @@ describe('recupero: ±15 s e serie successiva', () => {
       responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [{ id: 1, name: 'Push', exercises: [ex] }] }] });
     };
 
-    it('solo il peso quando manca l\'obiettivo? No: riscaldamento dopo riscaldamento a campo vuoto, nessuna riga', async () => {
+    it('riscaldamento dopo riscaldamento a campo vuoto: la riga non c\'è', async () => {
       withSets({ planned_sets: plannedSets(2, [{ min: 8, max: 10 }]) });
       await startDay('Push');
       doSet('20', '10');

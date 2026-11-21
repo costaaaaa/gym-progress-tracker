@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   lastSessionSets, totalSlots, setSlot, skipWarmup, slotWeight, numberedSets, withWarmupRule, isCurrentDraft, swapExercise, buildSessionEntry, suggestedWeight,
-  plannedSetAt, slotTarget, slotTechnique, repsNeedConfirm, addedPlannedSets, editSet, restNextWeight,
+  plannedSetAt, slotTarget, slotTechnique, repsNeedConfirm, addedPlannedSets, editSet, restNextWeight, clockText,
 } from './focusSession';
 import { DROP, plannedSets, times, work } from '../test/plannedSets';
 
@@ -279,5 +279,13 @@ describe('restNextWeight: il peso della serie successiva mostrato nel recupero',
   });
   it('corpo libero con zavorra: il campo mantiene la zavorra', () => {
     expect(restNextWeight({ field: '5.0', previous: 5, ...work2 })).toBe(5);
+  });
+});
+
+describe('clockText: i secondi come mm:ss', () => {
+  it('scrive minuti e secondi a due cifre', () => {
+    expect(clockText(0)).toBe('00:00');
+    expect(clockText(75)).toBe('01:15');
+    expect(clockText(600)).toBe('10:00');
   });
 });

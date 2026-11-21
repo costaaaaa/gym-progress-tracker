@@ -6,13 +6,8 @@ import { TABULAR } from '../../utils/fonts';
 import { slotLabel } from './slotLabel';
 import { radius } from '../../theme/radius';
 import { formatWeightInUnit } from '../../utils/weightUnit';
+import { clockText } from '../../utils/focusSession';
 import { intlLocale } from '../../i18n/format';
-
-export const formatTime = (seconds) => {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-};
 
 export default function RestTimerPhase({
   timerDuration, timerRemaining, currentExerciseName, nextSet, nextWeightKg, nextTarget, weightUnit, onAdjust, onSkip
@@ -25,10 +20,12 @@ export default function RestTimerPhase({
   if (nextWeight && nextTarget) nextLine = t('focus.next_weight_target', { weight: nextWeight, target: nextTarget });
   else if (nextWeight) nextLine = nextWeight;
   else if (nextTarget) nextLine = t('focus.next_target', { target: nextTarget });
-  const adjustSx = {
-    color: colors.text, borderColor: colors.border, borderRadius: radius.lg, minHeight: 44, flex: 1, fontSize: '1rem',
-    '&:hover': { borderColor: colors.text, bgcolor: colors.bgElevated }, '&[aria-disabled="true"]': { opacity: 0.5 }
+  // Stile comune ai tre pulsanti sotto l'anello
+  const buttonSx = {
+    color: colors.text, borderColor: colors.border, borderRadius: radius.lg, fontSize: '1rem',
+    '&:hover': { borderColor: colors.text, bgcolor: colors.bgElevated }
   };
+  const adjustSx = { ...buttonSx, minHeight: 44, flex: 1, '&[aria-disabled="true"]': { opacity: 0.5 } };
   return (
     <Box sx={{
       minHeight: '100vh', bgcolor: colors.bg, color: colors.text,
@@ -40,7 +37,7 @@ export default function RestTimerPhase({
         <CircularProgress variant="determinate" value={100} size={220} thickness={4} aria-hidden
           sx={{ color: colors.border, position: 'absolute', left: 0, zIndex: 0 }} />
         <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-          <Typography variant="h2" component="div" sx={{ ...TABULAR, fontWeight: 700, color: colors.text }}>{formatTime(timerRemaining)}</Typography>
+          <Typography variant="h2" component="div" sx={{ ...TABULAR, fontWeight: 700, color: colors.text }}>{clockText(timerRemaining)}</Typography>
           <Typography variant="caption" component="h1" tabIndex={-1} sx={{ color: colors.textSecondary, mt: 0.5 }}>{t('focus.rest')}</Typography>
         </Box>
       </Box>
@@ -53,8 +50,7 @@ export default function RestTimerPhase({
       <Typography variant="body2" sx={{ color: colors.textSecondary, mb: nextLine ? 0.5 : 4 }}>{nextSet && slotLabel(t, nextSet, 'next')}</Typography>
       {nextLine && <Typography variant="body1" data-testid="rest-next-set" sx={{ color: colors.text, fontWeight: 600, mb: 4, textAlign: 'center' }}>{nextLine}</Typography>}
       <Button variant="outlined" size="large" startIcon={<SkipNextIcon />} onClick={onSkip}
-        sx={{ color: colors.text, borderColor: colors.border, borderRadius: radius.lg, px: 4, py: 1.5, fontSize: '1rem',
-          '&:hover': { borderColor: colors.text, bgcolor: colors.bgElevated } }}>
+        sx={{ ...buttonSx, px: 4, py: 1.5 }}>
         {t('focus.skip_timer')}
       </Button>
     </Box>

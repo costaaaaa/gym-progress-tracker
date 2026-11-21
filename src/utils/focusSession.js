@@ -96,6 +96,9 @@ export const slotWeight = (exercise, slotIndex, { suggested = '', current = '' }
   return nextSetWeight(exercise, current);
 };
 
+// Secondi come mm:ss (il conto del recupero)
+export const clockText = (seconds) => `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+
 // Peso (kg, numero) della serie successiva da mostrare nel recupero, null se non c'è: quello con cui parte il campo; se il
 // campo parte vuoto e sia la serie appena fatta sia la successiva sono allenanti, quello della serie appena fatta. Zero = nessun peso.
 export const restNextWeight = ({ field, previous, previousIsWarmup, nextIsWarmup }) => {
