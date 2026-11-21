@@ -5,7 +5,6 @@ import {
   PlayArrow as PlayArrowIcon, FitnessCenter as FitnessCenterIcon, Timer as TimerIcon, TimerOff as TimerOffIcon,
   ArrowBack as ArrowBackIcon
 } from '@mui/icons-material';
-import { alpha } from '@mui/material/styles';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
 import { muscleLabel } from '../../i18n/labels';
@@ -13,6 +12,7 @@ import { planSummary } from '../../utils/plannedSets';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 import LogoMark from '../../components/LogoMark';
 import { radius } from '../../theme/radius';
+import { choiceSx } from './choiceSx';
 
 export default function SelectDayPhase({
   activePlan, selectedDayId, selectedDay, timerEnabled, onDayChange, onStart, onBack, onGoToPlans
@@ -30,6 +30,7 @@ export default function SelectDayPhase({
     onDayChange(activePlan.days[next].id);
     options[next].focus();
   };
+  const hasSelected = Boolean(activePlan?.days?.some((d) => d.id === selectedDayId));
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text }}>
       <Box sx={{
@@ -87,14 +88,11 @@ export default function SelectDayPhase({
                   const selected = day.id === selectedDayId;
                   return (
                     <ButtonBase key={day.id} role="radio" aria-checked={selected}
-                      // Una sola etichetta è nell'ordine di Tab (la scelta, o la prima senza scelta); le frecce spostano scelta e fuoco
-                      tabIndex={selected || (!selectedDayId && index === 0) ? 0 : -1}
+                      // Una sola etichetta è nell'ordine di Tab (la scelta, o la prima se nessun giorno della scheda è scelto); le frecce spostano scelta e fuoco
+                      tabIndex={selected || (!hasSelected && index === 0) ? 0 : -1}
                       onClick={() => onDayChange(day.id)}
                       sx={{
-                        minHeight: 44, px: 2, borderRadius: radius.pill, fontSize: '0.95rem', fontWeight: selected ? 700 : 500,
-                        color: selected ? colors.primaryText : colors.textSecondary,
-                        border: `${selected ? 2 : 1}px solid ${selected ? colors.primary : colors.fieldBorder}`,
-                        bgcolor: selected ? alpha(colors.primary, 0.12) : 'transparent',
+                        minHeight: 44, px: 2, borderRadius: radius.pill, fontSize: '0.95rem', ...choiceSx(colors, selected),
                       }}>
                       {day.name}
                     </ButtonBase>
