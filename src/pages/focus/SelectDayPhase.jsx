@@ -1,24 +1,31 @@
+import { useState } from 'react';
 import {
-  Container, Box, Typography, Button, ButtonBase, Link, Paper, IconButton, Chip
+  Container, Box, Typography, Button, ButtonBase, Link, Paper, IconButton, Chip, Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
 import {
-  PlayArrow as PlayArrowIcon, FitnessCenter as FitnessCenterIcon, Timer as TimerIcon, TimerOff as TimerOffIcon,
+  PlayArrow as PlayArrowIcon, FitnessCenter as FitnessCenterIcon, ChevronRight as ChevronRightIcon,
   ArrowBack as ArrowBackIcon
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../context/AuthContext';
+import FocusToolsOptions from '../../components/Focus/FocusToolsOptions';
+import { FOCUS_TOOLS, toolsOnCount } from '../../utils/focusTools';
 import { useFocusColors } from './useFocusColors';
 import { muscleLabel } from '../../i18n/labels';
 import { planSummary } from '../../utils/plannedSets';
-import { TITLE_FONT_FAMILY } from '../../utils/fonts';
+import { TITLE_FONT_FAMILY, CHIP_FONT } from '../../utils/fonts';
 import LogoMark from '../../components/LogoMark';
 import { radius } from '../../theme/radius';
 import { choiceSx } from './choiceSx';
 
 export default function SelectDayPhase({
-  activePlan, selectedDayId, selectedDay, timerEnabled, onDayChange, onStart, onBack, onGoToPlans
+  activePlan, selectedDayId, selectedDay, onDayChange, onStart, onBack, onGoToPlans
 }) {
   const { t } = useTranslation();
   const { colors } = useFocusColors();
+  const { user } = useAuth();
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const onCount = toolsOnCount(user);
   // Frecce come in un gruppo di opzioni: scelgono il giorno accanto (con giro) e gli portano il fuoco
   const moveDay = (event) => {
     const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
@@ -161,19 +168,31 @@ export default function SelectDayPhase({
               </Typography>
             )}
 
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 2, gap: 1 }}>
-              {timerEnabled ? (
-                <>
-                  <TimerIcon sx={{ fontSize: 16, color: colors.success }} />
-                  <Typography variant="caption" sx={{ color: colors.textSecondary }}>{t('focus.timer_on')}</Typography>
-                </>
-              ) : (
-                <>
-                  <TimerOffIcon sx={{ fontSize: 16, color: colors.textSecondary }} />
-                  <Typography variant="caption" sx={{ color: colors.textSecondary }}>{t('focus.timer_off')}</Typography>
-                </>
-              )}
-            </Box>
+            {/* Gli strumenti si cambiano qui e in Account: la riga dice quanti sono accesi, la finestra li cambia */}
+            <ButtonBase onClick={() => setToolsOpen(true)} aria-haspopup="dialog"
+              sx={{
+                width: '100%', minHeight: 44, mt: 2, px: 1.5, py: 0.75, gap: 1, justifyContent: 'space-between', alignItems: 'center', textAlign: 'left',
+                borderRadius: radius.md, border: `1px solid ${colors.border}`, color: colors.text,
+              }}>
+              <Box component="span" sx={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                <Box component="span" sx={{ ...CHIP_FONT, fontWeight: 700, fontSize: '0.95rem' }}>{t('focus.tools.title')}</Box>
+                <Typography component="span" sx={{ color: colors.textSecondary, fontSize: '0.875rem' }}>
+                  {onCount === 0 ? t('focus.tools.none_on') : t('focus.tools.count', { count: onCount, total: FOCUS_TOOLS.length })}
+                </Typography>
+              </Box>
+              <ChevronRightIcon aria-hidden sx={{ fontSize: 20, flexShrink: 0, color: colors.textSecondary }} />
+            </ButtonBase>
+
+            <Dialog open={toolsOpen} onClose={() => setToolsOpen(false)} fullWidth maxWidth="xs" aria-labelledby="focus-tools-title"
+              PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: radius.xxl } }}>
+              <DialogTitle id="focus-tools-title" sx={{ color: colors.text }}>{t('focus.tools.title')}</DialogTitle>
+              <DialogContent>
+                <FocusToolsOptions idPrefix="focus-tools-dialog" />
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setToolsOpen(false)} sx={{ color: colors.text, minHeight: 44 }}>{t('common.close')}</Button>
+              </DialogActions>
+            </Dialog>
           </>
         )}
       </Container>

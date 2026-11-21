@@ -20,6 +20,8 @@ import i18n from '../../i18n';
 import { unlockedAchievementsText } from './unlockedAchievementsText';
 import { DRAFT_STORAGE_KEY } from '../../utils/focusDraft';
 import { isSelectableTechnique } from '../../utils/intensityTechniques';
+import { isToolOn } from '../../utils/focusTools';
+import { useSaveFocusTool } from '../../hooks/useSaveFocusTool';
 
 // Tecnica con cui parte la serie: quella della scheda, solo se si può ancora scegliere (una tecnica tolta: nessuna)
 const startTechnique = (exercise, index) => {
@@ -40,6 +42,11 @@ export default function useFocusSession() {
   const { isLoggedIn, loading: authLoading, weightUnit, user } = useAuth();
   // Senza il modulo Livelli i festeggiamenti di streak, livello e traguardi non si mostrano (il server li conta)
   const levelsOn = isModuleActive(user, 'levels');
+  // Strumenti della serie: tre valori dell'account, accesi se l'account non dice il contrario
+  const restTimerOn = isToolOn(user, 'rest_timer');
+  const techniqueOn = isToolOn(user, 'technique');
+  const suggestedOn = isToolOn(user, 'suggested_weight');
+  const saveFocusTool = useSaveFocusTool();
 
   // ================================================
   // STATE
@@ -48,7 +55,6 @@ export default function useFocusSession() {
   const [activePlan, setActivePlan] = useState(null);
   const [selectedDayId, setSelectedDayId] = useState('');
   const [selectedDay, setSelectedDay] = useState(null);
-  const [timerEnabled, setTimerEnabled] = useState(true);
   // Indice dello storico per esercizio (ultima sessione + record personali),
   // calcolato dallo storico allenamenti. Usato per il riferimento "Ultima volta"
   // e per il rilevamento dei record (PR) nel riepilogo.
@@ -258,9 +264,6 @@ export default function useFocusSession() {
       const userData = await userRes.json();
 
       // Impostazioni utente
-      if (userData.rest_timer_enabled !== undefined) {
-        setTimerEnabled(userData.rest_timer_enabled);
-      }
       setFeatures(Array.isArray(userData.features) ? userData.features : []);
 
       // Trova piano attivo
@@ -392,7 +395,8 @@ export default function useFocusSession() {
   }, [weightUnit]);
 
   // Peso suggerito = top set (peso più alto) delle serie allenanti dell'ultima sessione.
-  const getSuggestedWeight = useCallback((exercise) => suggestedWeight(getLastSession(exercise)), [getLastSession]);
+  // Con il peso suggerito spento non c'è niente da suggerire: il campo parte vuoto (0 per il corpo libero).
+  const getSuggestedWeight = useCallback((exercise) => (suggestedOn ? suggestedWeight(getLastSession(exercise)) : ''), [getLastSession, suggestedOn]);
 
   // kg del campo peso (numero, null se non valido) e come stringa per la serie dopo: una volta per render
   const weightKg = fieldToKg(weightInput, weightUnit, MAX_WEIGHT, weightOrigin);
@@ -480,7 +484,8 @@ export default function useFocusSession() {
       setNumber: currentSetIndex + 1,
       weight: weightKg,
       reps: String(parseInt(repsInput, 10)),
-      intensity_technique: intensityTechniqueInput,
+      // Con la tecnica spenta la serie si salva senza, anche se la scheda ne prevedeva una
+      intensity_technique: techniqueOn ? intensityTechniqueInput : '',
       is_warmup: isWarmup,
       // Secondi netti dall'inizio (stesso orologio della durata); in modalità "già finito" l'orario non è reale.
       // Non passa da getElapsedSeconds()/netEnd: preferiscono endTime, congelato nel riepilogo e in retro, mentre qui serve "adesso"
@@ -503,7 +508,7 @@ export default function useFocusSession() {
       goToSlot(nextSetIndex, slotWeight(currentExercise, nextSetIndex, { suggested: getSuggestedWeight(currentExercise), current: weightKgText }));
 
       // Avvia timer di recupero se abilitato
-      if (timerEnabled && currentExercise.rest > 0) {
+      if (restTimerOn && currentExercise.rest > 0) {
         startRestTimer(currentExercise.rest);
       }
     }
@@ -858,7 +863,6 @@ export default function useFocusSession() {
     activePlan,
     selectedDayId,
     selectedDay,
-    timerEnabled,
     onDayChange: handleDayChange,
     onStart: handleStartWorkout,
     onBack: () => navigate('/'),
@@ -871,8 +875,16 @@ export default function useFocusSession() {
     nextSet: currentSlot,
     onSkip: handleSkipTimer,
   };
+  // «Non suggerire più»: spegne lo strumento per l'account e dice se è riuscito; se non riesce resta acceso (l'errore lo mostra
+  // la spiegazione). L'avviso di dove si riaccende lo manda la spiegazione a finestra uscita (`onSuggestedOff`).
+  const disableSuggested = async () => (await saveFocusTool('suggested_weight', false)).ok;
   const workout = {
     currentExercise,
+    techniqueOn,
+    // Nelle serie allenanti, il peso (kg, come stringa) da suggerire: vuoto se spento o senza storico
+    suggestedKg: currentExercise && currentSlot && !currentSlot.isWarmup ? getSuggestedWeight(currentExercise) : '',
+    onDisableSuggested: disableSuggested,
+    onSuggestedOff: () => setSnackbar({ open: true, message: t('focus.suggested.disabled', { tools: t('focus.tools.title') }), severity: 'success' }),
     currentExerciseIndex,
     totalExercises,
     currentSetIndex,

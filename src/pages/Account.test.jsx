@@ -313,7 +313,40 @@ describe('nomi accessibili', () => {
   it('l\'interruttore del timer di recupero è legato al suo titolo', async () => {
     await mount();
     fireEvent.click(button('Modifica'));
-    expect(screen.getByRole('checkbox', { name: 'Timer di recupero' })).toBeTruthy();
+    expect(screen.getByRole('switch', { name: 'Timer di recupero' })).toBeTruthy();
+  });
+});
+
+describe('strumenti della serie', () => {
+  const group = () => screen.getByRole('list', { name: 'Strumenti della serie' });
+  const settingsCalls = () => fetch.mock.calls.filter(([url]) => url.includes('update_settings.php')).map(([, init]) => JSON.parse(init.body));
+
+  it('in Preferenze c\'è il gruppo con i tre interruttori, timer di recupero compreso', async () => {
+    await mount();
+    fireEvent.click(button('Modifica'));
+    expect(within(group()).getAllByRole('switch').map((s) => s.getAttribute('aria-label'))).toEqual(['Timer di recupero', 'Tecnica di intensità', 'Peso suggerito']);
+  });
+
+  it.each([
+    ['Timer di recupero', { rest_timer_enabled: false }],
+    ['Tecnica di intensità', { focus_tools: { technique: false } }],
+    ['Peso suggerito', { focus_tools: { suggested_weight: false } }],
+  ])('%s: il cambio salva subito la chiave giusta', async (name, body) => {
+    stubFetch({ settings: () => json({ success: true, rest_timer_enabled: false, focus_tools: { technique: false, suggested_weight: false } }) });
+    await mount();
+    fireEvent.click(button('Modifica'));
+    fireEvent.click(within(group()).getByRole('switch', { name }));
+    await waitFor(() => expect(settingsCalls()).toEqual([body]));
+    await waitFor(() => expect(updateUser).toHaveBeenCalled());
+  });
+
+  it('il salvataggio del profilo non rimanda più il timer di recupero', async () => {
+    await mount();
+    fireEvent.click(button('Modifica'));
+    fetch.mockClear();
+    fireEvent.click(button('Salva profilo'));
+    await waitFor(() => expect(settingsCalls()).toHaveLength(1));
+    expect(settingsCalls()[0]).not.toHaveProperty('rest_timer_enabled');
   });
 });
 

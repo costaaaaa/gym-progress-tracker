@@ -25,7 +25,7 @@ const emailStateFrom = (data) => ({
   outcome: '',
 });
 
-// `modules` e `group_visibility` di user/read.php: un oggetto semplice (se non lo è, il server è vecchio o la risposta è rovinata e non si tocca nulla)
+// `modules`, `group_visibility` e `focus_tools` di user/read.php: un oggetto semplice (se non lo è, il server è vecchio o la risposta è rovinata e non si tocca nulla)
 const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 
 // Scrive la copia dell'utente in localStorage e restituisce lo stesso valore, da usare dentro setUser: tutte le modifiche passano da qui
@@ -51,6 +51,8 @@ export const AuthProvider = ({ children }) => {
   const groupVisibilitySavedAt = useRef(0);
   // E per il layout della Home
   const homeLayoutSavedAt = useRef(0);
+  // E per gli strumenti della serie (timer di recupero compreso)
+  const focusToolsSavedAt = useRef(0);
 
   // Rilegge lo stato della conferma. Non fa mai uscire l'utente: se la lettura non riesce, resta lo stato di prima.
   // `outcome`: il messaggio del server quando la conferma ha anche deciso il codice di registrazione («Plus attivo
@@ -69,7 +71,7 @@ export const AuthProvider = ({ children }) => {
         const data = await response.json();
         if (data.success && mine === lastRead.current) {
           setEmailState({ ...emailStateFrom(data), outcome });
-          // Campi di user riletti da read.php: il login risponde senza l'unità di peso (i moduli li porta già) e senza la visibilità nei gruppi.
+          // Campi di user riletti da read.php: il login risponde senza l'unità di peso (i moduli li porta già), senza la visibilità nei gruppi e senza gli strumenti della serie.
           // I moduli di una lettura partita prima dell'ultimo salvataggio dei moduli sono vecchi: non lo sovrascrivono.
           const fresh = {};
           if (isWeightUnit(data.weight_unit)) fresh.weight_unit = data.weight_unit;
@@ -80,6 +82,11 @@ export const AuthProvider = ({ children }) => {
             if (typeof data.module_offer === 'string' || data.module_offer === null) fresh.module_offer = data.module_offer;
           }
           if (mine > groupVisibilitySavedAt.current && isPlainObject(data.group_visibility)) fresh.group_visibility = data.group_visibility;
+          // Strumenti della serie: un oggetto e un booleano, altro è una risposta rovinata e non si tocca; una lettura partita prima dell'ultimo salvataggio ha quelli di prima
+          if (mine > focusToolsSavedAt.current) {
+            if (isPlainObject(data.focus_tools)) fresh.focus_tools = data.focus_tools;
+            if (typeof data.rest_timer_enabled === 'boolean') fresh.rest_timer_enabled = data.rest_timer_enabled;
+          }
           // Layout della Home: un elenco, o null (mai personalizzato); altro è una risposta rovinata e non si tocca (lo sistema effectiveLayout)
           // Una lettura partita prima dell'ultimo salvataggio del layout ha quello di prima: non lo sovrascrive
           if (mine > homeLayoutSavedAt.current && (Array.isArray(data.home_layout) || data.home_layout === null)) fresh.home_layout = data.home_layout;
@@ -233,6 +240,7 @@ export const AuthProvider = ({ children }) => {
     if ('modules' in patch || 'modules_chosen' in patch || 'module_offer' in patch) modulesSavedAt.current = lastRead.current;
     if ('home_layout' in patch) homeLayoutSavedAt.current = lastRead.current;
     if ('group_visibility' in patch) groupVisibilitySavedAt.current = lastRead.current;
+    if ('focus_tools' in patch || 'rest_timer_enabled' in patch) focusToolsSavedAt.current = lastRead.current;
     // Senza utente (risposta arrivata dopo l'uscita) non si rimette in cache un utente a metà
     setUser((prev) => (prev ? cacheUser({ ...prev, ...patch }) : prev));
   };
