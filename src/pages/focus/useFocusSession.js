@@ -11,7 +11,7 @@ import {
   FEATURE_SESSION_EDIT, MAX_WEIGHT, suggestedWeight, slotWeight, totalSlots, setSlot, skipWarmup,
   isValidReps, repsNeedConfirm, plannedSetAt, slotTechnique, isCurrentDraft,
   numberedSets, groupsInExecutionOrder, withWarmupRule, buildSessionEntry, swapExercise, insertExercise,
-  newIdempotencyKey, draftIdempotencyKey, editSet
+  newIdempotencyKey, draftIdempotencyKey, editSet, restNextWeight, slotTarget
 } from '../../utils/focusSession';
 import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../../utils/celebrate';
 import { track } from '../../utils/analytics';
@@ -84,6 +84,8 @@ export default function useFocusSession() {
   const [timerDuration, setTimerDuration] = useState(0);
   const [timerRemaining, setTimerRemaining] = useState(0);
   const timerRef = useRef(null);
+  // Ultimo tocco di ±15 s con tempo rimasto: { seconds: quanto restava, taps: quanti tocchi }; null se nessuno. Lo legge lo stato per i lettori di schermo
+  const [restLeftAtTap, setRestLeftAtTap] = useState(null);
 
   // Summary state
   const [workoutNotes, setWorkoutNotes] = useState('');
@@ -641,11 +643,7 @@ export default function useFocusSession() {
   // ================================================
   // TIMER DI RECUPERO
   // ================================================
-  const startRestTimer = (durationSeconds) => {
-    setTimerDuration(durationSeconds);
-    setTimerRemaining(durationSeconds);
-    setPhase('rest_timer');
-
+  const runCountdown = () => {
     if (timerRef.current) clearInterval(timerRef.current);
 
     timerRef.current = setInterval(() => {
@@ -661,12 +659,39 @@ export default function useFocusSession() {
     }, 1000);
   };
 
+  const startRestTimer = (durationSeconds) => {
+    setTimerDuration(durationSeconds);
+    setTimerRemaining(durationSeconds);
+    setRestLeftAtTap(null);
+    setPhase('rest_timer');
+    runCountdown();
+  };
+
+  // ±15 s: cambiano solo il recupero in corso. Il tempo già passato resta, quindi la durata segue i secondi rimasti.
+  // A zero il conto si ferma (senza vibrazione, che è solo dello scadere naturale) e la schermata resta; da zero +15 lo fa ripartire.
+  // La durata non scende sotto 1: azzerato prima che passi un secondo, il recupero risulta comunque finito (anello pieno, annuncio).
+  const handleAdjustTimer = (delta) => {
+    const next = Math.max(0, timerRemaining + delta);
+    if (next === timerRemaining) return;
+    setTimerDuration(Math.max(1, timerDuration + next - timerRemaining));
+    setTimerRemaining(next);
+    setRestLeftAtTap(prev => (next > 0 ? { seconds: next, taps: (prev?.taps ?? 0) + 1 } : null));
+    if (next === 0) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = null;
+    } else if (!timerRef.current) {
+      // Fermo (dopo lo zero): riparte. Con il conto in corso il secondo in corso non si perde
+      runCountdown();
+    }
+  };
+
   const handleSkipTimer = () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
     setTimerRemaining(0);
+    setRestLeftAtTap(null);
     setPhase('workout');
   };
 
@@ -873,11 +898,23 @@ export default function useFocusSession() {
     onBack: () => navigate('/'),
     onGoToPlans: () => navigate('/schede'),
   };
+  const lastDoneSet = currentExercise ? (completedSets[currentExercise.id] || []).at(-1) : undefined;
   const restTimer = {
     timerDuration,
     timerRemaining,
     currentExerciseName: currentExercise?.exercise_name,
     nextSet: currentSlot,
+    // Serie successiva: la posizione corrente è già quella dopo (goToSlot) e il campo peso è già pronto
+    nextWeightKg: phase === 'rest_timer' && currentExercise && currentSetIndex > 0 ? restNextWeight({
+      field: weightKgText,
+      previous: lastDoneSet?.weight,
+      previousIsWarmup: setSlot(currentExercise, currentSetIndex - 1).isWarmup,
+      nextIsWarmup: currentSlot?.isWarmup,
+    }) : null,
+    nextTarget: phase === 'rest_timer' && currentExercise ? slotTarget(currentExercise, currentSetIndex) : '',
+    weightUnit,
+    restLeftAtTap,
+    onAdjust: handleAdjustTimer,
     onSkip: handleSkipTimer,
   };
   // «Non suggerire più»: spegne lo strumento per l'account e dice se è riuscito; se non riesce resta acceso (l'errore lo mostra

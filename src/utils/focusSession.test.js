@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   lastSessionSets, totalSlots, setSlot, skipWarmup, slotWeight, numberedSets, withWarmupRule, isCurrentDraft, swapExercise, buildSessionEntry, suggestedWeight,
-  plannedSetAt, slotTarget, slotTechnique, repsNeedConfirm, addedPlannedSets, editSet,
+  plannedSetAt, slotTarget, slotTechnique, repsNeedConfirm, addedPlannedSets, editSet, restNextWeight, clockText,
 } from './focusSession';
 import { DROP, plannedSets, times, work } from '../test/plannedSets';
 
@@ -254,5 +254,38 @@ describe('editSet: correzione di una serie fatta', () => {
   it('una serie che non esiste lascia tutto com\'è', () => {
     const next = editSet(done, 2, { weight: 1, reps: '1', intensity_technique: '' });
     expect(next).toEqual(done);
+  });
+});
+
+describe('restNextWeight: il peso della serie successiva mostrato nel recupero', () => {
+  const work2 = { previousIsWarmup: false, nextIsWarmup: false };
+  it('campo pieno: è il peso del campo', () => {
+    expect(restNextWeight({ field: '62.5', previous: 60, ...work2 })).toBe(62.5);
+  });
+  it('campo vuoto fra due allenanti: il peso della serie appena fatta', () => {
+    expect(restNextWeight({ field: '', previous: 60, ...work2 })).toBe(60);
+  });
+  it('campo vuoto dopo o prima di un riscaldamento: nessun peso', () => {
+    expect(restNextWeight({ field: '', previous: 20, previousIsWarmup: true, nextIsWarmup: true })).toBeNull();
+    expect(restNextWeight({ field: '', previous: 20, previousIsWarmup: true, nextIsWarmup: false })).toBeNull();
+    expect(restNextWeight({ field: '', previous: 60, previousIsWarmup: false, nextIsWarmup: true })).toBeNull();
+  });
+  it('riscaldamento seguito dalla prima allenante: il peso suggerito che riempie il campo', () => {
+    expect(restNextWeight({ field: '100', previous: 20, previousIsWarmup: true, nextIsWarmup: false })).toBe(100);
+  });
+  it('peso 0 (corpo libero senza zavorra): nessun peso', () => {
+    expect(restNextWeight({ field: '0', previous: 0, ...work2 })).toBeNull();
+    expect(restNextWeight({ field: '', previous: 0, ...work2 })).toBeNull();
+  });
+  it('corpo libero con zavorra: il campo mantiene la zavorra', () => {
+    expect(restNextWeight({ field: '5.0', previous: 5, ...work2 })).toBe(5);
+  });
+});
+
+describe('clockText: i secondi come mm:ss', () => {
+  it('scrive minuti e secondi a due cifre', () => {
+    expect(clockText(0)).toBe('00:00');
+    expect(clockText(75)).toBe('01:15');
+    expect(clockText(600)).toBe('10:00');
   });
 });

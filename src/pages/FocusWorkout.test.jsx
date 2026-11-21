@@ -1,5 +1,5 @@
 // Focus Mode visto dall'utente: pulsanti e campi della pagina, con fetch e localStorage come confini.
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished } from 'vitest';
 import { render, screen, fireEvent, act, cleanup, within } from '@testing-library/react';
 import FocusWorkout from './FocusWorkout';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
@@ -9,6 +9,7 @@ import { setBrowserTimeZone } from '../test/timeZone';
 import { DROP, plannedSets, times } from '../test/plannedSets';
 import { unnamedControls } from '../test/accessibleNames';
 import i18n from '../i18n';
+import { hapticFeedback } from '../utils/vibration';
 
 const { mockNavigate, mockTrack, mockLocation } = vi.hoisted(() => ({ mockNavigate: vi.fn(), mockTrack: vi.fn(), mockLocation: { state: null } }));
 vi.mock('react-router-dom', async (importOriginal) => ({
@@ -2794,6 +2795,260 @@ describe('pallini e «Serie fatte» (F3)', () => {
       expect(saveBody().workout_records.map((r) => [r.weight, r.reps, r.intensity_technique, r.set_number, r.seconds_from_start])).toEqual([
         [55, '8', '', 1, 300], [1, '8', 'Rest Pause', 2, 400],
       ]);
+    });
+  });
+});
+
+describe('recupero: ±15 s e serie successiva', () => {
+  const MINUS = '15 secondi in meno';
+  const PLUS = '15 secondi in più';
+  const status = () => screen.getByRole('status').textContent;
+  // «Restano …» senza lo spazio a larghezza zero che fa riannunciare lo stesso testo
+  const leftText = () => status().replace(/\u200b/g, '');
+  const ring = () => Number(screen.getByRole('progressbar', { name: 'Avanzamento del recupero' }).getAttribute('aria-valuenow'));
+  const toRest = async () => { await startDay('Push'); doSet(); };
+  const nextLine = () => screen.getByTestId('rest-next-set').textContent;
+
+  it('i pulsanti mostrano «−15 s» (segno meno vero) e «+15 s»', async () => {
+    await toRest();
+    expect(screen.getByRole('button', { name: MINUS }).textContent).toBe('−15 s');
+    expect(screen.getByRole('button', { name: PLUS }).textContent).toBe('+15 s');
+  });
+
+  it('+15 da 01:30 porta a 01:45 e il conto continua a scendere; l\'anello resta coerente', async () => {
+    await toRest();
+    click(PLUS);
+    expect(screen.getByText('01:45')).toBeTruthy();
+    expect(ring()).toBe(0);
+    await advance(30);
+    expect(screen.getByText('01:15')).toBeTruthy();
+    expect(ring()).toBe(29);
+  });
+
+  it('−15 da 01:30 porta a 01:15', async () => {
+    await toRest();
+    click(MINUS);
+    expect(screen.getByText('01:15')).toBeTruthy();
+    expect(ring()).toBe(0);
+    await advance(15);
+    expect(screen.getByText('01:00')).toBeTruthy();
+    expect(ring()).toBe(20);
+  });
+
+  it('−15 fino a zero prima che passi un secondo: anello pieno e annuncio della fine', async () => {
+    await toRest();
+    for (let i = 0; i < 6; i++) click(MINUS);
+    expect(screen.getByText('00:00')).toBeTruthy();
+    expect(ring()).toBe(100);
+    expect(status()).toBe('Recupero finito: puoi fare la serie successiva');
+  });
+
+  it('−15 con meno di 15 s: 00:00, la schermata resta, annuncia la fine e «−15 s» è inattivo (aria-disabled, non disabled)', async () => {
+    await toRest();
+    await advance(80);
+    const minus = screen.getByRole('button', { name: MINUS });
+    fireEvent.click(minus);
+    expect(screen.getByText('00:00')).toBeTruthy();
+    expect(screen.getByText('Recupero')).toBeTruthy();
+    expect(ring()).toBe(100);
+    expect(status()).toBe('Recupero finito: puoi fare la serie successiva');
+    expect(minus.getAttribute('aria-disabled')).toBe('true');
+    expect(minus.hasAttribute('disabled')).toBe(false);
+    await advance(30);
+    expect(screen.getByText('00:00')).toBeTruthy();
+    expect(screen.getByText('Recupero')).toBeTruthy();
+    fireEvent.click(minus);
+    expect(screen.getByText('00:00')).toBeTruthy();
+  });
+
+  it('+15 a tempo scaduto: 00:15, scende, riscade e riannuncia', async () => {
+    await toRest();
+    await advance(90);
+    expect(status()).toBe('Recupero finito: puoi fare la serie successiva');
+    click(PLUS);
+    expect(screen.getByText('00:15')).toBeTruthy();
+    expect(leftText()).toBe('Restano 00:15');
+    await advance(5);
+    expect(screen.getByText('00:10')).toBeTruthy();
+    expect(screen.getByRole('button', { name: MINUS }).getAttribute('aria-disabled')).toBeNull();
+    await advance(10);
+    expect(screen.getByText('00:00')).toBeTruthy();
+    expect(status()).toBe('Recupero finito: puoi fare la serie successiva');
+  });
+
+  it('dopo un tocco lo stato dice quanto resta, senza cambiare a ogni secondo; «Salta timer» lo svuota', async () => {
+    await toRest();
+    expect(status()).toBe('');
+    click(PLUS);
+    expect(leftText()).toBe('Restano 01:45');
+    await advance(10);
+    expect(leftText()).toBe('Restano 01:45');
+    click(MINUS);
+    expect(leftText()).toBe('Restano 01:20');
+    click('Salta timer');
+    expect(status()).toBe('');
+  });
+
+  it('un tocco a metà di un secondo non fa perdere il secondo in corso', async () => {
+    await toRest();
+    await advance(0.5);
+    click(PLUS);
+    expect(screen.getByText('01:45')).toBeTruthy();
+    await advance(0.5);
+    expect(screen.getByText('01:44')).toBeTruthy();
+  });
+
+  it('due tocchi ravvicinati si sommano', async () => {
+    await toRest();
+    click(PLUS);
+    click(PLUS);
+    expect(screen.getByText('02:00')).toBeTruthy();
+    await advance(1);
+    expect(screen.getByText('01:59')).toBeTruthy();
+  });
+
+  it('due tocchi che lasciano lo stesso tempo cambiano comunque il testo dello stato, così il lettore di schermo riannuncia', async () => {
+    await toRest();
+    click(PLUS);
+    const first = status();
+    expect(first).toContain('Restano 01:45');
+    await advance(15);
+    click(PLUS);
+    expect(status()).toContain('Restano 01:45');
+    expect(status()).not.toBe(first);
+  });
+
+  it('la vibrazione è solo dello scadere naturale: «−15 s» che porta a zero non vibra', async () => {
+    const warning = vi.spyOn(hapticFeedback, 'warning').mockImplementation(() => {});
+    onTestFinished(() => warning.mockRestore());
+    responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [{ id: 1, name: 'Push', exercises: [{ ...bench, planned_sets: plannedSets(0, times(3, { min: 8, max: 10 })) }] }] }] });
+    await toRest();
+    await advance(80);
+    click(MINUS);
+    expect(screen.getByText('00:00')).toBeTruthy();
+    expect(warning).not.toHaveBeenCalled();
+    click('Salta timer');
+    doSet();
+    await advance(90);
+    expect(warning).toHaveBeenCalledTimes(1);
+  });
+
+  it('il recupero successivo riparte dalla durata della scheda, non da quella ritoccata', async () => {
+    responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [{ id: 1, name: 'Push', exercises: [{ ...bench, planned_sets: plannedSets(0, times(3, { min: 8, max: 10 })) }] }] }] });
+    await startDay('Push');
+    doSet();
+    click(PLUS);
+    click('Salta timer');
+    doSet();
+    expect(screen.getByText('01:30')).toBeTruthy();
+    expect(ring()).toBe(0);
+    expect(status()).toBe('');
+  });
+
+  it('i pulsanti hanno una zona di tocco di almeno 44 px, uguali e con gli stessi colori di «Salta timer», anche in scuro', async () => {
+    localStorage.setItem('themeMode', 'dark');
+    await toRest();
+    const minus = screen.getByRole('button', { name: MINUS });
+    const plus = screen.getByRole('button', { name: PLUS });
+    const skip = screen.getByRole('button', { name: 'Salta timer' });
+    [minus, plus].forEach((b) => {
+      expect(parseInt(getComputedStyle(b).minHeight, 10)).toBeGreaterThanOrEqual(44);
+      expect(getComputedStyle(b).color).toBe(getComputedStyle(skip).color);
+      expect(getComputedStyle(b).borderColor).toBe(getComputedStyle(skip).borderColor);
+    });
+    expect(getComputedStyle(minus).width).toBe(getComputedStyle(plus).width);
+  });
+
+  it('serie successiva: peso e obiettivo, con la sola «Prossima» invariata sopra', async () => {
+    await toRest();
+    expect(screen.getByText('Prossima: Serie 2 di 2')).toBeTruthy();
+    expect(nextLine()).toBe('60 kg × 8-10');
+  });
+
+  it('il campo della serie dopo resta vuoto dov\'era vuoto', async () => {
+    await toRest();
+    click('Salta timer');
+    expect(screen.getByLabelText('Peso (kg)').value).toBe('');
+  });
+
+  it('in lb mostra il peso in lb', async () => {
+    account.weightUnit = 'lb';
+    await startDay('Push');
+    fireEvent.change(screen.getByLabelText('Peso (lb)'), { target: { value: '100' } });
+    fireEvent.change(screen.getByLabelText('Ripetizioni'), { target: { value: '8' } });
+    click('Conferma serie');
+    expect(nextLine()).toBe('100 lb × 8-10');
+  });
+
+  it('in inglese: «Target» e i pulsanti in inglese', async () => {
+    const warm = { ...bench, planned_sets: plannedSets(1, [{ min: 8, max: 10 }]) };
+    responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [{ id: 1, name: 'Push', exercises: [warm] }] }] });
+    await startDay('Push');
+    await act(async () => { await i18n.changeLanguage('en'); });
+    fireEvent.change(screen.getByLabelText('Weight (kg)'), { target: { value: '20' } });
+    fireEvent.change(screen.getByLabelText('Reps'), { target: { value: '10' } });
+    click('Confirm set');
+    expect(screen.getByRole('button', { name: '15 seconds less' })).toBeTruthy();
+    expect(nextLine()).toBe('Target: 8-10');
+    click('15 seconds more');
+    expect(leftText()).toBe('01:45 left');
+  });
+
+  describe('con riscaldamento e corpo libero', () => {
+    const withSets = (extra) => {
+      const ex = { ...bench, ...extra };
+      responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [{ id: 1, name: 'Push', exercises: [ex] }] }] });
+    };
+
+    it('riscaldamento dopo riscaldamento a campo vuoto: la riga non c\'è', async () => {
+      withSets({ planned_sets: plannedSets(2, [{ min: 8, max: 10 }]) });
+      await startDay('Push');
+      doSet('20', '10');
+      expect(screen.getByText('Prossima: Riscaldamento 2 di 2')).toBeTruthy();
+      expect(screen.queryByTestId('rest-next-set')).toBeNull();
+    });
+
+    it('dal riscaldamento alla prima allenante con peso suggerito: peso e obiettivo', async () => {
+      withSets({ planned_sets: plannedSets(1, [{ min: 8, max: 10 }]) });
+      responses['workout_history/read.php'] = () => json({ records: [{ id: 1, date: '2026-10-13', exercises: [{ exercise_id: 3, name: 'Panca piana', sets: [{ weight: 100, reps: '8' }] }] }] });
+      await startDay('Push');
+      doSet('20', '10');
+      expect(nextLine()).toBe('100 kg × 8-10');
+    });
+
+    it('a cedimento: l\'obiettivo è quello della scheda', async () => {
+      withSets({ planned_sets: plannedSets(0, [{ min: 8, max: 10 }, { min: 6, failure: true }]) });
+      await startDay('Push');
+      doSet();
+      expect(nextLine()).toBe('60 kg × a cedimento (min. 6)');
+    });
+
+    it('solo il peso, senza obiettivo', async () => {
+      withSets({ equipment: 'corpo_libero', planned_sets: plannedSets(2, [{ min: 8, max: 10 }]) });
+      await startDay('Push');
+      doSet('5', '10');
+      expect(nextLine()).toBe('5\u00a0kg');
+    });
+
+    it('corpo libero senza zavorra: solo l\'obiettivo', async () => {
+      withSets({ equipment: 'corpo_libero' });
+      await startDay('Push');
+      doSet('0', '8');
+      expect(nextLine()).toBe('Obiettivo: 8-10');
+    });
+
+    it('corpo libero con zavorra: peso della zavorra e obiettivo', async () => {
+      withSets({ equipment: 'corpo_libero' });
+      await startDay('Push');
+      doSet('5', '8');
+      expect(nextLine()).toBe('5 kg × 8-10');
+    });
+
+    it('niente peso e niente obiettivo: la riga non c\'è', async () => {
+      withSets({ equipment: 'corpo_libero', planned_sets: plannedSets(2, [{ min: 8, max: 10 }]) });
+      await startDay('Push');
+      doSet('0', '10');
+      expect(screen.queryByTestId('rest-next-set')).toBeNull();
     });
   });
 });
