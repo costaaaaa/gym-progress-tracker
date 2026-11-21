@@ -42,6 +42,9 @@ class User
     // Visibilità nei gruppi (colonne group_show_<chiave>), valori salvati: chiave => mostrato agli altri membri
     const GROUP_VISIBILITY = array('workouts', 'volume', 'streak', 'level');
     public $group_visibility = array('workouts' => true, 'volume' => true, 'streak' => true, 'level' => true);
+    // Strumenti della serie del Focus (colonne focus_tool_<chiave>), valori salvati: chiave => acceso
+    const FOCUS_TOOLS = array('technique', 'suggested_weight');
+    public $focus_tools = array('technique' => true, 'suggested_weight' => true);
 
     // Helper per calcolare l'età dalla data di nascita
     public function calculateAge()
@@ -87,6 +90,12 @@ class User
     public static function groupVisibilityColumns()
     {
         return implode(', ', array_map(function ($key) { return 'group_show_' . $key; }, self::GROUP_VISIBILITY));
+    }
+
+    // Le colonne degli strumenti della serie per una SELECT: «focus_tool_technique, focus_tool_suggested_weight»
+    public static function focusToolColumns()
+    {
+        return implode(', ', array_map(function ($key) { return 'focus_tool_' . $key; }, self::FOCUS_TOOLS));
     }
 
     // Valori effettivi della visibilità nei gruppi da una riga con le colonne di groupVisibilityColumns() e module_levels:
@@ -418,7 +427,7 @@ class User
     }
     public function readById($id)
     {
-        $query = "SELECT id, username, email, created_at, rest_timer_enabled, birth_date, gender, training_start_date, locale, weight_unit, " . self::moduleColumns() . ", modules_chosen_at, " . self::groupVisibilityColumns() . ", home_layout, module_offers_declined, module_offer_at, NOW() AS db_now, password_changed_at FROM " . $this->table_name . " WHERE id = ? LIMIT 1";
+        $query = "SELECT id, username, email, created_at, rest_timer_enabled, birth_date, gender, training_start_date, locale, weight_unit, " . self::moduleColumns() . ", modules_chosen_at, " . self::groupVisibilityColumns() . ", home_layout, module_offers_declined, module_offer_at, " . self::focusToolColumns() . ", NOW() AS db_now, password_changed_at FROM " . $this->table_name . " WHERE id = ? LIMIT 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(1, $id);
         $stmt->execute();
@@ -440,6 +449,9 @@ class User
             foreach (self::GROUP_VISIBILITY as $key) {
                 $this->group_visibility[$key] = (bool)$row['group_show_' . $key];
             }
+            foreach (self::FOCUS_TOOLS as $key) {
+                $this->focus_tools[$key] = (bool)$row['focus_tool_' . $key];
+            }
             $this->home_layout = home_layout_stored($row['home_layout']);
             $declined = json_decode((string) $row['module_offers_declined'], true);
             $this->module_offer = module_to_offer($this->modules, $row['modules_chosen_at'], is_array($declined) ? $declined : array(),
@@ -456,7 +468,7 @@ class User
 
     // Aggiorna le impostazioni del profilo dell'utente. Aggiornamento parziale: si scrivono
     // solo le chiavi presenti in $fields (rest_timer_enabled, birth_date, gender,
-    // training_start_date, locale, weight_unit, module_<chiave>, group_show_<chiave>); quelle assenti restano come sono.
+    // training_start_date, locale, weight_unit, module_<chiave>, group_show_<chiave>, focus_tool_<chiave>); quelle assenti restano come sono.
     // 'home_layout' => elenco già validato (home_layout_valid) o null; 'module_offer_answer' => ['key' => una di MODULE_OFFERS,
     // 'accepted' => bool]: scrive module_offer_at = NOW() e attiva il modulo (accettato) o lo aggiunge ai rifiutati, senza doppioni.
     // 'modules_chosen' => true scrive modules_chosen_at = NOW() solo se è ancora NULL (nella stessa UPDATE dei moduli).
@@ -476,6 +488,10 @@ class User
         foreach (self::GROUP_VISIBILITY as $key) {
             $allowed[] = 'group_show_' . $key;
             $flags[] = 'group_show_' . $key;
+        }
+        foreach (self::FOCUS_TOOLS as $key) {
+            $allowed[] = 'focus_tool_' . $key;
+            $flags[] = 'focus_tool_' . $key;
         }
         $sets = array();
         $values = array();

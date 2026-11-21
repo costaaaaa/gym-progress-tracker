@@ -1159,3 +1159,21 @@ SET @q = IF(@fresh,
      ADD COLUMN `module_offer_at` DATETIME NULL AFTER `module_offers_declined`',
   'DO 0');
 PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;
+
+
+-- ------------------------------------------------------------------------------
+-- 45. Strumenti della serie del Focus: due opzioni dell'account su gym_users (focus_tool_technique = riga
+--     della tecnica, focus_tool_suggested_weight = peso suggerito). Accese di default: per gli account
+--     esistenti non cambia nulla. Il timer di recupero resta rest_timer_enabled. Solo aggiunte: il rollback
+--     del codice resta possibile (il codice vecchio ignora le colonne). La sezione si rilancia senza cambiare
+--     nulla.
+-- ------------------------------------------------------------------------------
+
+SET @fresh = (SELECT COUNT(*) = 0 FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = 'gym_users' AND column_name = 'focus_tool_technique');
+SET @q = IF(@fresh,
+  'ALTER TABLE `gym_users`
+     ADD COLUMN `focus_tool_technique` TINYINT(1) NOT NULL DEFAULT 1 AFTER `module_offer_at`,
+     ADD COLUMN `focus_tool_suggested_weight` TINYINT(1) NOT NULL DEFAULT 1 AFTER `focus_tool_technique`',
+  'DO 0');
+PREPARE q FROM @q; EXECUTE q; DEALLOCATE PREPARE q;

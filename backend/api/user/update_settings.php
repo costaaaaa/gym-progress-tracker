@@ -113,6 +113,23 @@ try {
             $fields['group_show_' . $key] = $value;
         }
     }
+    // Strumenti della serie del Focus: oggetto parziale {chiave: booleano}, come la visibilità nei gruppi
+    if (property_exists($data, 'focus_tools')) {
+        $tools = $data->focus_tools;
+        if (!is_object($tools)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => t_server('settings.focus_tools_invalid')]);
+            exit;
+        }
+        foreach ($tools as $key => $value) {
+            if (!in_array((string)$key, User::FOCUS_TOOLS, true) || !is_bool($value)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => t_server('settings.focus_tools_invalid')]);
+                exit;
+            }
+            $fields['focus_tool_' . $key] = $value;
+        }
+    }
     // Chiusura della scelta dei moduli: solo `true` (una volta sola; la data si scrive se è ancora vuota)
     if (property_exists($data, 'modules_chosen')) {
         if ($data->modules_chosen !== true) {
@@ -199,6 +216,7 @@ try {
             'modules' => $user->modules,
             'modules_chosen' => $user->modules_chosen,
             'group_visibility' => $user->group_visibility,
+            'focus_tools' => $user->focus_tools,
             'home_layout' => $user->home_layout,
             'module_offer' => $user->module_offer,
             'age' => $user->age,
