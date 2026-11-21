@@ -163,8 +163,18 @@ describe('HomeBlocks: modifica', () => {
     expect(button('Nascondi Ultimo allenamento')).toBeTruthy();
   });
 
-  it('i comandi non stanno dentro un link e fuori dalla modifica non ci sono', () => {
+  it('in modifica i comandi non hanno un link tra gli antenati e i blocchi non sono link; fuori dalla modifica i comandi non ci sono', () => {
     stubFetch(RESPONSES);
+    const { unmount } = renderBlock(<Harness saved={[{ key: 'groups', hidden: true, large: false }]} />);
+    const controls = document.querySelectorAll('[data-edit-key]');
+    expect(controls.length).toBeGreaterThan(0);
+    controls.forEach((control) => expect(control.closest('a')).toBeNull());
+    const headings = screen.getAllByRole('heading', { level: 2 });
+    expect(headings.length).toBe(5);
+    headings.forEach((heading) => expect(heading.closest('a')).toBeNull());
+    expect(document.querySelectorAll('[data-testid="home-block-hidden"]').length).toBe(1);
+    expect(screen.queryAllByRole('link')).toEqual([]);
+    unmount();
     renderBlock(<HomeBlocks user={{ username: 'x' }} weightUnit="kg" lastWorkout={WORKOUT} stats={{ recovery: {} }} dashboardStatus="ok" />);
     expect(screen.queryAllByRole('button')).toEqual([]);
     expect(document.querySelector('[aria-live]')).toBeNull();

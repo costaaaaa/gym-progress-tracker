@@ -39,9 +39,13 @@ export const moveBlock = (layout, key, direction, isListed = () => true) => {
   return next;
 };
 
-const change = (layout, key, patch) => layout.map((entry) => (entry.key === key ? { ...entry, ...patch } : entry));
+// Se la voce ha già quei valori restituisce lo stesso layout: chi chiama capisce da lì che non è cambiato nulla
+const patchEntry = (layout, key, patch) => {
+  const unchanged = layout.some((entry) => entry.key === key && Object.keys(patch).every((field) => entry[field] === patch[field]));
+  return unchanged ? layout : layout.map((entry) => (entry.key === key ? { ...entry, ...patch } : entry));
+};
 
-export const setHidden = (layout, key, hidden) => change(layout, key, { hidden });
+export const setHidden = (layout, key, hidden) => patchEntry(layout, key, { hidden });
 
 // «last» resta sempre piccolo
-export const setLarge = (layout, key, large) => (key === 'last' ? layout : change(layout, key, { large }));
+export const setLarge = (layout, key, large) => (key === 'last' ? layout : patchEntry(layout, key, { large }));

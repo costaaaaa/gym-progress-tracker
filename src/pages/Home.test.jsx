@@ -800,6 +800,22 @@ describe('Modifica Home', () => {
     expect(auth.homeLayout).toBeUndefined();
   });
 
+  it('salvataggio fallito: il fuoco resta su un comando del blocco mosso (lo stesso bottone, o il primo del blocco)', async () => {
+    withSettings(rejecting);
+    await edit();
+    button('Sposta su Peso').focus();
+    fireEvent.click(button('Sposta su Peso'));
+    await screen.findByRole('alert');
+    expect(blockTitles()).toEqual(ORDER);
+    expect(document.activeElement).toBe(button('Sposta su Peso'));
+    // Nascondere: dopo il ritorno il bottone «Mostra» non esiste più, il fuoco va su «Nascondi» dello stesso blocco
+    fireEvent.click(screen.getByRole('button', { name: 'Chiudi' }));
+    button('Nascondi Recupero').focus();
+    fireEvent.click(button('Nascondi Recupero'));
+    await waitFor(() => expect(screen.queryByText('Nascosto')).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(button('Nascondi Recupero')));
+  });
+
   it('due mosse rapide: una richiesta alla volta e vale l\'ultima', async () => {
     let release;
     const saves = withSettings((body) => (saves.length === 1 ? new Promise((resolve) => { release = () => resolve(accepting(body)); }) : accepting(body)));
@@ -814,7 +830,7 @@ describe('Modifica Home', () => {
     expect(blockTitles()).toEqual(['Ultimo allenamento', 'Livello e streak', 'Peso', 'Gruppi', 'Recupero']);
   });
 
-  it('da tastiera: il fuoco resta sul bottone dopo lo spostamento e l\'esito è annunciato', async () => {
+  it('il fuoco resta sul comando premuto dopo lo spostamento e l\'annuncio dice l\'esito', async () => {
     withSettings(accepting);
     await edit();
     button('Sposta su Peso').focus();

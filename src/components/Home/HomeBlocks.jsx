@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from 'react';
 import { Box, Card, Typography } from '@mui/material';
 import { visuallyHidden } from '@mui/utils';
 import { useTranslation } from 'react-i18next';
@@ -9,16 +8,13 @@ import RecoveryBlock from './blocks/RecoveryBlock';
 import BodyBlock from './blocks/BodyBlock';
 import { isModuleActive } from '../../hooks/useModule';
 import EditControls from './blocks/EditControls';
-import { BlockEditContext } from './blocks/blockEdit';
-import { effectiveLayout, moveBlock, setHidden, setLarge } from '../../utils/homeLayout';
+import { BlockEditContext, TITLE_KEYS, useBlockEditing } from './blocks/blockEdit';
+import { effectiveLayout } from '../../utils/homeLayout';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 import { DASHED_CARD } from './labelStyle';
 
 // Lo stato delle richieste della Home ('pending' | 'ok' | 'failed') nel vocabolario dei blocchi ('loading' | 'ok' | 'error')
 const BLOCK_STATUS = { pending: 'loading', ok: 'ok', failed: 'error' };
-
-// Il titolo di ogni blocco (nomi dei comandi, annunci e segnaposto dei blocchi nascosti)
-const TITLE_KEYS = { last: 'home.last.title', levels: 'home.block.levels_title', groups: 'groups.title', recovery: 'home.block.recovery_title', body: 'home.block.body_title' };
 
 // Un blocco nascosto in modifica: solo titolo e «Nascosto» (scritto, non solo il colore) e i comandi; non carica dati
 const HiddenBlock = ({ title, controls }) => {
@@ -42,15 +38,6 @@ const HiddenBlock = ({ title, controls }) => {
 // applica una mossa sul layout (la mossa prende il layout e ne restituisce uno nuovo; `onChange` restituisce il risultato).
 const HomeBlocks = ({ user, weightUnit, lastWorkout, stats, dashboardStatus, editing = false, layout = null, onChange = null }) => {
   const { t } = useTranslation();
-  const [announcement, setAnnouncement] = useState('');
-  // Il bottone premuto: dopo il disegno il fuoco ci torna (il blocco può essere stato spostato o rifatto da capo)
-  const focusAfter = useRef(null);
-  useEffect(() => {
-    const target = focusAfter.current;
-    if (!target) return;
-    focusAfter.current = null;
-    document.querySelector(`[data-edit-key="${target.key}"][data-edit-action="${target.action}"]`)?.focus();
-  });
   const blocks = {
     last: () => (editing || lastWorkout) && <LastWorkout record={lastWorkout} weightUnit={weightUnit} today={stats?.today} />,
     levels: ({ large }) => isModuleActive(user, 'levels') && <LevelsBlock large={large} />,
@@ -63,47 +50,25 @@ const HomeBlocks = ({ user, weightUnit, lastWorkout, stats, dashboardStatus, edi
   const entries = layout ?? effectiveLayout(user?.home_layout);
   // I blocchi che l'utente vede in modifica: «last» e quelli dei moduli attivi, nascosti compresi
   const isListed = (key) => key === 'last' || isModuleActive(user, key);
-  const listedKeys = (list) => list.filter((entry) => isListed(entry.key)).map((entry) => entry.key);
+  const { announcement, applyAction } = useBlockEditing({ isListed, onChange });
 
-  const act = (key, action) => {
-    const title = t(TITLE_KEYS[key]);
-    const move = {
-      up: (current) => moveBlock(current, key, -1, isListed),
-      down: (current) => moveBlock(current, key, 1, isListed),
-      hide: (current) => setHidden(current, key, !current.find((entry) => entry.key === key).hidden),
-      large: (current) => setLarge(current, key, !current.find((entry) => entry.key === key).large),
-    }[action];
-    const before = JSON.stringify(entries);
-    const next = onChange(move);
-    if (JSON.stringify(next) === before) return;
-    focusAfter.current = { key, action };
-    const entry = next.find((candidate) => candidate.key === key);
-    const messages = {
-      up: () => t('home.edit.moved', { title, position: listedKeys(next).indexOf(key) + 1, count: listedKeys(next).length }),
-      hide: () => t(entry.hidden ? 'home.edit.now_hidden' : 'home.edit.now_shown', { title }),
-      large: () => t(entry.large ? 'home.edit.now_large' : 'home.edit.now_small', { title }),
-    };
-    setAnnouncement(messages[action === 'down' ? 'up' : action]());
-  };
-
-  const listed = listedKeys(entries);
+  const listed = entries.filter((entry) => isListed(entry.key)).map((entry) => entry.key);
   return (
     <>
       {editing && <Box role="status" aria-live="polite" sx={visuallyHidden}>{announcement}</Box>}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, alignItems: 'start', gap: 3 }}>
-        {entries.map(({ key, hidden, large }) => {
+        {entries.map((entry) => {
+          const { key, hidden, large } = entry;
           if (editing && !isListed(key)) return null;
           const position = listed.indexOf(key);
           const controls = editing && (
             <EditControls
-              blockKey={key}
+              entry={entry}
               title={t(TITLE_KEYS[key])}
-              hidden={hidden}
-              large={large}
               canResize={key !== 'last'}
               first={position === 0}
               last={position === listed.length - 1}
-              onAction={act}
+              onAction={applyAction}
             />
           );
           let block;

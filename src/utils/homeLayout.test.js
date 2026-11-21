@@ -124,6 +124,13 @@ describe('setHidden e setLarge', () => {
     expect(setLarge(DEFAULT, 'last', true)).toEqual(DEFAULT);
   });
 
+  it('se non cambia nulla restituiscono lo stesso layout (stessa identità)', () => {
+    expect(setHidden(DEFAULT, 'groups', false)).toBe(DEFAULT);
+    expect(setLarge(DEFAULT, 'body', false)).toBe(DEFAULT);
+    expect(setLarge(DEFAULT, 'last', true)).toBe(DEFAULT);
+    expect(setHidden(DEFAULT, 'groups', true)).not.toBe(DEFAULT);
+  });
+
   it('una chiave sconosciuta non cambia nulla e l\'ingresso non si muta', () => {
     const before = JSON.stringify(DEFAULT);
     expect(setHidden(DEFAULT, 'altro', true)).toEqual(DEFAULT);
