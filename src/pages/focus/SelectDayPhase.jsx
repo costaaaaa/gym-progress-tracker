@@ -13,7 +13,7 @@ import { FOCUS_TOOLS, toolsOnCount } from '../../utils/focusTools';
 import { useFocusColors } from './useFocusColors';
 import { muscleLabel } from '../../i18n/labels';
 import { planSummary } from '../../utils/plannedSets';
-import { TITLE_FONT_FAMILY } from '../../utils/fonts';
+import { TITLE_FONT_FAMILY, CHIP_FONT } from '../../utils/fonts';
 import LogoMark from '../../components/LogoMark';
 import { radius } from '../../theme/radius';
 import { choiceSx } from './choiceSx';
@@ -171,14 +171,16 @@ export default function SelectDayPhase({
             {/* Gli strumenti si cambiano qui e in Account: la riga dice quanti sono accesi, la finestra li cambia */}
             <ButtonBase onClick={() => setToolsOpen(true)} aria-haspopup="dialog"
               sx={{
-                width: '100%', minHeight: 44, mt: 2, px: 1.5, gap: 1, justifyContent: 'space-between', textAlign: 'left',
+                width: '100%', minHeight: 44, mt: 2, px: 1.5, py: 0.75, gap: 1, justifyContent: 'space-between', alignItems: 'center', textAlign: 'left',
                 borderRadius: radius.md, border: `1px solid ${colors.border}`, color: colors.text,
               }}>
-              <Box component="span" sx={{ fontWeight: 600, fontSize: '0.95rem' }}>{t('focus.tools.title')}</Box>
-              <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: colors.textSecondary, fontSize: '0.875rem' }}>
-                {onCount === 0 ? t('focus.tools.none_on') : t('focus.tools.count', { count: onCount, total: FOCUS_TOOLS.length })}
-                <ChevronRightIcon aria-hidden sx={{ fontSize: 20 }} />
+              <Box component="span" sx={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                <Box component="span" sx={{ ...CHIP_FONT, fontWeight: 700, fontSize: '0.95rem' }}>{t('focus.tools.title')}</Box>
+                <Typography component="span" sx={{ color: colors.textSecondary, fontSize: '0.875rem' }}>
+                  {onCount === 0 ? t('focus.tools.none_on') : t('focus.tools.count', { count: onCount, total: FOCUS_TOOLS.length })}
+                </Typography>
               </Box>
+              <ChevronRightIcon aria-hidden sx={{ fontSize: 20, flexShrink: 0, color: colors.textSecondary }} />
             </ButtonBase>
 
             <Dialog open={toolsOpen} onClose={() => setToolsOpen(false)} fullWidth maxWidth="xs" aria-labelledby="focus-tools-title"

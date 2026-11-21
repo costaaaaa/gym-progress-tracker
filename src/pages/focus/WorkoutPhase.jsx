@@ -10,7 +10,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
 import { FOCUS_FIELD_PADDING } from './focusField';
-import { TABULAR } from '../../utils/fonts';
+import { TABULAR, CHIP_FONT } from '../../utils/fonts';
 import ElapsedClock from './ElapsedClock';
 import QuitDialog from './QuitDialog';
 import { slotLabel } from './slotLabel';
@@ -150,7 +150,7 @@ export default function WorkoutPhase({
                     <ButtonBase onClick={() => { setDisableError(false); setSuggestedOpen(true); }} aria-haspopup="dialog"
                       sx={{
                         mt: 0.75, minHeight: 44, px: 1.25, borderRadius: radius.md, border: `1px solid ${colors.fieldBorder}`,
-                        color: colors.text, fontWeight: 700, fontSize: '0.875rem', fontVariantNumeric: 'tabular-nums',
+                        ...CHIP_FONT, color: colors.text, fontWeight: 700, fontSize: '0.875rem', fontVariantNumeric: 'tabular-nums',
                       }}>
                       {t('focus.suggested.button', { weight: formatWeightInUnit(Number(suggestedKg), weightUnit, intlLocale()) })}
                     </ButtonBase>

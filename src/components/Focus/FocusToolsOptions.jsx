@@ -70,8 +70,9 @@ const FocusToolsOptions = ({ notify, idPrefix }) => {
     </Box>
     {!notify && (
       <>
-        <Typography role="status" sx={{ fontSize: 16, minHeight: '1.5em' }}>{inline.status}</Typography>
-        <Typography role="alert" sx={{ fontSize: 16, color: 'error.main' }}>{inline.alert}</Typography>
+        {/* Sempre nel DOM, ma vuote non occupano spazio */}
+        <Typography role="status" sx={{ fontSize: 16, mt: inline.status ? 1 : 0 }}>{inline.status}</Typography>
+        <Typography role="alert" sx={{ fontSize: 16, color: 'error.main', mt: inline.alert ? 1 : 0 }}>{inline.alert}</Typography>
       </>
     )}
     </>

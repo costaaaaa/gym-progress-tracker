@@ -107,6 +107,11 @@ describe('senza notify: l\'esito si legge dentro il componente', () => {
     expect(screen.getByRole('alert').textContent).toBe('');
   });
 
+  it('vuote, le regioni non aggiungono margini', () => {
+    mountInline();
+    ['status', 'alert'].forEach((role) => expect(getComputedStyle(screen.getByRole(role)).marginTop).toBe('0px'));
+  });
+
   it('un salvataggio riuscito riempie la regione «status» e non chiama notify', async () => {
     mountInline();
     fireEvent.click(sw('Tecnica di intensità'));

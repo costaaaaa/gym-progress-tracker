@@ -70,6 +70,16 @@ describe('riga degli strumenti della serie', () => {
     expect(start.compareDocumentPosition(row()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it('titolo e conteggio sono impilati (conteggio sotto) e il titolo ha il carattere dei chip, come le etichette dei giorni', () => {
+    renderPhase(1);
+    const title = within(row()).getByText('Strumenti della serie');
+    const count = within(row()).getByText('3 accesi su 3');
+    expect(title.compareDocumentPosition(count) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(title.parentElement).toBe(count.parentElement);
+    expect(getComputedStyle(title.parentElement).flexDirection).toBe('column');
+    expect(getComputedStyle(title).fontFamily).toBe(getComputedStyle(screen.getAllByRole('radio')[0]).fontFamily);
+  });
+
   it('è un bottone che apre una finestra', () => {
     renderPhase(1);
     expect(row().tagName).toBe('BUTTON');

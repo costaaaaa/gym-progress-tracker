@@ -1998,6 +1998,12 @@ describe('strumenti della serie', () => {
       expect(parseInt(getComputedStyle(suggestedButton()).minHeight, 10)).toBeGreaterThanOrEqual(44);
     });
 
+    it('il bottone ha il carattere dei chip, come le etichette vicine', async () => {
+      haveLastTime();
+      await startDay('Pressa');
+      expect(getComputedStyle(suggestedButton()).fontFamily).toBe(getComputedStyle(screen.getByRole('button', { name: 'Drop set (stripping)' })).fontFamily);
+    });
+
     it('in libbre il peso è nell\'unità dell\'account', async () => {
       account.weightUnit = 'lb';
       withDay(pressDay(press(rows)));
