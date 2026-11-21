@@ -21,6 +21,7 @@ import { muscleLabel, techniqueLabel } from '../../i18n/labels';
 import { radius } from '../../theme/radius';
 import ActionsMenu from './ActionsMenu';
 import SetsDoneDialog from './SetsDoneDialog';
+import RepsConfirmDialog from './RepsConfirmDialog';
 import TechniqueRow from './TechniqueRow';
 
 export default function WorkoutPhase({
@@ -29,7 +30,7 @@ export default function WorkoutPhase({
   weightInput, weightUnit, weightValid, onWeightChange, repsInput, onRepsChange, intensityTechniqueInput, onIntensityChange,
   onConfirmSet, onSkipSet, onSkipWarmup, onSkipExercise, canEditSession, onOpenPicker, onQuit,
   quitDialogOpen, onCloseQuitDialog, onConfirmQuit, totalCompletedSets,
-  repsConfirmOpen, onCloseRepsConfirm, onConfirmReps, techniqueOn, suggestedKg, onDisableSuggested, onSuggestedOff
+  repsConfirmOpen, onCloseRepsConfirm, onConfirmReps, techniqueOn, suggestedKg, onDisableSuggested, onSuggestedOff, onEditSet
 }) {
   const { t } = useTranslation();
   const { colors } = useFocusColors();
@@ -196,7 +197,8 @@ export default function WorkoutPhase({
         </Container>
       </Fade>
 
-      <SetsDoneDialog open={doneOpen} onClose={() => setDoneOpen(false)} exercise={currentExercise} sets={currentExerciseSets} weightUnit={weightUnit} />
+      <SetsDoneDialog open={doneOpen} onClose={() => setDoneOpen(false)} exercise={currentExercise} sets={currentExerciseSets}
+        weightUnit={weightUnit} techniqueOn={techniqueOn} onEditSet={onEditSet} />
 
       <QuitDialog open={quitDialogOpen} onClose={onCloseQuitDialog} onConfirm={onConfirmQuit}
         title={t('focus.quit_title')} text={t('focus.quit_text', { count: totalCompletedSets })}
@@ -224,14 +226,7 @@ export default function WorkoutPhase({
         </DialogActions>
       </Dialog>
 
-      <Dialog open={repsConfirmOpen} onClose={onCloseRepsConfirm}
-        PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: radius.xxl } }}>
-        <DialogTitle sx={{ color: colors.text }}>{t('record.confirm_reps', { reps: parseInt(repsInput, 10) })}</DialogTitle>
-        <DialogActions>
-          <Button onClick={onCloseRepsConfirm} sx={{ color: colors.textSecondary }}>{t('record.fix')}</Button>
-          <Button onClick={onConfirmReps} sx={{ color: colors.text }}>{t('record.confirm_yes')}</Button>
-        </DialogActions>
-      </Dialog>
+      <RepsConfirmDialog open={repsConfirmOpen} reps={repsInput} onClose={onCloseRepsConfirm} onConfirm={onConfirmReps} />
     </Box>
   );
 }

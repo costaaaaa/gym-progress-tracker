@@ -1,6 +1,6 @@
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import {
-  Container, Box, Typography, Button, TextField, Paper, IconButton, Chip
+  Container, Box, Typography, Button, ButtonBase, TextField, Paper, IconButton, Chip
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon, Save as SaveIcon, EmojiEvents as TrophyIcon, TrendingUp as TrendingUpIcon,
@@ -19,6 +19,9 @@ import { techniqueLabel } from '../../i18n/labels';
 import { formatSetText } from '../../i18n/format';
 import { radius } from '../../theme/radius';
 import LockedButton from './LockedButton';
+import SetsDoneDialog from './SetsDoneDialog';
+import { slotLabel } from './slotLabel';
+import { setSlot } from '../../utils/focusSession';
 import ButtonSpinner from '../../components/ButtonSpinner';
 import { useModule } from '../../hooks/useModule';
 
@@ -44,13 +47,15 @@ function SummaryStat({ value, label, valueSx }) {
 export default function SummaryPhase({
   weightUnit, activePlan, selectedDay, completedSets, historyIndex, shareDate, elapsedSeconds, elapsedTime, totalCompletedSets,
   workoutNotes, onNotesChange, saving, savedResult, onSave, onQuit, onGoHistory, onGoHome,
-  canEditSession, onAddExercise, shareStats, onOpenShare, onCloseShare,
+  canEditSession, techniqueOn, onEditSet, onAddExercise, shareStats, onOpenShare, onCloseShare,
   quitDialogOpen, onCloseQuitDialog, onConfirmQuit
 }) {
   const { t } = useTranslation();
   const { colors } = useFocusColors();
   // Senza il modulo Livelli il server conta comunque punti e streak: qui non si mostrano
   const levelsOn = useModule('levels');
+  // Serie in correzione: la finestra resta con l'ultimo esercizio mentre si chiude
+  const [correction, setCorrection] = useState({ open: false, exercise: null, setNumber: null });
 
   const xpWithheldText = (result) => {
     if (!levelsOn || !result || result.xp_session_awarded !== false) return '';
@@ -117,15 +122,29 @@ export default function SummaryPhase({
                   )}
                 </Box>
                 <Box role="list" sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                  {sets.map((set) => (
-                    <Box key={set.setNumber} role="listitem" sx={{
+                  {sets.map((set) => {
+                    const text = `${formatSetText(set.weight, set.reps, weightUnit)}${set.intensity_technique ? ` · ${techniqueLabel(set.intensity_technique)}` : ''}`;
+                    const chipSx = {
                       bgcolor: colors.bgElevated, borderRadius: '6px', px: 1.125, py: 0.625,
                       fontSize: 12, fontWeight: 600, color: colors.textSecondary, fontVariantNumeric: 'tabular-nums',
-                    }}>
-                      {set.is_warmup && <WarmupBadge sx={{ mr: 0.75 }} />}
-                      {formatSetText(set.weight, set.reps, weightUnit)}{set.intensity_technique ? ` · ${techniqueLabel(set.intensity_technique)}` : ''}
-                    </Box>
-                  ))}
+                    };
+                    const content = <>{set.is_warmup && <WarmupBadge sx={{ mr: 0.75 }} />}{text}</>;
+                    // Prima del salvataggio ogni serie si può correggere; dopo no
+                    return savedResult ? (
+                      <Box key={set.setNumber} role="listitem" sx={chipSx}>{content}</Box>
+                    ) : (
+                      <Box key={set.setNumber} role="listitem" sx={{ display: 'flex' }}>
+                        <ButtonBase sx={{ ...chipSx, minHeight: 44, minWidth: 44, justifyContent: 'center' }}
+                          aria-label={t('focus.edit_set.open_aria', {
+                            exercise: exercise.exercise_name, name: slotLabel(t, setSlot(exercise, set.setNumber - 1), 'name'),
+                            text: text.replace(' · ', ', ')
+                          })}
+                          onClick={(e) => { e.currentTarget.focus(); setCorrection({ open: true, exercise, setNumber: set.setNumber }); }}>
+                          {content}
+                        </ButtonBase>
+                      </Box>
+                    );
+                  })}
                 </Box>
               </Box>
             );
@@ -263,6 +282,12 @@ export default function SummaryPhase({
           </>
         )}
       </Container>
+
+      {correction.exercise && (
+        <SetsDoneDialog open={correction.open} onClose={() => setCorrection((c) => ({ ...c, open: false }))} exercise={correction.exercise}
+          sets={completedSets[correction.exercise.id] || []} weightUnit={weightUnit} techniqueOn={techniqueOn} onEditSet={onEditSet}
+          startEditing={correction.setNumber} />
+      )}
 
       <QuitDialog open={quitDialogOpen} onClose={onCloseQuitDialog} onConfirm={onConfirmQuit}
         title={t('focus.discard_title')} text={t('focus.discard_text', { count: totalCompletedSets })}

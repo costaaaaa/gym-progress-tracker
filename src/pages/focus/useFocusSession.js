@@ -11,7 +11,7 @@ import {
   FEATURE_SESSION_EDIT, MAX_WEIGHT, suggestedWeight, slotWeight, totalSlots, setSlot, skipWarmup,
   isValidReps, repsNeedConfirm, plannedSetAt, slotTechnique, isCurrentDraft,
   numberedSets, groupsInExecutionOrder, withWarmupRule, buildSessionEntry, swapExercise, insertExercise,
-  newIdempotencyKey, draftIdempotencyKey
+  newIdempotencyKey, draftIdempotencyKey, editSet
 } from '../../utils/focusSession';
 import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../../utils/celebrate';
 import { track } from '../../utils/analytics';
@@ -514,6 +514,11 @@ export default function useFocusSession() {
     }
   };
 
+  // Corregge una serie già fatta (peso, ripetizioni, tecnica): la bozza si riscrive da sola come per ogni cambio
+  const handleEditSet = (rowId, setNumber, changes) => {
+    setCompletedSets(prev => ({ ...prev, [rowId]: editSet(prev[rowId] || [], setNumber, changes) }));
+  };
+
   // ================================================
   // NAVIGAZIONE TRA ESERCIZI
   // ================================================
@@ -917,6 +922,7 @@ export default function useFocusSession() {
     repsConfirmOpen: repsConfirmDialog,
     onCloseRepsConfirm: () => setRepsConfirmDialog(false),
     onConfirmReps: recordSet,
+    onEditSet: handleEditSet,
   };
   const summary = {
     weightUnit,
@@ -936,6 +942,8 @@ export default function useFocusSession() {
     onGoHistory: () => navigate('/storico', { state: { refreshHistory: Date.now() } }),
     onGoHome: () => navigate('/'),
     canEditSession,
+    techniqueOn,
+    onEditSet: handleEditSet,
     onAddExercise: () => openPicker('add', 'summary'),
     shareStats,
     onOpenShare: setShareStats,

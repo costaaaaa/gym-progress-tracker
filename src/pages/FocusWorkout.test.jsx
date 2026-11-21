@@ -2409,4 +2409,286 @@ describe('pallini e «Serie fatte» (F3)', () => {
       expect(document.activeElement).toBe(doneButton());
     });
   });
+
+  describe('correggere una serie fatta', () => {
+    const squatDraft = (sets, extra = {}) => ({
+      ...savedDraft, activePlan: { id: 5, name: 'Gambe', days: [legDay] }, selectedDay: legDay, selectedDayId: 3,
+      completedSets: { 11: sets }, currentSetIndex: 3, ...extra,
+    });
+    const benchSets = [{ setNumber: 1, weight: 62.5, reps: '8', intensity_technique: '', is_warmup: false, seconds_from_start: 300 }];
+    const inDialog = () => within(doneDialog());
+    const field = (label) => inDialog().getByLabelText(label);
+    const save = () => fireEvent.click(inDialog().getByRole('button', { name: 'Salva' }));
+    const cancel = () => fireEvent.click(inDialog().getByRole('button', { name: 'Annulla' }));
+    const resume = async (draftValue) => {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draftValue));
+      await mount();
+      click('Riprendi allenamento');
+    };
+    // Una serie di Panca piana (id 9) in corso nella seconda: la prima è fatta con `weight`
+    const afterFirstSet = async (weight = '60', reps = '8') => {
+      await startDay('Push');
+      await advance(60);
+      doSet(weight, reps);
+      click('Salta timer');
+    };
+    const finishAndSave = async () => {
+      doSet('70', '6');
+      await act(async () => { click('Salva allenamento'); });
+      await advance(0);
+      return saveBody().workout_records;
+    };
+
+    it('toccare una serie la apre in modifica: gruppo col suo nome, campi con etichetta, fuoco sul peso', async () => {
+      await afterFirstSet();
+      const dialog = await openDone();
+      fireEvent.click(row(dialog, 'Serie 1'));
+      const group = inDialog().getByRole('group', { name: 'Correggi Serie 1' });
+      expect(within(group).getByLabelText('Peso (kg)').value).toBe('60');
+      expect(within(group).getByLabelText('Ripetizioni').value).toBe('8');
+      expect(within(group).getByRole('button', { name: 'Rest pause' })).toBeTruthy();
+      expect(document.activeElement).toBe(field('Peso (kg)'));
+      const weight = field('Peso (kg)');
+      expect(weight.getAttribute('inputmode')).toBe('decimal');
+      expect([weight.getAttribute('step'), weight.getAttribute('min'), weight.getAttribute('max')]).toEqual(['0.5', '0', '999.99']);
+    });
+
+    it('peso, ripetizioni e tecnica cambiati arrivano al salvataggio, con gli stessi set_number e seconds_from_start', async () => {
+      await afterFirstSet();
+      const dialog = await openDone();
+      fireEvent.click(row(dialog, 'Serie 1'));
+      fireEvent.change(field('Peso (kg)'), { target: { value: '65' } });
+      fireEvent.change(field('Ripetizioni'), { target: { value: '9' } });
+      fireEvent.click(inDialog().getByRole('button', { name: 'Drop set (stripping)' }));
+      save();
+      await closeDone();
+      expect(draft().completedSets[9][0]).toMatchObject({ weight: 65, reps: '9', intensity_technique: 'Drop Set (Stripping)', setNumber: 1, seconds_from_start: 60 });
+      const records = await finishAndSave();
+      expect(records.map((r) => [r.weight, r.reps, r.intensity_technique, r.set_number])).toEqual([
+        [65, '9', 'Drop Set (Stripping)', 1], [70, '6', '', 2],
+      ]);
+      expect(records[0].seconds_from_start).toBe(60);
+    });
+
+    it('«Annulla» non cambia nulla e riporta il fuoco alla riga', async () => {
+      await afterFirstSet();
+      const dialog = await openDone();
+      fireEvent.click(row(dialog, 'Serie 1'));
+      fireEvent.change(field('Peso (kg)'), { target: { value: '99' } });
+      cancel();
+      expect(inDialog().queryByRole('group')).toBeNull();
+      expect(document.activeElement).toBe(row(inDialog(), 'Serie 1'));
+      expect(inDialog().getByText('60 kg × 8')).toBeTruthy();
+      expect(draft().completedSets[9][0].weight).toBe(60);
+      expect(inDialog().getByRole('status').textContent).toBe('');
+    });
+
+    it('«Salva» torna alla riga e annuncia «Serie corretta.» dentro la finestra; alla seconda correzione lo riannuncia', async () => {
+      await afterFirstSet();
+      const dialog = await openDone();
+      expect(inDialog().getByRole('status').textContent).toBe('');
+      fireEvent.click(row(dialog, 'Serie 1'));
+      fireEvent.change(field('Ripetizioni'), { target: { value: '9' } });
+      save();
+      expect(document.activeElement).toBe(row(inDialog(), 'Serie 1'));
+      expect(inDialog().getByRole('status').textContent).toBe('Serie corretta.');
+      expect(inDialog().getByText('60 kg × 9')).toBeTruthy();
+      // La regione si svuota quando parte una nuova modifica: lo stesso testo viene riletto
+      fireEvent.click(row(inDialog(), 'Serie 1'));
+      expect(inDialog().getByRole('status').textContent).toBe('');
+      save();
+      expect(inDialog().getByRole('status').textContent).toBe('Serie corretta.');
+    });
+
+    it('valori non validi disabilitano «Salva»', async () => {
+      await afterFirstSet();
+      const dialog = await openDone();
+      fireEvent.click(row(dialog, 'Serie 1'));
+      const saveButton = () => inDialog().getByRole('button', { name: 'Salva' });
+      expect(saveButton().disabled).toBe(false);
+      fireEvent.change(field('Peso (kg)'), { target: { value: '' } });
+      expect(saveButton().disabled).toBe(true);
+      fireEvent.change(field('Peso (kg)'), { target: { value: '1000' } });
+      expect(saveButton().disabled).toBe(true);
+      fireEvent.change(field('Peso (kg)'), { target: { value: '60' } });
+      fireEvent.change(field('Ripetizioni'), { target: { value: '0' } });
+      expect(saveButton().disabled).toBe(true);
+      fireEvent.change(field('Ripetizioni'), { target: { value: '251' } });
+      expect(saveButton().disabled).toBe(true);
+      fireEvent.change(field('Ripetizioni'), { target: { value: '8' } });
+      expect(saveButton().disabled).toBe(false);
+    });
+
+    it('oltre 30 ripetizioni e oltre la scheda chiede conferma, come per la serie', async () => {
+      await afterFirstSet();
+      const dialog = await openDone();
+      fireEvent.click(row(dialog, 'Serie 1'));
+      fireEvent.change(field('Ripetizioni'), { target: { value: '45' } });
+      save();
+      expect(screen.getByText('Confermi 45 ripetizioni?')).toBeTruthy();
+      expect(draft().completedSets[9][0].reps).toBe('8');
+      fireEvent.click(screen.getByRole('button', { name: 'Correggi' }));
+      await advance(500);
+      expect(inDialog().getByRole('group', { name: 'Correggi Serie 1' })).toBeTruthy();
+      save();
+      fireEvent.click(screen.getByRole('button', { name: 'Sì, confermo' }));
+      await advance(500);
+      expect(draft().completedSets[9][0].reps).toBe('45');
+      expect(inDialog().getByRole('status').textContent).toBe('Serie corretta.');
+    });
+
+    it('una riga sola alla volta in modifica', async () => {
+      withLegs();
+      await startDay('Gambe');
+      doSet('20', '10');
+      click('Salta timer');
+      doSet('60', '5');
+      click('Salta timer');
+      const dialog = await openDone();
+      fireEvent.click(row(dialog, 'Riscaldamento 1'));
+      expect(inDialog().getAllByRole('group', { name: /^Correggi/ })).toHaveLength(1);
+      fireEvent.click(row(inDialog(), 'Serie 1'));
+      expect(inDialog().getAllByRole('group').map((g) => g.getAttribute('aria-label')).filter((n) => n.startsWith('Correggi'))).toEqual(['Correggi Serie 1']);
+    });
+
+    it('un riscaldamento non ha la riga della tecnica e resta senza', async () => {
+      withLegs();
+      await startDay('Gambe');
+      doSet('20', '10');
+      click('Salta timer');
+      const dialog = await openDone();
+      fireEvent.click(row(dialog, 'Riscaldamento 1'));
+      expect(inDialog().queryByRole('group', { name: 'Tecnica di intensità' })).toBeNull();
+      fireEvent.change(field('Peso (kg)'), { target: { value: '25' } });
+      save();
+      expect(draft().completedSets[11][0]).toMatchObject({ weight: 25, intensity_technique: '', is_warmup: true });
+    });
+
+    it('con lo strumento «Tecnica» spento la riga non c\'è e la tecnica salvata resta', async () => {
+      account.user = { focus_tools: { technique: false } };
+      withLegs();
+      await resume(squatDraft([{ setNumber: 2, weight: 60, reps: '5', intensity_technique: 'Rest Pause', is_warmup: false, seconds_from_start: 100 }], { currentSetIndex: 3 }));
+      const dialog = await openDone();
+      fireEvent.click(row(dialog, 'Serie 1'));
+      expect(inDialog().queryByRole('group', { name: 'Tecnica di intensità' })).toBeNull();
+      fireEvent.change(field('Peso (kg)'), { target: { value: '65' } });
+      save();
+      expect(draft().completedSets[11][0]).toMatchObject({ weight: 65, intensity_technique: 'Rest Pause' });
+    });
+
+    it('una tecnica salvata che non è tra le quattro resta finché non se ne sceglie un\'altra', async () => {
+      withLegs();
+      await resume(squatDraft([{ setNumber: 2, weight: 60, reps: '5', intensity_technique: 'Cluster Set', is_warmup: false, seconds_from_start: 100 }]));
+      const dialog = await openDone();
+      fireEvent.click(row(dialog, 'Serie 1'));
+      inDialog().getAllByRole('button').filter((b) => b.hasAttribute('aria-pressed')).forEach((b) => expect(b.getAttribute('aria-pressed')).toBe('false'));
+      fireEvent.change(field('Ripetizioni'), { target: { value: '6' } });
+      save();
+      expect(draft().completedSets[11][0]).toMatchObject({ reps: '6', intensity_technique: 'Cluster Set' });
+      fireEvent.click(row(inDialog(), 'Serie 1'));
+      fireEvent.click(inDialog().getByRole('button', { name: 'Negative' }));
+      save();
+      expect(draft().completedSets[11][0].intensity_technique).toBe('Negative');
+    });
+
+    describe('il peso non toccato non cambia di un centesimo', () => {
+      it('in lb: 62,5 kg resta 62,5 anche dopo una correzione delle ripetizioni', async () => {
+        account.weightUnit = 'lb';
+        await resume({ ...savedDraft, completedSets: { 9: benchSets } });
+        const dialog = await openDone();
+        fireEvent.click(row(dialog, 'Serie 1'));
+        expect(field('Peso (lb)').value).toBe('137.75');
+        fireEvent.change(field('Ripetizioni'), { target: { value: '9' } });
+        save();
+        expect(draft().completedSets[9][0]).toMatchObject({ weight: 62.5, reps: '9' });
+      });
+
+      it('in lb, se il peso si tocca, i kg vengono dalle libbre scritte', async () => {
+        account.weightUnit = 'lb';
+        await resume({ ...savedDraft, completedSets: { 9: benchSets } });
+        const dialog = await openDone();
+        fireEvent.click(row(dialog, 'Serie 1'));
+        fireEvent.change(field('Peso (lb)'), { target: { value: '140' } });
+        save();
+        expect(draft().completedSets[9][0].weight).toBe(63.5);
+      });
+    });
+
+    describe('effetti sul resto della schermata', () => {
+      it('i pallini, «Ultima volta» e il peso già scritto nel campo della serie in corso non cambiano', async () => {
+        responses['workout_history/read.php'] = () => json({ records: [{ id: 1, date: '2026-10-13', exercises: [{ exercise_id: 3, name: 'Panca piana', sets: [{ weight: 50, reps: '10' }, { weight: 55, reps: '8' }] }] }] });
+        await startDay('Push');
+        doSet('60', '8');
+        click('Salta timer');
+        fireEvent.change(screen.getByLabelText('Peso (kg)'), { target: { value: '70' } });
+        const name = doneButton().getAttribute('aria-label');
+        const last = screen.getByText('Ultima volta').parentElement.textContent;
+        const dialog = await openDone();
+        fireEvent.click(row(dialog, 'Serie 1'));
+        fireEvent.change(field('Peso (kg)'), { target: { value: '80' } });
+        save();
+        await closeDone();
+        expect(screen.getByLabelText('Peso (kg)').value).toBe('70');
+        expect(doneButton().getAttribute('aria-label')).toBe(name);
+        expect(screen.getByText('Ultima volta').parentElement.textContent).toBe(last);
+        expect(screen.getByText(/^Serie 2 di 2$/)).toBeTruthy();
+      });
+    });
+  });
+
+  describe('dal riepilogo', () => {
+    const history = [{ id: 1, date: '2026-10-13', exercises: [{ exercise_id: 3, name: 'Panca piana', sets: [{ weight: 60, reps: '8' }] }] }];
+    const summaryDraft = (weight = 70) => ({
+      ...savedDraft, phase: 'summary', completedSets: { 9: [
+        { setNumber: 1, weight, reps: '8', intensity_technique: '', is_warmup: false, seconds_from_start: 300 },
+        { setNumber: 2, weight: 50, reps: '8', intensity_technique: 'Rest Pause', is_warmup: false, seconds_from_start: 400 },
+      ] },
+    });
+    const goSummary = async (draftValue) => {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draftValue));
+      await mount();
+      click('Riprendi allenamento');
+    };
+    // Il nome porta gli spazi stretti di formatSetText: si confronta con spazi normali
+    const chip = (name) => screen.getAllByRole('button').find((b) => b.getAttribute('aria-label')?.replace(/\s/g, ' ') === name);
+
+    it('prima del salvataggio ogni serie è un bottone con esercizio, serie e valori; dopo non lo è più', async () => {
+      await goSummary(summaryDraft());
+      const first = chip('Correggi Panca piana, Serie 1: 70 kg × 8');
+      expect(first).toBeTruthy();
+      expect(parseInt(getComputedStyle(first).minHeight, 10)).toBeGreaterThanOrEqual(44);
+      expect(chip('Correggi Panca piana, Serie 2: 50 kg × 8, Rest pause')).toBeTruthy();
+      await act(async () => { click('Salva allenamento'); });
+      await advance(0);
+      expect(screen.queryAllByRole('button', { name: /^Correggi Panca/ })).toEqual([]);
+      expect(screen.getByText('70 kg × 8')).toBeTruthy();
+    });
+
+    it('il tocco apre la finestra di quell\'esercizio con la serie già in modifica', async () => {
+      await goSummary(summaryDraft());
+      fireEvent.click(chip('Correggi Panca piana, Serie 2: 50 kg × 8, Rest pause'));
+      await advance(500);
+      expect(screen.getByRole('group', { name: 'Correggi Serie 2' })).toBeTruthy();
+      expect(document.activeElement).toBe(within(doneDialog()).getByLabelText('Peso (kg)'));
+      expect(within(doneDialog()).getByLabelText('Peso (kg)').value).toBe('50');
+    });
+
+    it('dopo la correzione i record si aggiornano e il salvataggio porta i valori corretti', async () => {
+      responses['workout_history/read.php'] = () => json({ records: history });
+      await goSummary(summaryDraft(70));
+      expect(screen.getByText(/^Nuovo record/)).toBeTruthy();
+      fireEvent.click(chip('Correggi Panca piana, Serie 1: 70 kg × 8'));
+      await advance(500);
+      fireEvent.change(within(doneDialog()).getByLabelText('Peso (kg)'), { target: { value: '55' } });
+      fireEvent.click(within(doneDialog()).getByRole('button', { name: 'Salva' }));
+      await closeDone();
+      expect(screen.queryByText(/^Nuovo record/)).toBeNull();
+      expect(document.activeElement).toBe(chip('Correggi Panca piana, Serie 1: 55 kg × 8'));
+      await act(async () => { click('Salva allenamento'); });
+      await advance(0);
+      expect(saveBody().workout_records.map((r) => [r.weight, r.reps, r.intensity_technique, r.set_number, r.seconds_from_start])).toEqual([
+        [55, '8', '', 1, 300], [50, '8', 'Rest Pause', 2, 400],
+      ]);
+    });
+  });
 });
