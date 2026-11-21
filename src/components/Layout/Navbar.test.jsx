@@ -264,3 +264,60 @@ describe('barra in alto: telefono', () => {
     expect(screen.queryByRole('button', { name: 'Altre azioni' })).toBeNull();
   });
 });
+
+// Apertura della Home rossa: sul telefono dentro l'app la barra in alto diventa rossa (la prop arriva dal Layout)
+describe('barra in alto: rossa con l\'apertura della Home', () => {
+  afterEach(() => {
+    auth.value = { user: null, isLoggedIn: false, loading: false };
+    window.matchMedia = realMatchMedia;
+  });
+  const phoneMedia = (query) => ({ matches: query.includes('max-width'), media: query, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
+  const mount = ({ phone = true, loggedIn = true, red = true } = {}) => {
+    window.matchMedia = phone ? phoneMedia : realMatchMedia;
+    auth.value = { user: loggedIn ? { username: 'atleta_demo' } : null, isLoggedIn: loggedIn, loading: false };
+    const { container } = render(<MemoryRouter><ThemeModeProvider><Navbar redBar={red} /></ThemeModeProvider></MemoryRouter>);
+    return container.querySelector('header');
+  };
+  const WHITE = 'rgb(255, 255, 255)';
+  const RED = 'rgb(213, 0, 0)';
+
+  it('sul telefono dentro l\'app: fondo rosso, nome bianco', () => {
+    const bar = mount();
+    expect(getComputedStyle(bar).backgroundColor).toBe(RED);
+    expect(getComputedStyle(screen.getByText('LiftIndex')).color).toBe(WHITE);
+  });
+
+  it('l\'avatar è bianco con la lettera rossa, il cambio tema è bianco sul rosso', () => {
+    mount();
+    const avatar = screen.getByText('A');
+    expect(getComputedStyle(avatar).backgroundColor).toBe(WHITE);
+    expect(getComputedStyle(avatar).color).toBe(RED);
+    const toggle = screen.getByRole('button', { name: /modalità scura/i });
+    expect(getComputedStyle(toggle).color).toBe(WHITE);
+  });
+
+  it('il contorno del focus sulla barra rossa è bianco (5,5 : 1 sul rosso)', () => {
+    const bar = mount();
+    const rules = [...document.styleSheets].flatMap((sheet) => [...sheet.cssRules]).map((r) => r.cssText).join('\n');
+    const toggle = screen.getByRole('button', { name: /modalità scura/i });
+    expect(bar.className).toBeTruthy();
+    expect(rules).toMatch(/Mui-focusVisible[^{]*\{[^}]*outline:\s*2px solid #fff/);
+    expect(toggle).toBeTruthy();
+  });
+
+  it('senza lo stato rosso la barra resta neutra', () => {
+    const bar = mount({ red: false });
+    expect(getComputedStyle(bar).backgroundColor).toBe('rgb(255, 255, 255)');
+    expect(getComputedStyle(screen.getByText('A')).color).toBe('rgb(255, 255, 255)');
+  });
+
+  it('da md in su (non telefono) resta neutra anche con lo stato rosso', () => {
+    const bar = mount({ phone: false });
+    expect(getComputedStyle(bar).backgroundColor).toBe('rgb(255, 255, 255)');
+  });
+
+  it('per chi non è loggato resta neutra', () => {
+    const bar = mount({ loggedIn: false });
+    expect(getComputedStyle(bar).backgroundColor).toBe('rgb(255, 255, 255)');
+  });
+});
