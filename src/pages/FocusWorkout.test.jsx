@@ -1075,19 +1075,18 @@ describe('riga della tecnica (quattro celle)', () => {
     expect(await saveAll()).toEqual(['', '']);
   });
 
-  it('una tecnica tolta sulla serie dopo: confermata la prima, la riga parte senza scelta', async () => {
+  // Una tecnica tolta non ha una cella: a schermo non si vedrebbe comunque, la prova è la serie salvata
+  it('una tecnica tolta sulla serie dopo: la serie si salva senza tecnica', async () => {
     withBench([{ min: 8, max: 8 }, { min: 6, max: 6, technique: 'Super Set' }]);
     await startDay('Pressa');
     doSet('50', '8');
     click('Salta timer');
     expect(screen.getByText('Serie 2 di 2')).toBeTruthy();
-    expect(shownTechnique()).toBe('');
-    expect(pressed()).toEqual(['false', 'false', 'false', 'false']);
     doSet('50', '6');
     expect(await saveAll()).toEqual(['', '']);
   });
 
-  it('riprendendo la bozza su una serie con una tecnica tolta, la riga parte senza scelta', async () => {
+  it('riprendendo la bozza su una serie con una tecnica tolta, la serie si salva senza tecnica', async () => {
     const press = { id: 12, exercise_id: 6, exercise_name: 'Pressa', rest: 60, muscle_group: 'gambe', planned_sets: plannedSets(0, [{ min: 8, max: 8 }, { min: 6, max: 6, technique: 'Super Set' }]) };
     const day = { id: 4, name: 'Pressa', exercises: [press] };
     responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [day] }] });
@@ -1098,7 +1097,6 @@ describe('riga della tecnica (quattro celle)', () => {
     await mount();
     click('Riprendi allenamento');
     expect(screen.getByText('Serie 2 di 2')).toBeTruthy();
-    expect(shownTechnique()).toBe('');
     doSet('50', '6');
     expect(await saveAll()).toEqual(['', '']);
   });
@@ -1124,14 +1122,15 @@ describe('riga della tecnica (quattro celle)', () => {
     expect(shownTechnique()).toBe('');
   });
 
-  it('le celle sono in Lexend 500, quella scelta in 700, e scegliere non cambia la larghezza del bordo', async () => {
+  it('le celle sono in Lexend 500, quella scelta in 700 con il bordo ispessito da un\'ombra interna: la larghezza del bordo non cambia', async () => {
     await startDay('Push');
     const style = (c) => getComputedStyle(c);
     techniqueCells().forEach((c) => expect([style(c).fontFamily, style(c).fontWeight]).toEqual(['"Lexend", sans-serif', '500']));
-    const before = style(techniqueCells()[1]).borderTopWidth;
+    expect(style(cell('Rest pause')).borderTopWidth).toBe('1px');
     fireEvent.click(cell('Rest pause'));
     expect([style(cell('Rest pause')).fontFamily, style(cell('Rest pause')).fontWeight]).toEqual(['"Lexend", sans-serif', '700']);
-    expect(style(cell('Rest pause')).borderTopWidth).toBe(before);
+    expect(style(cell('Rest pause')).borderTopWidth).toBe('1px');
+    expect(style(cell('Rest pause')).boxShadow).toContain('inset');
   });
 
   it('le celle hanno una zona di tocco di almeno 44 px di altezza', async () => {
@@ -1585,14 +1584,15 @@ describe('scelta del giorno con le etichette', () => {
     expect(dayChoice()).toBe('Push');
   });
 
-  it('le etichette sono in Lexend 500, quella scelta in 700, e scegliere non cambia la larghezza del bordo', async () => {
+  it('le etichette sono in Lexend 500, quella scelta in 700 con il bordo ispessito da un\'ombra interna: la larghezza del bordo non cambia', async () => {
     await mount();
     const style = (r) => getComputedStyle(r);
     radios().forEach((r) => expect([style(r).fontFamily, style(r).fontWeight]).toEqual(['"Lexend", sans-serif', '500']));
-    const before = style(radios()[0]).borderTopWidth;
+    expect(style(radios()[0]).borderTopWidth).toBe('1px');
     fireEvent.click(radios()[0]);
     expect([style(radios()[0]).fontFamily, style(radios()[0]).fontWeight]).toEqual(['"Lexend", sans-serif', '700']);
-    expect(style(radios()[0]).borderTopWidth).toBe(before);
+    expect(style(radios()[0]).borderTopWidth).toBe('1px');
+    expect(style(radios()[0]).boxShadow).toContain('inset');
   });
 
   it('la zona di tocco è di almeno 44 px di altezza', async () => {

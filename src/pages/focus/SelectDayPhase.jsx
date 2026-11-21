@@ -86,9 +86,10 @@ export default function SelectDayPhase({
                 sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
                 {activePlan.days?.map((day, index) => {
                   const selected = day.id === selectedDayId;
+                  // Una sola etichetta è nell'ordine di Tab (la scelta, o la prima se nessun giorno della scheda è scelto);
+                  // le frecce spostano scelta e fuoco
                   return (
                     <ButtonBase key={day.id} role="radio" aria-checked={selected}
-                      // Una sola etichetta è nell'ordine di Tab (la scelta, o la prima se nessun giorno della scheda è scelto); le frecce spostano scelta e fuoco
                       tabIndex={selected || (!hasSelected && index === 0) ? 0 : -1}
                       onClick={() => onDayChange(day.id)}
                       sx={{
