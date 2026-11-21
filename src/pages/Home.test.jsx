@@ -801,10 +801,17 @@ describe('Modifica Home', () => {
   });
 
   it('salvataggio fallito: il fuoco resta su un comando del blocco mosso (lo stesso bottone, o il primo del blocco)', async () => {
-    withSettings(rejecting);
+    let fail;
+    withSettings((body) => (fail ? rejecting(body) : new Promise((resolve) => { fail = () => resolve(rejecting(body)); })));
     await edit();
     button('Sposta su Peso').focus();
     fireEvent.click(button('Sposta su Peso'));
+    expect(document.activeElement).toBe(button('Sposta su Peso'));
+    // Il ritorno indietro rimette il blocco al suo posto e il browser toglie il fuoco al bottone spostato con lui:
+    // jsdom non lo fa, quindi qui il fuoco si toglie a mano prima che il salvataggio fallisca
+    document.activeElement.blur();
+    expect(document.activeElement).toBe(document.body);
+    await act(async () => { fail(); });
     await screen.findByRole('alert');
     expect(blockTitles()).toEqual(ORDER);
     expect(document.activeElement).toBe(button('Sposta su Peso'));

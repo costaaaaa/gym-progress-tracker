@@ -3,7 +3,7 @@ import { Box, Button, Card, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useSaveModules } from '../../hooks/useModule';
-import { LABEL, DISABLED, DASHED_CARD, HOME_BUTTON } from './labelStyle';
+import { LABEL, DISABLED, DASHED_CARD, HOME_BUTTON } from './homeStyles';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 
 // La proposta di un modulo non attivo (`moduleKey`, quello che il server propone adesso). «Attiva» e «No, grazie»

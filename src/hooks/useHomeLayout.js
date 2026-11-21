@@ -4,10 +4,11 @@ import { saveHomeLayout } from '../api/homeLayout';
 import { effectiveLayout } from '../utils/homeLayout';
 
 // Il layout della Home in modifica. `layout` è l'elenco effettivo da disegnare; `change(fn)` applica una mossa
-// (`fn` prende il layout effettivo e ne restituisce uno nuovo; `change` restituisce quello risultante): lo schermo cambia subito e il layout intero va al
-// server, una richiesta alla volta (se ne parte un'altra mentre una è in volo, vale l'ultima). Se il salvataggio
-// fallisce si torna all'ultimo layout salvato e `error` diventa vero. A salvataggio riuscito l'account riceve il
-// layout confermato dal server.
+// (`fn` prende il layout effettivo e ne restituisce uno nuovo; `change` restituisce quello risultante, o null se la
+// mossa ha restituito lo stesso elenco: niente è cambiato e niente parte): lo schermo cambia subito e il layout intero
+// va al server, una richiesta alla volta (se ne parte un'altra mentre una è in volo, vale l'ultima). `saving` è vero
+// finché c'è una mossa non ancora confermata. Se il salvataggio fallisce si torna all'ultimo layout salvato e `error`
+// diventa vero. A salvataggio riuscito l'account riceve il layout confermato dal server.
 export const useHomeLayout = () => {
   const { user, updateUser } = useAuth();
   const latest = useRef({});
@@ -46,7 +47,7 @@ export const useHomeLayout = () => {
   const change = (move) => {
     const base = working.current ?? effectiveLayout(latest.current.user?.home_layout);
     const next = move(base);
-    if (next === base) return base;
+    if (next === base) return null;
     working.current = next;
     queued.current = next;
     setDraft(next);
@@ -55,5 +56,5 @@ export const useHomeLayout = () => {
     return next;
   };
 
-  return { layout: draft ?? effectiveLayout(user?.home_layout), change, error, clearError: () => setError(false) };
+  return { layout: draft ?? effectiveLayout(user?.home_layout), change, saving: draft !== null, error, clearError: () => setError(false) };
 };

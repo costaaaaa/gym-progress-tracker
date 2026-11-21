@@ -51,7 +51,13 @@ describe('HomeBlocks: modifica', () => {
   const Harness = ({ modules, saved = null, lastWorkout = WORKOUT }) => {
     const [layout, setLayout] = useState(effectiveLayout(saved));
     let current = layout;
-    const onChange = (move) => { current = move(current); setLayout(current); return current; };
+    const onChange = (move) => {
+      const next = move(current);
+      if (next === current) return null;
+      current = next;
+      setLayout(current);
+      return current;
+    };
     return (
       <HomeBlocks user={{ username: 'x', modules }} weightUnit="kg" lastWorkout={lastWorkout} stats={{ recovery: {} }} dashboardStatus="ok" editing layout={layout} onChange={onChange} />
     );

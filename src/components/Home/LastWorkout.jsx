@@ -4,7 +4,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { workoutLine } from './workoutLine';
 import { formatDate, intlLocale } from '../../i18n/format';
-import { LABEL } from './labelStyle';
+import { LABEL } from './homeStyles';
 import { TABULAR } from '../../utils/fonts';
 import { BlockEditContext } from './blocks/blockEdit';
 

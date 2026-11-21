@@ -4,7 +4,7 @@ import { Link as RouterLink, useOutletContext } from 'react-router-dom';
 import HomeOpening, { Greeting } from '../components/Home/HomeOpening';
 import HomeBlocks from '../components/Home/HomeBlocks';
 import ModuleOffer from '../components/Home/ModuleOffer';
-import { HOME_BUTTON } from '../components/Home/labelStyle';
+import { HOME_BUTTON } from '../components/Home/homeStyles';
 import { useAuth } from '../context/AuthContext';
 import { readJson, isSuccess } from '../utils/readJson';
 import { useTranslation } from 'react-i18next';
@@ -34,7 +34,7 @@ const Home = () => {
   const [stats, setStats] = useState(null);
   // «Modifica Home»: i comandi dei blocchi; il layout lo tiene l'hook (schermo subito, salvataggio dietro)
   const [editing, setEditing] = useState(false);
-  const { layout, change, error: layoutError, clearError: clearLayoutError } = useHomeLayout();
+  const { layout, change, saving, error: layoutError, clearError: clearLayoutError } = useHomeLayout();
   const [offerFailed, setOfferFailed] = useState(false);
   // Il Layout colora la barra in alto di rosso (sul telefono) mentre l'apertura è rossa
   const { setBarRed } = useOutletContext() ?? {};
@@ -153,7 +153,7 @@ const Home = () => {
   const sidePadding = { xs: red ? 2 : 0, md: 0 };
   const offer = MODULE_KEYS.includes(user?.module_offer) ? user.module_offer : null;
   // Un modulo appena attivato mostra il suo blocco anche se l'utente l'aveva nascosto (stesso salvataggio della modifica)
-  const showBlock = (key) => change((current) => (current.find((entry) => entry.key === key)?.hidden ? setHidden(current, key, false) : current));
+  const showBlock = (key) => change((current) => setHidden(current, key, false));
   const closeNotice = () => {
     clearLayoutError();
     setOfferFailed(false);
@@ -174,6 +174,7 @@ const Home = () => {
             editing={editing}
             layout={layout}
             onChange={change}
+            saving={saving}
           />
           {offer && !editing && (
             <Box sx={{ mt: 3 }}>

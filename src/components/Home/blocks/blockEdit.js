@@ -40,36 +40,33 @@ export const EDIT_ACTIONS = {
 };
 
 // Le mosse della modifica per HomeBlocks: `applyAction(key, action)` applica l'azione con `onChange(mossa)` (restituisce il
-// layout risultante), annuncia l'esito e riporta il fuoco su un comando del blocco mosso. `isListed(key)`: il blocco
-// compare in modifica (conta per la posizione annunciata).
-export const useBlockEditing = ({ isListed, onChange }) => {
+// layout risultante, o null se non è cambiato nulla), annuncia l'esito e tiene il fuoco su un comando del blocco mosso.
+// `isListed(key)`: il blocco compare in modifica (conta per la posizione annunciata). `saving`: la mossa non è ancora
+// confermata dal server.
+export const useBlockEditing = ({ isListed, onChange, saving }) => {
   const { t } = useTranslation();
   const [announcement, setAnnouncement] = useState('');
-  // Il blocco mosso e il comando premuto. Resta finché il fuoco è perso (un salvataggio fallito rifà il disegno e
-  // riporta il layout indietro) e cade quando il fuoco sta su un altro elemento.
+  // Il blocco mosso e il comando premuto. Ogni ridisegno della mossa (lo spostamento, e il ritorno indietro se il
+  // salvataggio fallisce) può far perdere il fuoco: finché il salvataggio è in corso torna su quel comando, o sul primo
+  // del blocco se non c'è più. Cade a salvataggio chiuso, o prima se l'utente porta il fuoco fuori dal blocco.
   const focusAfter = useRef(null);
   useEffect(() => {
     const target = focusAfter.current;
     if (!target) return;
     const active = document.activeElement;
-    if (active && active !== document.body) {
-      focusAfter.current = null;
-      return;
+    const lost = !active || active === document.body;
+    if (lost) {
+      const control = document.querySelector(`[data-edit-key="${target.key}"][data-edit-action="${target.action}"]`)
+        ?? document.querySelector(`[data-edit-key="${target.key}"]`);
+      control?.focus();
     }
-    const controls = document.querySelector(`[data-edit-key="${target.key}"][data-edit-action="${target.action}"]`)
-      ?? document.querySelector(`[data-edit-key="${target.key}"]`);
-    if (controls) controls.focus();
-    else focusAfter.current = null;
+    if (!saving || (!lost && active.dataset.editKey !== target.key)) focusAfter.current = null;
   });
 
   const applyAction = (key, action) => {
     const spec = EDIT_ACTIONS[action];
-    let base;
-    const next = onChange((current) => {
-      base = current;
-      return spec.move(current, key, isListed);
-    });
-    if (next === base) return;
+    const next = onChange((current) => spec.move(current, key, isListed));
+    if (!next) return;
     focusAfter.current = { key, action };
     const listed = next.filter((entry) => isListed(entry.key)).map((entry) => entry.key);
     setAnnouncement(t(spec.announce(entryOf(next, key)), { title: t(TITLE_KEYS[key]), position: listed.indexOf(key) + 1, count: listed.length }));

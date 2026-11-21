@@ -2,7 +2,7 @@ import { Box, Button, IconButton } from '@mui/material';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { useTranslation } from 'react-i18next';
-import { DISABLED } from '../labelStyle';
+import { DISABLED } from '../homeStyles';
 import { EDIT_ACTIONS } from './blockEdit';
 
 const TOUCH = 44;
