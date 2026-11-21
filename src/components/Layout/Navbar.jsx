@@ -103,7 +103,8 @@ const Navbar = ({ redBar = false }) => {
           color: theme.palette.common.white,
           borderBottom: 'none',
           // Sul rosso il contorno scuro del tema dà 3,2 : 1: qui è bianco (5,5 : 1)
-          '& .Mui-focusVisible': { outline: `2px solid ${theme.palette.common.white}` },
+          // (il logo è un link: lo copre la regola globale a:focus-visible del tema, qui battuta per specificità)
+          '& .Mui-focusVisible, & a:focus-visible': { outline: `2px solid ${theme.palette.common.white}` },
         }),
       }}
     >
