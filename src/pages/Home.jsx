@@ -48,14 +48,18 @@ const Home = () => {
   const { setBarRed } = useOutletContext() ?? {};
 
   useEffect(() => {
-    if (!isLoggedIn) return;
+    if (!isLoggedIn) return undefined;
+    // Una risposta che arriva dopo l'uscita (logout, cambio pagina) non scrive più lo stato
+    let active = true;
     // Le tre richieste partono insieme, ognuna con il suo esito: una che fallisce non ferma le altre
     const load = async (path, accept, onData, setStatus) => {
       try {
         const data = await fetchJson(path, accept);
+        if (!active) return;
         if (data) onData(data);
         setStatus(data ? 'ok' : 'failed');
       } catch (error) {
+        if (!active) return;
         console.error(`Errore nel caricamento di ${path}:`, error);
         setStatus('failed');
       }
@@ -63,6 +67,7 @@ const Home = () => {
     load('api/workout_history/read.php', undefined, (data) => setRecords(data.records || []), setHistoryStatus);
     load('api/workout/read_plans.php', undefined, (data) => setHasPlans((data.records || []).length > 0), setPlansStatus);
     load('api/workout_stats/dashboard.php', (data) => data.success, setStats, setDashboardStatus);
+    return () => { active = false; };
   }, [isLoggedIn]);
 
   const ready = historyStatus !== 'pending' && plansStatus !== 'pending' && dashboardStatus !== 'pending';
@@ -78,6 +83,9 @@ const Home = () => {
     ? homeState({ hasDraft: hasFocusSessionInProgress(), trainedToday: stats.trained_today === true, weeklyWorkouts, weeklyGoal })
     : null;
   const red = isLoggedIn && isRedState(state);
+  // L'allenamento di oggi: il primo la cui data è `today` del server (non l'orologio del dispositivo); può mancare
+  // (fusi diversi): l'apertura «done» allora non ha titolo né riga
+  const todayRecord = state === 'done' ? records.find((r) => String(r.date).slice(0, 10) === stats.today) ?? null : null;
 
   useEffect(() => {
     if (!setBarRed) return undefined;
@@ -137,12 +145,14 @@ const Home = () => {
         name={user?.username || ''}
         nextDay={stats.next_day || null}
         draftDayName={state === 'resume' ? savedDraftDayName() : null}
-        todayRecord={state === 'done' ? lastWorkout : null}
+        todayRecord={todayRecord}
         weightUnit={weightUnit}
-        weeklyWorkouts={weeklyWorkouts}
-        weeklyGoal={weeklyGoal}
-        weekDays={Array.isArray(stats.week_days) ? stats.week_days : NO_DAYS}
-        todayIdx={todayIndex(stats.today)}
+        week={{
+          workouts: weeklyWorkouts,
+          goal: weeklyGoal,
+          days: Array.isArray(stats.week_days) ? stats.week_days : NO_DAYS,
+          todayIdx: todayIndex(stats.today),
+        }}
       />
     );
   })();
@@ -157,10 +167,10 @@ const Home = () => {
       {ready && !showStartHere && (
         <Box sx={{ px: sidePadding }}>
           <Grid container spacing={3}>
-            {/* Ultimo allenamento: nello stato «done» è già nell'apertura */}
-            {lastWorkout && state !== 'done' && (
+            {/* Ultimo allenamento: se l'allenamento di oggi è già nell'apertura («done») non si ripete */}
+            {lastWorkout && !todayRecord && (
               <Grid item xs={12}>
-                <LastWorkout record={lastWorkout} weightUnit={weightUnit} />
+                <LastWorkout record={lastWorkout} weightUnit={weightUnit} today={stats?.today} />
               </Grid>
             )}
 

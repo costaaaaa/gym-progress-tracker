@@ -5,11 +5,10 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import WeekDays from './WeekDays';
 import { workoutLine } from './workoutLine';
-import { isRedState } from '../../utils/homeState';
 import { TABULAR, TITLE_FONT_FAMILY } from '../../utils/fonts';
 import { radius } from '../../theme/radius';
+import { LABEL } from './labelStyle';
 
-const LABEL = { fontSize: 12, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase' };
 const DAY_TITLE = { fontFamily: TITLE_FONT_FAMILY, fontSize: '1.5rem', fontWeight: 700, lineHeight: 1.3 };
 
 // Saluto con lo username: l'unico h1 della Home
@@ -22,42 +21,60 @@ export const Greeting = ({ name, sx }) => {
   );
 };
 
-// «Settimana», «2 di 4 allenamenti» e i sette giorni
-const WeekBlock = ({ weeklyWorkouts, weeklyGoal, weekDays, todayIdx, onColor }) => {
+// «Settimana», «2 di 4 allenamenti» e i sette giorni. `week`: { workouts, goal, days, todayIdx }
+const WeekBlock = ({ week, onColor }) => {
   const { t } = useTranslation();
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', columnGap: 1, mb: 1.25 }}>
         <Typography sx={LABEL}>{t('home.week.label')}</Typography>
-        {weeklyGoal > 0 && (
+        {week.goal > 0 && (
           <Typography sx={{ fontWeight: 600, ...TABULAR }}>
-            {t('home.week.progress', { done: weeklyWorkouts, count: weeklyGoal })}
+            {t('home.week.progress', { done: week.workouts, count: week.goal })}
           </Typography>
         )}
       </Box>
-      <WeekDays done={weekDays} today={todayIdx} onColor={onColor} />
+      <WeekDays done={week.days} today={week.todayIdx} onColor={onColor} />
     </Box>
   );
 };
 
-// Frase sotto il saluto, secondo lo stato
-const statusSentence = (t, { state, nextDay, dayName, weeklyWorkouts, weeklyGoal }) => {
-  const week = weeklyGoal > 0 ? t('home.state.week', { count: weeklyWorkouts, goal: weeklyGoal }) : null;
-  if (state === 'resume') return t('home.state.resume', { day: dayName });
-  if (state === 'goal') return t('home.state.goal', { count: weeklyWorkouts, goal: weeklyGoal });
-  if (state === 'done') return [t('home.state.done'), week].filter(Boolean).join(' ');
-  return [nextDay ? t('home.state.todo_day', { day: nextDay.name }) : null, week].filter(Boolean).join(' ');
+// Cosa dice e mostra ogni stato, deciso qui e letto dai due componenti:
+// red (campo rosso o card neutra), sentence (frase sotto il saluto, '' se non c'è nulla da dire), label e title (del blocco
+// con il giorno), completed (la seduta di oggi è fatta), button (testo e se porta il giorno proposto al Focus).
+const describeState = (t, { state, nextDay, draftDayName, week }) => {
+  const weekSentence = week.goal > 0 ? t('home.state.week', { count: week.workouts, goal: week.goal }) : null;
+  const join = (...parts) => parts.filter(Boolean).join(' ');
+  const start = { label: t('home.today.start'), suggestsDay: true };
+  switch (state) {
+    case 'resume': {
+      const title = draftDayName || t('home.today.workout_fallback');
+      return { red: true, sentence: t('home.state.resume', { day: title }), label: t('home.today.label'), title, button: { label: t('home.today.resume'), suggestsDay: false } };
+    }
+    case 'goal':
+      return { red: false, sentence: t('home.state.goal', { count: week.workouts, goal: week.goal }), label: t('home.today.next_label'), title: nextDay?.name, button: start };
+    case 'done':
+      return { red: false, sentence: join(t('home.state.done'), weekSentence), label: t('home.today.label'), title: null, completed: true };
+    default:
+      return { red: true, sentence: join(nextDay ? t('home.state.todo_day', { day: nextDay.name }) : null, weekSentence), label: t('home.today.label'), title: nextDay?.name, button: start };
+  }
 };
 
-const startState = (nextDay) => (nextDay ? { suggestedDayId: nextDay.id } : undefined);
+// Il Focus si apre con il giorno proposto già scelto, se lo stato ne ha uno
+const buttonState = (view, nextDay) => (view.button.suggestsDay && nextDay ? { suggestedDayId: nextDay.id } : undefined);
+
+// Saluto e frase dello stato (la frase vuota non si disegna); `gap`: spazio sotto
+const OpeningHead = ({ name, sentence, gap }) => (
+  <>
+    <Greeting name={name} sx={{ lineHeight: 1.2, mb: sentence ? 0 : gap }} />
+    {sentence && <Typography sx={{ fontSize: 15, mt: 0.5, mb: gap, lineHeight: 1.5 }}>{sentence}</Typography>}
+  </>
+);
 
 // Apertura rossa («todo» e «resume»): oggi c'è ancora da allenarsi. Sul telefono il campo arriva ai bordi (il Layout lo
 // attacca alla barra rossa), da md in su è un pannello con gli angoli tondi: Oggi a sinistra, Settimana a destra.
-const RedOpening = ({ props, sentence }) => {
-  const { t } = useTranslation();
-  const { state, name, nextDay, draftDayName, weeklyWorkouts, weeklyGoal, weekDays, todayIdx } = props;
-  const resume = state === 'resume';
-  const title = resume ? draftDayName : nextDay?.name;
+const RedOpening = ({ view, name, nextDay, week }) => {
+  const { title } = view;
   return (
     <Box
       data-red-field
@@ -70,21 +87,20 @@ const RedOpening = ({ props, sentence }) => {
         borderRadius: { xs: '0 0 28px 28px', md: '28px' },
       }}
     >
-      <Greeting name={name} sx={{ lineHeight: 1.2 }} />
-      <Typography sx={{ fontSize: 15, mt: 0.5, mb: 2.5, lineHeight: 1.5 }}>{sentence}</Typography>
+      <OpeningHead name={name} sentence={view.sentence} gap={2.5} />
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, columnGap: 6, rowGap: 2.5, alignItems: 'start' }}>
         <Box>
           {title && (
             <>
-              <Typography sx={LABEL}>{t('home.today.label')}</Typography>
+              <Typography sx={LABEL}>{view.label}</Typography>
               <Typography sx={{ ...DAY_TITLE, mt: 0.25 }}>{title}</Typography>
-              {!resume && nextDay && <Typography sx={{ mb: 0.5 }}>{t('home.today.exercises', { count: nextDay.exercises })}</Typography>}
+              {view.button.suggestsDay && nextDay && <ExerciseCount nextDay={nextDay} sx={{ mb: 0.5 }} />}
             </>
           )}
           <Button
             component={RouterLink}
             to="/focus"
-            state={resume ? undefined : startState(nextDay)}
+            state={buttonState(view, nextDay)}
             fullWidth
             size="large"
             sx={{
@@ -99,31 +115,33 @@ const RedOpening = ({ props, sentence }) => {
               '&.Mui-focusVisible': { outlineColor: 'common.white' },
             }}
           >
-            {t(resume ? 'home.today.resume' : 'home.today.start')}
+            {view.button.label}
           </Button>
         </Box>
-        <WeekBlock weeklyWorkouts={weeklyWorkouts} weeklyGoal={weeklyGoal} weekDays={weekDays} todayIdx={todayIdx} onColor />
+        <WeekBlock week={week} onColor />
       </Box>
     </Box>
   );
 };
 
+const ExerciseCount = ({ nextDay, sx }) => {
+  const { t } = useTranslation();
+  return <Typography sx={sx}>{t('home.today.exercises', { count: nextDay.exercises })}</Typography>;
+};
+
 const outlineButton = { py: 1.2, fontWeight: 700, borderRadius: radius.xl, minHeight: 48 };
 
 // Apertura neutra («done» e «goal»): saluto e frase su fondo normale, poi la card con la seduta e la settimana
-const NeutralOpening = ({ props, sentence }) => {
+const NeutralOpening = ({ view, name, nextDay, todayRecord, weightUnit, week }) => {
   const { t } = useTranslation();
-  const { state, name, nextDay, todayRecord, weightUnit, weeklyWorkouts, weeklyGoal, weekDays, todayIdx } = props;
-  const done = state === 'done';
-  const line = done ? workoutLine(todayRecord, weightUnit, t) : '';
+  const line = view.completed ? workoutLine(todayRecord, weightUnit, t) : '';
   return (
     <Box>
-      <Greeting name={name} sx={{ lineHeight: 1.2 }} />
-      <Typography sx={{ fontSize: 15, mt: 0.5, mb: 2, lineHeight: 1.5 }}>{sentence}</Typography>
+      <OpeningHead name={name} sentence={view.sentence} gap={2} />
       <Card data-card sx={{ p: { xs: 2, md: '22px' } }}>
-        {done ? (
+        {view.completed ? (
           <>
-            <Typography sx={{ ...LABEL, color: 'text.secondary' }}>{t('home.today.label')}</Typography>
+            <Typography sx={{ ...LABEL, color: 'text.secondary' }}>{view.label}</Typography>
             <Typography sx={{ ...DAY_TITLE, mt: 0.5 }}>{todayRecord?.day_name || t('home.today.workout_fallback')}</Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.25 }}>
               <CheckCircleIcon aria-hidden="true" sx={{ fontSize: 20, color: 'success.title' }} />
@@ -150,26 +168,26 @@ const NeutralOpening = ({ props, sentence }) => {
           <>
             {nextDay && (
               <>
-                <Typography sx={{ ...LABEL, color: 'text.secondary' }}>{t('home.today.next_label')}</Typography>
-                <Typography sx={{ ...DAY_TITLE, mt: 0.5 }}>{nextDay.name}</Typography>
-                <Typography sx={{ color: 'text.secondary', mb: 1.5 }}>{t('home.today.exercises', { count: nextDay.exercises })}</Typography>
+                <Typography sx={{ ...LABEL, color: 'text.secondary' }}>{view.label}</Typography>
+                <Typography sx={{ ...DAY_TITLE, mt: 0.5 }}>{view.title}</Typography>
+                <ExerciseCount nextDay={nextDay} sx={{ color: 'text.secondary', mb: 1.5 }} />
               </>
             )}
             <Button
               component={RouterLink}
               to="/focus"
-              state={startState(nextDay)}
+              state={buttonState(view, nextDay)}
               variant="outlined"
               fullWidth
               size="large"
               sx={{ ...outlineButton, color: 'primary.text', borderColor: 'primary.text', '&:hover': { borderColor: 'primary.text', bgcolor: 'action.hover' } }}
             >
-              {t('home.today.start')}
+              {view.button.label}
             </Button>
           </>
         )}
         <Box sx={{ borderTop: '1px solid', borderColor: 'divider', mt: 2, pt: 1.5 }}>
-          <WeekBlock weeklyWorkouts={weeklyWorkouts} weeklyGoal={weeklyGoal} weekDays={weekDays} todayIdx={todayIdx} onColor={false} />
+          <WeekBlock week={week} onColor={false} />
         </Box>
       </Card>
     </Box>
@@ -177,14 +195,14 @@ const NeutralOpening = ({ props, sentence }) => {
 };
 
 // `state`: 'todo' | 'resume' | 'done' | 'goal' (utils/homeState). `nextDay`: {id, name, exercises} o null; `draftDayName`: il
-// giorno della bozza; `todayRecord`: l'allenamento di oggi (stato «done»); `weekDays`: sette booleani da lunedì.
-const HomeOpening = (props) => {
+// giorno della bozza (stato «resume»); `todayRecord`: l'allenamento di oggi o null (stato «done»);
+// `week`: { workouts, goal, days (sette booleani da lunedì), todayIdx }.
+const HomeOpening = ({ state, name, nextDay, draftDayName, todayRecord, weightUnit, week }) => {
   const { t } = useTranslation();
-  const dayName = props.draftDayName || t('home.today.workout_fallback');
-  const sentence = statusSentence(t, { ...props, dayName });
-  return isRedState(props.state)
-    ? <RedOpening props={{ ...props, draftDayName: dayName }} sentence={sentence} />
-    : <NeutralOpening props={props} sentence={sentence} />;
+  const view = describeState(t, { state, nextDay, draftDayName, week });
+  return view.red
+    ? <RedOpening view={view} name={name} nextDay={nextDay} week={week} />
+    : <NeutralOpening view={view} name={name} nextDay={nextDay} todayRecord={todayRecord} weightUnit={weightUnit} week={week} />;
 };
 
 export default HomeOpening;

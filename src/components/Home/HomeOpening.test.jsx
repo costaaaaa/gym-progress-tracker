@@ -10,12 +10,13 @@ import { mediaStyle } from '../../test/mediaStyle';
 const NEXT = { id: 7, name: 'Giorno B · Pull', exercises: 6 };
 const props = {
   state: 'todo', name: 'mario88', nextDay: NEXT, draftDayName: null, todayRecord: null, weightUnit: 'kg',
-  weeklyWorkouts: 2, weeklyGoal: 4, weekDays: [true, false, true, false, false, false, false], todayIdx: 3,
+  week: { workouts: 2, goal: 4, days: [true, false, true, false, false, false, false], todayIdx: 3 },
 };
 const Where = () => {
   const { pathname, state } = useLocation();
   return <p data-testid="where">{pathname}{state ? JSON.stringify(state) : ''}</p>;
 };
+const showWeek = (extra, week) => show({ ...extra, week: { ...props.week, ...week } });
 const show = (extra) => render(
   <MemoryRouter>
     <ThemeModeProvider>
@@ -82,10 +83,18 @@ describe('stato «todo» (rosso)', () => {
 
   it.each([[0, 'Questa settimana sei a 0 allenamenti su 3.'], [1, 'Questa settimana sei a 1 allenamento su 3.'], [2, 'Questa settimana sei a 2 allenamenti su 3.']])(
     'plurali: %i allenamenti', (count, text) => {
-      show({ nextDay: null, weeklyWorkouts: count, weeklyGoal: 3 });
+      showWeek({ nextDay: null }, { workouts: count, goal: 3 });
       expect(screen.getByText(text)).toBeTruthy();
     },
   );
+
+  it('senza giorno proposto né obiettivo non c\'è nessuna frase: niente paragrafo vuoto', () => {
+    showWeek({ nextDay: null }, { goal: undefined });
+    const h1 = screen.getByRole('heading', { level: 1 });
+    expect(h1.nextElementSibling.tagName).not.toBe('P');
+    [...h1.closest('[data-red-field]').querySelectorAll('p')].forEach((p) => expect(p.textContent.trim()).not.toBe(''));
+    expect(screen.getByRole('link', { name: 'Inizia' })).toBeTruthy();
+  });
 
   it('un solo esercizio: «1 esercizio»', () => {
     show({ nextDay: { ...NEXT, exercises: 1 } });
@@ -93,7 +102,7 @@ describe('stato «todo» (rosso)', () => {
   });
 
   it('senza obiettivo della settimana niente frase né conteggio della settimana', () => {
-    show({ weeklyGoal: undefined });
+    showWeek({}, { goal: undefined });
     expect(screen.getByText('Oggi tocca a Giorno B · Pull.')).toBeTruthy();
     expect(screen.queryByText(/di \d+ allenament/)).toBeNull();
   });
@@ -136,7 +145,7 @@ describe('stato «done» (neutro)', () => {
     expect(screen.getByText('Oggi')).toBeTruthy();
     expect(screen.getByText('Giorno B · Pull', { selector: 'p' })).toBeTruthy();
     expect(screen.getByText('Completato')).toBeTruthy();
-    expect(screen.getByText('58 min · 1000 kg di volume')).toBeTruthy();
+    expect(screen.getByText('58 min · 1.000 kg di volume')).toBeTruthy();
     const link = screen.getByRole('link', { name: 'Vedi allenamento' });
     expect(link.getAttribute('href')).toBe('/storico');
     expect(screen.getByText('Prossima seduta: Giorno B · Pull')).toBeTruthy();
@@ -151,7 +160,7 @@ describe('stato «done» (neutro)', () => {
 
   it('senza durata resta il solo volume', () => {
     show({ state: 'done', todayRecord: { ...record, duration_seconds: null } });
-    expect(screen.getByText('1000 kg di volume')).toBeTruthy();
+    expect(screen.getByText('1.000 kg di volume')).toBeTruthy();
   });
 
   it('la card contiene anche la settimana, sotto un bordo, con i giorni sul neutro', () => {
@@ -164,23 +173,23 @@ describe('stato «done» (neutro)', () => {
 });
 
 describe('stato «goal» (neutro)', () => {
-  it('frase dell\'obiettivo raggiunto, anche oltre l\'obiettivo', () => {
-    show({ state: 'goal', weeklyWorkouts: 4, weeklyGoal: 4 });
+  it('frase dell\'obiettivo raggiunto, a obiettivo pari', () => {
+    showWeek({ state: 'goal' }, { workouts: 4, goal: 4 });
     expect(screen.getByText('Obiettivo della settimana raggiunto: 4 allenamenti su 4.')).toBeTruthy();
   });
-  it('con più allenamenti dell\'obiettivo il conteggio resta quello vero', () => {
-    show({ state: 'goal', weeklyWorkouts: 5, weeklyGoal: 4 });
+  it('oltre l\'obiettivo il conteggio resta quello vero', () => {
+    showWeek({ state: 'goal' }, { workouts: 5, goal: 4 });
     expect(screen.getByText('Obiettivo della settimana raggiunto: 5 allenamenti su 4.')).toBeTruthy();
     expect(screen.getByText('5 di 4 allenamenti')).toBeTruthy();
   });
   it('un solo allenamento su uno: singolare', () => {
-    show({ state: 'goal', weeklyWorkouts: 1, weeklyGoal: 1 });
+    showWeek({ state: 'goal' }, { workouts: 1, goal: 1 });
     expect(screen.getByText('Obiettivo della settimana raggiunto: 1 allenamento su 1.')).toBeTruthy();
     expect(screen.getByText('1 di 1 allenamento')).toBeTruthy();
   });
 
   it('card «Prossima seduta» con il giorno, il conteggio e «Inizia» a contorno col giorno scelto', () => {
-    show({ state: 'goal', weeklyWorkouts: 4, weeklyGoal: 4 });
+    showWeek({ state: 'goal' }, { workouts: 4, goal: 4 });
     expect(screen.getByRole('heading', { level: 1 }).closest('[data-red-field]')).toBeNull();
     expect(screen.getByText('Prossima seduta')).toBeTruthy();
     expect(screen.getByText('Giorno B · Pull')).toBeTruthy();
@@ -192,13 +201,13 @@ describe('stato «goal» (neutro)', () => {
   });
 
   it('senza giorno proposto solo il bottone «Inizia»', () => {
-    show({ state: 'goal', weeklyWorkouts: 4, weeklyGoal: 4, nextDay: null });
+    showWeek({ state: 'goal', nextDay: null }, { workouts: 4, goal: 4 });
     expect(screen.queryByText('Prossima seduta')).toBeNull();
     expect(screen.getByRole('link', { name: 'Inizia' })).toBeTruthy();
   });
 
   it('la settimana sta nella stessa card', () => {
-    show({ state: 'goal', weeklyWorkouts: 4, weeklyGoal: 4 });
+    showWeek({ state: 'goal' }, { workouts: 4, goal: 4 });
     const card = screen.getByText('Prossima seduta').closest('[data-card]');
     expect(within(card).getByText('4 di 4 allenamenti')).toBeTruthy();
   });

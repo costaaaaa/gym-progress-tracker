@@ -283,14 +283,19 @@ describe('stato «resume»', () => {
 });
 
 describe('stato «done»', () => {
-  beforeEach(() => setDashboard({ trained_today: true, weekly_workouts: 3, week_days: [true, false, true, true, false, false, false], next_day: { id: 8, name: 'Giorno C · Legs', exercises: 5 } }));
+  const TODAY_WORKOUT = { ...WORKOUT, id: 2, date: '2026-11-19 08:10:00', day_name: 'Giorno B · Pull' };
+  const withTodayWorkout = () => { responses['workout_history/read.php'] = { success: true, records: [TODAY_WORKOUT, WORKOUT] }; };
+  beforeEach(() => {
+    withTodayWorkout();
+    setDashboard({ trained_today: true, weekly_workouts: 3, week_days: [true, false, true, true, false, false, false], next_day: { id: 8, name: 'Giorno C · Legs', exercises: 5 } });
+  });
 
   it('«Fatto per oggi.» e la card con l\'allenamento di oggi', async () => {
     renderHome();
     expect(await screen.findByText('Fatto per oggi. Questa settimana sei a 3 allenamenti su 4.')).toBeTruthy();
     expect(screen.getByText('Completato')).toBeTruthy();
-    expect(screen.getByText('Giorno A · Push', { selector: 'p' })).toBeTruthy();
-    expect(screen.getByText('58 min · 1400 kg di volume')).toBeTruthy();
+    expect(screen.getByText('Giorno B · Pull', { selector: 'p' })).toBeTruthy();
+    expect(screen.getByText('58 min · 1.400 kg di volume')).toBeTruthy();
     expect(screen.getByText('Prossima seduta: Giorno C · Legs')).toBeTruthy();
   });
 
@@ -306,10 +311,27 @@ describe('stato «done»', () => {
     expect(screen.queryByRole('heading', { name: 'Ultimo allenamento' })).toBeNull();
   });
 
+  it('l\'allenamento di oggi è il primo con la data di today, non il primo dell\'elenco', async () => {
+    responses['workout_history/read.php'] = { success: true, records: [{ ...WORKOUT, id: 3, date: '2026-11-20 07:00:00', day_name: 'Giorno C · Legs' }, TODAY_WORKOUT, WORKOUT] };
+    renderHome();
+    await screen.findByText('Completato');
+    expect(screen.getByText('Giorno B · Pull', { selector: 'p' })).toBeTruthy();
+    expect(screen.queryByText('Giorno C · Legs', { selector: 'p' })).toBeNull();
+  });
+
+  it('senza un allenamento con la data di today (fusi): «Allenamento di oggi», senza durata e volume, e l\'ultimo allenamento si vede', async () => {
+    responses['workout_history/read.php'] = { success: true, records: [WORKOUT] };
+    renderHome();
+    await screen.findByText('Completato');
+    expect(screen.getByText('Allenamento di oggi')).toBeTruthy();
+    expect(document.querySelector('[data-card]').textContent).not.toMatch(/kg di volume/);
+    expect(screen.getByRole('heading', { level: 2, name: 'Ultimo allenamento' })).toBeTruthy();
+  });
+
   it('il volume è nell\'unità dell\'account (lb)', async () => {
     auth.weightUnit = 'lb';
     renderHome();
-    expect(await screen.findByText('58 min · 3086 lb di volume')).toBeTruthy(); // 1400 kg = 3086 lb
+    expect(await screen.findByText('58 min · 3.086 lb di volume')).toBeTruthy(); // 1400 kg = 3086 lb
   });
 });
 
@@ -351,8 +373,9 @@ describe('sotto l\'apertura', () => {
     const link = (await screen.findByRole('heading', { level: 2, name: 'Ultimo allenamento' })).closest('a');
     expect(link.getAttribute('href')).toBe('/storico');
     expect(link.textContent).toContain('Giorno A · Push');
-    expect(link.textContent).toContain('mercoledì 18 novembre 2026');
-    expect(link.textContent).toContain('58 min · 1400 kg di volume');
+    expect(link.textContent).toContain('Mercoledì 18 novembre');
+    expect(link.textContent).not.toContain('2026');
+    expect(link.textContent).toContain('58 min · 1.400 kg di volume');
   });
 
   it('senza allenamenti il blocco non c\'è', async () => {
@@ -434,6 +457,18 @@ describe('la barra in alto', () => {
     expect(barColor()).toBe('rgb(255, 255, 255)');
   });
 
+  it('al logout, restando sulla Home, torna neutra', async () => {
+    phone();
+    const view = renderHome();
+    await opened();
+    expect(barColor()).toBe(RED);
+    auth.isLoggedIn = false;
+    view.rerender(homeTree());
+    expect(await screen.findByText('Landing per gli ospiti')).toBeTruthy();
+    expect(document.querySelector('[data-red-field]')).toBeNull();
+    expect(barColor()).toBe('rgb(255, 255, 255)');
+  });
+
   it('uscendo dalla Home torna neutra', async () => {
     phone();
     renderHome();
@@ -454,11 +489,13 @@ describe('«oggi» lo decide il server, non l\'orologio del dispositivo', () => 
     vi.useRealTimers();
   });
 
-  it('«fatto oggi» è quello del server anche se la data del dispositivo è un altro giorno', async () => {
+  it('«fatto oggi» è quello del server: con trained_today falso uno storico con la data del dispositivo non cambia lo stato', async () => {
     pinLocalClock('Asia/Tokyo', 2026, 10, 25, 0, 5);
-    setDashboard({ trained_today: true });
+    responses['workout_history/read.php'] = { success: true, records: [{ ...WORKOUT, date: '2026-11-25 00:01:00' }] };
+    setDashboard({ trained_today: false });
     renderHome();
-    expect(await screen.findByRole('link', { name: 'Vedi allenamento' })).toBeTruthy();
+    expect(await screen.findByRole('link', { name: 'Inizia' })).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Vedi allenamento' })).toBeNull();
     vi.useRealTimers();
   });
 });
