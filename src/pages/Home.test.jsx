@@ -1,6 +1,6 @@
 // Home dopo il login: i dati arrivano dalla fetch (confine), l'utente vede testi, bottoni, link e la barra in alto.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, within, fireEvent, act } from '@testing-library/react';
+import { render, screen, within, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { renderToString } from 'react-dom/server';
 import Home from './Home';
