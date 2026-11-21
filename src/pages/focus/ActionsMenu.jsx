@@ -39,7 +39,8 @@ export default function ActionsMenu({ currentSlot, canEditSession, canSwap, onSk
     { mode: 'swap', label: t('focus.swap_exercise'), icon: <SwapIcon />, faded: !canSwap },
     { mode: 'add', label: t('focus.add_exercise'), icon: <AddIcon /> },
   ];
-  const itemSx = { minHeight: 44, gap: 1.5, color: colors.text };
+  // Dal tablet in su MUI riporta le voci ad altezza libera: i 44 px valgono a ogni larghezza
+  const itemSx = { minHeight: { xs: 44 }, gap: 1.5, color: colors.text };
 
   return (
     <>

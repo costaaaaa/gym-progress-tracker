@@ -2614,6 +2614,15 @@ describe('pallini e «Serie fatte» (F3)', () => {
       expect(document.activeElement).toBe(row(inDialog(), 'Serie 1'));
     });
 
+    it('nella finestra le tecniche stanno su due colonne (a 320 px quattro non ci stanno), nella serie su quattro', async () => {
+      await resume({ ...savedDraft });
+      const columns = (root) => getComputedStyle(root.getByRole('group', { name: 'Tecnica di intensità' })).gridTemplateColumns;
+      expect(columns(screen)).toContain('repeat(4');
+      const dialog = await openDone();
+      fireEvent.click(row(dialog, 'Serie 1'));
+      expect(columns(inDialog())).toContain('repeat(2');
+    });
+
     it('corpo libero: la serie con peso 0 si apre con 0 nel campo e correggere le ripetizioni lascia il peso a 0', async () => {
       await resume({ ...savedDraft, completedSets: { 9: [{ setNumber: 1, weight: 0, reps: '8', intensity_technique: '', is_warmup: false, seconds_from_start: 300 }] } });
       const dialog = await openDone();

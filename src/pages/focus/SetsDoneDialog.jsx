@@ -50,7 +50,7 @@ function SetEditForm({ exercise, set, weightUnit, techniqueOn, onSave, onCancel 
         <TextField label={t('record.reps')} value={reps} onChange={(e) => setReps(e.target.value)} onFocus={(e) => e.target.select()}
           fullWidth sx={fieldSx} inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }} />
       </Box>
-      {!slot.isWarmup && techniqueOn && <TechniqueRow value={technique} onChange={setTechnique} />}
+      {!slot.isWarmup && techniqueOn && <TechniqueRow value={technique} onChange={setTechnique} columns={2} />}
       <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
         <Button onClick={onCancel} sx={{ color: colors.textSecondary, minHeight: 44 }}>{t('common.cancel')}</Button>
         <Button variant="contained" onClick={save} disabled={!valid}
