@@ -11,6 +11,15 @@ export const savedDraftDayId = () => {
   }
 };
 
+// Nome del giorno di scheda dell'allenamento salvato su questo browser, o null.
+export const savedDraftDayName = () => {
+  try {
+    return JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY))?.selectedDay?.name ?? null;
+  } catch {
+    return null;
+  }
+};
+
 // C'è un allenamento Focus in corso su questo browser? Stessa condizione con cui Focus propone la ripresa.
 export const hasFocusSessionInProgress = () => {
   try {

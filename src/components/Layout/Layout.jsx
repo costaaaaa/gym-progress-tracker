@@ -40,10 +40,15 @@ const Layout = () => {
   const { t, i18n } = useTranslation();
   // C'è un avviso di esito della conferma dell'email: «Cosa ti interessa?» attende che si chiuda
   const [noticeOpen, setNoticeOpen] = useState(false);
+  // L'apertura della Home è rossa: la Home lo dice con il contesto dell'Outlet. Sul telefono la barra in alto diventa
+  // rossa (Navbar) e il campo arriva ai bordi dello schermo, attaccato alla barra: qui sotto niente margine in alto
+  // e niente bordi laterali, le pagine dentro il campo si danno il loro spazio
+  const [barRed, setBarRed] = useState(false);
   const { pathname, search } = useLocation();
   const otherLang = isEnPath(pathname) ? 'it' : 'en';
   // Dal giorno 8 senza email confermata, al posto di ogni pagina dell'app c'è la schermata di conferma (le pagine di accesso restano)
   const blocked = isLoggedIn && emailState?.blocked === true && !isAccessPath(pathname);
+  const red = barRed && isLoggedIn && !blocked;
 
   return (
     // Solo per gli ospiti: serve al campo pieno della home (100cqw); i Safari più vecchi trattavano il container
@@ -60,7 +65,7 @@ const Layout = () => {
         {t('nav.skip_to_content')}
       </Link>
       {!isLoggedIn && <LanguageHint />}
-      <Navbar />
+      <Navbar redBar={red} />
       <EmailStrip />
       <Container
         component="main"
@@ -68,15 +73,15 @@ const Layout = () => {
         tabIndex={-1}
         disableGutters
         sx={{
-          mt: 4,
+          mt: red ? { xs: 0, md: 4 } : 4,
           mb: isLoggedIn ? 10 : 4,
           flexGrow: 1,
           maxWidth: { xs: '100%', md: '1180px' },
-          px: { xs: 2, md: '32px' },
+          px: { xs: red ? 0 : 2, md: '32px' },
           '&:focus': { outline: 'none' },
         }}
       >
-        {blocked ? <EmailBlockedScreen /> : <Outlet />}
+        {blocked ? <EmailBlockedScreen /> : <Outlet context={{ setBarRed }} />}
       </Container>
       <Box
         component="footer"

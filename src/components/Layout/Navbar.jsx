@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { alpha } from '@mui/material/styles';
 import { AppBar, Toolbar, Typography, Button, ButtonGroup, Box, Avatar, useMediaQuery, IconButton, useTheme, Tooltip, CircularProgress, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
@@ -30,7 +31,8 @@ const navItems = [
 ];
 
 
-const Navbar = () => {
+// `redBar`: l'apertura della Home è rossa (lo dice il Layout). La barra segue solo sul telefono dentro l'app
+const Navbar = ({ redBar = false }) => {
   const location = useLocation();
   const { t } = useTranslation();
   const localizedPath = useLocalizedPath();
@@ -86,11 +88,26 @@ const Navbar = () => {
   };
 
   const phoneApp = isMobile && showAppNav;
+  const onRed = phoneApp && redBar;
   const onProfilePage = location.pathname === '/profilo';
   const initials = user?.username ? user.username.charAt(0).toUpperCase() : '?';
 
   return (
-    <AppBar position="sticky" elevation={0} sx={{ overflowX: 'hidden' }}>
+    <AppBar
+      position="sticky"
+      elevation={0}
+      sx={{
+        overflowX: 'hidden',
+        ...(onRed && {
+          background: theme.palette.primary.main,
+          color: theme.palette.common.white,
+          borderBottom: 'none',
+          // Sul rosso il contorno scuro del tema dà 3,2 : 1: qui è bianco (5,5 : 1)
+          // (il logo è un link: lo copre la regola globale a:focus-visible del tema, qui battuta per specificità)
+          '& .Mui-focusVisible, & a:focus-visible': { outline: `2px solid ${theme.palette.common.white}` },
+        }),
+      }}
+    >
       <Toolbar
         ref={toolbarRef}
         sx={{
@@ -116,7 +133,7 @@ const Navbar = () => {
             justifySelf: 'start',
             cursor: 'pointer',
             textDecoration: 'none',
-            color: 'text.primary',
+            color: onRed ? 'inherit' : 'text.primary',
           }}
           component={RouterLink}
           to={localizedPath('/')}
@@ -220,9 +237,9 @@ const Navbar = () => {
                 width: 40,
                 height: 40,
                 ml: 1,
-                color: 'text.secondary',
-                bgcolor: 'navToggle.bg',
-                '&:hover': { bgcolor: 'navToggle.hover' },
+                ...(onRed
+                  ? { color: 'common.white', bgcolor: 'transparent', '&:hover': { bgcolor: (theme) => alpha(theme.palette.common.white, 0.16) } }
+                  : { color: 'text.secondary', bgcolor: 'navToggle.bg', '&:hover': { bgcolor: 'navToggle.hover' } }),
               }}
             >
               {mode === 'light' ? <DarkModeIcon fontSize="small" /> : <LightModeIcon fontSize="small" />}
@@ -244,8 +261,8 @@ const Navbar = () => {
                   sx={{
                     width: 34,
                     height: 34,
-                    bgcolor: 'ink',
-                    color: 'onInk',
+                    bgcolor: onRed ? 'common.white' : 'ink',
+                    color: onRed ? 'primary.main' : 'onInk',
                     fontSize: 14,
                     fontWeight: 700,
                     fontFamily: TITLE_FONT_FAMILY,
