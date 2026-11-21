@@ -2326,6 +2326,9 @@ describe('barra in alto e menu «⋯» (F3)', () => {
     click('Salta timer');
     openMenu();
     screen.getAllByRole('menuitem').forEach((item) => expect(item.getAttribute('aria-disabled')).toBeNull());
+    fireEvent.click(menuItem('Cambia esercizio (Plus)'));
+    await advance(500);
+    expect(screen.getByText('Funzione Plus')).toBeTruthy();
   });
 
   it('due tocchi di fila su «Salta esercizio» mentre il menu si chiude saltano un esercizio solo', async () => {
