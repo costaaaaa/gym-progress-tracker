@@ -8,15 +8,37 @@ import Layout from '../components/Layout/Layout';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { pinLocalClock } from '../test/timeZone';
 import { textBelow } from '../test/minText';
+import { unnamedControls } from '../test/accessibleNames';
 import { mediaStyle } from '../test/mediaStyle';
 import { HOME_BLOCKS } from '../utils/homeLayout';
 
 vi.mock('./landing/Landing', () => ({ default: () => <p>Landing per gli ospiti</p> }));
 
-const auth = vi.hoisted(() => ({ isLoggedIn: true, weightUnit: 'kg', modules: undefined, homeLayout: undefined }));
-vi.mock('../context/AuthContext', () => ({
-  useAuth: () => ({ user: { username: 'mario88', modules: auth.modules, home_layout: auth.homeLayout }, isLoggedIn: auth.isLoggedIn, loading: false, weightUnit: auth.weightUnit }),
+const auth = vi.hoisted(() => ({
+  isLoggedIn: true, weightUnit: 'kg', modules: undefined, homeLayout: undefined, moduleOffer: null, version: 0, listeners: new Set(), refreshed: 0,
 }));
+// L'account è uno solo e cambia con updateUser, come nell'app: chi lo legge si ridisegna
+vi.mock('../context/AuthContext', async () => {
+  const { useSyncExternalStore } = await import('react');
+  const subscribe = (listener) => { auth.listeners.add(listener); return () => auth.listeners.delete(listener); };
+  const updateUser = (patch) => {
+    if ('home_layout' in patch) auth.homeLayout = patch.home_layout;
+    if ('modules' in patch) auth.modules = patch.modules;
+    if ('module_offer' in patch) auth.moduleOffer = patch.module_offer;
+    auth.version += 1;
+    auth.listeners.forEach((listener) => listener());
+  };
+  const refreshEmailState = () => { auth.refreshed += 1; };
+  return {
+    useAuth: () => {
+      useSyncExternalStore(subscribe, () => auth.version, () => auth.version);
+      return {
+        user: { username: 'mario88', modules: auth.modules, home_layout: auth.homeLayout, module_offer: auth.moduleOffer },
+        isLoggedIn: auth.isLoggedIn, loading: false, weightUnit: auth.weightUnit, updateUser, refreshEmailState,
+      };
+    },
+  };
+});
 
 const DRAFT_KEY = 'gym_focus_workout_draft';
 const NEXT_DAY = { id: 7, name: 'Giorno B · Pull', exercises: 6 };
@@ -100,6 +122,8 @@ afterEach(() => {
   auth.weightUnit = 'kg';
   auth.modules = undefined;
   auth.homeLayout = undefined;
+  auth.moduleOffer = null;
+  auth.refreshed = 0;
   window.matchMedia = realMatchMedia;
   localStorage.removeItem(DRAFT_KEY);
   vi.useRealTimers();
@@ -690,5 +714,211 @@ describe('blocchi dei moduli', () => {
     await screen.findByText('settimane di fila');
     expect(screen.getAllByRole('heading', { level: 1 }).length).toBe(1);
     expect(textBelow(document.querySelector('main'), 12)).toEqual([]);
+  });
+});
+
+// «Modifica Home» e la proposta di un modulo
+describe('Modifica Home', () => {
+  const SETTINGS = 'user/update_settings.php';
+  const ORDER = ['Ultimo allenamento', 'Livello e streak', 'Gruppi', 'Recupero', 'Peso'];
+  // Il fetch finto con l'aggiunta del salvataggio: `reply(body)` dà la risposta (una promessa o un oggetto)
+  const withSettings = (reply) => {
+    const saves = [];
+    vi.stubGlobal('fetch', vi.fn((url, init) => {
+      if (!String(url).includes(SETTINGS)) return fakeFetch(url);
+      const body = JSON.parse(init.body);
+      saves.push(body);
+      return reply(body);
+    }));
+    return saves;
+  };
+  const accepting = (body) => Promise.resolve({ ok: true, status: 200, json: async () => ({ success: true, home_layout: body.home_layout, modules: auth.modules ?? { body: true, recovery: true, levels: true, groups: true, ai: true }, module_offer: null }), text: async () => '' });
+  const rejecting = () => Promise.resolve({ ok: false, status: 500, json: async () => ({ success: false }), text: async () => '{}' });
+  const edit = async () => {
+    renderHome();
+    await opened();
+    await blocksLoaded();
+    fireEvent.click(screen.getByRole('button', { name: 'Modifica Home' }));
+  };
+  const button = (name) => within(document.querySelector('main')).getByRole('button', { name });
+
+  it('in fondo c\'è «Modifica Home»; l\'apertura non ha comandi di modifica; «Fine» esce', async () => {
+    renderHome();
+    await opened();
+    await blocksLoaded();
+    fireEvent.click(screen.getByRole('button', { name: 'Modifica Home' }));
+    expect(screen.getByRole('button', { name: 'Fine' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Modifica Home' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Inizia' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Sposta .* Inizia|Nascondi Inizia/ })).toBeNull();
+    expect(blockTitles()).toEqual(ORDER);
+    fireEvent.click(screen.getByRole('button', { name: 'Fine' }));
+    expect(screen.getByRole('button', { name: 'Modifica Home' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Sposta giù Peso' })).toBeNull();
+  });
+
+  it('l\'account nuovo («Inizia da qui») non ha «Modifica Home»', async () => {
+    newUser();
+    renderHome();
+    await screen.findByText('Inizia da qui');
+    expect(screen.queryByRole('button', { name: 'Modifica Home' })).toBeNull();
+  });
+
+  it('una mossa: lo schermo cambia subito, il layout intero va al server e l\'account riceve quello confermato', async () => {
+    const saves = withSettings(accepting);
+    await edit();
+    fireEvent.click(button('Sposta su Peso'));
+    expect(blockTitles()).toEqual(['Ultimo allenamento', 'Livello e streak', 'Gruppi', 'Peso', 'Recupero']);
+    expect(saves.length).toBe(1);
+    expect(saves[0].home_layout.map((entry) => entry.key)).toEqual(['last', 'levels', 'groups', 'body', 'recovery']);
+    await waitFor(() => expect(auth.homeLayout?.map((entry) => entry.key)).toEqual(['last', 'levels', 'groups', 'body', 'recovery']));
+    expect(blockTitles()).toEqual(['Ultimo allenamento', 'Livello e streak', 'Gruppi', 'Peso', 'Recupero']);
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('nascondere e cambiare misura si salvano; nascosto si vede solo in modifica', async () => {
+    const saves = withSettings(accepting);
+    await edit();
+    fireEvent.click(button('Nascondi Gruppi'));
+    fireEvent.click(button('Rendi Livello e streak grande'));
+    await waitFor(() => expect(saves.length).toBe(2));
+    expect(saves[1].home_layout.find((entry) => entry.key === 'groups').hidden).toBe(true);
+    expect(saves[1].home_layout.find((entry) => entry.key === 'levels').large).toBe(true);
+    expect(screen.getByText('Nascosto')).toBeTruthy();
+    await waitFor(() => expect(auth.homeLayout).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: 'Fine' }));
+    expect(blockTitles()).toEqual(['Ultimo allenamento', 'Livello e streak', 'Recupero', 'Peso']);
+    expect(screen.queryByText('Nascosto')).toBeNull();
+  });
+
+  it('salvataggio fallito: avviso a schermo e ritorno all\'ultimo layout salvato', async () => {
+    withSettings(rejecting);
+    await edit();
+    fireEvent.click(button('Sposta su Peso'));
+    expect((await screen.findByRole('alert')).textContent).toContain('Non sono riuscito a salvare la Home');
+    expect(blockTitles()).toEqual(ORDER);
+    expect(auth.homeLayout).toBeUndefined();
+  });
+
+  it('due mosse rapide: una richiesta alla volta e vale l\'ultima', async () => {
+    let release;
+    const saves = withSettings((body) => (saves.length === 1 ? new Promise((resolve) => { release = () => resolve(accepting(body)); }) : accepting(body)));
+    await edit();
+    fireEvent.click(button('Sposta su Peso'));
+    fireEvent.click(button('Sposta su Peso'));
+    expect(saves.length).toBe(1);
+    expect(blockTitles()).toEqual(['Ultimo allenamento', 'Livello e streak', 'Peso', 'Gruppi', 'Recupero']);
+    await act(async () => { release(); });
+    await waitFor(() => expect(saves.length).toBe(2));
+    expect(saves[1].home_layout.map((entry) => entry.key)).toEqual(['last', 'levels', 'body', 'groups', 'recovery']);
+    expect(blockTitles()).toEqual(['Ultimo allenamento', 'Livello e streak', 'Peso', 'Gruppi', 'Recupero']);
+  });
+
+  it('da tastiera: il fuoco resta sul bottone dopo lo spostamento e l\'esito è annunciato', async () => {
+    withSettings(accepting);
+    await edit();
+    button('Sposta su Peso').focus();
+    fireEvent.click(button('Sposta su Peso'));
+    await waitFor(() => expect(document.activeElement).toBe(button('Sposta su Peso')));
+    expect(document.querySelector('main [aria-live="polite"]').textContent).toBe('Peso spostato in posizione 4 di 5');
+  });
+
+  it('un modulo non attivo non compare in modifica; nascondere non lo spegne', async () => {
+    auth.modules = { body: true, recovery: true, levels: true, groups: false, ai: true };
+    const saves = withSettings(accepting);
+    await edit();
+    expect(blockTitles()).toEqual(['Ultimo allenamento', 'Livello e streak', 'Recupero', 'Peso']);
+    fireEvent.click(button('Nascondi Peso'));
+    await waitFor(() => expect(saves.length).toBe(1));
+    expect(auth.modules.body).toBe(true);
+  });
+
+  it('un solo h1, nessun testo sotto i 12 px e tutti i bottoni con un nome, anche in modifica', async () => {
+    await edit();
+    expect(screen.getAllByRole('heading', { level: 1 }).length).toBe(1);
+    expect(textBelow(document.querySelector('main'), 12)).toEqual([]);
+    expect(unnamedControls(['button'])).toEqual([]);
+  });
+});
+
+describe('proposta di un modulo', () => {
+  const offerReply = (accepted) => vi.fn((url, init) => {
+    if (!String(url).includes('user/update_settings.php')) return fakeFetch(url);
+    const body = JSON.parse(init.body);
+    const modules = { body: true, recovery: true, levels: true, groups: accepted, ai: true };
+    return Promise.resolve({ ok: true, status: 200, json: async () => ({ success: true, modules, module_offer: null, answered: body }), text: async () => '' });
+  });
+  beforeEach(() => { auth.modules = { body: true, recovery: true, levels: true, groups: false, ai: true }; });
+
+  it('senza module_offer la card non c\'è', async () => {
+    renderHome();
+    await opened();
+    await screen.findByText('Livello 5 · streak di 4 settimane');
+    expect(screen.queryByText('Prova anche…')).toBeNull();
+  });
+
+  it('con module_offer: sotto i blocchi e sopra «Modifica Home», una sola', async () => {
+    auth.moduleOffer = 'groups';
+    renderHome();
+    await opened();
+    const card = (await screen.findByText('Prova anche…')).closest('.MuiCard-root');
+    expect(within(card).getByRole('heading', { level: 2, name: 'Gruppi' })).toBeTruthy();
+    expect(screen.getAllByText('Prova anche…').length).toBe(1);
+    const edit = screen.getByRole('button', { name: 'Modifica Home' });
+    expect(card.compareDocumentPosition(edit) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const peso = screen.getByRole('heading', { level: 2, name: 'Peso' });
+    expect(peso.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('non compare in modifica e torna a «Fine»', async () => {
+    auth.moduleOffer = 'groups';
+    renderHome();
+    await opened();
+    await screen.findByText('Prova anche…');
+    fireEvent.click(screen.getByRole('button', { name: 'Modifica Home' }));
+    expect(screen.queryByText('Prova anche…')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Fine' }));
+    expect(screen.getByText('Prova anche…')).toBeTruthy();
+  });
+
+  it('non compare per l\'account nuovo', async () => {
+    newUser();
+    auth.moduleOffer = 'groups';
+    renderHome();
+    await screen.findByText('Inizia da qui');
+    expect(screen.queryByText('Prova anche…')).toBeNull();
+  });
+
+  it('«Attiva»: il modulo diventa attivo, il suo blocco compare in coda (non era nel layout salvato) e la card sparisce', async () => {
+    auth.moduleOffer = 'groups';
+    auth.homeLayout = ['last', 'levels', 'recovery', 'body'].map((key) => ({ key, hidden: false, large: false }));
+    vi.stubGlobal('fetch', offerReply(true));
+    renderHome();
+    await opened();
+    fireEvent.click(await screen.findByRole('button', { name: 'Attiva Gruppi' }));
+    await waitFor(() => expect(screen.queryByText('Prova anche…')).toBeNull());
+    expect(auth.modules.groups).toBe(true);
+    expect(blockTitles()).toEqual(['Ultimo allenamento', 'Livello e streak', 'Recupero', 'Peso', 'Gruppi']);
+  });
+
+  it('«No, grazie»: la card sparisce e il modulo resta spento', async () => {
+    auth.moduleOffer = 'groups';
+    vi.stubGlobal('fetch', offerReply(false));
+    renderHome();
+    await opened();
+    fireEvent.click(await screen.findByRole('button', { name: /^No, grazie/ }));
+    await waitFor(() => expect(screen.queryByText('Prova anche…')).toBeNull());
+    expect(auth.modules.groups).toBe(false);
+  });
+
+  it('errore: avviso, la card resta e l\'account si rilegge', async () => {
+    auth.moduleOffer = 'groups';
+    vi.stubGlobal('fetch', vi.fn((url) => (String(url).includes('update_settings') ? Promise.resolve({ ok: false, status: 400, json: async () => ({ success: false }), text: async () => '{}' }) : fakeFetch(url))));
+    renderHome();
+    await opened();
+    fireEvent.click(await screen.findByRole('button', { name: 'Attiva Gruppi' }));
+    expect((await screen.findByRole('alert')).textContent).toContain('Non sono riuscito a rispondere alla proposta');
+    expect(screen.getByText('Prova anche…')).toBeTruthy();
+    expect(auth.refreshed).toBe(1);
   });
 });
