@@ -1,8 +1,9 @@
 import i18n from './index';
 import { achievementCatalog } from '../utils/gamificationLevels';
 import { kgToTotal, weightUnitLabel } from '../utils/weightUnit';
+import { NO_TECHNIQUE } from '../utils/intensityTechniques';
 
-export const NO_TECHNIQUE = 'Nessuna (Normale)';
+export { NO_TECHNIQUE };
 
 // muscle_group è una chiave del catalogo (es. 'petto'); se manca la traduzione resta il valore.
 // intensity_technique è salvato in italiano (valore dei dati): qui si traduce solo l'etichetta.
@@ -19,13 +20,13 @@ const TECHNIQUE_KEYS = {
   'Myo-Reps': 'myo_reps',
 };
 
-// Le tecniche nell'ordine dei menu
-export const INTENSITY_TECHNIQUES = Object.keys(TECHNIQUE_KEYS);
-
 export const techniqueLabel = (value) => {
   const key = TECHNIQUE_KEYS[value];
   return key ? i18n.t(`technique.${key}`) : value || '';
 };
+
+// Etichetta corta delle quattro tecniche che si scelgono (celle della riga del Focus)
+export const techniqueShortLabel = (value) => i18n.t(`technique.short.${TECHNIQUE_KEYS[value]}`);
 
 export const muscleLabel = (group) => {
   if (!group) return '';

@@ -231,3 +231,26 @@ describe('peso in libbre: dati sempre in kg', () => {
     expect(body.workout_records.map((r) => r.weight)).toEqual([82.5]);
   });
 });
+
+describe('tecniche offerte', () => {
+  const optionsOfRow = (row) => {
+    fireEvent.mouseDown(screen.getAllByRole('combobox').slice(1)[row]);
+    return screen.getAllByRole('option').map((o) => o.textContent);
+  };
+
+  it('ogni riga offre «nessuna» e le sole quattro tecniche', () => {
+    open();
+    expect(optionsOfRow(3)).toEqual(['Nessuna', 'Drop set (stripping)', 'Rest pause', 'Myo-reps', 'Negative']);
+  });
+
+  it('una tecnica tolta presa dalla scheda si mostra e si salva finché non si cambia', async () => {
+    const oldPlan = { ...basePlan, days: [{ id: 3, name: 'Gambe', exercises: [{ ...squat, planned_sets: plannedSets(0, [{ min: 5, max: 5 }, { min: 5, max: 5, technique: 'Super Set' }]) }] }] };
+    open(oldPlan);
+    const second = () => screen.getAllByRole('combobox').slice(1)[1];
+    expect(second().textContent).toBe('Super set');
+    expect(optionsOfRow(1)).toEqual(['Nessuna', 'Drop set (stripping)', 'Rest pause', 'Myo-reps', 'Negative', 'Super set']);
+    fireEvent.click(screen.getByRole('option', { name: 'Negative' }));
+    expect(second().textContent).toBe('Negative');
+    expect(optionsOfRow(1)).not.toContain('Super set');
+  });
+});

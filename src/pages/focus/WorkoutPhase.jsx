@@ -1,5 +1,5 @@
 import {
-  Container, Box, Typography, Button, TextField, FormControl, InputLabel, Select, MenuItem, Paper, LinearProgress,
+  Container, Box, Typography, Button, TextField, Paper, LinearProgress,
   IconButton, Chip, Alert, Dialog, DialogTitle, DialogActions, Fade
 } from '@mui/material';
 import {
@@ -16,9 +16,10 @@ import { slotLabel } from './slotLabel';
 import { MAX_WEIGHT, isValidReps, plannedSetAt, slotTarget, lastSessionSets, setStatus, setSlot } from '../../utils/focusSession';
 import { maxWeightInUnit, weightStepInUnit, weightUnitLabel } from '../../utils/weightUnit';
 import { intlLocale, formatSetText } from '../../i18n/format';
-import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, muscleLabel, techniqueLabel } from '../../i18n/labels';
+import { muscleLabel, techniqueLabel } from '../../i18n/labels';
 import { radius } from '../../theme/radius';
 import LockedButton from './LockedButton';
+import TechniqueRow from './TechniqueRow';
 
 export default function WorkoutPhase({
   currentExercise, currentExerciseIndex, totalExercises, currentSetIndex, totalSlotsForCurrentExercise,
@@ -139,32 +140,7 @@ export default function WorkoutPhase({
           </Box>
 
           {/* Il riscaldamento non ha tecnica di intensità */}
-          {!currentSlot.isWarmup && (
-            <FormControl fullWidth sx={{
-              mb: 3,
-              '& .MuiOutlinedInput-root': {
-                color: colors.text,
-                '& fieldset': { borderColor: colors.fieldBorder, borderWidth: 2 },
-              },
-              '& .MuiOutlinedInput-input': FOCUS_FIELD_PADDING,
-              '& .MuiInputLabel-root': { color: colors.textSecondary },
-              '& .MuiSvgIcon-root': { color: colors.textSecondary },
-            }}>
-              <InputLabel id="focus-technique-label">{t('focus.technique')}</InputLabel>
-              <Select
-                labelId="focus-technique-label"
-                id="focus-technique"
-                value={intensityTechniqueInput}
-                label={t('focus.technique')}
-                onChange={(e) => onIntensityChange(e.target.value)}
-              >
-                <MenuItem value=""><em>{t('record.no_technique')}</em></MenuItem>
-                {INTENSITY_TECHNIQUES.filter(tech => tech !== NO_TECHNIQUE).map((tech) => (
-                  <MenuItem key={tech} value={tech}>{techniqueLabel(tech)}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          )}
+          {!currentSlot.isWarmup && <TechniqueRow value={intensityTechniqueInput} onChange={onIntensityChange} />}
 
           <Button variant="contained" fullWidth size="large" startIcon={<CheckIcon />} onClick={onConfirmSet} disabled={!weightValid || !isValidReps(repsInput)}
             sx={{ py: 2.5, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.success, color: colors.onSuccess, borderRadius: radius.xl,

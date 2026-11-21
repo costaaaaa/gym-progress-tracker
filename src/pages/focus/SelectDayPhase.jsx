@@ -1,5 +1,5 @@
 import {
-  Container, Box, Typography, Button, Link, FormControl, InputLabel, Select, MenuItem, Paper, IconButton, Chip
+  Container, Box, Typography, Button, ButtonBase, Link, Paper, IconButton, Chip
 } from '@mui/material';
 import {
   PlayArrow as PlayArrowIcon, FitnessCenter as FitnessCenterIcon, Timer as TimerIcon, TimerOff as TimerOffIcon,
@@ -7,18 +7,30 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
-import { FOCUS_FIELD_PADDING } from './focusField';
 import { muscleLabel } from '../../i18n/labels';
 import { planSummary } from '../../utils/plannedSets';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 import LogoMark from '../../components/LogoMark';
 import { radius } from '../../theme/radius';
+import { choiceSx } from './choiceSx';
 
 export default function SelectDayPhase({
   activePlan, selectedDayId, selectedDay, timerEnabled, onDayChange, onStart, onBack, onGoToPlans
 }) {
   const { t } = useTranslation();
   const { colors } = useFocusColors();
+  // Frecce come in un gruppo di opzioni: scelgono il giorno accanto (con giro) e gli portano il fuoco
+  const moveDay = (event) => {
+    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+    const options = [...event.currentTarget.querySelectorAll('[role="radio"]')];
+    const from = options.indexOf(event.target);
+    if (!step || from < 0) return;
+    event.preventDefault();
+    const next = (from + step + options.length) % options.length;
+    onDayChange(activePlan.days[next].id);
+    options[next].focus();
+  };
+  const hasSelected = Boolean(activePlan?.days?.some((d) => d.id === selectedDayId));
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text }}>
       <Box sx={{
@@ -35,7 +47,7 @@ export default function SelectDayPhase({
           <LogoMark width={15} color={colors.primaryContrast} />
         </Box>
         <Typography component="h1" tabIndex={-1} sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 14 }}>
-          Focus mode
+          {t('focus.title')}
         </Typography>
       </Box>
 
@@ -70,29 +82,24 @@ export default function SelectDayPhase({
                 {activePlan.name}
               </Typography>
 
-              <FormControl fullWidth sx={{
-                mb: 3,
-                '& .MuiOutlinedInput-root': {
-                  color: colors.text,
-                  '& fieldset': { borderColor: colors.fieldBorder },
-                },
-                '& .MuiOutlinedInput-input': FOCUS_FIELD_PADDING,
-                '& .MuiInputLabel-root': { color: colors.textSecondary },
-                '& .MuiSvgIcon-root': { color: colors.textSecondary },
-              }}>
-                <InputLabel id="focus-day-label">{t('record.select_day')}</InputLabel>
-                <Select
-                  labelId="focus-day-label"
-                  id="focus-day"
-                  value={selectedDayId}
-                  label={t('record.select_day')}
-                  onChange={onDayChange}
-                >
-                  {activePlan.days?.map((day) => (
-                    <MenuItem key={day.id} value={day.id}>{day.name}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Box role="radiogroup" aria-label={t('record.select_day')} onKeyDown={moveDay}
+                sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
+                {activePlan.days?.map((day, index) => {
+                  const selected = day.id === selectedDayId;
+                  // Una sola etichetta è nell'ordine di Tab (la scelta, o la prima se nessun giorno della scheda è scelto);
+                  // le frecce spostano scelta e fuoco
+                  return (
+                    <ButtonBase key={day.id} role="radio" aria-checked={selected}
+                      tabIndex={selected || (!hasSelected && index === 0) ? 0 : -1}
+                      onClick={() => onDayChange(day.id)}
+                      sx={{
+                        minHeight: 44, px: 2, borderRadius: radius.pill, fontSize: '0.95rem', ...choiceSx(colors, selected),
+                      }}>
+                      {day.name}
+                    </ButtonBase>
+                  );
+                })}
+              </Box>
 
               {selectedDay && selectedDay.exercises && (
                 <Box>

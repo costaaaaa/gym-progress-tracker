@@ -59,10 +59,11 @@ const mount = async () => {
 const click = (name) => fireEvent.click(screen.getByRole('button', { name }));
 const startDay = async (dayName) => {
   await mount();
-  fireEvent.mouseDown(screen.getByRole('combobox'));
-  fireEvent.click(screen.getByRole('option', { name: dayName }));
+  fireEvent.click(screen.getByRole('radio', { name: dayName }));
   click('Inizia allenamento');
 };
+// Giorno scelto prima dell'allenamento: l'etichetta con aria-checked, '' se nessuna
+const dayChoice = () => screen.queryByRole('radio', { checked: true })?.textContent ?? '';
 const doSet = (weight = '60', reps = '8') => {
   fireEvent.change(screen.getByLabelText('Peso (kg)'), { target: { value: weight } });
   fireEvent.change(screen.getByLabelText('Ripetizioni'), { target: { value: reps } });
@@ -234,7 +235,7 @@ describe('bozza e ripresa', () => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(savedDraft));
     await mount();
     click('Scarta e inizia nuovo');
-    expect(screen.getByRole('combobox').textContent).toBe('Push completo');
+    expect(dayChoice()).toBe('Push completo');
     expect(screen.getByRole('button', { name: 'Inizia allenamento' }).disabled).toBe(false);
   });
 
@@ -245,7 +246,7 @@ describe('bozza e ripresa', () => {
     click('Scarta e inizia nuovo');
     await act(async () => { arrivano(); });
     await advance(0);
-    expect(screen.getByRole('combobox').textContent).toBe('Push completo');
+    expect(dayChoice()).toBe('Push completo');
   });
 
   it('riprendere la bozza prima che arrivino le schede: il giorno unico della scheda non sostituisce quello della bozza', async () => {
@@ -1007,7 +1008,136 @@ describe('riepilogo', () => {
   });
 });
 
-const shownTechnique = () => screen.getByRole('combobox').textContent;
+// Riga della tecnica: un gruppo di quattro bottoni con aria-pressed. Nome della cella scelta, '' se nessuna.
+const techniqueRow = () => screen.queryByRole('group', { name: 'Tecnica di intensità' });
+const techniqueCells = () => within(techniqueRow()).getAllByRole('button');
+const shownTechnique = () => techniqueCells().find((c) => c.getAttribute('aria-pressed') === 'true')?.getAttribute('aria-label') ?? '';
+
+describe('riga della tecnica (quattro celle)', () => {
+  const FOUR = ['Drop set (stripping)', 'Rest pause', 'Myo-reps', 'Negative'];
+  const pressed = () => techniqueCells().map((c) => c.getAttribute('aria-pressed'));
+  const cell = (name) => within(techniqueRow()).getByRole('button', { name });
+  const withBench = (plannedRows) => {
+    const press = { id: 12, exercise_id: 6, exercise_name: 'Pressa', rest: 60, muscle_group: 'gambe', planned_sets: plannedSets(0, plannedRows) };
+    responses['read_plans.php'] = () => json({ records: [{ id: 6, name: 'Pressa', is_active: true, days: [{ id: 4, name: 'Pressa', exercises: [press] }] }] });
+  };
+  const saveAll = async () => {
+    await act(async () => { click('Salva allenamento'); });
+    await advance(0);
+    return saveBody().workout_records.map((r) => r.intensity_technique);
+  };
+
+  it('sono quattro celle e basta, nell\'ordine, con l\'etichetta corta e il nome intero', async () => {
+    await startDay('Push');
+    expect(techniqueCells().map((c) => c.getAttribute('aria-label'))).toEqual(FOUR);
+    expect(techniqueCells().map((c) => c.textContent)).toEqual(['Drop set', 'Rest pause', 'Myo-reps', 'Negative']);
+    expect(screen.queryByRole('combobox')).toBeNull();
+  });
+
+  it('senza scelta nessuna cella è premuta', async () => {
+    await startDay('Push');
+    expect(pressed()).toEqual(['false', 'false', 'false', 'false']);
+  });
+
+  it('un tocco sceglie, un altro tocco sulla stessa toglie', async () => {
+    await startDay('Push');
+    fireEvent.click(cell('Myo-reps'));
+    expect(shownTechnique()).toBe('Myo-reps');
+    fireEvent.click(cell('Myo-reps'));
+    expect(shownTechnique()).toBe('');
+    expect(pressed()).toEqual(['false', 'false', 'false', 'false']);
+  });
+
+  it('una sola alla volta: sceglierne un\'altra sposta la scelta', async () => {
+    await startDay('Push');
+    fireEvent.click(cell('Negative'));
+    fireEvent.click(cell('Rest pause'));
+    expect(pressed()).toEqual(['false', 'true', 'false', 'false']);
+  });
+
+  it('parte preselezionata se la scheda la prevede per quella serie', async () => {
+    withBench([{ min: 8, max: 8 }, { min: 6, max: 6, technique: 'Rest Pause' }]);
+    await startDay('Pressa');
+    expect(shownTechnique()).toBe('');
+    doSet('50', '8');
+    click('Salta timer');
+    expect(shownTechnique()).toBe('Rest pause');
+  });
+
+  it('una tecnica tolta in scheda non si preseleziona: la serie parte senza e si salva senza', async () => {
+    withBench([{ min: 8, max: 8, technique: 'Super Set' }, { min: 6, max: 6 }]);
+    await startDay('Pressa');
+    expect(shownTechnique()).toBe('');
+    expect(pressed()).toEqual(['false', 'false', 'false', 'false']);
+    doSet('50', '8');
+    click('Salta timer');
+    doSet('50', '6');
+    expect(await saveAll()).toEqual(['', '']);
+  });
+
+  // Una tecnica tolta non ha una cella: a schermo non si vedrebbe comunque, la prova è la serie salvata
+  it('una tecnica tolta sulla serie dopo: la serie si salva senza tecnica', async () => {
+    withBench([{ min: 8, max: 8 }, { min: 6, max: 6, technique: 'Super Set' }]);
+    await startDay('Pressa');
+    doSet('50', '8');
+    click('Salta timer');
+    expect(screen.getByText('Serie 2 di 2')).toBeTruthy();
+    doSet('50', '6');
+    expect(await saveAll()).toEqual(['', '']);
+  });
+
+  it('riprendendo la bozza su una serie con una tecnica tolta, la serie si salva senza tecnica', async () => {
+    const press = { id: 12, exercise_id: 6, exercise_name: 'Pressa', rest: 60, muscle_group: 'gambe', planned_sets: plannedSets(0, [{ min: 8, max: 8 }, { min: 6, max: 6, technique: 'Super Set' }]) };
+    const day = { id: 4, name: 'Pressa', exercises: [press] };
+    responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [day] }] });
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      ...savedDraft, activePlan: { id: 5, name: 'Push Pull', days: [day] }, selectedDay: day, selectedDayId: 4,
+      completedSets: { 12: [{ setNumber: 1, weight: 50, reps: '8', intensity_technique: '' }] }, currentSetIndex: 1,
+    }));
+    await mount();
+    click('Riprendi allenamento');
+    expect(screen.getByText('Serie 2 di 2')).toBeTruthy();
+    doSet('50', '6');
+    expect(await saveAll()).toEqual(['', '']);
+  });
+
+  it('il valore scelto finisce nella serie salvata; senza scelta resta vuoto come prima', async () => {
+    await startDay('Push completo');
+    doSet('60', '8');
+    click('Salta timer');
+    fireEvent.click(cell('Negative'));
+    doSet('62.5', '7');
+    await advance(0.3);
+    doSet('20', '12');
+    click('Salta timer');
+    doSet('20', '12');
+    expect(await saveAll()).toEqual(['', 'Negative', '', '']);
+  });
+
+  it('la scelta non passa alla serie dopo', async () => {
+    await startDay('Push');
+    fireEvent.click(cell('Drop set (stripping)'));
+    doSet('60', '8');
+    click('Salta timer');
+    expect(shownTechnique()).toBe('');
+  });
+
+  it('le celle sono in Lexend 500, quella scelta in 700 con il bordo ispessito da un\'ombra interna: la larghezza del bordo non cambia', async () => {
+    await startDay('Push');
+    const style = (c) => getComputedStyle(c);
+    techniqueCells().forEach((c) => expect([style(c).fontFamily, style(c).fontWeight]).toEqual(['"Lexend", sans-serif', '500']));
+    expect(style(cell('Rest pause')).borderTopWidth).toBe('1px');
+    fireEvent.click(cell('Rest pause'));
+    expect([style(cell('Rest pause')).fontFamily, style(cell('Rest pause')).fontWeight]).toEqual(['"Lexend", sans-serif', '700']);
+    expect(style(cell('Rest pause')).borderTopWidth).toBe('1px');
+    expect(style(cell('Rest pause')).boxShadow).toContain('inset');
+  });
+
+  it('le celle hanno una zona di tocco di almeno 44 px di altezza', async () => {
+    await startDay('Push');
+    techniqueCells().forEach((c) => expect(getComputedStyle(c).minHeight).toBe('44px'));
+  });
+});
 
 describe('serie di riscaldamento della scheda (#67)', () => {
   // 2 riscaldamenti + 2 serie da 5, la seconda con Rest pause
@@ -1042,7 +1172,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     expect(screen.queryByText(/^Serie 1 di/)).toBeNull();
     expect(screen.getByLabelText('Peso (kg)').value).toBe('');
     expect(screen.getByLabelText('Ripetizioni').getAttribute('placeholder')).toBe('');
-    expect(screen.queryByText('Tecnica di intensità')).toBeNull();
+    expect(techniqueRow()).toBeNull();
     // Le chip sono le sole serie allenanti dell'ultima volta e nessuna è quella in corso
     expect(screen.queryAllByRole('listitem', { current: true })).toHaveLength(0);
     expect(screen.queryByText('40 kg × 8')).toBeNull();
@@ -1068,9 +1198,9 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     expect(screen.getByText('Serie 1 di 2')).toBeTruthy();
     expect(screen.getByLabelText('Peso (kg)').value).toBe('100');
     expect(screen.getByLabelText('Ripetizioni').getAttribute('placeholder')).toBe('5');
-    expect(screen.getAllByText('Tecnica di intensità').length).toBeGreaterThan(0);
+    expect(techniqueRow()).toBeTruthy();
     // La tecnica è della seconda serie allenante, non della prima
-    expect(shownTechnique()).not.toContain('Rest Pause');
+    expect(shownTechnique()).toBe('');
     expect(screen.getByRole('listitem', { current: true }).textContent).toBe('100\u00a0kg\u00a0×\u00a05');
     // Saltare la prima serie allenante equivale a saltare l'esercizio; "Salta riscaldamento" non c'è più
     expect(screen.queryByRole('button', { name: 'Salta serie' })).toBeNull();
@@ -1134,7 +1264,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     await mount();
     click('Riprendi allenamento');
     expect(screen.getByText('Riscaldamento 2 di 2')).toBeTruthy();
-    expect(screen.queryByText('Tecnica di intensità')).toBeNull();
+    expect(techniqueRow()).toBeNull();
   });
 
   it('una bozza di prima delle serie pianificate viene scartata: nessun invito a riprendere', async () => {
@@ -1164,18 +1294,18 @@ describe('serie di riscaldamento della scheda (#67)', () => {
 
     expect(screen.getByText('Serie 1 di 3')).toBeTruthy();
     expect(screen.getByLabelText('Ripetizioni').getAttribute('placeholder')).toBe('12');
-    expect(shownTechnique()).not.toContain('Drop');
+    expect(shownTechnique()).toBe('');
     doSet('50', '12');
     click('Salta timer');
 
     expect(screen.getByLabelText('Ripetizioni').getAttribute('placeholder')).toBe('10');
-    expect(shownTechnique()).not.toContain('Drop');
+    expect(shownTechnique()).toBe('');
     doSet('50', '10');
     click('Salta timer');
 
     expect(screen.getByText('Serie 3 di 3')).toBeTruthy();
     expect(screen.getByLabelText('Ripetizioni').getAttribute('placeholder')).toBe('a cedimento (min. 6)');
-    expect(shownTechnique()).toContain('Drop');
+    expect(shownTechnique()).toBe('Drop set (stripping)');
   });
 
   it('riepilogo: il riscaldamento ha il badge "Risc." e non entra nel conteggio delle serie', async () => {
@@ -1359,8 +1489,6 @@ describe('ordine reale e orario delle serie (#26)', () => {
 
 // «Inizia» della Home porta qui il giorno proposto nello stato della navigazione: è solo già scelto, non parte nulla
 describe('giorno proposto dalla Home', () => {
-  // Il campo vuoto di MUI contiene uno zero-width space
-  const dayChoice = () => screen.getByRole('combobox').textContent.replace(/\u200b/g, '');
   const startButton = () => screen.getByRole('button', { name: 'Inizia allenamento' });
 
   it('un giorno della scheda attiva è già scelto nella scelta del giorno, e l\'allenamento non parte da solo', async () => {
@@ -1386,8 +1514,7 @@ describe('giorno proposto dalla Home', () => {
   it('l\'utente può cambiarlo', async () => {
     mockLocation.state = { suggestedDayId: 2 };
     await mount();
-    fireEvent.mouseDown(screen.getByRole('combobox'));
-    fireEvent.click(screen.getByRole('option', { name: 'Push' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Push' }));
     expect(dayChoice()).toBe('Push');
   });
 
@@ -1413,6 +1540,72 @@ describe('giorno proposto dalla Home', () => {
   });
 });
 
+describe('scelta del giorno con le etichette', () => {
+  const radios = () => screen.getAllByRole('radio');
+
+  it('al posto della tendina: un\'etichetta per giorno, nessuna scelta, «Inizia» spento', async () => {
+    await mount();
+    expect(screen.queryByRole('combobox')).toBeNull();
+    expect(radios().map((r) => [r.textContent, r.getAttribute('aria-checked')])).toEqual([['Push', 'false'], ['Push completo', 'false']]);
+    expect(screen.getByRole('button', { name: 'Inizia allenamento' }).disabled).toBe(true);
+    expect(screen.queryByText(/^Esercizi \(/)).toBeNull();
+  });
+
+  it('scegliere un giorno mostra i suoi esercizi e accende «Inizia»; sceglierne un altro sposta la scelta', async () => {
+    await mount();
+    fireEvent.click(screen.getByRole('radio', { name: 'Push' }));
+    expect(dayChoice()).toBe('Push');
+    expect(screen.getByText('Panca piana')).toBeTruthy();
+    expect(screen.queryByText('Croci')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Inizia allenamento' }).disabled).toBe(false);
+    fireEvent.click(screen.getByRole('radio', { name: 'Push completo' }));
+    expect(radios().map((r) => r.getAttribute('aria-checked'))).toEqual(['false', 'true']);
+    expect(screen.getByText('Croci')).toBeTruthy();
+  });
+
+  it('una sola etichetta è nell\'ordine di Tab: senza scelta la prima, con una scelta quella scelta', async () => {
+    await mount();
+    expect(radios().map((r) => r.tabIndex)).toEqual([0, -1]);
+    fireEvent.click(screen.getByRole('radio', { name: 'Push completo' }));
+    expect(radios().map((r) => r.tabIndex)).toEqual([-1, 0]);
+  });
+
+  it('tastiera: le frecce spostano il fuoco e la scelta, con giro dalla fine all\'inizio e viceversa', async () => {
+    await mount();
+    screen.getByRole('radio', { name: 'Push' }).focus();
+    fireEvent.keyDown(document.activeElement, { key: 'ArrowRight' });
+    expect(dayChoice()).toBe('Push completo');
+    expect(document.activeElement).toBe(screen.getByRole('radio', { name: 'Push completo' }));
+    fireEvent.keyDown(document.activeElement, { key: 'ArrowDown' });
+    expect(dayChoice()).toBe('Push');
+    fireEvent.keyDown(document.activeElement, { key: 'ArrowLeft' });
+    expect(dayChoice()).toBe('Push completo');
+    fireEvent.keyDown(document.activeElement, { key: 'ArrowUp' });
+    expect(dayChoice()).toBe('Push');
+  });
+
+  it('le etichette sono in Lexend 500, quella scelta in 700 con il bordo ispessito da un\'ombra interna: la larghezza del bordo non cambia', async () => {
+    await mount();
+    const style = (r) => getComputedStyle(r);
+    radios().forEach((r) => expect([style(r).fontFamily, style(r).fontWeight]).toEqual(['"Lexend", sans-serif', '500']));
+    expect(style(radios()[0]).borderTopWidth).toBe('1px');
+    fireEvent.click(radios()[0]);
+    expect([style(radios()[0]).fontFamily, style(radios()[0]).fontWeight]).toEqual(['"Lexend", sans-serif', '700']);
+    expect(style(radios()[0]).borderTopWidth).toBe('1px');
+    expect(style(radios()[0]).boxShadow).toContain('inset');
+  });
+
+  it('la zona di tocco è di almeno 44 px di altezza', async () => {
+    await mount();
+    radios().forEach((r) => expect(getComputedStyle(r).minHeight).toBe('44px'));
+  });
+
+  it('il titolo della pagina viene dalle traduzioni', async () => {
+    await mount();
+    expect(screen.getByRole('heading', { level: 1, name: 'Focus mode' })).toBeTruthy();
+  });
+});
+
 describe('scelta del giorno con una scheda appena creata', () => {
   const emptyDay = { id: 3, name: 'Giorno 1', exercises: [] };
   const withDays = (days) => {
@@ -1422,13 +1615,13 @@ describe('scelta del giorno con una scheda appena creata', () => {
   it('con un solo giorno è già scelto e si può iniziare subito', async () => {
     withDays([pushDay]);
     await mount();
-    expect(screen.getByRole('combobox').textContent).toBe('Push');
+    expect(dayChoice()).toBe('Push');
     expect(screen.getByRole('button', { name: 'Inizia allenamento' }).disabled).toBe(false);
   });
 
   it('con più giorni nessuno è scelto, come prima', async () => {
     await mount();
-    expect(screen.getByRole('combobox').textContent.replace(/\u200b/g, '').trim()).toBe('');
+    expect(dayChoice()).toBe('');
     expect(screen.getByRole('button', { name: 'Inizia allenamento' }).disabled).toBe(true);
   });
 
@@ -1444,37 +1637,25 @@ describe('scelta del giorno con una scheda appena creata', () => {
   it('il messaggio non compare finché non c\'è un giorno scelto né quando ha esercizi', async () => {
     await mount();
     expect(screen.queryByText(/Questo giorno non ha esercizi/)).toBeNull();
-    fireEvent.mouseDown(screen.getByRole('combobox'));
-    fireEvent.click(screen.getByRole('option', { name: 'Push' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Push' }));
     expect(screen.queryByText(/Questo giorno non ha esercizi/)).toBeNull();
   });
 });
 
 describe('nomi accessibili', () => {
-  it('scelta del giorno: il tasto indietro e il menu dei giorni hanno un nome', async () => {
+  it('scelta del giorno: il tasto indietro e il gruppo dei giorni hanno un nome, e ogni giorno è un\'opzione col suo nome', async () => {
     await mount();
     expect(screen.getByRole('button', { name: 'Indietro' })).toBeTruthy();
-    expect(screen.getByRole('combobox', { name: 'Seleziona giorno' })).toBeTruthy();
+    const group = screen.getByRole('radiogroup', { name: 'Seleziona giorno' });
+    expect(within(group).getAllByRole('radio').map((r) => r.getAttribute('aria-label') ?? r.textContent)).toEqual(['Push', 'Push completo']);
     expect(unnamedControls()).toEqual([]);
   });
 
-  it('la lista aperta dei giorni ha un nome', async () => {
-    await mount();
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Seleziona giorno' }));
-    expect(screen.getByRole('listbox', { name: 'Seleziona giorno' })).toBeTruthy();
-  });
-
-  it('la lista aperta della tecnica ha un nome', async () => {
-    await startDay('Push');
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Tecnica di intensità' }));
-    expect(screen.getByRole('listbox', { name: 'Tecnica di intensità' })).toBeTruthy();
-  });
-
-  it('allenamento: uscita, avanzamento e menu della tecnica hanno un nome', async () => {
+  it('allenamento: uscita, avanzamento e riga della tecnica hanno un nome', async () => {
     await startDay('Push');
     expect(screen.getByRole('button', { name: 'Esci dall\'allenamento' })).toBeTruthy();
     expect(screen.getByRole('progressbar', { name: 'Avanzamento dell\'allenamento' })).toBeTruthy();
-    expect(screen.getByRole('combobox', { name: 'Tecnica di intensità' })).toBeTruthy();
+    expect(screen.getByRole('group', { name: 'Tecnica di intensità' })).toBeTruthy();
     expect(unnamedControls()).toEqual([]);
   });
 

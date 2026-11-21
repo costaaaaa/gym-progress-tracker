@@ -203,3 +203,37 @@ describe('PlannedSetsEditor · serie diverse', () => {
     expect(switchDiverse().disabled).toBe(true);
   });
 });
+
+describe('PlannedSetsEditor · tecniche offerte', () => {
+  const openList = (name) => {
+    fireEvent.mouseDown(screen.getByRole('combobox', { name }));
+    return within(screen.getByRole('listbox')).getAllByRole('option').map((o) => o.textContent);
+  };
+
+  it('la tendina offre «nessuna» e le sole quattro tecniche', () => {
+    setup();
+    expect(openList(/Tecnica/)).toEqual(['Nessuna (normale)', 'Drop set (stripping)', 'Rest pause', 'Myo-reps', 'Negative']);
+  });
+
+  it('una scheda vecchia con una tecnica tolta la mostra e la offre finché non si cambia', () => {
+    const { last } = setup(buildPlannedSets(0, [normal(8, 8), normal(8, 8, 'Super Set')]));
+    const technique = () => screen.getByRole('combobox', { name: /Tecnica/ });
+    expect(technique().textContent).toBe('Super set');
+    expect(last()).toEqual(buildPlannedSets(0, [normal(8, 8), normal(8, 8, 'Super Set')]));
+    expect(openList(/Tecnica/)).toEqual(['Nessuna (normale)', 'Drop set (stripping)', 'Rest pause', 'Myo-reps', 'Negative', 'Super set']);
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Rest pause' }));
+
+    expect(technique().textContent).toBe('Rest pause');
+    expect(openList(/Tecnica/)).not.toContain('Super set');
+  });
+
+  it('nella forma per serie la tecnica tolta di una riga si mostra e si offre in quella riga', () => {
+    setup(buildPlannedSets(0, [normal(8, 8, 'Super Set'), normal(6, 6)]));
+    expect(rowOf(1).getByRole('combobox').textContent).toBe('Super set');
+    fireEvent.mouseDown(rowOf(1).getByRole('combobox'));
+    expect(within(screen.getByRole('listbox')).getAllByRole('option').map((o) => o.textContent)).toContain('Super set');
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Negative' }));
+    fireEvent.mouseDown(rowOf(1).getByRole('combobox'));
+    expect(within(screen.getByRole('listbox')).queryByRole('option', { name: 'Super set' })).toBeNull();
+  });
+});

@@ -19,6 +19,13 @@ import { currentTimeZone, moveToZoneDay, zoneClock } from '../../utils/workoutTi
 import i18n from '../../i18n';
 import { unlockedAchievementsText } from './unlockedAchievementsText';
 import { DRAFT_STORAGE_KEY } from '../../utils/focusDraft';
+import { isSelectableTechnique } from '../../utils/intensityTechniques';
+
+// Tecnica con cui parte la serie: quella della scheda, solo se si può ancora scegliere (una tecnica tolta: nessuna)
+const startTechnique = (exercise, index) => {
+  const technique = slotTechnique(exercise, index);
+  return isSelectableTechnique(technique) ? technique : '';
+};
 
 // Stato e transizioni di Focus Mode (loading -> select_day o resume_prompt -> workout <-> rest_timer -> summary).
 // Restituisce le props di ogni fase, come useFocusSession del mobile.
@@ -345,7 +352,7 @@ export default function useFocusSession() {
     // Ripristina input correnti
     const currentEx = day.exercises[draftToResume.currentExerciseIndex];
     setRepsInput('');
-    setIntensityTechniqueInput(slotTechnique(currentEx, draftToResume.currentSetIndex));
+    setIntensityTechniqueInput(startTechnique(currentEx, draftToResume.currentSetIndex));
 
     setPhase(finishedOn ? 'summary' : (draftToResume.phase || 'workout'));
     setDraftToResume(null);
@@ -360,8 +367,7 @@ export default function useFocusSession() {
   // ================================================
   // GESTIONE SELEZIONE GIORNO
   // ================================================
-  const handleDayChange = (event) => {
-    const dayId = event.target.value;
+  const handleDayChange = (dayId) => {
     setSelectedDayId(dayId);
     const day = activePlan?.days?.find(d => d.id === dayId);
     setSelectedDay(day || null);
@@ -413,7 +419,7 @@ export default function useFocusSession() {
     // Peso dall'ultima sessione (sovraccarico progressivo); ripetizioni vuote, la scheda è in grigio
     const firstExercise = selectedDay.exercises[0];
     setRepsInput('');
-    setIntensityTechniqueInput(slotTechnique(firstExercise, 0));
+    setIntensityTechniqueInput(startTechnique(firstExercise, 0));
     prefillWeight(slotWeight(firstExercise, 0, { suggested: getSuggestedWeight(firstExercise) }));
 
     setPhase('workout');
@@ -440,7 +446,7 @@ export default function useFocusSession() {
     setCurrentExerciseIndex(index);
     setCurrentSetIndex(0);
     setRepsInput('');
-    setIntensityTechniqueInput(slotTechnique(exercise, 0));
+    setIntensityTechniqueInput(startTechnique(exercise, 0));
     prefillWeight(slotWeight(exercise, 0, { suggested: getSuggestedWeight(exercise) }));
   }, [getSuggestedWeight, prefillWeight]);
 
@@ -452,7 +458,7 @@ export default function useFocusSession() {
     setCurrentSetIndex(index);
     prefillWeight(weight);
     setRepsInput('');
-    setIntensityTechniqueInput(slotTechnique(currentExercise, index));
+    setIntensityTechniqueInput(startTechnique(currentExercise, index));
   };
 
   const handleConfirmSet = () => {
