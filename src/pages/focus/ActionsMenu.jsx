@@ -48,7 +48,8 @@ export default function ActionsMenu({ currentSlot, canEditSession, canSwap, onSk
         aria-expanded={open} aria-controls={open ? menuId : undefined} sx={{ width: 44, height: 44, color: colors.textSecondary }}>
         <MoreIcon />
       </IconButton>
-      <Menu MenuListProps={{ id: menuId }} anchorEl={anchor} open={open} onClose={() => setAnchor(null)} TransitionProps={{ onExited }}>
+      {/* «Cambia» non disponibile resta raggiungibile con le frecce: toccandola si legge perché */}
+      <Menu MenuListProps={{ id: menuId, disabledItemsFocusable: true }} anchorEl={anchor} open={open} onClose={() => setAnchor(null)} TransitionProps={{ onExited }}>
         {skips.map(({ label, action }) => (
           <MenuItem key={label} onClick={() => choose(action)} sx={itemSx}>
             <SkipNextIcon />{label}
@@ -56,7 +57,7 @@ export default function ActionsMenu({ currentSlot, canEditSession, canSwap, onSk
         ))}
         {pickers.map(({ mode, label, icon, faded }) => (
           <MenuItem key={mode} onClick={() => choose(() => onOpenPicker(mode), true)} aria-label={canEditSession ? undefined : t('focus.plus_aria', { label })}
-            aria-disabled={faded ? 'true' : undefined} sx={itemSx}>
+            aria-disabled={canEditSession && faded ? 'true' : undefined} sx={itemSx}>
             <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1.5, ...(faded && { opacity: 0.45 }) }}>{icon}{label}</Box>
             {!canEditSession && <PlusTag sx={{ ml: 'auto', bgcolor: 'transparent' }} />}
           </MenuItem>

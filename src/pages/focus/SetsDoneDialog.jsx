@@ -64,9 +64,9 @@ function SetEditForm({ exercise, set, weightUnit, techniqueOn, onSave, onCancel 
   );
 }
 
-// Contenuto separato dalla finestra: si smonta con lei, così a ogni apertura riparte da capo (riga in modifica e messaggio).
 // Le serie fatte dell'esercizio (le saltate non ci sono), nell'ordine in cui sono state fatte; una alla volta si apre
 // in modifica. L'esito si legge qui dentro: la pagina dietro la finestra è nascosta ai lettori di schermo.
+// È separato dalla finestra perché si smonta con lei: a ogni apertura riga in modifica e messaggio ripartono da capo.
 function SetsDoneContent({ exercise, sets, weightUnit, techniqueOn, onEditSet, startEditing, onClose }) {
   const { t } = useTranslation();
   const { colors } = useFocusColors();

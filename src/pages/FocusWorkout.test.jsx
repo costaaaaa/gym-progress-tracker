@@ -2309,9 +2309,23 @@ describe('barra in alto e menu «⋯» (F3)', () => {
     const swap = menuItem('Cambia esercizio');
     expect(swap.getAttribute('aria-disabled')).toBe('true');
     expect(swap.hasAttribute('disabled')).toBe(false);
+    // Con le frecce la voce si raggiunge lo stesso: è da lì che si legge perché non è disponibile
+    const before = menuItem('Salta esercizio');
+    before.focus();
+    fireEvent.keyDown(before, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(swap);
     fireEvent.click(swap);
     await advance(500);
     expect(screen.getByText('Puoi cambiare l\'esercizio solo prima di aver fatto una serie')).toBeTruthy();
+  });
+
+  it('senza Plus «Cambia» non è mai aria-disabled: il tocco apre la finestra Plus', async () => {
+    withLegs();
+    await startDay('Gambe');
+    doSet();
+    click('Salta timer');
+    openMenu();
+    screen.getAllByRole('menuitem').forEach((item) => expect(item.getAttribute('aria-disabled')).toBeNull());
   });
 
   it('due tocchi di fila su «Salta esercizio» mentre il menu si chiude saltano un esercizio solo', async () => {
@@ -2743,29 +2757,30 @@ describe('pallini e «Serie fatte» (F3)', () => {
       expect(within(doneDialog()).getByLabelText('Peso (kg)').value).toBe('50');
     });
 
-    it('dopo la correzione i record si aggiornano e il salvataggio porta i valori corretti', async () => {
+    it('dopo la correzione i record di peso e di volume si aggiornano e il salvataggio porta i valori corretti', async () => {
       responses['workout_history/read.php'] = () => json({ records: history });
       await goSummary(summaryDraft(70));
       expect(screen.getByText(/^Nuovo record/)).toBeTruthy();
       expect(screen.getByText('Miglior volume')).toBeTruthy();
-      // I tre numeri in alto contano esercizi, serie e durata: una correzione di valori non li tocca
-      const stats = () => ['Esercizi', 'Serie', 'Durata'].map((label) => screen.getByRole('group', { name: label }).textContent);
-      const before = stats();
-      expect(before.slice(0, 2)).toEqual(['1Esercizi', '2Serie']);
       fireEvent.click(chip('Correggi Panca piana, Serie 1: 70 kg × 8'));
       await advance(500);
       fireEvent.change(within(doneDialog()).getByLabelText('Peso (kg)'), { target: { value: '55' } });
       fireEvent.click(within(doneDialog()).getByRole('button', { name: 'Salva' }));
       await closeDone();
       expect(screen.queryByText(/^Nuovo record/)).toBeNull();
-      // Il volume è la somma dell'esercizio (440 + 400 kg contro 480): resta un record anche dopo la correzione
+      // Il volume è dell'esercizio intero (440 + 400 kg contro i 480 dello storico): resta un record finché non scende sotto
       expect(screen.getByText('Miglior volume')).toBeTruthy();
-      expect(stats()).toEqual(before);
       expect(document.activeElement).toBe(chip('Correggi Panca piana, Serie 1: 55 kg × 8'));
+      fireEvent.click(chip('Correggi Panca piana, Serie 2: 50 kg × 8, Rest pause'));
+      await advance(500);
+      fireEvent.change(within(doneDialog()).getByLabelText('Peso (kg)'), { target: { value: '1' } });
+      fireEvent.click(within(doneDialog()).getByRole('button', { name: 'Salva' }));
+      await closeDone();
+      expect(screen.queryByText('Miglior volume')).toBeNull();
       await act(async () => { click('Salva allenamento'); });
       await advance(0);
       expect(saveBody().workout_records.map((r) => [r.weight, r.reps, r.intensity_technique, r.set_number, r.seconds_from_start])).toEqual([
-        [55, '8', '', 1, 300], [50, '8', 'Rest Pause', 2, 400],
+        [55, '8', '', 1, 300], [1, '8', 'Rest Pause', 2, 400],
       ]);
     });
   });
