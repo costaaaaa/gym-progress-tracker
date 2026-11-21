@@ -442,6 +442,20 @@ describe('AuthProvider: unità di peso', () => {
   });
 });
 
+describe('AuthProvider: updateUser senza utente', () => {
+  it('una risposta di salvataggio arrivata dopo l\'uscita non rimette in cache un utente a metà', async () => {
+    const Probe = () => {
+      const { user, updateUser } = useAuth();
+      return (<><span data-testid="who">{user ? JSON.stringify(user) : 'nessun utente'}</span><button onClick={() => updateUser({ home_layout: [] })}>salva</button></>);
+    };
+    render(<AuthProvider><Probe /></AuthProvider>);
+    await waitFor(() => expect(backend).not.toHaveBeenCalled());
+    fireEvent.click(screen.getByText('salva'));
+    expect(screen.getByTestId('who').textContent).toBe('nessun utente');
+    expect(localStorage.getItem('user')).toBeNull();
+  });
+});
+
 // Moduli facoltativi: da user/read.php dentro `user`; chi non li ha (login, server vecchio) li ha tutti attivi
 describe('AuthProvider: moduli', () => {
   const Modules = () => {

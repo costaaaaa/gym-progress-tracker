@@ -233,9 +233,8 @@ export const AuthProvider = ({ children }) => {
     if ('modules' in patch || 'modules_chosen' in patch || 'module_offer' in patch) modulesSavedAt.current = lastRead.current;
     if ('home_layout' in patch) homeLayoutSavedAt.current = lastRead.current;
     if ('group_visibility' in patch) groupVisibilitySavedAt.current = lastRead.current;
-    setUser((prev) => {
-      return cacheUser({ ...prev, ...patch });
-    });
+    // Senza utente (risposta arrivata dopo l'uscita) non si rimette in cache un utente a metà
+    setUser((prev) => (prev ? cacheUser({ ...prev, ...patch }) : prev));
   };
 
   // Unità di peso dell'account: kg finché non è letta e da sloggati
