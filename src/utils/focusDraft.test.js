@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DRAFT_STORAGE_KEY, hasFocusSessionInProgress, savedDraftDayId } from './focusDraft';
+import { DRAFT_STORAGE_KEY, hasFocusSessionInProgress, savedDraftDayId, savedDraftDayName } from './focusDraft';
 
 const save = (draft) => localStorage.setItem(DRAFT_STORAGE_KEY, typeof draft === 'string' ? draft : JSON.stringify(draft));
 
@@ -21,5 +21,15 @@ describe('bozza Focus', () => {
     save('{non json');
     expect(hasFocusSessionInProgress()).toBe(false);
     expect(savedDraftDayId()).toBeNull();
+  });
+
+  it('il nome del giorno della bozza, o null se manca o la bozza è rovinata', () => {
+    expect(savedDraftDayName()).toBeNull();
+    save({ selectedDay: { id: 7, name: 'Push' }, startTime: 1000 });
+    expect(savedDraftDayName()).toBe('Push');
+    save({ selectedDay: { id: 7 }, startTime: 1000 });
+    expect(savedDraftDayName()).toBeNull();
+    save('{non json');
+    expect(savedDraftDayName()).toBeNull();
   });
 });
