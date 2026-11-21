@@ -25,11 +25,8 @@ export const techniqueLabel = (value) => {
   return key ? i18n.t(`technique.${key}`) : value || '';
 };
 
-// Etichetta corta delle tecniche che si scelgono (celle della riga del Focus); le altre restano com'è l'etichetta intera
-export const techniqueShortLabel = (value) => {
-  const key = TECHNIQUE_KEYS[value];
-  return key && i18n.exists(`technique.short.${key}`) ? i18n.t(`technique.short.${key}`) : techniqueLabel(value);
-};
+// Etichetta corta delle quattro tecniche che si scelgono (celle della riga del Focus)
+export const techniqueShortLabel = (value) => i18n.t(`technique.short.${TECHNIQUE_KEYS[value]}`);
 
 export const muscleLabel = (group) => {
   if (!group) return '';

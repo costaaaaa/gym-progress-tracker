@@ -22,12 +22,6 @@ describe('etichette delle tecniche', () => {
     await i18n.changeLanguage('en');
     expect(shortOf()).toEqual(['Drop set', 'Rest pause', 'Myo-reps', 'Negative']);
   });
-
-  it('una tecnica senza etichetta corta resta con l\'etichetta intera', async () => {
-    await i18n.changeLanguage('it');
-    expect(techniqueShortLabel('Super Set')).toBe('Super set');
-    expect(techniqueShortLabel('altro')).toBe('altro');
-  });
 });
 
 describe('equipmentName', () => {

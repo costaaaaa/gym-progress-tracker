@@ -202,6 +202,9 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
     return notes && notes.length > 50;
   };
 
+  // In riscaldamento la tecnica è vuota
+  const shownTechnique = (row) => (row.is_warmup ? '' : (row.intensity_technique || ''));
+
   // Stesso nome per il combobox e per la lista aperta della Tecnica di ogni serie.
   const techniqueNameProps = (exercise, setIndex) => {
     const name = t('record.technique_aria', { exercise: exercise.exercise_name, n: setIndex + 1 });
@@ -353,12 +356,12 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                           <Select
                             {...techniqueNameProps(exercise, setIndex)}
                             disabled={!!row.is_warmup}
-                            value={row.is_warmup ? '' : (row.intensity_technique || '')}
+                            value={shownTechnique(row)}
                             label={t('record.technique')}
                             onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'intensity_technique', e.target.value)}
                           >
                             <MenuItem value=""><em>{t('record.no_technique')}</em></MenuItem>
-                            {techniqueChoices(row.is_warmup ? '' : row.intensity_technique).map(tech => (
+                            {techniqueChoices(shownTechnique(row)).map(tech => (
                               <MenuItem key={tech} value={tech}>{techniqueLabel(tech)}</MenuItem>
                             ))}
                           </Select>
