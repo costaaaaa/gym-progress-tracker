@@ -1,3 +1,4 @@
+import { alpha } from '@mui/material/styles';
 import { Box, Typography } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import { visuallyHidden } from '@mui/utils';
@@ -13,9 +14,9 @@ const DAYS = [0, 1, 2, 3, 4, 5, 6];
 // Colori dei cerchi (bordo almeno 3 : 1 sul fondo, in chiaro e in scuro). Sul rosso: bianco pieno, e il bianco al 75%
 // per i giorni non fatti (3,4 : 1 sul rosso del marchio; il 55% del prototipo si fermava a 2,3 : 1).
 const ON_COLOR = {
-  done: { bgcolor: '#fff', color: 'primary.main', borderColor: '#fff' },
-  today: { bgcolor: 'transparent', color: '#fff', borderColor: '#fff' },
-  todo: { bgcolor: 'transparent', color: '#fff', borderColor: 'rgba(255, 255, 255, 0.75)' },
+  done: { bgcolor: 'common.white', color: 'primary.main', borderColor: 'common.white' },
+  today: { bgcolor: 'transparent', color: 'common.white', borderColor: 'common.white' },
+  todo: { bgcolor: 'transparent', color: 'common.white', borderColor: (theme) => alpha(theme.palette.common.white, 0.75) },
 };
 const ON_NEUTRAL = {
   done: { bgcolor: 'success.main', color: 'success.contrastText', borderColor: 'success.main' },
@@ -54,7 +55,7 @@ const WeekDays = ({ done, today, onColor = false }) => {
             >
               {isDone && <CheckIcon sx={{ fontSize: 18 }} />}
             </Box>
-            <Typography variant="caption" sx={{ color: onColor ? '#fff' : isToday ? 'text.primary' : 'text.secondary', fontWeight: isToday ? 700 : undefined }}>
+            <Typography variant="caption" sx={{ color: onColor ? 'common.white' : isToday ? 'text.primary' : 'text.secondary', fontWeight: isToday ? 700 : undefined }}>
               {dayName(i, 'narrow')}
             </Typography>
           </Box>

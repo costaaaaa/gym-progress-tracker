@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { alpha } from '@mui/material/styles';
 import { AppBar, Toolbar, Typography, Button, ButtonGroup, Box, Avatar, useMediaQuery, IconButton, useTheme, Tooltip, CircularProgress, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
@@ -236,7 +237,7 @@ const Navbar = ({ redBar = false }) => {
                 height: 40,
                 ml: 1,
                 ...(onRed
-                  ? { color: 'common.white', bgcolor: 'transparent', '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.16)' } }
+                  ? { color: 'common.white', bgcolor: 'transparent', '&:hover': { bgcolor: (theme) => alpha(theme.palette.common.white, 0.16) } }
                   : { color: 'text.secondary', bgcolor: 'navToggle.bg', '&:hover': { bgcolor: 'navToggle.hover' } }),
               }}
             >

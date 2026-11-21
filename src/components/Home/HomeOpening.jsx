@@ -1,3 +1,4 @@
+import { alpha } from '@mui/material/styles';
 import { Box, Button, Card, Typography } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { Link as RouterLink } from 'react-router-dom';
@@ -62,7 +63,7 @@ const RedOpening = ({ props, sentence }) => {
       data-red-field
       sx={{
         bgcolor: 'primary.main',
-        color: '#fff',
+        color: 'common.white',
         px: { xs: 2, md: 4 },
         pt: { xs: 2, md: 4 },
         pb: { xs: 3, md: 4 },
@@ -91,11 +92,11 @@ const RedOpening = ({ props, sentence }) => {
               py: 1.4,
               fontWeight: 700,
               borderRadius: radius.xl,
-              bgcolor: '#fff',
+              bgcolor: 'common.white',
               color: 'primary.main',
-              '&:hover': { bgcolor: '#f7f6f5' },
+              '&:hover': { bgcolor: (theme) => alpha(theme.palette.common.white, 0.9) },
               // Il contorno scuro del tema sul rosso dà 3,2 : 1: bianco (5,5 : 1)
-              '&.Mui-focusVisible': { outlineColor: '#fff' },
+              '&.Mui-focusVisible': { outlineColor: 'common.white' },
             }}
           >
             {t(resume ? 'home.today.resume' : 'home.today.start')}
