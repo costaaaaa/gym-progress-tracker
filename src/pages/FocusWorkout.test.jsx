@@ -2295,6 +2295,38 @@ describe('barra in alto e menu «⋯» (F3)', () => {
     expect(screen.getByText('Puoi cambiare l\'esercizio solo prima di aver fatto una serie')).toBeTruthy();
   });
 
+  it('«Cambia» ha aria-disabled solo quando il cambio non è disponibile, e il tocco avvisa lo stesso', async () => {
+    withLegs();
+    pro();
+    await startDay('Gambe');
+    openMenu();
+    expect(menuItem('Cambia esercizio').getAttribute('aria-disabled')).toBeNull();
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
+    await advance(500);
+    doSet();
+    click('Salta timer');
+    openMenu();
+    const swap = menuItem('Cambia esercizio');
+    expect(swap.getAttribute('aria-disabled')).toBe('true');
+    expect(swap.hasAttribute('disabled')).toBe(false);
+    fireEvent.click(swap);
+    await advance(500);
+    expect(screen.getByText('Puoi cambiare l\'esercizio solo prima di aver fatto una serie')).toBeTruthy();
+  });
+
+  it('due tocchi di fila su «Salta esercizio» mentre il menu si chiude saltano un esercizio solo', async () => {
+    await startDay('Push completo');
+    openMenu();
+    const skip = menuItem('Salta esercizio');
+    fireEvent.click(skip);
+    fireEvent.click(skip);
+    await advance(500);
+    expect(screen.getByRole('heading', { name: 'Croci' })).toBeTruthy();
+    expect(screen.queryByText('Riepilogo')).toBeNull();
+    // Un secondo tocco registrerebbe l'esercizio saltato due volte
+    expect(draft().skippedExercises).toEqual([0]);
+  });
+
   it('Esc chiude il menu e il fuoco torna a «⋯»', async () => {
     withLegs();
     await startDay('Gambe');
@@ -2336,6 +2368,16 @@ describe('pallini e «Serie fatte» (F3)', () => {
       await startDay('Gambe');
       await chooseAction('Salta riscaldamento');
       expect(doneButton().getAttribute('aria-label')).toBe('Serie fatte: 0 di 4, 1 saltata');
+    });
+
+    it('con due serie saltate dice «2 saltate»', async () => {
+      withLegs();
+      await startDay('Gambe');
+      await chooseAction('Salta riscaldamento');
+      doSet('60', '5');
+      click('Salta timer');
+      await chooseAction('Salta serie');
+      expect(doneButton().getAttribute('aria-label')).toBe('Serie fatte: 1 di 4, 2 saltate');
     });
 
     it('in inglese il nome è in inglese', async () => {
@@ -2544,11 +2586,25 @@ describe('pallini e «Serie fatte» (F3)', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Correggi' }));
       await advance(500);
       expect(inDialog().getByRole('group', { name: 'Correggi Serie 1' })).toBeTruthy();
+      expect(draft().completedSets[9][0].reps).toBe('8');
+      expect(document.activeElement).toBe(field('Peso (kg)'));
       save();
       fireEvent.click(screen.getByRole('button', { name: 'Sì, confermo' }));
       await advance(500);
       expect(draft().completedSets[9][0].reps).toBe('45');
       expect(inDialog().getByRole('status').textContent).toBe('Serie corretta.');
+      expect(inDialog().queryByRole('group', { name: 'Correggi Serie 1' })).toBeNull();
+      expect(document.activeElement).toBe(row(inDialog(), 'Serie 1'));
+    });
+
+    it('corpo libero: la serie con peso 0 si apre con 0 nel campo e correggere le ripetizioni lascia il peso a 0', async () => {
+      await resume({ ...savedDraft, completedSets: { 9: [{ setNumber: 1, weight: 0, reps: '8', intensity_technique: '', is_warmup: false, seconds_from_start: 300 }] } });
+      const dialog = await openDone();
+      fireEvent.click(row(dialog, 'Serie 1'));
+      expect(field('Peso (kg)').value).toBe('0');
+      fireEvent.change(field('Ripetizioni'), { target: { value: '12' } });
+      save();
+      expect(draft().completedSets[9][0]).toMatchObject({ weight: 0, reps: '12' });
     });
 
     it('una riga sola alla volta in modifica', async () => {
@@ -2691,12 +2747,20 @@ describe('pallini e «Serie fatte» (F3)', () => {
       responses['workout_history/read.php'] = () => json({ records: history });
       await goSummary(summaryDraft(70));
       expect(screen.getByText(/^Nuovo record/)).toBeTruthy();
+      expect(screen.getByText('Miglior volume')).toBeTruthy();
+      // I tre numeri in alto contano esercizi, serie e durata: una correzione di valori non li tocca
+      const stats = () => ['Esercizi', 'Serie', 'Durata'].map((label) => screen.getByRole('group', { name: label }).textContent);
+      const before = stats();
+      expect(before.slice(0, 2)).toEqual(['1Esercizi', '2Serie']);
       fireEvent.click(chip('Correggi Panca piana, Serie 1: 70 kg × 8'));
       await advance(500);
       fireEvent.change(within(doneDialog()).getByLabelText('Peso (kg)'), { target: { value: '55' } });
       fireEvent.click(within(doneDialog()).getByRole('button', { name: 'Salva' }));
       await closeDone();
       expect(screen.queryByText(/^Nuovo record/)).toBeNull();
+      // Il volume è la somma dell'esercizio (440 + 400 kg contro 480): resta un record anche dopo la correzione
+      expect(screen.getByText('Miglior volume')).toBeTruthy();
+      expect(stats()).toEqual(before);
       expect(document.activeElement).toBe(chip('Correggi Panca piana, Serie 1: 55 kg × 8'));
       await act(async () => { click('Salva allenamento'); });
       await advance(0);
