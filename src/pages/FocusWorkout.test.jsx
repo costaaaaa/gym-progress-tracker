@@ -1,5 +1,5 @@
 // Focus Mode visto dall'utente: pulsanti e campi della pagina, con fetch e localStorage come confini.
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished } from 'vitest';
 import { render, screen, fireEvent, act, cleanup, within } from '@testing-library/react';
 import FocusWorkout from './FocusWorkout';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
@@ -2920,6 +2920,7 @@ describe('recupero: ±15 s e serie successiva', () => {
 
   it('la vibrazione è solo dello scadere naturale: «−15 s» che porta a zero non vibra', async () => {
     const warning = vi.spyOn(hapticFeedback, 'warning').mockImplementation(() => {});
+    onTestFinished(() => warning.mockRestore());
     responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [{ id: 1, name: 'Push', exercises: [{ ...bench, planned_sets: plannedSets(0, times(3, { min: 8, max: 10 })) }] }] }] });
     await toRest();
     await advance(80);
@@ -2930,7 +2931,6 @@ describe('recupero: ±15 s e serie successiva', () => {
     doSet();
     await advance(90);
     expect(warning).toHaveBeenCalledTimes(1);
-    warning.mockRestore();
   });
 
   it('il recupero successivo riparte dalla durata della scheda, non da quella ritoccata', async () => {
@@ -2991,7 +2991,7 @@ describe('recupero: ±15 s e serie successiva', () => {
     expect(screen.getByRole('button', { name: '15 seconds less' })).toBeTruthy();
     expect(nextLine()).toBe('Target: 8-10');
     click('15 seconds more');
-    expect(screen.getByRole('status').textContent.replace(/\u200b/g, '')).toBe('01:45 left');
+    expect(leftText()).toBe('01:45 left');
   });
 
   describe('con riscaldamento e corpo libero', () => {
