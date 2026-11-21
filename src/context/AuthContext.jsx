@@ -49,6 +49,8 @@ export const AuthProvider = ({ children }) => {
   const modulesSavedAt = useRef(0);
   // Lo stesso per la visibilità nei gruppi
   const groupVisibilitySavedAt = useRef(0);
+  // E per il layout della Home
+  const homeLayoutSavedAt = useRef(0);
 
   // Rilegge lo stato della conferma. Non fa mai uscire l'utente: se la lettura non riesce, resta lo stato di prima.
   // `outcome`: il messaggio del server quando la conferma ha anche deciso il codice di registrazione («Plus attivo
@@ -74,10 +76,13 @@ export const AuthProvider = ({ children }) => {
           if (mine > modulesSavedAt.current) {
             if (isPlainObject(data.modules)) fresh.modules = data.modules;
             if (typeof data.modules_chosen === 'boolean') fresh.modules_chosen = data.modules_chosen;
+            // La proposta di un modulo (una chiave o null) cambia con la risposta, come i moduli
+            if (typeof data.module_offer === 'string' || data.module_offer === null) fresh.module_offer = data.module_offer;
           }
           if (mine > groupVisibilitySavedAt.current && isPlainObject(data.group_visibility)) fresh.group_visibility = data.group_visibility;
           // Layout della Home: un elenco, o null (mai personalizzato); altro è una risposta rovinata e non si tocca (lo sistema effectiveLayout)
-          if (Array.isArray(data.home_layout) || data.home_layout === null) fresh.home_layout = data.home_layout;
+          // Una lettura partita prima dell'ultimo salvataggio del layout ha quello di prima: non lo sovrascrive
+          if (mine > homeLayoutSavedAt.current && (Array.isArray(data.home_layout) || data.home_layout === null)) fresh.home_layout = data.home_layout;
           setUser((prev) => {
             if (!prev) return prev;
             const changed = Object.keys(fresh).some((key) => JSON.stringify(prev[key]) !== JSON.stringify(fresh[key]));
@@ -225,7 +230,8 @@ export const AuthProvider = ({ children }) => {
 
   // Aggiorna campi dell'utente già salvati sul server (es. la lingua)
   const updateUser = (patch) => {
-    if ('modules' in patch || 'modules_chosen' in patch) modulesSavedAt.current = lastRead.current;
+    if ('modules' in patch || 'modules_chosen' in patch || 'module_offer' in patch) modulesSavedAt.current = lastRead.current;
+    if ('home_layout' in patch) homeLayoutSavedAt.current = lastRead.current;
     if ('group_visibility' in patch) groupVisibilitySavedAt.current = lastRead.current;
     setUser((prev) => {
       return cacheUser({ ...prev, ...patch });
