@@ -7,7 +7,7 @@ import { shareCardStrings } from '../../i18n/shareCardStrings';
 // condivisione, kg interi) nell'unità dell'account. Vuoto se non c'è nessuno dei due.
 export const workoutLine = (record, unit, t) => {
   const parts = [];
-  // Il formato è quello dello Storico (la card di condivisione): «1h 05m», «4.775 kg»
+  // Stesso formato della card di condivisione: «1h 05m», «4.775 kg»
   const strings = shareCardStrings();
   const duration = formatDuration(record?.duration_seconds, strings);
   if (duration) parts.push(duration);

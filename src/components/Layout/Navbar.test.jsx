@@ -304,7 +304,6 @@ describe('barra in alto: rossa con l\'apertura della Home', () => {
     expect(rules).toMatch(/Mui-focusVisible[^{]*\{[^}]*outline:\s*2px solid #fff/);
     // il logo è un link: il contorno scuro di a:focus-visible del tema deve essere battuto sulla barra rossa
     expect(rules).toMatch(/a:focus-visible[^{]*\{[^}]*outline:\s*2px solid #fff/);
-    expect(screen.getByText('LiftIndex').closest('a')).toBeTruthy();
     expect(bar.contains(screen.getByText('LiftIndex').closest('a'))).toBe(true);
     expect(toggle).toBeTruthy();
   });

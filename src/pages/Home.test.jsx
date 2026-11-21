@@ -229,6 +229,22 @@ describe('caricamento ed errori della dashboard', () => {
     expect((await screen.findByRole('link', { name: 'Inizia' })).getAttribute('href')).toBe('/focus');
     expect(screen.queryByText('Settimana')).toBeNull();
   });
+
+  it('un errore di rete arrivato dopo il logout non viene più gestito', async () => {
+    let fail;
+    const dashboard = new Promise((_, reject) => { fail = reject; });
+    vi.stubGlobal('fetch', vi.fn((url) => (String(url).includes('workout_stats/dashboard.php') ? dashboard : fakeFetch(url))));
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const view = renderHome();
+    await act(async () => {});
+    auth.isLoggedIn = false;
+    view.rerender(homeTree());
+    expect(await screen.findByText('Landing per gli ospiti')).toBeTruthy();
+    await act(async () => { fail(new Error('rete')); });
+    const handled = logged.mock.calls.some((call) => String(call[0]).includes('Errore nel caricamento'));
+    logged.mockRestore();
+    expect(handled).toBe(false);
+  });
 });
 
 describe('stato «todo»', () => {

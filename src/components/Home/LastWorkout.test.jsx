@@ -1,5 +1,5 @@
 // «Ultimo allenamento»: blocco piccolo, tutto cliccabile verso lo Storico.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, cleanup, act } from '@testing-library/react';
 import i18n from '../../i18n';
 import { MemoryRouter } from 'react-router-dom';
@@ -13,6 +13,9 @@ const record = {
 const show = (props) => render(<MemoryRouter><ThemeModeProvider><LastWorkout record={record} weightUnit="kg" {...props} /></ThemeModeProvider></MemoryRouter>);
 
 describe('Ultimo allenamento', () => {
+  // Il test in inglese non deve lasciare la lingua cambiata agli altri, nemmeno se fallisce
+  afterEach(() => act(() => i18n.changeLanguage('it')));
+
   it('etichetta, nome del giorno, data lunga, durata e volume; tutto il blocco porta allo Storico', () => {
     show();
     const link = screen.getByRole('link');
@@ -39,7 +42,6 @@ describe('Ultimo allenamento', () => {
     cleanup();
     show({ today: '2027-01-02' });
     expect(screen.getByRole('link').textContent).toMatch(/2026/);
-    await act(() => i18n.changeLanguage('it'));
   });
 
   it('senza nome del giorno (allenamento di prima) mostra solo data e riga', () => {

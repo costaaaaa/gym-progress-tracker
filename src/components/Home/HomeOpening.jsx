@@ -8,6 +8,7 @@ import { workoutLine } from './workoutLine';
 import { TABULAR, TITLE_FONT_FAMILY } from '../../utils/fonts';
 import { radius } from '../../theme/radius';
 import { LABEL } from './labelStyle';
+import { isRedState } from '../../utils/homeState';
 
 const DAY_TITLE = { fontFamily: TITLE_FONT_FAMILY, fontSize: '1.5rem', fontWeight: 700, lineHeight: 1.3 };
 
@@ -41,27 +42,29 @@ const WeekBlock = ({ week, onColor }) => {
 
 // Cosa dice e mostra ogni stato, deciso qui e letto dai due componenti:
 // red (campo rosso o card neutra), sentence (frase sotto il saluto, '' se non c'è nulla da dire), label e title (del blocco
-// con il giorno), completed (la seduta di oggi è fatta), button (testo e se porta il giorno proposto al Focus).
-const describeState = (t, { state, nextDay, draftDayName, week }) => {
+// con il giorno), proposedDay (il giorno proposto: si mostra con i suoi esercizi e il bottone lo porta al Focus; null se
+// non si propone nulla), completed (la seduta di oggi è fatta), buttonLabel.
+const describeState = (t, { state, nextDay, draftDayName, todayRecord, week }) => {
+  const red = isRedState(state);
   const weekSentence = week.goal > 0 ? t('home.state.week', { count: week.workouts, goal: week.goal }) : null;
   const join = (...parts) => parts.filter(Boolean).join(' ');
-  const start = { label: t('home.today.start'), suggestsDay: true };
+  const proposal = { title: nextDay?.name, proposedDay: nextDay, buttonLabel: t('home.today.start') };
   switch (state) {
     case 'resume': {
       const title = draftDayName || t('home.today.workout_fallback');
-      return { red: true, sentence: t('home.state.resume', { day: title }), label: t('home.today.label'), title, button: { label: t('home.today.resume'), suggestsDay: false } };
+      return { red, sentence: t('home.state.resume', { day: title }), label: t('home.today.label'), title, proposedDay: null, buttonLabel: t('home.today.resume') };
     }
     case 'goal':
-      return { red: false, sentence: t('home.state.goal', { count: week.workouts, goal: week.goal }), label: t('home.today.next_label'), title: nextDay?.name, button: start };
+      return { red, sentence: t('home.state.goal', { count: week.workouts, goal: week.goal }), label: t('home.today.next_label'), ...proposal };
     case 'done':
-      return { red: false, sentence: join(t('home.state.done'), weekSentence), label: t('home.today.label'), title: null, completed: true };
+      return { red, sentence: join(t('home.state.done'), weekSentence), label: t('home.today.label'), title: todayRecord?.day_name || t('home.today.workout_fallback'), proposedDay: null, completed: true };
     default:
-      return { red: true, sentence: join(nextDay ? t('home.state.todo_day', { day: nextDay.name }) : null, weekSentence), label: t('home.today.label'), title: nextDay?.name, button: start };
+      return { red, sentence: join(nextDay ? t('home.state.todo_day', { day: nextDay.name }) : null, weekSentence), label: t('home.today.label'), ...proposal };
   }
 };
 
-// Il Focus si apre con il giorno proposto già scelto, se lo stato ne ha uno
-const buttonState = (view, nextDay) => (view.button.suggestsDay && nextDay ? { suggestedDayId: nextDay.id } : undefined);
+// Il Focus si apre con il giorno proposto già scelto, se lo stato ne propone uno
+const focusState = (view) => (view.proposedDay ? { suggestedDayId: view.proposedDay.id } : undefined);
 
 // Saluto e frase dello stato (la frase vuota non si disegna); `gap`: spazio sotto
 const OpeningHead = ({ name, sentence, gap }) => (
@@ -73,7 +76,7 @@ const OpeningHead = ({ name, sentence, gap }) => (
 
 // Apertura rossa («todo» e «resume»): oggi c'è ancora da allenarsi. Sul telefono il campo arriva ai bordi (il Layout lo
 // attacca alla barra rossa), da md in su è un pannello con gli angoli tondi: Oggi a sinistra, Settimana a destra.
-const RedOpening = ({ view, name, nextDay, week }) => {
+const RedOpening = ({ view, name, week }) => {
   const { title } = view;
   return (
     <Box
@@ -94,13 +97,13 @@ const RedOpening = ({ view, name, nextDay, week }) => {
             <>
               <Typography sx={LABEL}>{view.label}</Typography>
               <Typography sx={{ ...DAY_TITLE, mt: 0.25 }}>{title}</Typography>
-              {view.button.suggestsDay && nextDay && <ExerciseCount nextDay={nextDay} sx={{ mb: 0.5 }} />}
+              {view.proposedDay && <ExerciseCount day={view.proposedDay} sx={{ mb: 0.5 }} />}
             </>
           )}
           <Button
             component={RouterLink}
             to="/focus"
-            state={buttonState(view, nextDay)}
+            state={focusState(view)}
             fullWidth
             size="large"
             sx={{
@@ -115,7 +118,7 @@ const RedOpening = ({ view, name, nextDay, week }) => {
               '&.Mui-focusVisible': { outlineColor: 'common.white' },
             }}
           >
-            {view.button.label}
+            {view.buttonLabel}
           </Button>
         </Box>
         <WeekBlock week={week} onColor />
@@ -124,9 +127,9 @@ const RedOpening = ({ view, name, nextDay, week }) => {
   );
 };
 
-const ExerciseCount = ({ nextDay, sx }) => {
+const ExerciseCount = ({ day, sx }) => {
   const { t } = useTranslation();
-  return <Typography sx={sx}>{t('home.today.exercises', { count: nextDay.exercises })}</Typography>;
+  return <Typography sx={sx}>{t('home.today.exercises', { count: day.exercises })}</Typography>;
 };
 
 const outlineButton = { py: 1.2, fontWeight: 700, borderRadius: radius.xl, minHeight: 48 };
@@ -142,7 +145,7 @@ const NeutralOpening = ({ view, name, nextDay, todayRecord, weightUnit, week }) 
         {view.completed ? (
           <>
             <Typography sx={{ ...LABEL, color: 'text.secondary' }}>{view.label}</Typography>
-            <Typography sx={{ ...DAY_TITLE, mt: 0.5 }}>{todayRecord?.day_name || t('home.today.workout_fallback')}</Typography>
+            <Typography sx={{ ...DAY_TITLE, mt: 0.5 }}>{view.title}</Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.25 }}>
               <CheckCircleIcon aria-hidden="true" sx={{ fontSize: 20, color: 'success.title' }} />
               <Typography sx={{ fontWeight: 700, color: 'success.title' }}>{t('home.today.completed')}</Typography>
@@ -166,23 +169,23 @@ const NeutralOpening = ({ view, name, nextDay, todayRecord, weightUnit, week }) 
           </>
         ) : (
           <>
-            {nextDay && (
+            {view.proposedDay && (
               <>
                 <Typography sx={{ ...LABEL, color: 'text.secondary' }}>{view.label}</Typography>
                 <Typography sx={{ ...DAY_TITLE, mt: 0.5 }}>{view.title}</Typography>
-                <ExerciseCount nextDay={nextDay} sx={{ color: 'text.secondary', mb: 1.5 }} />
+                <ExerciseCount day={view.proposedDay} sx={{ color: 'text.secondary', mb: 1.5 }} />
               </>
             )}
             <Button
               component={RouterLink}
               to="/focus"
-              state={buttonState(view, nextDay)}
+              state={focusState(view)}
               variant="outlined"
               fullWidth
               size="large"
               sx={{ ...outlineButton, color: 'primary.text', borderColor: 'primary.text', '&:hover': { borderColor: 'primary.text', bgcolor: 'action.hover' } }}
             >
-              {view.button.label}
+              {view.buttonLabel}
             </Button>
           </>
         )}
@@ -199,9 +202,9 @@ const NeutralOpening = ({ view, name, nextDay, todayRecord, weightUnit, week }) 
 // `week`: { workouts, goal, days (sette booleani da lunedì), todayIdx }.
 const HomeOpening = ({ state, name, nextDay, draftDayName, todayRecord, weightUnit, week }) => {
   const { t } = useTranslation();
-  const view = describeState(t, { state, nextDay, draftDayName, week });
+  const view = describeState(t, { state, nextDay, draftDayName, todayRecord, week });
   return view.red
-    ? <RedOpening view={view} name={name} nextDay={nextDay} week={week} />
+    ? <RedOpening view={view} name={name} week={week} />
     : <NeutralOpening view={view} name={name} nextDay={nextDay} todayRecord={todayRecord} weightUnit={weightUnit} week={week} />;
 };
 
