@@ -38,8 +38,6 @@
   "home.week.sr_done": "Allenato {{days}}.",
   "home.week.sr_none": "Nessun allenamento finora.",
   "home.week.sr_today": "Oggi è {{day}}.",
-  "home.last.minutes": "{{count}} min",
-  "home.last.hours": "{{hours}} h {{minutes}} min",
   "home.last.volume": "{{value}} di volume",
   "home.hero.note": "Gratis · senza carta di credito · funziona da telefono e da computer",
   "home.landing.hero.title": "Sai già cosa allenare oggi",
