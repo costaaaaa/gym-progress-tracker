@@ -43,7 +43,8 @@ const WeekBlock = ({ week, onColor }) => {
 // Cosa dice e mostra ogni stato, deciso qui e letto dai due componenti:
 // red (campo rosso o card neutra), sentence (frase sotto il saluto, '' se non c'è nulla da dire), label e title (del blocco
 // con il giorno), proposedDay (il giorno proposto: si mostra con i suoi esercizi e il bottone lo porta al Focus; null se
-// non si propone nulla), completed (la seduta di oggi è fatta), buttonLabel.
+// non si propone nulla), completed (la seduta di oggi è fatta), buttonLabel (non c'è in «done»: lì il bottone porta
+// allo Storico).
 const describeState = (t, { state, nextDay, draftDayName, todayRecord, week }) => {
   const red = isRedState(state);
   const weekSentence = week.goal > 0 ? t('home.state.week', { count: week.workouts, goal: week.goal }) : null;
@@ -169,11 +170,11 @@ const NeutralOpening = ({ view, name, nextDay, todayRecord, weightUnit, week }) 
           </>
         ) : (
           <>
-            {view.proposedDay && (
+            {view.title && (
               <>
                 <Typography sx={{ ...LABEL, color: 'text.secondary' }}>{view.label}</Typography>
                 <Typography sx={{ ...DAY_TITLE, mt: 0.5 }}>{view.title}</Typography>
-                <ExerciseCount day={view.proposedDay} sx={{ color: 'text.secondary', mb: 1.5 }} />
+                {view.proposedDay && <ExerciseCount day={view.proposedDay} sx={{ color: 'text.secondary', mb: 1.5 }} />}
               </>
             )}
             <Button

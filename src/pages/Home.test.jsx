@@ -235,15 +235,17 @@ describe('caricamento ed errori della dashboard', () => {
     const dashboard = new Promise((_, reject) => { fail = reject; });
     vi.stubGlobal('fetch', vi.fn((url) => (String(url).includes('workout_stats/dashboard.php') ? dashboard : fakeFetch(url))));
     const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const view = renderHome();
-    await act(async () => {});
-    auth.isLoggedIn = false;
-    view.rerender(homeTree());
-    expect(await screen.findByText('Landing per gli ospiti')).toBeTruthy();
-    await act(async () => { fail(new Error('rete')); });
-    const handled = logged.mock.calls.some((call) => String(call[0]).includes('Errore nel caricamento'));
-    logged.mockRestore();
-    expect(handled).toBe(false);
+    try {
+      const view = renderHome();
+      await act(async () => {});
+      auth.isLoggedIn = false;
+      view.rerender(homeTree());
+      expect(await screen.findByText('Landing per gli ospiti')).toBeTruthy();
+      await act(async () => { fail(new Error('rete')); });
+      expect(logged.mock.calls.some((call) => String(call[0]).includes('Errore nel caricamento'))).toBe(false);
+    } finally {
+      logged.mockRestore();
+    }
   });
 });
 
