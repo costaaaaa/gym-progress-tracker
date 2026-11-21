@@ -9,8 +9,10 @@ import { setBrowserTimeZone } from '../test/timeZone';
 import { DROP, plannedSets, times } from '../test/plannedSets';
 import { unnamedControls } from '../test/accessibleNames';
 
-const { mockNavigate, mockTrack } = vi.hoisted(() => ({ mockNavigate: vi.fn(), mockTrack: vi.fn() }));
-vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => mockNavigate }));
+const { mockNavigate, mockTrack, mockLocation } = vi.hoisted(() => ({ mockNavigate: vi.fn(), mockTrack: vi.fn(), mockLocation: { state: null } }));
+vi.mock('react-router-dom', async (importOriginal) => ({
+  ...(await importOriginal()), useNavigate: () => mockNavigate, useLocation: () => ({ pathname: '/focus', search: '', hash: '', state: mockLocation.state }),
+}));
 // Unità di peso dell'utente: kg salvo i test che la cambiano
 const account = vi.hoisted(() => ({ isLoggedIn: true, loading: false, weightUnit: 'kg', user: undefined }));
 vi.mock('../context/AuthContext', () => ({ useAuth: () => account }));
@@ -108,6 +110,7 @@ beforeEach(() => {
   };
 });
 afterEach(() => {
+  mockLocation.state = null;
   account.weightUnit = 'kg';
   account.user = undefined;
   vi.useRealTimers();
@@ -1351,6 +1354,51 @@ describe('ordine reale e orario delle serie (#26)', () => {
     await advance(0);
 
     expect(saveBody().workout_records.map((r) => [r.exercise_id, r.seconds_from_start])).toEqual([[4, 1200], [3, null], [3, 900]]);
+  });
+});
+
+// «Inizia» della Home porta qui il giorno proposto nello stato della navigazione: è solo già scelto, non parte nulla
+describe('giorno proposto dalla Home', () => {
+  // Il campo vuoto di MUI contiene uno zero-width space
+  const dayChoice = () => screen.getByRole('combobox').textContent.replace(/\u200b/g, '');
+  const startButton = () => screen.getByRole('button', { name: 'Inizia allenamento' });
+
+  it('un giorno della scheda attiva è già scelto nella scelta del giorno, e l\'allenamento non parte da solo', async () => {
+    mockLocation.state = { suggestedDayId: 2 };
+    await mount();
+    expect(dayChoice()).toBe('Push completo');
+    expect(startButton().disabled).toBe(false);
+    expect(screen.queryByText(/^Serie 1 di/)).toBeNull();
+    expect(saveBody()).toBeNull();
+  });
+
+  it('l\'utente può cambiarlo', async () => {
+    mockLocation.state = { suggestedDayId: 2 };
+    await mount();
+    fireEvent.mouseDown(screen.getByRole('combobox'));
+    fireEvent.click(screen.getByRole('option', { name: 'Push' }));
+    expect(dayChoice()).toBe('Push');
+  });
+
+  it('un giorno che non è della scheda attiva si ignora in silenzio', async () => {
+    mockLocation.state = { suggestedDayId: 99 };
+    await mount();
+    expect(dayChoice()).toBe('');
+    expect(startButton().disabled).toBe(true);
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('senza stato di navigazione la scelta resta vuota (con più giorni)', async () => {
+    await mount();
+    expect(dayChoice()).toBe('');
+  });
+
+  it('con una bozza da riprendere non si sceglie nulla: nemmeno dopo averla scartata', async () => {
+    mockLocation.state = { suggestedDayId: 1 };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(savedDraft));
+    await mount();
+    click('Scarta e inizia nuovo');
+    expect(dayChoice()).toBe('');
   });
 });
 

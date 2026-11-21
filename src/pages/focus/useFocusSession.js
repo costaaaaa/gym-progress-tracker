@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { isModuleActive } from '../../hooks/useModule';
@@ -25,6 +25,10 @@ import { DRAFT_STORAGE_KEY } from '../../utils/focusDraft';
 export default function useFocusSession() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  // Giorno proposto dalla Home («Inizia»): dallo stato della navigazione, letto quando arrivano i piani
+  const suggestedDayId = useLocation().state?.suggestedDayId ?? null;
+  const suggestedDayRef = useRef(suggestedDayId);
+  suggestedDayRef.current = suggestedDayId;
   const { isLoggedIn, loading: authLoading, weightUnit, user } = useAuth();
   // Senza il modulo Livelli i festeggiamenti di streak, livello e traguardi non si mostrano (il server li conta)
   const levelsOn = isModuleActive(user, 'levels');
@@ -158,7 +162,18 @@ export default function useFocusSession() {
     setSelectedDay((current) => current || plan.days[0]);
   }, []);
 
-  // useCallback([clearDraft, preselectOnlyDay]): non legge stato reattivo (solo localStorage,
+  // Il giorno proposto dalla Home, se è della scheda attiva, è già scelto (l'utente può cambiarlo, nulla parte da solo);
+  // un giorno che non è della scheda si ignora. Solo setter e ref: stabile.
+  const preselectSuggestedDay = useCallback((plan) => {
+    const suggested = suggestedDayRef.current;
+    if (suggested === null) return;
+    const day = plan?.days?.find((d) => String(d.id) === String(suggested));
+    if (!day) return;
+    setSelectedDayId(day.id);
+    setSelectedDay(day);
+  }, []);
+
+  // useCallback([clearDraft, preselectOnlyDay, preselectSuggestedDay]): non legge stato reattivo (solo localStorage,
   // setter, clearDraft e preselectOnlyDay, a loro volta stabili), quindi l'effetto sotto si
   // riesegue solo al cambio di isLoggedIn.
   const loadInitialData = useCallback(async () => {
@@ -250,6 +265,7 @@ export default function useFocusSession() {
           preselectOnlyDay(active);
           // Se non c'è bozza, vai alla selezione giorno
           if (!resuming) {
+            preselectSuggestedDay(active);
             setPhase('select_day');
           }
         } else {
@@ -270,7 +286,7 @@ export default function useFocusSession() {
         setPhase('select_day');
       }
     }
-  }, [clearDraft, preselectOnlyDay]);
+  }, [clearDraft, preselectOnlyDay, preselectSuggestedDay]);
 
   // Dopo la dichiarazione di loadInitialData: l'array di dipendenze viene
   // valutato durante il render (temporal dead zone se fosse sopra).
