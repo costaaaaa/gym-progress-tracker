@@ -56,6 +56,7 @@ import useFocusField from '../hooks/useFocusField';
 import useConfirmPassword from '../hooks/useConfirmPassword';
 import ConfirmPasswordField from '../components/Auth/ConfirmPasswordField';
 import { loginWithNext } from '../utils/safeNext';
+import FocusToolsOptions from '../components/Focus/FocusToolsOptions';
 import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
 import ModulesCard from '../components/Account/ModulesCard';
 import AccountTier from '../components/Account/AccountTier';
@@ -118,7 +119,6 @@ const Account = ({ isEmbedded = false }) => {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
 
   // Stato per le impostazioni allenamento
-  const [restTimerEnabled, setRestTimerEnabled] = useState(true);
   const [locale, setLocale] = useState('it');
   const [weightUnit, setWeightUnit] = useState(DEFAULT_WEIGHT_UNIT);
   const [savingSettings, setSavingSettings] = useState(false);
@@ -272,10 +272,6 @@ const Account = ({ isEmbedded = false }) => {
       setBirthDate(userDetails.birth_date ? parseISO(userDetails.birth_date) : null);
       setTrainingStartDate(userDetails.training_start_date ? parseISO(userDetails.training_start_date) : null);
 
-      // Impostazione timer
-      if (userDetails.rest_timer_enabled !== undefined) {
-        setRestTimerEnabled(userDetails.rest_timer_enabled);
-      }
       if (userDetails.locale) {
         setLocale(userDetails.locale);
       }
@@ -350,7 +346,6 @@ const Account = ({ isEmbedded = false }) => {
         credentials: 'include',
         // Data di nascita e sesso si inviano solo se compilati: il server non li accetta vuoti
         body: JSON.stringify({
-          rest_timer_enabled: restTimerEnabled,
           ...(birthDate ? { birth_date: format(birthDate, 'yyyy-MM-dd') } : {}),
           ...(gender ? { gender } : {}),
           training_start_date: trainingStartDate ? format(trainingStartDate, 'yyyy-MM-01') : null
@@ -679,48 +674,9 @@ const Account = ({ isEmbedded = false }) => {
               </Button>
             </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
-              <Box>
-                <Typography id="rest-timer-label" sx={{ fontSize: 16, fontWeight: 700 }}>{t('account.rest_timer')}</Typography>
-                <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
-                  {t('account.rest_timer_help')}
-                </Typography>
-              </Box>
-              <Switch
-                checked={restTimerEnabled}
-                inputProps={{ 'aria-labelledby': 'rest-timer-label' }}
-                onChange={async (e) => {
-                  const newValue = e.target.checked;
-                  setRestTimerEnabled(newValue);
-                  setSavingSettings(true);
-                  try {
-                    const response = await fetch(`${API_BASE_URL}api/user/update_settings.php`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      credentials: 'include',
-                      body: JSON.stringify({ rest_timer_enabled: newValue })
-                    });
-                    const data = await response.json();
-                    if (!response.ok) throw new Error(data.message);
-                    setSnackbar({
-                      open: true,
-                      message: newValue ? t('account.rest_timer_on') : t('focus.timer_off'),
-                      severity: 'success'
-                    });
-                  } catch (error) {
-                    console.error('Errore aggiornamento impostazioni:', error);
-                    setRestTimerEnabled(!newValue); // Rollback
-                    setSnackbar({
-                      open: true,
-                      message: t('account.settings_error'),
-                      severity: 'error'
-                    });
-                  } finally {
-                    setSavingSettings(false);
-                  }
-                }}
-                disabled={savingSettings}
-              />
+            <Box sx={{ pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
+              <Typography sx={{ fontSize: 16, fontWeight: 700 }}>{t('focus.tools.title')}</Typography>
+              <FocusToolsOptions notify={notify} idPrefix="account-focus-tools" />
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
