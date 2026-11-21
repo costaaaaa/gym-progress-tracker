@@ -2835,6 +2835,14 @@ describe('recupero: ±15 s e serie successiva', () => {
     expect(ring()).toBe(20);
   });
 
+  it('−15 fino a zero prima che passi un secondo: anello pieno e annuncio della fine', async () => {
+    await toRest();
+    for (let i = 0; i < 6; i++) click(MINUS);
+    expect(screen.getByText('00:00')).toBeTruthy();
+    expect(ring()).toBe(100);
+    expect(status()).toBe('Recupero finito: puoi fare la serie successiva');
+  });
+
   it('−15 con meno di 15 s: 00:00, la schermata resta, annuncia la fine e «−15 s» è inattivo (aria-disabled, non disabled)', async () => {
     await toRest();
     await advance(80);

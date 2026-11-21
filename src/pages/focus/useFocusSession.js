@@ -669,10 +669,11 @@ export default function useFocusSession() {
 
   // ±15 s: cambiano solo il recupero in corso. Il tempo già passato resta, quindi la durata segue i secondi rimasti.
   // A zero il conto si ferma (senza vibrazione, che è solo dello scadere naturale) e la schermata resta; da zero +15 lo fa ripartire.
+  // La durata non scende sotto 1: azzerato prima che passi un secondo, il recupero risulta comunque finito (anello pieno, annuncio).
   const handleAdjustTimer = (delta) => {
     const next = Math.max(0, timerRemaining + delta);
     if (next === timerRemaining) return;
-    setTimerDuration(timerDuration + next - timerRemaining);
+    setTimerDuration(Math.max(1, timerDuration + next - timerRemaining));
     setTimerRemaining(next);
     setRestLeftAtTap(prev => (next > 0 ? { seconds: next, taps: (prev?.taps ?? 0) + 1 } : null));
     if (next === 0) {
