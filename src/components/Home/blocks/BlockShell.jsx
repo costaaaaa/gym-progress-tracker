@@ -1,8 +1,10 @@
+import { useContext } from 'react';
 import { Box, Card, CardActionArea, Collapse, Skeleton, Typography, useMediaQuery } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { TITLE_FONT_FAMILY, TABULAR } from '../../../utils/fonts';
+import { BlockEditContext } from './blockEdit';
 
 const COLLAPSE_MS = 250;
 
@@ -10,9 +12,11 @@ const COLLAPSE_MS = 250;
 // titolo, una riga con un dato, a destra l'eventuale segno e la freccia. Grande = la stessa riga in testa e sotto il
 // contenuto pieno (`children`); il passaggio è un Collapse, spento da «riduci movimento». Un blocco il cui contenuto
 // pieno ripete il dato (`contentRepeatsSummary`) quando è grande non disegna in testa né il dato né il segno: resta il titolo.
+// In «Modifica Home» (`BlockEditContext`) la riga non è un link, non ha la freccia e sotto ci sono i comandi del blocco.
 // `status`: 'loading' (titolo e segnaposto) | 'error' (titolo e link restano, la riga dice che i dati non ci sono) | 'ok'.
 const BlockShell = ({ title, to, status, summary, sign = null, large = false, contentRepeatsSummary = false, children = null }) => {
   const { t } = useTranslation();
+  const controls = useContext(BlockEditContext);
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const headOnlyTitle = large && contentRepeatsSummary;
   const line = (() => {
@@ -21,21 +25,27 @@ const BlockShell = ({ title, to, status, summary, sign = null, large = false, co
     if (headOnlyTitle) return null;
     return <Typography sx={{ fontSize: 14, color: 'text.secondary', overflowWrap: 'anywhere', ...TABULAR }}>{summary}</Typography>;
   })();
+  const head = (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography component="h2" sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 600, fontSize: 16 }}>{title}</Typography>
+        {line}
+      </Box>
+      {status === 'ok' && !headOnlyTitle && sign}
+      {!controls && <ChevronRightIcon aria-hidden sx={{ color: 'text.secondary', flexShrink: 0 }} />}
+    </Box>
+  );
   return (
     <Card data-testid="home-block" aria-busy={status === 'loading' ? 'true' : undefined}>
-      <CardActionArea component={RouterLink} to={to} sx={{ minHeight: 44, px: 2.5, py: 1.75 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography component="h2" sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 600, fontSize: 16 }}>{title}</Typography>
-            {line}
-          </Box>
-          {status === 'ok' && !headOnlyTitle && sign}
-          <ChevronRightIcon aria-hidden sx={{ color: 'text.secondary', flexShrink: 0 }} />
-        </Box>
-      </CardActionArea>
+      {controls ? (
+        <Box sx={{ minHeight: 44, px: 2.5, py: 1.75 }}>{head}</Box>
+      ) : (
+        <CardActionArea component={RouterLink} to={to} sx={{ minHeight: 44, px: 2.5, py: 1.75 }}>{head}</CardActionArea>
+      )}
       <Collapse in={large && status === 'ok'} appear={false} timeout={reduceMotion ? 0 : COLLAPSE_MS} unmountOnExit>
         <Box sx={{ px: 2.5, pb: 2.5, pt: 0.5 }}>{children}</Box>
       </Collapse>
+      {controls}
     </Card>
   );
 };

@@ -1,12 +1,17 @@
 import { Suspense, lazy, useState, useEffect } from 'react';
-import { Button, Box, Skeleton, Card, Typography } from '@mui/material';
+import { Alert, Button, Box, Skeleton, Snackbar, Card, Typography } from '@mui/material';
 import { Link as RouterLink, useOutletContext } from 'react-router-dom';
 import HomeOpening, { Greeting } from '../components/Home/HomeOpening';
 import HomeBlocks from '../components/Home/HomeBlocks';
+import ModuleOffer from '../components/Home/ModuleOffer';
+import { HOME_BUTTON } from '../components/Home/homeStyles';
 import { useAuth } from '../context/AuthContext';
 import { readJson, isSuccess } from '../utils/readJson';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { useHomeLayout } from '../hooks/useHomeLayout';
+import { setHidden } from '../utils/homeLayout';
+import { MODULE_KEYS } from '../hooks/useModule';
 import { hasFocusSessionInProgress, savedDraftDayName } from '../utils/focusDraft';
 import { homeState, isRedState, todayIndex } from '../utils/homeState';
 import { radius } from '../theme/radius';
@@ -27,6 +32,10 @@ const Home = () => {
   const [records, setRecords] = useState([]);
   const [hasPlans, setHasPlans] = useState(false);
   const [stats, setStats] = useState(null);
+  // «Modifica Home»: i comandi dei blocchi; il layout lo tiene l'hook (schermo subito, salvataggio dietro)
+  const [editing, setEditing] = useState(false);
+  const { layout, change, error: layoutError, clearError: clearLayoutError } = useHomeLayout();
+  const [offerFailed, setOfferFailed] = useState(false);
   // Il Layout colora la barra in alto di rosso (sul telefono) mentre l'apertura è rossa
   const { setBarRed } = useOutletContext() ?? {};
 
@@ -142,6 +151,13 @@ const Home = () => {
 
   // Sul telefono il campo rosso arriva ai bordi: il resto della pagina si dà da solo lo spazio ai lati
   const sidePadding = { xs: red ? 2 : 0, md: 0 };
+  const offer = MODULE_KEYS.includes(user?.module_offer) ? user.module_offer : null;
+  // Un modulo appena attivato mostra il suo blocco anche se l'utente l'aveva nascosto (stesso salvataggio della modifica)
+  const showBlock = (key) => change((current) => setHidden(current, key, false));
+  const closeNotice = () => {
+    clearLayoutError();
+    setOfferFailed(false);
+  };
 
   return (
     <>
@@ -155,9 +171,28 @@ const Home = () => {
             lastWorkout={lastWorkout && !todayRecord ? lastWorkout : null}
             stats={stats}
             dashboardStatus={dashboardStatus}
+            editing={editing}
+            layout={layout}
+            onChange={change}
           />
+          {offer && !editing && (
+            <Box sx={{ mt: 3 }}>
+              <ModuleOffer key={offer} moduleKey={offer} onError={() => setOfferFailed(true)} onAccepted={() => showBlock(offer)} />
+            </Box>
+          )}
+          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+            <Button onClick={() => setEditing((on) => !on)} sx={HOME_BUTTON}>
+              {t(editing ? 'home.edit.done' : 'home.edit.start')}
+            </Button>
+          </Box>
         </Box>
       )}
+
+      <Snackbar open={layoutError || offerFailed} autoHideDuration={6000} onClose={closeNotice} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+        <Alert onClose={closeNotice} severity="error" sx={{ width: '100%' }}>
+          {t(layoutError ? 'home.edit.save_error' : 'home.offer.error')}
+        </Alert>
+      </Snackbar>
     </>
   );
 };

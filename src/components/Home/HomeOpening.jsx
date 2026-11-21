@@ -7,7 +7,7 @@ import WeekDays from './WeekDays';
 import { workoutLine } from './workoutLine';
 import { TABULAR, TITLE_FONT_FAMILY } from '../../utils/fonts';
 import { radius } from '../../theme/radius';
-import { LABEL } from './labelStyle';
+import { LABEL } from './homeStyles';
 import { isRedState } from '../../utils/homeState';
 
 const DAY_TITLE = { fontFamily: TITLE_FONT_FAMILY, fontSize: '1.5rem', fontWeight: 700, lineHeight: 1.3 };

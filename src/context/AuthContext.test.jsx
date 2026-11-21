@@ -442,6 +442,20 @@ describe('AuthProvider: unità di peso', () => {
   });
 });
 
+describe('AuthProvider: updateUser senza utente', () => {
+  it('una risposta di salvataggio arrivata dopo l\'uscita non rimette in cache un utente a metà', async () => {
+    const Probe = () => {
+      const { user, updateUser } = useAuth();
+      return (<><span data-testid="who">{user ? JSON.stringify(user) : 'nessun utente'}</span><button onClick={() => updateUser({ home_layout: [] })}>salva</button></>);
+    };
+    render(<AuthProvider><Probe /></AuthProvider>);
+    await waitFor(() => expect(backend).not.toHaveBeenCalled());
+    fireEvent.click(screen.getByText('salva'));
+    expect(screen.getByTestId('who').textContent).toBe('nessun utente');
+    expect(localStorage.getItem('user')).toBeNull();
+  });
+});
+
 // Moduli facoltativi: da user/read.php dentro `user`; chi non li ha (login, server vecchio) li ha tutti attivi
 describe('AuthProvider: moduli', () => {
   const Modules = () => {
@@ -702,10 +716,73 @@ describe('AuthProvider: home_layout', () => {
     expect(screen.getByTestId('layout').textContent).toBe(JSON.stringify(LAYOUT));
   });
 
+  it('una rilettura partita prima del salvataggio e arrivata dopo non riporta indietro il layout', async () => {
+    const NEW = [{ key: 'body', hidden: false, large: false }];
+    readReturns({ id: 1, username: 'a', home_layout: LAYOUT });
+    localStorage.setItem('isLoggedIn', 'true');
+    const Save = () => {
+      const { updateUser } = useAuth();
+      return <button onClick={() => updateUser({ home_layout: NEW })}>salva</button>;
+    };
+    render(<AuthProvider><Layout /><Refresh /><Save /></AuthProvider>);
+    await waitFor(() => expect(screen.getByTestId('layout').textContent).toBe(JSON.stringify(LAYOUT)));
+    let release;
+    backend.mockImplementation(() => new Promise((resolve) => {
+      release = () => resolve(new Response(JSON.stringify({ success: true, id: 1, username: 'a', home_layout: LAYOUT }), { status: 200 }));
+    }));
+    fireEvent.click(screen.getByText('rileggi'));
+    fireEvent.click(screen.getByText('salva'));
+    await act(async () => { release(); });
+    await waitFor(() => expect(backend).toHaveBeenCalledTimes(2));
+    await act(async () => { await Promise.resolve(); });
+    expect(screen.getByTestId('layout').textContent).toBe(JSON.stringify(NEW));
+  });
+
   it('un server senza il campo lascia user senza home_layout', async () => {
     readReturns({ id: 1, username: 'a' });
     localStorage.setItem('isLoggedIn', 'true');
     render(<AuthProvider><Layout /></AuthProvider>);
     await waitFor(() => expect(screen.getByTestId('layout').textContent).toBe('null'));
+  });
+});
+
+// Proposta di un modulo: da user/read.php dentro `user`, con la stessa tutela dei moduli
+describe('AuthProvider: module_offer', () => {
+  const Offer = () => <div data-testid="offer">{JSON.stringify(useAuth().user?.module_offer ?? null)}</div>;
+  const Tools = () => {
+    const { refreshEmailState, updateUser } = useAuth();
+    return (<><button onClick={() => refreshEmailState()}>rileggi</button><button onClick={() => updateUser({ module_offer: null })}>rispondi</button></>);
+  };
+
+  it('user.module_offer arriva da user/read.php, anche null, e un valore non valido non cambia nulla', async () => {
+    readReturns({ id: 1, username: 'a', module_offer: 'groups' });
+    localStorage.setItem('isLoggedIn', 'true');
+    render(<AuthProvider><Offer /><Tools /></AuthProvider>);
+    await waitFor(() => expect(screen.getByTestId('offer').textContent).toBe('"groups"'));
+    readReturns({ id: 1, username: 'a', module_offer: 42 });
+    fireEvent.click(screen.getByText('rileggi'));
+    await waitFor(() => expect(backend.mock.calls.length).toBeGreaterThan(1));
+    await act(async () => {});
+    expect(screen.getByTestId('offer').textContent).toBe('"groups"');
+    readReturns({ id: 1, username: 'a', module_offer: null });
+    fireEvent.click(screen.getByText('rileggi'));
+    await waitFor(() => expect(screen.getByTestId('offer').textContent).toBe('null'));
+  });
+
+  it('una rilettura partita prima della risposta e arrivata dopo non riporta indietro la proposta', async () => {
+    readReturns({ id: 1, username: 'a', module_offer: 'groups' });
+    localStorage.setItem('isLoggedIn', 'true');
+    render(<AuthProvider><Offer /><Tools /></AuthProvider>);
+    await waitFor(() => expect(screen.getByTestId('offer').textContent).toBe('"groups"'));
+    let release;
+    backend.mockImplementation(() => new Promise((resolve) => {
+      release = () => resolve(new Response(JSON.stringify({ success: true, id: 1, username: 'a', module_offer: 'groups' }), { status: 200 }));
+    }));
+    fireEvent.click(screen.getByText('rileggi'));
+    fireEvent.click(screen.getByText('rispondi'));
+    await act(async () => { release(); });
+    await waitFor(() => expect(backend).toHaveBeenCalledTimes(2));
+    await act(async () => { await Promise.resolve(); });
+    expect(screen.getByTestId('offer').textContent).toBe('null');
   });
 });

@@ -26,6 +26,8 @@ export const useModule = (key) => isModuleActive(useAuth().user, key);
 // più vecchia (che arriva per ultima) ha l'altro modulo ancora com'era e non deve riportarlo indietro. Se l'account
 // non ha ancora un elenco (subito dopo il login), si parte da quello intero restituito dal server.
 // Con `{ chosen: true }` il salvataggio chiude anche la scelta iniziale dei moduli (`modules_chosen` dell'account diventa vero).
+// Con `{ offerAnswer: { key, accepted } }` risponde alla proposta di un modulo: se accettata il modulo diventa attivo, e
+// l'account riceve la proposta di adesso (`module_offer`, di norma null).
 export const useSaveModules = () => {
   const { user, updateUser } = useAuth();
   const current = useRef(user?.modules);
@@ -34,9 +36,15 @@ export const useSaveModules = () => {
     const res = await saveModules(patch, options);
     if (res.ok) {
       const merged = current.current ? { ...current.current } : { ...res.modules };
-      Object.keys(patch).forEach((key) => { merged[key] = res.modules[key]; });
+      const { offerAnswer } = options;
+      const keys = [...Object.keys(patch), ...(offerAnswer?.accepted ? [offerAnswer.key] : [])];
+      keys.forEach((key) => { merged[key] = res.modules[key]; });
       current.current = merged;
-      updateUser(options.chosen ? { modules: merged, modules_chosen: true } : { modules: merged });
+      updateUser({
+        ...(keys.length > 0 || !offerAnswer ? { modules: merged } : {}),
+        ...(options.chosen && { modules_chosen: true }),
+        ...(offerAnswer && { module_offer: res.moduleOffer }),
+      });
     }
     return res;
   };
