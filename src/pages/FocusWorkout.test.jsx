@@ -2410,6 +2410,20 @@ describe('pallini e «Serie fatte» (F3)', () => {
     });
   });
 
+  it.each([
+    ['light', 'rgb(255, 255, 255)', 'rgb(26, 24, 22)'],
+    ['dark', 'rgb(20, 20, 22)', 'rgb(255, 255, 255)'],
+  ])('in tema %s la finestra ha lo sfondo e il testo del tema, e le voci di «⋯» il colore del testo', async (mode, paper, ink) => {
+    localStorage.setItem('themeMode', mode);
+    await startDay('Push');
+    await openDone();
+    expect(getComputedStyle(doneDialog().closest('.MuiPaper-root')).backgroundColor).toBe(paper);
+    expect(getComputedStyle(screen.getByRole('heading', { name: 'Serie fatte' })).color).toBe(ink);
+    await closeDone();
+    openMenu();
+    expect(getComputedStyle(menuItem('Salta esercizio')).color).toBe(ink);
+  });
+
   describe('correggere una serie fatta', () => {
     const squatDraft = (sets, extra = {}) => ({
       ...savedDraft, activePlan: { id: 5, name: 'Gambe', days: [legDay] }, selectedDay: legDay, selectedDayId: 3,
