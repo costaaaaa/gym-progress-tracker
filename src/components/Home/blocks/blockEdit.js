@@ -11,6 +11,10 @@ export const TITLE_KEYS = { last: 'home.last.title', levels: 'home.block.levels_
 
 const entryOf = (layout, key) => layout.find((entry) => entry.key === key);
 
+// Il segno che ogni comando porta nel documento (blocco e azione) e come ritrovarlo; senza azione, il primo del blocco
+export const controlMark = (key, action) => ({ 'data-edit-key': key, 'data-edit-action': action });
+const findControl = (key, action) => document.querySelector(`[data-edit-key="${key}"]${action ? `[data-edit-action="${action}"]` : ''}`);
+
 // Le azioni della modifica, in un posto solo: la mossa sul layout, il nome accessibile del comando (`aria`), l'etichetta
 // visibile dei comandi a testo (`label`) e l'annuncio dell'esito (`announce`); `aria`, `label` e `announce` leggono la
 // voce del blocco (prima della mossa i primi due, dopo la mossa il terzo).
@@ -55,9 +59,7 @@ export const useBlockEditing = ({ isListed, onChange }) => {
     if (!editKey) return;
     const active = document.activeElement;
     if (active && active !== document.body) return;
-    const control = document.querySelector(`[data-edit-key="${editKey}"][data-edit-action="${editAction}"]`)
-      ?? document.querySelector(`[data-edit-key="${editKey}"]`);
-    control?.focus();
+    (findControl(editKey, editAction) ?? findControl(editKey))?.focus();
   });
 
   const applyAction = (key, action) => {

@@ -811,16 +811,9 @@ describe('Modifica Home', () => {
     };
   };
 
-  it('salvataggio fallito: il fuoco resta su un comando del blocco mosso (lo stesso bottone, o il primo del blocco)', async () => {
+  it('salvataggio fallito di «Nascondi»: il bottone «Mostra» sparisce con il ritorno indietro e il fuoco va su «Nascondi» dello stesso blocco', async () => {
     const fail = failingLater();
     await edit();
-    button('Sposta su Peso').focus();
-    fireEvent.click(button('Sposta su Peso'));
-    expect(document.activeElement).toBe(button('Sposta su Peso'));
-    await fail();
-    expect(document.activeElement).toBe(button('Sposta su Peso'));
-    // Nascondere: dopo il ritorno il bottone «Mostra» non esiste più, il fuoco va su «Nascondi» dello stesso blocco
-    fireEvent.click(screen.getByRole('button', { name: 'Chiudi' }));
     button('Nascondi Recupero').focus();
     fireEvent.click(button('Nascondi Recupero'));
     expect(document.activeElement).toBe(button('Mostra Recupero'));

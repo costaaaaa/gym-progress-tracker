@@ -3,7 +3,7 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { useTranslation } from 'react-i18next';
 import { DISABLED } from '../homeStyles';
-import { EDIT_ACTIONS } from './blockEdit';
+import { EDIT_ACTIONS, controlMark } from './blockEdit';
 
 const TOUCH = 44;
 
@@ -13,11 +13,10 @@ const TOUCH = 44;
 const EditControls = ({ entry, title, canResize, first, last, onAction }) => {
   const { t } = useTranslation();
   const { key, hidden } = entry;
-  const mark = (action) => ({ 'data-edit-key': key, 'data-edit-action': action });
   const aria = (action) => t(EDIT_ACTIONS[action].aria(entry), { title });
   const move = (action, edge, icon) => (
     <IconButton
-      {...mark(action)}
+      {...controlMark(key, action)}
       aria-label={aria(action)}
       aria-disabled={edge ? 'true' : undefined}
       onClick={() => { if (!edge) onAction(key, action); }}
@@ -27,7 +26,7 @@ const EditControls = ({ entry, title, canResize, first, last, onAction }) => {
     </IconButton>
   );
   const text = (action) => (
-    <Button {...mark(action)} aria-label={aria(action)} onClick={() => onAction(key, action)} sx={{ minHeight: TOUCH, minWidth: TOUCH, fontSize: 14 }}>
+    <Button {...controlMark(key, action)} aria-label={aria(action)} onClick={() => onAction(key, action)} sx={{ minHeight: TOUCH, minWidth: TOUCH, fontSize: 14 }}>
       {t(EDIT_ACTIONS[action].label(entry))}
     </Button>
   );
