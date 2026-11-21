@@ -96,6 +96,14 @@ export const slotWeight = (exercise, slotIndex, { suggested = '', current = '' }
   return nextSetWeight(exercise, current);
 };
 
+// Peso (kg, numero) della serie successiva da mostrare nel recupero, null se non c'è: quello con cui parte il campo; se il
+// campo parte vuoto e sia la serie appena fatta sia la successiva sono allenanti, quello della serie appena fatta. Zero = nessun peso.
+export const restNextWeight = ({ field, previous, previousIsWarmup, nextIsWarmup }) => {
+  const fromField = parseFloat(field);
+  const kg = Number.isFinite(fromField) ? fromField : (!previousIsWarmup && !nextIsWarmup ? parseFloat(previous) : NaN);
+  return Number.isFinite(kg) && kg > 0 ? kg : null;
+};
+
 // Serie dell'ultima sessione per le chip "Ultima volta": [{ label, technique }]
 // repsLabel(reps) scrive le ripetizioni di una serie senza peso: il testo lo dà il chiamante (lingua).
 export const lastSessionSets = (lastSession, locale, repsLabel, unit = DEFAULT_WEIGHT_UNIT) => {
