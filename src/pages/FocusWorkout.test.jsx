@@ -57,6 +57,14 @@ const mount = async () => {
   await advance(0);
 };
 const click = (name) => fireEvent.click(screen.getByRole('button', { name }));
+// Le azioni sotto «⋯»: si apre il menu e si sceglie la voce. «Cambia» e «Aggiungi» aprono la loro finestra a menu chiuso
+const openMenu = () => fireEvent.click(screen.getByRole('button', { name: 'Altre azioni' }));
+const menuItem = (name) => screen.getByRole('menuitem', { name });
+const chooseAction = async (name) => {
+  openMenu();
+  fireEvent.click(menuItem(name));
+  await advance(500);
+};
 const startDay = async (dayName) => {
   await mount();
   fireEvent.click(screen.getByRole('radio', { name: dayName }));
@@ -199,7 +207,8 @@ describe('bozza e ripresa', () => {
     click('Riprendi allenamento');
     expect(screen.getByRole('heading', { name: 'Panca piana' })).toBeTruthy();
     // "Salta serie" c'è solo dalla seconda serie
-    expect(screen.getByRole('button', { name: 'Salta serie' })).toBeTruthy();
+    openMenu();
+    expect(menuItem('Salta serie')).toBeTruthy();
   });
 
   it('riprendendo, la serie già confermata tiene il suo orario e la prossima parte dal vecchio inizio', async () => {
@@ -211,7 +220,7 @@ describe('bozza e ripresa', () => {
     click('Riprendi allenamento');
     doSet('62.5', '7'); // 18:00, la sessione è iniziata alle 17:40
     await advance(0.3);
-    click('Salta esercizio');
+    await chooseAction('Salta esercizio');
     await act(async () => { click('Salva allenamento'); });
     await advance(0);
 
@@ -224,7 +233,7 @@ describe('bozza e ripresa', () => {
     click('Riprendi allenamento');
     doSet('62.5', '7');
     await advance(0.3);
-    click('Salta esercizio');
+    await chooseAction('Salta esercizio');
     await act(async () => { click('Salva allenamento'); });
     await advance(0);
 
@@ -738,12 +747,12 @@ describe('salti e uscita', () => {
     doSet();
     click('Salta timer');
 
-    click('Salta serie');
+    await chooseAction('Salta serie');
     expect(screen.queryByText('Recupero')).toBeNull();
     await advance(0.3);
     expect(screen.getByRole('heading', { name: 'Croci' })).toBeTruthy();
 
-    click('Salta esercizio');
+    await chooseAction('Salta esercizio');
     expect(screen.getByText('Riepilogo')).toBeTruthy();
 
     await act(async () => { click('Salva allenamento'); });
@@ -785,15 +794,18 @@ describe('errori e funzioni bloccate', () => {
 
   it('senza la funzione Plus i bottoni in allenamento hanno l\'etichetta "Plus" e il nome accessibile "… (Plus)"', async () => {
     await startDay('Push');
-    expect(screen.getByRole('button', { name: 'Cambia esercizio (Plus)' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Aggiungi esercizio (Plus)' })).toBeTruthy();
+    openMenu();
+    expect(menuItem('Cambia esercizio (Plus)')).toBeTruthy();
+    expect(menuItem('Aggiungi esercizio (Plus)')).toBeTruthy();
   });
 
   it('l\'etichetta "Plus" sta fuori dal bottone sbiadito e resta piena, anche dopo una serie fatta', async () => {
     await startDay('Push');
     doSet();
     click('Salta timer');
-    const swap = screen.getByRole('button', { name: 'Cambia esercizio (Plus)' });
+    openMenu();
+    await advance(500);
+    const swap = within(menuItem('Cambia esercizio (Plus)')).getByText('Cambia esercizio');
     expect(getComputedStyle(swap).opacity).toBe('0.45');
     const labels = screen.getAllByText('Plus');
     expect(labels).toHaveLength(2);
@@ -814,7 +826,8 @@ describe('errori e funzioni bloccate', () => {
     responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
     await startDay('Push');
     expect(screen.queryByText('Plus')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Cambia esercizio' })).toBeTruthy();
+    openMenu();
+    expect(menuItem('Cambia esercizio')).toBeTruthy();
   });
 
   it('senza la funzione Plus anche "Aggiungi esercizio" del riepilogo mostra "Plus"', async () => {
@@ -826,7 +839,7 @@ describe('errori e funzioni bloccate', () => {
 
   it('senza la funzione Plus, cambiare esercizio apre il dialog Plus con il link ai piani', async () => {
     await startDay('Push');
-    click('Cambia esercizio (Plus)');
+    await chooseAction('Cambia esercizio (Plus)');
     expect(screen.getByText('Funzione Plus')).toBeTruthy();
     expect(screen.getByText("Con Plus o Pro puoi cambiare o aggiungere esercizi durante l'allenamento.")).toBeTruthy();
     expect(screen.queryByText(/dalla sezione schede/)).toBeNull();
@@ -889,7 +902,7 @@ describe('colori di Focus: rosso solo per ciò che è distruttivo', () => {
   it('il cronometro e il contatore degli esercizi sono in text.secondary', async () => {
     await startDay('Push');
     expect(getComputedStyle(screen.getByText('00:00')).color).toBe(GREY);
-    expect(getComputedStyle(screen.getByText('1/1')).color).toBe(GREY);
+    expect(getComputedStyle(screen.getByText('Esercizio 1 di 1')).color).toBe(GREY);
   });
 
   it('il campo con il focus ha il bordo in inchiostro, non rosso', async () => {
@@ -936,7 +949,7 @@ describe('colori di Focus: rosso solo per ciò che è distruttivo', () => {
 
   it('il dialogo Plus ha il bottone "Ho capito" non rosso', async () => {
     await startDay('Push');
-    click('Cambia esercizio (Plus)');
+    await chooseAction('Cambia esercizio (Plus)');
     expect(getComputedStyle(screen.getByRole('button', { name: 'Ho capito' })).color).not.toBe(RED);
   });
 });
@@ -1211,7 +1224,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
   it('"Salta riscaldamento" salta le serie rimaste senza recupero e porta alla prima serie allenante', async () => {
     await startDay('Gambe');
     expect(screen.queryByRole('button', { name: 'Salta serie' })).toBeNull();
-    click('Salta riscaldamento');
+    await chooseAction('Salta riscaldamento');
     expect(screen.queryByText('Recupero')).toBeNull();
     expect(screen.getByText('Serie 1 di 2')).toBeTruthy();
     expect(screen.getByLabelText('Peso (kg)').value).toBe('100');
@@ -1243,7 +1256,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     await startDay('Gambe');
     doSet('20', '10');
     click('Salta timer');
-    click('Salta riscaldamento');
+    await chooseAction('Salta riscaldamento');
     doSet('100', '5');
     click('Salta timer');
     doSet('100', '4');
@@ -1311,7 +1324,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
 
   it('riepilogo: il riscaldamento ha il badge "Risc." e non entra nel conteggio delle serie', async () => {
     await startDay('Gambe');
-    click('Salta riscaldamento');
+    await chooseAction('Salta riscaldamento');
     doSet('100', '5');
     click('Salta timer');
     doSet('100', '4');
@@ -1324,7 +1337,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     await startDay('Gambe');
     doSet('20', '10');
     click('Salta timer');
-    click('Salta riscaldamento');
+    await chooseAction('Salta riscaldamento');
     doSet('100', '5');
     click('Salta timer');
     doSet('100', '4');
@@ -1351,7 +1364,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
       responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
     });
     const swapToCroci = async () => {
-      click('Cambia esercizio');
+      await chooseAction('Cambia esercizio');
       await advance(0);
       // Il catalogo è in cache di modulo e parte dal gruppo muscolare dell'esercizio: si cerca per nome
       fireEvent.change(screen.getByPlaceholderText(/^Cerca/), { target: { value: 'Croci' } });
@@ -1360,7 +1373,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
 
     it('dopo "Salta riscaldamento", senza serie fatte, si può cambiare e si riparte dal riscaldamento della scheda', async () => {
       await startDay('Gambe');
-      click('Salta riscaldamento');
+      await chooseAction('Salta riscaldamento');
       await swapToCroci();
       expect(screen.queryByText('Puoi cambiare l\'esercizio solo prima di aver fatto una serie')).toBeNull();
       expect(screen.getByText('Ora: Croci ai cavi')).toBeTruthy();
@@ -1371,7 +1384,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
       await startDay('Gambe');
       doSet('20', '10');
       click('Salta timer');
-      click('Cambia esercizio');
+      await chooseAction('Cambia esercizio');
       await advance(0);
       expect(screen.getByText('Puoi cambiare l\'esercizio solo prima di aver fatto una serie')).toBeTruthy();
       // Il picker non si è aperto (il catalogo può essere già in cache di modulo: non si guarda la rete)
@@ -1384,7 +1397,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
       { weight: 40, reps: '8', is_warmup: true },
     ] }] }] });
     await startDay('Gambe');
-    click('Salta riscaldamento');
+    await chooseAction('Salta riscaldamento');
     expect(screen.getByLabelText('Peso (kg)').value).toBe('');
   });
 
@@ -1393,7 +1406,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     await startDay('Gambe');
     doSet('20', '10');
     click('Salta timer');
-    click('Salta esercizio');
+    await chooseAction('Salta esercizio');
     await advance(0.3);
     doSet('30', '12');
     click('Salta timer');
@@ -1410,7 +1423,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     doSet('20', '10');
     click('Salta timer');
     expect(screen.getByLabelText('Riscaldamento 1, fatta')).toBeTruthy();
-    click('Salta riscaldamento');
+    await chooseAction('Salta riscaldamento');
     expect(screen.getByLabelText('Riscaldamento 2, saltata')).toBeTruthy();
     expect(screen.getByLabelText('Serie 1, in corso')).toBeTruthy();
   });
@@ -1456,7 +1469,7 @@ describe('ordine reale e orario delle serie (#26)', () => {
     }));
     await mount();
     click('Riprendi allenamento');
-    click('Salta serie');
+    await chooseAction('Salta serie');
     await advance(0.3);
     await act(async () => { click('Salva allenamento'); });
     await advance(0);
@@ -1479,7 +1492,7 @@ describe('ordine reale e orario delle serie (#26)', () => {
     }));
     await mount();
     click('Riprendi allenamento');
-    click('Salta serie');
+    await chooseAction('Salta serie');
     await advance(0.3);
     await act(async () => { click('Salva allenamento'); });
     await advance(0);
@@ -1680,7 +1693,7 @@ describe('nomi accessibili', () => {
   it('il picker degli esercizi: il tasto di chiusura ha un nome e non finisce in quello del dialogo', async () => {
     responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
     await startDay('Push');
-    click('Cambia esercizio');
+    await chooseAction('Cambia esercizio');
     await advance(0);
     expect(screen.getByRole('dialog', { name: 'Cambia esercizio' })).toBeTruthy();
     expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Chiudi' })).toBeTruthy();
@@ -1781,7 +1794,7 @@ describe('peso in kg: il testo del campo resta com\'è scritto', () => {
     doSet('60', '8');
     click('Salta timer');
     fireEvent.change(screen.getByLabelText('Peso (kg)'), { target: { value: '20.0' } });
-    click('Salta serie');
+    await chooseAction('Salta serie');
     expect(screen.getByLabelText('Peso (kg)').value).toBe('20.0');
   });
 
@@ -1842,7 +1855,7 @@ describe('peso in libbre: dati sempre in kg', () => {
     doSetLb('220', '8');
     click('Salta timer');
     fireEvent.change(screen.getByLabelText('Peso (lb)'), { target: { value: '200' } });
-    click('Salta serie');
+    await chooseAction('Salta serie');
     expect(screen.getByLabelText('Peso (lb)').value).toBe('200');
     fireEvent.change(screen.getByLabelText('Ripetizioni'), { target: { value: '8' } });
     click('Conferma serie');
@@ -2164,5 +2177,133 @@ describe('strumenti della serie', () => {
       await startDay('Pressa');
       expect(weightField().value).toBe('0');
     });
+  });
+});
+
+describe('barra in alto e menu «⋯» (F3)', () => {
+  const squat = {
+    id: 11, exercise_id: 5, exercise_name: 'Squat', rest: 60, muscle_group: 'gambe', equipment: 'bilanciere',
+    planned_sets: plannedSets(1, times(3, { min: 5, max: 5 })),
+  };
+  const legDay = { id: 3, name: 'Gambe', exercises: [squat, fly] };
+  const withLegs = () => { responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Gambe', is_active: true, days: [legDay] }] }); };
+  const itemNames = () => screen.getAllByRole('menuitem').map((el) => el.getAttribute('aria-label') ?? el.textContent);
+  const pro = () => { responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: ['focus_session_edit'] }); };
+
+  it('la barra dice «Esercizio 1 di 2» in parole', async () => {
+    withLegs();
+    await startDay('Gambe');
+    expect(screen.getByText('Esercizio 1 di 2')).toBeTruthy();
+    expect(screen.queryByText('1/2')).toBeNull();
+  });
+
+  it('«⋯»: nome accessibile, menu, 44 px, aria-expanded e aria-controls solo da aperto', async () => {
+    withLegs();
+    await startDay('Gambe');
+    const more = screen.getByRole('button', { name: 'Altre azioni' });
+    expect(more.getAttribute('aria-haspopup')).toBe('menu');
+    expect(more.getAttribute('aria-expanded')).toBe('false');
+    expect(more.getAttribute('aria-controls')).toBeNull();
+    expect(getComputedStyle(more).width).toBe('44px');
+    expect(getComputedStyle(more).height).toBe('44px');
+    fireEvent.click(more);
+    expect(more.getAttribute('aria-expanded')).toBe('true');
+    const menu = screen.getByRole('menu');
+    expect(more.getAttribute('aria-controls')).toBe(menu.id);
+    screen.getAllByRole('menuitem').forEach((item) => expect(parseInt(getComputedStyle(item).minHeight, 10)).toBeGreaterThanOrEqual(44));
+  });
+
+  it('i tre «Salta» e «Cambia / Aggiungi» non stanno più sotto «Conferma serie»', async () => {
+    withLegs();
+    await startDay('Gambe');
+    ['Salta riscaldamento', 'Salta serie', 'Salta esercizio', 'Cambia esercizio (Plus)', 'Aggiungi esercizio (Plus)'].forEach((name) => {
+      expect(screen.queryByRole('button', { name })).toBeNull();
+    });
+  });
+
+  it('in riscaldamento: «Salta riscaldamento», «Salta esercizio», «Cambia», «Aggiungi» (senza «Salta serie»)', async () => {
+    withLegs();
+    await startDay('Gambe');
+    openMenu();
+    expect(itemNames()).toEqual(['Salta riscaldamento', 'Salta esercizio', 'Cambia esercizio (Plus)', 'Aggiungi esercizio (Plus)']);
+  });
+
+  it('alla prima serie allenante: niente «Salta serie» né «Salta riscaldamento»', async () => {
+    withLegs();
+    await startDay('Gambe');
+    await chooseAction('Salta riscaldamento');
+    openMenu();
+    expect(itemNames()).toEqual(['Salta esercizio', 'Cambia esercizio (Plus)', 'Aggiungi esercizio (Plus)']);
+  });
+
+  it('dalla seconda serie allenante c\'è «Salta serie» e fa quello che faceva il bottone', async () => {
+    withLegs();
+    await startDay('Gambe');
+    await chooseAction('Salta riscaldamento');
+    doSet();
+    click('Salta timer');
+    openMenu();
+    expect(itemNames()).toEqual(['Salta serie', 'Salta esercizio', 'Cambia esercizio (Plus)', 'Aggiungi esercizio (Plus)']);
+    fireEvent.click(menuItem('Salta serie'));
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(screen.getByText('Serie 3 di 3')).toBeTruthy();
+  });
+
+  it('«Salta esercizio» porta all\'esercizio dopo e il menu si chiude', async () => {
+    withLegs();
+    await startDay('Gambe');
+    await chooseAction('Salta esercizio');
+    await advance(500);
+    expect(screen.getByRole('heading', { name: 'Croci' })).toBeTruthy();
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('senza Plus: «Cambia» e «Aggiungi» hanno l\'etichetta «Plus» e aprono la finestra Plus, con il fuoco che torna a «⋯»', async () => {
+    withLegs();
+    await startDay('Gambe');
+    openMenu();
+    expect(screen.getAllByText('Plus')).toHaveLength(2);
+    fireEvent.click(menuItem('Cambia esercizio (Plus)'));
+    await advance(500);
+    expect(screen.getByText('Funzione Plus')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Ho capito' }));
+    await advance(500);
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Altre azioni' }));
+  });
+
+  it('con Plus le voci non hanno l\'etichetta e «Aggiungi esercizio» apre la scelta dell\'esercizio', async () => {
+    withLegs();
+    pro();
+    await startDay('Gambe');
+    openMenu();
+    expect(screen.queryByText('Plus')).toBeNull();
+    fireEvent.click(menuItem('Aggiungi esercizio'));
+    await advance(500);
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(screen.getByText('Croci ai cavi')).toBeTruthy();
+  });
+
+  it('dopo una serie fatta «Cambia» resta nel menu, sbiadito, e avvisa come prima', async () => {
+    withLegs();
+    pro();
+    await startDay('Gambe');
+    doSet();
+    click('Salta timer');
+    openMenu();
+    const swap = menuItem('Cambia esercizio');
+    expect(getComputedStyle(within(swap).getByText('Cambia esercizio')).opacity).toBe('0.45');
+    fireEvent.click(swap);
+    await advance(500);
+    expect(screen.getByText('Puoi cambiare l\'esercizio solo prima di aver fatto una serie')).toBeTruthy();
+  });
+
+  it('Esc chiude il menu e il fuoco torna a «⋯»', async () => {
+    withLegs();
+    await startDay('Gambe');
+    openMenu();
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
+    await advance(500);
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Altre azioni' }));
   });
 });

@@ -4,8 +4,8 @@ import {
   IconButton, Chip, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Fade
 } from '@mui/material';
 import {
-  SkipNext as SkipNextIcon, Check as CheckIcon, Close as CloseIcon, Info as InfoIcon, AccessTime as AccessTimeIcon,
-  History as HistoryIcon, SwapHoriz as SwapIcon, Add as AddIcon, Remove as RemoveIcon
+  Check as CheckIcon, Close as CloseIcon, Info as InfoIcon, AccessTime as AccessTimeIcon,
+  History as HistoryIcon, Remove as RemoveIcon
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
@@ -19,7 +19,7 @@ import { formatWeightInUnit, maxWeightInUnit, weightStepInUnit, weightUnitLabel 
 import { intlLocale, formatSetText } from '../../i18n/format';
 import { muscleLabel, techniqueLabel } from '../../i18n/labels';
 import { radius } from '../../theme/radius';
-import LockedButton from './LockedButton';
+import ActionsMenu from './ActionsMenu';
 import TechniqueRow from './TechniqueRow';
 
 export default function WorkoutPhase({
@@ -58,16 +58,19 @@ export default function WorkoutPhase({
   const target = slotTarget(currentExercise, currentSetIndex);
   // "a cedimento (min. 6)" non entra nel campo a dimensione piena: placeholder più piccolo
   const failureTarget = plannedSetAt(currentExercise, currentSetIndex)?.to_failure === true;
-  const skipButtonSx = { py: 1.5, color: colors.textSecondary, '&:hover': { color: colors.text, bgcolor: colors.bgElevated } };
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text, display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${colors.border}` }}>
-        <IconButton onClick={onQuit} aria-label={t('focus.quit_aria')} sx={{ color: colors.textSecondary }}><CloseIcon /></IconButton>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Box sx={{ px: 1, py: 1, display: 'flex', alignItems: 'center', gap: 0.5, borderBottom: `1px solid ${colors.border}` }}>
+        <IconButton onClick={onQuit} aria-label={t('focus.quit_aria')} sx={{ width: 44, height: 44, color: colors.textSecondary }}><CloseIcon /></IconButton>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <AccessTimeIcon sx={{ fontSize: 16, color: colors.textSecondary }} />
           <Typography variant="caption" sx={{ ...TABULAR, color: colors.textSecondary }}>{finishedClock ?? <ElapsedClock startTime={clockStart} />}</Typography>
         </Box>
-        <Typography variant="caption" sx={{ color: colors.textSecondary }}>{currentExerciseIndex + 1}/{totalExercises}</Typography>
+        <Typography variant="caption" sx={{ flex: 1, minWidth: 0, textAlign: 'center', color: colors.textSecondary }}>
+          {t('focus.exercise_of', { current: currentExerciseIndex + 1, total: totalExercises })}
+        </Typography>
+        <ActionsMenu currentSlot={currentSlot} canEditSession={canEditSession} canSwap={canSwap}
+          onSkipWarmup={onSkipWarmup} onSkipSet={onSkipSet} onSkipExercise={onSkipExercise} onOpenPicker={onOpenPicker} />
       </Box>
 
       <LinearProgress variant="determinate" value={((currentExerciseIndex) / totalExercises) * 100} aria-label={t('focus.progress_aria')}
@@ -181,39 +184,6 @@ export default function WorkoutPhase({
               '&:disabled': { bgcolor: colors.bgElevated, color: colors.textSecondary }, mb: 2, transition: 'all 0.3s ease' }}>
             {t('focus.confirm_set')}
           </Button>
-
-          <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-            {/* In riscaldamento si salta tutto il riscaldamento; dalla seconda serie allenante si salta la serie
-                (saltare la prima equivale a saltare l'esercizio) */}
-            {currentSlot.isWarmup && (
-              <Button variant="text" fullWidth startIcon={<SkipNextIcon />} onClick={onSkipWarmup}
-                sx={skipButtonSx}>
-                {t('focus.skip_warmup')}
-              </Button>
-            )}
-            {currentSlot.workingIndex > 0 && (
-              <Button variant="text" fullWidth startIcon={<SkipNextIcon />} onClick={onSkipSet}
-                sx={skipButtonSx}>
-                {t('focus.skip_set')}
-              </Button>
-            )}
-            <Button variant="text" fullWidth startIcon={<SkipNextIcon />} onClick={onSkipExercise}
-              sx={skipButtonSx}>
-              {t('focus.skip_exercise')}
-            </Button>
-          </Box>
-
-          <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
-            {[
-              { mode: 'swap', label: t('focus.swap_exercise'), icon: <SwapIcon /> },
-              { mode: 'add', label: t('focus.add_exercise'), icon: <AddIcon /> },
-            ].map(({ mode: pickerMode, label, icon }) => (
-              <LockedButton key={pickerMode} locked={!canEditSession} label={label} startIcon={icon}
-                onClick={() => onOpenPicker(pickerMode)}
-                wrapperSx={{ flex: 1, minWidth: 0 }}
-                faded={pickerMode === 'swap' && !canSwap} />
-            ))}
-          </Box>
 
           {currentExerciseSets.length > 0 && (
             <Paper sx={{ bgcolor: colors.bgCard, overflow: 'hidden', border: `1px solid ${colors.border}` }}>

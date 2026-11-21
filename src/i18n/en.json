@@ -890,6 +890,8 @@
   "focus.skip_exercise": "Skip exercise",
   "focus.swap_exercise": "Swap exercise",
   "focus.add_exercise": "Add exercise",
+  "focus.exercise_of": "Exercise {{current}} of {{total}}",
+  "focus.more_actions": "More actions",
   "focus.sets_done": "Completed sets",
   "focus.set_n": "Set {{n}}",
   "focus.set_of": "Set {{n}} of {{total}}",

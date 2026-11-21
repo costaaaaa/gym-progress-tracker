@@ -890,6 +890,8 @@
   "focus.skip_exercise": "Salta esercizio",
   "focus.swap_exercise": "Cambia esercizio",
   "focus.add_exercise": "Aggiungi esercizio",
+  "focus.exercise_of": "Esercizio {{current}} di {{total}}",
+  "focus.more_actions": "Altre azioni",
   "focus.sets_done": "Serie completate",
   "focus.set_n": "Serie {{n}}",
   "focus.set_of": "Serie {{n}} di {{total}}",
