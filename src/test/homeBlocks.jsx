@@ -4,6 +4,7 @@ import { vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
+import { json } from './dom';
 
 const Where = () => <p data-testid="where">{useLocation().pathname}{useLocation().search}</p>;
 
@@ -18,18 +19,13 @@ export const renderBlock = (element) => render(
   </MemoryRouter>,
 );
 
-const reply = (body) => {
-  if (body?.status === 500) return Promise.resolve({ ok: false, status: 500, json: async () => ({}) });
-  return Promise.resolve({ ok: true, status: 200, json: async () => body });
-};
-
 // `responses`: { 'parte/dell/indirizzo': corpo | { status: 500 } | (url) => corpo }
 export const stubFetch = (responses) => {
   const fake = vi.fn((url) => {
     const key = Object.keys(responses).find((k) => String(url).includes(k));
-    if (!key) return Promise.resolve({ ok: false, status: 404, json: async () => ({}) });
-    const body = responses[key];
-    return reply(typeof body === 'function' ? body(url) : body);
+    if (!key) return Promise.resolve(json({}, 404));
+    const body = typeof responses[key] === 'function' ? responses[key](url) : responses[key];
+    return Promise.resolve(body?.status === 500 ? json({}, 500) : json(body));
   });
   vi.stubGlobal('fetch', fake);
   return fake;

@@ -72,6 +72,15 @@ describe('blocco «Gruppi»', () => {
     expect(getComputedStyle(within(list).getAllByRole('listitem')[3]).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
   });
 
+  it('grande, account in lb: il volume della classifica è in lb (il server manda kg)', async () => {
+    stubFetch(server({ 'groups/read.php': read([row(1, 'marta', { volume_kg: 5200 }), row(2, 'io', { is_me: true, volume_kg: 4820 })]) }));
+    renderBlock(<GroupsBlock large weightUnit="lb" />);
+    const list = await screen.findByRole('list');
+    expect(within(list).getByText('11.464 lb')).toBeTruthy(); // 5200 kg
+    expect(within(list).getByText('10.626 lb')).toBeTruthy(); // 4820 kg
+    expect(list.textContent).not.toMatch(/kg/);
+  });
+
   it('grande con la propria riga tra i primi tre: solo i tre', async () => {
     stubFetch(server({ 'groups/read.php': read([row(1, 'marta'), row(2, 'io', { is_me: true }), row(3, 'anna'), row(4, 'luca')]) }));
     renderBlock(<GroupsBlock large />);

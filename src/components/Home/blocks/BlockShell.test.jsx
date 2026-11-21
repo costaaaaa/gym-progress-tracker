@@ -43,10 +43,20 @@ describe('guscio dei blocchi', () => {
     expect(screen.getByRole('link').textContent).not.toContain('Contenuto pieno');
   });
 
-  it('senza dato la riga in testa ha solo il titolo (il contenuto pieno lo dice già)', () => {
-    renderBlock(shell({ large: true, summary: null }));
-    expect(screen.getByRole('link').querySelectorAll('p').length).toBe(0);
+  it('contentRepeatsSummary: grande la riga in testa ha solo titolo e freccia, senza dato né segno', () => {
+    renderBlock(shell({ large: true, contentRepeatsSummary: true, sign: <span data-testid="segno" /> }));
+    const link = screen.getByRole('link');
+    expect(link.querySelectorAll('p').length).toBe(0);
+    expect(within(link).queryByTestId('segno')).toBeNull();
+    expect(link.textContent).not.toContain('78,4 kg');
     expect(screen.getByRole('heading', { level: 2, name: 'Peso' })).toBeTruthy();
+    expect(screen.getByText('Contenuto pieno')).toBeTruthy();
+  });
+
+  it('contentRepeatsSummary: piccola il dato e il segno ci sono', () => {
+    renderBlock(shell({ contentRepeatsSummary: true, sign: <span data-testid="segno" /> }));
+    expect(screen.getByRole('link').textContent).toContain('78,4 kg');
+    expect(screen.getByTestId('segno')).toBeTruthy();
   });
 
   it('caricamento: titolo e segnaposto, nessun dato, aria-busy', () => {

@@ -15,11 +15,3 @@ export const useBlockData = (load) => {
   }, [load]);
   return state;
 };
-
-// Lettura di un endpoint del sito come JSON, o null se non è andata bene
-export const readJson = async (url, accept = (data) => data?.success === true) => {
-  const response = await fetch(url, { credentials: 'include' });
-  if (!response.ok) return null;
-  const data = await response.json();
-  return accept(data) ? data : null;
-};

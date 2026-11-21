@@ -14,8 +14,8 @@ const load = async () => {
   if (!list.ok) return null;
   const group = list.data.groups?.[0] ?? null;
   if (!group) return { group: null, board: null };
-  const detail = await readGroup(group.id, 'week');
-  const rows = detail.ok && detail.data.visibility?.workouts !== false && Array.isArray(detail.data.board) ? detail.data.board : [];
+  const reading = await readGroup(group.id, 'week');
+  const rows = reading.ok && reading.data.visibility?.workouts !== false && Array.isArray(reading.data.board) ? reading.data.board : [];
   const mine = rows.find((row) => row.is_me) ?? null;
   return { group, board: mine ? { rows, mine } : null };
 };
@@ -29,8 +29,8 @@ const GroupsBlock = ({ large = false, weightUnit = 'kg' }) => {
   const { group, board } = data ?? {};
   const summary = (() => {
     if (!group) return t('home.block.groups_none');
-    const detail = board ? t('home.block.groups_rank', { count: board.mine.rank, ordinal: true }) : t('groups_card.members', { count: Number(group.members_count) });
-    return `${group.name} · ${detail}`;
+    const where = board ? t('home.block.groups_rank', { count: board.mine.rank, ordinal: true }) : t('groups_card.members', { count: Number(group.members_count) });
+    return `${group.name} · ${where}`;
   })();
   return (
     <BlockShell title={t('groups.title')} to="/gruppi" status={status} summary={summary} large={large && Boolean(board)}>

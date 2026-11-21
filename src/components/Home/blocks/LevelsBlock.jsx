@@ -2,16 +2,16 @@ import { Box, LinearProgress, Typography } from '@mui/material';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import { useTranslation } from 'react-i18next';
 import BlockShell from './BlockShell';
-import { readJson, useBlockData } from './useBlockData';
-import { API_BASE_URL } from '../../../config';
+import { useBlockData } from './useBlockData';
+import { readJson, isSuccess } from '../../../api/readJson';
 import { formatNumber } from '../../../i18n/format';
 import { TITLE_FONT_FAMILY } from '../../../utils/fonts';
 
 // Livello e punti, e le settimane di fila: tutte e due le letture devono essere buone
 const load = async () => {
   const [profile, streak] = await Promise.all([
-    readJson(`${API_BASE_URL}api/gamification/profile.php`),
-    readJson(`${API_BASE_URL}api/gamification/streak.php`),
+    readJson('api/gamification/profile.php', isSuccess),
+    readJson('api/gamification/streak.php', isSuccess),
   ]);
   return profile && streak ? { profile, weeks: Number(streak.current_streak_weeks) || 0 } : null;
 };
@@ -28,9 +28,10 @@ const LevelsBlock = ({ large = false }) => {
       title={t('home.block.levels_title')}
       to="/profilo"
       status={status}
-      summary={large ? null : summary}
-      sign={weeks > 0 && !large ? <LocalFireDepartmentIcon aria-hidden sx={{ fontSize: 26, color: 'warning.text' }} /> : null}
+      summary={summary}
+      sign={weeks > 0 ? <LocalFireDepartmentIcon aria-hidden sx={{ fontSize: 26, color: 'warning.text' }} /> : null}
       large={large}
+      contentRepeatsSummary
     >
       {status === 'ok' && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>

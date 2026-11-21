@@ -4,7 +4,7 @@ import { Link as RouterLink, useOutletContext } from 'react-router-dom';
 import HomeOpening, { Greeting } from '../components/Home/HomeOpening';
 import HomeBlocks from '../components/Home/HomeBlocks';
 import { useAuth } from '../context/AuthContext';
-import { API_BASE_URL } from '../config';
+import { readJson } from '../api/readJson';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { hasFocusSessionInProgress, savedDraftDayName } from '../utils/focusDraft';
@@ -15,14 +15,6 @@ import { radius } from '../theme/radius';
 const Landing = lazy(() => import('./landing/Landing'));
 
 const NO_DAYS = new Array(7).fill(false);
-
-// Risposta della richiesta come dati, o null se non è andata bene (lo stato di ogni richiesta lo decide il chiamante)
-const fetchJson = async (path, accept = () => true) => {
-  const response = await fetch(`${API_BASE_URL}${path}`, { credentials: 'include' });
-  if (!response.ok) return null;
-  const data = await response.json();
-  return accept(data) ? data : null;
-};
 
 const Home = () => {
   const { isLoggedIn, user, weightUnit } = useAuth();
@@ -45,7 +37,7 @@ const Home = () => {
     // Le tre richieste partono insieme, ognuna con il suo esito: una che fallisce non ferma le altre
     const load = async (path, accept, onData, setStatus) => {
       try {
-        const data = await fetchJson(path, accept);
+        const data = await readJson(path, accept);
         if (!active) return;
         if (data) onData(data);
         setStatus(data ? 'ok' : 'failed');
@@ -158,7 +150,6 @@ const Home = () => {
       {ready && !showStartHere && (
         <Box sx={{ px: sidePadding }}>
           <HomeBlocks
-            layout={user?.home_layout}
             user={user}
             weightUnit={weightUnit}
             lastWorkout={lastWorkout && !todayRecord ? lastWorkout : null}

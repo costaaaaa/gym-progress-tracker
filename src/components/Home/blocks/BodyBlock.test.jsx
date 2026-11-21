@@ -144,6 +144,8 @@ describe('blocco «Peso»: il periodo parte da today del server', () => {
   });
 
   it.each(['UTC', 'Europe/Rome', 'America/Los_Angeles', 'Asia/Tokyo'])('mezzanotte vicina al confine (%s): today 01/12 parte dal 01/11, non da un giorno prima', async (zone) => {
+    // Dispositivo al 30/11 23:50 (mese 10 = novembre): con l'orologio del dispositivo il periodo partirebbe dal 30/10,
+    // includerebbe la misura del 31/10 e darebbe «-2 kg»; da today del server (01/12) parte dal 01/11 e dà «-1 kg»
     pinLocalClock(zone, 2026, 10, 30, 23, 50);
     stubFetch(server([rec('2026-10-31', '80'), rec('2026-11-01', '79'), rec('2026-12-01', '78')]));
     renderBlock(<BodyBlock today="2026-12-01" />);

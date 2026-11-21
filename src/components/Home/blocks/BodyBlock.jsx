@@ -1,8 +1,8 @@
 import { Box, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import BlockShell from './BlockShell';
-import { readJson, useBlockData } from './useBlockData';
-import { API_BASE_URL } from '../../../config';
+import { useBlockData } from './useBlockData';
+import { readJson } from '../../../api/readJson';
 import { intlLocale } from '../../../i18n/format';
 import { PERIOD_UI, filterByPeriod, periodWeightDelta, sortByDate, weightTrend } from '../../../utils/bodyStatsPeriod';
 import { BODY_LB_DIVISIONS, formatWeightInUnit } from '../../../utils/weightUnit';
@@ -14,7 +14,7 @@ const SPARK_POINTS = 30;
 // Le misure con un peso, in ordine di data. Senza consenso alla salute il server risponde 200 con l'elenco vuoto
 // (`consent_required`): non è un errore, è «nessuna misura».
 const load = async () => {
-  const data = await readJson(`${API_BASE_URL}api/user_stats/read.php`, (body) => Array.isArray(body?.records));
+  const data = await readJson('api/user_stats/read.php', (body) => Array.isArray(body?.records));
   if (!data) return null;
   return { weights: sortByDate(data.records.filter((row) => Number.isFinite(parseFloat(row.weight)))) };
 };
@@ -70,9 +70,10 @@ const BodyBlock = ({ today, weightUnit = 'kg', large = false }) => {
       title={t('home.block.body_title')}
       to="/dashboard?tab=body"
       status={status}
-      summary={showLarge ? null : summary}
-      sign={spark && !showLarge ? <Spark values={values} width={56} height={24} /> : null}
+      summary={summary}
+      sign={spark ? <Spark values={values} width={56} height={24} /> : null}
       large={showLarge}
+      contentRepeatsSummary
     >
       {hasWeights && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
