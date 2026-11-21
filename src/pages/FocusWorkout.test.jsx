@@ -14,7 +14,7 @@ vi.mock('react-router-dom', async (importOriginal) => ({
   ...(await importOriginal()), useNavigate: () => mockNavigate, useLocation: () => ({ pathname: '/focus', search: '', hash: '', state: mockLocation.state }),
 }));
 // Unità di peso dell'utente: kg salvo i test che la cambiano
-const account = vi.hoisted(() => ({ isLoggedIn: true, loading: false, weightUnit: 'kg', user: undefined }));
+const account = vi.hoisted(() => ({ isLoggedIn: true, loading: false, weightUnit: 'kg', user: undefined, updateUser: undefined }));
 vi.mock('../context/AuthContext', () => ({ useAuth: () => account }));
 vi.mock('../utils/celebrate', () => ({
   celebrate: () => {}, celebratePR: () => {}, celebrateStreak: () => {}, celebrateLevelUp: () => {},
@@ -102,6 +102,7 @@ beforeEach(() => {
   currentTimeZone.mockReturnValue(BROWSER_ZONE);
   localStorage.setItem('themeMode', 'light');
   vi.stubGlobal('fetch', fetchMock);
+  account.updateUser = (patch) => { account.user = { ...account.user, ...patch }; };
   responses = {
     'read_plans.php': () => json({ records: [{ id: 5, name: 'Push Pull', is_active: true, days: [pushDay, fullDay] }] }),
     'user/read.php': () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'free', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: [] }),
@@ -1889,3 +1890,234 @@ const doSetLb = (weight, reps) => {
   fireEvent.change(screen.getByLabelText('Ripetizioni'), { target: { value: reps } });
   click('Conferma serie');
 };
+
+// Strumenti della serie: tre valori dell'account (timer di recupero, tecnica, peso suggerito), acceso se l'account non dice il contrario
+describe('strumenti della serie', () => {
+  const press = (plannedRows, equipment = 'bilanciere') => ({
+    id: 12, exercise_id: 6, exercise_name: 'Pressa', rest: 60, muscle_group: 'gambe', equipment, planned_sets: plannedSets(0, plannedRows),
+  });
+  const pressDay = (exercise) => ({ id: 4, name: 'Pressa', exercises: [exercise] });
+  const withDay = (day) => { responses['read_plans.php'] = () => json({ records: [{ id: 6, name: 'Pressa', is_active: true, days: [day] }] }); };
+  const lastTimePress = (sets) => { responses['workout_history/read.php'] = () => json({ records: [{ id: 1, date: '2026-10-13', exercises: [{ exercise_id: 6, name: 'Pressa', sets }] }] }); };
+  const saveAll = async () => {
+    await act(async () => { click('Salva allenamento'); });
+    await advance(0);
+    return saveBody().workout_records.map((r) => r.intensity_technique);
+  };
+  const weightField = () => screen.getByLabelText('Peso (kg)');
+  const suggestedButton = () => screen.queryByRole('button', { name: /^Suggerito:/ });
+  const answerSettings = (body) => { responses['update_settings.php'] = () => json(body); };
+  const settingsBody = () => {
+    const call = fetchMock.mock.calls.find(([url]) => url.includes('update_settings.php'));
+    return call ? JSON.parse(call[1].body) : null;
+  };
+
+  describe('timer di recupero', () => {
+    it('acceso (di partenza): dopo la serie parte il recupero', async () => {
+      await startDay('Push');
+      doSet();
+      expect(screen.getByText('Recupero')).toBeTruthy();
+    });
+
+    it('spento nell\'account: dopo la serie il recupero non parte', async () => {
+      account.user = { rest_timer_enabled: false };
+      await startDay('Push');
+      doSet();
+      expect(screen.queryByText('Recupero')).toBeNull();
+      expect(screen.getByText('Serie 2 di 2')).toBeTruthy();
+    });
+  });
+
+  describe('tecnica spenta', () => {
+    const rows = [{ min: 8, max: 8 }, { min: 6, max: 6, technique: 'Rest Pause' }];
+
+    it('con la tecnica accesa la scheda la preseleziona sulla serie che la prevede (controllo)', async () => {
+      withDay(pressDay(press(rows)));
+      await startDay('Pressa');
+      doSet('50', '8');
+      click('Salta timer');
+      expect(shownTechnique()).toBe('Rest pause');
+    });
+
+    it('la riga non compare e le serie si salvano senza tecnica, anche se la scheda ne prevede una', async () => {
+      account.user = { focus_tools: { technique: false } };
+      withDay(pressDay(press(rows)));
+      await startDay('Pressa');
+      expect(techniqueRow()).toBeNull();
+      doSet('50', '8');
+      click('Salta timer');
+      expect(techniqueRow()).toBeNull();
+      doSet('50', '6');
+      expect(await saveAll()).toEqual(['', '']);
+    });
+
+    it('ripresa della bozza: nessuna riga e la serie dopo si salva senza tecnica', async () => {
+      account.user = { focus_tools: { technique: false } };
+      const day = pressDay(press(rows));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        ...savedDraft, activePlan: { id: 6, name: 'Pressa', days: [day] }, selectedDay: day, selectedDayId: 4,
+        completedSets: { 12: [{ setNumber: 1, weight: 50, reps: '8', intensity_technique: '' }] }, currentSetIndex: 1,
+      }));
+      await mount();
+      click('Riprendi allenamento');
+      expect(techniqueRow()).toBeNull();
+      doSet('50', '6');
+      expect(await saveAll()).toEqual(['', '']);
+    });
+
+    it('cambio di esercizio: la riga non compare nemmeno sul nuovo esercizio', async () => {
+      account.user = { focus_tools: { technique: false } };
+      withDay({ id: 4, name: 'Pressa', exercises: [press([{ min: 8, max: 8, technique: 'Rest Pause' }]), { ...fly, planned_sets: plannedSets(0, [{ min: 8, max: 8, technique: 'Myo-Reps' }]) }] });
+      await startDay('Pressa');
+      doSet('50', '8');
+      await advance(1);
+      expect(screen.getByRole('heading', { level: 1, name: 'Croci' })).toBeTruthy();
+      expect(techniqueRow()).toBeNull();
+      doSet('20', '8');
+      expect(await saveAll()).toEqual(['', '']);
+    });
+
+    it('«Ultima volta» e serie fatte mostrano ancora le tecniche già registrate', async () => {
+      account.user = { focus_tools: { technique: false } };
+      withDay(pressDay(press(rows)));
+      lastTimePress([{ weight: 50, reps: '8', intensity_technique: 'Rest Pause' }]);
+      await startDay('Pressa');
+      expect(within(screen.getByRole('list')).getByText('Rest pause')).toBeTruthy();
+    });
+  });
+
+  describe('peso suggerito acceso', () => {
+    const rows = [{ min: 8, max: 8 }, { min: 8, max: 8 }];
+    const haveLastTime = () => { withDay(pressDay(press(rows))); lastTimePress([{ weight: 60, reps: '8' }, { weight: 62.5, reps: '8' }]); };
+
+    it('un bottone «Suggerito: 62,5 kg» nel riquadro «Ultima volta», col campo già precompilato', async () => {
+      haveLastTime();
+      await startDay('Pressa');
+      expect(suggestedButton().textContent).toBe('Suggerito: 62,5\u00a0kg');
+      expect(weightField().value).toBe('62.5');
+      expect(parseInt(getComputedStyle(suggestedButton()).minHeight, 10)).toBeGreaterThanOrEqual(44);
+    });
+
+    it('in libbre il peso è nell\'unità dell\'account', async () => {
+      account.weightUnit = 'lb';
+      withDay(pressDay(press(rows)));
+      lastTimePress([{ weight: 100, reps: '8' }]);
+      await startDay('Pressa');
+      expect(suggestedButton().textContent).toBe('Suggerito: 220,5\u00a0lb');
+    });
+
+    it('senza storico non c\'è', async () => {
+      withDay(pressDay(press(rows)));
+      await startDay('Pressa');
+      expect(suggestedButton()).toBeNull();
+    });
+
+    it('corpo libero senza zavorra nell\'ultima volta: non c\'è', async () => {
+      withDay(pressDay(press(rows, 'corpo_libero')));
+      lastTimePress([{ weight: 0, reps: '12' }, { weight: 0, reps: '10' }]);
+      await startDay('Pressa');
+      expect(suggestedButton()).toBeNull();
+    });
+
+    it('in riscaldamento non c\'è e compare alla prima serie allenante', async () => {
+      const squat = { ...press([{ min: 5, max: 5 }]), planned_sets: plannedSets(1, [{ min: 5, max: 5 }]) };
+      withDay(pressDay(squat));
+      lastTimePress([{ weight: 40, reps: '8', is_warmup: true }, { weight: 100, reps: '5' }]);
+      await startDay('Pressa');
+      expect(screen.getByText('Riscaldamento 1 di 1')).toBeTruthy();
+      expect(suggestedButton()).toBeNull();
+      doSet('40', '8');
+      click('Salta timer');
+      expect(suggestedButton().textContent).toBe('Suggerito: 100\u00a0kg');
+    });
+
+    it('il tocco apre la spiegazione; «Ok» la chiude e lo strumento resta acceso', async () => {
+      haveLastTime();
+      await startDay('Pressa');
+      suggestedButton().focus();
+      fireEvent.click(suggestedButton());
+      await advance(300);
+      const dialog = screen.getByRole('dialog', { name: 'Peso suggerito' });
+      expect(within(dialog).getByText('È il peso più alto che hai usato l\'ultima volta in questo esercizio.')).toBeTruthy();
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Ok' }));
+      await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(settingsBody()).toBeNull();
+      expect(suggestedButton()).toBeTruthy();
+    });
+
+    it('«Non suggerire più» spegne lo strumento: chiamata giusta, bottone sparito, avviso con dove riaccenderlo, campo in corso intatto', async () => {
+      haveLastTime();
+      answerSettings({ success: true, rest_timer_enabled: true, focus_tools: { technique: true, suggested_weight: false } });
+      await startDay('Pressa');
+      fireEvent.change(weightField(), { target: { value: '70' } });
+      fireEvent.click(suggestedButton());
+      await advance(300);
+      const dialog = screen.getByRole('dialog', { name: 'Peso suggerito' });
+      await act(async () => { fireEvent.click(within(dialog).getByRole('button', { name: 'Non suggerire più' })); });
+      await advance(500);
+      expect(settingsBody()).toEqual({ focus_tools: { suggested_weight: false } });
+      expect(screen.queryByRole('dialog', { name: 'Peso suggerito' })).toBeNull();
+      expect(suggestedButton()).toBeNull();
+      expect(screen.getByText('Peso suggerito spento. Si riaccende da Strumenti della serie.')).toBeTruthy();
+      expect(weightField().value).toBe('70');
+      expect(document.activeElement).toBe(weightField());
+    });
+
+    it('l\'esercizio dopo parte con il campo vuoto', async () => {
+      withDay({ id: 4, name: 'Pressa', exercises: [press([{ min: 8, max: 8 }]), { ...fly, equipment: 'manubri' }] });
+      responses['workout_history/read.php'] = () => json({ records: [{ id: 1, date: '2026-10-13', exercises: [
+        { exercise_id: 6, name: 'Pressa', sets: [{ weight: 60, reps: '8' }] }, { exercise_id: 4, name: 'Croci', sets: [{ weight: 20, reps: '12' }] },
+      ] }] });
+      answerSettings({ success: true, rest_timer_enabled: true, focus_tools: { technique: true, suggested_weight: false } });
+      await startDay('Pressa');
+      fireEvent.click(suggestedButton());
+      await advance(300);
+      const dialog = screen.getByRole('dialog', { name: 'Peso suggerito' });
+      await act(async () => { fireEvent.click(within(dialog).getByRole('button', { name: 'Non suggerire più' })); });
+      await advance(500);
+      doSet('60', '8');
+      await advance(1);
+      expect(screen.getByRole('heading', { level: 1, name: 'Croci' })).toBeTruthy();
+      expect(weightField().value).toBe('');
+      expect(suggestedButton()).toBeNull();
+    });
+
+    it('salvataggio fallito: lo strumento resta acceso, il bottone c\'è e l\'errore si dice', async () => {
+      haveLastTime();
+      responses['update_settings.php'] = () => json({ success: false }, 500);
+      await startDay('Pressa');
+      fireEvent.click(suggestedButton());
+      await advance(300);
+      const dialog = screen.getByRole('dialog', { name: 'Peso suggerito' });
+      await act(async () => { fireEvent.click(within(dialog).getByRole('button', { name: 'Non suggerire più' })); });
+      await advance(500);
+      expect(screen.getByText('Errore nel salvataggio. Riprova.')).toBeTruthy();
+      expect(account.user?.focus_tools?.suggested_weight).not.toBe(false);
+      // La spiegazione resta aperta (si può riprovare) e il bottone dietro c'è ancora
+      expect(screen.getByRole('dialog', { name: 'Peso suggerito' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: /^Suggerito:/, hidden: true })).toBeTruthy();
+    });
+  });
+
+  describe('peso suggerito spento', () => {
+    beforeEach(() => { account.user = { focus_tools: { suggested_weight: false } }; });
+
+    it('il bottone non compare e il campo parte vuoto alla prima serie allenante', async () => {
+      withDay(pressDay(press([{ min: 8, max: 8 }])));
+      lastTimePress([{ weight: 60, reps: '8' }]);
+      await startDay('Pressa');
+      expect(suggestedButton()).toBeNull();
+      expect(weightField().value).toBe('');
+      // «Ultima volta» resta
+      expect(screen.getByText('60 kg × 8')).toBeTruthy();
+    });
+
+    it('corpo libero: parte da 0, come senza storico', async () => {
+      withDay(pressDay(press([{ min: 8, max: 8 }], 'corpo_libero')));
+      lastTimePress([{ weight: 10, reps: '8' }]);
+      await startDay('Pressa');
+      expect(weightField().value).toBe('0');
+    });
+  });
+});

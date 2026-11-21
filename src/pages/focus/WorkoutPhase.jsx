@@ -1,6 +1,7 @@
+import { useState, useRef } from 'react';
 import {
-  Container, Box, Typography, Button, TextField, Paper, LinearProgress,
-  IconButton, Chip, Alert, Dialog, DialogTitle, DialogActions, Fade
+  Container, Box, Typography, Button, ButtonBase, TextField, Paper, LinearProgress,
+  IconButton, Chip, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Fade
 } from '@mui/material';
 import {
   SkipNext as SkipNextIcon, Check as CheckIcon, Close as CloseIcon, Info as InfoIcon, AccessTime as AccessTimeIcon,
@@ -14,7 +15,7 @@ import ElapsedClock from './ElapsedClock';
 import QuitDialog from './QuitDialog';
 import { slotLabel } from './slotLabel';
 import { MAX_WEIGHT, isValidReps, plannedSetAt, slotTarget, lastSessionSets, setStatus, setSlot } from '../../utils/focusSession';
-import { maxWeightInUnit, weightStepInUnit, weightUnitLabel } from '../../utils/weightUnit';
+import { formatWeightInUnit, maxWeightInUnit, weightStepInUnit, weightUnitLabel } from '../../utils/weightUnit';
 import { intlLocale, formatSetText } from '../../i18n/format';
 import { muscleLabel, techniqueLabel } from '../../i18n/labels';
 import { radius } from '../../theme/radius';
@@ -27,10 +28,21 @@ export default function WorkoutPhase({
   weightInput, weightUnit, weightValid, onWeightChange, repsInput, onRepsChange, intensityTechniqueInput, onIntensityChange,
   onConfirmSet, onSkipSet, onSkipWarmup, onSkipExercise, canEditSession, onOpenPicker, onQuit,
   quitDialogOpen, onCloseQuitDialog, onConfirmQuit, totalCompletedSets,
-  repsConfirmOpen, onCloseRepsConfirm, onConfirmReps
+  repsConfirmOpen, onCloseRepsConfirm, onConfirmReps, techniqueOn, suggestedKg, onDisableSuggested
 }) {
   const { t } = useTranslation();
   const { colors } = useFocusColors();
+  const [suggestedOpen, setSuggestedOpen] = useState(false);
+  const [disabling, setDisabling] = useState(false);
+  const weightRef = useRef(null);
+  const disableSuggested = async () => {
+    // Un secondo tocco durante il salvataggio è ignorato
+    if (disabling) return;
+    setDisabling(true);
+    const ok = await onDisableSuggested();
+    setDisabling(false);
+    if (ok) setSuggestedOpen(false);
+  };
   const target = slotTarget(currentExercise, currentSetIndex);
   // "a cedimento (min. 6)" non entra nel campo a dimensione piena: placeholder più piccolo
   const failureTarget = plannedSetAt(currentExercise, currentSetIndex)?.to_failure === true;
@@ -122,6 +134,15 @@ export default function WorkoutPhase({
                       );
                     })}
                   </Box>
+                  {suggestedKg !== '' && (
+                    <ButtonBase onClick={() => setSuggestedOpen(true)} aria-haspopup="dialog"
+                      sx={{
+                        mt: 0.75, minHeight: 44, px: 1.25, borderRadius: radius.md, border: `1px solid ${colors.fieldBorder}`,
+                        color: colors.text, fontWeight: 700, fontSize: '0.875rem', fontVariantNumeric: 'tabular-nums',
+                      }}>
+                      {t('focus.suggested.button', { weight: formatWeightInUnit(Number(suggestedKg), weightUnit, intlLocale()) })}
+                    </ButtonBase>
+                  )}
                 </Box>
               </Box>
             );
@@ -129,7 +150,7 @@ export default function WorkoutPhase({
 
           <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
             <TextField label={t('record.weight', { unit: weightUnitLabel(weightUnit) })} type="number" value={weightInput} onChange={(e) => onWeightChange(e.target.value)}
-              fullWidth autoFocus inputProps={{ step: weightStepInUnit(weightUnit), min: 0, max: maxWeightInUnit(MAX_WEIGHT, weightUnit), inputMode: 'decimal' }}
+              fullWidth autoFocus inputRef={weightRef} inputProps={{ step: weightStepInUnit(weightUnit), min: 0, max: maxWeightInUnit(MAX_WEIGHT, weightUnit), inputMode: 'decimal' }}
               sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.fieldBorder, borderWidth: 2 } }, '& .MuiOutlinedInput-input': FOCUS_FIELD_PADDING, '& .MuiInputLabel-root': { color: colors.textSecondary } }} />
             {/* Vuoto a ogni serie: la scheda in grigio è solo un suggerimento, va scritta */}
             <TextField label={t('record.reps')} value={repsInput} onChange={(e) => onRepsChange(e.target.value)}
@@ -139,8 +160,8 @@ export default function WorkoutPhase({
               sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.fieldBorder, borderWidth: 2 } }, '& .MuiOutlinedInput-input': FOCUS_FIELD_PADDING, '& .MuiInputLabel-root': { color: colors.textSecondary }, ...(failureTarget && { '& input::placeholder': { fontSize: '0.85rem', fontWeight: 500 } }) }} />
           </Box>
 
-          {/* Il riscaldamento non ha tecnica di intensità */}
-          {!currentSlot.isWarmup && <TechniqueRow value={intensityTechniqueInput} onChange={onIntensityChange} />}
+          {/* Il riscaldamento non ha tecnica di intensità; con lo strumento spento la riga non c'è */}
+          {!currentSlot.isWarmup && techniqueOn && <TechniqueRow value={intensityTechniqueInput} onChange={onIntensityChange} />}
 
           <Button variant="contained" fullWidth size="large" startIcon={<CheckIcon />} onClick={onConfirmSet} disabled={!weightValid || !isValidReps(repsInput)}
             sx={{ py: 2.5, fontSize: '1.2rem', fontWeight: 700, letterSpacing: 1, bgcolor: colors.success, color: colors.onSuccess, borderRadius: radius.xl,
@@ -212,6 +233,20 @@ export default function WorkoutPhase({
       <QuitDialog open={quitDialogOpen} onClose={onCloseQuitDialog} onConfirm={onConfirmQuit}
         title={t('focus.quit_title')} text={t('focus.quit_text', { count: totalCompletedSets })}
         stayLabel={t('focus.quit_continue')} exitLabel={t('focus.quit_exit')} destructive />
+
+      {/* Spiegazione del peso suggerito. Se «Non suggerire più» ha tolto il bottone, il fuoco va al campo del peso */}
+      <Dialog open={suggestedOpen} onClose={() => setSuggestedOpen(false)} aria-labelledby="suggested-weight-title"
+        TransitionProps={{ onExited: () => { if (suggestedKg === '') weightRef.current?.focus(); } }}
+        PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: radius.xxl } }}>
+        <DialogTitle id="suggested-weight-title" sx={{ color: colors.text }}>{t('focus.tools.suggested_weight.name')}</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ color: colors.textSecondary }}>{t('focus.suggested.text')}</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={disableSuggested} disabled={disabling} sx={{ color: colors.textSecondary, minHeight: 44 }}>{t('focus.suggested.disable')}</Button>
+          <Button onClick={() => setSuggestedOpen(false)} sx={{ color: colors.text, minHeight: 44 }}>{t('focus.suggested.ok')}</Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={repsConfirmOpen} onClose={onCloseRepsConfirm}
         PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: radius.xxl } }}>
