@@ -262,7 +262,8 @@ export default function WorkoutPhase({
           <Typography role="alert" sx={{ color: 'error.main', mt: disableError ? 1 : 0 }}>{disableError ? t('focus.tools.save_error') : ''}</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={disableSuggested} disabled={disabling} aria-busy={disabling} sx={{ color: colors.textSecondary, minHeight: 44 }}>{t('focus.suggested.disable')}</Button>
+          {/* Occupato ma non disabilitato: il fuoco resta sul bottone e dopo un errore si riprova da lì */}
+          <Button onClick={disableSuggested} aria-disabled={disabling} aria-busy={disabling} sx={{ color: colors.textSecondary, minHeight: 44, '&[aria-disabled="true"]': { opacity: 0.5 } }}>{t('focus.suggested.disable')}</Button>
           <Button onClick={closeSuggested} disabled={disabling} sx={{ color: colors.text, minHeight: 44 }}>{t('focus.suggested.ok')}</Button>
         </DialogActions>
       </Dialog>

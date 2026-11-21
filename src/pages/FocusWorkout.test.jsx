@@ -2107,6 +2107,11 @@ describe('strumenti della serie', () => {
       // La spiegazione resta aperta (si può riprovare) e il bottone dietro c'è ancora
       expect(screen.getByRole('dialog', { name: 'Peso suggerito' })).toBeTruthy();
       expect(screen.getByRole('button', { name: /^Suggerito:/, hidden: true })).toBeTruthy();
+      // Dopo l'errore la finestra si chiude di nuovo
+      expect(within(dialog).getByRole('button', { name: 'Ok' }).disabled).toBe(false);
+      fireEvent.keyDown(dialog, { key: 'Escape' });
+      await advance(500);
+      expect(screen.queryByRole('dialog', { name: 'Peso suggerito' })).toBeNull();
     });
   });
 
@@ -2122,8 +2127,13 @@ describe('strumenti della serie', () => {
       const dialog = screen.getByRole('dialog', { name: 'Peso suggerito' });
       await act(async () => { fireEvent.click(within(dialog).getByRole('button', { name: 'Non suggerire più' })); });
       const disable = within(dialog).getByRole('button', { name: 'Non suggerire più' });
-      expect(disable.disabled).toBe(true);
+      // Occupato ma non disabilitato: il fuoco resta sul bottone; un secondo tocco non salva due volte
+      expect(disable.disabled).toBe(false);
+      expect(disable.getAttribute('aria-disabled')).toBe('true');
       expect(disable.getAttribute('aria-busy')).toBe('true');
+      const sent = fetch.mock.calls.length;
+      await act(async () => { fireEvent.click(disable); });
+      expect(fetch.mock.calls.length).toBe(sent);
       expect(within(dialog).getByRole('button', { name: 'Ok' }).disabled).toBe(true);
       fireEvent.keyDown(dialog, { key: 'Escape' });
       await advance(500);

@@ -131,4 +131,18 @@ describe('senza notify: l\'esito si legge dentro il componente', () => {
     expect(sw('Tecnica di intensità').checked).toBe(true);
     expect(notify).not.toHaveBeenCalled();
   });
+
+  // Un testo uguale a quello già scritto non verrebbe riletto: a ogni cambio le regioni ripartono vuote
+  it('un secondo errore uguale al primo è annunciato di nuovo: la regione si svuota mentre si salva', async () => {
+    mountInline();
+    settings = () => json({ success: false }, 500);
+    fireEvent.click(sw('Tecnica di intensità'));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('Errore nel salvataggio. Riprova.'));
+    let finish;
+    settings = () => new Promise((resolve) => { finish = () => resolve(json({ success: false }, 500)); });
+    fireEvent.click(sw('Peso suggerito'));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toBe(''));
+    finish();
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('Errore nel salvataggio. Riprova.'));
+  });
 });

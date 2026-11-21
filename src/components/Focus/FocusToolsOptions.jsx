@@ -31,6 +31,8 @@ const FocusToolsOptions = ({ notify, idPrefix }) => {
     // Mentre il salvataggio è in corso un altro cambio dello stesso strumento è ignorato (il fuoco resta sull'interruttore)
     if (tool in pending) return;
     setPending((p) => ({ ...p, [tool]: next }));
+    // Le regioni ripartono vuote: un esito uguale a quello di prima non verrebbe riletto
+    if (!notify) setInline({ status: '', alert: '' });
     const res = await save(tool, next);
     if (res.ok) {
       announce(t('focus.tools.changed', { name: t(TEXTS[tool].name), state: t(next ? 'focus.tools.on' : 'focus.tools.off') }), 'success');
@@ -46,35 +48,35 @@ const FocusToolsOptions = ({ notify, idPrefix }) => {
 
   return (
     <>
-    <Box component="ul" aria-label={t('focus.tools.title')} sx={{ listStyle: 'none', m: 0, p: 0 }}>
-      {FOCUS_TOOLS.map((tool, index) => {
-        const helpId = `${idPrefix}-${tool}-help`;
-        return (
-          <Box component="li" key={tool} sx={{ py: 1.25, borderTop: index === 0 ? 'none' : '1px solid', borderColor: 'divider' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography sx={{ fontSize: 16, fontWeight: 700 }}>{t(TEXTS[tool].name)}</Typography>
-                <Typography id={helpId} sx={{ fontSize: 16, color: 'text.secondary', mt: 0.25 }}>{t(TEXTS[tool].help)}</Typography>
-              </Box>
-              <Box component="label" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, minWidth: 58, minHeight: 44 }}>
-                <Switch
-                  checked={pending[tool] ?? isToolOn(user, tool)}
-                  onChange={(e) => toggle(tool, e.target.checked)}
-                  inputProps={{ role: 'switch', 'aria-label': t(TEXTS[tool].name), 'aria-busy': tool in pending, 'aria-describedby': helpId }}
-                />
+      <Box component="ul" aria-label={t('focus.tools.title')} sx={{ listStyle: 'none', m: 0, p: 0 }}>
+        {FOCUS_TOOLS.map((tool, index) => {
+          const helpId = `${idPrefix}-${tool}-help`;
+          return (
+            <Box component="li" key={tool} sx={{ py: 1.25, borderTop: index === 0 ? 'none' : '1px solid', borderColor: 'divider' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography sx={{ fontSize: 16, fontWeight: 700 }}>{t(TEXTS[tool].name)}</Typography>
+                  <Typography id={helpId} sx={{ fontSize: 16, color: 'text.secondary', mt: 0.25 }}>{t(TEXTS[tool].help)}</Typography>
+                </Box>
+                <Box component="label" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, minWidth: 58, minHeight: 44 }}>
+                  <Switch
+                    checked={pending[tool] ?? isToolOn(user, tool)}
+                    onChange={(e) => toggle(tool, e.target.checked)}
+                    inputProps={{ role: 'switch', 'aria-label': t(TEXTS[tool].name), 'aria-busy': tool in pending, 'aria-describedby': helpId }}
+                  />
+                </Box>
               </Box>
             </Box>
-          </Box>
-        );
-      })}
-    </Box>
-    {!notify && (
-      <>
-        {/* Sempre nel DOM, ma vuote non occupano spazio */}
-        <Typography role="status" sx={{ fontSize: 16, mt: inline.status ? 1 : 0 }}>{inline.status}</Typography>
-        <Typography role="alert" sx={{ fontSize: 16, color: 'error.main', mt: inline.alert ? 1 : 0 }}>{inline.alert}</Typography>
-      </>
-    )}
+          );
+        })}
+      </Box>
+      {!notify && (
+        <>
+          {/* Sempre nel DOM, ma vuote non occupano spazio */}
+          <Typography role="status" sx={{ fontSize: 16, mt: inline.status ? 1 : 0 }}>{inline.status}</Typography>
+          <Typography role="alert" sx={{ fontSize: 16, color: 'error.main', mt: inline.alert ? 1 : 0 }}>{inline.alert}</Typography>
+        </>
+      )}
     </>
   );
 };
