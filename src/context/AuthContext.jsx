@@ -76,6 +76,8 @@ export const AuthProvider = ({ children }) => {
             if (typeof data.modules_chosen === 'boolean') fresh.modules_chosen = data.modules_chosen;
           }
           if (mine > groupVisibilitySavedAt.current && isPlainObject(data.group_visibility)) fresh.group_visibility = data.group_visibility;
+          // Layout della Home: un elenco, o null (mai personalizzato); altro è una risposta rovinata e non si tocca (lo sistema effectiveLayout)
+          if (Array.isArray(data.home_layout) || data.home_layout === null) fresh.home_layout = data.home_layout;
           setUser((prev) => {
             if (!prev) return prev;
             const changed = Object.keys(fresh).some((key) => JSON.stringify(prev[key]) !== JSON.stringify(fresh[key]));

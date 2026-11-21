@@ -648,3 +648,64 @@ describe('AuthProvider: visibilità nei gruppi', () => {
     expect(JSON.parse(localStorage.getItem('user')).group_visibility).toEqual(NEW);
   });
 });
+
+// Layout della Home: da user/read.php dentro `user`, come i moduli
+describe('AuthProvider: home_layout', () => {
+  const Layout = () => {
+    const { user } = useAuth();
+    return <div data-testid="layout">{user ? JSON.stringify(user.home_layout ?? null) : 'nessun utente'}</div>;
+  };
+  const LAYOUT = [{ key: 'body', hidden: false, large: true }, { key: 'levels', hidden: true, large: false }];
+  const Refresh = () => {
+    const { refreshEmailState } = useAuth();
+    return <button onClick={() => refreshEmailState()}>rileggi</button>;
+  };
+
+  it('user.home_layout arriva da user/read.php', async () => {
+    readReturns({ id: 1, username: 'a', home_layout: LAYOUT });
+    localStorage.setItem('isLoggedIn', 'true');
+    render(<AuthProvider><Layout /></AuthProvider>);
+    await waitFor(() => expect(screen.getByTestId('layout').textContent).toBe(JSON.stringify(LAYOUT)));
+  });
+
+  it('dopo il login (che risponde senza layout) la rilettura lo porta, e finisce nella copia in localStorage', async () => {
+    readReturns({ id: 1, username: 'a', home_layout: LAYOUT });
+    const Login = () => {
+      const { login } = useAuth();
+      return <button onClick={() => login({ id: 1, username: 'a' })}>entra</button>;
+    };
+    render(<AuthProvider><Layout /><Login /></AuthProvider>);
+    fireEvent.click(screen.getByText('entra'));
+    await waitFor(() => expect(screen.getByTestId('layout').textContent).toBe(JSON.stringify(LAYOUT)));
+    expect(JSON.parse(localStorage.getItem('user')).home_layout).toEqual(LAYOUT);
+  });
+
+  it('home_layout null (mai personalizzato) è un valore valido e si conserva', async () => {
+    readReturns({ id: 1, username: 'a', home_layout: LAYOUT });
+    localStorage.setItem('isLoggedIn', 'true');
+    render(<AuthProvider><Layout /><Refresh /></AuthProvider>);
+    await waitFor(() => expect(screen.getByTestId('layout').textContent).toBe(JSON.stringify(LAYOUT)));
+    readReturns({ id: 1, username: 'a', home_layout: null });
+    fireEvent.click(screen.getByText('rileggi'));
+    await waitFor(() => expect(screen.getByTestId('layout').textContent).toBe('null'));
+  });
+
+  it('un valore non valido nella rilettura non cambia quello che c\'è', async () => {
+    readReturns({ id: 1, username: 'a', home_layout: LAYOUT });
+    localStorage.setItem('isLoggedIn', 'true');
+    render(<AuthProvider><Layout /><Refresh /></AuthProvider>);
+    await waitFor(() => expect(screen.getByTestId('layout').textContent).toBe(JSON.stringify(LAYOUT)));
+    readReturns({ id: 1, username: 'a', home_layout: 'rovinato' });
+    fireEvent.click(screen.getByText('rileggi'));
+    await waitFor(() => expect(backend.mock.calls.length).toBeGreaterThan(1));
+    await act(async () => {});
+    expect(screen.getByTestId('layout').textContent).toBe(JSON.stringify(LAYOUT));
+  });
+
+  it('un server senza il campo lascia user senza home_layout', async () => {
+    readReturns({ id: 1, username: 'a' });
+    localStorage.setItem('isLoggedIn', 'true');
+    render(<AuthProvider><Layout /></AuthProvider>);
+    await waitFor(() => expect(screen.getByTestId('layout').textContent).toBe('null'));
+  });
+});
