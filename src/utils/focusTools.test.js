@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { FOCUS_TOOLS, isToolOn, toolSettingsBody, toolsOnCount } from './focusTools';
+import { FOCUS_TOOLS, isToolOn, toolValue, toolSettingsBody, accountPatch, toolsOnCount } from './focusTools';
 
 describe('FOCUS_TOOLS', () => {
   it('sono tre, nell\'ordine timer di recupero, tecnica, peso suggerito', () => {
@@ -54,5 +54,36 @@ describe('toolsOnCount', () => {
     expect(toolsOnCount({ focus_tools: { technique: false } })).toBe(2);
     expect(toolsOnCount({ rest_timer_enabled: false, focus_tools: { technique: false } })).toBe(1);
     expect(toolsOnCount({ rest_timer_enabled: false, focus_tools: { technique: false, suggested_weight: false } })).toBe(0);
+  });
+});
+
+describe('toolValue: il valore scritto di uno strumento, in un account o in una risposta del server', () => {
+  it('legge il booleano dove vive ciascuno strumento', () => {
+    const data = { rest_timer_enabled: false, focus_tools: { technique: true, suggested_weight: false } };
+    expect(toolValue(data, 'rest_timer')).toBe(false);
+    expect(toolValue(data, 'technique')).toBe(true);
+    expect(toolValue(data, 'suggested_weight')).toBe(false);
+  });
+
+  it.each([undefined, null, {}, { rest_timer_enabled: 0, focus_tools: 'no' }, { focus_tools: { technique: null } }])('senza un booleano: undefined (%j)', (data) => {
+    FOCUS_TOOLS.forEach((tool) => expect(toolValue(data, tool)).toBeUndefined());
+  });
+});
+
+describe('accountPatch: la modifica dell\'account dopo un salvataggio', () => {
+  const server = { rest_timer_enabled: false, focus_tools: { technique: false, suggested_weight: true } };
+
+  it('il timer porta solo il suo valore', () => {
+    expect(accountPatch({ focus_tools: { technique: true, suggested_weight: true } }, 'rest_timer', server)).toEqual({ rest_timer_enabled: false });
+  });
+
+  it('un altro strumento porta l\'elenco dell\'account con solo la sua chiave cambiata', () => {
+    expect(accountPatch({ focus_tools: { technique: true, suggested_weight: false } }, 'technique', server))
+      .toEqual({ focus_tools: { technique: false, suggested_weight: false } });
+  });
+
+  it('un account senza elenco riceve l\'elenco intero del server', () => {
+    expect(accountPatch({ id: 1 }, 'suggested_weight', server)).toEqual({ focus_tools: server.focus_tools });
+    expect(accountPatch(undefined, 'technique', server)).toEqual({ focus_tools: server.focus_tools });
   });
 });
