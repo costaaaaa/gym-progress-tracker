@@ -176,7 +176,7 @@ export default function SelectDayPhase({
               }}>
               <Box component="span" sx={{ fontWeight: 600, fontSize: '0.95rem' }}>{t('focus.tools.title')}</Box>
               <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: colors.textSecondary, fontSize: '0.875rem' }}>
-                {onCount === 0 ? t('focus.tools.count_none') : t('focus.tools.count', { count: onCount, total: FOCUS_TOOLS.length })}
+                {onCount === 0 ? t('focus.tools.none_on') : t('focus.tools.count', { count: onCount, total: FOCUS_TOOLS.length })}
                 <ChevronRightIcon aria-hidden sx={{ fontSize: 20 }} />
               </Box>
             </ButtonBase>

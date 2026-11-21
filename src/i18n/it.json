@@ -862,7 +862,7 @@
   "focus.tools.title": "Strumenti della serie",
   "focus.tools.count_one": "{{count}} acceso su {{total}}",
   "focus.tools.count_other": "{{count}} accesi su {{total}}",
-  "focus.tools.count_none": "Nessuno acceso",
+  "focus.tools.none_on": "Nessuno acceso",
   "focus.tools.technique.name": "Tecnica di intensità",
   "focus.tools.technique.help": "La riga per segnare drop set, rest pause, myo-reps e negative",
   "focus.tools.suggested_weight.name": "Peso suggerito",

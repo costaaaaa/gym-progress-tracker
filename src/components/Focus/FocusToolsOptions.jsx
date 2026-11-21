@@ -14,7 +14,7 @@ const TEXTS = {
 
 // I tre strumenti della serie dell'account: una riga con interruttore ciascuno, il cambio si salva subito.
 // `notify(messaggio, gravità)` annuncia l'esito (e mostra l'errore). Usato prima dell'allenamento e in Account.
-const FocusToolsOptions = ({ notify, idPrefix = 'focus-tools' }) => {
+const FocusToolsOptions = ({ notify, idPrefix }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const save = useSaveFocusTool();

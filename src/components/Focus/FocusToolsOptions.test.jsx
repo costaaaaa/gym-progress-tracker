@@ -26,7 +26,7 @@ afterEach(() => vi.unstubAllGlobals());
 const Harness = ({ initial }) => {
   const [user, setUser] = useState(initial);
   auth.value = { user, updateUser: (patch) => setUser((u) => ({ ...u, ...patch })) };
-  return <ThemeModeProvider><FocusToolsOptions notify={notify} /></ThemeModeProvider>;
+  return <ThemeModeProvider><FocusToolsOptions notify={notify} idPrefix="test-tools" /></ThemeModeProvider>;
 };
 const mount = (user = { id: 1 }) => render(<Harness initial={user} />);
 const sw = (name) => screen.getByRole('switch', { name });

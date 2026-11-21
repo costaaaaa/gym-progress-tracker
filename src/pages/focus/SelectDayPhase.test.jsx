@@ -53,13 +53,13 @@ describe('riga degli strumenti della serie', () => {
     it('il conto ha i plurali giusti', () => {
       account.user = { rest_timer_enabled: false, focus_tools: { technique: false } };
       renderPhase(1);
-      expect(within(screen.getByRole('button', { name: /Series tools/ })).getByText('1 of 3 on')).toBeTruthy();
+      expect(within(screen.getByRole('button', { name: /Set tools/ })).getByText('1 of 3 on')).toBeTruthy();
     });
 
     it('nessuno acceso', () => {
       account.user = { rest_timer_enabled: false, focus_tools: { technique: false, suggested_weight: false } };
       renderPhase(1);
-      expect(within(screen.getByRole('button', { name: /Series tools/ })).getByText('None on')).toBeTruthy();
+      expect(within(screen.getByRole('button', { name: /Set tools/ })).getByText('None on')).toBeTruthy();
     });
   });
 
