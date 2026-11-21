@@ -842,13 +842,19 @@ describe('Modifica Home', () => {
 });
 
 describe('proposta di un modulo', () => {
+  const posts = [];
   const offerReply = (accepted) => vi.fn((url, init) => {
     if (!String(url).includes('user/update_settings.php')) return fakeFetch(url);
     const body = JSON.parse(init.body);
+    posts.push(body);
     const modules = { body: true, recovery: true, levels: true, groups: accepted, ai: true };
+    if (body.home_layout) return Promise.resolve({ ok: true, status: 200, json: async () => ({ success: true, home_layout: body.home_layout, modules, module_offer: null }), text: async () => '' });
     return Promise.resolve({ ok: true, status: 200, json: async () => ({ success: true, modules, module_offer: null, answered: body }), text: async () => '' });
   });
-  beforeEach(() => { auth.modules = { body: true, recovery: true, levels: true, groups: false, ai: true }; });
+  beforeEach(() => {
+    posts.length = 0;
+    auth.modules = { body: true, recovery: true, levels: true, groups: false, ai: true };
+  });
 
   it('senza module_offer la card non c\'è', async () => {
     renderHome();
@@ -899,6 +905,22 @@ describe('proposta di un modulo', () => {
     await waitFor(() => expect(screen.queryByText('Prova anche…')).toBeNull());
     expect(auth.modules.groups).toBe(true);
     expect(blockTitles()).toEqual(['Ultimo allenamento', 'Livello e streak', 'Recupero', 'Peso', 'Gruppi']);
+    // Il blocco non era nascosto: nessuna richiesta in più oltre alla risposta
+    expect(posts.length).toBe(1);
+  });
+
+  it('«Attiva» con il blocco salvato come nascosto: il blocco compare e il layout visibile va al server', async () => {
+    auth.moduleOffer = 'groups';
+    auth.homeLayout = HOME_BLOCKS.map((key) => ({ key, hidden: key === 'groups', large: false }));
+    vi.stubGlobal('fetch', offerReply(true));
+    renderHome();
+    await opened();
+    fireEvent.click(await screen.findByRole('button', { name: 'Attiva Gruppi' }));
+    await waitFor(() => expect(screen.queryByText('Prova anche…')).toBeNull());
+    await waitFor(() => expect(posts.length).toBe(2));
+    await waitFor(() => expect(blockTitles()).toContain('Gruppi'));
+    expect(posts[1].home_layout.find((entry) => entry.key === 'groups').hidden).toBe(false);
+    expect(auth.homeLayout.find((entry) => entry.key === 'groups').hidden).toBe(false);
   });
 
   it('«No, grazie»: la card sparisce e il modulo resta spento', async () => {

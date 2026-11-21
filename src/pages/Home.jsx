@@ -10,6 +10,7 @@ import { readJson, isSuccess } from '../utils/readJson';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { useHomeLayout } from '../hooks/useHomeLayout';
+import { setHidden } from '../utils/homeLayout';
 import { MODULE_KEYS } from '../hooks/useModule';
 import { hasFocusSessionInProgress, savedDraftDayName } from '../utils/focusDraft';
 import { homeState, isRedState, todayIndex } from '../utils/homeState';
@@ -151,6 +152,8 @@ const Home = () => {
   // Sul telefono il campo rosso arriva ai bordi: il resto della pagina si dà da solo lo spazio ai lati
   const sidePadding = { xs: red ? 2 : 0, md: 0 };
   const offer = MODULE_KEYS.includes(user?.module_offer) ? user.module_offer : null;
+  // Un modulo appena attivato mostra il suo blocco anche se l'utente l'aveva nascosto (stesso salvataggio della modifica)
+  const showBlock = (key) => change((current) => (current.find((entry) => entry.key === key)?.hidden ? setHidden(current, key, false) : current));
   const closeNotice = () => {
     clearLayoutError();
     setOfferFailed(false);
@@ -174,7 +177,7 @@ const Home = () => {
           />
           {offer && !editing && (
             <Box sx={{ mt: 3 }}>
-              <ModuleOffer key={offer} moduleKey={offer} onError={() => setOfferFailed(true)} />
+              <ModuleOffer key={offer} moduleKey={offer} onError={() => setOfferFailed(true)} onAccepted={() => showBlock(offer)} />
             </Box>
           )}
           <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>

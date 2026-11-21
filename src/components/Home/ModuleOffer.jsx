@@ -9,8 +9,9 @@ import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 // La proposta di un modulo non attivo (`moduleKey`, quello che il server propone adesso). «Attiva» e «No, grazie»
 // rispondono al server (stesso punto di salvataggio dei moduli): a risposta data l'account cambia e la card sparisce da
 // sola. Se la risposta non passa (rete, o la proposta nel frattempo è cambiata) `onError()` avvisa, la card resta e
-// l'account si rilegge. Durante la richiesta i bottoni sono disabilitati (ma restano raggiungibili col fuoco).
-const ModuleOffer = ({ moduleKey, onError }) => {
+// l'account si rilegge. Dopo un «Attiva» riuscito `onAccepted()` lascia alla Home il blocco del modulo. Durante la
+// richiesta i bottoni sono disabilitati (ma restano raggiungibili col fuoco).
+const ModuleOffer = ({ moduleKey, onError, onAccepted }) => {
   const { t } = useTranslation();
   const { refreshEmailState } = useAuth();
   const save = useSaveModules();
@@ -27,7 +28,7 @@ const ModuleOffer = ({ moduleKey, onError }) => {
     if (!res.ok) {
       onError();
       refreshEmailState();
-    }
+    } else if (accepted) onAccepted();
     sending.current = false;
     setBusy(false);
   };

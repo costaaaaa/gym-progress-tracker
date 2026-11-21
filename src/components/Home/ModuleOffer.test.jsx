@@ -13,14 +13,15 @@ vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth.value }));
 const MODULES = { body: true, recovery: true, levels: true, groups: false, ai: true };
 const setup = (reply) => {
   const onError = vi.fn();
+  const onAccepted = vi.fn();
   const updateUser = vi.fn();
   const refreshEmailState = vi.fn();
   auth.value = { user: { modules: MODULES, module_offer: 'groups' }, updateUser, refreshEmailState };
   const answers = [];
   const fake = vi.fn(() => (reply ? Promise.resolve(reply) : new Promise((resolve) => { answers.push(resolve); })));
   vi.stubGlobal('fetch', fake);
-  renderBlock(<ModuleOffer moduleKey="groups" onError={onError} />);
-  return { onError, updateUser, refreshEmailState, fake, answers };
+  renderBlock(<ModuleOffer moduleKey="groups" onError={onError} onAccepted={onAccepted} />);
+  return { onError, onAccepted, updateUser, refreshEmailState, fake, answers };
 };
 const bodies = (fake) => fake.mock.calls.map(([, init]) => JSON.parse(init.body));
 
@@ -39,17 +40,19 @@ describe('ModuleOffer', () => {
   });
 
   it('«Attiva»: risponde accepted true, l\'account riceve moduli e proposta della risposta', async () => {
-    const { fake, updateUser } = setup(json({ success: true, modules: { ...MODULES, groups: true }, module_offer: null }));
+    const { fake, updateUser, onAccepted } = setup(json({ success: true, modules: { ...MODULES, groups: true }, module_offer: null }));
     fireEvent.click(screen.getByRole('button', { name: 'Attiva Gruppi' }));
     await waitFor(() => expect(updateUser).toHaveBeenCalledWith({ modules: { ...MODULES, groups: true }, module_offer: null }));
     expect(bodies(fake)).toEqual([{ module_offer_answer: { key: 'groups', accepted: true } }]);
+    expect(onAccepted).toHaveBeenCalledTimes(1);
   });
 
   it('«No, grazie»: risponde accepted false, i moduli restano com\'erano', async () => {
-    const { fake, updateUser } = setup(json({ success: true, modules: MODULES, module_offer: null }));
+    const { fake, updateUser, onAccepted } = setup(json({ success: true, modules: MODULES, module_offer: null }));
     fireEvent.click(screen.getByRole('button', { name: /^No, grazie/ }));
     await waitFor(() => expect(updateUser).toHaveBeenCalledWith({ module_offer: null }));
     expect(bodies(fake)).toEqual([{ module_offer_answer: { key: 'groups', accepted: false } }]);
+    expect(onAccepted).not.toHaveBeenCalled();
   });
 
   it('errore (400: la proposta è cambiata): avviso e l\'account si rilegge, la card non cambia', async () => {
