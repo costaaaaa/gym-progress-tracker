@@ -22,3 +22,26 @@ export const effectiveLayout = (saved) => {
   }
   return result;
 };
+
+// Le mosse della modifica: prendono e restituiscono il layout effettivo completo, senza mutare l'ingresso.
+
+// Sposta `key` di un posto (-1 su, 1 giù) tra i blocchi che l'utente vede in modifica: `isListed(key)` dice se un
+// blocco compare (un modulo non attivo no). I blocchi non elencati restano al loro posto e non contano come vicino.
+// Ai capi non fa nulla.
+export const moveBlock = (layout, key, direction, isListed = () => true) => {
+  const from = layout.findIndex((entry) => entry.key === key);
+  if (from === -1) return layout;
+  let to = from + direction;
+  while (to >= 0 && to < layout.length && !isListed(layout[to].key)) to += direction;
+  if (to < 0 || to >= layout.length) return layout;
+  const next = [...layout];
+  [next[from], next[to]] = [next[to], next[from]];
+  return next;
+};
+
+const change = (layout, key, patch) => layout.map((entry) => (entry.key === key ? { ...entry, ...patch } : entry));
+
+export const setHidden = (layout, key, hidden) => change(layout, key, { hidden });
+
+// «last» resta sempre piccolo
+export const setLarge = (layout, key, large) => (key === 'last' ? layout : change(layout, key, { large }));
