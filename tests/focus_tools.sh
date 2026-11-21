@@ -39,7 +39,7 @@ if section_sql | tm_sql >/dev/null 2>&1; then ok "la sezione 45 si applica"; els
 for c in $COLUMNS; do
     [[ "$(column_info $c)" == "tinyint(1)/NO/1" ]] && ok "$c: tinyint(1), NOT NULL, default 1" || ko "$c: tinyint(1), NOT NULL, default 1 ($(column_info $c))"
 done
-[[ "$(sql_value "SELECT GROUP_CONCAT(column_name ORDER BY ordinal_position) FROM information_schema.columns WHERE table_schema = 'gym_progress_tracker' AND table_name = 'gym_users' AND ordinal_position > (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = 'gym_progress_tracker' AND table_name = 'gym_users' AND column_name = 'module_offer_at') LIMIT 1" | cut -d, -f1-2)" == "focus_tool_technique,focus_tool_suggested_weight" ]] \
+[[ "$(sql_value "SELECT GROUP_CONCAT(column_name ORDER BY ordinal_position) FROM information_schema.columns WHERE table_schema = 'gym_progress_tracker' AND table_name = 'gym_users' AND ordinal_position > (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = 'gym_progress_tracker' AND table_name = 'gym_users' AND column_name = 'module_offer_at')" | cut -d, -f1-2)" == "focus_tool_technique,focus_tool_suggested_weight" ]] \
     && ok "le colonne stanno subito dopo module_offer_at" || ko "le colonne stanno subito dopo module_offer_at"
 [[ "$(tools_of ftold1)" == 11 ]] && ok "l'utente esistente ha le due colonne a 1" || ko "l'utente esistente ha le due colonne a 1 ($(tools_of ftold1))"
 tm_sql -e "INSERT INTO gym_users (username, email, password) VALUES ('ftnew1', 'ftnew1@example.test', 'x')" || tm_die "utente nuovo non inserito"

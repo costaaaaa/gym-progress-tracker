@@ -110,7 +110,7 @@ setStored('ftnew', '10');
 $r = api('GET', '/api/user/export.php', $n);
 $profile = $r[1]['profile'] ?? [];
 check('export: il profilo ha le due colonne focus_tool_* con i valori salvati',
-    $r[0] === 200 && ($profile['focus_tool_technique'] ?? null) == 1 && ($profile['focus_tool_suggested_weight'] ?? null) == 0, $r[2]);
+    $r[0] === 200 && (string)($profile['focus_tool_technique'] ?? '') === '1' && (string)($profile['focus_tool_suggested_weight'] ?? '') === '0', $r[2]);
 setStored('ftnew', '11');
 
 $bads = [
