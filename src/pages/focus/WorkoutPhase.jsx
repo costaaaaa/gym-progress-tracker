@@ -9,7 +9,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
-import { FOCUS_FIELD_PADDING } from './focusField';
+import { focusFieldSx } from './focusField';
 import { TABULAR, CHIP_FONT } from '../../utils/fonts';
 import ElapsedClock from './ElapsedClock';
 import QuitDialog from './QuitDialog';
@@ -98,11 +98,11 @@ export default function WorkoutPhase({
             )}
           </Box>
 
-          {/* Un solo bottone: i pallini sono disegno, lo stato lo dice il nome. Apre le serie fatte */}
+          {/* Un solo bottone: i pallini sono disegno, lo stato lo dice il nome (il totale conta tutti i pallini a schermo,
+              riscaldamento compreso). Apre le serie fatte */}
           <ButtonBase onClick={(e) => { e.currentTarget.focus(); setDoneOpen(true); }} aria-haspopup="dialog" aria-label={doneSetsLabel}
-            sx={{ display: 'flex', justifyContent: 'center', gap: 1.5, minHeight: 44, mb: 3, mx: 'auto', px: 1, borderRadius: radius.md }}>
-            {Array.from({ length: Number(totalSlotsForCurrentExercise) || 0 }, (_, idx) => {
-              const status = setStatus(idx, currentSetIndex, currentSkippedSets);
+            sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 1.5, rowGap: 1, minHeight: 44, mb: 3, mx: 'auto', px: 1, borderRadius: radius.md }}>
+            {dotStatuses.map((status, idx) => {
               const slot = setSlot(currentExercise, idx);
               // Il riscaldamento ha pallini più piccoli (R1, R2) davanti a quelli delle serie allenanti
               const size = slot.isWarmup ? 32 : 40;
@@ -175,13 +175,13 @@ export default function WorkoutPhase({
           <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
             <TextField label={t('record.weight', { unit: weightUnitLabel(weightUnit) })} type="number" value={weightInput} onChange={(e) => onWeightChange(e.target.value)}
               fullWidth autoFocus inputRef={weightRef} inputProps={{ step: weightStepInUnit(weightUnit), min: 0, max: maxWeightInUnit(MAX_WEIGHT, weightUnit), inputMode: 'decimal' }}
-              sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.fieldBorder, borderWidth: 2 } }, '& .MuiOutlinedInput-input': FOCUS_FIELD_PADDING, '& .MuiInputLabel-root': { color: colors.textSecondary } }} />
+              sx={focusFieldSx(colors, '1.2rem')} />
             {/* Vuoto a ogni serie: la scheda in grigio è solo un suggerimento, va scritta */}
             <TextField label={t('record.reps')} value={repsInput} onChange={(e) => onRepsChange(e.target.value)}
               placeholder={target}
               onFocus={(e) => e.target.select()}
               fullWidth inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
-              sx={{ '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.2rem', fontWeight: 700, '& fieldset': { borderColor: colors.fieldBorder, borderWidth: 2 } }, '& .MuiOutlinedInput-input': FOCUS_FIELD_PADDING, '& .MuiInputLabel-root': { color: colors.textSecondary }, ...(failureTarget && { '& input::placeholder': { fontSize: '0.85rem', fontWeight: 500 } }) }} />
+              sx={focusFieldSx(colors, '1.2rem', failureTarget && { '& input::placeholder': { fontSize: '0.85rem', fontWeight: 500 } })} />
           </Box>
 
           {/* Il riscaldamento non ha tecnica di intensità; con lo strumento spento la riga non c'è */}

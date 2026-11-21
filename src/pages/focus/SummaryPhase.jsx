@@ -137,7 +137,7 @@ export default function SummaryPhase({
                         <ButtonBase sx={{ ...chipSx, minHeight: 44, minWidth: 44, justifyContent: 'center' }}
                           aria-label={t('focus.edit_set.open_aria', {
                             exercise: exercise.exercise_name, name: slotLabel(t, setSlot(exercise, set.setNumber - 1), 'name'),
-                            text: text.replace(' · ', ', ')
+                            text: `${formatSetText(set.weight, set.reps, weightUnit)}${set.intensity_technique ? `, ${techniqueLabel(set.intensity_technique)}` : ''}`
                           })}
                           onClick={(e) => { e.currentTarget.focus(); setCorrection({ open: true, exercise, setNumber: set.setNumber }); }}>
                           {content}

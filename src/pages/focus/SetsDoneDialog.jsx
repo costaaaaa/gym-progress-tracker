@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Box, ButtonBase, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useFocusColors } from './useFocusColors';
-import { FOCUS_FIELD_PADDING } from './focusField';
+import { focusFieldSx } from './focusField';
 import { slotLabel } from './slotLabel';
 import TechniqueRow from './TechniqueRow';
 import RepsConfirmDialog from './RepsConfirmDialog';
@@ -40,10 +40,7 @@ function SetEditForm({ exercise, set, weightUnit, techniqueOn, onSave, onCancel 
     if (repsNeedConfirm(reps, plannedSetAt(exercise, set.setNumber - 1))) setConfirmOpen(true);
     else commit();
   };
-  const fieldSx = {
-    '& .MuiOutlinedInput-root': { color: colors.text, fontSize: '1.1rem', fontWeight: 700, '& fieldset': { borderColor: colors.fieldBorder, borderWidth: 2 } },
-    '& .MuiOutlinedInput-input': FOCUS_FIELD_PADDING, '& .MuiInputLabel-root': { color: colors.textSecondary },
-  };
+  const fieldSx = focusFieldSx(colors, '1.1rem');
   return (
     <Box role="group" aria-label={t('focus.edit_set.group', { name: slotLabel(t, slot, 'name') })} sx={{ py: 1.5 }}>
       <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
@@ -67,6 +64,7 @@ function SetEditForm({ exercise, set, weightUnit, techniqueOn, onSave, onCancel 
   );
 }
 
+// Contenuto separato dalla finestra: si smonta con lei, così a ogni apertura riparte da capo (riga in modifica e messaggio).
 // Le serie fatte dell'esercizio (le saltate non ci sono), nell'ordine in cui sono state fatte; una alla volta si apre
 // in modifica. L'esito si legge qui dentro: la pagina dietro la finestra è nascosta ai lettori di schermo.
 function SetsDoneContent({ exercise, sets, weightUnit, techniqueOn, onEditSet, startEditing, onClose }) {

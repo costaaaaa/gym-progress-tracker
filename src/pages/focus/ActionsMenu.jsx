@@ -16,6 +16,8 @@ export default function ActionsMenu({ currentSlot, canEditSession, canSwap, onSk
   const open = Boolean(anchor);
 
   const choose = (action, opensDialog = false) => {
+    // Il menu si sta chiudendo ma le voci restano nel DOM: un secondo tocco non rilancia l'azione
+    if (!open) return;
     setAnchor(null);
     if (opensDialog) afterClose.current = action;
     else action();
@@ -53,7 +55,8 @@ export default function ActionsMenu({ currentSlot, canEditSession, canSwap, onSk
           </MenuItem>
         ))}
         {pickers.map(({ mode, label, icon, faded }) => (
-          <MenuItem key={mode} onClick={() => choose(() => onOpenPicker(mode), true)} aria-label={canEditSession ? undefined : t('focus.plus_aria', { label })} sx={itemSx}>
+          <MenuItem key={mode} onClick={() => choose(() => onOpenPicker(mode), true)} aria-label={canEditSession ? undefined : t('focus.plus_aria', { label })}
+            aria-disabled={faded ? 'true' : undefined} sx={itemSx}>
             <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1.5, ...(faded && { opacity: 0.45 }) }}>{icon}{label}</Box>
             {!canEditSession && <PlusTag sx={{ ml: 'auto', bgcolor: 'transparent' }} />}
           </MenuItem>
