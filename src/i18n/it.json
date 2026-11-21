@@ -56,6 +56,8 @@
   "home.block.recovery_ready_one": "{{count}} muscolo pronto",
   "home.block.recovery_ready_other": "{{count}} muscoli pronti",
   "home.block.recovery_resting": "{{count}} in recupero",
+  "home.block.recovery_resting_alone_one": "{{count}} muscolo in recupero",
+  "home.block.recovery_resting_alone_other": "{{count}} muscoli in recupero",
   "home.block.recovery_none": "Nessun dato ancora",
   "home.block.body_title": "Peso",
   "home.block.body_empty": "Aggiungi la prima misura",

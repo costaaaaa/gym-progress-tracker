@@ -21,8 +21,11 @@ describe('blocco «Recupero»', () => {
     const view = renderBlock(<RecoveryBlock status="ok" recovery={{ petto: ready() }} />);
     expect(screen.getByText('1 muscolo pronto')).toBeTruthy();
     view.unmount();
-    renderBlock(<RecoveryBlock status="ok" recovery={{ bicipiti: resting }} />);
-    expect(screen.getByText('1 in recupero')).toBeTruthy();
+    const one = renderBlock(<RecoveryBlock status="ok" recovery={{ bicipiti: resting }} />);
+    expect(screen.getByText('1 muscolo in recupero')).toBeTruthy();
+    one.unmount();
+    renderBlock(<RecoveryBlock status="ok" recovery={{ bicipiti: resting, tricipiti: resting }} />);
+    expect(screen.getByText('2 muscoli in recupero')).toBeTruthy();
   });
 
   it.each([[undefined], [null], [{}], [{ petto: { status: 'PRONTO', last_trained: null } }]])('senza dati (%j): «Nessun dato ancora»', (recovery) => {
@@ -40,6 +43,8 @@ describe('blocco «Recupero»', () => {
     expect(screen.getByText('Puoi allenare')).toBeTruthy();
     expect(screen.getByText('A riposo')).toBeTruthy();
     expect(screen.getByRole('progressbar', { name: 'Petto' })).toBeTruthy();
+    // il titolo è quello del blocco: quello della card non si ripete
+    expect(screen.queryByText('Stato muscolare')).toBeNull();
   });
 
   it('grande con detail basic: le righe senza percentuali', () => {

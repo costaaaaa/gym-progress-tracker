@@ -61,15 +61,18 @@ const BodyBlock = ({ today, weightUnit = 'kg', large = false }) => {
   })();
   const values = weights.slice(-SPARK_POINTS).map((row) => parseFloat(row.weight));
   const spark = values.length >= 2;
+  // Grande solo con almeno un peso: senza, resta la riga che invita ad aggiungere la prima misura
+  const showLarge = large && hasWeights;
+  const summary = hasWeights ? [weightText, deltaText].filter(Boolean).join(' · ') : t('home.block.body_empty');
 
   return (
     <BlockShell
       title={t('home.block.body_title')}
       to="/dashboard?tab=body"
       status={status}
-      summary={hasWeights ? [weightText, deltaText].filter(Boolean).join(' · ') : t('home.block.body_empty')}
-      sign={spark ? <Spark values={values} width={56} height={24} /> : null}
-      large={large && hasWeights}
+      summary={showLarge ? null : summary}
+      sign={spark && !showLarge ? <Spark values={values} width={56} height={24} /> : null}
+      large={showLarge}
     >
       {hasWeights && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>

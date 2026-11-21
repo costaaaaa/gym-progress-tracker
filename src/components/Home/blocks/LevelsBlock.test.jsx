@@ -38,7 +38,10 @@ describe('blocco «Livello e streak»', () => {
     stubFetch(server(4));
     renderBlock(<LevelsBlock large />);
     expect(await screen.findByText('settimane di fila')).toBeTruthy();
-    expect(screen.getAllByTestId('LocalFireDepartmentIcon').length).toBe(2);
+    // la riga in testa non ripete quello che il contenuto dice in grande: una fiamma sola, il livello una volta
+    expect(screen.getAllByTestId('LocalFireDepartmentIcon').length).toBe(1);
+    expect(screen.queryByText('Livello 12 · streak di 4 settimane')).toBeNull();
+    expect(screen.getAllByText('Livello 12').length).toBe(1);
     expect(screen.getByText('12.400 / 15.000 punti')).toBeTruthy();
     const bar = screen.getByRole('progressbar', { name: 'Avanzamento verso il livello 13' });
     expect(bar.getAttribute('aria-valuenow')).toBe('83');
@@ -56,14 +59,18 @@ describe('blocco «Livello e streak»', () => {
     expect(await screen.findByText('12.400 / 15.000 punti')).toBeTruthy();
     expect(screen.queryByTestId('LocalFireDepartmentIcon')).toBeNull();
     expect(screen.queryByText(/di fila/)).toBeNull();
+    expect(screen.getAllByText('Livello 12').length).toBe(1);
   });
 
   it('in inglese i testi e il separatore delle migliaia sono della lingua', async () => {
     await i18n.changeLanguage('en');
     stubFetch(server(4));
-    renderBlock(<LevelsBlock large />);
+    const small = renderBlock(<LevelsBlock />);
     expect(await screen.findByText('Level 12 · 4-week streak')).toBeTruthy();
-    expect(screen.getByText('12,400 / 15,000 points')).toBeTruthy();
+    small.unmount();
+    renderBlock(<LevelsBlock large />);
+    expect(await screen.findByText('12,400 / 15,000 points')).toBeTruthy();
+    expect(screen.getByText('weeks in a row')).toBeTruthy();
   });
 
   it('caricamento: titolo e segnaposto, nessun numero', () => {

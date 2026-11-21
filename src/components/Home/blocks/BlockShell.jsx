@@ -8,7 +8,8 @@ const COLLAPSE_MS = 250;
 
 // Guscio comune dei blocchi dei moduli. Piccola (di partenza) = una riga tutta cliccabile verso la pagina del modulo:
 // titolo, una riga con un dato, a destra l'eventuale segno e la freccia. Grande = la stessa riga in testa e sotto il
-// contenuto pieno (`children`); il passaggio è un Collapse, spento da «riduci movimento».
+// contenuto pieno (`children`); il passaggio è un Collapse, spento da «riduci movimento». Un blocco il cui contenuto
+// pieno ripete il dato passa `summary` e `sign` vuoti quando è grande: in testa resta il titolo.
 // `status`: 'loading' (titolo e segnaposto) | 'error' (titolo e link restano, la riga dice che i dati non ci sono) | 'ok'.
 const BlockShell = ({ title, to, status, summary, sign = null, large = false, children = null }) => {
   const { t } = useTranslation();
@@ -16,7 +17,7 @@ const BlockShell = ({ title, to, status, summary, sign = null, large = false, ch
   const line = (() => {
     if (status === 'loading') return <Skeleton data-testid="block-skeleton" variant="text" width="60%" sx={{ fontSize: 14 }} />;
     if (status === 'error') return <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>{t('home.block.unavailable')}</Typography>;
-    return <Typography sx={{ fontSize: 14, color: 'text.secondary', overflowWrap: 'anywhere', ...TABULAR }}>{summary}</Typography>;
+    return summary ? <Typography sx={{ fontSize: 14, color: 'text.secondary', overflowWrap: 'anywhere', ...TABULAR }}>{summary}</Typography> : null;
   })();
   return (
     <Card data-testid="home-block" aria-busy={status === 'loading' ? 'true' : undefined}>

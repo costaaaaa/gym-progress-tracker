@@ -28,8 +28,8 @@ const LevelsBlock = ({ large = false }) => {
       title={t('home.block.levels_title')}
       to="/profilo"
       status={status}
-      summary={summary}
-      sign={weeks > 0 ? <LocalFireDepartmentIcon aria-hidden sx={{ fontSize: 26, color: 'warning.text' }} /> : null}
+      summary={large ? null : summary}
+      sign={weeks > 0 && !large ? <LocalFireDepartmentIcon aria-hidden sx={{ fontSize: 26, color: 'warning.text' }} /> : null}
       large={large}
     >
       {status === 'ok' && (

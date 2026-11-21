@@ -9,7 +9,8 @@ const RecoveryBlock = ({ status, recovery, detail, large = false }) => {
   const { canTrain, resting } = groupRecovery(recovery);
   const parts = [];
   if (canTrain.length > 0) parts.push(t('home.block.recovery_ready', { count: canTrain.length }));
-  if (resting.length > 0) parts.push(t('home.block.recovery_resting', { count: resting.length }));
+  // Da sola la seconda parte dice anche di cosa si parla: «2 muscoli in recupero»
+  if (resting.length > 0) parts.push(t(canTrain.length > 0 ? 'home.block.recovery_resting' : 'home.block.recovery_resting_alone', { count: resting.length }));
   return (
     <BlockShell
       title={t('home.block.recovery_title')}
@@ -18,7 +19,7 @@ const RecoveryBlock = ({ status, recovery, detail, large = false }) => {
       summary={parts.length > 0 ? parts.join(' · ') : t('home.block.recovery_none')}
       large={large}
     >
-      <BodyVisualizer recoveryData={recovery} detail={detail} />
+      <BodyVisualizer recoveryData={recovery} detail={detail} embedded />
     </BlockShell>
   );
 };

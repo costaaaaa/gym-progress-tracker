@@ -618,17 +618,18 @@ describe('blocchi dei moduli', () => {
 
   it('un blocco grande mostra il contenuto pieno; gli altri restano righe', async () => {
     auth.homeLayout = [{ key: 'levels', hidden: false, large: true }, { key: 'recovery', hidden: false, large: true }];
+    setDashboard({ recovery: { petto: { status: 'PRONTO', percent: 100, last_trained: '2026-11-10', ready_at: null } } });
     renderHome();
     await opened();
     expect(await screen.findByText('settimane di fila')).toBeTruthy();
-    expect(screen.getByText('Stato muscolare')).toBeTruthy();
+    expect(screen.getByRole('progressbar', { name: 'Petto' })).toBeTruthy();
   });
 
   it('un blocco grande occupa tutta la riga da md in su', async () => {
     auth.homeLayout = [{ key: 'levels', hidden: false, large: true }];
     renderHome();
     await opened();
-    await blocksLoaded();
+    await screen.findByText('settimane di fila');
     const cell = (title) => screen.getByRole('heading', { level: 2, name: title }).closest('[data-testid="home-block"]').parentElement;
     expect(mediaStyle(cell('Livello e streak'), 900)['grid-column']).toBe('1/-1');
     expect(mediaStyle(cell('Gruppi'), 900)['grid-column']).toBeUndefined();

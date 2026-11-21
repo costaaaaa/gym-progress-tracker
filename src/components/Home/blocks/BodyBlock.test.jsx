@@ -81,10 +81,10 @@ describe('blocco «Peso»', () => {
   it('grande: valore grande, variazione e linea più alta, senza ripetere la riga in testa', async () => {
     stubFetch(server());
     renderBlock(<BodyBlock today={TODAY} large />);
-    await screen.findByText('78,4 kg · -0,6 kg nell\'ultimo mese');
-    expect(screen.getAllByText('78,4 kg').length).toBe(1);
+    await screen.findByText('78,4 kg');
     expect(screen.getAllByText('-0,6 kg nell\'ultimo mese').length).toBe(1);
-    expect(document.querySelectorAll('svg polyline').length).toBe(2);
+    expect(screen.queryByText('78,4 kg · -0,6 kg nell\'ultimo mese')).toBeNull();
+    expect(document.querySelectorAll('svg polyline').length).toBe(1);
   });
 
   it('unità lb: peso e variazione nell\'unità dell\'account', async () => {

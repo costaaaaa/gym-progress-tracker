@@ -56,6 +56,8 @@
   "home.block.recovery_ready_one": "{{count}} muscle ready",
   "home.block.recovery_ready_other": "{{count}} muscles ready",
   "home.block.recovery_resting": "{{count}} recovering",
+  "home.block.recovery_resting_alone_one": "{{count}} muscle recovering",
+  "home.block.recovery_resting_alone_other": "{{count}} muscles recovering",
   "home.block.recovery_none": "No data yet",
   "home.block.body_title": "Weight",
   "home.block.body_empty": "Add your first measurement",

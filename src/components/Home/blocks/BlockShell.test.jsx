@@ -43,6 +43,12 @@ describe('guscio dei blocchi', () => {
     expect(screen.getByRole('link').textContent).not.toContain('Contenuto pieno');
   });
 
+  it('senza dato la riga in testa ha solo il titolo (il contenuto pieno lo dice già)', () => {
+    renderBlock(shell({ large: true, summary: null }));
+    expect(screen.getByRole('link').querySelectorAll('p').length).toBe(0);
+    expect(screen.getByRole('heading', { level: 2, name: 'Peso' })).toBeTruthy();
+  });
+
   it('caricamento: titolo e segnaposto, nessun dato, aria-busy', () => {
     renderBlock(shell({ status: 'loading', summary: 'NON DEVE COMPARIRE', large: true }));
     expect(screen.getByRole('heading', { level: 2, name: 'Peso' })).toBeTruthy();
