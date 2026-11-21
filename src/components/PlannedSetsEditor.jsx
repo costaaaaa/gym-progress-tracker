@@ -8,7 +8,8 @@ import {
   MenuItem, Select, Stack, Switch, TextField, Typography,
 } from '@mui/material';
 import { Add as AddIcon, RemoveCircleOutline as RemoveIcon } from '@mui/icons-material';
-import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, techniqueLabel } from '../i18n/labels';
+import { NO_TECHNIQUE, techniqueLabel } from '../i18n/labels';
+import { techniqueChoices } from '../utils/intensityTechniques';
 import { MAX_WORKING } from '../utils/plannedSets';
 import { radius } from '../theme/radius';
 import { FIELD_HEIGHT } from '../theme/fieldHeight';
@@ -22,10 +23,9 @@ const TechniqueSelect = ({ id, label, value, onChange, helperText, size }) => (
   <FormControl fullWidth size={size}>
     <InputLabel id={`${id}-label`}>{label}</InputLabel>
     <Select labelId={`${id}-label`} id={id} value={value} label={label} onChange={(e) => onChange(e.target.value)}>
-      {INTENSITY_TECHNIQUES.map((tech) => (
-        tech === NO_TECHNIQUE
-          ? <MenuItem key={tech} value=""><em>{techniqueLabel(tech)}</em></MenuItem>
-          : <MenuItem key={tech} value={tech}>{techniqueLabel(tech)}</MenuItem>
+      <MenuItem value=""><em>{techniqueLabel(NO_TECHNIQUE)}</em></MenuItem>
+      {techniqueChoices(value).map((tech) => (
+        <MenuItem key={tech} value={tech}>{techniqueLabel(tech)}</MenuItem>
       ))}
     </Select>
     {helperText && <FormHelperText>{helperText}</FormHelperText>}

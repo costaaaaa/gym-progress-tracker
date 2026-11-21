@@ -1,14 +1,32 @@
 import { describe, it, expect } from 'vitest';
 import i18n from './index';
-import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, equipmentName, achievementLabel } from './labels';
+import { NO_TECHNIQUE, techniqueLabel, techniqueShortLabel, equipmentName, achievementLabel } from './labels';
 
-describe('INTENSITY_TECHNIQUES', () => {
-  it('parte da "Nessuna (Normale)" e tiene l\'ordine del menu', () => {
+describe('etichette delle tecniche', () => {
+  it('le tecniche tolte dalla scelta si traducono ancora tutte (serie e schede vecchie)', async () => {
+    await i18n.changeLanguage('it');
     expect(NO_TECHNIQUE).toBe('Nessuna (Normale)');
-    expect(INTENSITY_TECHNIQUES).toEqual([
-      'Nessuna (Normale)', 'Drop Set (Stripping)', 'Rest Pause', 'Super Set', 'Jump Set',
-      'Negative', 'Ripetizioni Forzate', 'Isometria', 'Peak Contraction', 'Myo-Reps',
+    expect([
+      NO_TECHNIQUE, 'Drop Set (Stripping)', 'Rest Pause', 'Super Set', 'Jump Set', 'Negative',
+      'Ripetizioni Forzate', 'Isometria', 'Peak Contraction', 'Myo-Reps',
+    ].map(techniqueLabel)).toEqual([
+      'Nessuna (normale)', 'Drop set (stripping)', 'Rest pause', 'Super set', 'Jump set', 'Negative',
+      'Ripetizioni forzate', 'Isometria', 'Peak contraction', 'Myo-reps',
     ]);
+  });
+
+  it('le quattro tecniche scelte hanno un\'etichetta corta, uguale in italiano e in inglese', async () => {
+    const shortOf = () => ['Drop Set (Stripping)', 'Rest Pause', 'Myo-Reps', 'Negative'].map(techniqueShortLabel);
+    await i18n.changeLanguage('it');
+    expect(shortOf()).toEqual(['Drop set', 'Rest pause', 'Myo-reps', 'Negative']);
+    await i18n.changeLanguage('en');
+    expect(shortOf()).toEqual(['Drop set', 'Rest pause', 'Myo-reps', 'Negative']);
+  });
+
+  it('una tecnica senza etichetta corta resta con l\'etichetta intera', async () => {
+    await i18n.changeLanguage('it');
+    expect(techniqueShortLabel('Super Set')).toBe('Super set');
+    expect(techniqueShortLabel('altro')).toBe('altro');
   });
 });
 

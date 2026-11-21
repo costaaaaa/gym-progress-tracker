@@ -28,7 +28,8 @@ import { useAuth } from '../context/AuthContext';
 import { FIELD_HEIGHT } from '../theme/fieldHeight';
 import { track } from '../utils/analytics';
 import { useTranslation } from 'react-i18next';
-import { INTENSITY_TECHNIQUES, NO_TECHNIQUE, techniqueLabel } from '../i18n/labels';
+import { techniqueLabel } from '../i18n/labels';
+import { techniqueChoices } from '../utils/intensityTechniques';
 import {
   MAX_WEIGHT, newIdempotencyKey, isValidReps, repsNeedConfirm, withWarmupRule,
 } from '../utils/focusSession';
@@ -357,7 +358,7 @@ const RecordWorkoutDialog = ({ open, onClose, activePlan }) => {
                             onChange={(e) => handleWorkoutDataChange(exercise.id, setIndex, 'intensity_technique', e.target.value)}
                           >
                             <MenuItem value=""><em>{t('record.no_technique')}</em></MenuItem>
-                            {INTENSITY_TECHNIQUES.filter(tech => tech !== NO_TECHNIQUE).map(tech => (
+                            {techniqueChoices(row.is_warmup ? '' : row.intensity_technique).map(tech => (
                               <MenuItem key={tech} value={tech}>{techniqueLabel(tech)}</MenuItem>
                             ))}
                           </Select>
