@@ -6,14 +6,15 @@ import { techniqueLabel, techniqueShortLabel } from '../../i18n/labels';
 import { radius } from '../../theme/radius';
 import { choiceSx } from './choiceSx';
 
-// Riga della tecnica di intensità: quattro celle uguali, una sola scelta; un altro tocco sulla scelta la toglie.
+// Riga della tecnica di intensità: celle uguali, quattro per riga (due nella correzione dentro una finestra, dove lo
+// spazio è la metà), una sola scelta; un altro tocco sulla scelta la toglie.
 // Il testo è corto per stare su una riga a 320 px; il nome per i lettori di schermo è quello intero.
-export default function TechniqueRow({ value, onChange }) {
+export default function TechniqueRow({ value, onChange, columns = 4 }) {
   const { t } = useTranslation();
   const { colors } = useFocusColors();
   return (
     <Box role="group" aria-label={t('focus.technique')}
-      sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 0.75, mb: 3 }}>
+      sx={{ display: 'grid', gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 0.75, mb: 3 }}>
       {SELECTABLE_TECHNIQUES.map((tech) => {
         const selected = value === tech;
         return (

@@ -8,6 +8,7 @@ import { currentTimeZone } from '../utils/workoutTime';
 import { setBrowserTimeZone } from '../test/timeZone';
 import { DROP, plannedSets, times } from '../test/plannedSets';
 import { unnamedControls } from '../test/accessibleNames';
+import i18n from '../i18n';
 
 const { mockNavigate, mockTrack, mockLocation } = vi.hoisted(() => ({ mockNavigate: vi.fn(), mockTrack: vi.fn(), mockLocation: { state: null } }));
 vi.mock('react-router-dom', async (importOriginal) => ({
@@ -57,6 +58,14 @@ const mount = async () => {
   await advance(0);
 };
 const click = (name) => fireEvent.click(screen.getByRole('button', { name }));
+// Le azioni sotto «⋯»: si apre il menu e si sceglie la voce. «Cambia» e «Aggiungi» aprono la loro finestra a menu chiuso
+const openMenu = () => fireEvent.click(screen.getByRole('button', { name: 'Altre azioni' }));
+const menuItem = (name) => screen.getByRole('menuitem', { name });
+const chooseAction = async (name) => {
+  openMenu();
+  fireEvent.click(menuItem(name));
+  await advance(500);
+};
 const startDay = async (dayName) => {
   await mount();
   fireEvent.click(screen.getByRole('radio', { name: dayName }));
@@ -199,7 +208,8 @@ describe('bozza e ripresa', () => {
     click('Riprendi allenamento');
     expect(screen.getByRole('heading', { name: 'Panca piana' })).toBeTruthy();
     // "Salta serie" c'è solo dalla seconda serie
-    expect(screen.getByRole('button', { name: 'Salta serie' })).toBeTruthy();
+    openMenu();
+    expect(menuItem('Salta serie')).toBeTruthy();
   });
 
   it('riprendendo, la serie già confermata tiene il suo orario e la prossima parte dal vecchio inizio', async () => {
@@ -211,7 +221,7 @@ describe('bozza e ripresa', () => {
     click('Riprendi allenamento');
     doSet('62.5', '7'); // 18:00, la sessione è iniziata alle 17:40
     await advance(0.3);
-    click('Salta esercizio');
+    await chooseAction('Salta esercizio');
     await act(async () => { click('Salva allenamento'); });
     await advance(0);
 
@@ -224,7 +234,7 @@ describe('bozza e ripresa', () => {
     click('Riprendi allenamento');
     doSet('62.5', '7');
     await advance(0.3);
-    click('Salta esercizio');
+    await chooseAction('Salta esercizio');
     await act(async () => { click('Salva allenamento'); });
     await advance(0);
 
@@ -738,12 +748,12 @@ describe('salti e uscita', () => {
     doSet();
     click('Salta timer');
 
-    click('Salta serie');
+    await chooseAction('Salta serie');
     expect(screen.queryByText('Recupero')).toBeNull();
     await advance(0.3);
     expect(screen.getByRole('heading', { name: 'Croci' })).toBeTruthy();
 
-    click('Salta esercizio');
+    await chooseAction('Salta esercizio');
     expect(screen.getByText('Riepilogo')).toBeTruthy();
 
     await act(async () => { click('Salva allenamento'); });
@@ -785,15 +795,18 @@ describe('errori e funzioni bloccate', () => {
 
   it('senza la funzione Plus i bottoni in allenamento hanno l\'etichetta "Plus" e il nome accessibile "… (Plus)"', async () => {
     await startDay('Push');
-    expect(screen.getByRole('button', { name: 'Cambia esercizio (Plus)' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Aggiungi esercizio (Plus)' })).toBeTruthy();
+    openMenu();
+    expect(menuItem('Cambia esercizio (Plus)')).toBeTruthy();
+    expect(menuItem('Aggiungi esercizio (Plus)')).toBeTruthy();
   });
 
   it('l\'etichetta "Plus" sta fuori dal bottone sbiadito e resta piena, anche dopo una serie fatta', async () => {
     await startDay('Push');
     doSet();
     click('Salta timer');
-    const swap = screen.getByRole('button', { name: 'Cambia esercizio (Plus)' });
+    openMenu();
+    await advance(500);
+    const swap = within(menuItem('Cambia esercizio (Plus)')).getByText('Cambia esercizio');
     expect(getComputedStyle(swap).opacity).toBe('0.45');
     const labels = screen.getAllByText('Plus');
     expect(labels).toHaveLength(2);
@@ -814,7 +827,8 @@ describe('errori e funzioni bloccate', () => {
     responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
     await startDay('Push');
     expect(screen.queryByText('Plus')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Cambia esercizio' })).toBeTruthy();
+    openMenu();
+    expect(menuItem('Cambia esercizio')).toBeTruthy();
   });
 
   it('senza la funzione Plus anche "Aggiungi esercizio" del riepilogo mostra "Plus"', async () => {
@@ -826,7 +840,7 @@ describe('errori e funzioni bloccate', () => {
 
   it('senza la funzione Plus, cambiare esercizio apre il dialog Plus con il link ai piani', async () => {
     await startDay('Push');
-    click('Cambia esercizio (Plus)');
+    await chooseAction('Cambia esercizio (Plus)');
     expect(screen.getByText('Funzione Plus')).toBeTruthy();
     expect(screen.getByText("Con Plus o Pro puoi cambiare o aggiungere esercizi durante l'allenamento.")).toBeTruthy();
     expect(screen.queryByText(/dalla sezione schede/)).toBeNull();
@@ -889,7 +903,7 @@ describe('colori di Focus: rosso solo per ciò che è distruttivo', () => {
   it('il cronometro e il contatore degli esercizi sono in text.secondary', async () => {
     await startDay('Push');
     expect(getComputedStyle(screen.getByText('00:00')).color).toBe(GREY);
-    expect(getComputedStyle(screen.getByText('1/1')).color).toBe(GREY);
+    expect(getComputedStyle(screen.getByText('Esercizio 1 di 1')).color).toBe(GREY);
   });
 
   it('il campo con il focus ha il bordo in inchiostro, non rosso', async () => {
@@ -936,7 +950,7 @@ describe('colori di Focus: rosso solo per ciò che è distruttivo', () => {
 
   it('il dialogo Plus ha il bottone "Ho capito" non rosso', async () => {
     await startDay('Push');
-    click('Cambia esercizio (Plus)');
+    await chooseAction('Cambia esercizio (Plus)');
     expect(getComputedStyle(screen.getByRole('button', { name: 'Ho capito' })).color).not.toBe(RED);
   });
 });
@@ -1158,13 +1172,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
 
   it('i pallini del riscaldamento (R1, R2) vengono prima di quelli delle serie', async () => {
     await startDay('Gambe');
-    const dots = screen.getAllByRole('img').filter((d) => d.getAttribute('aria-label')?.includes(', '));
-    expect(dots.map((d) => [d.textContent, d.getAttribute('aria-label')])).toEqual([
-      ['R1', 'Riscaldamento 1, in corso'],
-      ['R2', 'Riscaldamento 2, da fare'],
-      ['1', 'Serie 1, da fare'],
-      ['2', 'Serie 2, da fare'],
-    ]);
+    expect(screen.getByRole('button', { name: /^Serie fatte/ }).textContent).toBe('R1R212');
   });
 
   it('in riscaldamento: sottotitolo dedicato, peso vuoto, nessun obiettivo ripetizioni, niente tecnica né chip evidenziata', async () => {
@@ -1211,11 +1219,11 @@ describe('serie di riscaldamento della scheda (#67)', () => {
   it('"Salta riscaldamento" salta le serie rimaste senza recupero e porta alla prima serie allenante', async () => {
     await startDay('Gambe');
     expect(screen.queryByRole('button', { name: 'Salta serie' })).toBeNull();
-    click('Salta riscaldamento');
+    await chooseAction('Salta riscaldamento');
     expect(screen.queryByText('Recupero')).toBeNull();
     expect(screen.getByText('Serie 1 di 2')).toBeTruthy();
     expect(screen.getByLabelText('Peso (kg)').value).toBe('100');
-    expect(screen.getAllByTitle('Serie saltata')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: /^Serie fatte/ }).getAttribute('aria-label')).toBe('Serie fatte: 0 di 4, 2 saltate');
     expect(draft()).toMatchObject({ currentSetIndex: 2, skippedSets: { 11: [0, 1] } });
   });
 
@@ -1243,7 +1251,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     await startDay('Gambe');
     doSet('20', '10');
     click('Salta timer');
-    click('Salta riscaldamento');
+    await chooseAction('Salta riscaldamento');
     doSet('100', '5');
     click('Salta timer');
     doSet('100', '4');
@@ -1311,7 +1319,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
 
   it('riepilogo: il riscaldamento ha il badge "Risc." e non entra nel conteggio delle serie', async () => {
     await startDay('Gambe');
-    click('Salta riscaldamento');
+    await chooseAction('Salta riscaldamento');
     doSet('100', '5');
     click('Salta timer');
     doSet('100', '4');
@@ -1324,7 +1332,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     await startDay('Gambe');
     doSet('20', '10');
     click('Salta timer');
-    click('Salta riscaldamento');
+    await chooseAction('Salta riscaldamento');
     doSet('100', '5');
     click('Salta timer');
     doSet('100', '4');
@@ -1332,7 +1340,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     expect(within(screen.getByRole('group', { name: 'Serie' })).getByText('2')).toBeTruthy();
   });
 
-  it('nell\'elenco "Serie completate" la prima serie allenante è "Serie 1", i riscaldamenti "Riscaldamento 1" e "Riscaldamento 2"', async () => {
+  it('nella finestra "Serie fatte" la prima serie allenante è "Serie 1", i riscaldamenti "Riscaldamento 1" e "Riscaldamento 2"', async () => {
     await startDay('Gambe');
     doSet('20', '10');
     click('Salta timer');
@@ -1340,10 +1348,13 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     click('Salta timer');
     doSet('100', '5');
     click('Salta timer');
-    expect(screen.getByText('Riscaldamento 1')).toBeTruthy();
-    expect(screen.getByText('Riscaldamento 2')).toBeTruthy();
-    expect(screen.getByText('Serie 1')).toBeTruthy();
-    expect(screen.queryByText('Serie 3')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /^Serie fatte/ }));
+    await advance(500);
+    const dialog = within(screen.getByRole('dialog', { name: 'Serie fatte' }));
+    expect(dialog.getByText('Riscaldamento 1')).toBeTruthy();
+    expect(dialog.getByText('Riscaldamento 2')).toBeTruthy();
+    expect(dialog.getByText('Serie 1')).toBeTruthy();
+    expect(dialog.queryByText('Serie 3')).toBeNull();
   });
 
   describe('cambio esercizio', () => {
@@ -1351,7 +1362,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
       responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
     });
     const swapToCroci = async () => {
-      click('Cambia esercizio');
+      await chooseAction('Cambia esercizio');
       await advance(0);
       // Il catalogo è in cache di modulo e parte dal gruppo muscolare dell'esercizio: si cerca per nome
       fireEvent.change(screen.getByPlaceholderText(/^Cerca/), { target: { value: 'Croci' } });
@@ -1360,7 +1371,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
 
     it('dopo "Salta riscaldamento", senza serie fatte, si può cambiare e si riparte dal riscaldamento della scheda', async () => {
       await startDay('Gambe');
-      click('Salta riscaldamento');
+      await chooseAction('Salta riscaldamento');
       await swapToCroci();
       expect(screen.queryByText('Puoi cambiare l\'esercizio solo prima di aver fatto una serie')).toBeNull();
       expect(screen.getByText('Ora: Croci ai cavi')).toBeTruthy();
@@ -1371,7 +1382,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
       await startDay('Gambe');
       doSet('20', '10');
       click('Salta timer');
-      click('Cambia esercizio');
+      await chooseAction('Cambia esercizio');
       await advance(0);
       expect(screen.getByText('Puoi cambiare l\'esercizio solo prima di aver fatto una serie')).toBeTruthy();
       // Il picker non si è aperto (il catalogo può essere già in cache di modulo: non si guarda la rete)
@@ -1384,7 +1395,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
       { weight: 40, reps: '8', is_warmup: true },
     ] }] }] });
     await startDay('Gambe');
-    click('Salta riscaldamento');
+    await chooseAction('Salta riscaldamento');
     expect(screen.getByLabelText('Peso (kg)').value).toBe('');
   });
 
@@ -1393,7 +1404,7 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     await startDay('Gambe');
     doSet('20', '10');
     click('Salta timer');
-    click('Salta esercizio');
+    await chooseAction('Salta esercizio');
     await advance(0.3);
     doSet('30', '12');
     click('Salta timer');
@@ -1402,17 +1413,15 @@ describe('serie di riscaldamento della scheda (#67)', () => {
     expect(within(screen.getByRole('group', { name: 'Esercizi' })).getByText('1')).toBeTruthy();
   });
 
-  it('ogni pallino ha un testo accessibile con numero e stato', async () => {
+  it('il bottone dei pallini dice le serie fatte e quelle saltate', async () => {
     await startDay('Gambe');
-    expect(screen.getByLabelText('Riscaldamento 1, in corso')).toBeTruthy();
-    expect(screen.getByLabelText('Riscaldamento 2, da fare')).toBeTruthy();
-    expect(screen.getByLabelText('Serie 1, da fare')).toBeTruthy();
+    const name = () => screen.getByRole('button', { name: /^Serie fatte/ }).getAttribute('aria-label');
+    expect(name()).toBe('Serie fatte: 0 di 4');
     doSet('20', '10');
     click('Salta timer');
-    expect(screen.getByLabelText('Riscaldamento 1, fatta')).toBeTruthy();
-    click('Salta riscaldamento');
-    expect(screen.getByLabelText('Riscaldamento 2, saltata')).toBeTruthy();
-    expect(screen.getByLabelText('Serie 1, in corso')).toBeTruthy();
+    expect(name()).toBe('Serie fatte: 1 di 4');
+    await chooseAction('Salta riscaldamento');
+    expect(name()).toBe('Serie fatte: 1 di 4, 1 saltata');
   });
 });
 
@@ -1456,7 +1465,7 @@ describe('ordine reale e orario delle serie (#26)', () => {
     }));
     await mount();
     click('Riprendi allenamento');
-    click('Salta serie');
+    await chooseAction('Salta serie');
     await advance(0.3);
     await act(async () => { click('Salva allenamento'); });
     await advance(0);
@@ -1479,7 +1488,7 @@ describe('ordine reale e orario delle serie (#26)', () => {
     }));
     await mount();
     click('Riprendi allenamento');
-    click('Salta serie');
+    await chooseAction('Salta serie');
     await advance(0.3);
     await act(async () => { click('Salva allenamento'); });
     await advance(0);
@@ -1680,7 +1689,7 @@ describe('nomi accessibili', () => {
   it('il picker degli esercizi: il tasto di chiusura ha un nome e non finisce in quello del dialogo', async () => {
     responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
     await startDay('Push');
-    click('Cambia esercizio');
+    await chooseAction('Cambia esercizio');
     await advance(0);
     expect(screen.getByRole('dialog', { name: 'Cambia esercizio' })).toBeTruthy();
     expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Chiudi' })).toBeTruthy();
@@ -1781,7 +1790,7 @@ describe('peso in kg: il testo del campo resta com\'è scritto', () => {
     doSet('60', '8');
     click('Salta timer');
     fireEvent.change(screen.getByLabelText('Peso (kg)'), { target: { value: '20.0' } });
-    click('Salta serie');
+    await chooseAction('Salta serie');
     expect(screen.getByLabelText('Peso (kg)').value).toBe('20.0');
   });
 
@@ -1842,7 +1851,7 @@ describe('peso in libbre: dati sempre in kg', () => {
     doSetLb('220', '8');
     click('Salta timer');
     fireEvent.change(screen.getByLabelText('Peso (lb)'), { target: { value: '200' } });
-    click('Salta serie');
+    await chooseAction('Salta serie');
     expect(screen.getByLabelText('Peso (lb)').value).toBe('200');
     fireEvent.change(screen.getByLabelText('Ripetizioni'), { target: { value: '8' } });
     click('Conferma serie');
@@ -1867,6 +1876,8 @@ describe('peso in libbre: dati sempre in kg', () => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(savedDraft));
     await mount();
     click('Riprendi allenamento');
+    fireEvent.click(screen.getByRole('button', { name: /^Serie fatte/ }));
+    await advance(500);
     screen.getByText('132,25 lb × 8');
     expect(draft().completedSets[9][0].weight).toBe(60);
   });
@@ -2163,6 +2174,626 @@ describe('strumenti della serie', () => {
       lastTimePress([{ weight: 10, reps: '8' }]);
       await startDay('Pressa');
       expect(weightField().value).toBe('0');
+    });
+  });
+});
+
+describe('barra in alto e menu «⋯» (F3)', () => {
+  const squat = {
+    id: 11, exercise_id: 5, exercise_name: 'Squat', rest: 60, muscle_group: 'gambe', equipment: 'bilanciere',
+    planned_sets: plannedSets(1, times(3, { min: 5, max: 5 })),
+  };
+  const legDay = { id: 3, name: 'Gambe', exercises: [squat, fly] };
+  const withLegs = () => { responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Gambe', is_active: true, days: [legDay] }] }); };
+  const itemNames = () => screen.getAllByRole('menuitem').map((el) => el.getAttribute('aria-label') ?? el.textContent);
+  const pro = () => { responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: ['focus_session_edit'] }); };
+
+  it('la barra dice «Esercizio 1 di 2» in parole', async () => {
+    withLegs();
+    await startDay('Gambe');
+    expect(screen.getByText('Esercizio 1 di 2')).toBeTruthy();
+    expect(screen.queryByText('1/2')).toBeNull();
+  });
+
+  it('«⋯»: nome accessibile, menu, 44 px, aria-expanded e aria-controls solo da aperto', async () => {
+    withLegs();
+    await startDay('Gambe');
+    const more = screen.getByRole('button', { name: 'Altre azioni' });
+    expect(more.getAttribute('aria-haspopup')).toBe('menu');
+    expect(more.getAttribute('aria-expanded')).toBe('false');
+    expect(more.getAttribute('aria-controls')).toBeNull();
+    expect(getComputedStyle(more).width).toBe('44px');
+    expect(getComputedStyle(more).height).toBe('44px');
+    fireEvent.click(more);
+    expect(more.getAttribute('aria-expanded')).toBe('true');
+    const menu = screen.getByRole('menu');
+    expect(more.getAttribute('aria-controls')).toBe(menu.id);
+    screen.getAllByRole('menuitem').forEach((item) => expect(parseInt(getComputedStyle(item).minHeight, 10)).toBeGreaterThanOrEqual(44));
+  });
+
+  it('i tre «Salta» e «Cambia / Aggiungi» non stanno più sotto «Conferma serie»', async () => {
+    withLegs();
+    await startDay('Gambe');
+    ['Salta riscaldamento', 'Salta serie', 'Salta esercizio', 'Cambia esercizio (Plus)', 'Aggiungi esercizio (Plus)'].forEach((name) => {
+      expect(screen.queryByRole('button', { name })).toBeNull();
+    });
+  });
+
+  it('in riscaldamento: «Salta riscaldamento», «Salta esercizio», «Cambia», «Aggiungi» (senza «Salta serie»)', async () => {
+    withLegs();
+    await startDay('Gambe');
+    openMenu();
+    expect(itemNames()).toEqual(['Salta riscaldamento', 'Salta esercizio', 'Cambia esercizio (Plus)', 'Aggiungi esercizio (Plus)']);
+  });
+
+  it('alla prima serie allenante: niente «Salta serie» né «Salta riscaldamento»', async () => {
+    withLegs();
+    await startDay('Gambe');
+    await chooseAction('Salta riscaldamento');
+    openMenu();
+    expect(itemNames()).toEqual(['Salta esercizio', 'Cambia esercizio (Plus)', 'Aggiungi esercizio (Plus)']);
+  });
+
+  it('dalla seconda serie allenante c\'è «Salta serie» e fa quello che faceva il bottone', async () => {
+    withLegs();
+    await startDay('Gambe');
+    await chooseAction('Salta riscaldamento');
+    doSet();
+    click('Salta timer');
+    openMenu();
+    expect(itemNames()).toEqual(['Salta serie', 'Salta esercizio', 'Cambia esercizio (Plus)', 'Aggiungi esercizio (Plus)']);
+    fireEvent.click(menuItem('Salta serie'));
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(screen.getByText('Serie 3 di 3')).toBeTruthy();
+  });
+
+  it('«Salta esercizio» porta all\'esercizio dopo e il menu si chiude', async () => {
+    withLegs();
+    await startDay('Gambe');
+    await chooseAction('Salta esercizio');
+    await advance(500);
+    expect(screen.getByRole('heading', { name: 'Croci' })).toBeTruthy();
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('senza Plus: «Cambia» e «Aggiungi» hanno l\'etichetta «Plus» e aprono la finestra Plus, con il fuoco che torna a «⋯»', async () => {
+    withLegs();
+    await startDay('Gambe');
+    openMenu();
+    expect(screen.getAllByText('Plus')).toHaveLength(2);
+    fireEvent.click(menuItem('Cambia esercizio (Plus)'));
+    await advance(500);
+    expect(screen.getByText('Funzione Plus')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Ho capito' }));
+    await advance(500);
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Altre azioni' }));
+  });
+
+  it('con Plus le voci non hanno l\'etichetta e «Aggiungi esercizio» apre la scelta dell\'esercizio', async () => {
+    withLegs();
+    pro();
+    await startDay('Gambe');
+    openMenu();
+    expect(screen.queryByText('Plus')).toBeNull();
+    fireEvent.click(menuItem('Aggiungi esercizio'));
+    await advance(500);
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(screen.getByText('Croci ai cavi')).toBeTruthy();
+  });
+
+  it('dopo una serie fatta «Cambia» resta nel menu, sbiadito, e avvisa come prima', async () => {
+    withLegs();
+    pro();
+    await startDay('Gambe');
+    doSet();
+    click('Salta timer');
+    openMenu();
+    const swap = menuItem('Cambia esercizio');
+    expect(getComputedStyle(within(swap).getByText('Cambia esercizio')).opacity).toBe('0.45');
+    fireEvent.click(swap);
+    await advance(500);
+    expect(screen.getByText('Puoi cambiare l\'esercizio solo prima di aver fatto una serie')).toBeTruthy();
+  });
+
+  it('«Cambia» ha aria-disabled solo quando il cambio non è disponibile, e il tocco avvisa lo stesso', async () => {
+    withLegs();
+    pro();
+    await startDay('Gambe');
+    openMenu();
+    expect(menuItem('Cambia esercizio').getAttribute('aria-disabled')).toBeNull();
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
+    await advance(500);
+    doSet();
+    click('Salta timer');
+    openMenu();
+    const swap = menuItem('Cambia esercizio');
+    expect(swap.getAttribute('aria-disabled')).toBe('true');
+    expect(swap.hasAttribute('disabled')).toBe(false);
+    // Con le frecce la voce si raggiunge lo stesso: è da lì che si legge perché non è disponibile
+    const before = menuItem('Salta esercizio');
+    before.focus();
+    fireEvent.keyDown(before, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(swap);
+    fireEvent.click(swap);
+    await advance(500);
+    expect(screen.getByText('Puoi cambiare l\'esercizio solo prima di aver fatto una serie')).toBeTruthy();
+  });
+
+  it('senza Plus «Cambia» non è mai aria-disabled: il tocco apre la finestra Plus', async () => {
+    withLegs();
+    await startDay('Gambe');
+    doSet();
+    click('Salta timer');
+    openMenu();
+    screen.getAllByRole('menuitem').forEach((item) => expect(item.getAttribute('aria-disabled')).toBeNull());
+    fireEvent.click(menuItem('Cambia esercizio (Plus)'));
+    await advance(500);
+    expect(screen.getByText('Funzione Plus')).toBeTruthy();
+  });
+
+  it('due tocchi di fila su «Salta esercizio» mentre il menu si chiude saltano un esercizio solo', async () => {
+    await startDay('Push completo');
+    openMenu();
+    const skip = menuItem('Salta esercizio');
+    fireEvent.click(skip);
+    fireEvent.click(skip);
+    await advance(500);
+    expect(screen.getByRole('heading', { name: 'Croci' })).toBeTruthy();
+    expect(screen.queryByText('Riepilogo')).toBeNull();
+    // Un secondo tocco registrerebbe l'esercizio saltato due volte
+    expect(draft().skippedExercises).toEqual([0]);
+  });
+
+  it('Esc chiude il menu e il fuoco torna a «⋯»', async () => {
+    withLegs();
+    await startDay('Gambe');
+    openMenu();
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
+    await advance(500);
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Altre azioni' }));
+  });
+});
+
+describe('pallini e «Serie fatte» (F3)', () => {
+  const squat = {
+    id: 11, exercise_id: 5, exercise_name: 'Squat', rest: 60, muscle_group: 'gambe', equipment: 'bilanciere',
+    planned_sets: plannedSets(1, times(3, { min: 5, max: 5 })),
+  };
+  const legDay = { id: 3, name: 'Gambe', exercises: [squat] };
+  const withLegs = () => { responses['read_plans.php'] = () => json({ records: [{ id: 5, name: 'Gambe', is_active: true, days: [legDay] }] }); };
+  const doneButton = () => screen.getByRole('button', { name: /^(Serie fatte|Sets done)/ });
+  const doneDialog = () => screen.getByRole('dialog', { name: 'Serie fatte' });
+  const openDone = async () => { fireEvent.click(doneButton()); await advance(500); return within(doneDialog()); };
+  const closeDone = async () => { fireEvent.click(within(doneDialog()).getByRole('button', { name: 'Chiudi' })); await advance(500); };
+  const row = (dialog, name) => dialog.getByRole('button', { name: new RegExp(`^${name}`) });
+
+  describe('il bottone dei pallini', () => {
+    it('è uno solo, sempre presente, con il nome che dice le serie fatte', async () => {
+      await startDay('Push');
+      expect(screen.getAllByRole('button', { name: /^Serie fatte/ })).toHaveLength(1);
+      expect(doneButton().getAttribute('aria-label')).toBe('Serie fatte: 0 di 2');
+      expect(doneButton().getAttribute('aria-haspopup')).toBe('dialog');
+      expect(parseInt(getComputedStyle(doneButton()).minHeight, 10)).toBeGreaterThanOrEqual(44);
+      doSet();
+      click('Salta timer');
+      expect(doneButton().getAttribute('aria-label')).toBe('Serie fatte: 1 di 2');
+    });
+
+    it('con serie saltate le dice a parte, al singolare e al plurale', async () => {
+      withLegs();
+      await startDay('Gambe');
+      await chooseAction('Salta riscaldamento');
+      expect(doneButton().getAttribute('aria-label')).toBe('Serie fatte: 0 di 4, 1 saltata');
+    });
+
+    it('con due serie saltate dice «2 saltate»', async () => {
+      withLegs();
+      await startDay('Gambe');
+      await chooseAction('Salta riscaldamento');
+      doSet('60', '5');
+      click('Salta timer');
+      await chooseAction('Salta serie');
+      expect(doneButton().getAttribute('aria-label')).toBe('Serie fatte: 1 di 4, 2 saltate');
+    });
+
+    it('in inglese il nome è in inglese', async () => {
+      await startDay('Push');
+      await act(async () => { await i18n.changeLanguage('en'); });
+      expect(doneButton().getAttribute('aria-label')).toBe('Sets done: 0 of 2');
+    });
+
+    it('i pallini dentro sono solo disegno, non più letti uno per uno', async () => {
+      withLegs();
+      await startDay('Gambe');
+      expect(screen.queryAllByRole('img').filter((d) => d.getAttribute('aria-label')?.includes(', '))).toEqual([]);
+      expect(screen.queryByLabelText('Riscaldamento 1, in corso')).toBeNull();
+      expect(doneButton().querySelectorAll('[aria-hidden="true"]').length).toBeGreaterThanOrEqual(3);
+      expect(screen.getByText('R1')).toBeTruthy();
+    });
+
+    it('la scheda «Serie fatte» in fondo alla pagina non c\'è più', async () => {
+      await startDay('Push');
+      doSet();
+      expect(screen.queryByText('Serie completate')).toBeNull();
+      expect(screen.queryByRole('heading', { name: 'Serie fatte' })).toBeNull();
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+  });
+
+  describe('la finestra', () => {
+    it('senza serie fatte dice che non ce ne sono, e chiusa riporta il fuoco al bottone', async () => {
+      await startDay('Push');
+      const dialog = await openDone();
+      expect(dialog.getByText('Ancora nessuna serie fatta in questo esercizio.')).toBeTruthy();
+      expect(dialog.queryAllByRole('button').map((b) => b.textContent)).toEqual(['Chiudi']);
+      await closeDone();
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(document.activeElement).toBe(doneButton());
+    });
+
+    it('elenca le serie fatte in ordine, con nome, valori e tecnica, senza le saltate', async () => {
+      withLegs();
+      await startDay('Gambe');
+      doSet('20', '10');
+      click('Salta timer');
+      fireEvent.click(screen.getByRole('button', { name: 'Rest pause' }));
+      doSet('60', '5');
+      click('Salta timer');
+      await chooseAction('Salta serie');
+      const dialog = await openDone();
+      const rows = dialog.getAllByRole('button').filter((b) => b.textContent !== 'Chiudi');
+      expect(rows.map((b) => b.textContent.replace(/\s/g, ' '))).toEqual(['Riscaldamento 120 kg × 10', 'Serie 160 kg × 5Rest pause']);
+      expect(dialog.queryByText('Serie 2')).toBeNull();
+      rows.forEach((b) => expect(parseInt(getComputedStyle(b).minHeight, 10)).toBeGreaterThanOrEqual(44));
+      expect(dialog.getByText('Tocca una serie per correggerla.')).toBeTruthy();
+    });
+
+    it('i valori sono nell\'unità dell\'utente', async () => {
+      account.weightUnit = 'lb';
+      await startDay('Push');
+      doSetLb('220', '8');
+      click('Salta timer');
+      const dialog = await openDone();
+      expect(dialog.getByText('Serie 1')).toBeTruthy();
+      expect(dialog.getByText('220 lb × 8')).toBeTruthy();
+    });
+
+    it('Esc chiude la finestra e il fuoco torna ai pallini', async () => {
+      await startDay('Push');
+      await openDone();
+      fireEvent.keyDown(doneDialog(), { key: 'Escape' });
+      await advance(500);
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(document.activeElement).toBe(doneButton());
+    });
+  });
+
+  it.each([
+    ['light', 'rgb(255, 255, 255)', 'rgb(26, 24, 22)'],
+    ['dark', 'rgb(20, 20, 22)', 'rgb(255, 255, 255)'],
+  ])('in tema %s la finestra ha lo sfondo e il testo del tema, e le voci di «⋯» il colore del testo', async (mode, paper, ink) => {
+    localStorage.setItem('themeMode', mode);
+    await startDay('Push');
+    await openDone();
+    expect(getComputedStyle(doneDialog().closest('.MuiPaper-root')).backgroundColor).toBe(paper);
+    expect(getComputedStyle(screen.getByRole('heading', { name: 'Serie fatte' })).color).toBe(ink);
+    await closeDone();
+    openMenu();
+    expect(getComputedStyle(menuItem('Salta esercizio')).color).toBe(ink);
+  });
+
+  describe('correggere una serie fatta', () => {
+    const squatDraft = (sets, extra = {}) => ({
+      ...savedDraft, activePlan: { id: 5, name: 'Gambe', days: [legDay] }, selectedDay: legDay, selectedDayId: 3,
+      completedSets: { 11: sets }, currentSetIndex: 3, ...extra,
+    });
+    const benchSets = [{ setNumber: 1, weight: 62.5, reps: '8', intensity_technique: '', is_warmup: false, seconds_from_start: 300 }];
+    const inDialog = () => within(doneDialog());
+    const field = (label) => inDialog().getByLabelText(label);
+    const save = () => fireEvent.click(inDialog().getByRole('button', { name: 'Salva' }));
+    const cancel = () => fireEvent.click(inDialog().getByRole('button', { name: 'Annulla' }));
+    const resume = async (draftValue) => {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draftValue));
+      await mount();
+      click('Riprendi allenamento');
+    };
+    // Una serie di Panca piana (id 9) in corso nella seconda: la prima è fatta con `weight`
+    const afterFirstSet = async (weight = '60', reps = '8') => {
+      await startDay('Push');
+      await advance(60);
+      doSet(weight, reps);
+      click('Salta timer');
+    };
+    const finishAndSave = async () => {
+      doSet('70', '6');
+      await act(async () => { click('Salva allenamento'); });
+      await advance(0);
+      return saveBody().workout_records;
+    };
+
+    it('toccare una serie la apre in modifica: gruppo col suo nome, campi con etichetta, fuoco sul peso', async () => {
+      await afterFirstSet();
+      const dialog = await openDone();
+      fireEvent.click(row(dialog, 'Serie 1'));
+      const group = inDialog().getByRole('group', { name: 'Correggi Serie 1' });
+      expect(within(group).getByLabelText('Peso (kg)').value).toBe('60');
+      expect(within(group).getByLabelText('Ripetizioni').value).toBe('8');
+      expect(within(group).getByRole('button', { name: 'Rest pause' })).toBeTruthy();
+      expect(document.activeElement).toBe(field('Peso (kg)'));
+      const weight = field('Peso (kg)');
+      expect(weight.getAttribute('inputmode')).toBe('decimal');
+      expect([weight.getAttribute('step'), weight.getAttribute('min'), weight.getAttribute('max')]).toEqual(['0.5', '0', '999.99']);
+    });
+
+    it('peso, ripetizioni e tecnica cambiati arrivano al salvataggio, con gli stessi set_number e seconds_from_start', async () => {
+      await afterFirstSet();
+      const dialog = await openDone();
+      fireEvent.click(row(dialog, 'Serie 1'));
+      fireEvent.change(field('Peso (kg)'), { target: { value: '65' } });
+      fireEvent.change(field('Ripetizioni'), { target: { value: '9' } });
+      fireEvent.click(inDialog().getByRole('button', { name: 'Drop set (stripping)' }));
+      save();
+      await closeDone();
+      expect(draft().completedSets[9][0]).toMatchObject({ weight: 65, reps: '9', intensity_technique: 'Drop Set (Stripping)', setNumber: 1, seconds_from_start: 60 });
+      const records = await finishAndSave();
+      expect(records.map((r) => [r.weight, r.reps, r.intensity_technique, r.set_number])).toEqual([
+        [65, '9', 'Drop Set (Stripping)', 1], [70, '6', '', 2],
+      ]);
+      expect(records[0].seconds_from_start).toBe(60);
+    });
+
+    it('«Annulla» non cambia nulla e riporta il fuoco alla riga', async () => {
+      await afterFirstSet();
+      const dialog = await openDone();
+      fireEvent.click(row(dialog, 'Serie 1'));
+      fireEvent.change(field('Peso (kg)'), { target: { value: '99' } });
+      cancel();
+      expect(inDialog().queryByRole('group')).toBeNull();
+      expect(document.activeElement).toBe(row(inDialog(), 'Serie 1'));
+      expect(inDialog().getByText('60 kg × 8')).toBeTruthy();
+      expect(draft().completedSets[9][0].weight).toBe(60);
+      expect(inDialog().getByRole('status').textContent).toBe('');
+    });
+
+    it('«Salva» torna alla riga e annuncia «Serie corretta.» dentro la finestra; alla seconda correzione lo riannuncia', async () => {
+      await afterFirstSet();
+      const dialog = await openDone();
+      expect(inDialog().getByRole('status').textContent).toBe('');
+      fireEvent.click(row(dialog, 'Serie 1'));
+      fireEvent.change(field('Ripetizioni'), { target: { value: '9' } });
+      save();
+      expect(document.activeElement).toBe(row(inDialog(), 'Serie 1'));
+      expect(inDialog().getByRole('status').textContent).toBe('Serie corretta.');
+      expect(inDialog().getByText('60 kg × 9')).toBeTruthy();
+      // La regione si svuota quando parte una nuova modifica: lo stesso testo viene riletto
+      fireEvent.click(row(inDialog(), 'Serie 1'));
+      expect(inDialog().getByRole('status').textContent).toBe('');
+      save();
+      expect(inDialog().getByRole('status').textContent).toBe('Serie corretta.');
+    });
+
+    it('valori non validi disabilitano «Salva»', async () => {
+      await afterFirstSet();
+      const dialog = await openDone();
+      fireEvent.click(row(dialog, 'Serie 1'));
+      const saveButton = () => inDialog().getByRole('button', { name: 'Salva' });
+      expect(saveButton().disabled).toBe(false);
+      fireEvent.change(field('Peso (kg)'), { target: { value: '' } });
+      expect(saveButton().disabled).toBe(true);
+      fireEvent.change(field('Peso (kg)'), { target: { value: '1000' } });
+      expect(saveButton().disabled).toBe(true);
+      fireEvent.change(field('Peso (kg)'), { target: { value: '60' } });
+      fireEvent.change(field('Ripetizioni'), { target: { value: '0' } });
+      expect(saveButton().disabled).toBe(true);
+      fireEvent.change(field('Ripetizioni'), { target: { value: '251' } });
+      expect(saveButton().disabled).toBe(true);
+      fireEvent.change(field('Ripetizioni'), { target: { value: '8' } });
+      expect(saveButton().disabled).toBe(false);
+    });
+
+    it('oltre 30 ripetizioni e oltre la scheda chiede conferma, come per la serie', async () => {
+      await afterFirstSet();
+      const dialog = await openDone();
+      fireEvent.click(row(dialog, 'Serie 1'));
+      fireEvent.change(field('Ripetizioni'), { target: { value: '45' } });
+      save();
+      expect(screen.getByText('Confermi 45 ripetizioni?')).toBeTruthy();
+      expect(draft().completedSets[9][0].reps).toBe('8');
+      fireEvent.click(screen.getByRole('button', { name: 'Correggi' }));
+      await advance(500);
+      expect(inDialog().getByRole('group', { name: 'Correggi Serie 1' })).toBeTruthy();
+      expect(draft().completedSets[9][0].reps).toBe('8');
+      expect(document.activeElement).toBe(field('Peso (kg)'));
+      save();
+      fireEvent.click(screen.getByRole('button', { name: 'Sì, confermo' }));
+      await advance(500);
+      expect(draft().completedSets[9][0].reps).toBe('45');
+      expect(inDialog().getByRole('status').textContent).toBe('Serie corretta.');
+      expect(inDialog().queryByRole('group', { name: 'Correggi Serie 1' })).toBeNull();
+      expect(document.activeElement).toBe(row(inDialog(), 'Serie 1'));
+    });
+
+    it('nella finestra le tecniche stanno su due colonne (a 320 px quattro non ci stanno), nella serie su quattro', async () => {
+      await resume({ ...savedDraft });
+      const columns = (root) => getComputedStyle(root.getByRole('group', { name: 'Tecnica di intensità' })).gridTemplateColumns;
+      expect(columns(screen)).toContain('repeat(4');
+      const dialog = await openDone();
+      fireEvent.click(row(dialog, 'Serie 1'));
+      expect(columns(inDialog())).toContain('repeat(2');
+    });
+
+    it('corpo libero: la serie con peso 0 si apre con 0 nel campo e correggere le ripetizioni lascia il peso a 0', async () => {
+      await resume({ ...savedDraft, completedSets: { 9: [{ setNumber: 1, weight: 0, reps: '8', intensity_technique: '', is_warmup: false, seconds_from_start: 300 }] } });
+      const dialog = await openDone();
+      fireEvent.click(row(dialog, 'Serie 1'));
+      expect(field('Peso (kg)').value).toBe('0');
+      fireEvent.change(field('Ripetizioni'), { target: { value: '12' } });
+      save();
+      expect(draft().completedSets[9][0]).toMatchObject({ weight: 0, reps: '12' });
+    });
+
+    it('una riga sola alla volta in modifica', async () => {
+      withLegs();
+      await startDay('Gambe');
+      doSet('20', '10');
+      click('Salta timer');
+      doSet('60', '5');
+      click('Salta timer');
+      const dialog = await openDone();
+      fireEvent.click(row(dialog, 'Riscaldamento 1'));
+      expect(inDialog().getAllByRole('group', { name: /^Correggi/ })).toHaveLength(1);
+      fireEvent.click(row(inDialog(), 'Serie 1'));
+      expect(inDialog().getAllByRole('group').map((g) => g.getAttribute('aria-label')).filter((n) => n.startsWith('Correggi'))).toEqual(['Correggi Serie 1']);
+    });
+
+    it('un riscaldamento non ha la riga della tecnica e resta senza', async () => {
+      withLegs();
+      await startDay('Gambe');
+      doSet('20', '10');
+      click('Salta timer');
+      const dialog = await openDone();
+      fireEvent.click(row(dialog, 'Riscaldamento 1'));
+      expect(inDialog().queryByRole('group', { name: 'Tecnica di intensità' })).toBeNull();
+      fireEvent.change(field('Peso (kg)'), { target: { value: '25' } });
+      save();
+      expect(draft().completedSets[11][0]).toMatchObject({ weight: 25, intensity_technique: '', is_warmup: true });
+    });
+
+    it('con lo strumento «Tecnica» spento la riga non c\'è e la tecnica salvata resta', async () => {
+      account.user = { focus_tools: { technique: false } };
+      withLegs();
+      await resume(squatDraft([{ setNumber: 2, weight: 60, reps: '5', intensity_technique: 'Rest Pause', is_warmup: false, seconds_from_start: 100 }], { currentSetIndex: 3 }));
+      const dialog = await openDone();
+      fireEvent.click(row(dialog, 'Serie 1'));
+      expect(inDialog().queryByRole('group', { name: 'Tecnica di intensità' })).toBeNull();
+      fireEvent.change(field('Peso (kg)'), { target: { value: '65' } });
+      save();
+      expect(draft().completedSets[11][0]).toMatchObject({ weight: 65, intensity_technique: 'Rest Pause' });
+    });
+
+    it('una tecnica salvata che non è tra le quattro resta finché non se ne sceglie un\'altra', async () => {
+      withLegs();
+      await resume(squatDraft([{ setNumber: 2, weight: 60, reps: '5', intensity_technique: 'Cluster Set', is_warmup: false, seconds_from_start: 100 }]));
+      const dialog = await openDone();
+      fireEvent.click(row(dialog, 'Serie 1'));
+      inDialog().getAllByRole('button').filter((b) => b.hasAttribute('aria-pressed')).forEach((b) => expect(b.getAttribute('aria-pressed')).toBe('false'));
+      fireEvent.change(field('Ripetizioni'), { target: { value: '6' } });
+      save();
+      expect(draft().completedSets[11][0]).toMatchObject({ reps: '6', intensity_technique: 'Cluster Set' });
+      fireEvent.click(row(inDialog(), 'Serie 1'));
+      fireEvent.click(inDialog().getByRole('button', { name: 'Negative' }));
+      save();
+      expect(draft().completedSets[11][0].intensity_technique).toBe('Negative');
+    });
+
+    describe('il peso non toccato non cambia di un centesimo', () => {
+      it('in lb: 62,5 kg resta 62,5 anche dopo una correzione delle ripetizioni', async () => {
+        account.weightUnit = 'lb';
+        await resume({ ...savedDraft, completedSets: { 9: benchSets } });
+        const dialog = await openDone();
+        fireEvent.click(row(dialog, 'Serie 1'));
+        expect(field('Peso (lb)').value).toBe('137.75');
+        fireEvent.change(field('Ripetizioni'), { target: { value: '9' } });
+        save();
+        expect(draft().completedSets[9][0]).toMatchObject({ weight: 62.5, reps: '9' });
+      });
+
+      it('in lb, se il peso si tocca, i kg vengono dalle libbre scritte', async () => {
+        account.weightUnit = 'lb';
+        await resume({ ...savedDraft, completedSets: { 9: benchSets } });
+        const dialog = await openDone();
+        fireEvent.click(row(dialog, 'Serie 1'));
+        fireEvent.change(field('Peso (lb)'), { target: { value: '140' } });
+        save();
+        expect(draft().completedSets[9][0].weight).toBe(63.5);
+      });
+    });
+
+    describe('effetti sul resto della schermata', () => {
+      it('i pallini, «Ultima volta» e il peso già scritto nel campo della serie in corso non cambiano', async () => {
+        responses['workout_history/read.php'] = () => json({ records: [{ id: 1, date: '2026-10-13', exercises: [{ exercise_id: 3, name: 'Panca piana', sets: [{ weight: 50, reps: '10' }, { weight: 55, reps: '8' }] }] }] });
+        await startDay('Push');
+        doSet('60', '8');
+        click('Salta timer');
+        fireEvent.change(screen.getByLabelText('Peso (kg)'), { target: { value: '70' } });
+        const name = doneButton().getAttribute('aria-label');
+        const last = screen.getByText('Ultima volta').parentElement.textContent;
+        const dialog = await openDone();
+        fireEvent.click(row(dialog, 'Serie 1'));
+        fireEvent.change(field('Peso (kg)'), { target: { value: '80' } });
+        save();
+        await closeDone();
+        expect(screen.getByLabelText('Peso (kg)').value).toBe('70');
+        expect(doneButton().getAttribute('aria-label')).toBe(name);
+        expect(screen.getByText('Ultima volta').parentElement.textContent).toBe(last);
+        expect(screen.getByText(/^Serie 2 di 2$/)).toBeTruthy();
+      });
+    });
+  });
+
+  describe('dal riepilogo', () => {
+    const history = [{ id: 1, date: '2026-10-13', exercises: [{ exercise_id: 3, name: 'Panca piana', sets: [{ weight: 60, reps: '8' }] }] }];
+    const summaryDraft = (weight = 70) => ({
+      ...savedDraft, phase: 'summary', completedSets: { 9: [
+        { setNumber: 1, weight, reps: '8', intensity_technique: '', is_warmup: false, seconds_from_start: 300 },
+        { setNumber: 2, weight: 50, reps: '8', intensity_technique: 'Rest Pause', is_warmup: false, seconds_from_start: 400 },
+      ] },
+    });
+    const goSummary = async (draftValue) => {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draftValue));
+      await mount();
+      click('Riprendi allenamento');
+    };
+    // Il nome porta gli spazi stretti di formatSetText: si confronta con spazi normali
+    const chip = (name) => screen.getAllByRole('button').find((b) => b.getAttribute('aria-label')?.replace(/\s/g, ' ') === name);
+
+    it('prima del salvataggio ogni serie è un bottone con esercizio, serie e valori; dopo non lo è più', async () => {
+      await goSummary(summaryDraft());
+      const first = chip('Correggi Panca piana, Serie 1: 70 kg × 8');
+      expect(first).toBeTruthy();
+      expect(parseInt(getComputedStyle(first).minHeight, 10)).toBeGreaterThanOrEqual(44);
+      expect(chip('Correggi Panca piana, Serie 2: 50 kg × 8, Rest pause')).toBeTruthy();
+      await act(async () => { click('Salva allenamento'); });
+      await advance(0);
+      expect(screen.queryAllByRole('button', { name: /^Correggi Panca/ })).toEqual([]);
+      expect(screen.getByText('70 kg × 8')).toBeTruthy();
+    });
+
+    it('il tocco apre la finestra di quell\'esercizio con la serie già in modifica', async () => {
+      await goSummary(summaryDraft());
+      fireEvent.click(chip('Correggi Panca piana, Serie 2: 50 kg × 8, Rest pause'));
+      await advance(500);
+      expect(screen.getByRole('group', { name: 'Correggi Serie 2' })).toBeTruthy();
+      expect(document.activeElement).toBe(within(doneDialog()).getByLabelText('Peso (kg)'));
+      expect(within(doneDialog()).getByLabelText('Peso (kg)').value).toBe('50');
+    });
+
+    it('dopo la correzione i record di peso e di volume si aggiornano e il salvataggio porta i valori corretti', async () => {
+      responses['workout_history/read.php'] = () => json({ records: history });
+      await goSummary(summaryDraft(70));
+      expect(screen.getByText(/^Nuovo record/)).toBeTruthy();
+      expect(screen.getByText('Miglior volume')).toBeTruthy();
+      fireEvent.click(chip('Correggi Panca piana, Serie 1: 70 kg × 8'));
+      await advance(500);
+      fireEvent.change(within(doneDialog()).getByLabelText('Peso (kg)'), { target: { value: '55' } });
+      fireEvent.click(within(doneDialog()).getByRole('button', { name: 'Salva' }));
+      await closeDone();
+      expect(screen.queryByText(/^Nuovo record/)).toBeNull();
+      // Il volume è dell'esercizio intero (440 + 400 kg contro i 480 dello storico): resta un record finché non scende sotto
+      expect(screen.getByText('Miglior volume')).toBeTruthy();
+      expect(document.activeElement).toBe(chip('Correggi Panca piana, Serie 1: 55 kg × 8'));
+      fireEvent.click(chip('Correggi Panca piana, Serie 2: 50 kg × 8, Rest pause'));
+      await advance(500);
+      fireEvent.change(within(doneDialog()).getByLabelText('Peso (kg)'), { target: { value: '1' } });
+      fireEvent.click(within(doneDialog()).getByRole('button', { name: 'Salva' }));
+      await closeDone();
+      expect(screen.queryByText('Miglior volume')).toBeNull();
+      await act(async () => { click('Salva allenamento'); });
+      await advance(0);
+      expect(saveBody().workout_records.map((r) => [r.weight, r.reps, r.intensity_technique, r.set_number, r.seconds_from_start])).toEqual([
+        [55, '8', '', 1, 300], [1, '8', 'Rest Pause', 2, 400],
+      ]);
     });
   });
 });

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   lastSessionSets, totalSlots, setSlot, skipWarmup, slotWeight, numberedSets, withWarmupRule, isCurrentDraft, swapExercise, buildSessionEntry, suggestedWeight,
-  plannedSetAt, slotTarget, slotTechnique, repsNeedConfirm, addedPlannedSets,
+  plannedSetAt, slotTarget, slotTechnique, repsNeedConfirm, addedPlannedSets, editSet,
 } from './focusSession';
 import { DROP, plannedSets, times, work } from '../test/plannedSets';
 
@@ -220,5 +220,39 @@ describe('cambio e aggiunta esercizio (#77)', () => {
 describe('lastSessionSets nella unità dell\'utente', () => {
   it('mostra il peso in lb', () => {
     expect(lastSessionSets({ sets: [{ weight: 100, reps: 5 }] }, 'it-IT', undefined, 'lb')[0].label).toBe('220,5\u00a0lb\u00a0×\u00a05');
+  });
+});
+
+describe('editSet: correzione di una serie fatta', () => {
+  const done = [
+    { setNumber: 1, weight: 20, reps: '10', intensity_technique: '', is_warmup: true, seconds_from_start: 30 },
+    { setNumber: 3, weight: 62.5, reps: '8', intensity_technique: 'Rest Pause', is_warmup: false, seconds_from_start: 400 },
+  ];
+
+  it('cambia peso, ripetizioni e tecnica di quella serie e lascia il resto', () => {
+    const next = editSet(done, 3, { weight: 65, reps: '9', intensity_technique: DROP });
+    expect(next[1]).toEqual({ setNumber: 3, weight: 65, reps: '9', intensity_technique: DROP, is_warmup: false, seconds_from_start: 400 });
+    expect(next[0]).toEqual(done[0]);
+  });
+
+  it('non tocca l\'elenco originale né la serie originale', () => {
+    const copy = JSON.parse(JSON.stringify(done));
+    const next = editSet(done, 3, { weight: 65, reps: '9', intensity_technique: '' });
+    expect(done).toEqual(copy);
+    expect(next).not.toBe(done);
+    expect(next[1]).not.toBe(done[1]);
+  });
+
+  it('le ripetizioni restano una stringa di intero', () => {
+    expect(editSet(done, 3, { weight: 62.5, reps: ' 012 ', intensity_technique: '' })[1].reps).toBe('12');
+  });
+
+  it('un riscaldamento resta senza tecnica', () => {
+    expect(editSet(done, 1, { weight: 25, reps: '10', intensity_technique: DROP })[0].intensity_technique).toBe('');
+  });
+
+  it('una serie che non esiste lascia tutto com\'è', () => {
+    const next = editSet(done, 2, { weight: 1, reps: '1', intensity_technique: '' });
+    expect(next).toEqual(done);
   });
 });
