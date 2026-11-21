@@ -154,6 +154,15 @@ export const withWarmupRule = (set) => ({
 // sulle serie fatte, così le serie saltate non lasciano buchi nel database.
 export const numberedSets = (sets = []) => sets.map((set, i) => ({ ...withWarmupRule(set), set_number: i + 1 }));
 
+// Correzione di una serie fatta: nell'elenco `sets` di un esercizio cambia peso (kg), ripetizioni e tecnica della serie
+// `setNumber`. Numero, tipo (riscaldamento / allenante) e orario restano; l'elenco e le serie originali non si toccano.
+// Una serie che non c'è lascia l'elenco com'è.
+export const editSet = (sets, setNumber, { weight, reps, intensity_technique }) => sets.map((set) => (
+  set.setNumber === setNumber
+    ? withWarmupRule({ ...set, weight, reps: String(parseInt(reps, 10)), intensity_technique })
+    : set
+));
+
 // Gruppi di serie (uno per riga di scheda, [id riga, serie]) nell'ordine in cui sono stati iniziati:
 // per orario della prima serie, serie del gruppo contigue. I gruppi la cui prima serie è senza orario
 // (bozze vecchie, serie confermate nel salvataggio "già finito") vanno in fondo, nell'ordine di prima.
