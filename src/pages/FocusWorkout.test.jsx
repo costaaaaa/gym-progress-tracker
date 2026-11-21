@@ -1372,6 +1372,17 @@ describe('giorno proposto dalla Home', () => {
     expect(saveBody()).toBeNull();
   });
 
+  it('vale una volta: letto, si toglie dallo stato della navigazione (ricarica e indietro non lo ripropongono)', async () => {
+    mockLocation.state = { suggestedDayId: 2 };
+    await mount();
+    expect(mockNavigate).toHaveBeenCalledWith({ pathname: '/focus', search: '' }, { replace: true, state: null });
+  });
+
+  it('senza giorno proposto non si tocca la cronologia', async () => {
+    await mount();
+    expect(mockNavigate).not.toHaveBeenCalledWith(expect.anything(), { replace: true, state: null });
+  });
+
   it('l\'utente può cambiarlo', async () => {
     mockLocation.state = { suggestedDayId: 2 };
     await mount();

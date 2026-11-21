@@ -26,7 +26,8 @@ export default function useFocusSession() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   // Giorno proposto dalla Home («Inizia»): dallo stato della navigazione, letto quando arrivano i piani
-  const suggestedDayId = useLocation().state?.suggestedDayId ?? null;
+  const location = useLocation();
+  const suggestedDayId = location.state?.suggestedDayId ?? null;
   const suggestedDayRef = useRef(suggestedDayId);
   suggestedDayRef.current = suggestedDayId;
   const { isLoggedIn, loading: authLoading, weightUnit, user } = useAuth();
@@ -174,7 +175,7 @@ export default function useFocusSession() {
   }, []);
 
   // useCallback([clearDraft, preselectOnlyDay, preselectSuggestedDay]): non legge stato reattivo (solo localStorage,
-  // setter, clearDraft e preselectOnlyDay, a loro volta stabili), quindi l'effetto sotto si
+  // setter, clearDraft, preselectOnlyDay e preselectSuggestedDay, a loro volta stabili), quindi l'effetto sotto si
   // riesegue solo al cambio di isLoggedIn.
   const loadInitialData = useCallback(async () => {
     // Variabile locale, non lo stato `phase`: dopo gli await la closure
@@ -287,6 +288,13 @@ export default function useFocusSession() {
       }
     }
   }, [clearDraft, preselectOnlyDay, preselectSuggestedDay]);
+
+  // Il giorno proposto vale una volta: letto (la fase non è più 'loading'), si toglie dallo stato della navigazione, che
+  // altrimenti sopravvive a ricarica e tasto indietro e preselezionerebbe un suggerimento vecchio.
+  useEffect(() => {
+    if (suggestedDayId === null || phase === 'loading') return;
+    navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: null });
+  }, [suggestedDayId, phase, navigate, location.pathname, location.search]);
 
   // Dopo la dichiarazione di loadInitialData: l'array di dipendenze viene
   // valutato durante il render (temporal dead zone se fosse sopra).
