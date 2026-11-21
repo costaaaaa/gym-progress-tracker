@@ -1,6 +1,6 @@
 // Home dopo il login: i dati arrivano dalla fetch (confine), l'utente vede testi, bottoni, link e la barra in alto.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, within, fireEvent, act } from '@testing-library/react';
+import { render, screen, within, fireEvent, act, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { renderToString } from 'react-dom/server';
 import Home from './Home';
@@ -8,12 +8,14 @@ import Layout from '../components/Layout/Layout';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { pinLocalClock } from '../test/timeZone';
 import { textBelow } from '../test/minText';
+import { mediaStyle } from '../test/mediaStyle';
+import { HOME_BLOCKS } from '../utils/homeLayout';
 
 vi.mock('./landing/Landing', () => ({ default: () => <p>Landing per gli ospiti</p> }));
 
-const auth = vi.hoisted(() => ({ isLoggedIn: true, weightUnit: 'kg', modules: undefined }));
+const auth = vi.hoisted(() => ({ isLoggedIn: true, weightUnit: 'kg', modules: undefined, homeLayout: undefined }));
 vi.mock('../context/AuthContext', () => ({
-  useAuth: () => ({ user: { username: 'mario88', modules: auth.modules }, isLoggedIn: auth.isLoggedIn, loading: false, weightUnit: auth.weightUnit }),
+  useAuth: () => ({ user: { username: 'mario88', modules: auth.modules, home_layout: auth.homeLayout }, isLoggedIn: auth.isLoggedIn, loading: false, weightUnit: auth.weightUnit }),
 }));
 
 const DRAFT_KEY = 'gym_focus_workout_draft';
@@ -41,6 +43,14 @@ const responses = {
   'gamification/streak.php': { success: true, current_streak_weeks: 4, longest_streak_weeks: 6, this_week: { count: 2, goal: 3, completed: false } },
   'gamification/profile.php': { success: true, level: 5, xp_into_level: 120, xp_for_next_level: 300, total_xp: 1500 },
   'groups/list.php': { success: true, groups: [{ id: 1, name: 'Palestra Roma', members_count: 3 }] },
+  'groups/read.php': {
+    success: true, visibility: { workouts: true },
+    board: [{ rank: 1, username: 'marta', is_me: false, workouts: 3, goal: 4, volume_kg: 900, adherence: 0.75 }, { rank: 2, username: 'mario88', is_me: true, workouts: 2, goal: 4, volume_kg: 500, adherence: 0.5 }],
+  },
+  'user_stats/read.php': {
+    consent_required: false,
+    records: [{ id: 1, date: '2026-10-25', weight: '79.00' }, { id: 2, date: '2026-11-18', weight: '78.40' }],
+  },
 };
 const original = JSON.parse(JSON.stringify(responses));
 
@@ -89,6 +99,7 @@ afterEach(() => {
   auth.isLoggedIn = true;
   auth.weightUnit = 'kg';
   auth.modules = undefined;
+  auth.homeLayout = undefined;
   window.matchMedia = realMatchMedia;
   localStorage.removeItem(DRAFT_KEY);
   vi.useRealTimers();
@@ -100,6 +111,9 @@ const newUser = () => {
   responses['workout_history/read.php'] = { success: true, records: [] };
   responses['workout/read_plans.php'] = { success: true, records: [] };
 };
+// I titoli dei blocchi sotto l'apertura, nell'ordine in cui compaiono
+const blockTitles = () => within(document.querySelector('main')).queryAllByRole('heading', { level: 2 }).map((h) => h.textContent);
+const blocksLoaded = () => screen.findByText('Livello 5 · streak di 4 settimane');
 const opened = () => screen.findByRole('link', { name: /^(Inizia|Riprendi|Vedi allenamento)$/ });
 
 describe('landing', () => {
@@ -122,7 +136,7 @@ describe('primo accesso', () => {
     expect(screen.queryByText('Settimana')).toBeNull();
     expect(screen.queryByRole('link', { name: 'Inizia' })).toBeNull();
     expect(screen.queryByText('Ultimo allenamento')).toBeNull();
-    expect(screen.queryByText('I tuoi gruppi')).toBeNull();
+    expect(blockTitles()).toEqual(['Inizia da qui']);
   });
 
   it('niente apertura rossa: la barra resta neutra anche sul telefono', async () => {
@@ -206,7 +220,8 @@ describe('caricamento ed errori della dashboard', () => {
   it('arrivati i dati l\'aria-busy sparisce', async () => {
     renderHome();
     await opened();
-    expect(document.querySelector('[aria-busy="true"]')).toBeNull();
+    // Anche i blocchi, che caricano per conto loro, a un certo punto hanno finito
+    await waitFor(() => expect(document.querySelector('[aria-busy="true"]')).toBeNull());
   });
 
   it('dashboard in errore: saluto e «Inizia» verso il Focus, niente settimana; il resto della pagina funziona', async () => {
@@ -218,7 +233,9 @@ describe('caricamento ed errori della dashboard', () => {
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Ciao, mario88');
     expect(screen.queryByText('Settimana')).toBeNull();
     expect(screen.queryByText(/allenamenti su/)).toBeNull();
-    expect(await screen.findByText('Livello')).toBeTruthy();
+    expect(await screen.findByText('Livello 5 · streak di 4 settimane')).toBeTruthy();
+    // La dashboard è in errore: il blocco che ne vive lo dice, gli altri no
+    expect(screen.getByRole('heading', { level: 2, name: 'Recupero' }).closest('a').textContent).toContain('Dati non disponibili al momento.');
     expect(screen.getByText('Ultimo allenamento')).toBeTruthy();
     expect(barColor()).toBe('rgb(255, 255, 255)');
   });
@@ -406,7 +423,7 @@ describe('sotto l\'apertura', () => {
   it('le card uscite non ci sono più', async () => {
     renderHome();
     await opened();
-    await screen.findByText('Livello');
+    await blocksLoaded();
     // Dentro la pagina: la barra in basso e il ventaglio hanno le loro voci
     const page = within(document.querySelector('main'));
     ['Azioni rapide', 'Scheda attiva', 'Riepilogo settimanale', 'Allenamenti effettuati', 'Serie allenanti', 'Volume totale', 'Inizia allenamento'].forEach((text) => {
@@ -420,17 +437,8 @@ describe('sotto l\'apertura', () => {
   it('un solo h1', async () => {
     renderHome();
     await opened();
-    await screen.findByText('Livello');
+    await blocksLoaded();
     expect(screen.getAllByRole('heading', { level: 1 }).length).toBe(1);
-  });
-
-  it('streak, livello, stato muscolare e gruppi restano', async () => {
-    renderHome();
-    expect(await screen.findByText('Streak')).toBeTruthy();
-    expect(screen.getByText('Livello')).toBeTruthy();
-    expect(screen.getByText('Stato muscolare')).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Serie e recupero per muscolo ›' }).getAttribute('href')).toBe('/dashboard?tab=muscles');
-    expect(await screen.findByText('I tuoi gruppi')).toBeTruthy();
   });
 
   it('nessun testo sotto i 12 px', async () => {
@@ -529,32 +537,158 @@ describe('moduli non attivi', () => {
     await opened();
   };
 
-  it('Livelli non attivo: né streak né livello, e il server dei livelli non si chiama', async () => {
+  it('Livelli non attivo: nessun blocco dei livelli e il server dei livelli non si chiama', async () => {
     await mountWith(['levels']);
-    expect(screen.queryByText('Streak')).toBeNull();
-    expect(screen.queryByText('Livello')).toBeNull();
+    expect(await screen.findByText('Peso')).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Livello e streak' })).toBeNull();
     expect(fetched('gamification/')).toBe(false);
-    expect(screen.getByText('Stato muscolare')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Recupero' })).toBeTruthy();
   });
 
-  it('Recupero non attivo: niente card dello stato muscolare', async () => {
+  it('Recupero non attivo: nessun blocco del recupero', async () => {
     await mountWith(['recovery']);
-    expect(screen.queryByText('Stato muscolare')).toBeNull();
-    expect(screen.queryByRole('link', { name: 'Serie e recupero per muscolo ›' })).toBeNull();
-    expect(await screen.findByText('Streak')).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Recupero' })).toBeNull();
+    expect(await blocksLoaded()).toBeTruthy();
   });
 
-  it('Gruppi non attivo: niente card dei gruppi e l\'elenco non si legge', async () => {
+  it('Gruppi non attivo: nessun blocco dei gruppi e l\'elenco non si legge', async () => {
     await mountWith(['groups']);
-    expect(screen.queryByText('I tuoi gruppi')).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Gruppi' })).toBeNull();
     expect(fetched('groups/list.php')).toBe(false);
     expect(screen.getByText('Ultimo allenamento')).toBeTruthy();
   });
 
-  it('tutti non attivi: restano saluto, apertura e ultimo allenamento', async () => {
+  it('Misure non attivo: nessun blocco del peso e le misure non si leggono', async () => {
+    await mountWith(['body']);
+    expect(await blocksLoaded()).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Peso' })).toBeNull();
+    expect(fetched('user_stats/read.php')).toBe(false);
+  });
+
+  it('tutti non attivi: restano saluto, apertura e ultimo allenamento, e nessuna lettura dei blocchi', async () => {
     await mountWith(['body', 'recovery', 'levels', 'groups']);
-    ['Streak', 'Livello', 'Stato muscolare', 'I tuoi gruppi'].forEach((text) => expect(screen.queryByText(text)).toBeNull());
-    expect(screen.getByText('Ultimo allenamento')).toBeTruthy();
+    expect(blockTitles()).toEqual(['Ultimo allenamento']);
+    ['gamification/', 'groups/', 'user_stats/'].forEach((part) => expect(fetched(part)).toBe(false));
     expect(within(document.querySelector('main')).getByRole('link', { name: 'Inizia' })).toBeTruthy();
+  });
+});
+
+// Blocchi dei moduli: li disegna il layout salvato sull'account
+describe('blocchi dei moduli', () => {
+  const fetched = (part) => fakeFetch.mock.calls.some(([url]) => String(url).includes(part));
+  const ALL_TITLES = ['Ultimo allenamento', 'Livello e streak', 'Gruppi', 'Recupero', 'Peso'];
+
+  it('senza layout salvato: ultimo allenamento e i quattro blocchi, nell\'ordine predefinito, tutti piccoli', async () => {
+    renderHome();
+    await opened();
+    await blocksLoaded();
+    await screen.findByText('Palestra Roma · sei 2° questa settimana');
+    expect(blockTitles()).toEqual(ALL_TITLES);
+    expect(screen.queryByText('settimane di fila')).toBeNull();
+    expect(screen.getByText('78,4 kg · -0,6 kg nell\'ultimo mese')).toBeTruthy();
+    expect(screen.getByText('Nessun dato ancora')).toBeTruthy();
+  });
+
+  it('ordine e blocco nascosto dal layout salvato; quelli che mancano vanno in coda', async () => {
+    auth.homeLayout = [{ key: 'body', hidden: false, large: false }, { key: 'groups', hidden: true, large: false }, { key: 'last', hidden: false, large: false }];
+    renderHome();
+    await opened();
+    await blocksLoaded();
+    expect(blockTitles()).toEqual(['Peso', 'Ultimo allenamento', 'Livello e streak', 'Recupero']);
+    expect(fetched('groups/')).toBe(false);
+  });
+
+  it('un blocco nascosto non chiama il server', async () => {
+    auth.homeLayout = [{ key: 'levels', hidden: true, large: false }, { key: 'body', hidden: true, large: false }];
+    renderHome();
+    await opened();
+    await screen.findByText('Palestra Roma · sei 2° questa settimana');
+    expect(fetched('gamification/')).toBe(false);
+    expect(fetched('user_stats/')).toBe(false);
+    expect(blockTitles()).toEqual(['Ultimo allenamento', 'Gruppi', 'Recupero']);
+  });
+
+  it('un layout non valido non rompe la Home: vale il predefinito', async () => {
+    auth.homeLayout = 'rovinato';
+    renderHome();
+    await opened();
+    await blocksLoaded();
+    expect(blockTitles()).toEqual(ALL_TITLES);
+  });
+
+  it('un blocco grande mostra il contenuto pieno; gli altri restano righe', async () => {
+    auth.homeLayout = [{ key: 'levels', hidden: false, large: true }, { key: 'recovery', hidden: false, large: true }];
+    setDashboard({ recovery: { petto: { status: 'PRONTO', percent: 100, last_trained: '2026-11-10', ready_at: null } } });
+    renderHome();
+    await opened();
+    expect(await screen.findByText('settimane di fila')).toBeTruthy();
+    expect(screen.getByRole('progressbar', { name: 'Petto' })).toBeTruthy();
+  });
+
+  it('un blocco grande occupa tutta la riga da md in su', async () => {
+    auth.homeLayout = [{ key: 'levels', hidden: false, large: true }];
+    renderHome();
+    await opened();
+    await screen.findByText('settimane di fila');
+    const cell = (title) => screen.getByRole('heading', { level: 2, name: title }).closest('[data-testid="home-block"]').parentElement;
+    expect(mediaStyle(cell('Livello e streak'), 900)['grid-column']).toBe('1/-1');
+    expect(mediaStyle(cell('Gruppi'), 900)['grid-column']).toBeUndefined();
+    expect(mediaStyle(cell('Gruppi').parentElement, 900)['grid-template-columns']).toBe('1fr 1fr');
+  });
+
+  it('«Ultimo allenamento» non è mai grande, anche se il layout lo dice', async () => {
+    auth.homeLayout = [{ key: 'last', hidden: false, large: true }];
+    renderHome();
+    await opened();
+    expect(screen.getByRole('heading', { level: 2, name: 'Ultimo allenamento' }).closest('a').getAttribute('href')).toBe('/storico');
+  });
+
+  it('«Ultimo allenamento» nascosto dal layout: non c\'è', async () => {
+    auth.homeLayout = [{ key: 'last', hidden: true, large: false }];
+    renderHome();
+    await opened();
+    await blocksLoaded();
+    expect(blockTitles()).not.toContain('Ultimo allenamento');
+  });
+
+  it('la Home non aspetta i blocchi: apertura e ultimo allenamento ci sono mentre i dati dei blocchi non sono arrivati', async () => {
+    vi.stubGlobal('fetch', vi.fn((url) => (/gamification|groups|user_stats/.test(String(url)) ? new Promise(() => {}) : fakeFetch(url))));
+    renderHome();
+    expect(await opened()).toBeTruthy();
+    expect(screen.getByText('Ultimo allenamento')).toBeTruthy();
+    expect(screen.getAllByTestId('block-skeleton').length).toBe(3);
+    expect(blockTitles()).toEqual(ALL_TITLES);
+  });
+
+  it('un blocco in errore non ferma gli altri', async () => {
+    vi.stubGlobal('fetch', failing('user_stats/read.php'));
+    renderHome();
+    await opened();
+    await blocksLoaded();
+    expect(screen.getByRole('heading', { level: 2, name: 'Peso' }).closest('a').textContent).toContain('Dati non disponibili al momento.');
+    expect(await screen.findByText('Palestra Roma · sei 2° questa settimana')).toBeTruthy();
+  });
+
+  it('il peso usa la data di oggi del server, con il dispositivo a un\'altra data', async () => {
+    pinLocalClock('Asia/Tokyo', 2026, 11, 20, 0, 30);
+    renderHome();
+    await opened();
+    expect(await screen.findByText('78,4 kg · -0,6 kg nell\'ultimo mese')).toBeTruthy();
+  });
+
+  it('il peso nell\'unità dell\'account (lb)', async () => {
+    auth.weightUnit = 'lb';
+    renderHome();
+    await opened();
+    expect(await screen.findByText('172,8 lb · -1,3 lb nell\'ultimo mese')).toBeTruthy();
+  });
+
+  it('un solo h1 e nessun testo sotto i 12 px, con i blocchi grandi', async () => {
+    auth.homeLayout = HOME_BLOCKS.map((key) => ({ key, hidden: false, large: true }));
+    renderHome();
+    await opened();
+    await screen.findByText('settimane di fila');
+    expect(screen.getAllByRole('heading', { level: 1 }).length).toBe(1);
+    expect(textBelow(document.querySelector('main'), 12)).toEqual([]);
   });
 });

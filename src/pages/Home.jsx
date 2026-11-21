@@ -1,15 +1,10 @@
 import { Suspense, lazy, useState, useEffect } from 'react';
-import { Grid, Button, Box, Skeleton, Card, Typography } from '@mui/material';
+import { Button, Box, Skeleton, Card, Typography } from '@mui/material';
 import { Link as RouterLink, useOutletContext } from 'react-router-dom';
-import BodyVisualizer from '../components/BodyVisualizer';
-import StreakCard from '../components/StreakCard';
-import LevelCard from '../components/LevelCard';
-import GroupsHomeCard from '../components/Groups/GroupsHomeCard';
 import HomeOpening, { Greeting } from '../components/Home/HomeOpening';
-import LastWorkout from '../components/Home/LastWorkout';
+import HomeBlocks from '../components/Home/HomeBlocks';
 import { useAuth } from '../context/AuthContext';
-import { isModuleActive } from '../hooks/useModule';
-import { API_BASE_URL } from '../config';
+import { readJson, isSuccess } from '../utils/readJson';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { hasFocusSessionInProgress, savedDraftDayName } from '../utils/focusDraft';
@@ -21,20 +16,8 @@ const Landing = lazy(() => import('./landing/Landing'));
 
 const NO_DAYS = new Array(7).fill(false);
 
-// Risposta della richiesta come dati, o null se non è andata bene (lo stato di ogni richiesta lo decide il chiamante)
-const fetchJson = async (path, accept = () => true) => {
-  const response = await fetch(`${API_BASE_URL}${path}`, { credentials: 'include' });
-  if (!response.ok) return null;
-  const data = await response.json();
-  return accept(data) ? data : null;
-};
-
 const Home = () => {
   const { isLoggedIn, user, weightUnit } = useAuth();
-  // Moduli facoltativi: ciò che non è attivo non si mostra (i dati restano)
-  const levelsOn = isModuleActive(user, 'levels');
-  const recoveryOn = isModuleActive(user, 'recovery');
-  const groupsOn = isModuleActive(user, 'groups');
   const { t } = useTranslation();
   usePageMeta(null, t('meta.description'));
   // Stato di ogni richiesta: 'pending' | 'ok' | 'failed'. Un errore di rete non deve far passare un utente per nuovo
@@ -54,7 +37,7 @@ const Home = () => {
     // Le tre richieste partono insieme, ognuna con il suo esito: una che fallisce non ferma le altre
     const load = async (path, accept, onData, setStatus) => {
       try {
-        const data = await fetchJson(path, accept);
+        const data = await readJson(path, accept);
         if (!active) return;
         if (data) onData(data);
         setStatus(data ? 'ok' : 'failed');
@@ -66,7 +49,7 @@ const Home = () => {
     };
     load('api/workout_history/read.php', undefined, (data) => setRecords(data.records || []), setHistoryStatus);
     load('api/workout/read_plans.php', undefined, (data) => setHasPlans((data.records || []).length > 0), setPlansStatus);
-    load('api/workout_stats/dashboard.php', (data) => data.success, setStats, setDashboardStatus);
+    load('api/workout_stats/dashboard.php', isSuccess, setStats, setDashboardStatus);
     return () => { active = false; };
   }, [isLoggedIn]);
 
@@ -166,45 +149,13 @@ const Home = () => {
 
       {ready && !showStartHere && (
         <Box sx={{ px: sidePadding }}>
-          <Grid container spacing={3}>
-            {/* Ultimo allenamento: se l'allenamento di oggi è già nell'apertura («done») non si ripete */}
-            {lastWorkout && !todayRecord && (
-              <Grid item xs={12}>
-                <LastWorkout record={lastWorkout} weightUnit={weightUnit} today={stats?.today} />
-              </Grid>
-            )}
-
-            {/* Streak / Livello */}
-            {levelsOn && (
-              <>
-                <Grid item xs={12} md={6}>
-                  <StreakCard />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <LevelCard />
-                </Grid>
-              </>
-            )}
-
-            {/* Stato Muscolare */}
-            {recoveryOn && (
-              <Grid item xs={12} md={6}>
-                <Card sx={{ height: '100%', p: '22px' }}>
-                  <BodyVisualizer recoveryData={stats?.recovery} detail={stats?.detail} />
-                  <Button component={RouterLink} to="/dashboard?tab=muscles" size="small" sx={{ mt: 1.5, px: 0 }}>
-                    {t('home.recovery_link')}
-                  </Button>
-                </Card>
-              </Grid>
-            )}
-
-            {/* Gruppi */}
-            {groupsOn && (
-              <Grid item xs={12} md={6}>
-                <GroupsHomeCard />
-              </Grid>
-            )}
-          </Grid>
+          <HomeBlocks
+            user={user}
+            weightUnit={weightUnit}
+            lastWorkout={lastWorkout && !todayRecord ? lastWorkout : null}
+            stats={stats}
+            dashboardStatus={dashboardStatus}
+          />
         </Box>
       )}
     </>
