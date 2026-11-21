@@ -6,7 +6,7 @@ import en from './en.json';
 // Nomi propri e sigle che restano maiuscoli anche a metà frase.
 const NOMI_PROPRI = new Set([
   'LiftIndex', 'Focus', 'Free', 'Plus', 'Pro', 'Apple', 'Salute', 'Health', 'Connect', 'Google', 'iPhone', 'Android', 'iOS',
-  'Epley', 'English', 'Italian', 'Monday', 'Wednesday', 'Sunday', 'I',
+  'Epley', 'English', 'Italian', 'Monday', 'Wednesday', 'Sunday', 'I', 'Home',
   'PR', 'PRs', '1RM', 'RPE', 'XP', 'ID', 'JSON', 'AI',
 ]);
 
