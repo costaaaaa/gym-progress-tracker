@@ -34,7 +34,7 @@ const Home = () => {
   const [stats, setStats] = useState(null);
   // «Modifica Home»: i comandi dei blocchi; il layout lo tiene l'hook (schermo subito, salvataggio dietro)
   const [editing, setEditing] = useState(false);
-  const { layout, change, saving, error: layoutError, clearError: clearLayoutError } = useHomeLayout();
+  const { layout, change, error: layoutError, clearError: clearLayoutError } = useHomeLayout();
   const [offerFailed, setOfferFailed] = useState(false);
   // Il Layout colora la barra in alto di rosso (sul telefono) mentre l'apertura è rossa
   const { setBarRed } = useOutletContext() ?? {};
@@ -174,7 +174,6 @@ const Home = () => {
             editing={editing}
             layout={layout}
             onChange={change}
-            saving={saving}
           />
           {offer && !editing && (
             <Box sx={{ mt: 3 }}>

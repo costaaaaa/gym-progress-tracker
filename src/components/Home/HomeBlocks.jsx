@@ -36,8 +36,8 @@ const HiddenBlock = ({ title, controls }) => {
 // `stats`: quanto la Home ha già letto.
 // In modifica (`editing`) si vedono anche i blocchi nascosti (solo titolo) e ognuno ha i suoi comandi; `onChange(mossa)`
 // applica una mossa sul layout (la mossa prende il layout e ne restituisce uno nuovo; `onChange` restituisce il risultato,
-// o null se non è cambiato nulla); `saving`: c'è una mossa non ancora confermata dal server.
-const HomeBlocks = ({ user, weightUnit, lastWorkout, stats, dashboardStatus, editing = false, layout = null, onChange = null, saving = false }) => {
+// o null se non è cambiato nulla).
+const HomeBlocks = ({ user, weightUnit, lastWorkout, stats, dashboardStatus, editing = false, layout = null, onChange = null }) => {
   const { t } = useTranslation();
   const blocks = {
     last: () => (editing || lastWorkout) && <LastWorkout record={lastWorkout} weightUnit={weightUnit} today={stats?.today} />,
@@ -51,7 +51,7 @@ const HomeBlocks = ({ user, weightUnit, lastWorkout, stats, dashboardStatus, edi
   const entries = layout ?? effectiveLayout(user?.home_layout);
   // I blocchi che l'utente vede in modifica: «last» e quelli dei moduli attivi, nascosti compresi
   const isListed = (key) => key === 'last' || isModuleActive(user, key);
-  const { announcement, applyAction } = useBlockEditing({ isListed, onChange, saving });
+  const { announcement, applyAction } = useBlockEditing({ isListed, onChange });
 
   const listed = entries.filter((entry) => isListed(entry.key)).map((entry) => entry.key);
   return (

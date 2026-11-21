@@ -1,4 +1,4 @@
-import { createContext, useEffect, useRef, useState } from 'react';
+import { createContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { moveBlock, setHidden, setLarge } from '../../../utils/homeLayout';
 
@@ -40,34 +40,30 @@ export const EDIT_ACTIONS = {
 };
 
 // Le mosse della modifica per HomeBlocks: `applyAction(key, action)` applica l'azione con `onChange(mossa)` (restituisce il
-// layout risultante, o null se non è cambiato nulla), annuncia l'esito e tiene il fuoco su un comando del blocco mosso.
-// `isListed(key)`: il blocco compare in modifica (conta per la posizione annunciata). `saving`: la mossa non è ancora
-// confermata dal server.
-export const useBlockEditing = ({ isListed, onChange, saving }) => {
+// layout risultante, o null se non è cambiato nulla) e annuncia l'esito. `isListed(key)`: il blocco compare in modifica
+// (conta per la posizione annunciata).
+export const useBlockEditing = ({ isListed, onChange }) => {
   const { t } = useTranslation();
   const [announcement, setAnnouncement] = useState('');
-  // Il blocco mosso e il comando premuto. Ogni ridisegno della mossa (lo spostamento, e il ritorno indietro se il
-  // salvataggio fallisce) può far perdere il fuoco: finché il salvataggio è in corso torna su quel comando, o sul primo
-  // del blocco se non c'è più. Cade a salvataggio chiuso, o prima se l'utente porta il fuoco fuori dal blocco.
-  const focusAfter = useRef(null);
+  // Il comando della modifica che ha il fuoco prima del ridisegno (qui il documento è ancora quello di prima). Se il
+  // ridisegno lo toglie dal documento (il blocco diventa segnaposto o torna blocco, anche per il ritorno indietro di un
+  // salvataggio fallito) il fuoco va sullo stesso comando dello stesso blocco, o sul primo del blocco se non c'è più.
+  // Uno spostamento non serve trattarlo: il bottone resta lo stesso e React gli rimette il fuoco. Un fuoco che l'utente
+  // ha portato altrove non si tocca.
+  const { editKey, editAction } = document.activeElement?.dataset ?? {};
   useEffect(() => {
-    const target = focusAfter.current;
-    if (!target) return;
+    if (!editKey) return;
     const active = document.activeElement;
-    const lost = !active || active === document.body;
-    if (lost) {
-      const control = document.querySelector(`[data-edit-key="${target.key}"][data-edit-action="${target.action}"]`)
-        ?? document.querySelector(`[data-edit-key="${target.key}"]`);
-      control?.focus();
-    }
-    if (!saving || (!lost && active.dataset.editKey !== target.key)) focusAfter.current = null;
+    if (active && active !== document.body) return;
+    const control = document.querySelector(`[data-edit-key="${editKey}"][data-edit-action="${editAction}"]`)
+      ?? document.querySelector(`[data-edit-key="${editKey}"]`);
+    control?.focus();
   });
 
   const applyAction = (key, action) => {
     const spec = EDIT_ACTIONS[action];
     const next = onChange((current) => spec.move(current, key, isListed));
     if (!next) return;
-    focusAfter.current = { key, action };
     const listed = next.filter((entry) => isListed(entry.key)).map((entry) => entry.key);
     setAnnouncement(t(spec.announce(entryOf(next, key)), { title: t(TITLE_KEYS[key]), position: listed.indexOf(key) + 1, count: listed.length }));
   };

@@ -800,27 +800,50 @@ describe('Modifica Home', () => {
     expect(auth.homeLayout).toBeUndefined();
   });
 
+  // Un salvataggio che fallisce solo quando il test lo dice: nel frattempo l'utente può spostare il fuoco
+  const failingLater = () => {
+    const pending = [];
+    withSettings((body) => new Promise((resolve) => { pending.push(() => resolve(rejecting(body))); }));
+    return async () => {
+      await act(async () => { pending.splice(0).forEach((fail) => fail()); });
+      await screen.findByRole('alert');
+      expect(blockTitles()).toEqual(ORDER);
+    };
+  };
+
   it('salvataggio fallito: il fuoco resta su un comando del blocco mosso (lo stesso bottone, o il primo del blocco)', async () => {
-    let fail;
-    withSettings((body) => (fail ? rejecting(body) : new Promise((resolve) => { fail = () => resolve(rejecting(body)); })));
+    const fail = failingLater();
     await edit();
     button('Sposta su Peso').focus();
     fireEvent.click(button('Sposta su Peso'));
     expect(document.activeElement).toBe(button('Sposta su Peso'));
-    // Il ritorno indietro rimette il blocco al suo posto e il browser toglie il fuoco al bottone spostato con lui:
-    // jsdom non lo fa, quindi qui il fuoco si toglie a mano prima che il salvataggio fallisca
-    document.activeElement.blur();
-    expect(document.activeElement).toBe(document.body);
-    await act(async () => { fail(); });
-    await screen.findByRole('alert');
-    expect(blockTitles()).toEqual(ORDER);
+    await fail();
     expect(document.activeElement).toBe(button('Sposta su Peso'));
     // Nascondere: dopo il ritorno il bottone «Mostra» non esiste più, il fuoco va su «Nascondi» dello stesso blocco
     fireEvent.click(screen.getByRole('button', { name: 'Chiudi' }));
     button('Nascondi Recupero').focus();
     fireEvent.click(button('Nascondi Recupero'));
-    await waitFor(() => expect(screen.queryByText('Nascosto')).toBeNull());
-    await waitFor(() => expect(document.activeElement).toBe(button('Nascondi Recupero')));
+    expect(document.activeElement).toBe(button('Mostra Recupero'));
+    await fail();
+    expect(screen.queryByText('Nascosto')).toBeNull();
+    expect(document.activeElement).toBe(button('Nascondi Recupero'));
+  });
+
+  it('salvataggio fallito: il fuoco che l\'utente ha spostato nel frattempo resta dov\'è', async () => {
+    const fail = failingLater();
+    await edit();
+    // Su un altro comando dello stesso blocco: il ritorno indietro lo rimette lì, non sul bottone premuto prima
+    fireEvent.click(button('Nascondi Recupero'));
+    button('Sposta su Recupero').focus();
+    await fail();
+    expect(document.activeElement).toBe(button('Sposta su Recupero'));
+    // Fuori dai comandi (un tocco nel vuoto): nessuno se lo riprende
+    fireEvent.click(screen.getByRole('button', { name: 'Chiudi' }));
+    button('Nascondi Recupero').focus();
+    fireEvent.click(button('Nascondi Recupero'));
+    document.activeElement.blur();
+    await fail();
+    expect(document.activeElement).toBe(document.body);
   });
 
   it('due mosse rapide: una richiesta alla volta e vale l\'ultima', async () => {
