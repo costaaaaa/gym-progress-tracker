@@ -663,6 +663,83 @@ describe('AuthProvider: visibilità nei gruppi', () => {
   });
 });
 
+// Strumenti della serie: `focus_tools` e `rest_timer_enabled` da user/read.php dentro `user`
+describe('AuthProvider: strumenti della serie', () => {
+  const Tools = () => {
+    const { user } = useAuth();
+    return <div data-testid="tools">{user ? JSON.stringify([user.focus_tools ?? null, user.rest_timer_enabled ?? null]) : 'nessun utente'}</div>;
+  };
+  const Actions = () => {
+    const { refreshEmailState, updateUser } = useAuth();
+    return (
+      <>
+        <button onClick={refreshEmailState}>rileggi</button>
+        <button onClick={() => updateUser({ focus_tools: { technique: false, suggested_weight: true } })}>salva elenco</button>
+        <button onClick={() => updateUser({ rest_timer_enabled: false })}>salva timer</button>
+      </>
+    );
+  };
+  const ON = { technique: true, suggested_weight: true };
+  const text = () => screen.getByTestId('tools').textContent;
+
+  it('arrivano da user/read.php', async () => {
+    readReturns({ id: 1, username: 'a', focus_tools: ON, rest_timer_enabled: false });
+    localStorage.setItem('isLoggedIn', 'true');
+    render(<AuthProvider><Tools /></AuthProvider>);
+    await waitFor(() => expect(text()).toBe(JSON.stringify([ON, false])));
+  });
+
+  it('dopo il login (che risponde senza) la rilettura li porta, anche nella copia locale', async () => {
+    readReturns({ id: 1, username: 'a', focus_tools: ON, rest_timer_enabled: false });
+    const Login = () => {
+      const { login } = useAuth();
+      return <button onClick={() => login({ id: 1, username: 'a' })}>entra</button>;
+    };
+    render(<AuthProvider><Tools /><Login /></AuthProvider>);
+    fireEvent.click(screen.getByText('entra'));
+    await waitFor(() => expect(text()).toBe(JSON.stringify([ON, false])));
+    expect(JSON.parse(localStorage.getItem('user')).focus_tools).toEqual(ON);
+    expect(JSON.parse(localStorage.getItem('user')).rest_timer_enabled).toBe(false);
+  });
+
+  it('un valore rovinato non si copia nell\'account', async () => {
+    readReturns({ id: 1, username: 'a', focus_tools: ['technique'], rest_timer_enabled: 'no' });
+    localStorage.setItem('isLoggedIn', 'true');
+    render(<AuthProvider><Tools /><Actions /></AuthProvider>);
+    await waitFor(() => expect(backend).toHaveBeenCalled());
+    // La prima lettura (sessione) è l'account intero; una rilettura rovinata non lo cambia
+    readReturns({ id: 1, username: 'a', focus_tools: ON, rest_timer_enabled: true });
+    fireEvent.click(screen.getByText('rileggi'));
+    await waitFor(() => expect(text()).toBe(JSON.stringify([ON, true])));
+    readReturns({ id: 1, username: 'a', focus_tools: 'no', rest_timer_enabled: 'no' });
+    fireEvent.click(screen.getByText('rileggi'));
+    await waitFor(() => expect(backend).toHaveBeenCalledTimes(3));
+    await act(async () => { await Promise.resolve(); });
+    expect(text()).toBe(JSON.stringify([ON, true]));
+  });
+
+  it('una rilettura partita prima del salvataggio e arrivata dopo non riporta indietro i valori', async () => {
+    readReturns({ id: 1, username: 'a', focus_tools: ON, rest_timer_enabled: true });
+    localStorage.setItem('isLoggedIn', 'true');
+    render(<AuthProvider><Tools /><Actions /></AuthProvider>);
+    await waitFor(() => expect(text()).toBe(JSON.stringify([ON, true])));
+    let release;
+    backend.mockImplementation(() => new Promise((resolve) => {
+      release = () => resolve(new Response(JSON.stringify({ success: true, id: 1, username: 'a', focus_tools: ON, rest_timer_enabled: true }), { status: 200 }));
+    }));
+    fireEvent.click(screen.getByText('rileggi'));
+    fireEvent.click(screen.getByText('salva elenco'));
+    fireEvent.click(screen.getByText('salva timer'));
+    const saved = JSON.stringify([{ technique: false, suggested_weight: true }, false]);
+    await waitFor(() => expect(text()).toBe(saved));
+    await act(async () => { release(); });
+    await waitFor(() => expect(backend).toHaveBeenCalledTimes(2));
+    await act(async () => { await Promise.resolve(); });
+    expect(text()).toBe(saved);
+    expect(JSON.parse(localStorage.getItem('user')).rest_timer_enabled).toBe(false);
+  });
+});
+
 // Layout della Home: da user/read.php dentro `user`, come i moduli
 describe('AuthProvider: home_layout', () => {
   const Layout = () => {
