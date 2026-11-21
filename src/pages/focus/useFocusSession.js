@@ -858,7 +858,7 @@ export default function useFocusSession() {
     activePlan,
     selectedDayId,
     selectedDay,
-    timerEnabled,
+    onNotify: (message, severity) => setSnackbar({ open: true, message, severity }),
     onDayChange: handleDayChange,
     onStart: handleStartWorkout,
     onBack: () => navigate('/'),
