@@ -6,9 +6,9 @@ import { techniqueLabel, techniqueShortLabel } from '../../i18n/labels';
 import { radius } from '../../theme/radius';
 import { choiceSx } from './choiceSx';
 
-// Riga della tecnica di intensità: quattro celle uguali, una sola scelta; un altro tocco sulla scelta la toglie.
+// Riga della tecnica di intensità: celle uguali, quattro per riga (due nella correzione dentro una finestra, dove lo
+// spazio è la metà), una sola scelta; un altro tocco sulla scelta la toglie.
 // Il testo è corto per stare su una riga a 320 px; il nome per i lettori di schermo è quello intero.
-// Dove lo spazio è la metà (la correzione dentro una finestra) le celle vanno su due colonne.
 export default function TechniqueRow({ value, onChange, columns = 4 }) {
   const { t } = useTranslation();
   const { colors } = useFocusColors();
