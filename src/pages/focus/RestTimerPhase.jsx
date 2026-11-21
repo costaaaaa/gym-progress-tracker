@@ -5,19 +5,30 @@ import { useFocusColors } from './useFocusColors';
 import { TABULAR } from '../../utils/fonts';
 import { slotLabel } from './slotLabel';
 import { radius } from '../../theme/radius';
+import { formatWeightInUnit } from '../../utils/weightUnit';
+import { intlLocale } from '../../i18n/format';
 
-const formatTime = (seconds) => {
+export const formatTime = (seconds) => {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 };
 
 export default function RestTimerPhase({
-  timerDuration, timerRemaining, currentExerciseName, nextSet, onSkip
+  timerDuration, timerRemaining, currentExerciseName, nextSet, nextWeightKg, nextTarget, weightUnit, onAdjust, onSkip
 }) {
   const { t } = useTranslation();
   const { colors } = useFocusColors();
   const progress = timerDuration > 0 ? ((timerDuration - timerRemaining) / timerDuration) * 100 : 0;
+  const nextWeight = nextWeightKg === null ? '' : formatWeightInUnit(nextWeightKg, weightUnit, intlLocale());
+  let nextLine = '';
+  if (nextWeight && nextTarget) nextLine = t('focus.next_weight_target', { weight: nextWeight, target: nextTarget });
+  else if (nextWeight) nextLine = nextWeight;
+  else if (nextTarget) nextLine = t('focus.next_target', { target: nextTarget });
+  const adjustSx = {
+    color: colors.text, borderColor: colors.border, borderRadius: radius.lg, minHeight: 44, flex: 1, fontSize: '1rem',
+    '&:hover': { borderColor: colors.text, bgcolor: colors.bgElevated }, '&[aria-disabled="true"]': { opacity: 0.5 }
+  };
   return (
     <Box sx={{
       minHeight: '100vh', bgcolor: colors.bg, color: colors.text,
@@ -33,8 +44,14 @@ export default function RestTimerPhase({
           <Typography variant="caption" component="h1" tabIndex={-1} sx={{ color: colors.textSecondary, mt: 0.5 }}>{t('focus.rest')}</Typography>
         </Box>
       </Box>
+      <Box sx={{ display: 'flex', gap: 2, width: '100%', maxWidth: 280, mb: 3 }}>
+        <Button variant="outlined" size="large" aria-label={t('focus.rest_minus15_aria')} aria-disabled={timerRemaining === 0 ? 'true' : undefined}
+          onClick={() => onAdjust(-15)} sx={adjustSx}>{t('focus.rest_minus15')}</Button>
+        <Button variant="outlined" size="large" aria-label={t('focus.rest_plus15_aria')} onClick={() => onAdjust(15)} sx={adjustSx}>{t('focus.rest_plus15')}</Button>
+      </Box>
       <Typography variant="body1" sx={{ color: colors.textSecondary, mb: 1 }}>{currentExerciseName}</Typography>
-      <Typography variant="body2" sx={{ color: colors.textSecondary, mb: 4 }}>{nextSet && slotLabel(t, nextSet, 'next')}</Typography>
+      <Typography variant="body2" sx={{ color: colors.textSecondary, mb: nextLine ? 0.5 : 4 }}>{nextSet && slotLabel(t, nextSet, 'next')}</Typography>
+      {nextLine && <Typography variant="body1" data-testid="rest-next-set" sx={{ color: colors.text, fontWeight: 600, mb: 4, textAlign: 'center' }}>{nextLine}</Typography>}
       <Button variant="outlined" size="large" startIcon={<SkipNextIcon />} onClick={onSkip}
         sx={{ color: colors.text, borderColor: colors.border, borderRadius: radius.lg, px: 4, py: 1.5, fontSize: '1rem',
           '&:hover': { borderColor: colors.text, bgcolor: colors.bgElevated } }}>

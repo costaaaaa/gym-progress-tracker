@@ -11,7 +11,7 @@ import {
   FEATURE_SESSION_EDIT, MAX_WEIGHT, suggestedWeight, slotWeight, totalSlots, setSlot, skipWarmup,
   isValidReps, repsNeedConfirm, plannedSetAt, slotTechnique, isCurrentDraft,
   numberedSets, groupsInExecutionOrder, withWarmupRule, buildSessionEntry, swapExercise, insertExercise,
-  newIdempotencyKey, draftIdempotencyKey, editSet
+  newIdempotencyKey, draftIdempotencyKey, editSet, restNextWeight, slotTarget
 } from '../../utils/focusSession';
 import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../../utils/celebrate';
 import { track } from '../../utils/analytics';
@@ -84,6 +84,8 @@ export default function useFocusSession() {
   const [timerDuration, setTimerDuration] = useState(0);
   const [timerRemaining, setTimerRemaining] = useState(0);
   const timerRef = useRef(null);
+  // Secondi che restavano all'ultimo tocco di ±15 s: li legge lo stato per i lettori di schermo; null se nessun tocco
+  const [restNote, setRestNote] = useState(null);
 
   // Summary state
   const [workoutNotes, setWorkoutNotes] = useState('');
@@ -641,11 +643,7 @@ export default function useFocusSession() {
   // ================================================
   // TIMER DI RECUPERO
   // ================================================
-  const startRestTimer = (durationSeconds) => {
-    setTimerDuration(durationSeconds);
-    setTimerRemaining(durationSeconds);
-    setPhase('rest_timer');
-
+  const runCountdown = () => {
     if (timerRef.current) clearInterval(timerRef.current);
 
     timerRef.current = setInterval(() => {
@@ -661,12 +659,37 @@ export default function useFocusSession() {
     }, 1000);
   };
 
+  const startRestTimer = (durationSeconds) => {
+    setTimerDuration(durationSeconds);
+    setTimerRemaining(durationSeconds);
+    setRestNote(null);
+    setPhase('rest_timer');
+    runCountdown();
+  };
+
+  // ±15 s: cambiano solo il recupero in corso. Il tempo già passato resta, quindi la durata segue i secondi rimasti.
+  // A zero il conto si ferma (senza vibrazione, che è solo dello scadere naturale) e la schermata resta; da zero +15 lo fa ripartire.
+  const handleAdjustTimer = (delta) => {
+    const next = Math.max(0, timerRemaining + delta);
+    if (next === timerRemaining) return;
+    setTimerDuration(timerDuration + next - timerRemaining);
+    setTimerRemaining(next);
+    setRestNote(next > 0 ? next : null);
+    if (next === 0) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = null;
+    } else {
+      runCountdown();
+    }
+  };
+
   const handleSkipTimer = () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
     setTimerRemaining(0);
+    setRestNote(null);
     setPhase('workout');
   };
 
@@ -878,6 +901,17 @@ export default function useFocusSession() {
     timerRemaining,
     currentExerciseName: currentExercise?.exercise_name,
     nextSet: currentSlot,
+    // Serie successiva: la posizione corrente è già quella dopo (goToSlot) e il campo peso è già pronto
+    nextWeightKg: phase === 'rest_timer' && currentExercise && currentSetIndex > 0 ? restNextWeight({
+      field: weightKgText,
+      previous: (completedSets[currentExercise.id] || []).at(-1)?.weight,
+      previousIsWarmup: setSlot(currentExercise, currentSetIndex - 1).isWarmup,
+      nextIsWarmup: currentSlot?.isWarmup,
+    }) : null,
+    nextTarget: phase === 'rest_timer' && currentExercise ? slotTarget(currentExercise, currentSetIndex) : '',
+    weightUnit,
+    restNote,
+    onAdjust: handleAdjustTimer,
     onSkip: handleSkipTimer,
   };
   // «Non suggerire più»: spegne lo strumento per l'account e dice se è riuscito; se non riesce resta acceso (l'errore lo mostra

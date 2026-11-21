@@ -23,7 +23,7 @@ import { useFocusColors } from './focus/useFocusColors';
 import useFocusSession from './focus/useFocusSession';
 import ResumePromptPhase from './focus/ResumePromptPhase';
 import SelectDayPhase from './focus/SelectDayPhase';
-import RestTimerPhase from './focus/RestTimerPhase';
+import RestTimerPhase, { formatTime } from './focus/RestTimerPhase';
 import WorkoutPhase from './focus/WorkoutPhase';
 import SummaryPhase from './focus/SummaryPhase';
 import { radius } from '../theme/radius';
@@ -54,6 +54,8 @@ const FocusWorkout = () => {
   }, [loading, phase, saved]);
   // Fine del recupero: l'unico annuncio, niente conto alla rovescia a voce
   const restOver = phase === 'rest_timer' && restTimer.timerDuration > 0 && restTimer.timerRemaining === 0;
+  // Dopo un tocco di ±15 s: quanto resta in quel momento, fermo (non cambia a ogni secondo)
+  const restLeft = phase === 'rest_timer' && restTimer.restNote !== null && !restOver ? t('focus.rest_left', { time: formatTime(restTimer.restNote) }) : '';
 
   // ================================================
   // RENDER — CONTENUTO IN BASE ALLA FASE
@@ -119,7 +121,7 @@ const FocusWorkout = () => {
     <Box component="main" ref={mainRef} sx={{ '& h1:focus': { outline: 'none' } }}>
       {renderContent()}
     </Box>
-    <Box role="status" aria-live="polite" sx={visuallyHidden}>{restOver ? t('focus.rest_over') : ''}</Box>
+    <Box role="status" aria-live="polite" sx={visuallyHidden}>{restOver ? t('focus.rest_over') : restLeft}</Box>
       <FocusExercisePicker {...picker} />
       <Dialog open={lockedDialog.open} onClose={lockedDialog.onClose}
         PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: radius.xxl } }}>
