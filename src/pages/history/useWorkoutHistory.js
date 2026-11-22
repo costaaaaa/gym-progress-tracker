@@ -80,11 +80,7 @@ export default function useWorkoutHistory({ refreshKey = null } = {}) {
       }
     } catch (error) {
       console.error('Error fetching workout history:', error);
-      setSnackbar({
-        open: true,
-        message: t('history.load_error_detail', { message: error.message || t('history.unknown_error') }),
-        severity: 'error'
-      });
+      notify(t('history.load_error_detail', { message: error.message || t('history.unknown_error') }), 'error');
       setWorkouts([]);
     } finally {
       setLoading(false);
@@ -92,7 +88,7 @@ export default function useWorkoutHistory({ refreshKey = null } = {}) {
   };
 
   // La riga sparisce subito; la richiesta al server parte solo allo scadere dell'«Annulla» (vedi useUndoableDelete)
-  const { hiddenIds, pendingId, schedule: deleteWorkout, undo: undoDelete, holdProps: undoHoldProps } = useUndoableDelete({
+  const { hiddenIds, pendingId, schedule: scheduleDelete, undo: undoDelete, holdProps: undoHoldProps } = useUndoableDelete({
     commit: async (id) => {
       const response = await fetch(`${API_BASE_URL}api/workout_history/delete.php`, {
         method: 'POST',
@@ -125,7 +121,7 @@ export default function useWorkoutHistory({ refreshKey = null } = {}) {
 
   const visibleWorkouts = useMemo(() => workouts.filter(w => !hiddenIds.includes(w.id)), [workouts, hiddenIds]);
 
-  const buildShareCard = (workout) => buildShareStats({
+  const shareStatsFor = (workout) => buildShareStats({
     exercises: workout.exercises,
     date: workout.date,
     durationSec: workout.duration_seconds,
@@ -137,7 +133,7 @@ export default function useWorkoutHistory({ refreshKey = null } = {}) {
     visibleWorkouts, loading, activePlan, planLoaded, planReadFailed,
     snackbar, notify, closeSnackbar,
     refresh: fetchWorkoutHistory,
-    hiddenIds, pendingId, deleteWorkout, undoDelete, undoHoldProps, previewDelete,
-    moveWorkoutDate, buildShareCard,
+    hiddenIds, pendingId, scheduleDelete, undoDelete, undoHoldProps, previewDelete,
+    moveWorkoutDate, shareStatsFor,
   };
 }

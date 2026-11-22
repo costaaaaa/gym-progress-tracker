@@ -68,8 +68,8 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null, recordRequest =
   const {
     visibleWorkouts, loading, activePlan, planLoaded, planReadFailed,
     snackbar, notify, closeSnackbar, refresh,
-    hiddenIds, pendingId, deleteWorkout, undoDelete, undoHoldProps, previewDelete,
-    moveWorkoutDate, buildShareCard,
+    hiddenIds, pendingId, scheduleDelete, undoDelete, undoHoldProps, previewDelete,
+    moveWorkoutDate, shareStatsFor,
   } = useWorkoutHistory({ refreshKey });
   const [openRecordDialog, setOpenRecordDialog] = useState(false);
   const [workoutToDelete, setWorkoutToDelete] = useState(null);
@@ -134,12 +134,12 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null, recordRequest =
   }, [pendingId, hiddenIds]);
 
   const handleConfirmDelete = (workout) => {
-    deleteWorkout(workout.id);
+    scheduleDelete(workout.id);
     handleCloseDeleteDialog();
   };
 
   const handleShareClick = (workout) => {
-    setShareStats(buildShareCard(workout));
+    setShareStats(shareStatsFor(workout));
     track('workout_card', { action: 'open', from: 'history' });
   };
 
@@ -270,8 +270,8 @@ const WorkoutHistory = ({ isEmbedded = false, refreshKey = null, recordRequest =
         workout={workoutToDelete}
         onClose={handleCloseDeleteDialog}
         onConfirm={handleConfirmDelete}
-        loadPreview={previewDelete}
-        levelsOn={levelsOn}
+        previewDelete={previewDelete}
+        showLevels={levelsOn}
         weightUnit={weightUnit}
       />
       <ShareCardDialog open={!!shareStats} stats={shareStats} weightUnit={weightUnit} onClose={() => setShareStats(null)} />
