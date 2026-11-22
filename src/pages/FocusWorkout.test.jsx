@@ -791,8 +791,11 @@ describe('colori di Focus: rosso solo per ciò che è distruttivo', () => {
   });
 });
 
-// Riga di «Record di oggi»: nome e testo del record (due elementi) con uno spazio in mezzo, spazi stretti come spazi normali
-const recordLine = (li) => [...li.lastElementChild.children].map((el) => el.textContent).join(' ').replace(/\s/g, ' ');
+// Riga di «Record di oggi»: nome e testo del record (due elementi), spazi stretti come spazi normali
+const recordParts = (li) => [...li.lastElementChild.children].map((el) => el.textContent.replace(/\s/g, ' '));
+const recordLine = (li) => recordParts(li).join(' ');
+// Tipo del record dal testo a schermo: un testo che non è fra questi non ha tipo
+const RECORD_TYPE_BY_TEXT = { 'Record di peso': 'weight', 'Record di 1RM stimato': 'oneRM', 'Record di ripetizioni': 'reps' };
 
 describe('riepilogo', () => {
   const toSummary = async () => {
@@ -3136,6 +3139,12 @@ describe('riepilogo di fine allenamento (F5)', () => {
       expect(screen.getByText('Allenamento già salvato')).toBeTruthy();
     });
 
+    it('«già salvato» con la sola streak: una riga, quella della streak', async () => {
+      await saveWith({ already_saved: true, current_streak_weeks: 4 });
+      expect(rows()).toEqual(['Streak: 4 settimane']);
+      expect(screen.getByText('Allenamento già salvato')).toBeTruthy();
+    });
+
     it('modulo Livelli spento: niente riquadro e niente annuncio, il salvataggio riesce', async () => {
       noLevels();
       await saveWith({ new_longest: true, current_streak_weeks: 3, leveled_up: true, new_level: 4, level: 4, xp_gained: 80, unlocked_achievements: [{ key: 'primo', label: 'Primo' }], xp_session_awarded: false, xp_session_reason: 'too_short' });
@@ -3261,8 +3270,8 @@ describe('riepilogo di fine allenamento (F5)', () => {
       click('Riprendi allenamento');
       await saveNow();
       const onScreen = within(recordsBox()).getAllByRole('listitem').map((li) => {
-        const [name, what] = [...li.lastElementChild.children].map((el) => el.textContent);
-        return `${name}|${what.startsWith('Record di peso') ? 'weight' : 'reps'}`;
+        const [name, what] = recordParts(li);
+        return `${name}|${RECORD_TYPE_BY_TEXT[what.split(':')[0]]}`;
       });
       expect(onScreen).toEqual(['Panca piana|weight', 'Croci|reps']);
       const streakOnScreen = Number(/\d+/.exec(within(screen.getByRole('heading', { name: 'Streak, livello e traguardi' }).closest('.MuiPaper-root')).getAllByRole('listitem')[0].textContent)[0]);
