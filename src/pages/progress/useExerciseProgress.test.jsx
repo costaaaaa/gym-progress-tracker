@@ -38,7 +38,7 @@ describe('useExerciseProgress', () => {
     const { analyzed, catalog: byId, loadFailed } = hook.result.current;
     expect(loadFailed).toBe(false);
     expect(analyzed).toHaveLength(1);
-    expect(analyzed[0]).toMatchObject({ id: 1, name: 'Panca piana', muscle: 'petto', mode: 'oneRM' });
+    expect(analyzed[0]).toMatchObject({ id: '1', name: 'Panca piana', muscle: 'petto', mode: 'oneRM' });
     expect(analyzed[0].sessions).toHaveLength(2);
     expect(byId['1'].name).toBe('Panca piana');
   });
