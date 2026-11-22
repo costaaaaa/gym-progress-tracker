@@ -170,6 +170,11 @@ describe('barra in alto: desktop', () => {
     expect(currentLinks()).toEqual(['Schede']);
   });
 
+  it('su «Tutti gli esercizi» (/schede/esercizi) la voce «Schede» resta attiva, e solo quella', () => {
+    mount(undefined, '/schede/esercizi');
+    expect(currentLinks()).toEqual(['Schede']);
+  });
+
   it('il pulsante diviso ha due bersagli: «Inizia allenamento» porta al Focus, «Altre azioni» apre il menu', () => {
     mount();
     expect(screen.getByRole('link', { name: 'Inizia allenamento' }).getAttribute('href')).toBe('/focus');

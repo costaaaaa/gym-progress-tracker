@@ -1230,5 +1230,15 @@
   "interests.continue": "Continue",
   "interests.skip": "Skip",
   "interests.later": "Not now",
-  "interests.error": "Couldn't save your choice. Try again."
+  "interests.error": "Couldn't save your choice. Try again.",
+  "plans.exercises.title": "All exercises",
+  "plans.exercises.hint": "Search the catalog",
+  "plans.exercises.search": "Search for an exercise",
+  "plans.exercises.all": "All",
+  "plans.exercises.group_filter": "Muscle group",
+  "plans.exercises.none": "No exercises found",
+  "plans.exercises.count_one": "{{count}} exercise",
+  "plans.exercises.count_other": "{{count}} exercises",
+  "plans.exercises.load_error": "Couldn't load the exercises.",
+  "plans.exercises.retry": "Try again"
 }

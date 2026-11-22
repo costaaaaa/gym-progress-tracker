@@ -80,6 +80,11 @@ describe('barra mobile: voci', () => {
     expect(current()).toEqual(['Schede']);
   });
 
+  it('su «Tutti gli esercizi» (/schede/esercizi) la voce «Schede» resta attiva, e solo quella', () => {
+    renderNav('light', '/schede/esercizi');
+    expect(current()).toEqual(['Schede']);
+  });
+
   it('con il Profilo aperto nessuna voce della barra è attiva', () => {
     renderNav('light', '/profilo');
     expect(current()).toEqual([]);
