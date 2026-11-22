@@ -5,6 +5,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { formatDate, intlLocale } from '../../i18n/format';
+import { radius } from '../../theme/radius';
 import { clockDay } from '../../utils/calendarDay';
 import { monthCells, monthOf, shiftMonth } from './calendarMonth';
 import { calendarParams } from './historyAddress';
@@ -94,7 +95,7 @@ const HistoryCalendar = ({ workouts, summaries, weightUnit, address, replaceAddr
                 aria-label={count > 0 ? t('history.calendar.day', { date, count }) : date}
                 onClick={() => chooseDay(day)}
                 sx={{
-                  minHeight: 44, flexDirection: 'column', justifyContent: 'center', gap: '2px', borderRadius: 1,
+                  minHeight: 44, flexDirection: 'column', justifyContent: 'center', gap: '2px', borderRadius: radius.sm,
                   border: '2px solid', borderColor: day === selected ? 'text.primary' : 'transparent',
                   '&.Mui-disabled': { color: 'text.disabled' },
                 }}
