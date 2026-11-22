@@ -2,6 +2,8 @@
 User-agent: *
 # Pagine dell'app dietro login: a un crawler mostrano solo il login.
 Disallow: /workouts
+Disallow: /schede
+Disallow: /storico
 Disallow: /dashboard
 Disallow: /profilo
 Disallow: /gruppi
