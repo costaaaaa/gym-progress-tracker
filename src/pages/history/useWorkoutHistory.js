@@ -14,7 +14,7 @@ const newestFirst = (a, b) => clockDate(b.date) - clockDate(a.date);
 // «nessun allenamento»), `refresh` (rilegge), gli avvisi (`snackbar`, `notify`, `closeSnackbar`), e i comandi:
 // previewDelete(id) chiede al server cosa si perderebbe (la risposta, o null se non arriva), moveWorkoutDate sposta la data
 // in locale, shareStatsFor prepara la card da condividere. La scheda attiva e l'eliminazione con «Annulla» sono dell'elenco
-// (useActivePlan, useDeletionOnArrival). Non sa nulla di come le pagine mostrano i dati.
+// (useActivePlan, useUndoableWorkoutDelete). Non sa nulla di come le pagine mostrano i dati.
 export default function useWorkoutHistory({ refreshKey = null } = {}) {
   const { t } = useTranslation();
   const { isLoggedIn, loading: authLoading } = useAuth();

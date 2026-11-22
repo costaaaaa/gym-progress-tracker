@@ -9,7 +9,7 @@ import { API_BASE_URL } from '../../config';
 // dei 10 secondi di «Annulla» (vedi useUndoableDelete), o subito se si lascia l'elenco. L'indicazione si legge una volta
 // sola: si toglie dall'indirizzo (il resto dello stato resta), perché non sopravviva a ricarica e tasto indietro.
 // `notify(messaggio, gravità)` dice l'errore se il server rifiuta.
-export default function useDeletionOnArrival(notify) {
+export default function useUndoableWorkoutDelete(notify) {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();

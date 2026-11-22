@@ -68,7 +68,7 @@ const Probe = () => {
 let navigate;
 const Nav = () => { navigate = useNavigate(); return null; };
 
-const mount = async (entry = '/storico', wait = NESSUNO, { strict = false } = {}) => {
+const renderPage = (entry = '/storico', { strict = false } = {}) => {
   const Root = strict ? StrictMode : Fragment;
   render(
     <Root><ThemeModeProvider>
@@ -83,6 +83,9 @@ const mount = async (entry = '/storico', wait = NESSUNO, { strict = false } = {}
       </MemoryRouter>
     </ThemeModeProvider></Root>,
   );
+};
+const mount = async (entry = '/storico', wait = NESSUNO, options) => {
+  renderPage(entry, options);
   await screen.findAllByText(wait);
 };
 // Elenco con degli allenamenti; `wait` = un testo che compare a lettura finita
@@ -119,14 +122,31 @@ describe('pagina Storico', () => {
   });
 
   it('senza una scheda attiva il comando non c\'è, nemmeno quando la lettura delle schede finisce', async () => {
-    // Le schede arrivano solo quando lo decide il test: l'assenza si controlla prima e dopo il loro arrivo
+    // Le schede arrivano solo quando lo decide il test, e il corpo della risposta segnala di essere stato letto: l'assenza
+    // si controlla prima, e poi solo dopo aver visto che la lettura è davvero conclusa
     let arrivano;
-    const inArrivo = new Promise((resolve) => { arrivano = () => resolve(json({ records: [{ ...plan, is_active: false }] })); });
-    serve({ workouts: [], on: { 'read_plans.php': () => inArrivo } });
+    let lette = 0;
+    let corpoLetto = false;
+    const inArrivo = new Promise((resolve) => { arrivano = resolve; });
+    serve({
+      workouts: [],
+      on: {
+        'read_plans.php': () => {
+          lette += 1;
+          return inArrivo.then(() => {
+            const risposta = json({ records: [{ ...plan, is_active: false }] });
+            return { ...risposta, json: async () => { corpoLetto = true; return risposta.json(); } };
+          });
+        },
+      },
+    });
     await mount();
+    expect(lette).toBe(1);
+    expect(corpoLetto).toBe(false);
     expect(screen.queryByRole('button', { name: 'Registra allenamento passato' })).toBeNull();
     await act(async () => { arrivano(); });
-    await act(async () => {});
+    await waitFor(() => expect(corpoLetto).toBe(true));
+    await act(async () => {}); // lo stato aggiornato dalla lettura finita arriva allo schermo
     expect(screen.queryByRole('button', { name: 'Registra allenamento passato' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Registra il primo' })).toBeNull();
   });
@@ -416,17 +436,23 @@ describe('errore di lettura', () => {
 describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
   const altro = made({ id: 8, date: '2026-10-17 02:00:00', day_name: 'Pull B' });
   const annulla = () => within(screen.getByRole('alert')).getByRole('button', { name: 'Annulla' });
-  const passano = (ms) => act(async () => { vi.advanceTimersByTime(ms); });
-  const arriva = async (state = { deleted: 7 }) => {
-    serve({ workouts: [workout, altro] });
-    await mount({ pathname: '/storico', state }, 'Allenamento eliminato');
-  };
-  // Dopo l'arrivo i timer dell'app (il conto dei 10 secondi) si fanno finti, così il test li fa scorrere. Il fuoco sta su
-  // «Annulla» e ferma il conto: chi vuole lo scadere lo lascia prima.
-  const conTimerFinti = () => {
+  // Qui i timer sono tutti finti (anche setTimeout): niente attese reali né findBy/waitFor, che dipendono dall'orologio vero.
+  // Il tempo scorre solo con `passano`; il fuoco sta su «Annulla» e ferma il conto dei 10 secondi: chi vuole lo scadere lo
+  // rilascia prima.
+  beforeEach(() => {
+    vi.useRealTimers();
     vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
     vi.setSystemTime(new Date(2026, 9, 20, 12, 0));
+  });
+  const passano = (ms) => act(() => vi.advanceTimersByTimeAsync(ms));
+  // Il tempo che basta a letture, effetti e timer a 0 ms, molto meno dei 10 secondi
+  const assesta = async () => { await passano(50); await passano(50); };
+  const monta = async (state = { deleted: 7 }, { strict = false, workouts = [workout, altro], plans } = {}) => {
+    serve({ workouts, plans });
+    renderPage({ pathname: '/storico', state }, { strict });
+    await assesta();
   };
+  const arriva = (state) => monta(state);
   const rilasciaFuoco = () => act(() => document.activeElement.blur());
 
   it('la riga sparisce subito, compare «Allenamento eliminato» con «Annulla» sul quale va il fuoco, e il server non è ancora chiamato', async () => {
@@ -439,11 +465,11 @@ describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
 
   it('l\'indicazione è letta una volta sola e tolta dall\'indirizzo', async () => {
     await arriva();
-    await waitFor(() => expect(screen.getByTestId('state').textContent).toBe('null'));
+    expect(screen.getByTestId('state').textContent).toBe('null');
   });
 
   it('arrivando senza l\'indicazione non c\'è nessun messaggio', async () => {
-    await mountWith([workout, altro]);
+    await monta(null);
     expect(screen.queryByText('Allenamento eliminato')).toBeNull();
     expect(screen.getByRole('link', { name: /^Push A/ })).toBeTruthy();
   });
@@ -451,16 +477,14 @@ describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
   it('«Annulla» riporta la riga in lista, il fuoco va alla riga e il server non viene mai chiamato', async () => {
     await arriva();
     fireEvent.click(annulla());
-    const riga = screen.getByRole('link', { name: /^Push A/ });
-    await waitFor(() => expect(document.activeElement).toBe(riga));
-    conTimerFinti();
+    await assesta();
+    expect(document.activeElement).toBe(screen.getByRole('link', { name: /^Push A/ }));
     await passano(20000);
     expect(deletions()).toHaveLength(0);
   });
 
   it('allo scadere dei 10 secondi parte la richiesta di eliminazione per quell\'id', async () => {
     await arriva();
-    conTimerFinti();
     rilasciaFuoco();
     await passano(9999);
     expect(deletions()).toHaveLength(0);
@@ -472,11 +496,8 @@ describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
 
   describe('con React.StrictMode (sviluppo)', () => {
     it('il server non è chiamato prima dei 10 secondi, poi una volta sola', async () => {
-      serve({ workouts: [workout, altro] });
-      await mount({ pathname: '/storico', state: { deleted: 7 } }, 'Allenamento eliminato', { strict: true });
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await monta({ deleted: 7 }, { strict: true });
       expect(deletions()).toHaveLength(0);
-      conTimerFinti();
       rilasciaFuoco();
       await passano(9999);
       expect(deletions()).toHaveLength(0);
@@ -486,12 +507,11 @@ describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
     });
 
     it('«Annulla» evita la richiesta', async () => {
-      serve({ workouts: [workout, altro] });
-      await mount({ pathname: '/storico', state: { deleted: 7 } }, 'Allenamento eliminato', { strict: true });
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await monta({ deleted: 7 }, { strict: true });
+      expect(deletions()).toHaveLength(0);
       fireEvent.click(annulla());
-      expect(await screen.findByRole('link', { name: /^Push A/ })).toBeTruthy();
-      conTimerFinti();
+      await assesta();
+      expect(screen.getByRole('link', { name: /^Push A/ })).toBeTruthy();
       await passano(20000);
       expect(deletions()).toHaveLength(0);
     });
@@ -500,8 +520,9 @@ describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
   it('uscendo dall\'elenco durante i 10 secondi la richiesta parte subito, come prima', async () => {
     await arriva();
     act(() => navigate('/altrove'));
-    await screen.findByText('Altra pagina');
-    await waitFor(() => expect(deletions()).toHaveLength(1));
+    await assesta();
+    expect(screen.getByText('Altra pagina')).toBeTruthy();
+    expect(deletions()).toHaveLength(1);
     expect(JSON.parse(deletions()[0][1].body)).toEqual({ id: 7 });
   });
 
@@ -509,18 +530,20 @@ describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
     await arriva();
     fireEvent.click(annulla());
     act(() => navigate('/altrove'));
-    await screen.findByText('Altra pagina');
+    await assesta();
+    expect(screen.getByText('Altra pagina')).toBeTruthy();
     act(() => navigate(-1));
-    expect(await screen.findByRole('link', { name: /^Push A/ })).toBeTruthy();
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await assesta();
+    expect(screen.getByRole('link', { name: /^Push A/ })).toBeTruthy();
+    await passano(20000);
     expect(screen.queryByText('Allenamento eliminato')).toBeNull();
     expect(deletions()).toHaveLength(0);
   });
 
   it('se il server rifiuta, la riga torna in lista e compare l\'errore', async () => {
     serve({ workouts: [workout, altro], on: { 'workout_history/delete.php': () => json({ message: 'Allenamento bloccato' }, 400) } });
-    await mount({ pathname: '/storico', state: { deleted: 7 } }, 'Allenamento eliminato');
-    conTimerFinti();
+    renderPage({ pathname: '/storico', state: { deleted: 7 } });
+    await assesta();
     rilasciaFuoco();
     await passano(10000);
     expect(screen.getByRole('link', { name: /^Push A/ })).toBeTruthy();
@@ -528,10 +551,10 @@ describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
   });
 
   it('un altro avviso mentre «Annulla» aspetta sta sopra, senza coprirlo', async () => {
-    serve({ workouts: [workout, altro], plans: [{ ...plan, is_active: false }] });
-    await mount({ pathname: '/storico', state: { deleted: 7 } }, 'Allenamento eliminato');
+    await monta({ deleted: 7 }, { plans: [{ ...plan, is_active: false }] });
     fireEvent.click(screen.getByRole('link', { name: 'Registra dal ventaglio' }));
-    const avviso = (await screen.findByText('Per registrare un allenamento serve una scheda attiva.')).closest('.MuiSnackbar-root');
+    await assesta();
+    const avviso = screen.getByText('Per registrare un allenamento serve una scheda attiva.').closest('.MuiSnackbar-root');
     const attesa = screen.getByText('Allenamento eliminato').closest('.MuiSnackbar-root');
     expect(getComputedStyle(avviso).bottom).not.toBe(getComputedStyle(attesa).bottom);
   });
@@ -540,7 +563,6 @@ describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
   describe('tastiera e fuoco', () => {
     it('con il fuoco da tastiera su «Annulla» i 10 secondi non scadono: la richiesta non parte', async () => {
       await arriva();
-      conTimerFinti();
       await passano(30000);
       expect(deletions()).toHaveLength(0);
       expect(screen.getByText('Allenamento eliminato')).toBeTruthy();
@@ -548,7 +570,6 @@ describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
 
     it('se il fuoco su «Annulla» non viene dalla tastiera (mouse, tocco) il conto parte e la richiesta parte', async () => {
       await arriva();
-      conTimerFinti();
       isKeyboardFocus.mockReturnValue(false);
       act(() => annulla().blur());
       act(() => annulla().focus());
@@ -558,7 +579,6 @@ describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
 
     it('con il puntatore sul messaggio il conto si ferma, e quando esce riparte', async () => {
       await arriva();
-      conTimerFinti();
       act(() => annulla().blur());
       const messaggio = screen.getByText('Allenamento eliminato').closest('.MuiSnackbar-root');
       fireEvent.mouseEnter(messaggio);
@@ -571,21 +591,17 @@ describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
 
     it('allo scadere il fuoco resta nella pagina, non su body', async () => {
       await arriva();
-      conTimerFinti();
       rilasciaFuoco();
-      await passano(10000);
-      await passano(1000);
+      await passano(11000);
       expect(document.activeElement).not.toBe(document.body);
       expect(document.body.contains(document.activeElement)).toBe(true);
     });
 
     it('se l\'utente ha spostato il fuoco altrove, la scadenza non glielo porta via', async () => {
       await arriva();
-      conTimerFinti();
       const riga = screen.getByRole('link', { name: /^Pull B/ });
       act(() => riga.focus());
-      await passano(10000);
-      await passano(1000);
+      await passano(11000);
       expect(document.activeElement).toBe(riga);
     });
   });

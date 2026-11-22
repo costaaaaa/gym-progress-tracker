@@ -95,6 +95,15 @@ describe('riquadri', () => {
     expect(riquadro('Serie').getByText('3')).toBeTruthy();
   });
 
+  it('il valore di ogni riquadro sta su una riga e non scende sotto 16 px (a 320 px «62 min» non va a capo)', async () => {
+    await mount();
+    ['60 min', '1440 kg', '3'].forEach((testo) => {
+      const stile = getComputedStyle(screen.getByText(testo));
+      expect(stile.whiteSpace).toBe('nowrap');
+      expect(parseFloat(stile.fontSize)).toBeGreaterThanOrEqual(16);
+    });
+  });
+
   it('sopra l\'ora la durata resta in minuti', async () => {
     await mount([made({ duration_seconds: 5700 })]);
     expect(riquadro('Durata').getByText('95 min')).toBeTruthy();

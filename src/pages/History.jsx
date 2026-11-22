@@ -12,7 +12,7 @@ import { focusedElement } from '../utils/focus';
 import { NEUTRAL_OUTLINED, NEUTRAL_TEXT } from '../utils/buttonStyles';
 import useWorkoutHistory from './history/useWorkoutHistory';
 import useActivePlan from './history/useActivePlan';
-import useDeletionOnArrival from './history/useDeletionOnArrival';
+import useUndoableWorkoutDelete from './history/useUndoableWorkoutDelete';
 import WorkoutListItem from './history/WorkoutListItem';
 
 // Gli allenamenti (già dal più recente) raggruppati per mese; la data illeggibile va in un gruppo a parte.
@@ -41,7 +41,7 @@ const History = () => {
   usePageMeta(t('nav.history'), t('history.meta.description'));
   const { workouts: allWorkouts, summaries, loading, loadFailed, snackbar, notify, closeSnackbar, refresh } = useWorkoutHistory({ refreshKey: location.state?.refreshHistory });
   const { activePlan, planLoaded, planReadFailed } = useActivePlan();
-  const { hiddenIds, pendingId, undo: undoDelete, holdProps: undoHoldProps } = useDeletionOnArrival(notify);
+  const { hiddenIds, pendingId, undo: undoDelete, holdProps: undoHoldProps } = useUndoableWorkoutDelete(notify);
   const workouts = useMemo(() => allWorkouts.filter((workout) => !hiddenIds.includes(workout.id)), [allWorkouts, hiddenIds]);
   const [openRecordDialog, setOpenRecordDialog] = useState(false);
 
