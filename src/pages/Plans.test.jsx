@@ -123,7 +123,7 @@ describe('elenco compatto', () => {
     expect(within(screen.getByRole('link', { name: 'Full body' })).getByText('1 giorno')).toBeTruthy();
     expect(within(screen.getByRole('link', { name: 'Full body' })).queryByText('Attiva')).toBeNull();
     expect(screen.queryByText('Spinta e tirata')).toBeNull();
-    expect(screen.queryByText(/esercizi|serie/)).toBeNull();
+    expect(within(card).queryByText(/esercizi|serie/)).toBeNull();
     expect(card.querySelector('svg')).toBeNull();
   });
 
@@ -142,7 +142,7 @@ describe('elenco compatto', () => {
 
   it('le attive vanno per prime, le altre nell\'ordine del server', async () => {
     await mount([mk(2), mk(3), mk(1)], PRO);
-    expect(screen.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['/schede/1', '/schede/2', '/schede/3']);
+    expect(screen.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['/schede/1', '/schede/2', '/schede/3', '/schede/esercizi']);
   });
 
   it('la card è alta almeno 64 px', async () => {
@@ -188,8 +188,48 @@ describe('elenco compatto', () => {
     renderPlans();
     await waitFor(() => expect(calls('read_plans.php')).toHaveLength(1));
     await waitFor(() => expect(calls('user/read.php')).toHaveLength(1));
-    expect(screen.queryAllByRole('link')).toHaveLength(0);
+    expect(screen.queryAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['/schede/esercizi']);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Nuova scheda' }).disabled).toBe(false));
+  });
+});
+
+describe('riga «Tutti gli esercizi»', () => {
+  const row = () => screen.getByRole('link', { name: 'Tutti gli esercizi' });
+
+  it('è l\'ultimo elemento dell\'elenco, dopo le card delle schede, e porta a /schede/esercizi', async () => {
+    await mount();
+    expect(row().getAttribute('href')).toBe('/schede/esercizi');
+    const links = screen.getAllByRole('link');
+    expect(links[links.length - 1]).toBe(row());
+    expect(links).toHaveLength(3);
+  });
+
+  it('c\'è anche senza nessuna scheda', async () => {
+    stub([]);
+    renderPlans();
+    await waitFor(() => expect(calls('read_plans.php')).toHaveLength(1));
+    expect(row().getAttribute('href')).toBe('/schede/esercizi');
+  });
+
+  it('sotto il titolo dice «Cerca nel catalogo», ha una freccia a destra ed è alta almeno 64px', async () => {
+    await mount();
+    expect(row().getAttribute('aria-describedby')).toBeTruthy();
+    expect(within(row()).getByText('Cerca nel catalogo')).toBeTruthy();
+    expect(row().querySelector('svg')).toBeTruthy();
+    expect(parseFloat(getComputedStyle(row()).minHeight)).toBeGreaterThanOrEqual(64);
+  });
+
+  it('è una card come le altre, non un pulsante rosso', async () => {
+    await mount();
+    expect(row().closest('.MuiCard-root')).toBeTruthy();
+    expect(row().closest('.MuiButton-root')).toBeNull();
+    expect(getComputedStyle(row()).backgroundColor).not.toBe('rgb(213, 0, 0)');
+  });
+
+  it('cliccandola si va alla pagina degli esercizi', async () => {
+    await mount();
+    fireEvent.click(row());
+    expect((await screen.findByTestId('pagina')).textContent).toBe('/schede/esercizi null');
   });
 });
 
