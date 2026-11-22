@@ -18,6 +18,7 @@ const plan = { id: 5, name: 'Push Pull', is_active: true, days: [] };
 const AVVISO_SALUTE = 'Questo allenamento è anche nell\'app Salute del telefono e lì resta. Per toglierlo anche da lì, eliminalo dall\'app LiftIndex sul telefono.';
 
 const originalMatchMedia = window.matchMedia;
+// Telefono: le media query "max-width" (breakpoint sotto sm) combaciano, le altre no
 const simulaTelefono = () => {
   window.matchMedia = (query) => ({
     matches: query.includes('max-width'), media: query, onchange: null,
@@ -25,7 +26,7 @@ const simulaTelefono = () => {
   });
 };
 
-// `anteprima`: cosa risponde il server alla richiesta di anteprima, per numero di richiesta (undefined = non risponde mai)
+// `anteprime`: cosa risponde il server alla richiesta di anteprima, per numero di richiesta (undefined = non risponde mai)
 const serve = (anteprime = []) => {
   let n = 0;
   const fetchMock = vi.fn((url, init) => {
@@ -78,6 +79,26 @@ describe('dialog di eliminazione', () => {
     await screen.findByText('Conferma eliminazione');
     await act(async () => {});
     expect(screen.queryByText('Perderai 30 XP.')).toBeNull();
+  });
+
+  // Mentre il dialog si chiude il pulsante resta nel documento: un secondo clic non deve fare nulla
+  it('due clic di fila su «Elimina» eliminano una volta sola, senza errori', async () => {
+    serve();
+    const errori = [];
+    const annota = (evento) => { errori.push(evento.error); evento.preventDefault(); };
+    window.addEventListener('error', annota);
+    try {
+      await mount();
+      fireEvent.click(screen.getAllByRole('button', { name: /^Elimina allenamento/ })[0]);
+      const conferma = within(await screen.findByRole('dialog')).getByRole('button', { name: 'Elimina' });
+      fireEvent.click(conferma);
+      fireEvent.click(conferma);
+      expect(errori).toEqual([]);
+      expect(document.querySelector('[data-workout-row="7"]')).toBeNull();
+      expect(document.querySelector('[data-workout-row="8"]')).toBeTruthy();
+    } finally {
+      window.removeEventListener('error', annota);
+    }
   });
 });
 
