@@ -44,4 +44,8 @@ describe('/profilo', () => {
   it('qualunque ancora passa con l\'utente', () => {
     expect(open('/profilo?tab=settings#sezione')).toBe('/account#sezione');
   });
+
+  it('l\'ancora passa anche verso i Livelli', () => {
+    expect(open('/profilo#sezione')).toBe('/livelli#sezione');
+  });
 });

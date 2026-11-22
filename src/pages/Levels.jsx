@@ -75,7 +75,7 @@ const AchievementCard = ({ achievement, isNext, progress, weightUnit }) => {
   );
 };
 
-const LevelsSummary = () => {
+const LevelsBody = () => {
   const { t } = useTranslation();
   const { weightUnit } = useAuth();
   const [data, setData] = useState(null);
@@ -231,7 +231,7 @@ const LevelsContent = () => {
   return (
     <Box sx={{ width: '100%' }}>
       <Typography variant="pageTitle" sx={{ mb: 3 }}>{t('modules.levels.name')}</Typography>
-      <LevelsSummary />
+      <LevelsBody />
     </Box>
   );
 };
