@@ -27,14 +27,14 @@ import { BODY_COMPOSITION_SERIES, CIRCUMFERENCE_SERIES } from './body/series';
 const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
   const { t } = useTranslation();
   const { weightUnit } = useAuth();
-  const { stats, loading: isLoading, loadFailed, consentRequired, consentUpdated, refresh, save, remove } = useBodyStats();
+  const { stats, loading, loadFailed, consentRequired, consentUpdated, refresh, save, remove } = useBodyStats();
   const [period, setPeriod] = useState(DEFAULT_PERIOD);
   const [page, setPage] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const notify = (message, severity) => setSnackbar({ open: true, message, severity });
 
-  useOncePerRequest(openRequest, !isLoading, () => { if (!consentRequired) setIsDialogOpen(true); });
+  useOncePerRequest(openRequest, !loading, () => { if (!consentRequired) setIsDialogOpen(true); });
 
   const handleDelete = async (id) => {
     if (!window.confirm(t('body.confirm_delete'))) return;
@@ -62,7 +62,7 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
   const history = paginate(sortedStats.slice().reverse(), page);
   const latestRow = sortedStats[sortedStats.length - 1];
 
-  const renderContent = () => (consentRequired && !isLoading) ? (
+  const renderContent = () => (consentRequired && !loading) ? (
     <HealthConsentCard onGranted={refresh} updated={consentUpdated} />
   ) : (
     <>
@@ -80,11 +80,11 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
       {/* Lettura fallita: l'errore al posto dei dati, diverso dalla pagina vuota */}
       {loadFailed && <LoadError message={t('body.error.load')} onRetry={refresh} />}
 
-      {!isLoading && !loadFailed && <HealthAppHint alreadySyncing={stats.some((s) => s.health_fields)} />}
+      {!loading && !loadFailed && <HealthAppHint alreadySyncing={stats.some((s) => s.health_fields)} />}
 
-      {!isLoading && !loadFailed && stats.length > 0 && <PeriodChips value={period} onChange={setPeriod} />}
+      {!loading && !loadFailed && stats.length > 0 && <PeriodChips value={period} onChange={setPeriod} />}
 
-      {loadFailed ? null : isLoading ? (
+      {loadFailed ? null : loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 10 }}>
           <CircularProgress color="primary" />
         </Box>

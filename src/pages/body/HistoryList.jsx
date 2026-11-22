@@ -25,7 +25,7 @@ const HistoryList = ({ rows, empty, onDelete, weightUnit }) => {
                 <Typography sx={{ fontSize: 16 }}>{formatDate(row.date)}</Typography>
                 <Typography sx={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
                   {/* Numero (con il cuore di Salute) e unità sono pezzi separati: lo spazio non separabile e l'unità si scrivono a mano */}
-                  {row.weight ? <><StatValue row={row} field="weight" weightUnit={weightUnit} />{' '}{weightUnitLabel(weightUnit)}</> : '-'}
+                  {row.weight ? <><StatValue row={row} field="weight" weightUnit={weightUnit} />{'\u00a0'}{weightUnitLabel(weightUnit)}</> : '-'}
                 </Typography>
               </Box>
               {others.length > 0 && (

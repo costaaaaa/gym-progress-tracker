@@ -54,17 +54,20 @@ describe('useBodyStats', () => {
   });
 
   it('lettura fallita: loadFailed, e refresh la rilegge togliendo l\'errore', async () => {
-    let up = false;
-    replies.read = () => { if (!up) throw new Error('rete'); return json({ records: rows }); };
+    replies.read = () => { throw new Error('rete'); };
     const { result } = await mount();
     expect(result.current.loadFailed).toBe(true);
     expect(result.current.stats).toEqual([]);
 
-    up = true;
-    act(() => { result.current.refresh(); });
+    // La rilettura resta in sospeso finché non la sblocco io: così si vede lo stato «in caricamento»
+    let release;
+    replies.read = () => new Promise((resolve) => { release = () => resolve(json({ records: rows })); });
+    let refreshed;
+    await act(async () => { refreshed = result.current.refresh(); });
     expect(result.current.loading).toBe(true);
     expect(result.current.loadFailed).toBe(false);
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    await act(async () => { release(); await refreshed; });
+    expect(result.current.loading).toBe(false);
     expect(result.current.stats).toEqual(rows);
   });
 
