@@ -62,7 +62,8 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
   const history = paginate(sortedStats.slice().reverse(), page);
   const latestRow = sortedStats[sortedStats.length - 1];
 
-  const renderContent = () => (consentRequired && !loading) ? (
+  // La lettura fallita vince sul consenso: dopo «Acconsento» una rilettura che non riesce non rimette la card come se niente fosse
+  const renderContent = () => (consentRequired && !loading && !loadFailed) ? (
     <HealthConsentCard onGranted={refresh} updated={consentUpdated} />
   ) : (
     <>
