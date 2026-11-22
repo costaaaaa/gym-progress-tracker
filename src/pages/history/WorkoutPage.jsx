@@ -109,11 +109,12 @@ const WorkoutPage = () => {
           <TimeZoneBadge workout={workout} sx={{ fontSize: 16 }} />
         </Box>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 1.5, mb: 2.5 }}>
+        {/* Sotto sm le colonne seguono il contenuto, con riempimento e spazi stretti: il valore (anche «12 345 lb») sta su una riga a 320 px */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(3, auto)', sm: 'repeat(3, minmax(0, 1fr))' }, gap: { xs: 1, sm: 1.5 }, mb: 2.5 }}>
           {tiles.map(([label, value]) => (
-            <Card key={label} sx={{ p: 1.5 }}>
+            <Card key={label} sx={{ p: { xs: 1, sm: 1.5 }, minWidth: 0 }}>
               <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{label}</Typography>
-              <Typography sx={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', overflowWrap: 'anywhere' }}>{value}</Typography>
+              <Typography sx={{ fontSize: { xs: 16, sm: 20 }, fontWeight: 700, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{value}</Typography>
             </Card>
           ))}
         </Box>
@@ -123,7 +124,7 @@ const WorkoutPage = () => {
             <Typography component="h2" variant="cardTitle" sx={{ mb: 1.5 }}>{t('history.pr.label')}</Typography>
             <Box component="ul" sx={{ m: 0, p: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               {summary.records.map((record, i) => (
-                // l'elenco non cambia mai dopo il disegno e due esercizi possono chiamarsi uguale: l'indice basta
+                // voci senza stato e due esercizi possono avere lo stesso nome (anche dopo il ricalcolo per «Cambia data»): il nome non fa da chiave, l'indice sì
                 <li key={i}>
                   <Typography sx={{ fontSize: 16, fontWeight: 700, overflowWrap: 'anywhere' }}>{record.name}</Typography>
                   <Typography sx={{ fontSize: 16, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>{recordLine(record)}</Typography>

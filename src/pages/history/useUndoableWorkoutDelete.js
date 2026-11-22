@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import useUndoableDelete from '../../hooks/useUndoableDelete';
 import { API_BASE_URL } from '../../config';
 
-// L'eliminazione con «Annulla» di un allenamento tolto dalla sua pagina: la pagina porta all'elenco con `deleted` (l'id)
-// nello stato di navigazione. La riga sparisce subito (`hiddenIds`); la richiesta al server parte solo allo scadere
+// L'eliminazione con «Annulla» di un allenamento, che parte dall'id arrivato nello stato di navigazione (`deleted`,
+// quando la sua pagina porta all'elenco). La riga sparisce subito (`hiddenIds`); la richiesta al server parte solo allo scadere
 // dei 10 secondi di «Annulla» (vedi useUndoableDelete), o subito se si lascia l'elenco. L'indicazione si legge una volta
 // sola: si toglie dall'indirizzo (il resto dello stato resta), perché non sopravviva a ricarica e tasto indietro.
 // `notify(messaggio, gravità)` dice l'errore se il server rifiuta.
