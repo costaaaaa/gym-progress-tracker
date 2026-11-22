@@ -224,12 +224,14 @@ describe('griglia del mese', () => {
     expect(getComputedStyle(griglia).gridTemplateColumns).toBe('repeat(7, minmax(0, 1fr))');
   });
 
-  it('i giorni sono pulsanti da 44 px almeno, «Mese precedente» e «Mese successivo» pure', async () => {
+  // In larghezza i giorni riempiono la colonna: a 320 px sette colonne da 44 px non ci stanno nella card, e la griglia non scorre
+  it('i giorni sono pulsanti alti 44 px almeno; «Mese precedente» e «Mese successivo» sono aree da 44 × 44', async () => {
     await mount();
-    [...giorni(), prec(), succ()].forEach((bottone) => {
+    giorni().forEach((bottone) => expect(parseFloat(getComputedStyle(bottone).minHeight)).toBeGreaterThanOrEqual(44));
+    [prec(), succ()].forEach((bottone) => {
       const stile = getComputedStyle(bottone);
-      expect(parseFloat(stile.minHeight)).toBeGreaterThanOrEqual(44);
-      expect(parseFloat(stile.minWidth)).toBeGreaterThanOrEqual(44);
+      expect(parseFloat(stile.width)).toBeGreaterThanOrEqual(44);
+      expect(parseFloat(stile.height)).toBeGreaterThanOrEqual(44);
     });
   });
 

@@ -10,8 +10,9 @@ const SHORT_DAY = { weekday: 'short', day: 'numeric', month: 'short' };
 
 // Una riga dell'elenco: tutta la riga è il collegamento alla pagina dell'allenamento. Titolo = giorno della scheda (o la
 // data, e allora sotto c'è l'ora); sotto, data, durata e volume quando ci sono. A destra il segno «Record» se l'allenamento
-// ne ha battuto uno vero. `summary`: volume e record di questo allenamento (workoutSummaries).
-const WorkoutListItem = ({ workout, summary, weightUnit }) => {
+// ne ha battuto uno vero. `summary`: volume e record di questo allenamento (workoutSummaries). `linkState`: lo stato di
+// navigazione che il collegamento porta alla pagina dell'allenamento (il calendario vi mette il suo indirizzo, per tornarci).
+const WorkoutListItem = ({ workout, summary, weightUnit, linkState }) => {
   const { t } = useTranslation();
   const details = [
     workout.day_name ? formatDate(workout.date, SHORT_DAY) : formatClockTime(workout.date),
@@ -24,6 +25,7 @@ const WorkoutListItem = ({ workout, summary, weightUnit }) => {
       <ButtonBase
         component={RouterLink}
         to={`/storico/${workout.id}`}
+        state={linkState}
         data-workout-row={workout.id}
         sx={{ width: '100%', minHeight: 60, px: 2.5, py: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1.5, textAlign: 'left' }}
       >

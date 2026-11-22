@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Box, Button, Card, CircularProgress, Link as MuiLink, Snackbar, Typography } from '@mui/material';
-import { Link, useLocation } from 'react-router-dom';
+import { Alert, Box, Button, Card, CircularProgress, Link as MuiLink, Snackbar, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import RecordWorkoutDialog from '../components/RecordWorkoutDialog';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { useNavigationRequest, useOncePerRequest } from '../hooks/useNavigationRequest';
@@ -10,10 +10,12 @@ import { formatDate } from '../i18n/format';
 import { clockDate } from '../utils/calendarDay';
 import { focusedElement } from '../utils/focus';
 import { NEUTRAL_OUTLINED, NEUTRAL_TEXT } from '../utils/buttonStyles';
+import { CHIP_FONT } from '../utils/fonts';
 import useWorkoutHistory from './history/useWorkoutHistory';
 import useActivePlan from './history/useActivePlan';
 import useUndoableWorkoutDelete from './history/useUndoableWorkoutDelete';
 import WorkoutListItem from './history/WorkoutListItem';
+import HistoryCalendar from './history/HistoryCalendar';
 
 // Gli allenamenti (già dal più recente) raggruppati per mese; la data illeggibile va in un gruppo a parte.
 // Pura: vive fuori dal componente per avere un'identità stabile nelle dipendenze del useMemo che la usa.
@@ -33,9 +35,12 @@ const groupWorkoutsByMonth = (workouts) => {
 // pagina è /storico/:id). `refreshHistory` (stato di navigazione, a fine allenamento) rilegge l'elenco; `openRecord` (dal
 // ventaglio) apre la finestra «Registra allenamento passato», solo con una scheda attiva (senza, un avviso lo dice).
 // Eliminato un allenamento dalla sua pagina si torna qui, e l'eliminazione resta annullabile per 10 secondi.
+// Due viste, scelte dall'indirizzo (?vista=calendario; altrimenti l'elenco): cambiarle sostituisce la voce di cronologia.
 const History = () => {
   const { t } = useTranslation();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const view = searchParams.get('vista') === 'calendario' ? 'calendar' : 'list';
   const { isLoggedIn, loading: authLoading, weightUnit } = useAuth();
   const recordRequest = useNavigationRequest('openRecord');
   usePageMeta(t('nav.history'), t('history.meta.description'));
@@ -118,6 +123,7 @@ const History = () => {
         </Card>
       );
     }
+    if (view === 'calendar') return <HistoryCalendar workouts={workouts} summaries={summaries} weightUnit={weightUnit} />;
     return Object.entries(groupedWorkouts).map(([key, inMonth]) => {
       const headingId = `history-month-${key.replace('/', '-')}`;
       return (
@@ -145,6 +151,20 @@ const History = () => {
           </Button>
         )}
       </Box>
+
+      {isLoggedIn && !authLoading && !loading && !loadFailed && workouts.length > 0 && (
+        <ToggleButtonGroup
+          exclusive
+          value={view}
+          onChange={(event, next) => next && setSearchParams(next === 'calendar' ? { vista: 'calendario' } : {}, { replace: true })}
+          aria-label={t('history.view.label')}
+          sx={{ mb: 2.5 }}
+        >
+          {['list', 'calendar'].map((value) => (
+            <ToggleButton key={value} value={value} sx={{ minHeight: 44, px: 2.5, fontSize: 16, ...CHIP_FONT }}>{t(`history.view.${value}`)}</ToggleButton>
+          ))}
+        </ToggleButtonGroup>
+      )}
 
       {body()}
 

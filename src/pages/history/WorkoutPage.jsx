@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, Box, Button, Card, CircularProgress, IconButton, Snackbar, Typography } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { format, subDays } from 'date-fns';
-import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import { isModuleActive } from '../../hooks/useModule';
@@ -31,6 +31,9 @@ const WorkoutPage = () => {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
+  // Dal calendario si arriva con il suo indirizzo (vista, mese e giorno): il ritorno e l'eliminazione tornano lì, non all'elenco
+  const { state } = useLocation();
+  const historyPath = /^\?[\w=&%.-]*$/.test(state?.historySearch) ? `/storico${state.historySearch}` : '/storico';
   const { weightUnit, user } = useAuth();
   // Punti, streak e traguardi nelle anteprime sono del modulo Livelli: non attivo = non si mostrano
   const levelsOn = isModuleActive(user, 'levels');
@@ -62,7 +65,7 @@ const WorkoutPage = () => {
   // Alla conferma si torna all'elenco con l'id: è l'elenco a eliminare, con «Annulla» per 10 secondi
   const handleConfirmDelete = (toDelete) => {
     setOpenDelete(false);
-    navigate('/storico', { replace: true, state: { deleted: toDelete.id } });
+    navigate(historyPath, { replace: true, state: { deleted: toDelete.id } });
   };
 
   const recordLine = (record) => {
@@ -71,7 +74,7 @@ const WorkoutPage = () => {
   };
 
   const back = (
-    <IconButton component={RouterLink} to="/storico" aria-label={t('nav.history')} edge="start" sx={{ width: 44, height: 44, color: 'text.primary' }}>
+    <IconButton component={RouterLink} to={historyPath} aria-label={t('nav.history')} edge="start" sx={{ width: 44, height: 44, color: 'text.primary' }}>
       <ArrowBackIcon />
     </IconButton>
   );
