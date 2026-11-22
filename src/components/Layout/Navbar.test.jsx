@@ -170,6 +170,11 @@ describe('barra in alto: desktop', () => {
     expect(currentLinks()).toEqual(['Schede']);
   });
 
+  it('su un allenamento (/storico/<id>) la voce «Storico» resta attiva, e solo quella', () => {
+    mount(undefined, '/storico/12');
+    expect(currentLinks()).toEqual(['Storico']);
+  });
+
   it('il pulsante diviso ha due bersagli: «Inizia allenamento» porta al Focus, «Altre azioni» apre il menu', () => {
     mount();
     expect(screen.getByRole('link', { name: 'Inizia allenamento' }).getAttribute('href')).toBe('/focus');

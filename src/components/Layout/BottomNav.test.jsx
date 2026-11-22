@@ -80,6 +80,11 @@ describe('barra mobile: voci', () => {
     expect(current()).toEqual(['Schede']);
   });
 
+  it('su un allenamento (/storico/<id>) la voce «Storico» resta attiva, e solo quella', () => {
+    renderNav('light', '/storico/12');
+    expect(current()).toEqual(['Storico']);
+  });
+
   it('con il Profilo aperto nessuna voce della barra è attiva', () => {
     renderNav('light', '/profilo');
     expect(current()).toEqual([]);
