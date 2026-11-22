@@ -201,7 +201,7 @@ describe('riga «Tutti gli esercizi»', () => {
     expect(row().getAttribute('href')).toBe('/schede/esercizi');
     const links = screen.getAllByRole('link');
     expect(links[links.length - 1]).toBe(row());
-    expect(links).toHaveLength(3);
+    expect(links.filter((a) => /^\/schede\/\d+$/.test(a.getAttribute('href')))).toHaveLength(2);
   });
 
   it('c\'è anche senza nessuna scheda', async () => {

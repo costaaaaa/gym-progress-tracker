@@ -1230,5 +1230,15 @@
   "interests.continue": "Continua",
   "interests.skip": "Salta",
   "interests.later": "Più tardi",
-  "interests.error": "Non sono riuscito a salvare la scelta. Riprova."
+  "interests.error": "Non sono riuscito a salvare la scelta. Riprova.",
+  "plans.all_exercises": "Tutti gli esercizi",
+  "plans.all_exercises_hint": "Cerca nel catalogo",
+  "plans.exercises.search": "Cerca un esercizio",
+  "plans.exercises.all": "Tutti",
+  "plans.exercises.group_filter": "Gruppo muscolare",
+  "plans.exercises.none": "Nessun esercizio trovato",
+  "plans.exercises.count_one": "{{count}} esercizio",
+  "plans.exercises.count_other": "{{count}} esercizi",
+  "plans.exercises.load_error": "Impossibile caricare gli esercizi.",
+  "plans.exercises.retry": "Riprova"
 }

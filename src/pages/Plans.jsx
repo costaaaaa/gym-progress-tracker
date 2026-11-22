@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Box, Typography, Button, Grid, Alert, Snackbar } from '@mui/material';
+import { Box, Typography, Button, Grid, Alert, Snackbar, Card, CardActionArea } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import { useNavigate } from 'react-router-dom';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { TITLE_FONT_FAMILY } from '../utils/fonts';
 import LockedRow from '../components/LockedRow';
 import usePlans from './plans/usePlans';
 import useArrivalState from './plans/useArrivalState';
@@ -59,6 +61,27 @@ const Plans = () => {
           </Grid>
         ))}
       </Grid>
+
+      {/* In fondo anche senza schede: l'elenco di tutti gli esercizi si apre sempre da qui */}
+      <Card sx={{ mt: 2.5 }}>
+        <CardActionArea
+          component={RouterLink}
+          to="/schede/esercizi"
+          aria-labelledby="all-exercises-title"
+          aria-describedby="all-exercises-hint"
+          sx={{ minHeight: 64, p: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}
+        >
+          <Box>
+            <Typography id="all-exercises-title" sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 16 }}>
+              {t('plans.all_exercises')}
+            </Typography>
+            <Typography id="all-exercises-hint" sx={{ mt: 0.5, fontSize: 16, color: 'text.secondary' }}>
+              {t('plans.all_exercises_hint')}
+            </Typography>
+          </Box>
+          <ChevronRightIcon sx={{ color: 'text.secondary', flexShrink: 0 }} />
+        </CardActionArea>
+      </Card>
 
       <NewPlanDialog
         open={openDialog}
