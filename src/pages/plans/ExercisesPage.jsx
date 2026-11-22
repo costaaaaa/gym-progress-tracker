@@ -12,18 +12,19 @@ import { equipmentName, muscleLabel } from '../../i18n/labels';
 import { NEUTRAL_OUTLINED } from '../../utils/buttonStyles';
 import useAllExercises from './useAllExercises';
 
+// Come in ExerciseDialog: se qui cambiasse, la pagina e il dialog raggrupperebbero gli esercizi in modo diverso
+const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '');
+
 // Pagina «Tutti gli esercizi» (/schede/esercizi): si cerca e si sfoglia lo stesso elenco di ExerciseDialog (catalogo
 // ed esercizi personali), in sola lettura. Ricerca e gruppo muscolare si sommano; gli esercizi si aggiungono alle
 // schede e si creano altrove.
-// Stessa normalizzazione di ExerciseDialog
-const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '');
 
 const ExercisesPage = () => {
   const { t, i18n } = useTranslation();
   usePageMeta(t('plans.exercises.title'), t('plans.meta.description'));
   const { status, records, message, retry } = useAllExercises();
   const [query, setQuery] = useState('');
-  const [group, setGroup] = useState(''); // '' = tutti; altrimenti il muscle_group del catalogo
+  const [group, setGroup] = useState(''); // '' = tutti; altrimenti uno dei `groups`
 
   // Gruppi presenti, in ordine alfabetico dell'etichetta nella lingua corrente. Come in ExerciseDialog, «petto» e
   // «Petto» sono lo stesso gruppo (confronto con la prima lettera maiuscola)
@@ -105,8 +106,8 @@ const ExercisesPage = () => {
                     key={ex.id}
                     sx={{ px: 2.5, py: 1.5, '&:not(:last-of-type)': { borderBottom: 1, borderColor: 'divider' } }}
                   >
-                    <Typography data-testid="nome-esercizio" sx={{ fontSize: 16, fontWeight: 600, overflowWrap: 'anywhere' }}>{ex.name}</Typography>
-                    <Typography data-testid="dettaglio-esercizio" sx={{ fontSize: 16, color: 'text.secondary' }}>
+                    <Typography data-testid="exercise-name" sx={{ fontSize: 16, fontWeight: 600, overflowWrap: 'anywhere' }}>{ex.name}</Typography>
+                    <Typography data-testid="exercise-detail" sx={{ fontSize: 16, color: 'text.secondary' }}>
                       {[muscleLabel(ex.muscle_group), equipmentName(ex.equipment), personalLabel(ex)].filter(Boolean).join(' · ')}
                     </Typography>
                   </Box>

@@ -47,7 +47,7 @@ const mountLoaded = async (handler) => {
   await mount(handler);
   await screen.findByRole('list');
 };
-const nameOf = (li) => within(li).getByTestId('nome-esercizio');
+const nameOf = (li) => within(li).getByTestId('exercise-name');
 const names = () => within(screen.getByRole('list')).getAllByRole('listitem').map((li) => nameOf(li).textContent);
 const search = (text) => fireEvent.change(screen.getByRole('textbox', { name: 'Cerca un esercizio' }), { target: { value: text } });
 const chip = (name) => screen.getByRole('button', { name });
@@ -133,7 +133,7 @@ describe('elenco', () => {
     await mountLoaded();
     const row = within(screen.getByRole('list')).getAllByRole('listitem')[2];
     expect(getComputedStyle(nameOf(row)).color).toBe('rgb(26, 24, 22)');
-    expect(getComputedStyle(within(row).getByTestId('dettaglio-esercizio')).color).toBe('rgb(107, 102, 99)');
+    expect(getComputedStyle(within(row).getByTestId('exercise-detail')).color).toBe('rgb(107, 102, 99)');
   });
 });
 
@@ -295,6 +295,12 @@ describe('errore di lettura', () => {
 
   it('un 404 che non è quello del catalogo vuoto (senza messaggio JSON) resta un errore', async () => {
     await mount(() => Promise.resolve({ ok: false, status: 404, json: async () => { throw new Error('html'); } }));
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Riprova' })).toBeTruthy();
+  });
+
+  it('un 404 con `success: false` resta un errore', async () => {
+    await mount(() => Promise.resolve(json({ message: 'Errore del server.', success: false }, 404)));
     expect(await screen.findByRole('alert')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Riprova' })).toBeTruthy();
   });
