@@ -1,7 +1,7 @@
 // «Tutti gli esercizi» (/schede/esercizi) vista dall'utente: ricerca, filtro per gruppo muscolare, elenco in sola lettura
 // di catalogo ed esercizi personali, e gli stati di caricamento, vuoto ed errore. La fetch è il confine.
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import ExercisesPage from './ExercisesPage';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
