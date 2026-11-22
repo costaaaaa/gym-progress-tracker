@@ -234,6 +234,7 @@ export default function SummaryPhase({
             >
               {t('focus.share')}
             </Button>
+            <ShareCardDialog open={!!shareStats} stats={shareStats} weightUnit={weightUnit} onClose={onCloseShare} />
 
             <Button
               variant="contained" fullWidth size="large"
@@ -243,8 +244,6 @@ export default function SummaryPhase({
             >
               {t('focus.finish')}
             </Button>
-
-            <ShareCardDialog open={!!shareStats} stats={shareStats} weightUnit={weightUnit} onClose={onCloseShare} />
           </Fragment>
         ) : (
           <Fragment key="editing">
