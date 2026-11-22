@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { Fragment, useId, useState } from 'react';
 import {
   Container, Box, Typography, Button, ButtonBase, TextField, Paper, IconButton
 } from '@mui/material';
@@ -205,7 +205,8 @@ export default function SummaryPhase({
         </Paper>
 
         {savedResult ? (
-          <>
+          // Con la chiave React non riusa il pulsante «Salva allenamento» per «Condividi»: il focus perso va sul titolo
+          <Fragment key="saved">
             {rewardRows.length > 0 && (
               <Paper sx={{ bgcolor: colors.bgCard, overflow: 'hidden', mb: 3, border: `1px solid ${colors.border}` }}>
                 <Box sx={{ px: 2, py: 1.5 }}>
@@ -242,9 +243,9 @@ export default function SummaryPhase({
             </Button>
 
             <ShareCardDialog open={!!shareStats} stats={shareStats} weightUnit={weightUnit} onClose={onCloseShare} />
-          </>
+          </Fragment>
         ) : (
-          <>
+          <Fragment key="editing">
             <TextField label={t('focus.notes_label')} multiline rows={3} value={workoutNotes}
               onChange={(e) => onNotesChange(e.target.value)} fullWidth placeholder={t('focus.notes_placeholder')}
               sx={{ mb: 3, '& .MuiOutlinedInput-root': { color: colors.text, '& fieldset': { borderColor: colors.fieldBorder } }, '& .MuiInputLabel-root': { color: colors.textSecondary } }} />
@@ -259,7 +260,7 @@ export default function SummaryPhase({
             </Button>
 
             <Button variant="text" fullWidth onClick={onQuit} disabled={saving} sx={{ color: colors.textSecondary, py: 1.5 }}>{t('common.cancel')}</Button>
-          </>
+          </Fragment>
         )}
       </Container>
 
