@@ -11,6 +11,7 @@ import { AuthProvider } from './context/AuthContext';
 import LocaleSync from './i18n/LocaleSync';
 import EmailBlockGuard from './components/EmailVerification/EmailBlockGuard';
 import LegacyWorkoutsRedirect from './pages/LegacyWorkoutsRedirect';
+import DashboardRedirect from './pages/DashboardRedirect';
 
 // Lazy load Pages
 const Home = lazy(() => import('./pages/Home'));
@@ -20,6 +21,7 @@ const ExercisesPage = lazy(() => import('./pages/plans/ExercisesPage'));
 const History = lazy(() => import('./pages/History'));
 const WorkoutPage = lazy(() => import('./pages/history/WorkoutPage'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const ExercisePage = lazy(() => import('./pages/progress/ExercisePage'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
@@ -56,7 +58,8 @@ function App() {
                 <Route path="/schede/:id" element={<PlanPage />} />
                 <Route path="/storico" element={<History />} />
                 <Route path="/storico/:id" element={<WorkoutPage />} />
-                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/progressi" element={<Dashboard />} />
+                <Route path="/progressi/esercizi/:id" element={<ExercisePage />} />
                 <Route path="/profilo" element={<Profile />} />
                 <Route path="/gruppi" element={<Groups />} />
                 <Route path="/gruppi/:id" element={<GroupDetail />} />
@@ -82,8 +85,9 @@ function App() {
                 <Route path="/workouts" element={<LegacyWorkoutsRedirect />} />
                 <Route path="/workout-plans" element={<LegacyWorkoutsRedirect to="/schede" />} />
                 <Route path="/workout-history" element={<LegacyWorkoutsRedirect to="/storico" />} />
-                <Route path="/progress" element={<Navigate to="/dashboard?tab=progress" replace />} />
-                <Route path="/body-stats" element={<Navigate to="/dashboard?tab=body" replace />} />
+                <Route path="/dashboard" element={<DashboardRedirect />} />
+                <Route path="/progress" element={<Navigate to="/progressi?tab=progress" replace />} />
+                <Route path="/body-stats" element={<Navigate to="/progressi?tab=body" replace />} />
                 
                 {/* Fallback a Home per rotte non trovate */}
                 <Route path="*" element={<Navigate to="/" replace />} />

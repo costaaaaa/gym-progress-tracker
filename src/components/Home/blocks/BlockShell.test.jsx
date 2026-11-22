@@ -9,7 +9,7 @@ const realMatchMedia = window.matchMedia;
 afterEach(() => { window.matchMedia = realMatchMedia; });
 
 const shell = (props) => (
-  <BlockShell title="Peso" to="/dashboard?tab=body" status="ok" summary="78,4 kg" {...props}>
+  <BlockShell title="Peso" to="/progressi?tab=body" status="ok" summary="78,4 kg" {...props}>
     <p>Contenuto pieno</p>
   </BlockShell>
 );
@@ -18,7 +18,7 @@ describe('guscio dei blocchi', () => {
   it('piccola: titolo h2, una riga con il dato, tutta la riga è un link alla pagina del modulo, il contenuto pieno non c\'è', () => {
     renderBlock(shell());
     const link = screen.getByRole('heading', { level: 2, name: 'Peso' }).closest('a');
-    expect(link.getAttribute('href')).toBe('/dashboard?tab=body');
+    expect(link.getAttribute('href')).toBe('/progressi?tab=body');
     expect(link.textContent).toContain('78,4 kg');
     expect(screen.queryByText('Contenuto pieno')).toBeNull();
   });
@@ -39,7 +39,7 @@ describe('guscio dei blocchi', () => {
   it('grande: la riga in testa resta il link e sotto c\'è il contenuto pieno', () => {
     renderBlock(shell({ large: true }));
     expect(screen.getByText('Contenuto pieno')).toBeTruthy();
-    expect(screen.getByRole('link').getAttribute('href')).toBe('/dashboard?tab=body');
+    expect(screen.getByRole('link').getAttribute('href')).toBe('/progressi?tab=body');
     expect(screen.getByRole('link').textContent).not.toContain('Contenuto pieno');
   });
 
@@ -70,7 +70,7 @@ describe('guscio dei blocchi', () => {
 
   it('errore: titolo e link restano, la riga dice che i dati non sono disponibili, anche in grande', () => {
     renderBlock(shell({ status: 'error', summary: 'NO', large: true }));
-    expect(screen.getByRole('link').getAttribute('href')).toBe('/dashboard?tab=body');
+    expect(screen.getByRole('link').getAttribute('href')).toBe('/progressi?tab=body');
     expect(screen.getByText('Dati non disponibili al momento.')).toBeTruthy();
     expect(screen.queryByText('NO')).toBeNull();
     expect(screen.queryByText('Contenuto pieno')).toBeNull();
@@ -79,7 +79,7 @@ describe('guscio dei blocchi', () => {
   it('il tocco porta alla pagina del modulo', () => {
     renderBlock(shell());
     fireEvent.click(screen.getByRole('link'));
-    expect(screen.getByTestId('where').textContent).toBe('/dashboard?tab=body');
+    expect(screen.getByTestId('where').textContent).toBe('/progressi?tab=body');
   });
 
 });

@@ -7,8 +7,8 @@ import { saveModules } from '../api/modules';
 // e il server continua ad aggiornarli. Il modulo `ai` esiste nell'account (salvato e restituito dalle API) ma qui
 // non ha una riga.
 export const MODULE_PATHS = {
-  body: '/dashboard?tab=body',
-  recovery: '/dashboard?tab=muscles',
+  body: '/progressi?tab=body',
+  recovery: '/progressi?tab=muscles',
   levels: '/profilo',
   groups: '/gruppi',
 };

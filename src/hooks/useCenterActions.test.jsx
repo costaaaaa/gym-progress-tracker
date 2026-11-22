@@ -33,7 +33,7 @@ describe('azioni del pulsante centrale', () => {
     const [start, record, measure] = result.current;
     expect(start).toMatchObject({ to: '/focus', label: 'Inizia allenamento', shortLabel: 'Inizia' });
     expect(record).toMatchObject({ to: '/storico', state: { openRecord: true }, label: 'Registra allenamento passato', shortLabel: 'Registra' });
-    expect(measure).toMatchObject({ to: '/dashboard?tab=body', state: { openMeasure: true }, label: 'Nuova misura', shortLabel: 'Misura' });
+    expect(measure).toMatchObject({ to: '/progressi?tab=body', state: { openMeasure: true }, label: 'Nuova misura', shortLabel: 'Misura' });
     for (const item of result.current) expect(item.Icon).toBeTruthy();
   });
 

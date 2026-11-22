@@ -86,7 +86,7 @@ describe('righe', () => {
   it('«Apri» c\'è solo a modulo attivo e porta alla pagina di oggi del modulo', () => {
     mount({ ...ALL, recovery: false });
     const link = (row) => within(screen.getAllByRole('listitem')[row]).queryByRole('link', { name: /^Apri/ });
-    expect(link(0).getAttribute('href')).toBe('/dashboard?tab=body');
+    expect(link(0).getAttribute('href')).toBe('/progressi?tab=body');
     expect(link(1)).toBeNull();
     expect(link(2).getAttribute('href')).toBe('/profilo');
     expect(link(3).getAttribute('href')).toBe('/gruppi');

@@ -165,6 +165,15 @@ const HISTORY = Array.from({ length: 12 }, (_, i) => ({
   ],
 }));
 
+// Pagina di un esercizio: 12 sessioni di panca in cui il carico sale a ogni allenamento (la più recente è la più pesante),
+// quindi il grafico sale e ogni sessione dopo la prima è un record. Stessi giorni e stessi altri esercizi di HISTORY.
+const SALITA = HISTORY.map((workout, i) => ({
+  ...workout,
+  exercises: workout.exercises.map((ex) => (ex.exercise_id === 3
+    ? { ...ex, sets: [set(1, round(55 + (11 - i) * 1.25), 8), set(2, round(60 + (11 - i) * 1.25), 8), set(3, round(62.5 + (11 - i) * 1.25), 6)] }
+    : ex)),
+}));
+
 // Storico: due mesi (ottobre e settembre). `250` ha il giorno della scheda e un record vero (la panca più pesante
 // di tutti), `249` non ha il giorno della scheda, `248` non ha la durata; gli altri due sono i più vecchi
 const storicoWorkout = (id, offset, time, day, duration, exercises) => ({
@@ -274,7 +283,7 @@ const checkAvailability = ({ codice }) => {
 };
 
 // Utenti dei dati finti: `attivo` è l'utente di tutte le pagine, `un-allenamento` cambia solo lo storico
-// (un solo allenamento: ogni esercizio è "Nuovo" nei Progressi). `nuovo` risponde come un account vuoto
+// (un solo allenamento: ogni esercizio è "Nuovo" nei Progressi), `progressi` anche (la panca sale a ogni allenamento). `nuovo` risponde come un account vuoto
 // (livello 1, nessuna streak, nessun gruppo, muscoli mai allenati). È scritto per esteso e non parte da
 // `attivo`; prende solo l'elenco dei traguardi da `PROFILE_ATTIVO`, tutti bloccati.
 const PROFILE_ATTIVO = {
@@ -311,6 +320,7 @@ const MUSCLI = ['petto', 'schiena', 'spalle', 'bicipiti', 'tricipiti', 'addome',
 const UTENTI = {
   attivo: ATTIVO,
   'un-allenamento': { ...ATTIVO, history: HISTORY.slice(0, 1) },
+  progressi: { ...ATTIVO, history: SALITA },
   storico: { ...ATTIVO, history: STORICO },
   nuovo: {
     history: [],
@@ -456,9 +466,11 @@ const SHOT_LIST = [
   ['landing', '/', { loggedIn: false }],
   ['home', '/', { loggedIn: true }],
   ['home-nuovo', '/', { loggedIn: true, utente: 'nuovo' }],
-  ['progressi', '/dashboard?tab=progress', { loggedIn: true }],
-  ['progressi-nuovo', '/dashboard?tab=progress', { loggedIn: true, utente: 'un-allenamento' }],
-  ['misure', '/dashboard?tab=body', { loggedIn: true }],
+  ['progressi', '/progressi?tab=progress', { loggedIn: true }],
+  ['progressi-nuovo', '/progressi?tab=progress', { loggedIn: true, utente: 'un-allenamento' }],
+  ['misure', '/progressi?tab=body', { loggedIn: true }],
+  // Pagina di un esercizio (la panca): 12 sessioni, grafico in salita, record e cronologia
+  ['progressi-esercizio', '/progressi/esercizi/3', { loggedIn: true, utente: 'progressi', ready: 'Panca piana' }],
   ['account', '/account', { loggedIn: true }],
   ['profilo', '/profilo', { loggedIn: true }],
   ['gruppi', '/gruppi', { loggedIn: true }],
@@ -619,7 +631,7 @@ for (const vp of viewports) {
     });
 
     // Piano Gratis: schermate con i limiti, le righe con lucchetto e la sola lettura (account `gratis`)
-    for (const [name, url] of [['home-gratis', '/'], ['muscoli-gratis', '/dashboard?tab=muscles']]) {
+    for (const [name, url] of [['home-gratis', '/'], ['muscoli-gratis', '/progressi?tab=muscles']]) {
       if (!want(name)) continue;
       await attempt(tag, name, async () => {
         const { ctx, page } = await openPage(vp, theme, { loggedIn: true, gratis: true }, tag);

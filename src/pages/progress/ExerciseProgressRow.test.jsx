@@ -1,9 +1,10 @@
-// Card di un esercizio in Progressi: la sparkline segue le date delle sessioni.
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import ExerciseProgressRow, { formatValue } from './ExerciseProgressRow';
-import { STATUS } from '../utils/progressOverview';
-import { polylineX } from '../test/polyline';
+// Riga di un esercizio in Progressi: collegamento alla sua pagina, la sparkline segue le date delle sessioni.
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import ExerciseProgressRow from './ExerciseProgressRow';
+import { STATUS } from '../../utils/progressOverview';
+import { polylineX } from '../../test/polyline';
 
 const session = (date, value) => ({ id: date, date, value });
 
@@ -20,7 +21,24 @@ const item = (sessions) => ({
   recentPR: false,
 });
 
+// La riga è un collegamento: serve un router
+const wrapper = ({ children }) => <MemoryRouter><ul>{children}</ul></MemoryRouter>;
+
 const sparklineX = (container) => polylineX(container.querySelector('polyline'));
+
+describe('collegamento e stella', () => {
+  it('la riga è un elemento di elenco con un collegamento a /progressi/esercizi/<id>, e la stella è un pulsante a parte', () => {
+    const onToggle = vi.fn();
+    render(<ExerciseProgressRow item={item([session('2026-10-01 18:00:00', 80), session('2026-10-08 18:00:00', 90)])} favorite={false} onToggleFavorite={onToggle} />, { wrapper });
+    const link = screen.getByRole('link');
+    expect(link.getAttribute('href')).toBe('/progressi/esercizi/bench');
+    expect(screen.getByRole('listitem')).toBeTruthy();
+    const star = screen.getByRole('button', { name: 'Aggiungi ai preferiti' });
+    expect(link.contains(star)).toBe(false);
+    fireEvent.click(star);
+    expect(onToggle).toHaveBeenCalledWith('bench');
+  });
+});
 
 describe('sparkline', () => {
   it('distanzia le sessioni secondo la data, dalla prima all\'ultima', () => {
@@ -31,7 +49,8 @@ describe('sparkline', () => {
       session('2026-10-11 18:00:00', 85),
     ];
     const { container } = render(
-      <ExerciseProgressRow item={item(sessions)} favorite={false} onToggleFavorite={() => {}} onOpen={() => {}} />,
+      <ExerciseProgressRow item={item(sessions)} favorite={false} onToggleFavorite={() => {}} />,
+      { wrapper },
     );
     expect(sparklineX(container)).toEqual([0, 12, 120]);
   });
@@ -44,7 +63,8 @@ describe('sparkline', () => {
       session('2026-10-02 10:00:00', 85),
     ];
     const { container } = render(
-      <ExerciseProgressRow item={item(sessions)} favorite={false} onToggleFavorite={() => {}} onOpen={() => {}} />,
+      <ExerciseProgressRow item={item(sessions)} favorite={false} onToggleFavorite={() => {}} />,
+      { wrapper },
     );
     expect(sparklineX(container)).toEqual([0, 40, 120]);
   });
@@ -57,13 +77,14 @@ describe('nota "più avanti nella seduta" (#26)', () => {
     deltaPct: -10,
     laterInSession,
   });
-  const renderRow = (it) => render(<ExerciseProgressRow item={it} favorite={false} onToggleFavorite={() => {}} onOpen={() => {}} />);
+  const renderRow = (it) => render(<ExerciseProgressRow item={it} favorite={false} onToggleFavorite={() => {}} />, { wrapper });
 
   it('il calo coincide con l\'esercizio fatto più tardi: la nota è una riga a sé, il delta resta com\'era', () => {
     renderRow(declining(true));
     expect(screen.getByText('▼ 10%')).toBeTruthy();
     const note = screen.getByText('più avanti nella seduta');
-    expect(note.closest('[data-row-badge]')).toBeNull();
+    // sta nel collegamento, accanto al blocco del valore, non dentro la riga della variazione
+    expect(note.parentElement).toBe(screen.getByRole('link'));
   });
 
   it('senza il flag resta solo il ▼', () => {
@@ -73,21 +94,10 @@ describe('nota "più avanti nella seduta" (#26)', () => {
   });
 });
 
-describe('formatValue', () => {
-  it('il 1RM stimato ha al massimo un decimale, come prima', () => {
-    expect(formatValue((k) => k, 'oneRM', 101.33)).toBe('101,3\u00a0kg');
-  });
-});
-
 describe('unità di peso', () => {
-  it('formatValue: 1RM stimato in lb al quarto di libbra', () => {
-    expect(formatValue((k) => k, 'oneRM', 100, 'lb')).toBe('220,5\u00a0lb');
-    expect(formatValue((k) => k, 'oneRM', 101.33, 'kg')).toBe('101,3\u00a0kg');
-  });
-
   it('la riga mostra il valore nell\'unità passata', () => {
     const sessions = [session('2026-10-01 18:00:00', 80), session('2026-10-08 18:00:00', 100)];
-    render(<ExerciseProgressRow item={item(sessions)} weightUnit="lb" favorite={false} onToggleFavorite={() => {}} onOpen={() => {}} />);
+    render(<ExerciseProgressRow item={item(sessions)} weightUnit="lb" favorite={false} onToggleFavorite={() => {}} />, { wrapper });
     expect(screen.getByText('220,5 lb')).toBeTruthy();
     expect(screen.queryByText(/kg/)).toBeNull();
   });

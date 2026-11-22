@@ -14,7 +14,7 @@ const RecoveryBlock = ({ status, recovery, detail, large = false }) => {
   return (
     <BlockShell
       title={t('home.block.recovery_title')}
-      to="/dashboard?tab=muscles"
+      to="/progressi?tab=muscles"
       status={status}
       summary={parts.length > 0 ? parts.join(' · ') : t('home.block.recovery_none')}
       large={large}

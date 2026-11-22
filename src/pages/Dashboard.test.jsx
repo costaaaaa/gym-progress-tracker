@@ -1,4 +1,4 @@
-// Pagina Progressi (indirizzo /dashboard) vista dall'utente: titolo unico sopra i tab, tab attivo in inchiostro.
+// Pagina Progressi (indirizzo /progressi) vista dall'utente: titolo unico sopra i tab, tab attivo in inchiostro.
 // Colori del tema chiaro scritti a mano: text.primary #1a1816, text.secondary #6b6663.
 import { useState } from 'react';
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
@@ -36,7 +36,7 @@ afterEach(() => vi.unstubAllGlobals());
 const mount = async () => {
   render(
     <ThemeModeProvider>
-      <MemoryRouter initialEntries={['/dashboard']}><Dashboard /></MemoryRouter>
+      <MemoryRouter initialEntries={['/progressi']}><Dashboard /></MemoryRouter>
     </ThemeModeProvider>,
   );
   await screen.findByText(/Nessun dato di allenamento/);
@@ -106,7 +106,7 @@ describe('tab Muscoli', () => {
     )));
     render(
       <ThemeModeProvider>
-        <MemoryRouter initialEntries={['/dashboard?tab=muscles']}><Dashboard /></MemoryRouter>
+        <MemoryRouter initialEntries={['/progressi?tab=muscles']}><Dashboard /></MemoryRouter>
       </ThemeModeProvider>,
     );
     const tab = await screen.findByRole('tab', { name: 'Muscoli' });
@@ -121,7 +121,7 @@ describe('tab sconosciuta', () => {
     tabValues.length = 0;
     render(
       <ThemeModeProvider>
-        <MemoryRouter initialEntries={['/dashboard?tab=foo']}><Dashboard /></MemoryRouter>
+        <MemoryRouter initialEntries={['/progressi?tab=foo']}><Dashboard /></MemoryRouter>
       </ThemeModeProvider>,
     );
     const tab = await screen.findByRole('tab', { name: 'Esercizi' });
@@ -153,7 +153,7 @@ describe('moduli non attivi', () => {
     auth.value = { isLoggedIn: true, loading: false, user, updateUser: (patch) => setUser((u) => ({ ...u, ...patch })) };
     return <MemoryRouter initialEntries={[path]}><Dashboard /></MemoryRouter>;
   };
-  const open = (modules, path = '/dashboard') => render(<ThemeModeProvider><Switchable modules={modules} path={path} /></ThemeModeProvider>);
+  const open = (modules, path = '/progressi') => render(<ThemeModeProvider><Switchable modules={modules} path={path} /></ThemeModeProvider>);
   const tabNames = () => screen.getAllByRole('tab').map((tab) => tab.textContent);
 
   it('con tutto attivo le tab sono Esercizi · Muscoli · Misure', async () => {
@@ -187,7 +187,7 @@ describe('moduli non attivi', () => {
   });
 
   it('?tab=body con Misure non attivo: «Il modulo Misure non è attivo» con «Attiva», nessuna tab selezionata, nessun errore', async () => {
-    open({ ...ALL, body: false }, '/dashboard?tab=body');
+    open({ ...ALL, body: false }, '/progressi?tab=body');
     expect(await screen.findByRole('heading', { level: 2, name: 'Il modulo Misure non è attivo' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Attiva' })).toBeTruthy();
     expect(tabNames()).toEqual(['Esercizi', 'Muscoli']);
@@ -197,7 +197,7 @@ describe('moduli non attivi', () => {
   });
 
   it('?tab=muscles con Recupero non attivo: «Il modulo Recupero e serie per muscolo non è attivo»', async () => {
-    open({ ...ALL, recovery: false }, '/dashboard?tab=muscles');
+    open({ ...ALL, recovery: false }, '/progressi?tab=muscles');
     expect(await screen.findByRole('heading', { name: 'Il modulo Recupero e serie per muscolo non è attivo' })).toBeTruthy();
   });
 
@@ -205,7 +205,7 @@ describe('moduli non attivi', () => {
     vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
       String(url).includes('update_settings.php') ? json({ success: true, modules: ALL }) : json({ records: [] }),
     )));
-    open({ ...ALL, body: false }, '/dashboard?tab=body');
+    open({ ...ALL, body: false }, '/progressi?tab=body');
     fireEvent.click(await screen.findByRole('button', { name: 'Attiva' }));
     const tab = await screen.findByRole('tab', { name: 'Misure' });
     expect(tab.getAttribute('aria-selected')).toBe('true');
@@ -221,7 +221,7 @@ describe('«Nuova misura» dal ventaglio', () => {
     vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(json({ records: [], consent_required: consentRequired }))));
     render(
       <ThemeModeProvider>
-        <MemoryRouter initialEntries={[{ pathname: '/dashboard', search: '?tab=body', state }]}><Probe /><Dashboard /></MemoryRouter>
+        <MemoryRouter initialEntries={[{ pathname: '/progressi', search: '?tab=body', state }]}><Probe /><Dashboard /></MemoryRouter>
       </ThemeModeProvider>,
     );
   };
@@ -241,10 +241,10 @@ describe('«Nuova misura» dal ventaglio', () => {
     vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(json({ records: [], consent_required: false }))));
     render(
       <ThemeModeProvider>
-        <MemoryRouter initialEntries={[{ pathname: '/dashboard', search: '?tab=body', state: { openMeasure: true } }]}>
+        <MemoryRouter initialEntries={[{ pathname: '/progressi', search: '?tab=body', state: { openMeasure: true } }]}>
           <Nav />
           <Routes>
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/progressi" element={<Dashboard />} />
             <Route path="/altrove" element={<p>Altra pagina</p>} />
           </Routes>
         </MemoryRouter>

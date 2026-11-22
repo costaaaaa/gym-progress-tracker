@@ -13,7 +13,7 @@ import { ThemeModeProvider } from '../../context/ThemeModeContext';
 
 const start = { key: 'start', main: true, label: 'Inizia allenamento', shortLabel: 'Inizia', Icon: PlayArrowIcon, to: '/focus' };
 const record = { key: 'record', label: 'Registra allenamento passato', shortLabel: 'Registra', Icon: EditCalendarOutlinedIcon, to: '/storico', state: { openRecord: true } };
-const measure = { key: 'measure', label: 'Nuova misura', shortLabel: 'Misura', Icon: StraightenIcon, to: '/dashboard?tab=body' };
+const measure = { key: 'measure', label: 'Nuova misura', shortLabel: 'Misura', Icon: StraightenIcon, to: '/progressi?tab=body' };
 // Voci finte: il ventaglio le dispone senza conoscerle
 const cardio = { key: 'cardio', label: 'Cardio', shortLabel: 'Cardio', Icon: DirectionsRunIcon, to: '/cardio' };
 const coach = { key: 'coach', label: 'Chiedi al Coach', shortLabel: 'Coach', Icon: AutoAwesomeOutlinedIcon, to: '/coach' };

@@ -64,7 +64,7 @@ export const useCenterActions = () => {
       label: t('nav.center.measure'),
       shortLabel: t('nav.center.measure_short'),
       Icon: StraightenIcon,
-      to: '/dashboard?tab=body',
+      to: '/progressi?tab=body',
       state: { openMeasure: true },
     },
   ].filter(Boolean).concat(extra).slice(0, MAX_ACTIONS);

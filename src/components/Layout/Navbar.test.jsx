@@ -154,15 +154,20 @@ describe('barra in alto: desktop', () => {
   it('le voci sono Home, Schede, Storico, Progressi, senza Gruppi anche a modulo attivo', () => {
     mount({ username: 'atleta_demo', modules: { groups: true } });
     const items = ['Home', 'Schede', 'Storico', 'Progressi'].map((name) => screen.getByRole('link', { name }).getAttribute('href'));
-    expect(items).toEqual(['/', '/schede', '/storico', '/dashboard']);
+    expect(items).toEqual(['/', '/schede', '/storico', '/progressi']);
     expect(screen.queryByRole('link', { name: 'Gruppi' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Allenamenti' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Dashboard' })).toBeNull();
   });
 
-  it.each([['/', 'Home'], ['/schede', 'Schede'], ['/storico', 'Storico'], ['/dashboard', 'Progressi']])('su %s la voce attiva è «%s»', (path, name) => {
+  it.each([['/', 'Home'], ['/schede', 'Schede'], ['/storico', 'Storico'], ['/progressi', 'Progressi']])('su %s la voce attiva è «%s»', (path, name) => {
     mount(undefined, path);
     expect(currentLinks()).toEqual([name]);
+  });
+
+  it('su un esercizio (/progressi/esercizi/<id>) la voce «Progressi» resta attiva, e solo quella', () => {
+    mount(undefined, '/progressi/esercizi/3');
+    expect(currentLinks()).toEqual(['Progressi']);
   });
 
   it('su una scheda (/schede/<id>) la voce «Schede» resta attiva, e solo quella', () => {
@@ -190,7 +195,7 @@ describe('barra in alto: desktop', () => {
     expect(more.getAttribute('aria-expanded')).toBe('true');
     const items = screen.getAllByRole('menuitem');
     expect(items.map((item) => [item.textContent, item.getAttribute('href')])).toEqual([
-      ['Registra allenamento passato', '/storico'], ['Nuova misura', '/dashboard?tab=body'],
+      ['Registra allenamento passato', '/storico'], ['Nuova misura', '/progressi?tab=body'],
     ]);
   });
 

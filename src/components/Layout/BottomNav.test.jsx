@@ -54,7 +54,7 @@ describe('barra mobile: voci', () => {
     renderNav();
     const nav = screen.getByRole('navigation', { name: 'Navigazione principale' });
     expect([...nav.querySelectorAll('a')].map((a) => [a.textContent, a.getAttribute('href')])).toEqual([
-      ['Home', '/'], ['Schede', '/schede'], ['Storico', '/storico'], ['Progressi', '/dashboard'],
+      ['Home', '/'], ['Schede', '/schede'], ['Storico', '/storico'], ['Progressi', '/progressi'],
     ]);
     expect(centerButton()).toBeTruthy();
   });
@@ -69,10 +69,15 @@ describe('barra mobile: voci', () => {
     ['/', 'Home'],
     ['/schede', 'Schede'],
     ['/storico', 'Storico'],
-    ['/dashboard', 'Progressi'],
+    ['/progressi', 'Progressi'],
   ])('su %s la voce attiva è «%s», e solo quella', (path, name) => {
     renderNav('light', path);
     expect(current()).toEqual([name]);
+  });
+
+  it('su un esercizio (/progressi/esercizi/<id>) la voce «Progressi» resta attiva, e solo quella', () => {
+    renderNav('light', '/progressi/esercizi/3');
+    expect(current()).toEqual(['Progressi']);
   });
 
   it('su una scheda (/schede/<id>) la voce «Schede» resta attiva, e solo quella', () => {
