@@ -740,6 +740,9 @@ describe('colori di Focus: rosso solo per ciò che è distruttivo', () => {
   });
 });
 
+// Riga di «Record di oggi»: nome e testo del record (due elementi) con uno spazio in mezzo, spazi stretti come spazi normali
+const recordLine = (li) => [...li.lastElementChild.children].map((el) => el.textContent).join(' ').replace(/\s/g, ' ');
+
 describe('riepilogo', () => {
   const toSummary = async () => {
     await startDay('Push');
@@ -2551,7 +2554,7 @@ describe('pallini e «Serie fatte» (F3)', () => {
     it('dopo la correzione i record di peso e di volume si aggiornano e il salvataggio porta i valori corretti', async () => {
       responses['workout_history/read.php'] = () => json({ records: history });
       await goSummary(summaryDraft(70));
-      const rowsToday = () => within(screen.getByRole('heading', { name: 'Record di oggi' }).closest('.MuiPaper-root')).getAllByRole('listitem').map((li) => li.textContent.replace(/\s/g, ' '));
+      const rowsToday = () => within(screen.getByRole('heading', { name: 'Record di oggi' }).closest('.MuiPaper-root')).getAllByRole('listitem').map(recordLine);
       expect(rowsToday()).toEqual(['Panca piana Record di peso: 70 kg × 8']);
       fireEvent.click(chip('Correggi Panca piana, Serie 1: 70 kg × 8'));
       await advance(500);
@@ -2848,7 +2851,7 @@ describe('riepilogo di fine allenamento (F5)', () => {
   };
   const recordsBox = () => screen.queryByRole('heading', { level: 2, name: /^(Record di oggi|Today's records)$/ })?.closest('.MuiPaper-root') ?? null;
   // Testo di una riga del riquadro con gli spazi stretti di formatSetText come spazi normali
-  const recordRows = () => within(recordsBox()).getAllByRole('listitem').map((li) => li.textContent.replace(/\s/g, ' '));
+  const recordRows = () => within(recordsBox()).getAllByRole('listitem').map(recordLine);
 
   describe('«Record di oggi»', () => {
     it('con un record di peso: titolo h2, e una riga con il nome e «Record di peso: 80 kg × 8»', async () => {
@@ -2867,6 +2870,22 @@ describe('riepilogo di fine allenamento (F5)', () => {
       expect(within(recordsBox()).queryAllByRole('button')).toEqual([]);
       expect(within(recordsBox()).getByText('Panca piana').closest('[aria-hidden]')).toBeNull();
       expect(recordsBox().querySelector('[data-testid="EmojiEventsIcon"]').closest('[aria-hidden="true"]')).not.toBeNull();
+    });
+
+    it('ogni riga ha il nome e il testo del record su due righe, ciascuno nel suo elemento a blocco', async () => {
+      lastTime([{ weight: 60, reps: '8' }]);
+      await goSummary([[80, '8']]);
+      const [li] = within(recordsBox()).getAllByRole('listitem');
+      const name = within(li).getByText('Panca piana');
+      const what = within(li).getByText('Record di peso: 80 kg × 8', { normalizer: (text) => text.replace(/\s/g, ' ').trim() });
+      expect(name).not.toBe(what);
+      expect(name.contains(what) || what.contains(name)).toBe(false);
+      expect(getComputedStyle(name).display).toBe('block');
+      expect(getComputedStyle(what).display).toBe('block');
+      expect(name.parentElement).toBe(what.parentElement);
+      expect(name.compareDocumentPosition(what) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(getComputedStyle(name).fontWeight).toBe('600');
+      expect(getComputedStyle(what).color).toBe(GREY);
     });
 
     it('massimale stimato: la serie più leggera ma più lunga batte il massimale senza battere il peso', async () => {

@@ -141,13 +141,14 @@ export default function SummaryPhase({
             </Box>
             <Box component="ul" role="list" sx={{ listStyle: 'none', m: 0, p: 0 }}>
               {records.map((record, i) => (
-                <Box component="li" key={i} sx={{ px: 2, py: 1.5, borderTop: `1px solid ${colors.border}`, display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', columnGap: 1 }}>
-                  <TrophyIcon aria-hidden="true" sx={{ fontSize: 18, color: colors.warningText, alignSelf: 'center' }} />
-                  <Typography component="span" sx={{ fontWeight: 600, color: colors.text, minWidth: 0, overflowWrap: 'anywhere' }}>{record.name}</Typography>
-                  {' '}
-                  <Typography component="span" variant="body2" sx={{ color: colors.textSecondary, minWidth: 0, overflowWrap: 'anywhere' }}>
-                    {record.type === 'volume' ? t('focus.best_volume') : t(RECORD_KEYS[record.type], { set: formatSetText(record.weight, record.reps, weightUnit), reps: record.reps })}
-                  </Typography>
+                <Box component="li" key={i} sx={{ px: 2, py: 1.5, borderTop: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <TrophyIcon aria-hidden="true" sx={{ fontSize: 18, color: colors.warningText }} />
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography component="div" sx={{ fontWeight: 600, color: colors.text, overflowWrap: 'anywhere' }}>{record.name}</Typography>
+                    <Typography component="div" variant="body2" sx={{ color: colors.textSecondary, overflowWrap: 'anywhere' }}>
+                      {record.type === 'volume' ? t('focus.best_volume') : t(RECORD_KEYS[record.type], { set: formatSetText(record.weight, record.reps, weightUnit), reps: record.reps })}
+                    </Typography>
+                  </Box>
                 </Box>
               ))}
             </Box>
