@@ -1,0 +1,86 @@
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../context/AuthContext';
+import { API_BASE_URL } from '../../config';
+
+// I dati dell'account, dalla lettura di user/read.php: `account` (la risposta del server; null finché non arriva o se la
+// lettura fallisce), `joinDate` (data di iscrizione; oggi se il server non la manda) e `loading`. Se la lettura fallisce
+// l'errore va a notify(message, severity). Si rilegge quando cambia l'utente di AuthContext. Non sa nulla di come le
+// pagine mostrano i dati.
+export default function useAccount(notify) {
+  const { user, emailState } = useAuth();
+  const { t } = useTranslation();
+  const [account, setAccount] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [joinDate, setJoinDate] = useState(null);
+  // notify cambia a ogni disegno di chi chiama: la lettura non deve ripartire per questo
+  const notifyRef = useRef(notify);
+  notifyRef.current = notify;
+
+  // Funzione per recuperare i dati completi dell'utente
+  const fetchUserData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}api/user/read.php`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(t('account.load_error'));
+      }
+
+      const userDetails = await response.json();
+
+      setAccount({ ...userDetails, is_admin: userDetails.is_admin === true });
+
+      if (userDetails.created_at) {
+        setJoinDate(new Date(userDetails.created_at));
+      } else {
+        setJoinDate(new Date());
+      }
+    } catch (error) {
+      console.error('Errore nel recupero dei dati utente:', error);
+      notifyRef.current(t('account.load_error'), 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Caricamento dei dati dell'utente al mount del componente
+  useEffect(() => {
+    if (user) {
+      fetchUserData();
+    } else {
+      // Se l'utente non è autenticato, imposta loading a false per evitare il caricamento infinito
+      setLoading(false);
+    }
+  }, [user, fetchUserData]);
+
+  // Il livello cambia con la conferma dell'email (codice di registrazione che parte) e con l'indirizzo che diventa
+  // quello dell'account: quando lo stato dell'email cambia in questo modo si rilegge solo il livello, senza far
+  // tornare la pagina in caricamento
+  // (Resta una seconda lettura di read.php a ogni conferma: il livello non sta in AuthContext in questa PR.)
+  const lastEmailState = useRef(emailState);
+  // Solo l'ultima lettura scrive; allo smontaggio il contatore avanza e una risposta in volo non scrive più
+  const tierRead = useRef(0);
+  useEffect(() => () => { tierRead.current += 1; }, []);
+  useEffect(() => {
+    const before = lastEmailState.current;
+    lastEmailState.current = emailState;
+    if (!before || !emailState || !user) return;
+    const confirmed = !before.verified && emailState.verified;
+    const addressChanged = before.email !== emailState.email;
+    if (!confirmed && !addressChanged) return;
+    const mine = ++tierRead.current;
+    fetch(`${API_BASE_URL}api/user/read.php`, { method: 'GET', credentials: 'include' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((details) => {
+        if (!details?.success || mine !== tierRead.current) return;
+        setAccount((prev) => (prev ? { ...prev, tier: details.tier, tier_last_day: details.tier_last_day, signup_code: details.signup_code } : prev));
+      })
+      .catch((error) => console.error('Errore nel recupero del livello:', error));
+  }, [emailState, user]);
+
+  return { account, joinDate, loading };
+}
