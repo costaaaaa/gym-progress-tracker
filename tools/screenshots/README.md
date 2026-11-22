@@ -8,7 +8,7 @@ Il kit è separato dall'app: ha un suo `package.json` e non tocca quello di `gym
 
 ## Script
 
-- `shots.mjs <cartella> [porta]`: 17 pagine, «Tutti gli esercizi» (2 immagini), la pagina di una scheda in modifica con i dialog dell'editor
+- `shots.mjs <cartella> [porta]`: 18 pagine, «Tutti gli esercizi» (2 immagini), la pagina di una scheda in modifica con i dialog dell'editor
   delle serie (4 immagini) e le 5 schermate del Focus, con 390 e 1440 px di larghezza e tema
   chiaro/scuro. Ogni schermata usa un contesto browser nuovo con orologio fisso
   (2026-10-23 10:00, Europe/Rome), `reducedMotion: reduce`, animazioni CSS azzerate, font pronti
@@ -27,7 +27,9 @@ Pagine (file `<nome>_<390|1440>_<light|dark>.png`): `landing` (ospite), `home`, 
 `allenamenti-piani-pagina-non-attiva` (con «Rendi attiva»), `allenamenti-piani-pagina-ricche` (giorni con più di 4 esercizi, giorno vuoto),
 `allenamenti-piani-pagina-ricche-modifica` (la stessa in modifica), `allenamenti-piani-giorni` (pagina in modifica con tutti i comandi),
 `allenamenti-piani-aggiungi-compatto`, `allenamenti-piani-aggiungi-lista`,
-`allenamenti-piani-modifica-lista`, `allenamenti-esercizi` (pagina «Tutti gli esercizi», 13 esercizi con gli attrezzi e uno personale in revisione), `allenamenti-esercizi-cerca` (con «squat» cercato), `allenamenti-cronologia`, `admin` (utente con `is_admin`),
+`allenamenti-piani-modifica-lista`, `allenamenti-esercizi` (pagina «Tutti gli esercizi», 13 esercizi con gli attrezzi e uno personale in revisione), `allenamenti-esercizi-cerca` (con «squat» cercato),
+`allenamenti-cronologia` (elenco con due mesi: un allenamento con giorno della scheda e record, uno senza giorno, uno senza durata),
+`storico-allenamento` (pagina di un allenamento), `storico-allenamento-elimina` (la stessa con la conferma aperta), `admin` (utente con `is_admin`),
 `focus-scelta-giorno`, `focus-allenamento`, `focus-recupero`, `focus-riscaldamento`, `focus-riepilogo`.
 
 Piano Gratis (account finto con `tier: free`, tetti di 2 schede e 4 giorni, risposta `dashboard` ridotta):
@@ -39,7 +41,7 @@ Piano Gratis (account finto con `tier: free`, tetti di 2 schede e 4 giorni, risp
 Barra di navigazione: `barra-ventaglio-2` (senza modulo Misure: due voci), `barra-ventaglio-3` (tre voci),
 `barra-ventaglio-riprendi` (con un allenamento in corso: «Riprendi»), tutte con il bottone centrale aperto e
 solo sotto i 900 px; `barra-desktop-menu` (menu «Altre azioni» del bottone diviso, solo 1440). Le pagine
-Schede e Storico stanno su `/schede` e `/storico`; la pagina di una scheda su `/schede/<id>`.
+Schede e Storico stanno su `/schede` e `/storico`; la pagina di una scheda su `/schede/<id>`, quella di un allenamento su `/storico/<id>`.
 
 ## Prerequisiti
 

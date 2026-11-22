@@ -75,8 +75,8 @@ const BottomNav = () => {
   if (location.pathname === '/focus') return null;
 
   const isActive = (path) => location.pathname === path;
-  // Le schede hanno una pagina ciascuna: «Schede» resta attiva anche su /schede/<id>
-  const plansActive = isActive('/schede') || location.pathname.startsWith('/schede/');
+  // Schede e allenamenti hanno una pagina ciascuno: «Schede» e «Storico» restano attive anche su /schede/<id> e /storico/<id>
+  const isUnder = (path) => isActive(path) || location.pathname.startsWith(`${path}/`);
 
   return (
     <Box
@@ -98,7 +98,7 @@ const BottomNav = () => {
       }}
     >
       <NavItem path="/" label={t('nav.home')} Icon={HomeOutlinedIcon} active={isActive('/')} />
-      <NavItem path="/schede" label={t('nav.plans')} Icon={CalendarTodayOutlinedIcon} active={plansActive} />
+      <NavItem path="/schede" label={t('nav.plans')} Icon={CalendarTodayOutlinedIcon} active={isUnder('/schede')} />
 
       <ButtonBase
         ref={centerRef}
@@ -129,7 +129,7 @@ const BottomNav = () => {
         </Box>
       </ButtonBase>
 
-      <NavItem path="/storico" label={t('nav.history')} Icon={HistoryIcon} active={isActive('/storico')} />
+      <NavItem path="/storico" label={t('nav.history')} Icon={HistoryIcon} active={isUnder('/storico')} />
       <NavItem path="/dashboard" label={t('nav.progress')} Icon={EqualizerIcon} active={isActive('/dashboard')} />
 
       <CenterFan open={fanOpen} onClose={() => setFanOpen(false)} items={actions} />
