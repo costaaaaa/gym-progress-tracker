@@ -98,17 +98,19 @@ export default function SummaryPhase({
   const rewardRows = [];
   if (savedResult && levelsOn) {
     const r = savedResult;
+    // La festa dice già le settimane solo per il nuovo record e per la tappa di più settimane: allora la riga della streak non si ripete
+    const saysWeeks = r.new_longest || (r.streak_milestone && r.current_streak_weeks > 1);
     if (r.week_completed_now || r.streak_milestone || r.new_longest) {
       rewardRows.push({
         key: 'celebration', celebration: true,
         text: r.new_longest
           ? t('focus.streak_new_longest', { count: r.current_streak_weeks })
-          : r.streak_milestone && r.current_streak_weeks > 1
+          : saysWeeks
             ? t('focus.streak_milestone', { weeks: r.current_streak_weeks })
             : t('focus.week_completed')
       });
     }
-    if (r.current_streak_weeks > 0) rewardRows.push({ key: 'streak', text: t('focus.streak_line', { count: r.current_streak_weeks }) });
+    if (r.current_streak_weeks > 0 && !saysWeeks) rewardRows.push({ key: 'streak', text: t('focus.streak_line', { count: r.current_streak_weeks }) });
     const level = levelReachedText(t, r) || (r.level != null ? t('focus.level_now', { level: r.level }) : '');
     if (level) rewardRows.push({ key: 'level', text: r.xp_gained > 0 ? `${level} · ${t('focus.points_gained', { count: r.xp_gained })}` : level });
     const withheld = xpWithheldText(r);

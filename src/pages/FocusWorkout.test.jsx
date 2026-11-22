@@ -3006,17 +3006,20 @@ describe('riepilogo di fine allenamento (F5)', () => {
       expect(box()).toBeNull();
     });
 
-    it('streak con festa: festa in evidenza e poi «Streak: N settimane»', async () => {
+    it('festa che dice già le settimane: la riga «Streak: N settimane» non si ripete', async () => {
       await saveWith({ new_longest: true, current_streak_weeks: 3 });
-      expect(rows()).toEqual(['Nuovo record! 🏆 3 settimane consecutive', 'Streak: 3 settimane']);
-    });
-
-    it('settimana completata e tappa: gli stessi testi di prima', async () => {
-      await saveWith({ week_completed_now: true, current_streak_weeks: 2 });
-      expect(rows()[0]).toBe('Settimana completata! 🔥');
+      expect(rows()).toEqual(['Nuovo record! 🏆 3 settimane consecutive']);
       cleanup(); localStorage.clear();
       await saveWith({ streak_milestone: true, current_streak_weeks: 4 });
-      expect(rows()[0]).toBe('4 settimane di fila! 🔥');
+      expect(rows()).toEqual(['4 settimane di fila! 🔥']);
+    });
+
+    it('«Settimana completata!» non dice le settimane: la riga della streak resta, anche con una tappa a una settimana', async () => {
+      await saveWith({ week_completed_now: true, current_streak_weeks: 2 });
+      expect(rows()).toEqual(['Settimana completata! 🔥', 'Streak: 2 settimane']);
+      cleanup(); localStorage.clear();
+      await saveWith({ streak_milestone: true, current_streak_weeks: 1 });
+      expect(rows()).toEqual(['Settimana completata! 🔥', 'Streak: 1 settimana']);
     });
 
     it('streak senza festa: solo la riga «Streak: 1 settimana» (singolare)', async () => {
@@ -3068,7 +3071,7 @@ describe('riepilogo di fine allenamento (F5)', () => {
       await saveWith({ new_longest: true, current_streak_weeks: 2, leveled_up: true, new_level: 5, level: 5, xp_gained: 1, unlocked_achievements: [{ key: 'primo', label: 'Primo' }] });
       await act(async () => { await i18n.changeLanguage('en'); });
       expect(screen.getByRole('heading', { level: 2, name: 'Streak, level and achievements' })).toBeTruthy();
-      expect(rows()).toEqual(['New record! 🏆 2 weeks in a row', 'Streak: 2 weeks', 'Level 5 reached! 🎉 · +1 point', 'New achievement: Primo']);
+      expect(rows()).toEqual(['New record! 🏆 2 weeks in a row', 'Level 5 reached! 🎉 · +1 point', 'New achievement: Primo']);
     });
 
     it('nessuna riga: niente riquadro', async () => {
