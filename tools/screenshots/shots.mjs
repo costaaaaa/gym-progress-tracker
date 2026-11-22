@@ -151,6 +151,32 @@ const HISTORY = Array.from({ length: 12 }, (_, i) => ({
   ],
 }));
 
+// Storico: due mesi (ottobre e settembre). `250` ha il giorno della scheda e un record vero (la panca più pesante
+// di tutti), `249` non ha il giorno della scheda, `248` non ha la durata; gli altri due sono i più vecchi
+const storicoWorkout = (id, offset, time, day, duration, exercises) => ({
+  id, date: stamp(offset, time), time_zone: null, started_at: `${isoDay(offset)}T${time}.000Z`, duration_seconds: duration,
+  notes: '', health_written: false, day_id: day ? 1 : null, day_name: day, exercises,
+});
+const STORICO = [
+  storicoWorkout(250, -1, '18:30:00', 'Push A', 3720, [
+    { exercise_id: 3, name: 'Panca piana', sets: [set(1, 80, 5), set(2, 80, 5), set(3, 77.5, 6)] },
+    { exercise_id: 8, name: 'Croci ai cavi', sets: [set(1, 20, 12), set(2, 20, 10)] },
+  ]),
+  storicoWorkout(249, -4, '09:15:00', null, 2700, [
+    { exercise_id: 7, name: 'Squat', sets: [set(1, 100, 5), set(2, 100, 5)] },
+  ]),
+  storicoWorkout(248, -8, '19:00:00', 'Gambe', null, [
+    { exercise_id: 3, name: 'Panca piana', sets: [set(1, 72.5, 8), set(2, 72.5, 8)] },
+    { exercise_id: 7, name: 'Squat', sets: [set(1, 95, 5), set(2, 95, 5)] },
+  ]),
+  storicoWorkout(247, -33, '18:00:00', 'Push A', 3300, [
+    { exercise_id: 3, name: 'Panca piana', sets: [set(1, 70, 8), set(2, 70, 8)] },
+  ]),
+  storicoWorkout(246, -37, '17:45:00', null, 2400, [
+    { exercise_id: 7, name: 'Squat', sets: [set(1, 90, 5)] },
+  ]),
+];
+
 const BODY = Array.from({ length: 10 }, (_, i) => ({
   id: 300 + i,
   date: isoDay(-7 * (9 - i)),
@@ -271,6 +297,7 @@ const MUSCLI = ['petto', 'schiena', 'spalle', 'bicipiti', 'tricipiti', 'addome',
 const UTENTI = {
   attivo: ATTIVO,
   'un-allenamento': { ...ATTIVO, history: HISTORY.slice(0, 1) },
+  storico: { ...ATTIVO, history: STORICO },
   nuovo: {
     history: [],
     plans: [],
@@ -428,7 +455,9 @@ const SHOT_LIST = [
   ['allenamenti-piani-pagina', '/schede/5', { loggedIn: true, ready: 'Push Pull' }],
   ['allenamenti-piani-pagina-non-attiva', '/schede/6', { loggedIn: true, ready: 'Gambe e core' }],
   ['allenamenti-piani-pagina-ricche', '/schede/5', { loggedIn: true, plans: 'ricche', ready: 'Push Pull Legs' }],
-  ['allenamenti-cronologia', '/storico', { loggedIn: true }],
+  ['allenamenti-cronologia', '/storico', { loggedIn: true, utente: 'storico', readyText: 'Gambe' }],
+  // Pagina di un allenamento con giorno della scheda, record e dettaglio
+  ['storico-allenamento', '/storico/250', { loggedIn: true, utente: 'storico', ready: 'Push A' }],
   ['admin', '/admin', { loggedIn: true, admin: true }],
 ];
 
@@ -443,6 +472,7 @@ for (const vp of viewports) {
         try {
           await page.goto(`${base}${url}`, { waitUntil: 'domcontentloaded' });
           if (opts.ready) await page.getByRole('heading', { level: 1, name: opts.ready }).waitFor();
+          if (opts.readyText) await page.getByText(opts.readyText).first().waitFor();
           await snap(page, name, tag);
         } finally {
           await ctx.close();
@@ -610,6 +640,18 @@ for (const vp of viewports) {
         await page.getByRole('button', { name: 'Nuova scheda' }).click();
         await page.getByRole('dialog').waitFor();
         await snap(page, 'allenamenti-piani-nuova-gratis', tag, page.getByRole('dialog'));
+      } finally {
+        await ctx.close();
+      }
+    });
+    if (want('storico-allenamento-elimina')) await attempt(tag, 'storico-allenamento-elimina', async () => {
+      const { ctx, page } = await openPage(vp, theme, { loggedIn: true, utente: 'storico' }, tag);
+      try {
+        await page.goto(`${base}/storico/250`, { waitUntil: 'domcontentloaded' });
+        await page.getByRole('heading', { level: 1, name: 'Push A' }).waitFor();
+        await page.getByRole('button', { name: 'Elimina', exact: true }).click();
+        await page.getByRole('dialog').waitFor();
+        await snap(page, 'storico-allenamento-elimina', tag, page.getByRole('dialog'));
       } finally {
         await ctx.close();
       }
