@@ -26,7 +26,7 @@ const LevelsBlock = ({ large = false }) => {
   return (
     <BlockShell
       title={t('home.block.levels_title')}
-      to="/profilo"
+      to="/livelli"
       status={status}
       summary={summary}
       sign={weeks > 0 ? <LocalFireDepartmentIcon aria-hidden sx={{ fontSize: 26, color: 'warning.text' }} /> : null}

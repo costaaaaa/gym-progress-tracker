@@ -89,7 +89,7 @@ const Navbar = ({ redBar = false }) => {
 
   const phoneApp = isMobile && showAppNav;
   const onRed = phoneApp && redBar;
-  const onProfilePage = location.pathname === '/profilo';
+  const onAccountPage = location.pathname === '/account';
   const initials = user?.username ? user.username.charAt(0).toUpperCase() : '?';
 
   return (
@@ -247,14 +247,14 @@ const Navbar = ({ redBar = false }) => {
           </Tooltip>
 
           {authVerified && showAppNav && (
-            <Tooltip title={t('nav.profile')}>
+            <Tooltip title={t('nav.account')}>
               <IconButton
                 component={RouterLink}
-                to="/profilo"
-                aria-current={onProfilePage ? 'page' : undefined}
+                to="/account"
+                aria-current={onAccountPage ? 'page' : undefined}
                 sx={{
                   p: 0,
-                  boxShadow: onProfilePage ? `0 0 0 2px ${theme.palette.common.white}, 0 0 0 4px ${theme.palette.primary.main}` : 'none',
+                  boxShadow: onAccountPage ? `0 0 0 2px ${theme.palette.common.white}, 0 0 0 4px ${theme.palette.primary.main}` : 'none',
                 }}
               >
                 <Avatar

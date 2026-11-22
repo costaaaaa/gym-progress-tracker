@@ -61,7 +61,7 @@ const JoinGroupContent = () => {
           <>
             <Alert severity="error" sx={{ mb: 2, textAlign: 'left' }}>{error}</Alert>
             {errorCode === 'birth_date_required' && (
-              <Button component={RouterLink} to="/profilo?tab=settings" sx={{ fontSize: 16, mr: 1 }}>{t('groups.join.settings')}</Button>
+              <Button component={RouterLink} to="/account" sx={{ fontSize: 16, mr: 1 }}>{t('groups.join.settings')}</Button>
             )}
             <Button component={RouterLink} to="/gruppi" sx={{ fontSize: 16 }}>{t('groups.join.your_groups')}</Button>
           </>

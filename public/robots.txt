@@ -7,6 +7,8 @@ Disallow: /storico
 Disallow: /dashboard
 Disallow: /progressi
 Disallow: /profilo
+Disallow: /account
+Disallow: /livelli
 Disallow: /gruppi
 Disallow: /entra
 Disallow: /focus
