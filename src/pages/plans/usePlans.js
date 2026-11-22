@@ -13,8 +13,9 @@ const activeFirst = (records) => [...records].sort((a, b) => {
 });
 
 // Schede, piano e limiti dell'utente, e i comandi che li cambiano. Ogni comando manda la richiesta, mostra
-// l'avviso e rilegge le schede; restituisce true se il server ha accettato (i comandi dei dialog chiusi dalla
-// pagina). Non sa nulla di dialog né di card aperte.
+// l'avviso e rilegge le schede. createPlan, updatePlan, activatePlan, deletePlan, deleteDay, addExercise e
+// deleteExercise restituiscono true se il server ha accettato, false se no; updateExercise e moveExercise non
+// restituiscono nulla. Non sa nulla di come la pagina mostra i dati.
 export default function usePlans() {
   const { t } = useTranslation();
   const [workoutPlans, setWorkoutPlans] = useState([]);
@@ -244,7 +245,7 @@ export default function usePlans() {
     }
   };
 
-  const deleteExercise = async (dayId, exercise) => {
+  const deleteExercise = async ({ dayId, exercise }) => {
     try {
       const response = await fetch(`${API_BASE_URL}api/workout/delete_exercise.php`, {
         method: 'POST',
@@ -268,9 +269,9 @@ export default function usePlans() {
     }
   };
 
-  // Modifica di recupero, note e serie. `onResponse` parte appena il server ha risposto, prima della rilettura
-  // delle schede (il dialog si chiude lì, riuscito o no).
-  const updateExercise = async ({ dayId, exercise, plannedSets, rest, notes }, onResponse) => {
+  // Modifica di recupero, note e serie dell'esercizio `{ dayId, exercise }`. `onAnswered` parte appena il server ha
+  // risposto, riuscito o no, prima della rilettura delle schede: chi chiama non deve aspettare anche quella.
+  const updateExercise = async ({ dayId, exercise }, { plannedSets, rest, notes }, onAnswered) => {
     try {
       // Prepara i dati da inviare, con controlli di tipo
       const exerciseData = {
@@ -294,7 +295,7 @@ export default function usePlans() {
       const data = await response.json();
 
       if (response.ok) {
-        onResponse();
+        onAnswered();
 
         // Recupera i piani aggiornati
         const updatedPlansResponse = await fetch(`${API_BASE_URL}api/workout/read_plans.php`, {
@@ -351,11 +352,12 @@ export default function usePlans() {
     } catch (error) {
       console.error('Errore nella modifica dell\'esercizio:', error);
       notify(error.message || t('plans.msg.edit_exercise_error'), 'error');
-      onResponse();
+      onAnswered();
     }
   };
 
   // Sposta un esercizio di un posto nel giorno, `direction` è 'up' o 'down'. Al primo e all'ultimo non fa nulla.
+  // Riceve il giorno intero e non il suo id perché servono i suoi esercizi per riconoscere il primo e l'ultimo.
   const moveExercise = async (day, exercise, direction) => {
     const index = day.exercises.findIndex((e) => e.id === exercise.id);
     if (direction === 'up' ? index <= 0 : index >= day.exercises.length - 1) return;

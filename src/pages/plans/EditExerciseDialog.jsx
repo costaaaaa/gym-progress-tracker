@@ -6,21 +6,24 @@ import { muscleLabel } from '../../i18n/labels';
 
 const valuesOf = (exercise) => ({ rest: exercise?.rest ?? '', notes: exercise?.notes || '' });
 
-// Recupero, note e serie di un esercizio del giorno `dayId`. `dayId` ed `exercise` restano valorizzati finché il
-// dialog si chiude (i campi ripartono da lì a ogni esercizio nuovo). `onSave(valori, chiudi)` salva; `chiudi` va
-// chiamato quando il server ha risposto.
-const EditExerciseDialog = ({ open, dayId, exercise, onClose, onSave }) => {
+// Recupero, note e serie di un esercizio. `target` è `{ dayId, exercise }` e resta valorizzato finché il dialog si
+// chiude; a ogni apertura i campi ripartono da lì. `onSave(target, valori, chiudi)` salva; `chiudi` va chiamato
+// quando il server ha risposto.
+const EditExerciseDialog = ({ open, target, onClose, onSave }) => {
+  const exercise = target?.exercise;
   const { t } = useTranslation();
   const [editedExerciseValues, setEditedExerciseValues] = useState(() => valuesOf(exercise));
   const [editedPlannedSets, setEditedPlannedSets] = useState(null);
 
-  // I campi ripartono dall'esercizio appena cambiato, prima che l'editor delle serie venga disegnato (che
-  // comunica subito le sue serie)
-  const [lastExercise, setLastExercise] = useState(exercise);
-  if (exercise !== lastExercise) {
-    setLastExercise(exercise);
-    setEditedExerciseValues(valuesOf(exercise));
-    setEditedPlannedSets(null);
+  // A ogni apertura i campi ripartono dall'esercizio, durante il render e non in un effetto: l'editor delle serie
+  // comunica le sue appena montato, e un effetto qui le cancellerebbe
+  const [last, setLast] = useState({ target, open });
+  if (target !== last.target || open !== last.open) {
+    setLast({ target, open });
+    if (open) {
+      setEditedExerciseValues(valuesOf(exercise));
+      setEditedPlannedSets(null);
+    }
   }
 
   // Gestione cambiamenti nei campi del form di modifica
@@ -33,10 +36,8 @@ const EditExerciseDialog = ({ open, dayId, exercise, onClose, onSave }) => {
   };
 
   const handleSave = () => {
-    if (!exercise || !dayId) return;
-    onSave({
-      dayId,
-      exercise,
+    if (!exercise || !target.dayId) return;
+    onSave(target, {
       plannedSets: editedPlannedSets,
       rest: editedExerciseValues.rest,
       notes: editedExerciseValues.notes

@@ -4,21 +4,22 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { useTranslation } from 'react-i18next';
 import ButtonSpinner from '../../components/ButtonSpinner';
 
-// Conferma di eliminazione di un esercizio da un giorno. `dayId` ed `exercise` restano valorizzati finché il
-// dialog si chiude; `onDelete(dayId, esercizio)` elimina e il dialog si chiude comunque.
-const DeleteExerciseDialog = ({ open, dayId, exercise, onClose, onDelete }) => {
+// Conferma di eliminazione di un esercizio da un giorno. `target` è `{ dayId, exercise }` e resta valorizzato
+// finché il dialog si chiude. `onClose` serve per annullare; alla conferma `onDelete(target)` elimina e chiude chi
+// lo usa.
+const DeleteExerciseDialog = ({ open, target, onClose, onDelete }) => {
+  const exercise = target?.exercise;
   const { t } = useTranslation();
   const [deleteExerciseLoading, setDeleteExerciseLoading] = useState(false);
 
   const handleConfirm = async () => {
-    if (!exercise || !dayId) return;
+    if (!exercise || !target.dayId) return;
 
     setDeleteExerciseLoading(true);
     try {
-      await onDelete(dayId, exercise);
+      await onDelete(target);
     } finally {
       setDeleteExerciseLoading(false);
-      onClose();
     }
   };
 

@@ -30,7 +30,8 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
   const [selectedDayIndex, setSelectedDayIndex] = useState(null);
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(null);
 
-  // Un dialog si chiude subito e dimentica il suo bersaglio dopo 200 ms, a transizione finita
+  // Annullando, un dialog si chiude subito e la scheda, l'esercizio o il giorno su cui lavorava restano ancora
+  // 200 ms, a dissolvenza finita; «Elimina giorno» e la conferma di «Elimina esercizio» lo dimenticano subito.
   const [openEditPlanDialog, setOpenEditPlanDialog] = useState(false);
   const [planToEdit, setPlanToEdit] = useState(null);
   const [openDeletePlanDialog, setOpenDeletePlanDialog] = useState(false);
@@ -83,8 +84,8 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
     setTimeout(() => setPlanToDelete(null), 200); // Piccolo ritardo per evitare flickering
   };
 
-  const handleOpenDeleteExerciseDialog = (dayId, exercise) => {
-    setExerciseToDelete({ dayId, exercise });
+  const handleOpenDeleteExerciseDialog = (target) => {
+    setExerciseToDelete(target);
     setOpenDeleteExerciseDialog(true);
   };
 
@@ -93,10 +94,19 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
     setTimeout(() => setExerciseToDelete(null), 200);
   };
 
-  const handleOpenEditExerciseDialog = (dayId, exercise) => {
+  const handleOpenEditExerciseDialog = (target) => {
     clearTimeout(closeEditTimer.current);
-    setExerciseToEdit({ dayId, exercise });
+    setExerciseToEdit(target);
     setOpenEditExerciseDialog(true);
+  };
+
+  const handleConfirmDeleteExercise = async (target) => {
+    try {
+      await deleteExercise(target);
+    } finally {
+      setOpenDeleteExerciseDialog(false);
+      setExerciseToDelete(null);
+    }
   };
 
   const handleCloseEditExerciseDialog = () => {
@@ -142,7 +152,7 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
           <Grid item xs={12} md={6} key={plan.id}>
             <PlanCard
               plan={plan}
-              expanded={!!expandedPlans[plan.id]}
+              expanded={expandedPlans[plan.id]}
               expandedDays={expandedDays}
               limits={account.limits}
               isFree={isFree}
@@ -196,21 +206,19 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
         plan={planToDelete}
         onClose={handleCloseDeletePlanDialog}
         onDelete={(plan) => deletePlan(plan.id)}
-        loadGoalAfterDelete={readGoalAfterDelete}
+        readGoalAfterDelete={readGoalAfterDelete}
       />
 
       <DeleteExerciseDialog
         open={openDeleteExerciseDialog}
-        dayId={exerciseToDelete?.dayId ?? null}
-        exercise={exerciseToDelete?.exercise ?? null}
+        target={exerciseToDelete}
         onClose={handleCloseDeleteExerciseDialog}
-        onDelete={deleteExercise}
+        onDelete={handleConfirmDeleteExercise}
       />
 
       <EditExerciseDialog
         open={openEditExerciseDialog}
-        dayId={exerciseToEdit?.dayId ?? null}
-        exercise={exerciseToEdit?.exercise ?? null}
+        target={exerciseToEdit}
         onClose={handleCloseEditExerciseDialog}
         onSave={updateExercise}
       />

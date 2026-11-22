@@ -5,9 +5,9 @@ import { useTranslation } from 'react-i18next';
 import ButtonSpinner from '../../components/ButtonSpinner';
 
 // Conferma di eliminazione di una scheda. `plan` resta valorizzato finché il dialog si chiude; `onDelete(scheda)`
-// elimina e il dialog si chiude comunque. Per una scheda attiva, `loadGoalAfterDelete()` dice a quale obiettivo
+// elimina e il dialog si chiude comunque. Per una scheda attiva, `readGoalAfterDelete()` dice a quale obiettivo
 // settimanale tornerebbe l'utente (null = non cambia).
-const DeletePlanDialog = ({ open, plan, onClose, onDelete, loadGoalAfterDelete }) => {
+const DeletePlanDialog = ({ open, plan, onClose, onDelete, readGoalAfterDelete }) => {
   const { t } = useTranslation();
   const [deletePlanLoading, setDeletePlanLoading] = useState(false);
   const [goalAfterDelete, setGoalAfterDelete] = useState(null);
@@ -18,11 +18,11 @@ const DeletePlanDialog = ({ open, plan, onClose, onDelete, loadGoalAfterDelete }
     if (!plan?.is_active) return undefined;
     // Chiudendo il dialog la risposta in volo non vale più: non deve comparire in quello aperto dopo
     let current = true;
-    loadGoalAfterDelete().then((goal) => {
+    readGoalAfterDelete().then((goal) => {
       if (current) setGoalAfterDelete(goal);
     });
     return () => { current = false; };
-  }, [open, plan, loadGoalAfterDelete]);
+  }, [open, plan, readGoalAfterDelete]);
 
   const handleConfirm = async () => {
     if (!plan) return;

@@ -5,18 +5,18 @@ import ButtonSpinner from '../../components/ButtonSpinner';
 
 const valuesOf = (plan) => ({ name: plan?.name ?? '', description: plan?.description || '' });
 
-// Nome e descrizione di una scheda. `plan` resta valorizzato finché il dialog si chiude (i campi ripartono da lì
-// a ogni scheda nuova); `onSave(scheda, valori)` restituisce true se il server ha accettato: allora il dialog si chiude.
+// Nome e descrizione di una scheda. `plan` resta valorizzato finché il dialog si chiude; a ogni apertura i campi
+// ripartono da lì. `onSave(scheda, valori)` restituisce true se il server ha accettato: allora il dialog si chiude.
 const EditPlanDialog = ({ open, plan, onClose, onSave }) => {
   const { t } = useTranslation();
   const [values, setValues] = useState(() => valuesOf(plan));
   const [updatePlanLoading, setUpdatePlanLoading] = useState(false);
 
-  // I campi ripartono dalla scheda appena cambiata, prima che i figli vengano disegnati
-  const [lastPlan, setLastPlan] = useState(plan);
-  if (plan !== lastPlan) {
-    setLastPlan(plan);
-    setValues(valuesOf(plan));
+  // A ogni apertura i campi ripartono dalla scheda, durante il render e non in un effetto
+  const [last, setLast] = useState({ plan, open });
+  if (plan !== last.plan || open !== last.open) {
+    setLast({ plan, open });
+    if (open) setValues(valuesOf(plan));
   }
 
   const handleSave = async () => {
