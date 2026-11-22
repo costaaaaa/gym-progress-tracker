@@ -7,6 +7,7 @@ import i18n from '../../i18n';
 import ExercisePage from './ExercisePage';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
 import { json } from '../../test/dom';
+import { mediaStyle } from '../../test/mediaStyle';
 import { textBelow } from '../../test/minText';
 import { setBrowserTimeZone } from '../../test/timeZone';
 
@@ -115,6 +116,9 @@ describe('grafico', () => {
     stubFetch(bodyweight);
     await mount();
     expect(section('Max ripetizioni')).toBeTruthy();
+    // senza peso il volume è zero: la coppia «Volume» non c'è (le altre due sì)
+    expect(within(entries()[0]).getByText('Miglior serie')).toBeTruthy();
+    expect(within(entries()[0]).queryByText('Volume')).toBeNull();
     expect(within(tile('Attuale')).getByText('13 rip.')).toBeTruthy();
     expect(screen.getByRole('img', { name: 'Grafico: Max ripetizioni di Squat con bilanciere nel tempo. I valori sono nella cronologia.' })).toBeTruthy();
   });
@@ -180,10 +184,8 @@ describe('cronologia', () => {
   it('da sm in su le tre coppie stanno in tre colonne uguali, sotto sm vanno a capo', async () => {
     await mount();
     const list = within(entries()[0]).getByText('Miglior serie').closest('dl');
-    const own = [...document.styleSheets].flatMap((sheet) => [...sheet.cssRules]).map((r) => r.cssText)
-      .filter((css) => [...list.classList].some((c) => css.includes(`.${c} {`)));
-    expect(own.some((css) => css.startsWith('@media (min-width:600px)') && css.includes('grid-template-columns: repeat(3, minmax(0, 1fr))'))).toBe(true);
-    expect(own.some((css) => css.startsWith('@media (min-width:600px)') && css.includes('display: grid'))).toBe(true);
+    expect(mediaStyle(list, 600)).toMatchObject({ display: 'grid', 'grid-template-columns': 'repeat(3, minmax(0, 1fr))' });
+    expect(mediaStyle(list, 0).display).toBe('flex');
   });
 
   it('il pulsante «Mostra tutti» è un\'area da 44px e non è rosso', async () => {

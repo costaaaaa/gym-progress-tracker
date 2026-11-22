@@ -4,12 +4,12 @@ import { Link as RouterLink } from 'react-router-dom';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import { useTranslation } from 'react-i18next';
-import { formatNumber } from '../i18n/format';
-import { formatValue, formatDaysAgo } from '../pages/progress/exerciseText';
-import { buildPoints } from './ChartCard';
-import { dayTime } from '../utils/calendarDay';
-import { STATUS, STATUS_TONE, showsDelta } from '../utils/progressOverview';
-import { radius } from '../theme/radius';
+import { formatNumber } from '../../i18n/format';
+import { formatValue, formatDaysAgo } from './exerciseText';
+import { buildPoints } from '../../components/ChartCard';
+import { dayTime } from '../../utils/calendarDay';
+import { STATUS, STATUS_TONE, showsDelta } from '../../utils/progressOverview';
+import { radius } from '../../theme/radius';
 
 const SPARK_W = 120;
 const SPARK_H = 36;

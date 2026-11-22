@@ -11,7 +11,7 @@ describe('formatValue', () => {
     expect(formatValue((k) => k, 'oneRM', 100, 'lb')).toBe('220,5 lb');
   });
   it('le ripetizioni massime hanno l\'unità «rip.»', () => {
-    expect(formatValue(t, 'maxReps', 12)).toMatch(/^12 /);
+    expect(formatValue(t, 'maxReps', 12)).toBe('12 rip.');
   });
 });
 
@@ -36,6 +36,6 @@ describe('groupLabel', () => {
 describe('positionLabel', () => {
   it('c\'è solo con la posizione nella seduta', () => {
     expect(positionLabel(t, null)).toBeNull();
-    expect(positionLabel(t, 1)).toMatch(/1/);
+    expect(positionLabel(t, 1)).toBe('1° esercizio');
   });
 });

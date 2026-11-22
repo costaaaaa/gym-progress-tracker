@@ -3,8 +3,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import ExerciseProgressRow from './ExerciseProgressRow';
-import { STATUS } from '../utils/progressOverview';
-import { polylineX } from '../test/polyline';
+import { STATUS } from '../../utils/progressOverview';
+import { polylineX } from '../../test/polyline';
 
 const session = (date, value) => ({ id: date, date, value });
 

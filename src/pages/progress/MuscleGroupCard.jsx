@@ -1,6 +1,6 @@
 import { Box, Card, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import ExerciseProgressRow from '../../components/ExerciseProgressRow';
+import ExerciseProgressRow from './ExerciseProgressRow';
 import { groupLabel } from './exerciseText';
 
 // Una card per gruppo muscolare, sempre aperta: titolo h2 (che dà il nome alla sezione) con il numero di esercizi accanto,
