@@ -6,7 +6,7 @@ import { render, screen, within, fireEvent, waitFor, act } from '@testing-librar
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import PlanPage from './PlanPage';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
-import { json, colorOf, textsBelow16px } from '../../test/dom';
+import { json, colorOf, textsBelow16pxExceptActiveBadge } from '../../test/dom';
 import { plannedSets, times } from '../../test/plannedSets';
 import { unnamedControls } from '../../test/accessibleNames';
 import i18n from '../../i18n';
@@ -152,14 +152,14 @@ describe('aspetto della pagina', () => {
 
   it('nessun testo sotto i 16px, in lettura e in modifica, salvo la pillola "Attiva" (13px o più)', async () => {
     await mount([mk(1, { description: 'Base' })]);
-    expect(textsBelow16px()).toEqual([]);
+    expect(textsBelow16pxExceptActiveBadge()).toEqual([]);
     startEdit();
-    expect(textsBelow16px()).toEqual([]);
+    expect(textsBelow16pxExceptActiveBadge()).toEqual([]);
   });
 
   it('nessun testo sotto i 16px nemmeno su una scheda non attiva, con «Rendi attiva»', async () => {
     await mount([mk(2), mk(1)], { path: '/schede/2' });
-    expect(textsBelow16px()).toEqual([]);
+    expect(textsBelow16pxExceptActiveBadge()).toEqual([]);
   });
 });
 

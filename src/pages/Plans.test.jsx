@@ -6,7 +6,7 @@ import { render, screen, within, fireEvent, waitFor, act } from '@testing-librar
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Plans from './Plans';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
-import { json, expectNoNestedContainer, textsBelow16px } from '../test/dom';
+import { json, expectNoNestedContainer, textsBelow16pxExceptActiveBadge } from '../test/dom';
 import { plannedSets, times } from '../test/plannedSets';
 import { unnamedControls } from '../test/accessibleNames';
 import i18n from '../i18n';
@@ -180,7 +180,7 @@ describe('elenco compatto', () => {
 
   it('nessun testo sotto i 16px, salvo il badge "Attiva" (13px o più)', async () => {
     await mount([plan, otherPlan], PRO);
-    expect(textsBelow16px()).toEqual([]);
+    expect(textsBelow16pxExceptActiveBadge()).toEqual([]);
   });
 
   it('senza schede non c\'è nessun collegamento, e «Nuova scheda» c\'è', async () => {
