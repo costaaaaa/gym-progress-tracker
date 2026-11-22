@@ -1,15 +1,13 @@
-// Account: stato dell'email nella card del profilo, «Cambia indirizzo», cambio in attesa. La fetch è il confine,
+// Pagina «Profilo»: stato dell'email nella card del profilo, «Cambia indirizzo», cambio in attesa. La fetch è il confine,
 // lo stato dell'email viene dal contesto (qui finto: conta cosa ne fa la pagina).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
-import Account from './Account';
-import { ThemeModeProvider } from '../context/ThemeModeContext';
-import { json } from '../test/dom';
+import { screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { json } from '../../test/dom';
+import { renderAccount } from '../../test/accountRoutes';
 
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
 const auth = {};
-vi.mock('../context/AuthContext', () => ({ useAuth: () => auth }));
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth }));
 
 const state = (extra = {}) => ({ verified: true, email: 'mario@example.com', pendingEmail: null, blocked: false, daysLeft: null, ...extra });
 let calls;
@@ -41,7 +39,7 @@ afterEach(() => {
 });
 
 const mount = async () => {
-  render(<MemoryRouter><ThemeModeProvider><Account /></ThemeModeProvider></MemoryRouter>);
+  renderAccount('/account/profilo');
   await screen.findByText('mario');
 };
 const profileCard = () => screen.getByText('mario').closest('.MuiCard-root');

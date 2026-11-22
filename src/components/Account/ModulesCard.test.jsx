@@ -4,7 +4,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
 import { useState } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import ModulesCard from './ModulesCard';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
 import { json } from '../../test/dom';
@@ -26,10 +26,16 @@ const stubFetch = () => vi.stubGlobal('fetch', vi.fn((url, init) => Promise.reso
 const okSettings = (modules) => (body) => json({ success: true, modules: { ...modules, ...body.modules } });
 const savedBodies = () => fetch.mock.calls.filter(([url]) => url.includes('update_settings.php')).map(([, init]) => JSON.parse(init.body));
 
+// L'indirizzo a cui si è arrivati: i collegamenti dell'avviso dei Gruppi portano a un'altra pagina
+const Where = () => {
+  const { pathname, hash } = useLocation();
+  return <p data-testid="where">{`${pathname}${hash}`}</p>;
+};
+
 const Harness = ({ initial }) => {
   const [user, setUser] = useState(initial);
   auth.value = { user, updateUser: (patch) => { updateUser(patch); setUser((u) => ({ ...u, ...patch })); } };
-  return <MemoryRouter><ThemeModeProvider><ModulesCard notify={notify} /><section id="groups-visibility" tabIndex={-1}><div id="groups-shown" tabIndex={-1}>Cosa mostro qui</div><div id="groups-list" tabIndex={-1}>Elenco</div></section></ThemeModeProvider></MemoryRouter>;
+  return <MemoryRouter><ThemeModeProvider><ModulesCard notify={notify} /><Where /></ThemeModeProvider></MemoryRouter>;
 };
 const mount = (modules = ALL, user = { id: 1, modules }) => {
   settings = okSettings(modules);
@@ -49,7 +55,8 @@ afterEach(() => vi.unstubAllGlobals());
 describe('righe', () => {
   it('quattro righe nell\'ordine Misure · Recupero e serie per muscolo · Livelli e traguardi · Gruppi, senza il modulo AI', () => {
     mount();
-    expect(screen.getByRole('heading', { name: 'Moduli' })).toBeTruthy();
+    expect(screen.getByText('Scegli cosa vedere in LiftIndex. Un modulo non attivo sparisce dalle schermate ma i tuoi dati restano e continuano ad aggiornarsi.')).toBeTruthy();
+    expect(screen.queryByRole('heading')).toBeNull();
     expect(screen.getAllByRole('switch').map((s) => s.getAttribute('aria-label')))
       .toEqual(['Misure', 'Recupero e serie per muscolo', 'Livelli e traguardi', 'Gruppi']);
     expect(screen.queryByText(/assistent/i)).toBeNull();
@@ -243,15 +250,13 @@ describe('avviso dei Gruppi', () => {
     await waitFor(() => expect(warning(/Resti nel/)).toBeNull());
   });
 
-  it.each([['Cosa mostro', 'groups-shown'], ['Esci dai gruppi', 'groups-list']])('«%s» porta al suo punto della card, spostandoci il fuoco', async (name, id) => {
+  it.each([['Cosa mostro', 'groups-shown'], ['Esci dai gruppi', 'groups-list']])('«%s» porta a «Dati e privacy», al suo punto della card', async (name, id) => {
     groups = [{ id: 1 }];
-    const scrollIntoView = vi.fn();
-    Element.prototype.scrollIntoView = scrollIntoView;
     mount({ ...ALL, groups: false });
-    fireEvent.click(await screen.findByRole('link', { name }));
-    expect(document.activeElement).toBe(document.getElementById(id));
-    expect(scrollIntoView).toHaveBeenCalled();
-    delete Element.prototype.scrollIntoView;
+    const link = await screen.findByRole('link', { name });
+    expect(link.getAttribute('href')).toBe(`/account/dati#${id}`);
+    fireEvent.click(link);
+    expect(screen.getByTestId('where').textContent).toBe(`/account/dati#${id}`);
   });
 
   it('i due collegamenti hanno un bersaglio di almeno 44 px', async () => {

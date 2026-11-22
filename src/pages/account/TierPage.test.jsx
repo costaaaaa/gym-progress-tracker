@@ -1,19 +1,17 @@
-// Account: riga del livello nella card del profilo (Gratis, Plus fino a…, Pro senza scadenza, codice di
+// Pagina «Piano» (/account/piano): riga del livello (Gratis, Plus fino a…, Pro senza scadenza, codice di
 // registrazione in attesa o non applicato). La fetch è il confine; le date sono giorni scritti (tier_last_day),
 // senza conversione di fuso: stesso testo in ogni fuso del browser.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, within, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
-import Account from './Account';
-import { ThemeModeProvider } from '../context/ThemeModeContext';
-import i18n from '../i18n';
-import { json } from '../test/dom';
-import { textBelow } from '../test/minText';
-import { setBrowserTimeZone } from '../test/timeZone';
+import { screen, waitFor } from '@testing-library/react';
+import i18n from '../../i18n';
+import { json } from '../../test/dom';
+import { textBelow } from '../../test/minText';
+import { setBrowserTimeZone } from '../../test/timeZone';
+import { renderAccount } from '../../test/accountRoutes';
 
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
 const auth = {};
-vi.mock('../context/AuthContext', () => ({ useAuth: () => auth }));
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth }));
 
 let tierFields;
 beforeEach(async () => {
@@ -41,14 +39,16 @@ afterEach(() => {
   localStorage.clear();
 });
 
+// La pagina è tutta la card del livello: le ricerche sono sullo schermo. Il titolo c'è a lettura finita (la cornice
+// aspetta i dati prima di mostrare la pagina).
 const mount = async () => {
-  render(<MemoryRouter><ThemeModeProvider><Account /></ThemeModeProvider></MemoryRouter>);
-  await screen.findByText('mario');
-  return within(screen.getByText('mario').closest('.MuiCard-root'));
+  renderAccount('/account/piano');
+  await screen.findByRole('heading', { level: 1, name: /^(Piano|Plan)$/ });
+  return screen;
 };
 const row = (card) => card.getByTestId('account-tier');
 
-describe('livello nella card del profilo', () => {
+describe('livello nella pagina del piano', () => {
   it('Gratis, con il link ai piani', async () => {
     const card = await mount();
     expect(row(card).textContent).toBe('Livello: Gratis');
@@ -148,32 +148,32 @@ describe('livello nella card del profilo', () => {
 });
 
 describe('livello dopo la conferma dell\'email da questa pagina', () => {
-  const view = () => render(<MemoryRouter><ThemeModeProvider><Account /></ThemeModeProvider></MemoryRouter>);
+  const view = () => renderAccount('/account/piano');
 
   it('lo stato passa a confermata: la riga si aggiorna senza ricaricare e la pagina non torna in caricamento', async () => {
     auth.emailState = { verified: false, email: 'mario@example.com', pendingEmail: null, blocked: false, daysLeft: 4 };
     tierFields = { tier: 'free', tier_until: null, tier_last_day: null, signup_code: { status: 'pending', tier: 'plus', duration_days: 90 } };
-    const { rerender } = view();
-    await screen.findByText('mario');
+    const { rerenderAccount } = view();
+    await screen.findByTestId('account-tier');
     expect(screen.getByTestId('account-tier').textContent).toContain('Plus in attesa');
 
     tierFields = { tier: 'plus', tier_until: '2027-02-15T23:00:00Z', tier_last_day: '2027-02-15', signup_code: { status: 'applied', tier: 'plus', duration_days: 90 } };
     auth.emailState = { ...auth.emailState, verified: true, daysLeft: null };
-    rerender(<MemoryRouter><ThemeModeProvider><Account /></ThemeModeProvider></MemoryRouter>);
+    rerenderAccount();
 
     await waitFor(() => expect(screen.getByTestId('account-tier').textContent).toBe('Livello: Plus fino al 15 febbraio 2027'));
-    expect(screen.getByText('mario')).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Piano' })).toBeTruthy();
   });
 
   it('senza cambi nello stato dell\'email non rilegge nulla oltre al montaggio', async () => {
-    const { rerender } = view();
-    await screen.findByText('mario');
+    const { rerenderAccount } = view();
+    await screen.findByTestId('account-tier');
     await waitFor(() => expect(screen.getByTestId('account-tier')).toBeTruthy());
     const reads = () => fetch.mock.calls.filter(([u]) => String(u).includes('user/read.php')).length;
     const mounted = reads();
     // stesso stato, oggetto nuovo
     auth.emailState = { ...auth.emailState };
-    rerender(<MemoryRouter><ThemeModeProvider><Account /></ThemeModeProvider></MemoryRouter>);
+    rerenderAccount();
     await new Promise((r) => setTimeout(r, 50));
     expect(reads()).toBe(mounted);
   });
@@ -191,18 +191,18 @@ describe('livello dopo la conferma dell\'email da questa pagina', () => {
   const PLUS = { tier: 'plus', tier_until: '2027-02-15T23:00:00Z', tier_last_day: '2027-02-15', signup_code: { status: 'applied', tier: 'plus', duration_days: 90 } };
   const PRO = { tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null };
   const unverified = () => ({ verified: false, email: 'mario@example.com', pendingEmail: null, blocked: false, daysLeft: 4 });
-  const confirmedView = (rerender) => {
+  const confirmedView = (rerenderAccount) => {
     auth.emailState = { ...unverified(), verified: true, daysLeft: null };
-    rerender(<MemoryRouter><ThemeModeProvider><Account /></ThemeModeProvider></MemoryRouter>);
+    rerenderAccount();
   };
 
   it('una risposta con success: false non cancella il livello mostrato', async () => {
     auth.emailState = unverified();
     tierFields = { tier: 'free', tier_until: null, tier_last_day: null, signup_code: { status: 'pending', tier: 'plus', duration_days: 90 } };
-    const { rerender } = view();
-    await screen.findByText('mario');
+    const { rerenderAccount } = view();
+    await screen.findByTestId('account-tier');
     const held = holdReads();
-    confirmedView(rerender);
+    confirmedView(rerenderAccount);
     await waitFor(() => expect(held).toHaveLength(1));
     held[0](json({ success: false, message: 'errore' }));
     await new Promise((r) => setTimeout(r, 30));
@@ -212,13 +212,13 @@ describe('livello dopo la conferma dell\'email da questa pagina', () => {
   it('una risposta vecchia arrivata dopo la nuova non scrive', async () => {
     auth.emailState = unverified();
     tierFields = { tier: 'free', tier_until: null, tier_last_day: null, signup_code: { status: 'pending', tier: 'plus', duration_days: 90 } };
-    const { rerender } = view();
-    await screen.findByText('mario');
+    const { rerenderAccount } = view();
+    await screen.findByTestId('account-tier');
     const held = holdReads();
-    confirmedView(rerender); // lettura 1
+    confirmedView(rerenderAccount); // lettura 1
     await waitFor(() => expect(held).toHaveLength(1));
     auth.emailState = { ...auth.emailState, email: 'nuovo@example.com' }; // lettura 2: l'indirizzo diventa un altro
-    rerender(<MemoryRouter><ThemeModeProvider><Account /></ThemeModeProvider></MemoryRouter>);
+    rerenderAccount();
     await waitFor(() => expect(held).toHaveLength(2));
     held[1](readOf(PRO));
     await waitFor(() => expect(screen.getByTestId('account-tier').textContent).toBe('Livello: Pro, senza scadenza'));

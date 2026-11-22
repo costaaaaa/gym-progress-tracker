@@ -202,7 +202,7 @@ const GroupDetailContent = () => {
             {board === 'week' && visibility?.workouts === false ? (
               <Box sx={{ py: 2 }}>
                 <Typography sx={{ color: 'text.secondary' }}>{t('groups.detail.board.week_hidden')}</Typography>
-                <Link component={RouterLink} to="/account#groups-shown" sx={INK_LINK}>
+                <Link component={RouterLink} to="/account/dati#groups-shown" sx={INK_LINK}>
                   {t('groups.detail.board.week_hidden_link')}
                 </Link>
               </Box>

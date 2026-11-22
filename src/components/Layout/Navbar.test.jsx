@@ -245,6 +245,11 @@ describe('barra in alto: desktop', () => {
     expect(currentLinks()).toEqual(['Account']);
   });
 
+  it.each(['/account/dati', '/account/profilo', '/account/sicurezza'])('con %s aperto l\'avatar è la pagina corrente e nessuna voce della barra lo è', (path) => {
+    mount(undefined, path);
+    expect(currentLinks()).toEqual(['Account']);
+  });
+
   it('con i Livelli aperti l\'avatar non è la pagina corrente', () => {
     mount(undefined, '/livelli');
     expect(currentLinks()).toEqual([]);

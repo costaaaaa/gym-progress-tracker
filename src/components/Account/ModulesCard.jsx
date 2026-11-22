@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Box, Card, Link, Typography } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { MODULE_KEYS, MODULE_PATHS } from '../../hooks/useModule';
 import { listGroups } from '../../api/groups';
-import { scrollToAndFocus } from '../../utils/focus';
 import { INK_LINK } from '../../utils/buttonStyles';
 import ModuleRow from './ModuleRow';
 
-// Avviso sotto la riga dei Gruppi: a Gruppi non attivo serve sapere se si è ancora in qualche gruppo
+// Avviso sotto la riga dei Gruppi: a Gruppi non attivo serve sapere se si è ancora in qualche gruppo. I collegamenti
+// portano a «Dati e privacy», dove sta la card «Gruppi e visibilità»: lì il fuoco arriva da solo.
 const GroupsNotice = ({ on }) => {
   const { t } = useTranslation();
   const [groupsCount, setGroupsCount] = useState(null);
@@ -24,12 +25,6 @@ const GroupsNotice = ({ on }) => {
     return () => { cancelled = true; };
   }, [on]);
 
-  // I collegamenti portano a un punto della card «Gruppi e visibilità» della stessa pagina, col fuoco
-  const goTo = (id) => (event) => {
-    event.preventDefault();
-    scrollToAndFocus(id);
-  };
-
   return (
     // Sempre nel DOM: l'avviso arriva dopo una lettura asincrona e così viene annunciato
     <Box role="status" sx={{ mt: !on && groupsCount > 0 ? 1 : 0 }}>
@@ -37,8 +32,8 @@ const GroupsNotice = ({ on }) => {
         <>
           <Typography sx={{ fontSize: 16 }}>{t('modules.groups_warning', { count: groupsCount })}</Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 2 }}>
-            <Link href="#groups-shown" onClick={goTo('groups-shown')} sx={INK_LINK}>{t('modules.groups_show')}</Link>
-            <Link href="#groups-list" onClick={goTo('groups-list')} sx={INK_LINK}>{t('modules.groups_leave')}</Link>
+            <Link component={RouterLink} to="/account/dati#groups-shown" sx={INK_LINK}>{t('modules.groups_show')}</Link>
+            <Link component={RouterLink} to="/account/dati#groups-list" sx={INK_LINK}>{t('modules.groups_leave')}</Link>
           </Box>
         </>
       )}
@@ -53,8 +48,7 @@ const ModulesCard = ({ notify }) => {
 
   return (
     <Card sx={{ p: '24px' }}>
-      <Typography variant="cardTitle" component="h2">{t('modules.title')}</Typography>
-      <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5, maxWidth: 560 }}>{t('modules.help')}</Typography>
+      <Typography sx={{ fontSize: 16, color: 'text.secondary', maxWidth: 560 }}>{t('modules.help')}</Typography>
       <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, mt: 1 }}>
         {MODULE_KEYS.map((key, index) => (
           <ModuleRow

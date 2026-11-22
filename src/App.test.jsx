@@ -1,4 +1,4 @@
-// Le rotte delle Schede: «esercizi» è una pagina a sé, non l'id di una scheda.
+// Le rotte delle Schede («esercizi» è una pagina a sé, non l'id di una scheda), dei Progressi e dell'Account.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import App from './App';
@@ -19,6 +19,9 @@ beforeEach(() => {
       return reply({ records: [{ id: 90, date: '2026-10-20 10:00:00', started_at: '2026-10-20T08:00:00.000Z', exercises: [{ exercise_id: 1, name: 'Panca piana', sets: [{ weight: 80, reps: 5 }] }] }] });
     }
     if (url.includes('workout/read_plans.php')) return reply({ records: [{ id: 5, name: 'Push Pull', is_active: 1, days: [] }] });
+    if (url.includes('user/consent.php')) {
+      return reply({ success: true, consents: { terms: { granted: true, version: 1 }, health_data: { granted: true, version: 1 } } });
+    }
     if (url.includes('user/read.php')) {
       return reply({ success: true, id: 7, username: 'mario', email: 'mario@example.com', pending_email: null, email_verified: true, email_verification: null, tier: 'free', tier_until: null, tier_last_day: null, signup_code: null });
     }
@@ -88,5 +91,33 @@ describe('rotte dei Progressi', () => {
     render(<ThemeModeProvider><App /></ThemeModeProvider>);
     await screen.findByRole('heading', { level: 1, name: 'Progressi' }, { timeout: 3000 });
     expect(where()).toBe('/progressi');
+  }, 10000);
+});
+
+// L'Account è un elenco (/account) e sei pagine sotto /account/…: le rotte vere di App.jsx, con la cornice che le avvolge
+describe('rotte dell\'Account', () => {
+  const open = (path) => {
+    window.history.pushState({}, '', path);
+    render(<ThemeModeProvider><App /></ThemeModeProvider>);
+  };
+
+  it.each([
+    ['/account', 'Account'],
+    ['/account/profilo', 'Profilo'],
+    ['/account/preferenze', 'Preferenze'],
+    ['/account/moduli', 'Moduli'],
+    ['/account/piano', 'Piano'],
+    ['/account/dati', 'Dati e privacy'],
+    ['/account/sicurezza', 'Sicurezza'],
+  ])('%s apre «%s» e l\'indirizzo resta quello', async (path, title) => {
+    open(path);
+    expect(await screen.findByRole('heading', { level: 1, name: title }, { timeout: 3000 })).toBeTruthy();
+    expect(window.location.pathname).toBe(path);
+  }, 10000);
+
+  it('/profilo?tab=settings#groups-shown arriva a «Dati e privacy» con la stessa ancora', async () => {
+    open('/profilo?tab=settings#groups-shown');
+    await screen.findByRole('heading', { level: 1, name: 'Dati e privacy' }, { timeout: 3000 });
+    expect(window.location.pathname + window.location.hash).toBe('/account/dati#groups-shown');
   }, 10000);
 });
