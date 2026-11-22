@@ -81,12 +81,15 @@ describe('arrivo da un collegamento', () => {
 
   it('/account/dati#altro: la pagina si apre e il fuoco non va su nessuna delle due sezioni dei gruppi', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    await mount('/account/dati#altro');
-    await waitFor(() => expect(screen.getByLabelText('Consenso al trattamento delle misure corporee').checked).toBe(true));
-    expect(document.activeElement).not.toBe(document.getElementById('groups-shown'));
-    expect(document.activeElement).not.toBe(document.getElementById('groups-list'));
-    expect(error).not.toHaveBeenCalled();
-    error.mockRestore();
+    try {
+      await mount('/account/dati#altro');
+      await waitFor(() => expect(screen.getByLabelText('Consenso al trattamento delle misure corporee').checked).toBe(true));
+      expect(document.activeElement).not.toBe(document.getElementById('groups-shown'));
+      expect(document.activeElement).not.toBe(document.getElementById('groups-list'));
+      expect(error).not.toHaveBeenCalled();
+    } finally {
+      error.mockRestore();
+    }
   });
 
   it('senza ancora il fuoco non si sposta', async () => {
@@ -192,12 +195,24 @@ describe('una rilettura dei dati', () => {
     expect(screen.getByLabelText('Consenso al trattamento delle misure corporee').checked).toBe(true);
     expect(screen.queryByRole('progressbar')).toBeNull();
 
-    // La risposta arriva e viene letta (act scarica le promesse e gli effetti che ne seguono)
+    // La risposta arriva con un nome utente diverso (act scarica le promesse e gli effetti che ne seguono). Il segnale
+    // che la pagina l'ha ricevuta è il nome del file esportato, che porta il nome nuovo
     await act(async () => {
-      release(json({ success: true, id: 1, username: 'atleta_con_un_nome_molto_lungo', email: 'mario@example.com', created_at: '2025-03-01T10:00:00+01:00', weekly_goal_default: 3 }));
+      release(json({ success: true, id: 1, username: 'nome_nuovo', email: 'mario@example.com', created_at: '2025-03-01T10:00:00+01:00', weekly_goal_default: 3 }));
       await held;
     });
-    await waitFor(() => expect(screen.getByLabelText('Consenso al trattamento delle misure corporee').checked).toBe(true));
+    URL.createObjectURL = vi.fn(() => 'blob:x');
+    URL.revokeObjectURL = vi.fn();
+    const names = [];
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function click() { names.push(this.download); });
+    try {
+      fireEvent.click(screen.getAllByRole('button', { name: 'Esporta' })[0]);
+      await waitFor(() => expect(names).toHaveLength(1));
+    } finally {
+      click.mockRestore();
+    }
+    expect(names[0]).toMatch(/^dati_liftindex_nome_nuovo_\d{4}-\d{2}-\d{2}\.json$/);
+    expect(screen.getByLabelText('Consenso al trattamento delle misure corporee').checked).toBe(true);
     expect(screen.queryByRole('progressbar')).toBeNull();
     expect(original.mock.calls.filter(([url]) => String(url).includes('user/consent.php'))).toHaveLength(1);
   });

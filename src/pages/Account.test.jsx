@@ -1,5 +1,6 @@
 // Account: la cornice (dati letti una volta sola) e l'elenco di sei voci a /account, con «Esci» e «Elimina account».
-// Colori scritti a mano: text.primary #1a1816, text.secondary #6b6663, primary/error #d50000. La fetch è il confine.
+// Colori scritti a mano: text.primary #1a1816, text.secondary #6b6663, primary/error #d50000 (in scuro error #ff5252).
+// La fetch è il confine.
 // Le pagine delle sei voci hanno i loro file in src/pages/account/; qui c'è quello che hanno in comune.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, within, fireEvent, waitFor } from '@testing-library/react';
@@ -278,16 +279,19 @@ describe('la cornice legge i dati una volta sola', () => {
         ? (++reads === 1 ? json({}, 500) : json({ id: 1, username: 'mario', email: 'mario@example.com', created_at: '2025-03-01T10:00:00+01:00', locale: 'en', weekly_goal_default: 3 }))
         : json({ success: true, consents: [], id: 1, weekly_goal_default: 3 }),
     )));
-    const { rerenderAccount } = renderAccount('/account/preferenze');
-    await screen.findByRole('heading', { level: 1, name: 'Preferenze' });
-    expect(screen.getByLabelText('Lingua').textContent).toBe('Italiano');
-    expect(reads).toBe(1);
+    try {
+      const { rerenderAccount } = renderAccount('/account/preferenze');
+      await screen.findByRole('heading', { level: 1, name: 'Preferenze' });
+      expect(screen.getByLabelText('Lingua').textContent).toBe('Italiano');
+      expect(reads).toBe(1);
 
-    auth.user = { id: 1 };
-    rerenderAccount();
-    await waitFor(() => expect(screen.getByLabelText('Lingua').textContent).toBe('English'));
-    expect(reads).toBe(2);
-    error.mockRestore();
+      auth.user = { id: 1 };
+      rerenderAccount();
+      await waitFor(() => expect(screen.getByLabelText('Lingua').textContent).toBe('English'));
+      expect(reads).toBe(2);
+    } finally {
+      error.mockRestore();
+    }
   });
 
   it('senza accesso non mostra la pagina, solo l\'attesa', async () => {
