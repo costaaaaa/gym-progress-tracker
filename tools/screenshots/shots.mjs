@@ -365,7 +365,7 @@ const fixtures = [
   ['gamification/streak.php', ({ u }) => ({ success: true, ...u.streak })],
   ['gamification/profile.php', ({ u }) => u.profile],
   ['exercise/read_all.php', ({ catalog }) => ({ success: true, records: catalog === 'completo' ? CATALOG_COMPLETO : CATALOG })],
-  ['user_stats/read.php', () => ({ success: true, records: BODY, consent_required: false, consent_updated: false })],
+  ['user_stats/read.php', ({ statsError }) => (statsError ? { __status: 500, success: false } : { success: true, records: BODY, consent_required: false, consent_updated: false })],
   ['groups/list.php', ({ u }) => ({ success: true, groups: u.groups })],
   ['groups/read.php', () => ({
     success: true,
@@ -461,7 +461,7 @@ async function openPage(vp, theme, opts, tag) {
   await ctx.route('**/backend/**', (route) => {
     const url = route.request().url();
     const hit = fixtures.find(([key]) => url.includes(key));
-    const body = hit ? hit[1]({ admin: opts.admin === true, gratis: opts.gratis === true, email: opts.email, tierState: opts.tierState, codice: opts.codice, modules: opts.modules, url, plans: opts.plans, catalog: opts.catalog, sets: opts.sets === true, u: UTENTI[opts.utente ?? 'attivo'] }) : fallback;
+    const body = hit ? hit[1]({ admin: opts.admin === true, gratis: opts.gratis === true, email: opts.email, tierState: opts.tierState, codice: opts.codice, modules: opts.modules, url, plans: opts.plans, catalog: opts.catalog, sets: opts.sets === true, statsError: opts.statsError === true, u: UTENTI[opts.utente ?? 'attivo'] }) : fallback;
     const { __status: status = 200, ...payload } = body;
     route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(payload) });
   });
@@ -478,6 +478,8 @@ const SHOT_LIST = [
   ['progressi', '/progressi?tab=progress', { loggedIn: true }],
   ['progressi-nuovo', '/progressi?tab=progress', { loggedIn: true, utente: 'un-allenamento' }],
   ['misure', '/progressi?tab=body', { loggedIn: true }],
+  // Lettura delle misure fallita (il server risponde 500): l'errore nella pagina con «Riprova»
+  ['misure-errore', '/progressi?tab=body', { loggedIn: true, statsError: true, readyText: 'Errore nel caricamento delle statistiche' }],
   // Tab Volume: con il modulo Recupero attivo (card «Questa settimana» e «Per muscolo») e con il modulo spento (solo la card
   // della settimana)
   ['volume', '/progressi?tab=volume', { loggedIn: true, sets: true, readyText: 'Per muscolo' }],

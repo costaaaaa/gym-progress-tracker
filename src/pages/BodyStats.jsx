@@ -1,401 +1,45 @@
-import { Fragment, useState, useEffect } from 'react';
-import {
-  Typography,
-  Grid,
-  Box,
-  Card,
-  Snackbar,
-  Alert,
-  CircularProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Button,
-  TextField,
-  IconButton,
-  Chip,
-  useMediaQuery,
-  useTheme,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-} from '@mui/material';
-import { API_BASE_URL } from '../config';
-import LabeledDatePicker from '../components/LabeledDatePicker';
+import { useState } from 'react';
+import { Typography, Grid, Box, Card, Snackbar, Alert, CircularProgress, Button } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { format, isValid } from 'date-fns';
-import i18n from '../i18n';
-import DateLocalization from '../i18n/DateLocalization';
-import { formatDate, formatMeasureText, intlLocale } from '../i18n/format';
-import { useAuth } from '../context/AuthContext';
-import { BODY_LB_DIVISIONS, fieldTextToKgText, formatWeightInUnit, kgToDisplay, maxWeightInUnit, weightUnitLabel } from '../utils/weightUnit';
-import { fieldTextToCmText, formatLengthInUnit, lengthUnitLabel, maxLengthInUnit } from '../utils/lengthUnit';
-import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import FirstPageIcon from '@mui/icons-material/FirstPage';
-import LastPageIcon from '@mui/icons-material/LastPage';
-import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import EventBusyIcon from '@mui/icons-material/EventBusy';
-import ChartCard, { buildPoints } from '../components/ChartCard';
+import { formatDate, intlLocale } from '../i18n/format';
+import { useAuth } from '../context/AuthContext';
+import { BODY_LB_DIVISIONS, formatWeightInUnit } from '../utils/weightUnit';
+import { lengthUnitLabel } from '../utils/lengthUnit';
 import { dayNumber } from '../utils/calendarDay';
 import HealthConsentCard from '../components/HealthConsentCard';
 import HealthAppHint from '../components/HealthAppHint';
-import { DEFAULT_PERIOD, PERIODS, PERIOD_UI, filterByPeriod, periodStart, periodWeightDelta, weightTrend, sortByDate, paginate } from '../utils/bodyStatsPeriod';
-import { radius } from '../theme/radius';
-import useFocusField from '../hooks/useFocusField';
+import { DEFAULT_PERIOD, filterByPeriod, periodStart, sortByDate, paginate } from '../utils/bodyStatsPeriod';
 import { useOncePerRequest } from '../hooks/useNavigationRequest';
-import { BODY_LIMITS, isValueOutOfRange } from '../utils/bodyStatsRules';
-
-// Cuore accanto a un valore arrivato da Apple Salute / Health Connect
-// (health_fields è l'elenco dei campi importati, separati da virgola).
-const isFromHealth = (row, field) => (row.health_fields || '').split(',').includes(field);
-
-const HealthMark = () => {
-  const { t } = useTranslation();
-  return (
-    <Box component="span" title={t('body.from_health')} sx={{ ml: 0.5, verticalAlign: 'middle' }}>
-      <FavoriteIcon sx={{ fontSize: 11, color: 'health' }} />
-    </Box>
-  );
-};
-
-const StatValue = ({ row, field, weightUnit }) => {
-  if (!row[field]) return '-';
-  return (
-    <>
-      {field === 'weight' ? formatWeightInUnit(row[field], weightUnit, intlLocale(), { lbDivisions: BODY_LB_DIVISIONS, unit: false })
-        : LENGTH_FIELDS.includes(field) ? formatLengthInUnit(row[field], weightUnit, intlLocale(), { unit: false })
-          : formatMeasureText(row[field])}
-      {isFromHealth(row, field) && <HealthMark />}
-    </>
-  );
-};
-
-// Misure della card "Composizione corporea" e "Circonferenze": chiave dato, etichetta, unità.
-const BODY_COMPOSITION_SERIES = [
-  { key: 'body_fat_percentage', label: 'body.fat', unit: '%' },
-  { key: 'muscle_mass_percentage', label: 'body.muscle', unit: '%' },
-];
-// Circonferenze: i dati sono in cm, si mostrano nell'unità dell'account (cm con kg, pollici con lb)
-const CIRCUMFERENCE_SERIES = [
-  { key: 'chest_size', label: 'body.chest', isLength: true },
-  { key: 'waist_size', label: 'body.waist', isLength: true },
-  { key: 'arm_size', label: 'body.arm', isLength: true },
-  { key: 'leg_size', label: 'body.leg', isLength: true },
-];
-const LENGTH_FIELDS = CIRCUMFERENCE_SERIES.map((s) => s.key);
-
-// Valore di una misura con la sua unità: percentuale attaccata al numero, lunghezza con uno spazio e cm o in
-const measureText = (series, value, weightUnit) => (series.isLength
-  ? `${formatLengthInUnit(value, weightUnit, intlLocale(), { unit: false })} ${lengthUnitLabel(weightUnit)}`
-  : `${formatMeasureText(value)}${series.unit}`);
-const HISTORY_SERIES = [...BODY_COMPOSITION_SERIES, ...CIRCUMFERENCE_SERIES];
-
-// Linea dei grafici del corpo (peso e altre misure): neutra, il rosso del marchio non è un dato
-const CHART_LINE_COLOR = 'text.primary';
-
-const hasValue = (v) => v !== null && v !== undefined && v !== '';
-
-const lastValueOf = (data, key) => {
-  for (let i = data.length - 1; i >= 0; i--) {
-    if (hasValue(data[i][key])) return data[i][key];
-  }
-  return null;
-};
-
-const SPARK_W = 120;
-const SPARK_H = 36;
-
-// Una misura: nome, mini grafico con la sua scala (da 2 punti) e ultimo valore
-const MeasureRow = ({ series, data, domain, weightUnit }) => {
-  const { t } = useTranslation();
-  const value = lastValueOf(data, series.key);
-  const points = data.filter((d) => hasValue(d[series.key])).map((d) => ({ x: d.day, value: Number(d[series.key]) }));
-  const polyline = points.length >= 2 ? buildPoints(points, domain, SPARK_W, SPARK_H, 4) : '';
-  return (
-    <Box data-measure-row sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, md: 3 }, py: 1.25 }}>
-      <Typography sx={{ flex: 1, minWidth: 0, fontSize: 16 }}>{t(series.label)}</Typography>
-      {polyline && (
-        <Box sx={{ width: { xs: 72, md: 160 }, height: { xs: 28, md: 32 }, flexShrink: 0, color: CHART_LINE_COLOR }}>
-          <svg viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} width="100%" height="100%" preserveAspectRatio="none" aria-hidden="true">
-            <polyline points={polyline} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-          </svg>
-        </Box>
-      )}
-      <Typography variant="statNumber" sx={{ fontSize: 16, minWidth: { xs: 72, md: 96 }, textAlign: 'right' }}>
-        {value !== null ? measureText(series, value, weightUnit) : '—'}
-      </Typography>
-    </Box>
-  );
-};
-
-const MeasureCard = ({ title, series, data, domain, weightUnit }) => (
-  <Card sx={{ p: '22px' }}>
-    <Typography variant="cardTitle" sx={{ mb: 0.5 }}>{title}</Typography>
-    {series.map((s) => <MeasureRow key={s.key} series={s} data={data} domain={domain} weightUnit={weightUnit} />)}
-  </Card>
-);
-
-// Pillole: piena in inchiostro se selezionata, con il contorno le altre (il rosso resta sull'azione principale).
-const PeriodChips = ({ value, onChange }) => {
-  const { t } = useTranslation();
-  return (
-    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 3 }} role="group" aria-label={t('body.period_label')}>
-      {PERIODS.map((period) => {
-        const selected = period === value;
-        return (
-          <Chip
-            key={period}
-            label={t(PERIOD_UI[period].label)}
-            clickable
-            variant={selected ? 'filled' : 'outlined'}
-            onClick={() => onChange(period)}
-            aria-pressed={selected}
-            sx={{
-              fontSize: 13, height: 32, borderRadius: radius.pill, px: 0.5,
-              ...(selected
-                ? { bgcolor: 'text.primary', color: 'background.paper', '&:hover, &.Mui-focusVisible': { bgcolor: 'text.primary' } }
-                : { borderColor: 'divider', color: 'text.primary' }),
-            }}
-          />
-        );
-      })}
-    </Box>
-  );
-};
-
-const headCellSx = { fontWeight: 600, fontSize: 16, color: 'text.secondary' };
-const bodyCellSx = { fontSize: 16, fontVariantNumeric: 'tabular-nums' };
-
-// Storico sul telefono: data e peso sulla prima linea, le altre misure in grigio sulla seconda
-const HistoryList = ({ rows, empty, onDelete, weightUnit }) => {
-  const { t } = useTranslation();
-  if (empty) {
-    return <Typography sx={{ color: 'text.secondary', py: 3, textAlign: 'center', fontSize: 16 }}>{t('body.empty')}</Typography>;
-  }
-  return (
-    <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
-      {rows.map((row) => {
-        const others = HISTORY_SERIES.filter((s) => hasValue(row[s.key]));
-        return (
-          <Box component="li" key={row.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, pl: 2, pr: 0.5, py: 0.75, '& + li': { borderTop: '1px solid', borderColor: 'divider' } }}>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 1 }}>
-                <Typography sx={{ fontSize: 16 }}>{formatDate(row.date)}</Typography>
-                <Typography sx={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
-                  {/* Numero (con il cuore di Salute) e unità sono pezzi separati: lo spazio non separabile e l'unità si scrivono a mano */}
-                  {row.weight ? <><StatValue row={row} field="weight" weightUnit={weightUnit} />{'\u00a0'}{weightUnitLabel(weightUnit)}</> : '-'}
-                </Typography>
-              </Box>
-              {others.length > 0 && (
-                <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
-                  {others.map((s, i) => (
-                    <Fragment key={s.key}>
-                      {i > 0 && ' · '}{t(s.label)} {measureText(s, row[s.key], weightUnit)}{isFromHealth(row, s.key) && <HealthMark />}
-                    </Fragment>
-                  ))}
-                </Typography>
-              )}
-            </Box>
-            <IconButton aria-label={t('common.delete')} onClick={() => onDelete(row.id)} sx={{ width: 44, height: 44, color: 'text.secondary' }}>
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-          </Box>
-        );
-      })}
-    </Box>
-  );
-};
-
-// Campi del modulo nell'ordine in cui compaiono (il primo con un errore riceve il focus)
-const FORM_FIELDS = ['date', ...Object.keys(BODY_LIMITS)];
-
-const numberFieldSx = {
-  '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': { display: 'none' },
-  '& input[type=number]': { MozAppearance: 'textfield' },
-};
+import useBodyStats from './body/useBodyStats';
+import PeriodChips from './body/PeriodChips';
+import WeightCard from './body/WeightCard';
+import MeasureCard from './body/MeasureCard';
+import BodyHistory from './body/BodyHistory';
+import LoadError from './progress/LoadError';
+import NewMeasurementDialog from './body/NewMeasurementDialog';
+import { BODY_COMPOSITION_SERIES, CIRCUMFERENCE_SERIES } from './body/series';
 
 // `openRequest`: un numero che cresce a ogni richiesta di aprire «Nuova misurazione» (dal ventaglio); si apre una volta
-// per numero, a dati caricati e solo con il consenso ai dati sulla salute (come il pulsante della pagina)
+// per numero, a dati caricati e solo con il consenso ai dati sulla salute (come il pulsante della pagina).
+// La lettura e i comandi sono di useBodyStats; qui si compone la pagina.
 const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
   const { t } = useTranslation();
   const { weightUnit } = useAuth();
-  const isPhone = useMediaQuery(useTheme().breakpoints.down('sm'));
-  const [stats, setStats] = useState([]);
+  const { stats, loading, loadFailed, consentRequired, consentUpdated, refresh, save, remove } = useBodyStats();
   const [period, setPeriod] = useState(DEFAULT_PERIOD);
   const [page, setPage] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  // true finché l'utente non ha dato il consenso per i dati sulla salute
-  const [consentRequired, setConsentRequired] = useState(false);
-  // true se il consenso era stato dato a una versione precedente del testo
-  const [consentUpdated, setConsentUpdated] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  // Messaggio d'errore sotto ogni campo sbagliato; il focus va sul primo
-  const [fieldErrors, setFieldErrors] = useState({});
-  const { fieldRef, focusField } = useFocusField();
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+  const notify = (message, severity) => setSnackbar({ open: true, message, severity });
 
-  const [formData, setFormData] = useState({
-    date: new Date(),
-    weight: '',
-    body_fat_percentage: '',
-    muscle_mass_percentage: '',
-    chest_size: '',
-    arm_size: '',
-    waist_size: '',
-    leg_size: '',
-  });
-
-  // Proprietà comuni dei sette campi numerici del modulo; l'errore passa da error + helperText (aria-describedby)
-  const numberField = (name, labelKey) => ({
-    label: t(labelKey, { unit: LENGTH_FIELDS.includes(name) ? lengthUnitLabel(weightUnit) : weightUnitLabel(weightUnit) }), name, type: 'number', fullWidth: true, value: formData[name], onChange: handleInputChange, sx: numberFieldSx,
-    error: !!fieldErrors[name], helperText: fieldErrors[name], inputRef: fieldRef(name),
-  });
-
-  const fetchStats = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}api/user_stats/read.php`, {
-        credentials: 'include',
-      });
-      const data = await response.json();
-      setConsentRequired(data.consent_required === true);
-      setConsentUpdated(data.consent_updated === true);
-      if (data.records) {
-        setStats(data.records);
-      }
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-      setSnackbar({ open: true, message: i18n.t('body.error.load'), severity: 'error' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    if (fieldErrors[name]) setFieldErrors(({ [name]: _removed, ...others }) => others);
-  };
-
-  const showFieldErrors = (errors) => {
-    setFieldErrors(errors);
-    focusField(FORM_FIELDS.find((name) => errors[name]));
-  };
-
-  const openDialog = () => {
-    setFieldErrors({});
-    setIsDialogOpen(true);
-  };
-
-  useOncePerRequest(openRequest, !isLoading, () => { if (!consentRequired) openDialog(); });
-
-  const handleDateChange = (date) => {
-    setFormData({ ...formData, date });
-    if (fieldErrors.date) setFieldErrors(({ date: _removed, ...others }) => others);
-  };
-
-  // Il tetto del peso e delle circonferenze si mostra nell'unità dell'utente, gli altri com'è
-  const rangeMax = (name, max) => {
-    if (name === 'weight') return formatMeasureText(maxWeightInUnit(max, weightUnit, BODY_LB_DIVISIONS));
-    return LENGTH_FIELDS.includes(name) ? formatMeasureText(maxLengthInUnit(max, weightUnit)) : max;
-  };
-
-  // Il testo di un campo, nell'unità scelta, in kg (peso) o cm (circonferenze) per le regole e il payload; gli altri com'è
-  const baseText = (name) => {
-    if (name === 'weight') return fieldTextToKgText(formData.weight, weightUnit);
-    return LENGTH_FIELDS.includes(name) ? fieldTextToCmText(formData[name], weightUnit) : formData[name];
-  };
-
-  const handleSubmit = async () => {
-    const errors = {};
-    // Data cancellata o incompleta (si digita con il puntatore preciso): arriva null o una data non valida
-    if (!isValid(formData.date)) errors.date = t('body.error.date');
-    // Peso e circonferenze si scrivono nell'unità dell'utente; le regole e il payload sono in kg e cm
-    const base = Object.fromEntries(Object.keys(BODY_LIMITS).map((name) => [name, baseText(name)]));
-    Object.entries(BODY_LIMITS).forEach(([name, max]) => {
-      const value = base[name];
-      if (value === null || isValueOutOfRange(value, max)) errors[name] = t('body.error.range', { max: rangeMax(name, max) });
-    });
-    if (Object.keys(errors).length > 0) {
-      showFieldErrors(errors);
-      return;
-    }
-    try {
-      const formattedData = {
-        ...formData,
-        date: format(formData.date, 'yyyy-MM-dd'),
-        weight: base.weight || null,
-        body_fat_percentage: formData.body_fat_percentage || null,
-        muscle_mass_percentage: formData.muscle_mass_percentage || null,
-        chest_size: base.chest_size || null,
-        arm_size: base.arm_size || null,
-        waist_size: base.waist_size || null,
-        leg_size: base.leg_size || null,
-      };
-
-      const response = await fetch(`${API_BASE_URL}api/user_stats/create.php`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formattedData),
-        credentials: 'include',
-      });
-
-      const result = await response.json();
-      if (response.ok) {
-        setSnackbar({ open: true, message: t('body.saved'), severity: 'success' });
-        setIsDialogOpen(false);
-        setFormData({
-          date: new Date(),
-          weight: '',
-          body_fat_percentage: '',
-          muscle_mass_percentage: '',
-          chest_size: '',
-          arm_size: '',
-          waist_size: '',
-          leg_size: '',
-        });
-        fetchStats();
-      } else if (BODY_LIMITS[result.field]) {
-        // Con "max" il testo è quello del client (uguale a quello prima dell'invio); il messaggio del server resta il ripiego
-        showFieldErrors({ [result.field]: Number.isFinite(result.max) ? t('body.error.range', { max: rangeMax(result.field, result.max) }) : result.message });
-      } else {
-        setSnackbar({ open: true, message: result.message || t('body.error.save'), severity: 'error' });
-      }
-    } catch (error) {
-      console.error('Error saving stats:', error);
-      setSnackbar({ open: true, message: t('body.error.connection'), severity: 'error' });
-    }
-  };
+  useOncePerRequest(openRequest, !loading, () => { if (!consentRequired) setIsDialogOpen(true); });
 
   const handleDelete = async (id) => {
     if (!window.confirm(t('body.confirm_delete'))) return;
-
-    try {
-      const response = await fetch(`${API_BASE_URL}api/user_stats/delete.php`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        setSnackbar({ open: true, message: t('body.deleted'), severity: 'success' });
-        fetchStats();
-      }
-    } catch (error) {
-      console.error('Error deleting stat:', error);
-    }
+    const result = await remove(id);
+    if (result.ok) notify(t('body.deleted'), 'success');
   };
 
   const periodRows = filterByPeriod(stats, period);
@@ -413,24 +57,14 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
     Math.max(today, chartData.at(-1)?.day ?? today),
   ];
 
-  const weighed = chartData.filter(d => d.weight !== null && d.weight !== undefined);
-  const weightPoints = weighed.map(d => ({ x: d.day, value: kgToDisplay(d.weight, weightUnit, BODY_LB_DIVISIONS) }));
-  const weightRows = weighed.map(d => [formatDate(d.date), formatWeightInUnit(d.weight, weightUnit, intlLocale(), { lbDivisions: BODY_LB_DIVISIONS })]);
-  const lastWeight = lastValueOf(chartData, 'weight');
-  const weightLabel = formatWeightInUnit(lastWeight, weightUnit, intlLocale(), { lbDivisions: BODY_LB_DIVISIONS });
-  const weightDelta = periodWeightDelta(periodRows);
-  const trend = weightTrend(weightDelta);
-  const deltaText = trend === null ? undefined
-    : trend === 'flat' ? t(PERIOD_UI[period].stable)
-      : t(PERIOD_UI[period].delta, { delta: formatWeightInUnit(weightDelta, weightUnit, intlLocale(), { lbDivisions: BODY_LB_DIVISIONS, signed: true, maxDecimals: 1 }) });
-
   // Lo storico non segue il periodo: tutte le righe, dalla più recente, a pagine
   const sortedStats = sortByDate(stats);
   const history = paginate(sortedStats.slice().reverse(), page);
   const latestRow = sortedStats[sortedStats.length - 1];
 
-  const renderContent = () => (consentRequired && !isLoading) ? (
-    <HealthConsentCard onGranted={fetchStats} updated={consentUpdated} />
+  // La lettura fallita vince sul consenso: dopo «Acconsento» una rilettura che non riesce non rimette la card come se niente fosse
+  const renderContent = () => (consentRequired && !loading && !loadFailed) ? (
+    <HealthConsentCard onGranted={refresh} updated={consentUpdated} />
   ) : (
     <>
       <Box sx={{ display: 'flex', justifyContent: isEmbedded ? 'flex-end' : 'space-between', alignItems: 'center', mb: 3 }}>
@@ -439,16 +73,19 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
             {t('body.title')}
           </Typography>
         )}
-        <Button variant="contained" startIcon={<AddIcon />} onClick={openDialog} sx={{ fontSize: 16 }}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsDialogOpen(true)} sx={{ fontSize: 16 }}>
           {t('body.new')}
         </Button>
       </Box>
 
-      {!isLoading && <HealthAppHint alreadySyncing={stats.some((s) => s.health_fields)} />}
+      {/* Lettura fallita: l'errore al posto dei dati, diverso dalla pagina vuota */}
+      {loadFailed && <LoadError message={t('body.error.load')} onRetry={refresh} />}
 
-      {!isLoading && stats.length > 0 && <PeriodChips value={period} onChange={setPeriod} />}
+      {!loading && !loadFailed && <HealthAppHint alreadySyncing={stats.some((s) => s.health_fields)} />}
 
-      {isLoading ? (
+      {!loading && !loadFailed && stats.length > 0 && <PeriodChips value={period} onChange={setPeriod} />}
+
+      {loadFailed ? null : loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 10 }}>
           <CircularProgress color="primary" />
         </Box>
@@ -471,17 +108,7 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
             <>
               {/* Andamento Peso — a piena larghezza */}
               <Grid item xs={12}>
-                <ChartCard
-                  title={t('body.weight_trend', { unit: weightUnitLabel(weightUnit) })}
-                  points={weightPoints}
-                  domain={chartDomain}
-                  color={CHART_LINE_COLOR}
-                  valueLabel={weightLabel}
-                  trend={trend}
-                  deltaText={deltaText}
-                  ariaLabel={t('body.weight_chart_aria', { title: t('body.weight_trend', { unit: weightUnitLabel(weightUnit) }), value: weightLabel })}
-                  table={{ head: [t('body.col.date'), t('body.col.weight')], rows: weightRows }}
-                />
+                <WeightCard data={chartData} domain={chartDomain} period={period} weightUnit={weightUnit} />
               </Grid>
 
               {/* Composizione corporea */}
@@ -498,70 +125,7 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
 
           {/* Tabella Storico */}
           <Grid item xs={12}>
-            <TableContainer component={Card} sx={{ p: 0 }}>
-              {isPhone ? (
-                <HistoryList rows={history.rows} empty={stats.length === 0} onDelete={handleDelete} weightUnit={weightUnit} />
-              ) : (
-                <Table size="small" aria-label={t('body.history_aria')}>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={headCellSx}>{t('body.col.date')}</TableCell>
-                      <TableCell align="right" sx={headCellSx}>{t('body.col.weight_kg', { unit: weightUnitLabel(weightUnit) })}</TableCell>
-                      <TableCell align="right" sx={headCellSx}>{t('body.col.fat')}</TableCell>
-                      <TableCell align="right" sx={headCellSx}>{t('body.col.muscle')}</TableCell>
-                      <TableCell align="right" sx={headCellSx}>{t('body.col.length', { label: t('body.chest'), unit: lengthUnitLabel(weightUnit) })}</TableCell>
-                      <TableCell align="right" sx={headCellSx}>{t('body.col.length', { label: t('body.arm'), unit: lengthUnitLabel(weightUnit) })}</TableCell>
-                      <TableCell align="right" sx={headCellSx}>{t('body.col.length', { label: t('body.waist'), unit: lengthUnitLabel(weightUnit) })}</TableCell>
-                      <TableCell align="right" sx={headCellSx}>{t('body.col.length', { label: t('body.leg'), unit: lengthUnitLabel(weightUnit) })}</TableCell>
-                      <TableCell align="center" sx={headCellSx}>{t('body.col.actions')}</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {history.rows.map((row) => (
-                      <TableRow key={row.id}>
-                        <TableCell sx={bodyCellSx}>{formatDate(row.date)}</TableCell>
-                        <TableCell align="right" sx={{ ...bodyCellSx, fontWeight: 700 }}><StatValue row={row} field="weight" weightUnit={weightUnit} /></TableCell>
-                        <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="body_fat_percentage" /></TableCell>
-                        <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="muscle_mass_percentage" /></TableCell>
-                        <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="chest_size" weightUnit={weightUnit} /></TableCell>
-                        <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="arm_size" weightUnit={weightUnit} /></TableCell>
-                        <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="waist_size" weightUnit={weightUnit} /></TableCell>
-                        <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="leg_size" weightUnit={weightUnit} /></TableCell>
-                        <TableCell align="center">
-                          <IconButton size="small" aria-label={t('common.delete')} onClick={() => handleDelete(row.id)} sx={{ color: 'text.secondary' }}>
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {stats.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={9} align="center" sx={{ color: 'text.secondary', py: 3, fontSize: 16 }}>{t('body.empty')}</TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              )}
-              {history.total > 0 && (
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, py: 1.25, borderTop: '1px solid', borderColor: 'divider' }}>
-                  <IconButton size="small" disabled={history.page === 0} onClick={() => setPage(0)} aria-label={t('body.page_first')}>
-                    <FirstPageIcon fontSize="small" />
-                  </IconButton>
-                  <IconButton size="small" disabled={history.page === 0} onClick={() => setPage(history.page - 1)} aria-label={t('body.page_prev')}>
-                    <NavigateBeforeIcon fontSize="small" />
-                  </IconButton>
-                  <Typography sx={{ fontSize: 16, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
-                    {t('body.page_range', { from: history.from, to: history.to, total: history.total })}
-                  </Typography>
-                  <IconButton size="small" disabled={history.page === history.lastPage} onClick={() => setPage(history.page + 1)} aria-label={t('body.page_next')}>
-                    <NavigateNextIcon fontSize="small" />
-                  </IconButton>
-                  <IconButton size="small" disabled={history.page === history.lastPage} onClick={() => setPage(history.lastPage)} aria-label={t('body.page_last')}>
-                    <LastPageIcon fontSize="small" />
-                  </IconButton>
-                </Box>
-              )}
-            </TableContainer>
+            <BodyHistory history={history} empty={stats.length === 0} onDelete={handleDelete} onPageChange={setPage} weightUnit={weightUnit} />
           </Grid>
         </Grid>
       )}
@@ -576,51 +140,7 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
         <Box sx={{ mt: 4, mb: 4 }}>{renderContent()}</Box>
       )}
 
-      {/* Dialog Nuova Misurazione */}
-      <Dialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700 }}>{t('body.dialog_title')}</DialogTitle>
-        <DialogContent dividers>
-          <DateLocalization>
-            <LabeledDatePicker
-              label={t('body.field.date')}
-              value={formData.date}
-              onChange={handleDateChange}
-              // L'errore proprio del selettore (data digitata non valida) resta; il nostro compare solo dopo "Salva"
-              slotProps={{ textField: { fullWidth: true, sx: { mb: 3, mt: 1 }, inputRef: fieldRef('date'), ...(fieldErrors.date && { error: true, helperText: fieldErrors.date }) } }}
-            />
-          </DateLocalization>
-
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={4}>
-              <TextField {...numberField('weight', 'body.field.weight')} />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField {...numberField('body_fat_percentage', 'body.field.fat')} />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField {...numberField('muscle_mass_percentage', 'body.field.muscle')} />
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField {...numberField('chest_size', 'body.field.chest')} />
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField {...numberField('arm_size', 'body.field.arm')} />
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField {...numberField('waist_size', 'body.field.waist')} />
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField {...numberField('leg_size', 'body.field.leg')} />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setIsDialogOpen(false)}>{t('common.cancel')}</Button>
-          <Button variant="contained" onClick={handleSubmit}>
-            {t('common.save')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <NewMeasurementDialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)} save={save} onNotify={notify} weightUnit={weightUnit} />
 
       <Snackbar
         open={snackbar.open}

@@ -1,10 +1,11 @@
-import { Alert, Box, Button, CircularProgress } from '@mui/material';
+import { Box, CircularProgress } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useModule } from '../hooks/useModule';
 import useWeeklyStats from './progress/useWeeklyStats';
 import WeekCard from './progress/WeekCard';
 import MuscleCard from './progress/MuscleCard';
+import LoadError from './progress/LoadError';
 
 // Tab «Volume» dei Progressi: la card «Questa settimana» (sempre) e, con il modulo Recupero attivo, la card «Per muscolo».
 // La lettura dei dati è di useWeeklyStats.
@@ -16,11 +17,7 @@ const Volume = () => {
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress size={32} /></Box>;
   if (loadFailed) {
-    return (
-      <Alert severity="error" sx={{ fontSize: 16 }} action={<Button color="inherit" onClick={refresh} sx={{ minHeight: 44, fontSize: 16, fontWeight: 600 }}>{t('progress.retry')}</Button>}>
-        {t('progress.volume.load_error')}
-      </Alert>
-    );
+    return <LoadError message={t('progress.volume.load_error')} onRetry={refresh} />;
   }
   return (
     <Box sx={{ py: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>

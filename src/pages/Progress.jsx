@@ -1,8 +1,6 @@
 import { useState, useMemo, useDeferredValue } from 'react';
 import {
-  Alert,
   Box,
-  Button,
   Card,
   Chip,
   CircularProgress,
@@ -20,6 +18,7 @@ import { useFavoriteExercises } from '../hooks/useFavoriteExercises';
 import useExerciseProgress from './progress/useExerciseProgress';
 import ProgressSummary from './progress/ProgressSummary';
 import MuscleGroupCard from './progress/MuscleGroupCard';
+import LoadError from './progress/LoadError';
 
 // Tab «Esercizi» dei Progressi: il riepilogo, la ricerca, il filtro «Preferiti» e una card per gruppo muscolare; ogni riga
 // porta alla pagina dell'esercizio (/progressi/esercizi/<id>). La lettura dei dati è di useExerciseProgress.
@@ -55,9 +54,7 @@ const Progress = ({ isEmbedded = false }) => {
     if (loadFailed) {
       return (
         <Grid item xs={12}>
-          <Alert severity="error" sx={{ fontSize: 16 }} action={<Button color="inherit" onClick={refresh} sx={{ minHeight: 44, fontSize: 16, fontWeight: 600 }}>{t('progress.retry')}</Button>}>
-            {t('progress.error.connection')}
-          </Alert>
+          <LoadError message={t('progress.error.connection')} onRetry={refresh} />
         </Grid>
       );
     }

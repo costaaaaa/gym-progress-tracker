@@ -83,9 +83,9 @@ describe('shell di Progressi', () => {
     });
   });
 
-  it('le tre tab hanno etichette corte, uguali su ogni larghezza: Esercizi · Volume · Misure', async () => {
+  it('le tre tab hanno etichette corte, uguali su ogni larghezza: Esercizi · Volume · Corpo', async () => {
     await mount();
-    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Esercizi', 'Volume', 'Misure']);
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Esercizi', 'Volume', 'Corpo']);
   });
 });
 
@@ -170,10 +170,10 @@ describe('moduli non attivi', () => {
   const open = (modules, path = '/progressi') => render(<ThemeModeProvider><Switchable modules={modules} path={path} /></ThemeModeProvider>);
   const tabNames = () => screen.getAllByRole('tab').map((tab) => tab.textContent);
 
-  it('con tutto attivo le tab sono Esercizi · Volume · Misure', async () => {
+  it('con tutto attivo le tab sono Esercizi · Volume · Corpo', async () => {
     open(ALL);
     await screen.findByText(/Nessun dato di allenamento/);
-    expect(tabNames()).toEqual(['Esercizi', 'Volume', 'Misure']);
+    expect(tabNames()).toEqual(['Esercizi', 'Volume', 'Corpo']);
   });
 
   it('Misure non attivo: restano Esercizi e Volume, e la tab Volume si apre', async () => {
@@ -187,18 +187,18 @@ describe('moduli non attivi', () => {
   it('Recupero non attivo: la tab Volume c\'è lo stesso, e si apre', async () => {
     open({ ...ALL, recovery: false });
     await screen.findByText(/Nessun dato di allenamento/);
-    expect(tabNames()).toEqual(['Esercizi', 'Volume', 'Misure']);
+    expect(tabNames()).toEqual(['Esercizi', 'Volume', 'Corpo']);
     fireEvent.click(screen.getByRole('tab', { name: 'Volume' }));
     await waitFor(() => expect(screen.getByRole('tab', { name: 'Volume' }).getAttribute('aria-selected')).toBe('true'));
     expect(document.title).toBe('Volume · Progressi | LiftIndex');
   });
 
-  it('Recupero non attivo: la tab Misure si apre', async () => {
+  it('Recupero non attivo: la tab Corpo si apre', async () => {
     open({ ...ALL, recovery: false });
     await screen.findByText(/Nessun dato di allenamento/);
-    fireEvent.click(screen.getByRole('tab', { name: 'Misure' }));
-    await waitFor(() => expect(screen.getByRole('tab', { name: 'Misure' }).getAttribute('aria-selected')).toBe('true'));
-    expect(document.title).toBe('Misure · Progressi | LiftIndex');
+    fireEvent.click(screen.getByRole('tab', { name: 'Corpo' }));
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Corpo' }).getAttribute('aria-selected')).toBe('true'));
+    expect(document.title).toBe('Corpo · Progressi | LiftIndex');
   });
 
   it('Recupero e Misure non attivi: restano Esercizi e Volume', async () => {
@@ -233,7 +233,7 @@ describe('moduli non attivi', () => {
     )));
     open({ ...ALL, body: false }, '/progressi?tab=body');
     fireEvent.click(await screen.findByRole('button', { name: 'Attiva' }));
-    const tab = await screen.findByRole('tab', { name: 'Misure' });
+    const tab = await screen.findByRole('tab', { name: 'Corpo' });
     expect(tab.getAttribute('aria-selected')).toBe('true');
     expect(screen.queryByRole('heading', { name: 'Il modulo Misure non è attivo' })).toBeNull();
   });
