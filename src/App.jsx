@@ -11,7 +11,7 @@ import { AuthProvider } from './context/AuthContext';
 import LocaleSync from './i18n/LocaleSync';
 import EmailBlockGuard from './components/EmailVerification/EmailBlockGuard';
 import LegacyWorkoutsRedirect from './pages/LegacyWorkoutsRedirect';
-import DashboardRedirect from './pages/progress/DashboardRedirect';
+import DashboardRedirect from './pages/DashboardRedirect';
 
 // Lazy load Pages
 const Home = lazy(() => import('./pages/Home'));

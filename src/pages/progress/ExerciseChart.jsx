@@ -2,11 +2,10 @@ import { Box, Typography, useTheme } from '@mui/material';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { useTranslation } from 'react-i18next';
 import { formatDate } from '../../i18n/format';
-import { formatValue } from '../../components/ExerciseProgressRow';
 import { dayTime } from '../../utils/calendarDay';
 import { kgToDisplay } from '../../utils/weightUnit';
 import { radius } from '../../theme/radius';
-import { positionLabel } from './exerciseText';
+import { formatValue, positionLabel } from './exerciseText';
 
 // Il punto di un record è grande e col contorno, gli altri sono piccoli
 export const PRDot = ({ cx, cy, payload, color, dotOutline }) => {

@@ -4,24 +4,12 @@ import { Link as RouterLink } from 'react-router-dom';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import { useTranslation } from 'react-i18next';
-import { formatNumber, intlLocale } from '../i18n/format';
-import { formatEstimateInUnit } from '../utils/weightUnit';
-import { muscleLabel } from '../i18n/labels';
+import { formatNumber } from '../i18n/format';
+import { formatValue, formatDaysAgo } from '../pages/progress/exerciseText';
 import { buildPoints } from './ChartCard';
 import { dayTime } from '../utils/calendarDay';
 import { STATUS, STATUS_TONE, showsDelta } from '../utils/progressOverview';
 import { radius } from '../theme/radius';
-
-export const formatDaysAgo = (t, days) => {
-  if (days === 0) return t('progress.today');
-  if (days === 1) return t('progress.yesterday');
-  return t('progress.days_ago', { count: days });
-};
-
-export const formatValue = (t, mode, value, weightUnit) =>
-  mode === 'oneRM'
-    ? formatEstimateInUnit(value, weightUnit, intlLocale())
-    : `${formatNumber(value)} ${t('progress.unit.reps')}`;
 
 const SPARK_W = 120;
 const SPARK_H = 36;
@@ -45,9 +33,9 @@ const TONE_COLOR = { positive: 'success.main', negative: 'recovery.recovering', 
 
 // Una riga dell'elenco (un <li>): tutta la riga, tranne la stella, è il collegamento alla pagina dell'esercizio. Nome e
 // ultima sessione, mini grafico, valore con variazione; la stella dei preferiti è un pulsante a sé.
-const ExerciseProgressRow = ({ item, weightUnit, showMuscle = false, favorite, onToggleFavorite }) => {
+const ExerciseProgressRow = ({ item, weightUnit, favorite, onToggleFavorite }) => {
   const { t } = useTranslation();
-  const { name, muscle, status, deltaPct, last, mode, sessions, lastDays, recentPR, laterInSession } = item;
+  const { name, status, deltaPct, last, mode, sessions, lastDays, recentPR, laterInSession } = item;
   const tone = STATUS_TONE[status];
 
   return (
@@ -60,7 +48,7 @@ const ExerciseProgressRow = ({ item, weightUnit, showMuscle = false, favorite, o
         <Box sx={{ flex: { xs: 1, md: '0 0 300px' }, minWidth: 0 }}>
           <Typography sx={{ fontWeight: 600, fontSize: 16, lineHeight: 1.3, overflowWrap: 'anywhere' }}>{name}</Typography>
           <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
-            {showMuscle ? `${muscleLabel(muscle)} · ` : ''}{t('progress.last_session', { when: formatDaysAgo(t, lastDays) })}
+            {t('progress.last_session', { when: formatDaysAgo(t, lastDays) })}
           </Typography>
         </Box>
 

@@ -25,7 +25,7 @@ describe('formatDaysAgo', () => {
 
 describe('groupLabel', () => {
   it('il gruppo muscolare tradotto', () => {
-    expect(groupLabel(t, 'chest')).toBe('Petto');
+    expect(groupLabel(t, 'petto')).toBe('Petto');
   });
   it('senza gruppo, o «other», è «Altro»', () => {
     expect(groupLabel(t, null)).toBe('Altro');

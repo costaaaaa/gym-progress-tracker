@@ -331,7 +331,7 @@
   "progress.position_ordinal_other": "{{count}}th exercise",
   "progress.later_in_session": "later in session",
   "progress.col.best_set": "Best set",
-  "progress.col.volume": "Total volume ({{unit}})",
+  "progress.history.volume": "Volume",
   "progress.show_less": "Show less",
   "progress.show_all": "Show all ({{count}})",
   "body.from_health": "From Apple Health / Health Connect",

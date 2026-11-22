@@ -36,6 +36,8 @@ const Progress = ({ isEmbedded = false }) => {
   // Il chip c'è solo se almeno un esercizio dell'elenco è preferito; tolto l'ultimo, il filtro non resta acceso
   const hasFavorites = analyzed.some((a) => favoriteSet.has(a.id));
   const favoritesOn = onlyFavorites && hasFavorites;
+  // ...e senza preferiti la scelta si azzera, altrimenti alla prossima stella il chip ricomparirebbe già acceso
+  if (onlyFavorites && !hasFavorites && !loading) setOnlyFavorites(false);
 
   const deferredQuery = useDeferredValue(query);
   const filtered = useMemo(() => {

@@ -1,14 +1,14 @@
 import { Box, Card, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { muscleLabel } from '../../i18n/labels';
 import ExerciseProgressRow from '../../components/ExerciseProgressRow';
+import { groupLabel } from './exerciseText';
 
 // Una card per gruppo muscolare, sempre aperta: titolo h2 (che dà il nome alla sezione) con il numero di esercizi accanto,
 // e una riga-collegamento per esercizio. `section`: un elemento di groupByMuscle. `favoriteSet`: gli id dei preferiti.
 const MuscleGroupCard = ({ section, weightUnit, favoriteSet, onToggleFavorite }) => {
   const { t } = useTranslation();
   const id = `progress-group-${section.muscle}`;
-  const label = section.muscle === 'other' ? t('progress.muscle_other') : muscleLabel(section.muscle);
+  const label = groupLabel(t, section.muscle);
   return (
     <Card component="section" aria-labelledby={id}>
       <Typography id={id} component="h2" variant="cardTitle" sx={{ px: 2.5, pt: 2, pb: 1 }}>

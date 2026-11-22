@@ -5,9 +5,8 @@ import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import { useAuth } from '../../context/AuthContext';
-import { muscleLabel } from '../../i18n/labels';
-import { formatValue } from '../../components/ExerciseProgressRow';
 import useExerciseProgress from './useExerciseProgress';
+import { formatValue, groupLabel } from './exerciseText';
 import ExerciseChart from './ExerciseChart';
 import ExerciseHistory from './ExerciseHistory';
 
@@ -24,7 +23,8 @@ const ExercisePage = () => {
   const { weightUnit } = useAuth();
   const { analyzed, loading, loadFailed, refresh } = useExerciseProgress();
   const item = analyzed.find((a) => String(a.id) === id);
-  usePageMeta(item ? item.name : t('progress.title'), t('progress.exercise_meta'));
+  // finché non c'è il nome (lettura in corso o fallita) il titolo è quello della pagina dei Progressi
+  usePageMeta(item ? item.name : t('dashboard.title'), t('progress.exercise_meta'));
 
   useEffect(() => {
     if (!loading && !loadFailed && !item) navigate(BACK_PATH, { replace: true });
@@ -42,7 +42,7 @@ const ExercisePage = () => {
         <>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
             {back}
-            <Typography variant="pageTitle" sx={{ flex: 1, minWidth: 0 }}>{t('progress.title')}</Typography>
+            <Typography variant="pageTitle" sx={{ flex: 1, minWidth: 0 }}>{t('dashboard.title')}</Typography>
           </Box>
           <Alert severity="error" sx={{ fontSize: 16 }} action={<Button color="inherit" onClick={refresh} sx={{ minHeight: 44, fontSize: 16, fontWeight: 600 }}>{t('progress.retry')}</Button>}>
             {t('progress.error.connection')}
@@ -63,7 +63,7 @@ const ExercisePage = () => {
           {back}
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography variant="pageTitle" sx={{ overflowWrap: 'anywhere' }}>{item.name}</Typography>
-            <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{item.muscle ? muscleLabel(item.muscle) : t('progress.muscle_other')}</Typography>
+            <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{groupLabel(t, item.muscle)}</Typography>
           </Box>
         </Box>
 

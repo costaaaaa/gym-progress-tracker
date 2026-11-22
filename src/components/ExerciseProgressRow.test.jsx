@@ -2,7 +2,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import ExerciseProgressRow, { formatValue } from './ExerciseProgressRow';
+import ExerciseProgressRow from './ExerciseProgressRow';
 import { STATUS } from '../utils/progressOverview';
 import { polylineX } from '../test/polyline';
 
@@ -94,18 +94,7 @@ describe('nota "più avanti nella seduta" (#26)', () => {
   });
 });
 
-describe('formatValue', () => {
-  it('il 1RM stimato ha al massimo un decimale, come prima', () => {
-    expect(formatValue((k) => k, 'oneRM', 101.33)).toBe('101,3\u00a0kg');
-  });
-});
-
 describe('unità di peso', () => {
-  it('formatValue: 1RM stimato in lb al quarto di libbra', () => {
-    expect(formatValue((k) => k, 'oneRM', 100, 'lb')).toBe('220,5\u00a0lb');
-    expect(formatValue((k) => k, 'oneRM', 101.33, 'kg')).toBe('101,3\u00a0kg');
-  });
-
   it('la riga mostra il valore nell\'unità passata', () => {
     const sessions = [session('2026-10-01 18:00:00', 80), session('2026-10-08 18:00:00', 100)];
     render(<ExerciseProgressRow item={item(sessions)} weightUnit="lb" favorite={false} onToggleFavorite={() => {}} />, { wrapper });

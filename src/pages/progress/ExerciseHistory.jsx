@@ -2,16 +2,15 @@ import { useState } from 'react';
 import { Box, Button, Card, Chip, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import TimeZoneBadge from '../../components/TimeZoneBadge';
-import { formatValue } from '../../components/ExerciseProgressRow';
-import { formatDate, formatNumber } from '../../i18n/format';
-import { kgToDisplay, kgToTotal, weightUnitLabel } from '../../utils/weightUnit';
-import { positionLabel } from './exerciseText';
+import { formatDate, formatNumber, intlLocale } from '../../i18n/format';
+import { kgToDisplay, formatTotalInUnit } from '../../utils/weightUnit';
+import { NEUTRAL_TEXT } from '../../utils/buttonStyles';
+import { formatValue, positionLabel } from './exerciseText';
 
 const ROWS_COLLAPSED = 5;
 const HISTORY_TITLE_ID = 'exercise-history-title';
 
-// Una coppia etichetta-valore della sessione: sotto sm quattro colonne non ci stanno (e la tabella scorrerebbe in
-// orizzontale), quindi ogni sessione è una voce con la data in grassetto e sotto le coppie, che vanno a capo da sole.
+// Una coppia etichetta-valore della sessione (una voce di `dl`)
 const Pair = ({ label, children, strong = false }) => (
   <Box>
     <Box component="dt" sx={{ display: 'inline', mr: 0.75, fontSize: 16, color: 'text.secondary' }}>{label}</Box>
@@ -22,6 +21,9 @@ const Pair = ({ label, children, strong = false }) => (
 // La card «Cronologia» di un esercizio: le sessioni dalla più recente (le ultime 5, poi «Mostra tutti»), ognuna con la
 // data (e il fuso, se diverso da quello del dispositivo, e la posizione nella seduta), la miglior serie, il valore con
 // il segno PR e il volume totale. `item`: l'esercizio analizzato.
+// Una lista e non una tabella: sotto sm quattro colonne non ci stanno (e la tabella scorrerebbe in orizzontale), quindi
+// ogni sessione è una voce con la data in grassetto e sotto le coppie, che vanno a capo da sole; da sm in su le coppie
+// stanno in tre colonne uguali, allineate tra una sessione e l'altra.
 const ExerciseHistory = ({ item, weightUnit }) => {
   const { t } = useTranslation();
   const [showAll, setShowAll] = useState(false);
@@ -44,7 +46,7 @@ const ExerciseHistory = ({ item, weightUnit }) => {
                   <Chip size="small" variant="outlined" label={position} sx={{ fontSize: 16, borderColor: 'divider', color: 'text.secondary', fontWeight: 600 }} />
                 )}
               </Box>
-              <Box component="dl" sx={{ m: 0, mt: 0.5, display: 'flex', flexWrap: 'wrap', columnGap: 2.5, rowGap: 0.5 }}>
+              <Box component="dl" sx={{ m: 0, mt: 0.5, display: 'flex', flexWrap: 'wrap', columnGap: 2.5, rowGap: 0.5, '@media (min-width:600px)': { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' } }}>
                 <Pair label={t('progress.col.best_set')}>
                   {row.bestSet
                     ? (row.bestSet.weight > 0 ? `${formatNumber(kgToDisplay(row.bestSet.weight, weightUnit), { maximumFractionDigits: 2 })} × ${row.bestSet.reps}` : `${row.bestSet.reps} ${t('progress.unit.reps')}`)
@@ -53,7 +55,7 @@ const ExerciseHistory = ({ item, weightUnit }) => {
                 <Pair label={t(`progress.kind.${item.mode}`)} strong>
                   {formatValue(t, item.mode, row.value, weightUnit)}{row.isPR && ` · ${t('progress.pr')}`}
                 </Pair>
-                <Pair label={t('progress.col.volume', { unit: weightUnitLabel(weightUnit) })}>{formatNumber(kgToTotal(row.volume, weightUnit))}</Pair>
+                <Pair label={t('progress.history.volume')}>{formatTotalInUnit(row.volume, weightUnit, intlLocale())}</Pair>
               </Box>
             </Box>
           );
@@ -61,7 +63,7 @@ const ExerciseHistory = ({ item, weightUnit }) => {
       </Box>
       {rows.length > ROWS_COLLAPSED && (
         <Box sx={{ textAlign: 'center' }}>
-          <Button onClick={() => setShowAll(!showAll)} sx={{ minHeight: 44, fontSize: 16 }}>
+          <Button onClick={() => setShowAll(!showAll)} sx={{ ...NEUTRAL_TEXT, minHeight: 44 }}>
             {showAll ? t('progress.show_less') : t('progress.show_all', { count: rows.length })}
           </Button>
         </Box>

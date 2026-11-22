@@ -180,17 +180,18 @@ describe('cronologia', () => {
   it('da sm in su le tre coppie stanno in tre colonne uguali, sotto sm vanno a capo', async () => {
     await mount();
     const list = within(entries()[0]).getByText('Miglior serie').closest('dl');
-    const rules = [...document.styleSheets].flatMap((sheet) => [...sheet.cssRules]).map((r) => r.cssText).join('\n');
-    const cls = [...list.classList].map((c) => `.${c}`);
-    expect(cls.some((c) => rules.includes(`${c} {`) && rules.includes('repeat(3, minmax(0px, 1fr))'))).toBe(true);
+    const own = [...document.styleSheets].flatMap((sheet) => [...sheet.cssRules]).map((r) => r.cssText)
+      .filter((css) => [...list.classList].some((c) => css.includes(`.${c} {`)));
+    expect(own.some((css) => css.startsWith('@media (min-width:600px)') && css.includes('grid-template-columns: repeat(3, minmax(0, 1fr))'))).toBe(true);
+    expect(own.some((css) => css.startsWith('@media (min-width:600px)') && css.includes('display: grid'))).toBe(true);
   });
 
   it('il pulsante «Mostra tutti» è un\'area da 44px e non è rosso', async () => {
     await mount();
     const button = screen.getByRole('button', { name: 'Mostra tutti (7)' });
     expect(getComputedStyle(button).minHeight).toBe('44px');
-    // colore del testo (text.primary), come l'intestazione: il rosso del tema è solo per errori e marchio
-    expect(getComputedStyle(button).color).toBe(getComputedStyle(screen.getByRole('heading', { level: 1 })).color);
+    // inchiostro del tema chiaro (text.primary #1a1816), non il rosso #d50000: il rosso è solo per errori e marchio
+    expect(getComputedStyle(button).color).toBe('rgb(26, 24, 22)');
   });
 });
 
@@ -281,7 +282,7 @@ describe('unità di peso', () => {
     await mount();
     expect(within(tile('Attuale')).getByText('100 kg')).toBeTruthy();
     expect(screen.getByText('50 × 30')).toBeTruthy();
-    expect(screen.getByText('Volume').nextElementSibling.textContent).toBe('1.500\u00a0kg');
+    expect(screen.getByText('Volume').nextElementSibling.textContent).toBe('1500\u00a0kg');
   });
 
   it('in lb il 1RM e la miglior serie sono al quarto di libbra, il volume è il totale convertito', async () => {
@@ -291,7 +292,7 @@ describe('unità di peso', () => {
     expect(within(tile('Attuale')).getByText('220,5 lb')).toBeTruthy();
     expect(within(tile('Migliore')).getByText('220,5 lb')).toBeTruthy();
     expect(screen.getByText('110,25 × 30')).toBeTruthy();
-    expect(screen.getByText('Volume').nextElementSibling.textContent).toBe('3.307\u00a0lb'); // 1500 kg
+    expect(screen.getByText('Volume').nextElementSibling.textContent).toBe('3307\u00a0lb'); // 1500 kg
     expect(screen.queryByText(/kg/)).toBeNull();
   });
 });
