@@ -17,13 +17,15 @@ const FOCUS_SHOTS = {
   riscaldamento: 'focus-riscaldamento',
   riepilogo: 'focus-riepilogo',
 };
+// `giorni` è la pagina di una scheda in modifica (tutti i comandi); gli altri sono i dialog aperti da lì
 const PLAN_EDITOR_SHOTS = {
   giorni: 'allenamenti-piani-giorni',
   aggiungiCompatto: 'allenamenti-piani-aggiungi-compatto',
   aggiungiLista: 'allenamenti-piani-aggiungi-lista',
   modificaLista: 'allenamenti-piani-modifica-lista',
 };
-const PLANS_OPEN_SHOT = 'allenamenti-piani-ricche-aperta';
+// Pagina di una scheda ricca in modifica: giorni con più di 4 esercizi, giorno vuoto, nome lungo
+const PLANS_OPEN_SHOT = 'allenamenti-piani-pagina-ricche-modifica';
 const base = `http://localhost:${port}`;
 const outDir = path.join(path.dirname(fileURLToPath(import.meta.url)), outName);
 mkdirSync(outDir, { recursive: true });
@@ -60,7 +62,7 @@ const planInactive = {
   days: [{ id: 3, name: 'Gambe', exercises: [exercise(13, 7, 'Squat', planned(0, times(5, { min: 5, max: 5 })), 'quadricipiti'), exercise(14, 8, 'Stacco da terra', planned(0, [{ failure: true }]), 'femorali')] }],
 };
 
-// Schede più ricche per i controlli sulle card (scelta `plans: 'ricche'`) e per il Focus con un giorno solo
+// Schede più ricche per i controlli sull'elenco e sulla pagina (scelta `plans: 'ricche'`) e per il Focus con un giorno solo
 const day = (id, name, exercises) => ({ id, name, exercises });
 let nextExerciseId = 100;
 const ex = (name, sets, group = 'petto') => {
@@ -422,6 +424,10 @@ const SHOT_LIST = [
   ['gruppo-dettaglio', '/gruppi/1', { loggedIn: true }],
   ['allenamenti-piani', '/schede', { loggedIn: true }],
   ['allenamenti-piani-ricche', '/schede', { loggedIn: true, plans: 'ricche' }],
+  // Pagina di una scheda in lettura: attiva (con «Inizia»), non attiva (con «Rendi attiva»), ricca (giorni lunghi e vuoto)
+  ['allenamenti-piani-pagina', '/schede/5', { loggedIn: true, ready: 'Push Pull' }],
+  ['allenamenti-piani-pagina-non-attiva', '/schede/6', { loggedIn: true, ready: 'Gambe e core' }],
+  ['allenamenti-piani-pagina-ricche', '/schede/5', { loggedIn: true, plans: 'ricche', ready: 'Push Pull Legs' }],
   ['allenamenti-cronologia', '/storico', { loggedIn: true }],
   ['admin', '/admin', { loggedIn: true, admin: true }],
 ];
@@ -436,6 +442,7 @@ for (const vp of viewports) {
         const { ctx, page } = await openPage(vp, theme, opts, tag);
         try {
           await page.goto(`${base}${url}`, { waitUntil: 'domcontentloaded' });
+          if (opts.ready) await page.getByRole('heading', { level: 1, name: opts.ready }).waitFor();
           await snap(page, name, tag);
         } finally {
           await ctx.close();
@@ -457,13 +464,13 @@ for (const vp of viewports) {
       });
     }
 
-    // Le card aperte delle schede ricche: giorni con più di 4 esercizi, vuoto, nome lungo
+    // La pagina della scheda ricca in modifica: giorni con più di 4 esercizi, vuoto, nome lungo
     if (want(PLANS_OPEN_SHOT)) {
       await attempt(tag, PLANS_OPEN_SHOT, async () => {
         const { ctx, page } = await openPage(vp, theme, { loggedIn: true, plans: 'ricche' }, tag);
         try {
-          await page.goto(`${base}/schede`, { waitUntil: 'domcontentloaded' });
-          await page.getByRole('button', { name: /^(Mostra dettagli|Mostra giorni)$/ }).first().click();
+          await page.goto(`${base}/schede/5`, { waitUntil: 'domcontentloaded' });
+          await page.getByRole('button', { name: 'Modifica', exact: true }).click();
           await page.getByText('Nessun esercizio aggiunto').first().waitFor();
           await snap(page, PLANS_OPEN_SHOT, tag);
         } finally {
@@ -522,10 +529,8 @@ for (const vp of viewports) {
     if (want(...Object.values(PLAN_EDITOR_SHOTS))) await attempt(tag, 'piani-editor', async () => {
       const { ctx, page } = await openPage(vp, theme, { loggedIn: true }, tag);
       try {
-        await page.goto(`${base}/schede`, { waitUntil: 'domcontentloaded' });
-        await page.getByRole('button', { name: /^(Mostra dettagli|Mostra giorni)$/ }).first().click();
-        await page.getByRole('button', { name: 'Dettagli', exact: true }).first().click();
-        await page.getByRole('button', { name: 'Dettagli', exact: true }).first().click();
+        await page.goto(`${base}/schede/5`, { waitUntil: 'domcontentloaded' });
+        await page.getByRole('button', { name: 'Modifica', exact: true }).click();
         await page.getByText('Trazioni').first().waitFor();
         await snap(page, PLAN_EDITOR_SHOTS.giorni, tag);
 
@@ -578,19 +583,19 @@ for (const vp of viewports) {
         }
       });
     }
-    for (const [name, plans, expand] of [
-      ['allenamenti-piani-sola-lettura-schede', 'gratis-schede', true],
-      ['allenamenti-piani-sola-lettura-giorni', 'gratis-giorni', true],
-      ['allenamenti-piani-limite', 'gratis-limite', false],
+    // «troppe schede» e il tetto si vedono sull'elenco; «troppi giorni» nella pagina della scheda, in modifica
+    for (const [name, plans, url, edit] of [
+      ['allenamenti-piani-sola-lettura-schede', 'gratis-schede', '/schede', false],
+      ['allenamenti-piani-sola-lettura-giorni', 'gratis-giorni', '/schede/1', true],
+      ['allenamenti-piani-limite', 'gratis-limite', '/schede', false],
     ]) {
       if (!want(name)) continue;
       await attempt(tag, name, async () => {
         const { ctx, page } = await openPage(vp, theme, { loggedIn: true, gratis: true, plans }, tag);
         try {
-          await page.goto(`${base}/schede`, { waitUntil: 'domcontentloaded' });
-          await page.getByRole('button', { name: 'Nuova scheda' }).waitFor();
-          // la scheda in sola lettura (l'ultima) aperta: senza i comandi di modifica
-          if (expand) await page.getByRole('button', { name: /^(Mostra dettagli|Mostra giorni)$/ }).last().click();
+          await page.goto(`${base}${url}`, { waitUntil: 'domcontentloaded' });
+          if (edit) await page.getByRole('button', { name: 'Modifica', exact: true }).click();
+          else await page.getByRole('button', { name: 'Nuova scheda' }).waitFor();
           await snap(page, name, tag);
         } finally {
           await ctx.close();
@@ -612,9 +617,9 @@ for (const vp of viewports) {
     if (want('allenamenti-piani-elimina-giorno')) await attempt(tag, 'allenamenti-piani-elimina-giorno', async () => {
       const { ctx, page } = await openPage(vp, theme, { loggedIn: true, gratis: true, plans: 'gratis-elimina' }, tag);
       try {
-        await page.goto(`${base}/schede`, { waitUntil: 'domcontentloaded' });
+        await page.goto(`${base}/schede/1`, { waitUntil: 'domcontentloaded' });
         await page.setViewportSize({ width: vp.w, height: 1600 });
-        await page.getByRole('button', { name: /^(Mostra dettagli|Mostra giorni)$/ }).first().click();
+        await page.getByRole('button', { name: 'Modifica', exact: true }).click();
         await page.getByRole('button', { name: /^Elimina giorno/ }).first().click();
         await page.getByRole('dialog').waitFor();
         await snap(page, 'allenamenti-piani-elimina-giorno', tag, page.getByRole('dialog'));

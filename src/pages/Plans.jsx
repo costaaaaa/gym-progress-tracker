@@ -1,19 +1,78 @@
-import { Box, Typography } from '@mui/material';
+import { useState } from 'react';
+import { Box, Typography, Button, Grid, Alert, Snackbar } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../hooks/usePageMeta';
-import WorkoutPlans from './WorkoutPlans';
+import LockedRow from '../components/LockedRow';
+import usePlans from './plans/usePlans';
+import useArrivalState from './plans/useArrivalState';
+import PlanListCard from './plans/PlanListCard';
+import ReadOnlyNotice, { readOnlyNoticeReason } from './plans/ReadOnlyNotice';
+import NewPlanDialog from './plans/NewPlanDialog';
 
-// Pagina «Schede» (/schede): il titolo e l'elenco delle schede di prima.
+// Pagina «Schede» (/schede): l'elenco compatto, una card per scheda che porta alla sua pagina (/schede/:id).
 const Plans = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   usePageMeta(t('nav.plans'), t('plans.meta.description'));
+  const { workoutPlans, account, snackbar, closeSnackbar, notify, createPlan } = usePlans();
+  useArrivalState(notify);
+  const [openDialog, setOpenDialog] = useState(false);
+
+  // Creata la scheda si va alla sua pagina con «Modifica» già acceso, per aggiungere subito gli esercizi; l'avviso
+  // di riuscita va con lei, perché questa schermata si smonta
+  const handleCreate = async (values, numDays) => {
+    const id = await createPlan(values, numDays);
+    if (id === null) return false;
+    navigate(`/schede/${id}`, { state: { edit: true, notice: t('plans.msg.created') } });
+    return true;
+  };
+
+  const isFree = account.tier === 'free';
+  const readOnlyAbovePlans = workoutPlans.some((plan) => readOnlyNoticeReason(plan) === 'plans_over_limit');
+  const atPlanLimit = isFree && !!account.limits && workoutPlans.length >= account.limits.plans;
 
   return (
     <Box sx={{ py: 3 }}>
-      <Typography variant="pageTitle" gutterBottom>{t('nav.plans')}</Typography>
-      <Box sx={{ mt: 2 }}>
-        <WorkoutPlans isEmbedded />
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 3 }}>
+        <Typography variant="pageTitle">{t('nav.plans')}</Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon sx={{ color: 'white' }} fontSize="small" />}
+          onClick={() => setOpenDialog(true)}
+          disabled={!account.loaded || atPlanLimit}
+          sx={{ fontSize: 16, fontWeight: 600 }}
+        >
+          {t('plans.new')}
+        </Button>
       </Box>
+      {atPlanLimit && (
+        <LockedRow>{t('plans.locked_plans', { used: workoutPlans.length, max: account.limits.plans })}</LockedRow>
+      )}
+      {readOnlyAbovePlans && <ReadOnlyNotice reason="plans_over_limit" limits={account.limits} isFree={isFree} />}
+
+      <Grid container spacing={2.5}>
+        {workoutPlans.map((plan) => (
+          <Grid item xs={12} md={6} key={plan.id}>
+            <PlanListCard plan={plan} />
+          </Grid>
+        ))}
+      </Grid>
+
+      <NewPlanDialog
+        open={openDialog}
+        onClose={() => setOpenDialog(false)}
+        onCreate={handleCreate}
+        dayLimit={account.limits?.days_per_plan}
+        isFree={isFree}
+      />
+
+      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={closeSnackbar}>
+        <Alert onClose={closeSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

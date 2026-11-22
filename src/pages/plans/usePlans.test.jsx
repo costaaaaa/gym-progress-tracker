@@ -1,4 +1,4 @@
-// Spostamento di un esercizio: un solo comando con la direzione; al primo e all'ultimo posto non parte nessuna richiesta.
+// Spostamento di un esercizio e creazione di una scheda: un solo comando con la direzione; al primo e all'ultimo posto non parte nessuna richiesta.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import usePlans from './usePlans';
@@ -41,5 +41,36 @@ describe('moveExercise', () => {
     await act(async () => { await result.current.moveExercise(day, day.exercises[0], 'down'); });
     await act(async () => { await result.current.moveExercise(day, day.exercises[2], 'up'); });
     expect(reorders()).toHaveLength(2);
+  });
+});
+
+describe('createPlan', () => {
+  const answer = (daysStatus) => vi.fn((url) => Promise.resolve(
+    String(url).includes('create_plan.php') ? json({ plan: { id: 9 } }, 201)
+      : String(url).includes('create_days.php') ? json({ message: 'no' }, daysStatus)
+        : json({ records: [] }),
+  ));
+
+  it('restituisce l\'id della scheda creata', async () => {
+    vi.stubGlobal('fetch', answer(201));
+    const { result } = await mounted();
+    let id;
+    await act(async () => { id = await result.current.createPlan({ name: 'A', description: '' }, 2); });
+    expect(id).toBe(9);
+  });
+
+  it('se i giorni non si creano restituisce null', async () => {
+    vi.stubGlobal('fetch', answer(400));
+    const { result } = await mounted();
+    let id;
+    await act(async () => { id = await result.current.createPlan({ name: 'A', description: '' }, 2); });
+    expect(id).toBeNull();
+  });
+});
+
+describe('plansLoaded', () => {
+  it('è falso finché le schede non sono arrivate, poi vero', async () => {
+    const { result } = await mounted();
+    await waitFor(() => expect(result.current.plansLoaded).toBe(true));
   });
 });
