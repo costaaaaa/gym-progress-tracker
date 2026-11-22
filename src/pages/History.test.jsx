@@ -67,7 +67,7 @@ const mount = async (entry = '/storico', wait = NESSUNO) => {
       </MemoryRouter>
     </ThemeModeProvider>,
   );
-  await screen.findByText(wait);
+  await screen.findAllByText(wait);
 };
 // Elenco con degli allenamenti; `wait` = un testo che compare a lettura finita
 const mountWith = async (workouts, wait = 'Push A') => {

@@ -43,14 +43,14 @@ const WorkoutDetail = ({ workout, weightUnit }) => {
     <Box sx={{ px: 2.5, pb: 2.5, pt: 0.5 }}>
       {workout.notes && (
         <Box sx={{ mb: 2 }}>
-          <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', color: 'text.secondary', mb: 0.5 }}>
+          <Typography sx={{ fontSize: 16, fontWeight: 700, letterSpacing: '0.05em', color: 'text.secondary', mb: 0.5 }}>
             {t('history.notes_caps')}
           </Typography>
           <Box sx={{
             bgcolor: 'background.subtle',
             borderRadius: radius.md, p: 1.5,
           }}>
-            <Typography variant="body2">{workout.notes}</Typography>
+            <Typography sx={{ fontSize: 16 }}>{workout.notes}</Typography>
           </Box>
         </Box>
       )}
@@ -61,10 +61,10 @@ const WorkoutDetail = ({ workout, weightUnit }) => {
         exercises.map((exercise, index) => (
           <Box key={exercise.id + '-' + index} sx={{ mb: index < exercises.length - 1 ? 2 : 0 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, mb: 1 }}>
-              <Typography sx={{ fontWeight: 700, fontSize: 14 }}>{exercise.name}</Typography>
+              <Typography sx={{ fontWeight: 700, fontSize: 16 }}>{exercise.name}</Typography>
               <Box sx={{
                 border: '1px solid', borderColor: 'divider', borderRadius: radius.sm,
-                px: 1.25, py: 0.4, fontSize: 12, fontWeight: 600, color: 'text.secondary', flexShrink: 0,
+                px: 1.25, py: 0.4, fontSize: 16, fontWeight: 600, color: 'text.secondary', flexShrink: 0,
               }}>
                 {t('history.sets_count', { count: exercise.sets.filter(isWorkingSet).length })}
               </Box>
@@ -81,19 +81,19 @@ const WorkoutDetail = ({ workout, weightUnit }) => {
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                      <Typography variant="body2" color="text.secondary">{t('focus.set_n', { n: idx + 1 })}</Typography>
-                      {set.is_warmup && <WarmupBadge />}
+                      <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{t('focus.set_n', { n: idx + 1 })}</Typography>
+                      {set.is_warmup && <WarmupBadge sx={{ fontSize: 16 }} />}
                     </Box>
                     <Box sx={{ textAlign: 'right' }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{formatSetText(set.weight, set.reps, weightUnit)}</Typography>
+                      <Typography sx={{ fontSize: 16, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{formatSetText(set.weight, set.reps, weightUnit)}</Typography>
                       {set.intensity_technique && (
-                        <Typography variant="caption" color="text.secondary" display="block">{techniqueLabel(set.intensity_technique)}</Typography>
+                        <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{techniqueLabel(set.intensity_technique)}</Typography>
                       )}
                     </Box>
                   </Box>
                 ))}
                 {exercise.notes && (
-                  <Typography variant="caption" color="text.secondary" fontStyle="italic">{t('history.exercise_notes', { notes: exercise.notes })}</Typography>
+                  <Typography sx={{ fontSize: 16, color: 'text.secondary', fontStyle: 'italic' }}>{t('history.exercise_notes', { notes: exercise.notes })}</Typography>
                 )}
               </Box>
             ) : (
