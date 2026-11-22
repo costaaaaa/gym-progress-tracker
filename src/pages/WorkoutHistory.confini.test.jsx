@@ -81,8 +81,8 @@ describe('dialog di eliminazione', () => {
     expect(screen.queryByText('Perderai 30 XP.')).toBeNull();
   });
 
-  // Mentre il dialog si chiude il pulsante resta nel documento: un secondo clic non deve fare nulla
-  it('due clic di fila su «Elimina» eliminano una volta sola, senza errori', async () => {
+  // Il secondo clic arriva mentre il dialog si chiude
+  it('due clic di fila su «Elimina» non danno errori e tolgono solo quella riga', async () => {
     serve();
     const errori = [];
     const annota = (evento) => { errori.push(evento.error); evento.preventDefault(); };
