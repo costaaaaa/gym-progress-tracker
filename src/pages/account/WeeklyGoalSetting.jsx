@@ -22,7 +22,7 @@ const shownChoice = (settings) => {
 const WeeklyGoalSetting = ({ account, notify }) => {
   const { t } = useTranslation();
   const [weeklyGoal, setWeeklyGoal] = useState(() => goalSettings(account ?? {}));
-  const [weeklyGoalChoice, setWeeklyGoalChoice] = useState(() => shownChoice(goalSettings(account ?? {})));
+  const [weeklyGoalChoice, setWeeklyGoalChoice] = useState(() => shownChoice(weeklyGoal));
   const [saving, setSaving] = useState(false);
 
   const applyWeeklyGoalSettings = (data) => {
