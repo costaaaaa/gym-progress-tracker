@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { Box, CardActionArea, IconButton, Typography } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import { useTranslation } from 'react-i18next';
@@ -42,21 +43,23 @@ const Sparkline = ({ sessions, color }) => {
 
 const TONE_COLOR = { positive: 'success.main', negative: 'recovery.recovering', neutral: 'text.secondary', muted: 'text.disabled' };
 
-// Una riga della panoramica: nome e ultima sessione, mini grafico, valore con variazione, stella dei preferiti
-const ExerciseProgressRow = ({ item, weightUnit, showMuscle = false, favorite, onToggleFavorite, onOpen }) => {
+// Una riga dell'elenco (un <li>): tutta la riga, tranne la stella, è il collegamento alla pagina dell'esercizio. Nome e
+// ultima sessione, mini grafico, valore con variazione; la stella dei preferiti è un pulsante a sé.
+const ExerciseProgressRow = ({ item, weightUnit, showMuscle = false, favorite, onToggleFavorite }) => {
   const { t } = useTranslation();
   const { name, muscle, status, deltaPct, last, mode, sessions, lastDays, recentPR, laterInSession } = item;
   const tone = STATUS_TONE[status];
 
   return (
-    <Box data-exercise-row sx={{ display: 'flex', alignItems: 'center', opacity: status === STATUS.INACTIVE ? 0.6 : 1 }}>
+    <Box component="li" data-exercise-row sx={{ listStyle: 'none', display: 'flex', alignItems: 'center', opacity: status === STATUS.INACTIVE ? 0.6 : 1, '&:not(:first-of-type)': { borderTop: '1px solid', borderColor: 'divider' } }}>
       <CardActionArea
-        onClick={() => onOpen(item.id)}
-        sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: { xs: 1.5, md: 3 }, py: 1.25, px: 1, borderRadius: radius.xxl, ...(laterInSession && { flexWrap: 'wrap', rowGap: 0 }) }}
+        component={RouterLink}
+        to={`/progressi/esercizi/${item.id}`}
+        sx={{ flex: 1, minWidth: 0, minHeight: 60, display: 'flex', alignItems: 'center', gap: { xs: 1.5, md: 3 }, py: 1.25, px: 1, borderRadius: radius.xxl, ...(laterInSession && { flexWrap: 'wrap', rowGap: 0 }) }}
       >
         <Box sx={{ flex: { xs: 1, md: '0 0 300px' }, minWidth: 0 }}>
-          <Typography sx={{ fontWeight: 600, fontSize: 16, lineHeight: 1.3 }}>{name}</Typography>
-          <Typography sx={{ fontSize: 16, color: 'text.secondary' }} noWrap>
+          <Typography sx={{ fontWeight: 600, fontSize: 16, lineHeight: 1.3, overflowWrap: 'anywhere' }}>{name}</Typography>
+          <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
             {showMuscle ? `${muscleLabel(muscle)} · ` : ''}{t('progress.last_session', { when: formatDaysAgo(t, lastDays) })}
           </Typography>
         </Box>
@@ -66,8 +69,8 @@ const ExerciseProgressRow = ({ item, weightUnit, showMuscle = false, favorite, o
         <Box sx={{ textAlign: 'right', minWidth: { xs: 76, md: 120 }, ml: { md: 'auto' } }}>
           <Typography variant="statNumber" sx={{ fontSize: 18 }}>{formatValue(t, mode, last.value, weightUnit)}</Typography>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'baseline', gap: 0.75 }}>
-            {recentPR && <Typography component="span" data-row-badge sx={{ fontSize: 13, fontWeight: 700 }}>{t('progress.pr')}</Typography>}
-            <Typography component="span" data-row-badge sx={{ fontSize: 14, fontWeight: 600, color: TONE_COLOR[tone] }}>
+            {recentPR && <Typography component="span" sx={{ fontSize: 16, fontWeight: 700 }}>{t('progress.pr')}</Typography>}
+            <Typography component="span" sx={{ fontSize: 16, fontWeight: 600, color: TONE_COLOR[tone] }}>
               {showsDelta(item)
                 ? `${deltaPct >= 0 ? '▲' : '▼'} ${formatNumber(Math.abs(deltaPct), { maximumFractionDigits: 1 })}%`
                 : t(`progress.status.${status}`)}
@@ -77,7 +80,7 @@ const ExerciseProgressRow = ({ item, weightUnit, showMuscle = false, favorite, o
 
         {laterInSession && (
           // Riga a sé a tutta larghezza: concatenata al delta allargherebbe la colonna del valore sul telefono
-          <Typography sx={{ flexBasis: '100%', textAlign: 'right', fontSize: 13, fontWeight: 600, color: TONE_COLOR[tone] }}>{t('progress.later_in_session')}</Typography>
+          <Typography sx={{ flexBasis: '100%', textAlign: 'right', fontSize: 16, fontWeight: 600, color: TONE_COLOR[tone] }}>{t('progress.later_in_session')}</Typography>
         )}
       </CardActionArea>
 

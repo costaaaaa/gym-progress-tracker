@@ -83,7 +83,8 @@ describe('nota "più avanti nella seduta" (#26)', () => {
     renderRow(declining(true));
     expect(screen.getByText('▼ 10%')).toBeTruthy();
     const note = screen.getByText('più avanti nella seduta');
-    expect(note.closest('[data-row-badge]')).toBeNull();
+    // sta nel collegamento, accanto al blocco del valore, non dentro la riga della variazione
+    expect(note.parentElement).toBe(screen.getByRole('link'));
   });
 
   it('senza il flag resta solo il ▼', () => {
