@@ -1,8 +1,10 @@
-// Pagina Progressi vista dall'utente: riepilogo con numeri grandi, una riga per esercizio dentro la card del gruppo.
+// Tab Esercizi dei Progressi vista dall'utente: riepilogo con numeri grandi, gruppi muscolari come card sempre aperte,
+// una riga-collegamento per esercizio (la pagina dell'esercizio è /progressi/esercizi/<id>).
 // Colori del tema chiaro scritti a mano: text.primary #1a1816, text.secondary #6b6663, success #15803d,
 // recovery.recovering #b45309, text.disabled rgba(0,0,0,.38).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, within, fireEvent } from '@testing-library/react';
+import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import Progress from './Progress';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { textBelow } from '../test/minText';
@@ -56,13 +58,12 @@ beforeEach(() => {
 });
 afterEach(() => { vi.unstubAllGlobals(); localStorage.clear(); });
 
+const renderProgress = (props = {}) => render(
+  <ThemeModeProvider><MemoryRouter><Progress isEmbedded {...props} /></MemoryRouter></ThemeModeProvider>,
+);
 const mount = async () => {
-  render(<ThemeModeProvider><Progress isEmbedded /></ThemeModeProvider>);
+  renderProgress();
   await screen.findByText('Ultimi 60 giorni');
-};
-const mountOpen = async () => {
-  await mount();
-  ['Petto', 'Quadricipiti', 'Spalle', 'Schiena'].forEach(openSection);
 };
 
 // Numero e etichetta di una voce del riepilogo
@@ -73,7 +74,7 @@ const stat = (label) => {
 
 describe('contenitore', () => {
   it('non incorporata, la pagina non apre un Container dentro quello del Layout', async () => {
-    render(<ThemeModeProvider><Progress /></ThemeModeProvider>);
+    renderProgress({ isEmbedded: false });
     await screen.findByText('Ultimi 60 giorni');
     expectNoNestedContainer();
   });
@@ -133,23 +134,23 @@ describe('riepilogo', () => {
     expect(mediaStyle(rowEl, 900)).toMatchObject({ 'justify-content': 'flex-start', gap: '48px' });
   });
 
-  it('i chip dei PR sono neutri: bordo grigio, testo in inchiostro, 13px', async () => {
-    const records = [session(1, daysAgo(40), 1, 'Panca piana', 80), session(2, daysAgo(2), 1, 'Panca piana', 90)];
-    stubFetch(records);
+  it('i chip dei PR sono neutri (bordo grigio, testo in inchiostro, 16px, area da 44px) e portano alla pagina dell\'esercizio', async () => {
+    stubFetch([session(1, daysAgo(40), 1, 'Panca piana', 80), session(2, daysAgo(2), 1, 'Panca piana', 90)]);
     await mount();
-    const chip = screen.getByText('PR · Panca piana').closest('.MuiChip-root');
-    const style = getComputedStyle(chip);
+    const link = screen.getByRole('link', { name: 'PR · Panca piana' });
+    expect(link.getAttribute('href')).toBe('/progressi/esercizi/1');
+    const style = getComputedStyle(link);
     expect(style.color).toBe(INK);
-    expect(style.fontSize).toBe('13px');
+    expect(style.fontSize).toBe('16px');
+    expect(style.height).toBe('44px');
   });
 });
 
-const section = (title) => screen.getByText(title, { selector: 'p' }).closest('.MuiAccordion-root');
+// Il gruppo muscolare è una card (section) con titolo h2: «Petto · 2 esercizi»
+const section = (title) => screen.getByRole('heading', { level: 2, name: new RegExp(`^${title}`) }).closest('section');
 const row = (name) => screen.getByText(name, { selector: 'p' }).closest('[data-exercise-row]');
-const openSection = (title) => {
-  const header = within(section(title)).getByRole('button', { name: new RegExp(title) });
-  if (header.getAttribute('aria-expanded') !== 'true') fireEvent.click(header);
-};
+const rowLink = (name) => within(row(name)).getByRole('link');
+const star = (name) => within(row(name)).getByRole('button', { name: /preferiti/ });
 
 describe('nessun PR', () => {
   it('con un solo allenamento (tutti "Nuovo") dice che ne serve un secondo, non "Nessun record recente"', async () => {
@@ -177,122 +178,241 @@ describe('nessun PR', () => {
 });
 
 describe('testi', () => {
-  it('nessun testo della pagina è sotto i 16px, salvo chip dei PR, badge della riga (PR e variazione) e campo di ricerca', async () => {
-    await mountOpen();
-    // Esenti: chip (PR del riepilogo), badge del dato nella riga, etichetta del campo di ricerca (MUI)
-    expect(textBelow(document.body, 16, '.MuiChip-root, [data-row-badge], .MuiFormLabel-root, legend')).toEqual([]);
+  it('nessun testo della pagina è sotto i 16px: righe, chip, titoli e card (salvo l\'etichetta del campo di ricerca, di MUI)', async () => {
+    await mount();
+    expect(textBelow(document.body, 16, '.MuiFormLabel-root, legend')).toEqual([]);
+  });
+});
+
+describe('gruppi muscolari', () => {
+  it('ogni gruppo è una card sempre aperta, con titolo h2 (nome e numero di esercizi) e un elenco di righe', async () => {
+    await mount();
+    const headings = screen.getAllByRole('heading', { level: 2 });
+    expect(headings.map((h) => h.textContent)).toEqual(['Spalle · 1 esercizio', 'Petto · 2 esercizi', 'Quadricipiti · 1 esercizio', 'Schiena · 1 esercizio']);
+    expect(document.querySelectorAll('.MuiAccordion-root, .MuiAccordionSummary-root')).toHaveLength(0);
+    const petto = section('Petto');
+    expect(petto.classList.contains('MuiCard-root')).toBe(true);
+    const items = within(petto).getAllByRole('listitem');
+    expect(items).toHaveLength(2);
+    items.forEach((li) => expect(li.hasAttribute('data-exercise-row')).toBe(true));
+    expect(within(petto).getByText('Panca piana')).toBeTruthy();
+    expect(within(petto).getByText('Croci ai cavi')).toBeTruthy();
+  });
+
+  it('il numero di esercizi sta accanto al nome, in grigio', async () => {
+    await mount();
+    const count = within(screen.getByRole('heading', { level: 2, name: /^Petto/ })).getByText(/2 esercizi/);
+    expect(getComputedStyle(count).color).toBe(GREY);
+    expect(getComputedStyle(count).fontSize).toBe('16px');
+  });
+
+  it('un esercizio senza muscolo nel catalogo sta nel gruppo «Altro»', async () => {
+    stubFetch([session(1, daysAgo(1), 99, 'Esercizio nuovo', 40)]);
+    await mount();
+    expect(screen.getByRole('heading', { level: 2, name: /^Altro/ })).toBeTruthy();
   });
 });
 
 describe('righe degli esercizi', () => {
-  it('dentro la card del gruppo ogni esercizio è una riga, non una card', async () => {
-    await mountOpen();
-    openSection('Petto');
-    const petto = section('Petto');
-    expect(petto.querySelectorAll('[data-exercise-row]')).toHaveLength(2);
-    expect(petto.querySelectorAll('.MuiAccordionDetails-root .MuiCard-root')).toHaveLength(0);
+  it('ogni riga è un collegamento alla pagina dell\'esercizio, alto almeno 60px', async () => {
+    await mount();
+    const link = rowLink('Panca piana');
+    expect(link.getAttribute('href')).toBe('/progressi/esercizi/1');
+    expect(link.getAttribute('role')).toBeNull();
+    expect(getComputedStyle(link).minHeight).toBe('60px');
+    expect(rowLink('Squat con bilanciere').getAttribute('href')).toBe('/progressi/esercizi/2');
   });
 
-  it('il nome non è troncato (va a capo) e ha una sottoriga con l\'ultima sessione', async () => {
-    await mountOpen();
-    openSection('Petto');
+  it('la stella è un pulsante a sé, fuori dal collegamento, da 44px', async () => {
+    await mount();
+    const r = row('Panca piana');
+    const button = star('Panca piana');
+    expect(button.closest('a')).toBeNull();
+    expect(within(r).getByRole('link').contains(button)).toBe(false);
+    expect(getComputedStyle(button).width).toBe('44px');
+    expect(getComputedStyle(button).height).toBe('44px');
+  });
+
+  it('il nome non è troncato e ha una sottoriga con l\'ultima sessione, da 16px', async () => {
+    await mount();
     const name = screen.getByText('Panca piana', { selector: '[data-exercise-row] p' });
     const style = getComputedStyle(name);
     expect(style.whiteSpace).not.toBe('nowrap');
     expect(style.textOverflow).not.toBe('ellipsis');
     expect(style.fontSize).toBe('16px');
-    expect(within(row('Panca piana')).getByText('ultimo 2 gg fa')).toBeTruthy();
+    const sub = within(row('Panca piana')).getByText('ultimo 2 gg fa');
+    expect(getComputedStyle(sub).fontSize).toBe('16px');
+    expect(getComputedStyle(sub).textOverflow).not.toBe('ellipsis');
   });
 
   it('da md in su il nome sta in una colonna di larghezza fissa, poi il grafico, poi il valore a destra', async () => {
-    await mountOpen();
+    await mount();
     const r = row('Panca piana');
     const name = screen.getByText('Panca piana', { selector: '[data-exercise-row] p' }).parentElement;
-    const nameMd = mediaStyle(name, 900);
-    expect(nameMd['flex']).toMatch(/^0 0 (2[89]\d|3[0-2]\d)px$/);
+    expect(mediaStyle(name, 900)['flex']).toMatch(/^0 0 (2[89]\d|3[0-2]\d)px$/);
     const value = within(r).getByText(/kg$/).parentElement;
     expect(mediaStyle(value, 900)['margin-left']).toBe('auto');
     expect(getComputedStyle(value).textAlign).toBe('right');
   });
 
   it('il valore è nello stile numero grande, con l\'unità', async () => {
-    await mountOpen();
+    await mount();
     const value = within(row('Panca piana')).getByText(/kg$/);
     expect(getComputedStyle(value).fontFamily).toBe('"Lexend", sans-serif');
     expect(getComputedStyle(value).fontWeight).toBe('700');
   });
 
   it('variazione: crescita verde, calo ambra, fermo grigio, nuovo grigio, inattivo attenuato', async () => {
-    await mountOpen();
+    await mount();
     const delta = (name, text) => getComputedStyle(within(row(name)).getByText(text));
     expect(delta('Panca piana', /▲/).color).toBe(GREEN);
-    openSection('Quadricipiti');
     expect(delta('Squat con bilanciere', /▼/).color).toBe(AMBER);
     expect(delta('Croci ai cavi', 'Fermo').color).toBe(GREY);
-    openSection('Spalle');
     expect(delta('Military press', 'Nuovo').color).toBe(GREY);
-    openSection('Schiena');
     expect(delta('Stacco da terra', 'Inattivo').color).toBe(DISABLED);
   });
 
   it('il mini grafico ha il colore della variazione: verde in crescita, ambra in calo, grigio se fermo, attenuato se inattivo', async () => {
-    await mountOpen();
+    await mount();
     const spark = (name) => getComputedStyle(row(name).querySelector('svg').parentElement).color;
     expect(spark('Panca piana')).toBe(GREEN);
-    openSection('Quadricipiti');
     expect(spark('Squat con bilanciere')).toBe(AMBER);
     expect(spark('Croci ai cavi')).toBe(GREY);
-    openSection('Schiena');
     expect(spark('Stacco da terra')).toBe(DISABLED);
   });
 
   it('nessun rosso: il calo non usa error.main', async () => {
-    await mountOpen();
-    openSection('Quadricipiti');
+    await mount();
     const colors = [...document.querySelectorAll('[data-exercise-row] *')].map((el) => getComputedStyle(el).color);
     expect(colors).not.toContain('rgb(213, 0, 0)');
   });
 
-  it('il testo di riga è almeno 16px, salvo il «PR» e la variazione accanto al valore (badge del dato, 13px o più), e la stella è un bersaglio da 44px', async () => {
-    await mountOpen();
-    const r = row('Panca piana');
-    expect(textBelow(r, 16, '[data-row-badge]')).toEqual([]);
-    r.querySelectorAll('[data-row-badge]').forEach((b) => expect(parseFloat(getComputedStyle(b).fontSize)).toBeGreaterThanOrEqual(13));
-    const star = within(r).getByRole('button', { name: 'Aggiungi ai preferiti' });
-    expect(getComputedStyle(star).width).toBe('44px');
-    expect(getComputedStyle(star).height).toBe('44px');
+  it('nessun testo della riga è sotto i 16px, nemmeno il «PR» e la variazione accanto al valore', async () => {
+    await mount();
+    document.querySelectorAll('[data-exercise-row]').forEach((r) => expect(textBelow(r, 16)).toEqual([]));
+  });
+});
+
+describe('preferiti', () => {
+  const chip = () => screen.queryByRole('button', { name: 'Preferiti' });
+
+  it('senza preferiti il chip «Preferiti» non c\'è', async () => {
+    await mount();
+    expect(chip()).toBeNull();
   });
 
-  it('toccare la riga apre il dettaglio, la stella segna il preferito senza aprirlo', async () => {
-    await mountOpen();
-    fireEvent.click(within(row('Panca piana')).getByRole('button', { name: 'Aggiungi ai preferiti' }));
-    expect(screen.queryByRole('dialog')).toBeNull();
-    expect(await screen.findByText('Preferiti')).toBeTruthy();
-    fireEvent.click(screen.getByText('Panca piana'));
-    expect(await screen.findByRole('dialog')).toBeTruthy();
-  });
-
-  it('i preferiti stanno in una card con bordo e mostrano il muscolo nella sottoriga', async () => {
+  it('con un preferito il chip c\'è sotto la ricerca, spento, da 44px', async () => {
     localStorage.setItem('liftindex.progress.favorites', JSON.stringify(['1']));
-    await mountOpen();
-    const favorites = screen.getByText('Preferiti', { selector: 'p' }).closest('.MuiCard-root');
-    expect(favorites).not.toBeNull();
-    expect(within(favorites).getByText(/Petto/)).toBeTruthy();
+    await mount();
+    const c = chip();
+    expect(c.getAttribute('aria-pressed')).toBe('false');
+    expect(getComputedStyle(c).height).toBe('44px');
+    expect(getComputedStyle(c).fontSize).toBe('16px');
+    const search = screen.getByRole('textbox', { name: 'Cerca esercizio' });
+    expect(search.compareDocumentPosition(c) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('il titolo del gruppo è nello stile titolo di card e la sottoriga è da 16px', async () => {
-    await mountOpen();
-    const title = screen.getByText('Petto', { selector: 'p' });
-    expect(parseFloat(getComputedStyle(title).fontSize)).toBeGreaterThanOrEqual(16);
-    const sub = within(section('Petto').querySelector('.MuiAccordionSummary-root')).getByText(/ultimo 2 gg fa/);
-    expect(getComputedStyle(sub).fontSize).toBe('16px');
+  it('acceso mostra solo i preferiti (e i gruppi che li contengono), spento li rimostra tutti', async () => {
+    localStorage.setItem('liftindex.progress.favorites', JSON.stringify(['1']));
+    await mount();
+    fireEvent.click(chip());
+    expect(chip().getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+    expect(within(section('Petto')).getByText('Panca piana')).toBeTruthy();
+    expect(screen.queryByText('Croci ai cavi')).toBeNull();
+    expect(screen.queryByRole('heading', { level: 2, name: /^Quadricipiti/ })).toBeNull();
+    fireEvent.click(chip());
+    expect(chip().getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getAllByRole('listitem')).toHaveLength(5);
+  });
+
+  it('non c\'è più la card «Preferiti»: il preferito sta una volta sola, nel suo gruppo', async () => {
+    localStorage.setItem('liftindex.progress.favorites', JSON.stringify(['1']));
+    await mount();
+    expect(screen.queryByRole('heading', { name: 'Preferiti' })).toBeNull();
+    expect(screen.getAllByText('Panca piana', { selector: 'p' })).toHaveLength(1);
+    expect(within(section('Petto')).getByText('Panca piana')).toBeTruthy();
+    expect(star('Panca piana').getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('con il chip acceso e nessun risultato dice «Nessun esercizio trovato»', async () => {
+    localStorage.setItem('liftindex.progress.favorites', JSON.stringify(['1']));
+    await mount();
+    fireEvent.click(chip());
+    fireEvent.change(screen.getByRole('textbox', { name: 'Cerca esercizio' }), { target: { value: 'squat' } });
+    expect(await screen.findByText('Nessun esercizio trovato')).toBeTruthy();
+  });
+
+  it('la stella segna il preferito senza aprire la pagina, e il chip compare', async () => {
+    await mount();
+    expect(chip()).toBeNull();
+    fireEvent.click(star('Panca piana'));
+    expect(star('Panca piana').getAttribute('aria-pressed')).toBe('true');
+    expect(chip()).not.toBeNull();
+    expect(JSON.parse(localStorage.getItem('liftindex.progress.favorites'))).toEqual(['1']);
+  });
+
+  it('tolto l\'ultimo preferito a chip acceso, il chip sparisce e l\'elenco torna intero', async () => {
+    localStorage.setItem('liftindex.progress.favorites', JSON.stringify(['1']));
+    await mount();
+    fireEvent.click(chip());
+    fireEvent.click(star('Panca piana'));
+    expect(chip()).toBeNull();
+    expect(screen.getAllByRole('listitem')).toHaveLength(5);
+  });
+});
+
+describe('ricerca', () => {
+  it('filtra gli esercizi per nome e dice quando non trova nulla', async () => {
+    await mount();
+    const input = screen.getByRole('textbox', { name: 'Cerca esercizio' });
+    fireEvent.change(input, { target: { value: 'panca' } });
+    await waitFor(() => expect(screen.getAllByRole('listitem')).toHaveLength(1));
+    expect(within(section('Petto')).getByText('Panca piana')).toBeTruthy();
+    fireEvent.change(input, { target: { value: 'xyz' } });
+    expect(await screen.findByText('Nessun esercizio trovato')).toBeTruthy();
+    expect(screen.queryAllByRole('listitem')).toHaveLength(0);
+  });
+});
+
+describe('stati', () => {
+  it('in caricamento mostra l\'indicatore, non il vuoto', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
+    renderProgress();
+    expect(screen.getByRole('progressbar')).toBeTruthy();
+    expect(screen.queryByText(/Nessun dato di allenamento/)).toBeNull();
+  });
+
+  it('senza allenamenti (elenco vuoto) dice di registrare il primo, senza «Riprova»', async () => {
+    stubFetch([]);
+    renderProgress();
+    expect(await screen.findByText('Nessun dato di allenamento disponibile. Registra il tuo primo allenamento!')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Riprova' })).toBeNull();
+    expect(screen.queryByText(/problema di connessione/)).toBeNull();
+  });
+
+  it('errore di lettura: messaggio d\'errore con «Riprova», diverso dal vuoto; Riprova rilegge', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    let up = false;
+    vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
+      url.includes('read_all.php') ? json({ records: catalog }) : (up ? json({ records: history }) : json({}, 500)),
+    )));
+    renderProgress();
+    expect(await screen.findByText('Errore nel caricamento della cronologia: problema di connessione')).toBeTruthy();
+    expect(screen.getByRole('alert')).toBeTruthy();
+    expect(screen.queryByText(/Nessun dato di allenamento/)).toBeNull();
+    up = true;
+    fireEvent.click(screen.getByRole('button', { name: 'Riprova' }));
+    await screen.findByText('Ultimi 60 giorni');
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(within(section('Petto')).getByText('Panca piana')).toBeTruthy();
   });
 });
 
 describe('unità di peso dell\'account', () => {
   it('in lb il 1RM stimato di una riga è in libbre', async () => {
     account.weightUnit = 'lb';
-    await mountOpen();
+    await mount();
     expect(within(row('Panca piana')).getByText('231,5 lb')).toBeTruthy(); // 105 kg
     expect(within(row('Panca piana')).queryByText(/kg/)).toBeNull();
   });
