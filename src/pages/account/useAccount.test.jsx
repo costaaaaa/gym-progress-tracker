@@ -92,6 +92,25 @@ describe('useAccount: livello dopo la conferma dell\'email', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it.each([
+    ['il server risponde success: false', () => Promise.resolve(json({ success: false, tier: 'pro' }))],
+    ['il server risponde con un errore', () => Promise.resolve(json({ tier: 'pro' }, 500))],
+    ['la rete non risponde', () => Promise.reject(new Error('rete'))],
+  ])('rilettura del livello fallita (%s): i dati restano quelli di prima e nessuna notifica', async (_, reply) => {
+    // la risposta fallita nasce solo alla seconda lettura: una promessa rifiutata prima non avrebbe chi la gestisce
+    const fetchMock = vi.fn().mockReturnValueOnce(Promise.resolve(json(details({ age: 30 })))).mockImplementationOnce(reply);
+    vi.stubGlobal('fetch', fetchMock);
+    const hook = await mount();
+    const before = hook.result.current.account;
+    confirm(hook);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2)); // la rilettura è partita
+    await act(async () => { for (let i = 0; i < 5; i++) await Promise.resolve(); }); // e la risposta è stata gestita
+    expect(hook.result.current.account).toEqual(before);
+    expect(hook.result.current.account.tier).toBe('free');
+    expect(hook.result.current.loading).toBe(false);
+    expect(hook.notify).not.toHaveBeenCalled();
+  });
+
   it('un cambio dello stato dell\'email che non conferma né cambia indirizzo non rilegge', async () => {
     const fetchMock = stubReads(Promise.resolve(json(details())));
     const hook = await mount();
