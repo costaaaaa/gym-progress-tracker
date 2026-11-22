@@ -22,8 +22,7 @@ import SetsDoneDialog from './SetsDoneDialog';
 import { slotLabel } from './slotLabel';
 import { setSlot } from '../../utils/focusSession';
 import ButtonSpinner from '../../components/ButtonSpinner';
-import { useModule } from '../../hooks/useModule';
-import { levelReachedText, achievementsText } from './rewardTexts';
+import { levelReachedText, newAchievementsText } from './rewardTexts';
 
 // Cosa si è battuto, per tipo di record: il miglior volume non ha una serie da mostrare
 const RECORD_KEYS = {
@@ -51,16 +50,28 @@ function SummaryStat({ value, label, valueSx }) {
   );
 }
 
+// Riquadro della schermata: titolo h2 grigio, riga d'aiuto facoltativa e il contenuto
+function SummaryCard({ title, help, children }) {
+  const { colors } = useFocusColors();
+  return (
+    <Paper sx={{ bgcolor: colors.bgCard, overflow: 'hidden', mb: 3, border: `1px solid ${colors.border}` }}>
+      <Box sx={{ px: 2, py: 1.5 }}>
+        <Typography variant="subtitle2" component="h2" sx={{ color: colors.textSecondary }}>{title}</Typography>
+        {help && <Typography variant="caption" component="p" sx={{ color: colors.textSecondary, m: 0 }}>{help}</Typography>}
+      </Box>
+      {children}
+    </Paper>
+  );
+}
+
 export default function SummaryPhase({
   weightUnit, activePlan, selectedDay, completedSets, historyIndex, shareDate, elapsedSeconds, elapsedTime, totalCompletedSets,
   workoutNotes, onNotesChange, saving, savedResult, onSave, onQuit, onGoHome,
-  techniqueOn, onEditSet, shareStats, onOpenShare, onCloseShare,
+  levelsOn, techniqueOn, onEditSet, shareStats, onOpenShare, onCloseShare,
   quitDialogOpen, onCloseQuitDialog, onConfirmQuit
 }) {
   const { t } = useTranslation();
   const { colors } = useFocusColors();
-  // Senza il modulo Livelli il server conta comunque punti e streak: qui non si mostrano
-  const levelsOn = useModule('levels');
   // Serie in correzione: la finestra resta con l'ultimo esercizio mentre si chiude
   const [correction, setCorrection] = useState({ open: false, exercise: null, setNumber: null });
 
@@ -115,7 +126,7 @@ export default function SummaryPhase({
     if (level) rewardRows.push({ key: 'level', text: r.xp_gained > 0 ? `${level} · ${t('focus.points_gained', { count: r.xp_gained })}` : level });
     const withheld = xpWithheldText(r);
     if (withheld) rewardRows.push({ key: 'withheld', text: withheld, muted: true });
-    const achievements = achievementsText(t, r, weightUnit);
+    const achievements = newAchievementsText(t, r, weightUnit);
     if (achievements) rewardRows.push({ key: 'achievements', text: achievements });
   }
 
@@ -137,10 +148,7 @@ export default function SummaryPhase({
         </Box>
 
         {records.length > 0 && (
-          <Paper sx={{ bgcolor: colors.bgCard, overflow: 'hidden', mb: 3, border: `1px solid ${colors.border}` }}>
-            <Box sx={{ px: 2, py: 1.5 }}>
-              <Typography variant="subtitle2" component="h2" sx={{ color: colors.textSecondary }}>{t('focus.records_today')}</Typography>
-            </Box>
+          <SummaryCard title={t('focus.records_today')}>
             <Box component="ul" role="list" sx={{ listStyle: 'none', m: 0, p: 0 }}>
               {records.map((record, i) => (
                 <Box component="li" key={i} sx={{ px: 2, py: 1.5, borderTop: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -154,16 +162,10 @@ export default function SummaryPhase({
                 </Box>
               ))}
             </Box>
-          </Paper>
+          </SummaryCard>
         )}
 
-        <Paper sx={{ bgcolor: colors.bgCard, overflow: 'hidden', mb: 3, border: `1px solid ${colors.border}` }}>
-          <Box sx={{ px: 2, py: 1.5 }}>
-            <Typography variant="subtitle2" component="h2" sx={{ color: colors.textSecondary }}>{t('focus.detail')}</Typography>
-            {!savedResult && (
-              <Typography variant="caption" component="p" sx={{ color: colors.textSecondary, m: 0 }}>{t('focus.done_sets.help')}</Typography>
-            )}
-          </Box>
+        <SummaryCard title={t('focus.detail')} help={savedResult ? null : t('focus.done_sets.help')}>
           {selectedDay?.exercises?.map((exercise) => {
             const sets = completedSets[exercise.id];
             if (!sets || sets.length === 0) return null;
@@ -205,16 +207,13 @@ export default function SummaryPhase({
               </Box>
             );
           })}
-        </Paper>
+        </SummaryCard>
 
         {savedResult ? (
           // Con la chiave React non riusa il pulsante «Salva allenamento» per «Condividi»: il focus perso va sul titolo
           <Fragment key="saved">
             {rewardRows.length > 0 && (
-              <Paper sx={{ bgcolor: colors.bgCard, overflow: 'hidden', mb: 3, border: `1px solid ${colors.border}` }}>
-                <Box sx={{ px: 2, py: 1.5 }}>
-                  <Typography variant="subtitle2" component="h2" sx={{ color: colors.textSecondary }}>{t('focus.rewards_title')}</Typography>
-                </Box>
+              <SummaryCard title={t('focus.rewards_title')}>
                 <Box component="ul" role="list" sx={{ listStyle: 'none', m: 0, p: 0 }}>
                   {rewardRows.map((row) => (
                     <Box component="li" key={row.key} sx={{ px: 2, py: 1.5, borderTop: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -226,7 +225,7 @@ export default function SummaryPhase({
                     </Box>
                   ))}
                 </Box>
-              </Paper>
+              </SummaryCard>
             )}
 
             <Button

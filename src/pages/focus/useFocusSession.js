@@ -953,6 +953,7 @@ export default function useFocusSession() {
     onNotesChange: setWorkoutNotes,
     saving,
     savedResult,
+    levelsOn,
     onSave: handleSave,
     onQuit: handleQuit,
     onGoHome: () => navigate('/'),
