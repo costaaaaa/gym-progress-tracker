@@ -370,7 +370,7 @@ describe('giorno scelto e allenamenti del giorno', () => {
   it('le righe del giorno sono quelle dell\'elenco: titolo, data, durata e volume', async () => {
     await mount('/storico?vista=calendario&giorno=2026-11-18');
     const riga = screen.getByRole('link', { name: /^Pull B/ });
-    expect(within(riga).getByText('mer 18 nov · 60 min · 1440 kg')).toBeTruthy();
+    expect(within(riga).getByText('mer 18 nov · 60 min · 1.440 kg')).toBeTruthy();
     expect(parseFloat(getComputedStyle(riga).minHeight)).toBeGreaterThanOrEqual(60);
   });
 

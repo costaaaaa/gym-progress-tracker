@@ -25,6 +25,11 @@ describe('alias delle tab', () => {
     await waitFor(() => expect(screen.getByTestId('tab').textContent).toBe('one ?tab=one'));
   });
 
+  it('un nome del prototipo degli oggetti (constructor) non è un alias: torna alla prima tab', async () => {
+    open('/p?tab=constructor', ALIASES);
+    await waitFor(() => expect(screen.getByTestId('tab').textContent).toBe('one ?tab=one'));
+  });
+
   it('una tab valida resta com\'è', () => {
     open('/p?tab=two', ALIASES);
     expect(screen.getByTestId('tab').textContent).toBe('two ?tab=two');

@@ -1,7 +1,7 @@
 // Il volume della settimana come testo: unità dell'utente, migliaia sempre separate, lingua dell'utente.
 import { describe, it, expect } from 'vitest';
-import i18n from '../../i18n';
-import { formatVolume } from './volumeText';
+import i18n from '../i18n';
+import { formatVolume } from './formatVolume';
 
 describe('formatVolume', () => {
   it('in kg il totale com\'è, con le migliaia separate anche a quattro cifre (in italiano di norma non lo sono)', () => {

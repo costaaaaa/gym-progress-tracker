@@ -150,6 +150,16 @@ describe('card «Questa settimana»', () => {
     expect(screen.queryByText(/nessun/i)).toBeNull();
   });
 
+  it('settimana a zero con il modulo attivo: due zeri, righe «nessun dato» e nessun altro testo di vuoto', async () => {
+    await mount(emptyWeek);
+    expect(stat('Volume').textContent).toBe('0\u00a0kg');
+    expect(stat('Serie').textContent).toBe('0');
+    expect(within(muscleCard()).getAllByRole('listitem')).toHaveLength(12);
+    expect(within(muscleCard()).getAllByText('nessun dato')).toHaveLength(12);
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByText(/nessun (allenamento|dato di)/i)).toBeNull();
+  });
+
   it('a 320 px i due numeri stanno su una riga e il testo lungo va a capo dentro la card', async () => {
     await mount();
     const numbers = stat('Volume').parentElement.parentElement;
@@ -277,6 +287,8 @@ describe('piano Gratis (detail "basic")', () => {
   it('nella card «Per muscolo»: niente serie, variazione né barre per muscolo', async () => {
     await mount(basicStats);
     expect(stat('Serie').textContent).toBe('53');
+    expect(screen.queryByText(/intera/)).toBeNull();
+    expect(screen.queryByText(/Settimana scorsa/)).toBeNull();
     expect(within(muscleCard()).getAllByRole('listitem')).toHaveLength(12);
     expect(screen.queryByRole('progressbar')).toBeNull();
     expect(screen.queryByText(/[▲▼]/)).toBeNull();
