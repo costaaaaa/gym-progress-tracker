@@ -32,7 +32,7 @@ const WeightUnitSetting = ({ account, notify }) => {
   };
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
       <Box>
         <Typography sx={{ fontSize: 16, fontWeight: 700 }}>{t('account.weight_unit')}</Typography>
         <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
