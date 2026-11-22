@@ -15,7 +15,7 @@ import WeightUnitSetting from './account/WeightUnitSetting';
 import WeeklyGoalSetting from './account/WeeklyGoalSetting';
 import PasswordCard from './account/PasswordCard';
 import ExportCard from './account/ExportCard';
-import HealthConsentCard from './account/HealthConsentCard';
+import ConsentCard from './account/ConsentCard';
 import AdminCard from './account/AdminCard';
 import SessionCard from './account/SessionCard';
 import DeleteAccountCard from './account/DeleteAccountCard';
@@ -93,7 +93,7 @@ const Account = ({ isEmbedded = false }) => {
 
       <ExportCard username={account?.username} notify={notify} />
 
-      <HealthConsentCard username={account?.username} notify={notify} />
+      <ConsentCard username={account?.username} notify={notify} />
 
       <GroupsVisibilityCard notify={notify} />
 

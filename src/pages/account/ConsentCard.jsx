@@ -21,7 +21,7 @@ import useDataExport from '../../hooks/useDataExport';
 
 // Consenso per le misure corporee (dati sulla salute): concessione e revoca. La revoca cancella le misure, quindi chiede
 // conferma in una finestra e propone prima l'export (`username` dà il nome al file).
-const HealthConsentCard = ({ username, notify }) => {
+const ConsentCard = ({ username, notify }) => {
   const { t, i18n } = useTranslation();
   const { exporting: exportLoading, download: handleDownloadData } = useDataExport(username, notify);
   const [healthConsent, setHealthConsent] = useState(null); // null = non ancora caricato
@@ -132,4 +132,4 @@ const HealthConsentCard = ({ username, notify }) => {
   );
 };
 
-export default HealthConsentCard;
+export default ConsentCard;
