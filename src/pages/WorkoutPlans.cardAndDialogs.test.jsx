@@ -1,12 +1,12 @@
-// Comportamenti della pagina Schede che la divisione in file non deve cambiare: attributo della card, campi dei
-// dialog a ogni apertura, bersaglio di «Elimina esercizio». La fetch è il confine.
+// Pagina Schede, comportamenti fini di card e dialog: attributo della card mai aperta, campi dei dialog a ogni
+// apertura, bersaglio di «Elimina esercizio» alla conferma. La fetch è il confine.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import WorkoutPlans from '../WorkoutPlans';
-import { ThemeModeProvider } from '../../context/ThemeModeContext';
-import { json } from '../../test/dom';
-import { plannedSets, times } from '../../test/plannedSets';
+import WorkoutPlans from './WorkoutPlans';
+import { ThemeModeProvider } from '../context/ThemeModeContext';
+import { json } from '../test/dom';
+import { plannedSets, times } from '../test/plannedSets';
 
 const plan = {
   id: 1, name: 'Forza A', description: 'Base', is_active: 1,

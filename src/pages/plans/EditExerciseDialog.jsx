@@ -7,8 +7,8 @@ import { muscleLabel } from '../../i18n/labels';
 const valuesOf = (exercise) => ({ rest: exercise?.rest ?? '', notes: exercise?.notes || '' });
 
 // Recupero, note e serie di un esercizio. `target` è `{ dayId, exercise }` e resta valorizzato finché il dialog si
-// chiude; a ogni apertura i campi ripartono da lì. `onSave(target, valori, chiudi)` salva; `chiudi` va chiamato
-// quando il server ha risposto.
+// chiude; a ogni apertura i campi ripartono da lì. `onSave(target, valori, onAnswered)` salva e chiama
+// `onAnswered` appena il server ha risposto: qui è la chiusura del dialog.
 const EditExerciseDialog = ({ open, target, onClose, onSave }) => {
   const exercise = target?.exercise;
   const { t } = useTranslation();
