@@ -5,8 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { saveSettings } from './saveSettings';
 
 // Lingua dell'account: parte da `account.locale` e si salva appena si sceglie; se il salvataggio fallisce torna alla
-// lingua di prima. `first`: è la prima riga della sua card, senza la linea sopra.
-const LanguageSetting = ({ account, notify, first }) => {
+// lingua di prima.
+const LanguageSetting = ({ account, notify }) => {
   const { t } = useTranslation();
   const { updateUser } = useAuth();
   const [locale, setLocale] = useState(account?.locale || 'it');
@@ -31,7 +31,7 @@ const LanguageSetting = ({ account, notify, first }) => {
   };
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, ...(first ? {} : { pt: 3, borderTop: '1px solid', borderColor: 'divider' }) }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, }}>
       <Box>
         <Typography sx={{ fontSize: 16, fontWeight: 700 }}>{t('account.language')}</Typography>
         <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>

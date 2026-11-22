@@ -18,7 +18,7 @@ const ProfilePage = () => {
         <PhysicalProfileForm account={account} notify={notify} />
       </Card>
       <Card sx={{ p: '24px' }}>
-        <WeightUnitSetting account={account} notify={notify} first />
+        <WeightUnitSetting account={account} notify={notify} />
       </Card>
     </AccountSubpage>
   );

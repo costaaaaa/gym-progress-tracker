@@ -48,8 +48,7 @@ const ModulesCard = ({ notify }) => {
 
   return (
     <Card sx={{ p: '24px' }}>
-      <Typography variant="cardTitle" component="h2">{t('modules.title')}</Typography>
-      <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5, maxWidth: 560 }}>{t('modules.help')}</Typography>
+      <Typography sx={{ fontSize: 16, color: 'text.secondary', maxWidth: 560 }}>{t('modules.help')}</Typography>
       <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, mt: 1 }}>
         {MODULE_KEYS.map((key, index) => (
           <ModuleRow

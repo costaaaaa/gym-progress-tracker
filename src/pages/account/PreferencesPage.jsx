@@ -15,7 +15,7 @@ const PreferencesPage = () => {
   return (
     <AccountSubpage title={t('account.section.preferences.title')}>
       <Card sx={{ p: '24px', display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <LanguageSetting account={account} notify={notify} first />
+        <LanguageSetting account={account} notify={notify} />
         <WeeklyGoalSetting account={account} notify={notify} />
         <FocusToolsSetting notify={notify} />
       </Card>

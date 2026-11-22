@@ -55,7 +55,8 @@ afterEach(() => vi.unstubAllGlobals());
 describe('righe', () => {
   it('quattro righe nell\'ordine Misure · Recupero e serie per muscolo · Livelli e traguardi · Gruppi, senza il modulo AI', () => {
     mount();
-    expect(screen.getByRole('heading', { name: 'Moduli' })).toBeTruthy();
+    expect(screen.getByText('Scegli cosa vedere in LiftIndex. Un modulo non attivo sparisce dalle schermate ma i tuoi dati restano e continuano ad aggiornarsi.')).toBeTruthy();
+    expect(screen.queryByRole('heading')).toBeNull();
     expect(screen.getAllByRole('switch').map((s) => s.getAttribute('aria-label')))
       .toEqual(['Misure', 'Recupero e serie per muscolo', 'Livelli e traguardi', 'Gruppi']);
     expect(screen.queryByText(/assistent/i)).toBeNull();

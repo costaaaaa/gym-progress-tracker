@@ -10,7 +10,8 @@ import DataPage from '../pages/account/DataPage';
 import SecurityPage from '../pages/account/SecurityPage';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 
-// Le rotte dell'Account come stanno in App.jsx (lì sono caricate a richiesta): la cornice con le sette pagine
+// Le rotte dell'Account: la cornice con le sette pagine. Sono una copia di quelle di App.jsx (lì sono caricate a
+// richiesta), che serve ai test delle pagine; le rotte vere le prova src/App.test.jsx.
 const Tree = ({ path }) => (
   <ThemeModeProvider>
     <MemoryRouter initialEntries={[path]}>

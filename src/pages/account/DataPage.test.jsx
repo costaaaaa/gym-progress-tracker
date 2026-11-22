@@ -1,7 +1,7 @@
 // Pagina «Dati e privacy» (/account/dati): consenso alle misure corporee, gruppi mostrati e visibilità, esportazione.
 // Colori scritti a mano: text.primary #1a1816, text.secondary #6b6663, semantico di successo #15803d. La fetch è il confine.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { screen, within, fireEvent, waitFor } from '@testing-library/react';
+import { screen, within, fireEvent, waitFor, act } from '@testing-library/react';
 import i18n from '../../i18n';
 import { json } from '../../test/dom';
 import { pinLocalClock } from '../../test/timeZone';
@@ -77,6 +77,16 @@ describe('arrivo da un collegamento', () => {
   it('/account/dati#groups-list: il fuoco è sull\'elenco dei gruppi', async () => {
     await mount('/account/dati#groups-list');
     await waitFor(() => expect(document.activeElement).toBe(document.getElementById('groups-list')), { timeout: 10000 });
+  });
+
+  it('/account/dati#altro: la pagina si apre e il fuoco non va su nessuna delle due sezioni dei gruppi', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await mount('/account/dati#altro');
+    await waitFor(() => expect(screen.getByLabelText('Consenso al trattamento delle misure corporee').checked).toBe(true));
+    expect(document.activeElement).not.toBe(document.getElementById('groups-shown'));
+    expect(document.activeElement).not.toBe(document.getElementById('groups-list'));
+    expect(error).not.toHaveBeenCalled();
+    error.mockRestore();
   });
 
   it('senza ancora il fuoco non si sposta', async () => {
@@ -165,14 +175,30 @@ describe('una rilettura dei dati', () => {
   const consentReads = () => fetch.mock.calls.filter(([url]) => String(url).includes('user/consent.php')).length;
   const accountReads = () => fetch.mock.calls.filter(([url]) => String(url).includes('user/read.php')).length;
 
-  it('non smonta la pagina: il consenso non si rilegge', async () => {
+  // La seconda lettura resta in sospeso finché il test non la lascia andare: la pagina deve restare montata mentre
+  // aspetta e dopo la risposta, e il consenso non deve essere riletto neanche a lettura conclusa
+  it('non smonta la pagina: il consenso non si rilegge, né durante la rilettura né dopo la sua risposta', async () => {
     const { rerenderAccount } = await mount();
     await waitFor(() => expect(screen.getByLabelText('Consenso al trattamento delle misure corporee').checked).toBe(true));
     expect(consentReads()).toBe(1);
+
+    const original = fetch;
+    let release;
+    const held = new Promise((resolve) => { release = resolve; });
+    vi.stubGlobal('fetch', vi.fn((url, init) => (String(url).includes('user/read.php') ? held : original(url, init))));
     auth.user = { id: 1 };
     rerenderAccount();
-    await waitFor(() => expect(accountReads()).toBe(2));
+    await waitFor(() => expect(accountReads()).toBe(1));
     expect(screen.getByLabelText('Consenso al trattamento delle misure corporee').checked).toBe(true);
-    expect(consentReads()).toBe(1);
+    expect(screen.queryByRole('progressbar')).toBeNull();
+
+    // La risposta arriva e viene letta (act scarica le promesse e gli effetti che ne seguono)
+    await act(async () => {
+      release(json({ success: true, id: 1, username: 'atleta_con_un_nome_molto_lungo', email: 'mario@example.com', created_at: '2025-03-01T10:00:00+01:00', weekly_goal_default: 3 }));
+      await held;
+    });
+    await waitFor(() => expect(screen.getByLabelText('Consenso al trattamento delle misure corporee').checked).toBe(true));
+    expect(screen.queryByRole('progressbar')).toBeNull();
+    expect(original.mock.calls.filter(([url]) => String(url).includes('user/consent.php'))).toHaveLength(1);
   });
 });

@@ -38,12 +38,13 @@ afterEach(() => {
 
 const mount = async () => {
   renderAccount('/account/moduli');
-  await screen.findByRole('heading', { level: 2, name: 'Moduli' });
+  await screen.findByRole('heading', { level: 1, name: 'Moduli' });
 };
 
 describe('Moduli', () => {
-  it('la card «Moduli» c\'è con i suoi quattro interruttori', async () => {
+  it('la card «Moduli» c\'è con i suoi quattro interruttori e il titolo «Moduli» è uno solo, quello della pagina', async () => {
     await mount();
+    expect(screen.getAllByRole('heading', { name: 'Moduli' })).toHaveLength(1);
     expect(screen.getAllByRole('switch', { name: /^(Misure|Recupero e serie per muscolo|Livelli e traguardi|Gruppi)$/ })).toHaveLength(4);
   });
 

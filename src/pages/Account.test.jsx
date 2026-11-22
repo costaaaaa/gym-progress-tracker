@@ -16,6 +16,7 @@ vi.mock('../context/AuthContext', () => ({ useAuth: () => auth }));
 const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
 const RED = 'rgb(213, 0, 0)';
+const RED_ON_DARK = 'rgb(255, 82, 82)';
 
 const FREE = { tier: 'free', tier_until: null, tier_last_day: null, signup_code: null };
 const stubFetch = ({ is_admin = false, tierFields = FREE } = {}) => vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
@@ -183,6 +184,12 @@ describe('Elimina account', () => {
     expect(screen.getByRole('button', { name: 'Esci' }).compareDocumentPosition(del) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it('in tema scuro il pulsante è nel rosso chiaro del tema (error.main), non nel rosso del marchio', async () => {
+    localStorage.setItem('themeMode', 'dark');
+    await mount();
+    expect(getComputedStyle(screen.getByRole('button', { name: 'Elimina account' })).color).toBe(RED_ON_DARK);
+  });
+
   it('apre la finestra di conferma', async () => {
     const dialog = await apri();
     expect(within(dialog).getByText(/consapevole/)).toBeTruthy();
@@ -261,6 +268,26 @@ describe('la cornice legge i dati una volta sola', () => {
     auth.user = { id: 1 };
     rerenderAccount();
     await waitFor(() => expect(describedBy(screen.getByRole('link', { name: 'Piano' }))).toBe('Pro'));
+  });
+
+  it('prima lettura fallita, poi riuscita: la pagina passa dai valori di ripiego ai dati veri', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    let reads = 0;
+    vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
+      String(url).includes('user/read.php')
+        ? (++reads === 1 ? json({}, 500) : json({ id: 1, username: 'mario', email: 'mario@example.com', created_at: '2025-03-01T10:00:00+01:00', locale: 'en', weekly_goal_default: 3 }))
+        : json({ success: true, consents: [], id: 1, weekly_goal_default: 3 }),
+    )));
+    const { rerenderAccount } = renderAccount('/account/preferenze');
+    await screen.findByRole('heading', { level: 1, name: 'Preferenze' });
+    expect(screen.getByLabelText('Lingua').textContent).toBe('Italiano');
+    expect(reads).toBe(1);
+
+    auth.user = { id: 1 };
+    rerenderAccount();
+    await waitFor(() => expect(screen.getByLabelText('Lingua').textContent).toBe('English'));
+    expect(reads).toBe(2);
+    error.mockRestore();
   });
 
   it('senza accesso non mostra la pagina, solo l\'attesa', async () => {

@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { dateFnsLocale } from '../../i18n/format';
 import { useAuth } from '../../context/AuthContext';
 import { NEUTRAL_OUTLINED, LINK_BUTTON } from '../../utils/buttonStyles';
+import AccountIdentity from './AccountIdentity';
 import ChangeEmailDialog from '../../components/EmailVerification/ChangeEmailDialog';
 import { cancelEmailChange } from '../../api/emailVerification';
 
@@ -37,12 +38,7 @@ const ProfileCard = ({ account, joinDate, notify }) => {
   return (
     <>
       <Card sx={{ p: '24px' }}>
-        <Typography sx={{ fontSize: 18, fontWeight: 700, lineHeight: 1.3, overflowWrap: 'anywhere' }}>
-          {account?.username || t('account.user_fallback')}
-        </Typography>
-        <Typography sx={{ fontSize: 16, color: 'text.secondary', overflowWrap: 'anywhere' }}>
-          {emailState?.email || account?.email || t('account.email_unavailable')}
-        </Typography>
+        <AccountIdentity account={account} />
         {emailState && (
           <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', columnGap: 2, mt: 0.5 }}>
             {emailState.verified ? (
