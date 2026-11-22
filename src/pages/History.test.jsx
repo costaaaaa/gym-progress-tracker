@@ -439,7 +439,7 @@ describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
 
   it('l\'indicazione è letta una volta sola e tolta dall\'indirizzo', async () => {
     await arriva();
-    expect(screen.getByTestId('state').textContent).toBe('null');
+    await waitFor(() => expect(screen.getByTestId('state').textContent).toBe('null'));
   });
 
   it('arrivando senza l\'indicazione non c\'è nessun messaggio', async () => {

@@ -11,6 +11,8 @@ import { clockDate } from '../utils/calendarDay';
 import { focusedElement } from '../utils/focus';
 import { NEUTRAL_OUTLINED, NEUTRAL_TEXT } from '../utils/buttonStyles';
 import useWorkoutHistory from './history/useWorkoutHistory';
+import useActivePlan from './history/useActivePlan';
+import useDeletionOnArrival from './history/useDeletionOnArrival';
 import WorkoutListItem from './history/WorkoutListItem';
 
 // Gli allenamenti (già dal più recente) raggruppati per mese; la data illeggibile va in un gruppo a parte.
@@ -37,11 +39,10 @@ const History = () => {
   const { isLoggedIn, loading: authLoading, weightUnit } = useAuth();
   const recordRequest = useNavigationRequest('openRecord');
   usePageMeta(t('nav.history'), t('history.meta.description'));
-  const {
-    workouts, summaries, loading, loadFailed, activePlan, planLoaded, planReadFailed,
-    snackbar, notify, closeSnackbar, refresh,
-    hiddenIds, pendingId, undoDelete, undoHoldProps,
-  } = useWorkoutHistory({ refreshKey: location.state?.refreshHistory, list: true });
+  const { workouts: allWorkouts, summaries, loading, loadFailed, snackbar, notify, closeSnackbar, refresh } = useWorkoutHistory({ refreshKey: location.state?.refreshHistory });
+  const { activePlan, planLoaded, planReadFailed } = useActivePlan();
+  const { hiddenIds, pendingId, undo: undoDelete, holdProps: undoHoldProps } = useDeletionOnArrival(notify);
+  const workouts = useMemo(() => allWorkouts.filter((workout) => !hiddenIds.includes(workout.id)), [allWorkouts, hiddenIds]);
   const [openRecordDialog, setOpenRecordDialog] = useState(false);
 
   // Si apre una volta per richiesta, e solo con una scheda attiva (come il pulsante della pagina)
@@ -120,18 +121,16 @@ const History = () => {
     return Object.entries(groupedWorkouts).map(([key, inMonth]) => {
       const headingId = `history-month-${key.replace('/', '-')}`;
       return (
-        <Box key={key} component="section" aria-labelledby={headingId} sx={{ mb: 3.5 }}>
-          <Typography id={headingId} component="h2" variant="cardTitle" sx={{ mb: 1.75 }}>
+        <Card key={key} component="section" aria-labelledby={headingId} sx={{ mb: 3.5 }}>
+          <Typography id={headingId} component="h2" variant="cardTitle" sx={{ px: 2.5, pt: 2, pb: 1 }}>
             {key === '0/0' ? t('history.unknown_date') : monthName(key)}
           </Typography>
-          <Card>
-            <Box component="ul" sx={{ m: 0, p: 0 }}>
-              {inMonth.map((workout) => (
-                <WorkoutListItem key={workout.id} workout={workout} summary={summaries[workout.id]} weightUnit={weightUnit} />
-              ))}
-            </Box>
-          </Card>
-        </Box>
+          <Box component="ul" sx={{ m: 0, p: 0 }}>
+            {inMonth.map((workout) => (
+              <WorkoutListItem key={workout.id} workout={workout} summary={summaries[workout.id]} weightUnit={weightUnit} />
+            ))}
+          </Box>
+        </Card>
       );
     });
   };

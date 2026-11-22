@@ -21,6 +21,8 @@ import { durationText, volumeText, workoutTitle } from './workoutText';
 
 const FULL_DAY = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
 const DATE_LOCKED_ID = 'workout-date-locked';
+// Il nome di ogni tipo di record (come negli altri punti dell'app: «1RM stimato», «Max ripetizioni»)
+const RECORD_LABEL_KEY = { weight: 'history.pr.weight', oneRM: 'history.pr.one_rm', reps: 'history.pr.reps' };
 
 // Pagina di un allenamento (/storico/:id): titolo, data e ora, riquadri (durata, volume, serie), i record battuti, il
 // dettaglio di esercizi e serie, e le azioni: Condividi, Cambia data, Elimina. Eliminato, si torna all'elenco, che fa
@@ -64,10 +66,8 @@ const WorkoutPage = () => {
   };
 
   const recordLine = (record) => {
-    const set = formatSetText(record.weight, record.reps, weightUnit);
-    if (record.type === 'weight') return `${t('history.record_weight')} · ${set}`;
-    if (record.type === 'oneRM') return `${t('history.record_one_rm')} · ${set}`;
-    return `${t('history.record_reps')} · ${record.reps}`;
+    const label = t(RECORD_LABEL_KEY[record.type]);
+    return record.type === 'reps' ? `${label} · ${record.reps}` : `${label} · ${formatSetText(record.weight, record.reps, weightUnit)}`;
   };
 
   const back = (
@@ -80,7 +80,10 @@ const WorkoutPage = () => {
     if (loadFailed) {
       return (
         <>
-          <Box sx={{ mb: 1 }}>{back}</Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            {back}
+            <Typography variant="pageTitle" sx={{ flex: 1, minWidth: 0 }}>{t('nav.history')}</Typography>
+          </Box>
           <Alert severity="error" action={<Button color="inherit" onClick={refresh} sx={{ minHeight: 44, fontWeight: 600 }}>{t('history.retry')}</Button>}>
             {t('history.load_error')}
           </Alert>
@@ -117,10 +120,11 @@ const WorkoutPage = () => {
 
         {summary.records.length > 0 && (
           <Card component="section" sx={{ p: 2.5, mb: 2.5 }}>
-            <Typography component="h2" variant="cardTitle" sx={{ mb: 1.5 }}>{t('history.record')}</Typography>
+            <Typography component="h2" variant="cardTitle" sx={{ mb: 1.5 }}>{t('history.pr.label')}</Typography>
             <Box component="ul" sx={{ m: 0, p: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              {summary.records.map((record) => (
-                <li key={record.name}>
+              {summary.records.map((record, i) => (
+                // l'elenco non cambia mai dopo il disegno e due esercizi possono chiamarsi uguale: l'indice basta
+                <li key={i}>
                   <Typography sx={{ fontSize: 16, fontWeight: 700, overflowWrap: 'anywhere' }}>{record.name}</Typography>
                   <Typography sx={{ fontSize: 16, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>{recordLine(record)}</Typography>
                 </li>

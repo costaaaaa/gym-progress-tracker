@@ -31,7 +31,7 @@ const WorkoutListItem = ({ workout, summary, weightUnit }) => {
           <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 16, overflowWrap: 'anywhere' }}>{workoutTitle(workout)}</Typography>
           <Typography sx={{ fontSize: 16, color: 'text.secondary', fontVariantNumeric: 'tabular-nums', overflowWrap: 'anywhere' }}>{details}</Typography>
         </Box>
-        {summary.records.length > 0 && <EmojiEventsOutlinedIcon titleAccess={t('history.record')} sx={{ color: 'text.secondary', flexShrink: 0 }} />}
+        {summary.records.length > 0 && <EmojiEventsOutlinedIcon titleAccess={t('history.pr.label')} sx={{ color: 'text.secondary', flexShrink: 0 }} />}
       </ButtonBase>
     </Box>
   );
