@@ -1,4 +1,4 @@
-// Chi apre la scheda Impostazioni senza aver fatto l'accesso va al login con ?next=, così dopo il login torna
+// Chi apre l'Account senza aver fatto l'accesso va al login con ?next=, così dopo il login torna
 // alla stessa pagina, compresi parametri e ancora (es. un link da un'email). La fetch è il confine.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -23,17 +23,17 @@ describe('Account senza accesso', () => {
   it('va al login con next = pagina, parametri e ancora', async () => {
     vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
     render(
-      <MemoryRouter initialEntries={['/profilo?tab=settings#sezione']}>
+      <MemoryRouter initialEntries={['/account?x=1#sezione']}>
         <ThemeModeProvider>
           <Routes>
-            <Route path="/profilo" element={<Account isEmbedded />} />
+            <Route path="/account" element={<Account />} />
             <Route path="/login" element={<LoginProbe />} />
           </Routes>
         </ThemeModeProvider>
       </MemoryRouter>,
     );
     const search = (await screen.findByTestId('login')).textContent;
-    expect(search).toBe('?next=%2Fprofilo%3Ftab%3Dsettings%23sezione');
-    expect(safeNext(search)).toBe('/profilo?tab=settings#sezione');
+    expect(search).toBe('?next=%2Faccount%3Fx%3D1%23sezione');
+    expect(safeNext(search)).toBe('/account?x=1#sezione');
   });
 });

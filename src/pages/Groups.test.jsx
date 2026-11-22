@@ -210,6 +210,17 @@ describe('invito', () => {
     expect(icon).not.toBeNull();
     expect(colorOf(icon)).toBe(GREY);
   });
+
+  it('senza data di nascita il pulsante porta all\'Account', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(json({ success: false, code: 'birth_date_required', message: 'Serve la data di nascita.' }, 400))));
+    render(
+      <MemoryRouter initialEntries={['/entra?codice=K7M2QX9PHD']}>
+        <ThemeModeProvider><Routes><Route path="/entra" element={<JoinGroup />} /></Routes></ThemeModeProvider>
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText('Serve la data di nascita.')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Vai alle impostazioni' }).getAttribute('href')).toBe('/account');
+  });
 });
 
 // Moduli: Gruppi non attivo = la pagina «non attivo» al posto delle tre rotte; Livelli non attivo = solo la classifica della settimana
@@ -332,7 +343,7 @@ describe('visibilità nella classifica del gruppo', () => {
     expect(screen.getByText(NO_WORKOUTS).closest('[aria-hidden="true"]')).toBeNull();
     // Sotto il testo, il collegamento al blocco «Cosa mostro» dell'Account
     const link = screen.getByRole('link', { name: 'Cosa mostro' });
-    expect(link.getAttribute('href')).toBe('/profilo?tab=settings#groups-shown');
+    expect(link.getAttribute('href')).toBe('/account#groups-shown');
     expect(parseInt(getComputedStyle(link).minHeight, 10)).toBeGreaterThanOrEqual(44);
   });
 

@@ -75,11 +75,22 @@ afterEach(() => {
 });
 
 const mount = async () => {
-  render(<MemoryRouter><ThemeModeProvider><Account isEmbedded /></ThemeModeProvider></MemoryRouter>);
+  render(<MemoryRouter><ThemeModeProvider><Account /></ThemeModeProvider></MemoryRouter>);
   await screen.findByText('atleta_con_un_nome_molto_lungo');
   await screen.findByText('Palestra Rossi');
 };
 const button = (name) => screen.getByRole('button', { name });
+
+describe('titolo della pagina', () => {
+  it('un solo h1 «Account» nello stile titolo di pagina, e il titolo del documento lo segue', async () => {
+    await mount();
+    const h1s = screen.getAllByRole('heading', { level: 1 });
+    expect(h1s.map((h) => h.textContent)).toEqual(['Account']);
+    expect(getComputedStyle(h1s[0]).fontSize).toBe('28px');
+    expect(getComputedStyle(h1s[0]).fontWeight).toBe('800');
+    expect(document.title).toBe('Account | LiftIndex');
+  });
+});
 
 describe('unità di peso', () => {
   const unitSelect = () => screen.getByLabelText('Unità di misura');

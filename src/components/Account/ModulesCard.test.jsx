@@ -88,7 +88,7 @@ describe('righe', () => {
     const link = (row) => within(screen.getAllByRole('listitem')[row]).queryByRole('link', { name: /^Apri/ });
     expect(link(0).getAttribute('href')).toBe('/progressi?tab=body');
     expect(link(1)).toBeNull();
-    expect(link(2).getAttribute('href')).toBe('/profilo');
+    expect(link(2).getAttribute('href')).toBe('/livelli');
     expect(link(3).getAttribute('href')).toBe('/gruppi');
     expect(link(0).getAttribute('aria-label')).toBe('Apri Misure');
   });

@@ -76,7 +76,7 @@ describe('barra in alto: schermi stretti', () => {
   it('per chi è loggato tema e avatar restano a 12 px anche sui telefoni', () => {
     auth.value = { user: { username: 'atleta_demo' }, isLoggedIn: true, loading: false };
     mount();
-    const group = screen.getByRole('link', { name: 'Profilo' }).parentElement;
+    const group = screen.getByRole('link', { name: 'Account' }).parentElement;
     expect(mediaStyle(group).gap).toBe('12px');
   });
 
@@ -234,15 +234,20 @@ describe('barra in alto: desktop', () => {
     expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).not.toContain('Riprendi allenamento');
   });
 
-  it('l\'avatar apre il Profilo e ha aria-current solo con il Profilo aperto', () => {
+  it('l\'avatar apre l\'Account e ha aria-current solo con l\'Account aperto', () => {
     mount();
-    expect(screen.getByRole('link', { name: 'Profilo' }).getAttribute('href')).toBe('/profilo');
-    expect(screen.getByRole('link', { name: 'Profilo' }).getAttribute('aria-current')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Account' }).getAttribute('href')).toBe('/account');
+    expect(screen.getByRole('link', { name: 'Account' }).getAttribute('aria-current')).toBeNull();
   });
 
-  it('con il Profilo aperto l\'avatar è la pagina corrente e nessuna voce della barra lo è', () => {
-    mount(undefined, '/profilo');
-    expect(currentLinks()).toEqual(['Profilo']);
+  it('con l\'Account aperto l\'avatar è la pagina corrente e nessuna voce della barra lo è', () => {
+    mount(undefined, '/account');
+    expect(currentLinks()).toEqual(['Account']);
+  });
+
+  it('con i Livelli aperti l\'avatar non è la pagina corrente', () => {
+    mount(undefined, '/livelli');
+    expect(currentLinks()).toEqual([]);
   });
 
   it('il pulsante diviso non c\'è per gli ospiti', () => {
@@ -279,7 +284,7 @@ describe('barra in alto: telefono', () => {
   it('restano il selettore del tema e l\'avatar; né voci né pulsante diviso (stanno nella barra in basso)', () => {
     mountPhone();
     expect(screen.getByRole('button', { name: 'Modalità scura' })).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Profilo' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Account' })).toBeTruthy();
     expect(screen.queryByRole('link', { name: 'Schede' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Altre azioni' })).toBeNull();
   });

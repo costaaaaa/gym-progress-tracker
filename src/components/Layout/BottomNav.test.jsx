@@ -95,8 +95,8 @@ describe('barra mobile: voci', () => {
     expect(current()).toEqual(['Storico']);
   });
 
-  it('con il Profilo aperto nessuna voce della barra è attiva', () => {
-    renderNav('light', '/profilo');
+  it('con l'Account aperto nessuna voce della barra è attiva', () => {
+    renderNav('light', '/account');
     expect(current()).toEqual([]);
   });
 

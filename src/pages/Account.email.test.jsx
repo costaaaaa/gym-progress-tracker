@@ -41,7 +41,7 @@ afterEach(() => {
 });
 
 const mount = async () => {
-  render(<MemoryRouter><ThemeModeProvider><Account isEmbedded /></ThemeModeProvider></MemoryRouter>);
+  render(<MemoryRouter><ThemeModeProvider><Account /></ThemeModeProvider></MemoryRouter>);
   await screen.findByText('mario');
 };
 const profileCard = () => screen.getByText('mario').closest('.MuiCard-root');

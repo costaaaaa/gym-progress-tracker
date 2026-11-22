@@ -178,7 +178,7 @@ describe('struttura', () => {
 
 describe('arrivo da un collegamento', () => {
   it('con #groups-shown nell\'indirizzo il blocco prende il fuoco', async () => {
-    mount({ groups: true }, undefined, '/profilo?tab=settings#groups-shown');
+    mount({ groups: true }, undefined, '/account#groups-shown');
     await waitFor(() => expect(document.activeElement).toBe(document.getElementById('groups-shown')));
   });
 });
