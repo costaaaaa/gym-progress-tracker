@@ -17,7 +17,6 @@ import { celebrate, celebratePR, celebrateStreak, celebrateLevelUp } from '../..
 import { track } from '../../utils/analytics';
 import { currentTimeZone, moveToZoneDay, zoneClock } from '../../utils/workoutTime';
 import i18n from '../../i18n';
-import { unlockedAchievementsText } from './unlockedAchievementsText';
 import { DRAFT_STORAGE_KEY } from '../../utils/focusDraft';
 import { isSelectableTechnique } from '../../utils/intensityTechniques';
 import { isToolOn } from '../../utils/focusTools';
@@ -76,7 +75,7 @@ export default function useFocusSession() {
   // Funzioni Plus e Pro abilitate (user/read.php → features): qui solo per mostrare i comandi,
   // il salvataggio lo controlla record_workout.php
   const [features, setFeatures] = useState([]);
-  // Picker esercizi: null = chiuso, altrimenti { mode: 'swap' | 'add', from: 'workout' | 'summary' }
+  // Picker esercizi: null = chiuso, altrimenti { mode: 'swap' | 'add' }
   const [picker, setPicker] = useState(null);
   const [lockedDialog, setLockedDialog] = useState(false);
 
@@ -146,13 +145,13 @@ export default function useFocusSession() {
         // Segno del formato con le serie pianificate: una bozza senza viene scartata
         plannedSetsFormat: true,
         // Fine mostrata nel riepilogo, o fissa se già finita: la ripresa riparte da qui
-        summaryEndAt: phase === 'summary' || retroDate ? endTime : null,
+        summaryEndAt: phase === 'summary' ? endTime : null,
         phase: phase === 'rest_timer' ? 'workout' : phase, // Se crasha durante il timer, riprendi dall'esercizio
         timestamp: new Date().getTime()
       };
       localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
     }
-  }, [phase, activePlan, selectedDay, selectedDayId, completedSets, skippedExercises, skippedSets, currentExerciseIndex, currentSetIndex, workoutNotes, startTime, timeZone, idempotencyKey, lastActivityAt, pausedMs, endTime, retroDate]);
+  }, [phase, activePlan, selectedDay, selectedDayId, completedSets, skippedExercises, skippedSets, currentExerciseIndex, currentSetIndex, workoutNotes, startTime, timeZone, idempotencyKey, lastActivityAt, pausedMs, endTime]);
 
   const clearDraft = useCallback(() => {
     localStorage.removeItem(DRAFT_STORAGE_KEY);
@@ -489,9 +488,9 @@ export default function useFocusSession() {
       // Con la tecnica spenta la serie si salva senza, anche se la scheda ne prevedeva una
       intensity_technique: techniqueOn ? intensityTechniqueInput : '',
       is_warmup: isWarmup,
-      // Secondi netti dall'inizio (stesso orologio della durata); in modalità "già finito" l'orario non è reale.
-      // Non passa da getElapsedSeconds()/netEnd: preferiscono endTime, congelato nel riepilogo e in retro, mentre qui serve "adesso"
-      seconds_from_start: retroDate || !startTime ? null : Math.max(0, Math.floor((Date.now() - startTime.getTime() - pausedMs) / 1000))
+      // Secondi netti dall'inizio (stesso orologio della durata).
+      // Non passa da getElapsedSeconds()/netEnd: preferiscono endTime, congelato nel riepilogo, mentre qui serve "adesso"
+      seconds_from_start: !startTime ? null : Math.max(0, Math.floor((Date.now() - startTime.getTime() - pausedMs) / 1000))
     });
 
     setCompletedSets(prev => ({
@@ -584,7 +583,7 @@ export default function useFocusSession() {
   // ================================================
   // Le modifiche vanno in selectedDay.exercises: bozza, salvataggio, riepilogo e
   // barra di avanzamento le vedono senza altro codice.
-  const openPicker = (pickerMode, from = 'workout') => {
+  const openPicker = (pickerMode) => {
     if (!canEditSession) {
       setLockedDialog(true);
       return;
@@ -593,7 +592,7 @@ export default function useFocusSession() {
       setSnackbar({ open: true, message: t('focus.swap_only_before_sets'), severity: 'info' });
       return;
     }
-    setPicker({ mode: pickerMode, from });
+    setPicker({ mode: pickerMode });
   };
 
   const handlePickExercise = (catalogEx, opts) => {
@@ -605,22 +604,13 @@ export default function useFocusSession() {
       setSnackbar({ open: true, message: t('focus.swapped_to', { name: catalogEx.name }), severity: 'success' });
     } else {
       const entry = buildSessionEntry(catalogEx, opts);
-      const fromSummary = picker.from === 'summary';
-      const position = fromSummary || opts.position === 'end' ? exercises.length : currentExerciseIndex + 1;
+      const position = opts.position === 'end' ? exercises.length : currentExerciseIndex + 1;
       setSelectedDay({ ...selectedDay, exercises: insertExercise(exercises, position, entry) });
-      if (fromSummary) {
-        // Si torna ad allenarsi: la durata riparte (endTime vale finché si resta nel riepilogo).
-        // Se è già finita la fine resta quella: le serie aggiunte non la spostano.
-        if (!retroDate) setEndTime(null);
-        enterExercise(position, entry);
-        setPhase('workout');
-      } else {
-        setSnackbar({
-          open: true,
-          message: t(opts.position === 'end' ? 'focus.added_end' : 'focus.added_after', { name: catalogEx.name }),
-          severity: 'success'
-        });
-      }
+      setSnackbar({
+        open: true,
+        message: t(opts.position === 'end' ? 'focus.added_end' : 'focus.added_after', { name: catalogEx.name }),
+        severity: 'success'
+      });
     }
     hapticFeedback.medium();
     setPicker(null);
@@ -819,20 +809,11 @@ export default function useFocusSession() {
         celebrateStreak();
       }
 
-      // Level-up + achievement celebration (unified to avoid snackbar overwrite)
+      // Coriandoli per il livello nuovo o, in mancanza, per i traguardi
       if (data.leveled_up) {
         celebrateLevelUp();
       } else if (data.unlocked_achievements?.length) {
         celebrate();
-      }
-
-      const notifyParts = [];
-      if (data.leveled_up) notifyParts.push(t('focus.level_reached', { level: data.new_level }));
-      if (data.unlocked_achievements?.length) {
-        notifyParts.push(t('focus.achievements', { labels: unlockedAchievementsText(data.unlocked_achievements, weightUnit) }));
-      }
-      if (notifyParts.length) {
-        setSnackbar({ open: true, message: notifyParts.join(' · '), severity: 'success' });
       }
 
     } catch (error) {
@@ -938,8 +919,6 @@ export default function useFocusSession() {
     lastSession: getLastSession(currentExercise),
     exerciseTransition,
     clockStart,
-    // Già finita: la durata è quella del riepilogo e il cronometro non cammina
-    finishedClock: retroDate ? getElapsedTime() : null,
     weightInput,
     weightUnit,
     weightValid: weightKg !== null,
@@ -974,14 +953,12 @@ export default function useFocusSession() {
     onNotesChange: setWorkoutNotes,
     saving,
     savedResult,
+    levelsOn,
     onSave: handleSave,
     onQuit: handleQuit,
-    onGoHistory: () => navigate('/storico', { state: { refreshHistory: Date.now() } }),
     onGoHome: () => navigate('/'),
-    canEditSession,
     techniqueOn,
     onEditSet: handleEditSet,
-    onAddExercise: () => openPicker('add', 'summary'),
     shareStats,
     onOpenShare: setShareStats,
     onCloseShare: () => setShareStats(null),
@@ -1000,7 +977,6 @@ export default function useFocusSession() {
       open: !!picker,
       mode: picker?.mode || 'add',
       currentExercise,
-      allowPosition: picker?.from !== 'summary',
       onClose: () => setPicker(null),
       onPick: handlePickExercise,
     },

@@ -43,9 +43,9 @@ let catalogCache = null;
 // Scelta di un esercizio durante il Focus Mode.
 // mode 'swap': cambia l'esercizio corrente (es. cavi occupati → manubri), parte
 // dal suo gruppo muscolare. mode 'add': aggiunge un esercizio alla sessione, con
-// serie/ripetizioni/recupero e, se allowPosition, "subito dopo" o "alla fine".
+// serie/ripetizioni/recupero e la posizione, "subito dopo" o "alla fine".
 // onPick(catalogEx, { planned_sets, rest, position: 'next' | 'end' })
-const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true, onClose, onPick }) => {
+const FocusExercisePicker = ({ open, mode, currentExercise, onClose, onPick }) => {
   const { t } = useTranslation();
   const [catalog, setCatalog] = useState(catalogCache || []);
   const [loading, setLoading] = useState(false);
@@ -68,7 +68,7 @@ const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true
     setSets(start.sets);
     setReps(start.reps);
     setRest(String(currentExercise?.rest ?? 90));
-    setPosition(allowPosition ? 'next' : 'end');
+    setPosition('next');
 
     if (catalogCache) return;
     setLoading(true);
@@ -134,13 +134,11 @@ const FocusExercisePicker = ({ open, mode, currentExercise, allowPosition = true
               <TextField label={t('picker.rest')} value={rest} onChange={(e) => setRest(e.target.value)}
                 inputProps={{ inputMode: 'numeric' }} size="small" />
             </Box>
-            {allowPosition && (
-              <ToggleButtonGroup exclusive fullWidth size="small" value={position}
-                onChange={(_, v) => v && setPosition(v)} sx={{ mt: 2 }}>
-                <ToggleButton value="next">{t('picker.next')}</ToggleButton>
-                <ToggleButton value="end">{t('picker.end')}</ToggleButton>
-              </ToggleButtonGroup>
-            )}
+            <ToggleButtonGroup exclusive fullWidth size="small" value={position}
+              onChange={(_, v) => v && setPosition(v)} sx={{ mt: 2 }}>
+              <ToggleButton value="next">{t('picker.next')}</ToggleButton>
+              <ToggleButton value="end">{t('picker.end')}</ToggleButton>
+            </ToggleButtonGroup>
           </Box>
         ) : (
           <>

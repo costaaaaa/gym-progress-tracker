@@ -26,7 +26,7 @@ import TechniqueRow from './TechniqueRow';
 
 export default function WorkoutPhase({
   currentExercise, currentExerciseIndex, totalExercises, currentSetIndex, totalSlotsForCurrentExercise,
-  currentSlot, currentExerciseSets, canSwap, currentSkippedSets, lastSession, exerciseTransition, clockStart, finishedClock,
+  currentSlot, currentExerciseSets, canSwap, currentSkippedSets, lastSession, exerciseTransition, clockStart,
   weightInput, weightUnit, weightValid, onWeightChange, repsInput, onRepsChange, intensityTechniqueInput, onIntensityChange,
   onConfirmSet, onSkipSet, onSkipWarmup, onSkipExercise, canEditSession, onOpenPicker, onQuit,
   quitDialogOpen, onCloseQuitDialog, onConfirmQuit, totalCompletedSets,
@@ -73,7 +73,7 @@ export default function WorkoutPhase({
         <IconButton onClick={onQuit} aria-label={t('focus.quit_aria')} sx={{ width: 44, height: 44, color: colors.textSecondary }}><CloseIcon /></IconButton>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <AccessTimeIcon sx={{ fontSize: 16, color: colors.textSecondary }} />
-          <Typography variant="caption" sx={{ ...TABULAR, color: colors.textSecondary }}>{finishedClock ?? <ElapsedClock startTime={clockStart} />}</Typography>
+          <Typography variant="caption" sx={{ ...TABULAR, color: colors.textSecondary }}><ElapsedClock startTime={clockStart} /></Typography>
         </Box>
         <Typography variant="caption" sx={{ flex: 1, minWidth: 0, textAlign: 'center', color: colors.textSecondary }}>
           {t('focus.exercise_of', { current: currentExerciseIndex + 1, total: totalExercises })}
