@@ -3132,6 +3132,14 @@ describe('riepilogo di fine allenamento (F5)', () => {
       expect(mockTrack).toHaveBeenCalledWith('workout_card', { action: 'open', from: 'summary' });
     });
 
+    it('la freccia «Esci dall\'allenamento» ha una zona di tocco di 44 px, prima e dopo il salvataggio', async () => {
+      await goSummary([[80, '8']]);
+      const back = () => screen.getByRole('button', { name: 'Esci dall\'allenamento' });
+      expect([getComputedStyle(back()).width, getComputedStyle(back()).height]).toEqual(['44px', '44px']);
+      await saveNow();
+      expect([getComputedStyle(back()).width, getComputedStyle(back()).height]).toEqual(['44px', '44px']);
+    });
+
     it('«Fine» porta alla Home', async () => {
       await goSummary([[80, '8']]);
       await saveNow();

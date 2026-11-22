@@ -122,7 +122,7 @@ export default function SummaryPhase({
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: colors.bg, color: colors.text }}>
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1, borderBottom: `1px solid ${colors.border}` }}>
-        <IconButton onClick={onQuit} aria-label={t('focus.quit_aria')} sx={{ color: colors.textSecondary }}><ArrowBackIcon /></IconButton>
+        <IconButton onClick={onQuit} aria-label={t('focus.quit_aria')} sx={{ width: 44, height: 44, color: colors.textSecondary }}><ArrowBackIcon /></IconButton>
         <Typography variant="h6" component="h1" tabIndex={-1} sx={{ fontWeight: 700 }}>{t('focus.summary')}</Typography>
       </Box>
 
