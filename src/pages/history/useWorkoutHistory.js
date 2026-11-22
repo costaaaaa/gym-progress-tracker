@@ -43,13 +43,13 @@ export default function useWorkoutHistory({ refreshKey = null, list = false } = 
     } else {
       setLoading(false);
     }
-  }, [isLoggedIn, authLoading, list]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isLoggedIn, authLoading, list]);
 
   useEffect(() => {
     if (refreshKey && isLoggedIn) {
       fetchWorkoutHistory();
     }
-  }, [refreshKey, isLoggedIn]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [refreshKey, isLoggedIn]);
 
   const fetchActivePlan = async () => {
     try {
