@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Box, Button, Card, Chip, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import TimeZoneBadge from '../../components/TimeZoneBadge';
-import { formatDate, formatNumber, intlLocale } from '../../i18n/format';
-import { kgToDisplay, formatTotalInUnit } from '../../utils/weightUnit';
+import { formatDate, formatNumber } from '../../i18n/format';
+import { kgToDisplay } from '../../utils/weightUnit';
 import { NEUTRAL_TEXT } from '../../utils/buttonStyles';
 import { formatValue, positionLabel } from './exerciseText';
+import { formatVolume } from '../formatVolume';
 
 const ROWS_COLLAPSED = 5;
 const HISTORY_TITLE_ID = 'exercise-history-title';
@@ -56,7 +57,7 @@ const ExerciseHistory = ({ item, weightUnit }) => {
                   {formatValue(t, item.mode, row.value, weightUnit)}{row.isPR && ` · ${t('progress.pr')}`}
                 </Pair>
                 {/* a corpo libero il volume è zero: «0 kg» sembrerebbe un dato */}
-                {row.volume > 0 && <Pair label={t('progress.history.volume')}>{formatTotalInUnit(row.volume, weightUnit, intlLocale())}</Pair>}
+                {row.volume > 0 && <Pair label={t('progress.history.volume')}>{formatVolume(row.volume, weightUnit)}</Pair>}
               </Box>
             </Box>
           );

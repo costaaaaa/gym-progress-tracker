@@ -306,7 +306,7 @@ describe('elenco a mesi', () => {
     const riga = screen.getByRole('link', { name: /^Push A/ });
     expect(riga.getAttribute('href')).toBe('/storico/7');
     expect(within(riga).getByText('Push A')).toBeTruthy();
-    const sotto = within(riga).getByText('dom 18 ott · 60 min · 1440 kg');
+    const sotto = within(riga).getByText('dom 18 ott · 60 min · 1.440 kg');
     expect(colorOf(sotto)).toBe(GREY);
     expect(getComputedStyle(sotto).fontVariantNumeric).toBe('tabular-nums');
   });
@@ -324,21 +324,21 @@ describe('elenco a mesi', () => {
   it('senza giorno della scheda il titolo è la data e sotto c\'è l\'ora', async () => {
     await mountWith([made({ day_name: null })], 'domenica 18 ottobre');
     const riga = screen.getByRole('link', { name: /^domenica 18 ottobre/ });
-    expect(within(riga).getByText('02:00 · 60 min · 1440 kg')).toBeTruthy();
+    expect(within(riga).getByText('02:00 · 60 min · 1.440 kg')).toBeTruthy();
   });
 
   it('senza durata e senza volume la riga ha solo ciò che c\'è', async () => {
     const senzaDurata = made({ duration_seconds: null });
     const senzaVolume = made({ id: 8, date: '2026-10-17 10:00:00', exercises: [exercise(1, 'Corpo libero', [{ set_number: 1, weight: 0, reps: 0 }])] });
     await mountWith([senzaDurata, senzaVolume]);
-    expect(screen.getByText('dom 18 ott · 1440 kg')).toBeTruthy();
+    expect(screen.getByText('dom 18 ott · 1.440 kg')).toBeTruthy();
     expect(screen.getByText('sab 17 ott · 60 min')).toBeTruthy();
   });
 
-  it('il volume è nell\'unità dell\'utente: in lb 1440 kg sono 3175 lb', async () => {
+  it('il volume è nell\'unità dell\'utente: in lb 1440 kg sono 3.175 lb', async () => {
     account.weightUnit = 'lb';
     await mountWith([ottobre]);
-    expect(screen.getByText('dom 18 ott · 60 min · 3175 lb')).toBeTruthy();
+    expect(screen.getByText('dom 18 ott · 60 min · 3.175 lb')).toBeTruthy();
     expect(screen.queryByText(/kg/)).toBeNull();
   });
 

@@ -4,7 +4,8 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { formatClockTime, formatDate } from '../../i18n/format';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
-import { durationText, volumeText, workoutTitle } from './workoutText';
+import { durationText, workoutTitle } from './workoutText';
+import { formatVolume } from '../formatVolume';
 
 const SHORT_DAY = { weekday: 'short', day: 'numeric', month: 'short' };
 
@@ -17,7 +18,7 @@ const WorkoutListItem = ({ workout, summary, weightUnit, backTo }) => {
   const details = [
     workout.day_name ? formatDate(workout.date, SHORT_DAY) : formatClockTime(workout.date),
     durationText(workout.duration_seconds),
-    summary.volumeKg > 0 && volumeText(summary.volumeKg, weightUnit),
+    summary.volumeKg > 0 && formatVolume(summary.volumeKg, weightUnit),
   ].filter(Boolean).join(' · ');
 
   return (

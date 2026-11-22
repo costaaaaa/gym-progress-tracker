@@ -61,7 +61,7 @@ describe('rotte dei Progressi', () => {
   it.each([
     ['/dashboard', '/progressi'],
     ['/dashboard?tab=body', '/progressi?tab=body'],
-    ['/dashboard?tab=muscles', '/progressi?tab=muscles'],
+    ['/dashboard?tab=muscles', '/progressi?tab=volume'],
     ['/dashboard?tab=body#x', '/progressi?tab=body#x'],
     ['/progress', '/progressi?tab=progress'],
     ['/body-stats', '/progressi?tab=body'],

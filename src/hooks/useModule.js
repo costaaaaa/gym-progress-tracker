@@ -8,7 +8,7 @@ import { saveModules } from '../api/modules';
 // non ha una riga.
 export const MODULE_PATHS = {
   body: '/progressi?tab=body',
-  recovery: '/progressi?tab=muscles',
+  recovery: '/progressi?tab=volume',
   levels: '/profilo',
   groups: '/gruppi',
 };

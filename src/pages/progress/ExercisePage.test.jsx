@@ -284,7 +284,7 @@ describe('unità di peso', () => {
     await mount();
     expect(within(tile('Attuale')).getByText('100 kg')).toBeTruthy();
     expect(screen.getByText('50 × 30')).toBeTruthy();
-    expect(screen.getByText('Volume').nextElementSibling.textContent).toBe('1500\u00a0kg');
+    expect(screen.getByText('Volume').nextElementSibling.textContent).toBe('1.500\u00a0kg');
   });
 
   it('in lb il 1RM e la miglior serie sono al quarto di libbra, il volume è il totale convertito', async () => {
@@ -294,7 +294,7 @@ describe('unità di peso', () => {
     expect(within(tile('Attuale')).getByText('220,5 lb')).toBeTruthy();
     expect(within(tile('Migliore')).getByText('220,5 lb')).toBeTruthy();
     expect(screen.getByText('110,25 × 30')).toBeTruthy();
-    expect(screen.getByText('Volume').nextElementSibling.textContent).toBe('3307\u00a0lb'); // 1500 kg
+    expect(screen.getByText('Volume').nextElementSibling.textContent).toBe('3.307\u00a0lb'); // 1500 kg
     expect(screen.queryByText(/kg/)).toBeNull();
   });
 });

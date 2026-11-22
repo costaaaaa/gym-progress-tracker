@@ -12,7 +12,7 @@ describe('blocco «Recupero»', () => {
   it('piccola: muscoli pronti e in recupero, link ai muscoli; chi non è mai stato allenato non conta', () => {
     renderBlock(<RecoveryBlock status="ok" recovery={DATA} detail="full" />);
     const link = screen.getByText('3 muscoli pronti · 2 in recupero').closest('a');
-    expect(link.getAttribute('href')).toBe('/progressi?tab=muscles');
+    expect(link.getAttribute('href')).toBe('/progressi?tab=volume');
     expect(screen.getByRole('heading', { level: 2, name: 'Recupero' })).toBeTruthy();
     expect(screen.queryByText('Puoi allenare')).toBeNull();
   });
@@ -56,7 +56,7 @@ describe('blocco «Recupero»', () => {
   it('dashboard in errore: titolo e link restano, dati non disponibili', () => {
     renderBlock(<RecoveryBlock status="error" recovery={undefined} large />);
     expect(screen.getByText('Dati non disponibili al momento.')).toBeTruthy();
-    expect(screen.getByRole('link').getAttribute('href')).toBe('/progressi?tab=muscles');
+    expect(screen.getByRole('link').getAttribute('href')).toBe('/progressi?tab=volume');
     expect(screen.queryByText('Puoi allenare')).toBeNull();
   });
 
@@ -75,6 +75,6 @@ describe('blocco «Recupero»', () => {
   it('il tocco porta ai muscoli', () => {
     renderBlock(<RecoveryBlock status="ok" recovery={DATA} />);
     fireEvent.click(screen.getByRole('link'));
-    expect(screen.getByTestId('where').textContent).toBe('/progressi?tab=muscles');
+    expect(screen.getByTestId('where').textContent).toBe('/progressi?tab=volume');
   });
 });

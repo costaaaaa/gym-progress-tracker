@@ -94,6 +94,11 @@ describe('righe', () => {
   });
 });
 
+it('«Apri» di Recupero porta alla tab Volume dei Progressi', () => {
+  mount();
+  expect(within(screen.getAllByRole('listitem')[1]).getByRole('link', { name: /^Apri/ }).getAttribute('href')).toBe('/progressi?tab=volume');
+});
+
 describe('salvataggio', () => {
   it('spegnere un modulo salva subito solo quella chiave, aggiorna il contesto e lo annuncia', async () => {
     mount();

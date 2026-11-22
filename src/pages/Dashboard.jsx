@@ -1,7 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { Box, Tabs, Tab, CircularProgress, Typography } from '@mui/material';
 import BarChartIcon from '@mui/icons-material/BarChart';
-import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
+import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import StraightenIcon from '@mui/icons-material/Straighten';
 import { useTabbedPage } from '../hooks/useTabbedPage';
 import { useModule } from '../hooks/useModule';
@@ -12,28 +12,32 @@ import { INK_TABS } from '../utils/inkTabs';
 
 // Lazy loading dei componenti tab
 const Progress = lazy(() => import('./Progress'));
-const Muscles = lazy(() => import('./Muscles'));
+const Volume = lazy(() => import('./Volume'));
 const BodyStats = lazy(() => import('./BodyStats'));
 
-// `module`: il modulo facoltativo di cui la tab fa parte (Esercizi è sempre visibile)
+// `module`: il modulo facoltativo di cui la tab fa parte (Esercizi e Volume sono sempre visibili: del modulo Recupero è solo
+// la card «Per muscolo» dentro Volume)
 const TABS = [
   { id: 'progress', label: 'dashboard.tab.progress' },
-  { id: 'muscles', label: 'dashboard.tab.muscles', module: 'recovery' },
+  { id: 'volume', label: 'dashboard.tab.volume' },
   { id: 'body', label: 'dashboard.tab.body', module: 'body' },
 ];
 
+// L'indirizzo di prima della tab Volume: i segnalibri e i collegamenti già in giro portano ancora lì
+const TAB_ALIASES = { muscles: 'volume' };
+
 const TAB_ICONS = {
   progress: <BarChartIcon fontSize="small" />,
-  muscles: <AccessibilityNewIcon fontSize="small" />,
+  volume: <FitnessCenterIcon fontSize="small" />,
   body: <StraightenIcon fontSize="small" />,
 };
 
 const Dashboard = () => {
   const { t } = useTranslation();
-  const { currentTab, visitedTabs, handleTabChange } = useTabbedPage(TABS, { title: t('dashboard.title'), description: t('dashboard.meta.description') });
+  const { currentTab, visitedTabs, handleTabChange } = useTabbedPage(TABS, { title: t('dashboard.title'), description: t('dashboard.meta.description'), aliases: TAB_ALIASES });
   // «Nuova misura» dal ventaglio (stato di navigazione): la scheda Misure apre la sua finestra, una volta
   const measureRequest = useNavigationRequest('openMeasure');
-  const modules = { recovery: useModule('recovery'), body: useModule('body') };
+  const modules = { body: useModule('body') };
   // Una tab di un modulo non attivo sparisce dalla riga; se l'indirizzo la chiede, al suo posto c'è la pagina «non attivo»
   const visibleTabs = TABS.filter((tab) => !tab.module || modules[tab.module]);
   const requested = TABS.find((tab) => tab.id === currentTab);
@@ -73,9 +77,9 @@ const Dashboard = () => {
             </Box>
           )}
           {inactive && <ModuleInactive module={inactive.module} heading="h2" />}
-          {visitedTabs.muscles && modules.recovery && (
-            <Box sx={{ display: currentTab === 'muscles' ? 'block' : 'none' }}>
-              <Muscles />
+          {visitedTabs.volume && (
+            <Box sx={{ display: currentTab === 'volume' ? 'block' : 'none' }}>
+              <Volume />
             </Box>
           )}
           {visitedTabs.body && modules.body && (

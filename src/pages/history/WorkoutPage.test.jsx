@@ -111,13 +111,13 @@ describe('riquadri', () => {
   it('Durata, Volume (nell\'unità dell\'utente) e Serie allenanti', async () => {
     await mount();
     expect(riquadro('Durata').getByText('60 min')).toBeTruthy();
-    expect(riquadro('Volume').getByText('1440 kg')).toBeTruthy();
+    expect(riquadro('Volume').getByText('1.440 kg')).toBeTruthy();
     expect(riquadro('Serie').getByText('3')).toBeTruthy();
   });
 
   it('il valore di ogni riquadro non può andare a capo (`nowrap`) e non scende sotto 16 px', async () => {
     await mount();
-    ['60 min', '1440 kg', '3'].forEach((testo) => {
+    ['60 min', '1.440 kg', '3'].forEach((testo) => {
       const stile = getComputedStyle(screen.getByText(testo));
       expect(stile.whiteSpace).toBe('nowrap');
       expect(parseFloat(stile.fontSize)).toBeGreaterThanOrEqual(16);
@@ -141,10 +141,10 @@ describe('riquadri', () => {
     expect(riquadro('Serie').getByText('1')).toBeTruthy();
   });
 
-  it('in lb il volume è convertito sul totale: 1440 kg = 3175 lb', async () => {
+  it('in lb il volume è convertito sul totale: 1440 kg = 3.175 lb', async () => {
     account.weightUnit = 'lb';
     await mount();
-    expect(riquadro('Volume').getByText('3175 lb')).toBeTruthy();
+    expect(riquadro('Volume').getByText('3.175 lb')).toBeTruthy();
   });
 });
 
