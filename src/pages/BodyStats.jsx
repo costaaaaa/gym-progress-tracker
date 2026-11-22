@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Typography, Grid, Box, Card, Snackbar, Alert, CircularProgress, Button } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import AddIcon from '@mui/icons-material/Add';
 import EventBusyIcon from '@mui/icons-material/EventBusy';
-import i18n from '../i18n';
 import { formatDate, intlLocale } from '../i18n/format';
 import { useAuth } from '../context/AuthContext';
 import { BODY_LB_DIVISIONS, formatWeightInUnit } from '../utils/weightUnit';
@@ -18,6 +17,7 @@ import PeriodChips from './body/PeriodChips';
 import WeightCard from './body/WeightCard';
 import MeasureCard from './body/MeasureCard';
 import BodyHistory from './body/BodyHistory';
+import LoadError from './progress/LoadError';
 import NewMeasurementDialog from './body/NewMeasurementDialog';
 import { BODY_COMPOSITION_SERIES, CIRCUMFERENCE_SERIES } from './body/series';
 
@@ -33,10 +33,6 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const notify = (message, severity) => setSnackbar({ open: true, message, severity });
-
-  useEffect(() => {
-    if (loadFailed) notify(i18n.t('body.error.load'), 'error');
-  }, [loadFailed]);
 
   useOncePerRequest(openRequest, !isLoading, () => { if (!consentRequired) setIsDialogOpen(true); });
 
@@ -81,11 +77,14 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
         </Button>
       </Box>
 
-      {!isLoading && <HealthAppHint alreadySyncing={stats.some((s) => s.health_fields)} />}
+      {/* Lettura fallita: l'errore al posto dei dati, diverso dalla pagina vuota */}
+      {loadFailed && <LoadError message={t('body.error.load')} onRetry={refresh} />}
 
-      {!isLoading && stats.length > 0 && <PeriodChips value={period} onChange={setPeriod} />}
+      {!isLoading && !loadFailed && <HealthAppHint alreadySyncing={stats.some((s) => s.health_fields)} />}
 
-      {isLoading ? (
+      {!isLoading && !loadFailed && stats.length > 0 && <PeriodChips value={period} onChange={setPeriod} />}
+
+      {loadFailed ? null : isLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 10 }}>
           <CircularProgress color="primary" />
         </Box>

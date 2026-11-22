@@ -20,7 +20,7 @@ const BodyStats = lazy(() => import('./BodyStats'));
 const TABS = [
   { id: 'progress', label: 'dashboard.tab.progress' },
   { id: 'volume', label: 'dashboard.tab.volume' },
-  { id: 'body', label: 'dashboard.tab.body', module: 'body' },
+  { id: 'body', label: 'progress.tab.body', module: 'body' },
 ];
 
 // L'indirizzo di prima della tab Volume: i segnalibri e i collegamenti già in giro portano ancora lì

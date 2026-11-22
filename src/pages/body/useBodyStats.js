@@ -20,6 +20,8 @@ export default function useBodyStats() {
       const response = await fetch(`${API_BASE_URL}api/user_stats/read.php`, {
         credentials: 'include',
       });
+      // Un errore del server non è «nessuna misura»: si dice, non si mostra la pagina vuota
+      if (!response.ok) throw new Error(`user_stats/read ${response.status}`);
       const data = await response.json();
       setConsentRequired(data.consent_required === true);
       setConsentUpdated(data.consent_updated === true);

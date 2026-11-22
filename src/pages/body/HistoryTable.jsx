@@ -39,7 +39,7 @@ const HistoryTable = ({ rows, empty, onDelete, weightUnit }) => {
             <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="waist_size" weightUnit={weightUnit} /></TableCell>
             <TableCell align="right" sx={bodyCellSx}><StatValue row={row} field="leg_size" weightUnit={weightUnit} /></TableCell>
             <TableCell align="center">
-              <IconButton size="small" aria-label={t('common.delete')} onClick={() => onDelete(row.id)} sx={{ color: 'text.secondary' }}>
+              <IconButton aria-label={t('common.delete')} onClick={() => onDelete(row.id)} sx={{ width: 44, height: 44, color: 'text.secondary' }}>
                 <DeleteIcon fontSize="small" />
               </IconButton>
             </TableCell>

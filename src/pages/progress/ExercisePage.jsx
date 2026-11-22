@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Alert, Box, Button, Card, CircularProgress, IconButton, Typography } from '@mui/material';
+import { Box, Card, CircularProgress, IconButton, Typography } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -9,6 +9,7 @@ import useExerciseProgress from './useExerciseProgress';
 import { formatValue, groupLabel } from './exerciseText';
 import ExerciseChart from './ExerciseChart';
 import ExerciseHistory from './ExerciseHistory';
+import LoadError from './LoadError';
 
 const BACK_PATH = '/progressi';
 const CHART_TITLE_ID = 'exercise-chart-title';
@@ -44,9 +45,7 @@ const ExercisePage = () => {
             {back}
             <Typography variant="pageTitle" sx={{ flex: 1, minWidth: 0 }}>{t('dashboard.title')}</Typography>
           </Box>
-          <Alert severity="error" sx={{ fontSize: 16 }} action={<Button color="inherit" onClick={refresh} sx={{ minHeight: 44, fontSize: 16, fontWeight: 600 }}>{t('progress.retry')}</Button>}>
-            {t('progress.error.connection')}
-          </Alert>
+          <LoadError message={t('progress.error.connection')} onRetry={refresh} />
         </>
       );
     }

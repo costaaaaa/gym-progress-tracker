@@ -8,7 +8,7 @@ Il kit è separato dall'app: ha un suo `package.json` e non tocca quello di `gym
 
 ## Script
 
-- `shots.mjs <cartella> [porta]`: 23 pagine, «Tutti gli esercizi» (2 immagini), la pagina di una scheda in modifica con i dialog dell'editor
+- `shots.mjs <cartella> [porta]`: 24 pagine, «Tutti gli esercizi» (2 immagini), la pagina di una scheda in modifica con i dialog dell'editor
   delle serie (4 immagini) e le 5 schermate del Focus, con 390 e 1440 px di larghezza e tema
   chiaro/scuro. Ogni schermata usa un contesto browser nuovo con orologio fisso
   (2026-10-23 10:00, Europe/Rome), `reducedMotion: reduce`, animazioni CSS azzerate, font pronti
@@ -21,7 +21,7 @@ Il kit è separato dall'app: ha un suo `package.json` e non tocca quello di `gym
 - `compare.mjs [A=before] [B=after]`: confronto con pixelmatch (soglia 0). Le differenze finiscono in `diff/`.
   Esce con 1 se c'è almeno una differenza o un file mancante.
 
-Pagine (file `<nome>_<390|1440>_<light|dark>.png`): `landing` (ospite), `home`, `home-nuovo` (utente senza scheda né allenamenti), `progressi`, `progressi-nuovo` (un solo allenamento: ogni esercizio è "Nuovo"), `misure`,
+Pagine (file `<nome>_<390|1440>_<light|dark>.png`): `landing` (ospite), `home`, `home-nuovo` (utente senza scheda né allenamenti), `progressi`, `progressi-nuovo` (un solo allenamento: ogni esercizio è "Nuovo"), `misure`, `misure-errore` (tab Corpo con la lettura fallita: l'errore e «Riprova»),
 `volume` (tab Volume con il modulo Recupero attivo: la settimana e dodici muscoli: nove con serie, tre a zero, con recupero pronto, in recupero, affaticato o nessun dato), `volume-base` (la stessa con il modulo Recupero spento: solo la card della settimana), `progressi-esercizio` (pagina della panca: 12 sessioni con il carico che sale, grafico, record e cronologia),
 `account`, `profilo`, `gruppi`, `gruppo-dettaglio`, `allenamenti-piani` (elenco compatto, con la riga «Tutti gli esercizi» in fondo),
 `allenamenti-piani-ricche` (elenco con più schede), `allenamenti-piani-pagina` (pagina di una scheda attiva in lettura, con «Inizia»),

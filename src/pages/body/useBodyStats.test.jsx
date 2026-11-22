@@ -37,6 +37,13 @@ describe('useBodyStats', () => {
     expect(hook.result.current.consentRequired).toBe(false);
   });
 
+  it('il server risponde con un errore: loadFailed e nessuna riga, diverso dalle misure vuote', async () => {
+    replies.read = () => json({ success: false }, 500);
+    const { result } = await mount();
+    expect(result.current.loadFailed).toBe(true);
+    expect(result.current.stats).toEqual([]);
+  });
+
   it('senza il consenso ai dati sulla salute: consentRequired, righe vuote e, se il testo è cambiato, consentUpdated', async () => {
     replies.read = () => json({ records: [], consent_required: true, consent_updated: true });
     const { result } = await mount();

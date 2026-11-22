@@ -70,9 +70,9 @@ describe('rotte dei Progressi', () => {
     await waitFor(() => expect(where()).toBe(to));
   }, 10000);
 
-  it('/progressi?tab=body apre la tab Misure e resta lì', async () => {
+  it('/progressi?tab=body apre la tab Corpo e resta lì', async () => {
     await open('/progressi?tab=body');
-    expect((await screen.findByRole('tab', { name: 'Misure' })).getAttribute('aria-selected')).toBe('true');
+    expect((await screen.findByRole('tab', { name: 'Corpo' })).getAttribute('aria-selected')).toBe('true');
     expect(where()).toBe('/progressi?tab=body');
   }, 10000);
 
