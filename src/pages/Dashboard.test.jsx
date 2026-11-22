@@ -83,15 +83,17 @@ describe('shell di Progressi', () => {
     });
   });
 
-  it('le tre tab hanno etichette corte, uguali su ogni larghezza: Esercizi · Muscoli · Misure', async () => {
+  it('le tre tab hanno etichette corte, uguali su ogni larghezza: Esercizi · Volume · Misure', async () => {
     await mount();
-    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Esercizi', 'Muscoli', 'Misure']);
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Esercizi', 'Volume', 'Misure']);
   });
 });
 
-describe('tab Muscoli', () => {
+describe('tab Volume', () => {
   const dashboardStats = {
     success: true,
+    detail: 'full',
+    weekly_volume: { total_weight: 1200, total_reps: 30 },
     weekly_sets: {
       week: { petto: 3, schiena: 0, spalle: 0, bicipiti: 0, tricipiti: 0, addome: 0, quadricipiti: 0, femorali: 0, glutei: 0, adduttori: 0, abduttori: 0, polpacci: 0 },
       previous_to_date: { petto: 1, schiena: 0, spalle: 0, bicipiti: 0, tricipiti: 0, addome: 0, quadricipiti: 0, femorali: 0, glutei: 0, adduttori: 0, abduttori: 0, polpacci: 0 },
@@ -99,20 +101,32 @@ describe('tab Muscoli', () => {
     },
     recovery: {},
   };
-
-  it('?tab=muscles apre la scheda Muscoli, selezionata e con i suoi dati', async () => {
+  const Where = () => { const { pathname, search } = useLocation(); return <p data-testid="where">{pathname + search}</p>; };
+  const openAt = (path) => {
     vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
       json(String(url).includes('workout_stats/dashboard.php') ? dashboardStats : { records: [] }),
     )));
     render(
       <ThemeModeProvider>
-        <MemoryRouter initialEntries={['/progressi?tab=muscles']}><Dashboard /></MemoryRouter>
+        <MemoryRouter initialEntries={[path]}><Where /><Dashboard /></MemoryRouter>
       </ThemeModeProvider>,
     );
-    const tab = await screen.findByRole('tab', { name: 'Muscoli' });
+  };
+
+  it('?tab=volume apre la scheda Volume, selezionata e con i suoi dati', async () => {
+    openAt('/progressi?tab=volume');
+    const tab = await screen.findByRole('tab', { name: 'Volume' });
     expect(tab.getAttribute('aria-selected')).toBe('true');
-    await screen.findByText(/serie allenanti/); // la scheda Muscoli ha caricato i suoi dati
+    expect(await screen.findByRole('heading', { level: 2, name: 'Questa settimana' })).toBeTruthy();
     expect(screen.getByText('Petto').closest('li').textContent).toContain('3');
+  });
+
+  it('?tab=muscles (l\'indirizzo di prima) porta a ?tab=volume con replace, senza la pagina «non attivo»', async () => {
+    openAt('/progressi?tab=muscles');
+    expect(await screen.findByRole('heading', { level: 2, name: 'Questa settimana' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Volume' }).getAttribute('aria-selected')).toBe('true');
+    await waitFor(() => expect(screen.getByTestId('where').textContent).toBe('/progressi?tab=volume'));
+    expect(screen.queryByText(/non è attivo/)).toBeNull();
   });
 });
 
@@ -140,12 +154,12 @@ describe('nomi accessibili', () => {
   it('il titolo del documento segue il tab: «tab · Progressi | LiftIndex»', async () => {
     await mount();
     expect(document.title).toBe('Esercizi · Progressi | LiftIndex');
-    fireEvent.click(screen.getByRole('tab', { name: 'Muscoli' }));
-    await waitFor(() => expect(document.title).toBe('Muscoli · Progressi | LiftIndex'));
+    fireEvent.click(screen.getByRole('tab', { name: 'Volume' }));
+    await waitFor(() => expect(document.title).toBe('Volume · Progressi | LiftIndex'));
   });
 });
 
-// Moduli: Recupero non attivo toglie la tab Muscoli, Misure non attivo la tab Misure; Esercizi resta sempre
+// Moduli: Misure non attivo toglie la tab Misure; Esercizi e Volume restano sempre (Recupero spento toglie solo la card «Per muscolo»)
 describe('moduli non attivi', () => {
   const ALL = { body: true, recovery: true, levels: true, groups: true, ai: true };
   const Switchable = ({ modules, path }) => {
@@ -156,33 +170,41 @@ describe('moduli non attivi', () => {
   const open = (modules, path = '/progressi') => render(<ThemeModeProvider><Switchable modules={modules} path={path} /></ThemeModeProvider>);
   const tabNames = () => screen.getAllByRole('tab').map((tab) => tab.textContent);
 
-  it('con tutto attivo le tab sono Esercizi · Muscoli · Misure', async () => {
+  it('con tutto attivo le tab sono Esercizi · Volume · Misure', async () => {
     open(ALL);
     await screen.findByText(/Nessun dato di allenamento/);
-    expect(tabNames()).toEqual(['Esercizi', 'Muscoli', 'Misure']);
+    expect(tabNames()).toEqual(['Esercizi', 'Volume', 'Misure']);
   });
 
-  it('Misure non attivo: restano Esercizi e Muscoli, e la tab Muscoli si apre', async () => {
+  it('Misure non attivo: restano Esercizi e Volume, e la tab Volume si apre', async () => {
     open({ ...ALL, body: false });
     await screen.findByText(/Nessun dato di allenamento/);
-    expect(tabNames()).toEqual(['Esercizi', 'Muscoli']);
-    fireEvent.click(screen.getByRole('tab', { name: 'Muscoli' }));
-    await waitFor(() => expect(screen.getByRole('tab', { name: 'Muscoli' }).getAttribute('aria-selected')).toBe('true'));
+    expect(tabNames()).toEqual(['Esercizi', 'Volume']);
+    fireEvent.click(screen.getByRole('tab', { name: 'Volume' }));
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Volume' }).getAttribute('aria-selected')).toBe('true'));
   });
 
-  it('Recupero non attivo: restano Esercizi e Misure, e la tab Misure si apre (non quella che aveva il suo posto)', async () => {
+  it('Recupero non attivo: la tab Volume c\'è lo stesso, e si apre', async () => {
     open({ ...ALL, recovery: false });
     await screen.findByText(/Nessun dato di allenamento/);
-    expect(tabNames()).toEqual(['Esercizi', 'Misure']);
+    expect(tabNames()).toEqual(['Esercizi', 'Volume', 'Misure']);
+    fireEvent.click(screen.getByRole('tab', { name: 'Volume' }));
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Volume' }).getAttribute('aria-selected')).toBe('true'));
+    expect(document.title).toBe('Volume · Progressi | LiftIndex');
+  });
+
+  it('Recupero non attivo: la tab Misure si apre', async () => {
+    open({ ...ALL, recovery: false });
+    await screen.findByText(/Nessun dato di allenamento/);
     fireEvent.click(screen.getByRole('tab', { name: 'Misure' }));
     await waitFor(() => expect(screen.getByRole('tab', { name: 'Misure' }).getAttribute('aria-selected')).toBe('true'));
     expect(document.title).toBe('Misure · Progressi | LiftIndex');
   });
 
-  it('Recupero e Misure non attivi: resta solo Esercizi, valida e selezionata', async () => {
+  it('Recupero e Misure non attivi: restano Esercizi e Volume', async () => {
     open({ ...ALL, recovery: false, body: false });
     await screen.findByText(/Nessun dato di allenamento/);
-    expect(tabNames()).toEqual(['Esercizi']);
+    expect(tabNames()).toEqual(['Esercizi', 'Volume']);
     expect(screen.getByRole('tab', { name: 'Esercizi' }).getAttribute('aria-selected')).toBe('true');
   });
 
@@ -190,15 +212,19 @@ describe('moduli non attivi', () => {
     open({ ...ALL, body: false }, '/progressi?tab=body');
     expect(await screen.findByRole('heading', { level: 2, name: 'Il modulo Misure non è attivo' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Attiva' })).toBeTruthy();
-    expect(tabNames()).toEqual(['Esercizi', 'Muscoli']);
+    expect(tabNames()).toEqual(['Esercizi', 'Volume']);
     screen.getAllByRole('tab').forEach((tab) => expect(tab.getAttribute('aria-selected')).toBe('false'));
     expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual(['Progressi']);
   });
 
-  it('?tab=muscles con Recupero non attivo: «Il modulo Recupero e serie per muscolo non è attivo»', async () => {
+  it('?tab=muscles con Recupero non attivo apre Volume: nessuna pagina «non attivo» e nessuna card «Per muscolo»', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(json({ success: true, detail: 'full', weekly_volume: { total_weight: 0 }, weekly_sets: {}, recovery: {} }))));
     open({ ...ALL, recovery: false }, '/progressi?tab=muscles');
-    expect(await screen.findByRole('heading', { name: 'Il modulo Recupero e serie per muscolo non è attivo' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { level: 2, name: 'Questa settimana' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Volume' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.queryByRole('heading', { name: 'Il modulo Recupero e serie per muscolo non è attivo' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Per muscolo' })).toBeNull();
   });
 
   it('«Attiva» salva e mostra la tab richiesta, selezionata', async () => {
