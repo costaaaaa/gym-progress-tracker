@@ -835,3 +835,50 @@ describe('circonferenze: utente in kg, tutto com\'era', () => {
     expect(JSON.parse(post[1].body)).toMatchObject({ chest_size: '102.5', arm_size: null, leg_size: null });
   });
 });
+
+describe('lettura fallita', () => {
+  beforeEach(() => { vi.spyOn(console, 'error').mockImplementation(() => {}); });
+  afterEach(() => { vi.restoreAllMocks(); });
+
+  it('dà un errore nella pagina con «Riprova», diverso dalla pagina vuota, e senza avviso a scomparsa', async () => {
+    let up = false;
+    fetch.mockImplementation(() => (up ? Promise.resolve({ ok: true, json: async () => ({ records: [row('2026-10-15', '80.0')] }) }) : Promise.reject(new Error('rete'))));
+    render(<BodyStats />);
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toBe('Errore nel caricamento delle statistiche' + 'Riprova');
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(screen.queryByText('Nessuna misurazione registrata')).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Periodo' })).toBeNull();
+
+    up = true;
+    fireEvent.click(within(alert).getByRole('button', { name: 'Riprova' }));
+    await screen.findByRole('group', { name: 'Periodo' });
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(within(history()).getByText(formatDate('2026-10-15'))).toBeTruthy();
+  });
+
+  it('la pagina vuota resta senza errore né «Riprova»', async () => {
+    render(<BodyStats />);
+    expect(await screen.findByText('Nessuna misurazione registrata')).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Riprova' })).toBeNull();
+  });
+});
+
+describe('aree da 44px', () => {
+  beforeEach(() => {
+    records = Array.from({ length: 12 }, (_, i) => row(`2026-09-${String(i + 1).padStart(2, '0')}`, '80.0'));
+  });
+
+  it('i quattro pulsanti della paginazione e il cestino della tabella', async () => {
+    await mount();
+    ['Prima pagina', 'Pagina precedente', 'Pagina successiva', 'Ultima pagina'].forEach((name) => {
+      const button = pill(name);
+      expect(style(button).width, name).toBe('44px');
+      expect(style(button).height, name).toBe('44px');
+    });
+    const del = within(tableRows()[0]).getByRole('button', { name: 'Elimina' });
+    expect(style(del).width).toBe('44px');
+    expect(style(del).height).toBe('44px');
+  });
+});
