@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { Alert, Box, Button, Card, Chip, CircularProgress, IconButton, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Card, Chip, CircularProgress, IconButton, InputAdornment, TextField, Typography } from '@mui/material';
 import { visuallyHidden } from '@mui/utils';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import SearchIcon from '@mui/icons-material/Search';
 import { Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../../hooks/usePageMeta';
@@ -14,18 +15,26 @@ import useAllExercises from './useAllExercises';
 // Pagina «Tutti gli esercizi» (/schede/esercizi): si cerca e si sfoglia lo stesso elenco di ExerciseDialog (catalogo
 // ed esercizi personali), in sola lettura. Ricerca e gruppo muscolare si sommano; gli esercizi si aggiungono alle
 // schede e si creano altrove.
+// Stessa normalizzazione di ExerciseDialog
+const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '');
+
 const ExercisesPage = () => {
   const { t, i18n } = useTranslation();
-  usePageMeta(t('plans.all_exercises'), t('plans.meta.description'));
+  usePageMeta(t('plans.exercises.title'), t('plans.meta.description'));
   const { status, records, message, retry } = useAllExercises();
   const [query, setQuery] = useState('');
   const [group, setGroup] = useState(''); // '' = tutti; altrimenti il muscle_group del catalogo
 
-  // Gruppi presenti, in ordine alfabetico come nel dialog (la chiave del catalogo, non l'etichetta tradotta)
-  const groups = useMemo(() => [...new Set(records.map((ex) => ex.muscle_group).filter(Boolean))].sort(), [records]);
+  // Gruppi presenti, in ordine alfabetico dell'etichetta nella lingua corrente. Come in ExerciseDialog, «petto» e
+  // «Petto» sono lo stesso gruppo (confronto con la prima lettera maiuscola)
+  const groups = useMemo(
+    () => [...new Set(records.map((ex) => capitalize(ex.muscle_group)).filter(Boolean))]
+      .sort((a, b) => muscleLabel(a).localeCompare(muscleLabel(b), i18n.language)),
+    [records, i18n.language],
+  );
 
   const shown = useMemo(() => {
-    const inGroup = group ? records.filter((ex) => ex.muscle_group === group) : records;
+    const inGroup = group ? records.filter((ex) => capitalize(ex.muscle_group) === group) : records;
     if (query.trim()) return rankExerciseMatches(inGroup, query);
     return [...inGroup].sort((a, b) => (a.name || '').localeCompare(b.name || '', i18n.language));
   }, [records, group, query, i18n.language]);
@@ -36,7 +45,7 @@ const ExercisesPage = () => {
         <IconButton component={RouterLink} to="/schede" aria-label={t('nav.plans')} edge="start" sx={{ width: 44, height: 44, color: 'text.primary' }}>
           <ArrowBackIcon />
         </IconButton>
-        <Typography variant="pageTitle" sx={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{t('plans.all_exercises')}</Typography>
+        <Typography variant="pageTitle" sx={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{t('plans.exercises.title')}</Typography>
       </Box>
 
       {status === 'loading' && <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}><CircularProgress /></Box>}
@@ -57,6 +66,7 @@ const ExercisesPage = () => {
             fullWidth
             placeholder={t('plans.exercises.search')}
             inputProps={{ 'aria-label': t('plans.exercises.search') }}
+            InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             sx={{ mb: 2, '& input::placeholder': { color: 'text.secondary', opacity: 1 } }}
@@ -95,8 +105,8 @@ const ExercisesPage = () => {
                     key={ex.id}
                     sx={{ px: 2.5, py: 1.5, '&:not(:last-of-type)': { borderBottom: 1, borderColor: 'divider' } }}
                   >
-                    <Typography sx={{ fontSize: 16, fontWeight: 600, overflowWrap: 'anywhere' }}>{ex.name}</Typography>
-                    <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
+                    <Typography data-testid="nome-esercizio" sx={{ fontSize: 16, fontWeight: 600, overflowWrap: 'anywhere' }}>{ex.name}</Typography>
+                    <Typography data-testid="dettaglio-esercizio" sx={{ fontSize: 16, color: 'text.secondary' }}>
                       {[muscleLabel(ex.muscle_group), equipmentName(ex.equipment), personalLabel(ex)].filter(Boolean).join(' · ')}
                     </Typography>
                   </Box>

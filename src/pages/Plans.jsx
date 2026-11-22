@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Box, Typography, Button, Grid, Alert, Snackbar, Card, CardActionArea } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -21,6 +21,7 @@ const Plans = () => {
   const { workoutPlans, account, snackbar, closeSnackbar, notify, createPlan } = usePlans();
   useArrivalState(notify);
   const [openDialog, setOpenDialog] = useState(false);
+  const allExercisesId = useId();
 
   // Creata la scheda si va alla sua pagina con «Modifica» già acceso, per aggiungere subito gli esercizi; l'avviso
   // di riuscita va con lei, perché questa schermata si smonta
@@ -67,16 +68,16 @@ const Plans = () => {
         <CardActionArea
           component={RouterLink}
           to="/schede/esercizi"
-          aria-labelledby="all-exercises-title"
-          aria-describedby="all-exercises-hint"
+          aria-labelledby={`${allExercisesId}-title`}
+          aria-describedby={`${allExercisesId}-hint`}
           sx={{ minHeight: 64, p: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}
         >
           <Box>
-            <Typography id="all-exercises-title" sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 16 }}>
-              {t('plans.all_exercises')}
+            <Typography id={`${allExercisesId}-title`} sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 16 }}>
+              {t('plans.exercises.title')}
             </Typography>
-            <Typography id="all-exercises-hint" sx={{ mt: 0.5, fontSize: 16, color: 'text.secondary' }}>
-              {t('plans.all_exercises_hint')}
+            <Typography id={`${allExercisesId}-hint`} sx={{ mt: 0.5, fontSize: 16, color: 'text.secondary' }}>
+              {t('plans.exercises.hint')}
             </Typography>
           </Box>
           <ChevronRightIcon sx={{ color: 'text.secondary', flexShrink: 0 }} />

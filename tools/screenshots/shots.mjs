@@ -139,8 +139,9 @@ const CATALOG = [
 
 // Catalogo per «Tutti gli esercizi» (scelta `catalog: 'completo'`): con gli attrezzi e un esercizio personale in revisione.
 // A parte, perché gli attrezzi cambierebbero anche i dialog degli altri flussi.
+const EQUIPMENT_BY_ID = { 3: 'bilanciere', 4: 'manubri', 5: 'corpo_libero', 6: 'bilanciere', 7: 'bilanciere', 8: 'bilanciere' };
 const CATALOG_COMPLETO = [
-  ...CATALOG.map((e, i) => ({ ...e, equipment: ['bilanciere', 'manubri', 'corpo_libero', 'bilanciere', 'bilanciere', 'bilanciere'][i], is_mine: false, status: 'approved' })),
+  ...CATALOG.map((e) => ({ ...e, equipment: EQUIPMENT_BY_ID[e.id], is_mine: false, status: 'approved' })),
   { id: 9, name: 'Distensioni con manubri', name_it: 'Distensioni con manubri', name_en: 'Dumbbell press', muscle_group: 'petto', equipment: 'manubri', is_mine: false, status: 'approved' },
   { id: 10, name: 'Croci ai cavi', name_it: 'Croci ai cavi', name_en: 'Cable fly', muscle_group: 'petto', equipment: 'cavi', is_mine: false, status: 'approved' },
   { id: 11, name: 'Lat machine', name_it: 'Lat machine', name_en: 'Lat pulldown', muscle_group: 'schiena', equipment: 'cavi', is_mine: false, status: 'approved' },
