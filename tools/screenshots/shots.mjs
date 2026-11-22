@@ -487,7 +487,7 @@ const SHOT_LIST = [
   // Pagina di un esercizio (la panca): 12 sessioni, grafico in salita, record e cronologia
   ['progressi-esercizio', '/progressi/esercizi/3', { loggedIn: true, utente: 'progressi', ready: 'Panca piana' }],
   ['account', '/account', { loggedIn: true }],
-  ['profilo', '/profilo', { loggedIn: true }],
+  ['livelli', '/livelli', { loggedIn: true }],
   ['gruppi', '/gruppi', { loggedIn: true }],
   ['gruppo-dettaglio', '/gruppi/1', { loggedIn: true }],
   ['allenamenti-piani', '/schede', { loggedIn: true }],

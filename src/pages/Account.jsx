@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { TITLE_FONT_FAMILY } from '../utils/fonts';
+import { useTranslation } from 'react-i18next';
+import { usePageMeta } from '../hooks/usePageMeta';
 import { loginWithNext } from '../utils/safeNext';
 import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
 import ModulesCard from '../components/Account/ModulesCard';
@@ -20,7 +21,9 @@ import AdminCard from './account/AdminCard';
 import SessionCard from './account/SessionCard';
 import DeleteAccountCard from './account/DeleteAccountCard';
 
-const Account = ({ isEmbedded = false }) => {
+const Account = () => {
+  const { t } = useTranslation();
+  usePageMeta(t('account.title'), t('account.meta.description'));
   const { user, isLoggedIn, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -72,11 +75,7 @@ const Account = ({ isEmbedded = false }) => {
 
   return (
     <Box sx={{ maxWidth: 640, mx: 'auto', display: 'flex', flexDirection: 'column', gap: 3, pb: 4 }}>
-      {!isEmbedded && (
-        <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 22 }}>
-          Il mio Account
-        </Typography>
-      )}
+      <Typography variant="pageTitle">{t('account.title')}</Typography>
 
       <ProfileCard account={account} joinDate={joinDate} notify={notify} editOpen={editOpen} onToggleEdit={() => setEditOpen(o => !o)}>
         <PhysicalProfileForm account={account} notify={notify} />

@@ -12,6 +12,7 @@ import LocaleSync from './i18n/LocaleSync';
 import EmailBlockGuard from './components/EmailVerification/EmailBlockGuard';
 import LegacyWorkoutsRedirect from './pages/LegacyWorkoutsRedirect';
 import DashboardRedirect from './pages/DashboardRedirect';
+import ProfileRedirect from './pages/ProfileRedirect';
 
 // Lazy load Pages
 const Home = lazy(() => import('./pages/Home'));
@@ -27,7 +28,8 @@ const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const FocusWorkout = lazy(() => import('./pages/FocusWorkout'));
-const Profile = lazy(() => import('./pages/Profile'));
+const Account = lazy(() => import('./pages/Account'));
+const Levels = lazy(() => import('./pages/Levels'));
 const Groups = lazy(() => import('./pages/Groups'));
 const GroupDetail = lazy(() => import('./pages/GroupDetail'));
 const JoinGroup = lazy(() => import('./pages/JoinGroup'));
@@ -60,7 +62,8 @@ function App() {
                 <Route path="/storico/:id" element={<WorkoutPage />} />
                 <Route path="/progressi" element={<Dashboard />} />
                 <Route path="/progressi/esercizi/:id" element={<ExercisePage />} />
-                <Route path="/profilo" element={<Profile />} />
+                <Route path="/account" element={<Account />} />
+                <Route path="/livelli" element={<Levels />} />
                 <Route path="/gruppi" element={<Groups />} />
                 <Route path="/gruppi/:id" element={<GroupDetail />} />
                 <Route path="/entra" element={<JoinGroup />} />
@@ -81,7 +84,7 @@ function App() {
                 </Route>
                 
                 {/* Redirect per retrocompatibilità */}
-                <Route path="/account" element={<Navigate to="/profilo?tab=settings" replace />} />
+                <Route path="/profilo" element={<ProfileRedirect />} />
                 <Route path="/workouts" element={<LegacyWorkoutsRedirect />} />
                 <Route path="/workout-plans" element={<LegacyWorkoutsRedirect to="/schede" />} />
                 <Route path="/workout-history" element={<LegacyWorkoutsRedirect to="/storico" />} />

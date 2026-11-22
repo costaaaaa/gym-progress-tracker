@@ -1,9 +1,9 @@
-// Percorso vero del collegamento «Cosa mostro»: /profilo?tab=settings#groups-shown apre la scheda Impostazioni
-// (pagina Profilo, Account in lazy) e il fuoco arriva sul blocco della card dei gruppi. La fetch è il confine.
-import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+// Percorso vero del collegamento «Cosa mostro»: /account#groups-shown apre l'Account e il fuoco arriva sul blocco
+// della card dei gruppi. La fetch è il confine.
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import Profile from './Profile';
+import Account from './Account';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import i18n from '../i18n';
 import { json } from '../test/dom';
@@ -16,8 +16,6 @@ const profile = {
   success: true, level: 7, total_xp: 3140, xp_into_level: 340, xp_for_next_level: 600,
   lifetime_volume_kg: 1000, total_sessions: 3, longest_streak: 1, exercises: [], achievements: [],
 };
-
-beforeAll(() => Promise.all([import('./ProfileSummary'), import('./Account')]), 30000);
 
 beforeEach(async () => {
   await i18n.changeLanguage('it');
@@ -42,15 +40,13 @@ afterEach(() => {
   localStorage.clear();
 });
 
-describe('arrivo a /profilo?tab=settings#groups-shown', () => {
-  it('la scheda Impostazioni è aperta e il fuoco è sul blocco «Cosa mostro»', async () => {
+describe('arrivo a /account#groups-shown', () => {
+  it('il fuoco è sul blocco «Cosa mostro»', async () => {
     render(
       <ThemeModeProvider>
-        <MemoryRouter initialEntries={['/profilo?tab=settings#groups-shown']}><Profile /></MemoryRouter>
+        <MemoryRouter initialEntries={['/account#groups-shown']}><Account /></MemoryRouter>
       </ThemeModeProvider>,
     );
     await waitFor(() => expect(document.activeElement).toBe(document.getElementById('groups-shown')), { timeout: 10000 });
-    expect(screen.getByRole('tab', { name: 'Impostazioni' }).getAttribute('aria-selected')).toBe('true');
-    expect(document.getElementById('groups-shown').closest('[style*="display: none"]')).toBeNull();
   });
 });

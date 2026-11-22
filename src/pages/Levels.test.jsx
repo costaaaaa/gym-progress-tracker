@@ -1,16 +1,19 @@
-// Riepilogo del Profilo vista dall'utente: livello, statistiche e traguardi in neutro, rosso solo come accento.
+// Pagina Livelli e traguardi vista dall'utente: livello, statistiche e traguardi in neutro, rosso solo come accento.
 // Colori del tema chiaro scritti a mano: text.primary #1a1816, text.secondary #6b6663, success #15803d, primary #d50000.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
-import ProfileSummary from './ProfileSummary';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
+import Levels from './Levels';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import i18n from '../i18n';
 import { textBelow } from '../test/minText';
 import { unnamedControls } from '../test/accessibleNames';
 import { mediaStyle } from '../test/mediaStyle';
 
-const account = vi.hoisted(() => ({ weightUnit: 'kg', modules: undefined }));
-vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ weightUnit: account.weightUnit, user: { modules: account.modules } }) }));
+const account = vi.hoisted(() => ({ weightUnit: 'kg', modules: undefined, isLoggedIn: true }));
+vi.mock('../context/AuthContext', () => ({
+  useAuth: () => ({ weightUnit: account.weightUnit, user: { modules: account.modules }, isLoggedIn: account.isLoggedIn, loading: false, updateUser: () => {} }),
+}));
 
 const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
@@ -42,13 +45,14 @@ const profile = {
 beforeEach(() => {
   account.weightUnit = 'kg';
   account.modules = undefined;
+  account.isLoggedIn = true;
   localStorage.setItem('themeMode', 'light');
   vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: true, status: 200, json: async () => profile })));
 });
 afterEach(() => vi.unstubAllGlobals());
 
 const mount = async () => {
-  render(<ThemeModeProvider><ProfileSummary /></ThemeModeProvider>);
+  render(<ThemeModeProvider><MemoryRouter><Levels /></MemoryRouter></ThemeModeProvider>);
   await screen.findByText('Livello 7');
 };
 const style = (el) => getComputedStyle(el);
@@ -241,7 +245,7 @@ describe('testi', () => {
 describe('in inglese', () => {
   it('i testi vengono dal file di lingua, non dal codice', async () => {
     await i18n.changeLanguage('en');
-    render(<ThemeModeProvider><ProfileSummary /></ThemeModeProvider>);
+    render(<ThemeModeProvider><MemoryRouter><Levels /></MemoryRouter></ThemeModeProvider>);
     await screen.findByText('Level 7');
     ['Levels by exercise', 'Achievements', 'Consistency', 'Next', '58 of 100', 'kg lifted', 'record weeks'].forEach((text) => {
       expect(screen.getAllByText(text).length).toBeGreaterThan(0);
@@ -259,7 +263,7 @@ describe('nomi dei traguardi', () => {
   it('seguono la lingua dell\'app, non quella del testo mandato dal server', async () => {
     withServerLabels([a('sessions_100', 'sessions', 'Centurione', 100), a('tonnage_auto', 'tonnage', '1,5 t — automobile', 1500)]);
     await i18n.changeLanguage('en');
-    render(<ThemeModeProvider><ProfileSummary /></ThemeModeProvider>);
+    render(<ThemeModeProvider><MemoryRouter><Levels /></MemoryRouter></ThemeModeProvider>);
     await screen.findByText('Level 7');
     screen.getByText('Centurion');
     screen.getByText('1.5 t — a car');
@@ -269,7 +273,7 @@ describe('nomi dei traguardi', () => {
   it('un traguardo che il client non conosce mostra il testo del server', async () => {
     withServerLabels([a('sessions_9000', 'sessions', 'Nome nuovo', 9000)]);
     await i18n.changeLanguage('en');
-    render(<ThemeModeProvider><ProfileSummary /></ThemeModeProvider>);
+    render(<ThemeModeProvider><MemoryRouter><Levels /></MemoryRouter></ThemeModeProvider>);
     await screen.findByText('Level 7');
     screen.getByText('Nome nuovo');
   });
@@ -286,16 +290,43 @@ describe('unità di peso dell\'account', () => {
   });
 });
 
+describe('titolo e titolo del documento', () => {
+  it('un solo h1 «Livelli e traguardi» nello stile titolo di pagina, e il titolo del documento lo segue', async () => {
+    await mount();
+    const h1s = screen.getAllByRole('heading', { level: 1 });
+    expect(h1s.map((h) => h.textContent)).toEqual(['Livelli e traguardi']);
+    expect(style(h1s[0]).fontSize).toBe('28px');
+    expect(style(h1s[0]).fontWeight).toBe('800');
+    expect(document.title).toBe('Livelli e traguardi | LiftIndex');
+  });
+});
+
+describe('senza accesso', () => {
+  it('va al login con next = pagina', async () => {
+    account.isLoggedIn = false;
+    const Login = () => <p data-testid="login">{useLocation().search}</p>;
+    render(
+      <MemoryRouter initialEntries={['/livelli']}>
+        <ThemeModeProvider>
+          <Routes>
+            <Route path="/livelli" element={<Levels />} />
+            <Route path="/login" element={<Login />} />
+          </Routes>
+        </ThemeModeProvider>
+      </MemoryRouter>,
+    );
+    expect((await screen.findByTestId('login')).textContent).toBe('?next=%2Flivelli');
+  });
+});
+
 describe('modulo Livelli non attivo', () => {
-  it('niente livello, punti, livelli per esercizio, traguardi né serie più lunga; restano sessioni e volume', async () => {
+  it('la pagina «non attivo» con «Attiva», senza il contenuto dei livelli e senza leggerli', async () => {
     account.modules = { body: true, recovery: true, levels: false, groups: true, ai: true };
-    render(<ThemeModeProvider><ProfileSummary /></ThemeModeProvider>);
-    await screen.findByText('sessioni');
-    expect(screen.getByText('58')).toBeTruthy();
+    render(<ThemeModeProvider><MemoryRouter><Levels /></MemoryRouter></ThemeModeProvider>);
+    expect(screen.getByRole('heading', { name: 'Il modulo Livelli e traguardi non è attivo' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Attiva' })).toBeTruthy();
+    expect(screen.queryByText('sessioni')).toBeNull();
     expect(screen.queryByText('Livello 7')).toBeNull();
-    expect(screen.queryAllByRole('progressbar')).toHaveLength(0);
-    expect(screen.queryByText('Panca piana')).toBeNull();
-    expect(screen.queryByText(/Traguardi/)).toBeNull();
-    expect(screen.queryByText('Prime 10 sessioni')).toBeNull();
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

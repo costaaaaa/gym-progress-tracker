@@ -11,11 +11,11 @@ const streak = (weeks) => ({ success: true, current_streak_weeks: weeks, longest
 const server = (weeks = 4) => ({ 'gamification/profile.php': PROFILE, 'gamification/streak.php': streak(weeks) });
 
 describe('blocco «Livello e streak»', () => {
-  it('piccola: livello e streak in una riga, fiamma a destra, link al profilo', async () => {
+  it('piccola: livello e streak in una riga, fiamma a destra, link ai Livelli', async () => {
     stubFetch(server(4));
     renderBlock(<LevelsBlock />);
     const link = (await screen.findByText('Livello 12 · streak di 4 settimane')).closest('a');
-    expect(link.getAttribute('href')).toBe('/profilo');
+    expect(link.getAttribute('href')).toBe('/livelli');
     expect(screen.getByRole('heading', { level: 2, name: 'Livello e streak' })).toBeTruthy();
     expect(within(link).getByTestId('LocalFireDepartmentIcon')).toBeTruthy();
     expect(screen.queryByText('settimane di fila')).toBeNull();
@@ -85,7 +85,7 @@ describe('blocco «Livello e streak»', () => {
     stubFetch({ ...server(), [part]: { status: 500 } });
     renderBlock(<LevelsBlock />);
     expect(await screen.findByText('Dati non disponibili al momento.')).toBeTruthy();
-    expect(screen.getByRole('link').getAttribute('href')).toBe('/profilo');
+    expect(screen.getByRole('link').getAttribute('href')).toBe('/livelli');
   });
 
   it('una risposta senza success vale errore', async () => {
@@ -107,10 +107,10 @@ describe('blocco «Livello e streak»', () => {
     errors.mockRestore();
   });
 
-  it('il tocco porta al profilo', async () => {
+  it('il tocco porta ai Livelli', async () => {
     stubFetch(server());
     renderBlock(<LevelsBlock />);
     fireEvent.click((await screen.findByText(/Livello 12/)).closest('a'));
-    expect(screen.getByTestId('where').textContent).toBe('/profilo');
+    expect(screen.getByTestId('where').textContent).toBe('/livelli');
   });
 });

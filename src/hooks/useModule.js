@@ -9,7 +9,7 @@ import { saveModules } from '../api/modules';
 export const MODULE_PATHS = {
   body: '/progressi?tab=body',
   recovery: '/progressi?tab=volume',
-  levels: '/profilo',
+  levels: '/livelli',
   groups: '/gruppi',
 };
 export const MODULE_KEYS = Object.keys(MODULE_PATHS);
