@@ -1,181 +1,47 @@
-import { useState, useEffect, useRef } from 'react';
-import { 
-  Typography, 
-  Grid, 
-  Button, 
-  Box, 
-  Card, 
-  CardContent, 
-  CardActions,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  TextField,
-  IconButton,
-  Divider,
-  Alert,
-  Snackbar,
-  ButtonGroup,
-  Collapse,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem
-} from '@mui/material';
+import { useState, useRef } from 'react';
+import { Typography, Grid, Button, Box, Alert, Snackbar } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ExerciseDialog from '../components/ExerciseDialog';
-import PlannedSetsEditor from '../components/PlannedSetsEditor';
-import { API_BASE_URL } from '../config';
 import { useTranslation } from 'react-i18next';
-import { muscleLabel } from '../i18n/labels';
-import { planSummary, planSummaryCompact, samePlannedSets } from '../utils/plannedSets';
-import { planCardSummary } from '../utils/planCard';
-import FitNames from '../components/FitNames';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
-import { radius } from '../theme/radius';
-import ButtonSpinner from '../components/ButtonSpinner';
 import LockedRow from '../components/LockedRow';
-import { savedDraftDayId } from '../utils/focusDraft';
-
-const MAX_DAY_OPTIONS = 7; // giorni offerti al massimo nella nuova scheda
-const MAX_EXERCISE_ROWS = 4; // esercizi mostrati per giorno nella card aperta
-const DAY_LINK_SX = { fontSize: 12, fontWeight: 600, textTransform: 'none', minWidth: 0, p: 0 };
-
-// Motivo di sola lettura → testo con il numero (limite in account.limits), testo senza numero, chiave del limite
-const READ_ONLY_NOTICE = {
-  plans_over_limit: { key: 'plans.read_only_plans', genericKey: 'plans.read_only_plans_generic', limit: 'plans' },
-  days_over_limit: { key: 'plans.read_only_days', genericKey: 'plans.read_only_days_generic', limit: 'days_per_plan' },
-};
-
-// Avviso di sola lettura. Senza il limite dell'account (lettura fallita o valore null) la frase non ha numero.
-const ReadOnlyNotice = ({ reason, limits, isFree }) => {
-  const { t } = useTranslation();
-  const notice = READ_ONLY_NOTICE[reason];
-  const max = limits?.[notice.limit];
-  return (
-    <Alert severity="info" sx={{ mb: 1.5 }}>
-      {max == null ? t(notice.genericKey) : t(notice.key, { max })}
-      {isFree && ` ${t('plans.read_only_raise')}`}
-    </Alert>
-  );
-};
+import usePlans from './plans/usePlans';
+import PlanCard from './plans/PlanCard';
+import ReadOnlyNotice, { readOnlyOnCard } from './plans/ReadOnlyNotice';
+import NewPlanDialog from './plans/NewPlanDialog';
+import EditPlanDialog from './plans/EditPlanDialog';
+import DeletePlanDialog from './plans/DeletePlanDialog';
+import DeleteDayDialog from './plans/DeleteDayDialog';
+import DeleteExerciseDialog from './plans/DeleteExerciseDialog';
+import EditExerciseDialog from './plans/EditExerciseDialog';
 
 const WorkoutPlans = ({ isEmbedded = false }) => {
   const { t } = useTranslation();
-  const [workoutPlans, setWorkoutPlans] = useState([]);
+  const {
+    workoutPlans, account, snackbar, closeSnackbar, readGoalAfterDelete,
+    createPlan, updatePlan, activatePlan, deletePlan, deleteDay,
+    addExercise, deleteExercise, updateExercise, moveExercise,
+  } = usePlans();
   const [expandedPlans, setExpandedPlans] = useState({});
+  // Espansione inline dei dettagli del giorno (ex dialog)
+  const [expandedDays, setExpandedDays] = useState({});
   const [openDialog, setOpenDialog] = useState(false);
   const [openExerciseDialog, setOpenExerciseDialog] = useState(false);
   const [selectedDayIndex, setSelectedDayIndex] = useState(null);
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(null);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  
-  // Stati per il dialog di conferma eliminazione scheda
-  const [openDeletePlanDialog, setOpenDeletePlanDialog] = useState(false);
-  const [planToDelete, setPlanToDelete] = useState(null);
-  const [deletePlanLoading, setDeletePlanLoading] = useState(false);
-  const [goalAfterDelete, setGoalAfterDelete] = useState(null); // obiettivo a cui tornerebbe la settimana eliminando la scheda attiva, null = non cambia
-  const goalRequest = useRef(0); // distingue la richiesta dell'obiettivo del dialog aperto da quelle di dialog già chiusi
-  
-  // Stati per il dialog di conferma eliminazione esercizio
-  const [openDeleteExerciseDialog, setOpenDeleteExerciseDialog] = useState(false);
-  const [exerciseToDelete, setExerciseToDelete] = useState(null);
-  const [dayIdToDeleteFrom, setDayIdToDeleteFrom] = useState(null);
-  const [deleteExerciseLoading, setDeleteExerciseLoading] = useState(false);
-  
-  // Stato per l'espansione inline dei dettagli del giorno (ex dialog)
-  const [expandedDays, setExpandedDays] = useState({});
-  
-  // Nuovi stati per la modifica degli esercizi
-  const [openEditExerciseDialog, setOpenEditExerciseDialog] = useState(false);
-  const [exerciseToEdit, setExerciseToEdit] = useState(null);
-  const [editedExerciseValues, setEditedExerciseValues] = useState({
-    rest: '',
-    notes: ''
-  });
-  const [editedPlannedSets, setEditedPlannedSets] = useState(null);
-  const closeEditTimer = useRef();
-  
-  const [newPlan, setNewPlan] = useState({
-    name: '',
-    description: ''
-  });
-  const [numDays, setNumDays] = useState(1);
-  
-  // Stati per la modifica della scheda
+
+  // Annullando, un dialog si chiude subito e la scheda, l'esercizio o il giorno su cui lavorava restano ancora
+  // 200 ms, a dissolvenza finita; «Elimina giorno» e la conferma di «Elimina esercizio» lo dimenticano subito.
   const [openEditPlanDialog, setOpenEditPlanDialog] = useState(false);
   const [planToEdit, setPlanToEdit] = useState(null);
-  const [editedPlanValues, setEditedPlanValues] = useState({
-    name: '',
-    description: ''
-  });
-  const [updatePlanLoading, setUpdatePlanLoading] = useState(false);
-
-  // Stati per l'eliminazione di un giorno
+  const [openDeletePlanDialog, setOpenDeletePlanDialog] = useState(false);
+  const [planToDelete, setPlanToDelete] = useState(null);
   const [dayToDelete, setDayToDelete] = useState(null);
-  const [deleteDayLoading, setDeleteDayLoading] = useState(false);
-
-  // Piano, limiti e funzioni dell'utente (user/read.php). Se la lettura fallisce restano senza valori: nessun
-  // tetto lato client, decide il server (limite accettato).
-  const [account, setAccount] = useState({ loaded: false, tier: null, limits: null, features: [] });
-
-  useEffect(() => {
-    fetchWorkoutPlans();
-    fetchAccount();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const fetchAccount = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}api/user/read.php`, { credentials: 'include' });
-      const user = response.ok ? await response.json() : null;
-      setAccount({
-        loaded: true,
-        tier: user?.tier ?? null,
-        limits: user?.limits ?? null,
-        features: Array.isArray(user?.features) ? user.features : [],
-      });
-    } catch {
-      setAccount((prev) => ({ ...prev, loaded: true }));
-    }
-  };
-
-  const fetchWorkoutPlans = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}api/workout/read_plans.php`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-      const data = await response.json();
-
-      if (data.records) {
-        // Ordina i piani in modo che quelli attivi appaiano per primi
-        const sortedPlans = [...data.records].sort((a, b) => {
-          // Se a è attivo e b non lo è, a viene prima
-          if (a.is_active && !b.is_active) return -1;
-          // Se b è attivo e a non lo è, b viene prima
-          if (!a.is_active && b.is_active) return 1;
-          // Altrimenti mantieni l'ordine originale
-          return 0;
-        });
-        
-        setWorkoutPlans(sortedPlans);
-      }
-    } catch (error) {
-      console.error('Error fetching workout plans:', error);
-      setSnackbar({
-        open: true,
-        message: t('plans.msg.load_error', { message: error.message }),
-        severity: 'error'
-      });
-    }
-  };
+  const [openDeleteExerciseDialog, setOpenDeleteExerciseDialog] = useState(false);
+  const [exerciseToDelete, setExerciseToDelete] = useState(null); // { dayId, exercise }
+  const [openEditExerciseDialog, setOpenEditExerciseDialog] = useState(false);
+  const [exerciseToEdit, setExerciseToEdit] = useState(null); // { dayId, exercise }
+  const closeEditTimer = useRef();
 
   const togglePlanExpansion = (planId) => {
     setExpandedPlans(prev => ({
@@ -184,371 +50,6 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
     }));
   };
 
-  const handleAddPlan = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}api/workout/create_plan.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newPlan)
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || t('plans.msg.create_error'));
-      }
-
-      const daysToCreate = Array.from({ length: numDays }, (_, i) => ({
-        name: t('plans.day_default', { n: i + 1 }),
-        exercises: []
-      }));
-
-      // Create workout days
-      const daysResponse = await fetch(`${API_BASE_URL}api/workout/create_days.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          plan_id: data.plan.id,
-          days: daysToCreate
-        })
-      });
-
-      const daysData = await daysResponse.json();
-      if (!daysResponse.ok) {
-        throw new Error(daysData.message || t('plans.msg.create_days_error'));
-      }
-
-      setSnackbar({
-        open: true,
-        message: t('plans.msg.created'),
-        severity: 'success'
-      });
-      fetchWorkoutPlans();
-      setOpenDialog(false);
-      setNewPlan({
-        name: '',
-        description: ''
-      });
-      setNumDays(1);
-    } catch (error) {
-      console.error('Error creating workout plan:', error);
-      setSnackbar({
-        open: true,
-        message: error.message || t('plans.msg.create_error'),
-        severity: 'error'
-      });
-    }
-  };
-
-  const handleEditPlan = async () => {
-    if (!editedPlanValues.name.trim() || !planToEdit) return;
-
-    setUpdatePlanLoading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}api/workout/update_plan.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          plan_id: planToEdit.id,
-          name: editedPlanValues.name,
-          description: editedPlanValues.description,
-          is_active: planToEdit.is_active
-        })
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || t('plans.msg.update_error'));
-      }
-
-      setSnackbar({
-        open: true,
-        message: t('plans.msg.updated'),
-        severity: 'success'
-      });
-      fetchWorkoutPlans();
-      handleCloseEditPlanDialog();
-    } catch (error) {
-      console.error('Error updating workout plan:', error);
-      setSnackbar({
-        open: true,
-        message: error.message || t('plans.msg.update_error'),
-        severity: 'error'
-      });
-    } finally {
-      setUpdatePlanLoading(false);
-    }
-  };
-
-  const handleCloseEditPlanDialog = () => {
-    setOpenEditPlanDialog(false);
-    setTimeout(() => {
-      setPlanToEdit(null);
-      setEditedPlanValues({
-        name: '',
-        description: ''
-      });
-    }, 200);
-  };
-
-  const handleOpenEditPlanDialog = (plan) => {
-    setPlanToEdit(plan);
-    setEditedPlanValues({
-      name: plan.name,
-      description: plan.description || ''
-    });
-    setOpenEditPlanDialog(true);
-  };
-
-  const handleActivatePlan = async (planId) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}api/workout/activate_plan.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ plan_id: planId })
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setSnackbar({
-          open: true,
-          message: t('plans.msg.activated'),
-          severity: 'success'
-        });
-        fetchWorkoutPlans();
-      } else {
-        throw new Error(data.message);
-      }
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: error.message || t('plans.msg.activate_error'),
-        severity: 'error'
-      });
-    }
-  };
-
-  const handleAddExercise = async (dayIndex, exercise) => {
-    try {
-      // Non creiamo un nuovo esercizio, ma utilizziamo l'ID dell'esercizio esistente
-      // Otteniamo l'ID dell'esercizio selezionato dall'autocomplete
-      const selectedExerciseId = exercise.id;
-
-      if (!selectedExerciseId) {
-        throw new Error(t('plans.msg.invalid_exercise_id'));
-      }
-
-      // Aggiungiamo l'esercizio al giorno di allenamento
-      const response = await fetch(`${API_BASE_URL}api/workout/add_exercise.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          day_id: workoutPlans[selectedPlanIndex].days[dayIndex].id,
-          exercise_id: selectedExerciseId, // Questo è l'ID dell'esercizio dalla tabella gym_exercises
-          planned_sets: exercise.planned_sets,
-          rest: parseInt(exercise.rest),
-          notes: exercise.notes
-        })
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setSnackbar({
-          open: true,
-          message: t('plans.msg.exercise_added'),
-          severity: 'success'
-        });
-        fetchWorkoutPlans();
-      } else {
-        throw new Error(data.message);
-      }
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: error.message || t('plans.msg.add_exercise_error'),
-        severity: 'error'
-      });
-    }
-  };
-
-  const handleConfirmDeleteDay = async () => {
-    if (!dayToDelete) return;
-    setDeleteDayLoading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}api/workout/delete_day.php`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ day_id: dayToDelete.id })
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || t('plans.msg.delete_day_error'));
-      }
-      setSnackbar({ open: true, message: t('plans.msg.day_deleted'), severity: 'success' });
-      fetchWorkoutPlans();
-    } catch (error) {
-      setSnackbar({ open: true, message: error.message || t('plans.msg.delete_day_error'), severity: 'error' });
-    } finally {
-      setDeleteDayLoading(false);
-      setDayToDelete(null);
-    }
-  };
-
-  const handleOpenExerciseDialog = (planIndex, dayIndex) => {
-    setSelectedPlanIndex(planIndex);
-    setSelectedDayIndex(dayIndex);
-    setOpenExerciseDialog(true);
-  };
-
-  // Gestione apertura dialog conferma eliminazione scheda
-  const handleOpenDeletePlanDialog = (plan) => {
-    setPlanToDelete(plan);
-    setGoalAfterDelete(null);
-    const request = ++goalRequest.current;
-    setOpenDeletePlanDialog(true);
-    if (!plan.is_active) return;
-    // Senza scheda attiva, e senza un obiettivo scelto dall'utente, l'obiettivo della settimana torna a quello senza scheda
-    fetch(`${API_BASE_URL}api/user/read.php`, { credentials: 'include' })
-      .then(response => (response.ok ? response.json() : null))
-      .then(user => {
-        if (request !== goalRequest.current) return;
-        if (user && user.weekly_goal == null && user.weekly_goal_default !== user.weekly_goal_without_plan) setGoalAfterDelete(user.weekly_goal_without_plan);
-      })
-      .catch(() => {});
-  };
-  
-  // Chiusura dialog eliminazione scheda
-  const handleCloseDeletePlanDialog = () => {
-    goalRequest.current += 1;
-    setOpenDeletePlanDialog(false);
-    setTimeout(() => setPlanToDelete(null), 200); // Piccolo ritardo per evitare flickering
-  };
-  
-  // Conferma eliminazione scheda
-  const handleConfirmDeletePlan = async () => {
-    if (!planToDelete) return;
-    
-    setDeletePlanLoading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}api/workout/delete_plan.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ plan_id: planToDelete.id })
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setSnackbar({
-          open: true,
-          message: t('plans.msg.plan_deleted'),
-          severity: 'success'
-        });
-        fetchWorkoutPlans();
-      } else {
-        throw new Error(data.message);
-      }
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: error.message || t('plans.msg.delete_plan_error'),
-        severity: 'error'
-      });
-    } finally {
-      setDeletePlanLoading(false);
-      handleCloseDeletePlanDialog();
-    }
-  };
-
-  // Apertura dialog conferma eliminazione esercizio
-  const handleOpenDeleteExerciseDialog = (dayId, exercise) => {
-    setExerciseToDelete(exercise);
-    setDayIdToDeleteFrom(dayId);
-    setOpenDeleteExerciseDialog(true);
-  };
-  
-  // Chiusura dialog eliminazione esercizio
-  const handleCloseDeleteExerciseDialog = () => {
-    setOpenDeleteExerciseDialog(false);
-    setTimeout(() => {
-      setExerciseToDelete(null);
-      setDayIdToDeleteFrom(null);
-    }, 200);
-  };
-  
-  // Conferma eliminazione esercizio
-  const handleConfirmDeleteExercise = async () => {
-    if (!exerciseToDelete || !dayIdToDeleteFrom) return;
-    
-    setDeleteExerciseLoading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}api/workout/delete_exercise.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          day_id: dayIdToDeleteFrom,
-          exercise_id: exerciseToDelete.id
-        })
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setSnackbar({
-          open: true,
-          message: t('plans.msg.exercise_deleted'),
-          severity: 'success'
-        });
-        fetchWorkoutPlans();
-      } else {
-        throw new Error(data.message);
-      }
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: error.message || t('plans.msg.delete_exercise_error'),
-        severity: 'error'
-      });
-    } finally {
-      setDeleteExerciseLoading(false);
-      setOpenDeleteExerciseDialog(false);
-      setExerciseToDelete(null);
-      setDayIdToDeleteFrom(null);
-    }
-  };
-
-  // Funzione per raggruppare gli esercizi per gruppo muscolare
-  const groupExercisesByMuscleGroup = (exercises) => {
-    if (!exercises || !Array.isArray(exercises)) return [];
-    
-    const groups = {};
-    
-    exercises.forEach(exercise => {
-      const group = exercise.muscle_group.charAt(0).toUpperCase() + exercise.muscle_group.slice(1);
-      if (!groups[group]) {
-        groups[group] = [];
-      }
-      groups[group].push(exercise);
-    });
-    
-    return Object.keys(groups).map(group => ({
-      name: group,
-      exercises: groups[group],
-      count: groups[group].length
-    }));
-  };
-  
   // Espande/collassa i dettagli inline di un giorno (esercizi, riordino, modifica, eliminazione)
   const toggleDayExpansion = (dayId) => {
     setExpandedDays(prev => ({
@@ -557,258 +58,63 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
     }));
   };
 
-  // Nuova funzione per aprire il dialog di modifica esercizio
-  const handleOpenEditExerciseDialog = (dayId, exercise) => {
+  const handleOpenEditPlanDialog = (plan) => {
+    setPlanToEdit(plan);
+    setOpenEditPlanDialog(true);
+  };
+
+  const handleCloseEditPlanDialog = () => {
+    setOpenEditPlanDialog(false);
+    setTimeout(() => setPlanToEdit(null), 200);
+  };
+
+  const handleOpenExerciseDialog = (planIndex, dayIndex) => {
+    setSelectedPlanIndex(planIndex);
+    setSelectedDayIndex(dayIndex);
+    setOpenExerciseDialog(true);
+  };
+
+  const handleOpenDeletePlanDialog = (plan) => {
+    setPlanToDelete(plan);
+    setOpenDeletePlanDialog(true);
+  };
+
+  const handleCloseDeletePlanDialog = () => {
+    setOpenDeletePlanDialog(false);
+    setTimeout(() => setPlanToDelete(null), 200); // Piccolo ritardo per evitare flickering
+  };
+
+  const handleOpenDeleteExerciseDialog = (target) => {
+    setExerciseToDelete(target);
+    setOpenDeleteExerciseDialog(true);
+  };
+
+  const handleCloseDeleteExerciseDialog = () => {
+    setOpenDeleteExerciseDialog(false);
+    setTimeout(() => setExerciseToDelete(null), 200);
+  };
+
+  const handleOpenEditExerciseDialog = (target) => {
     clearTimeout(closeEditTimer.current);
-    setExerciseToEdit(exercise);
-    setDayIdToDeleteFrom(dayId); // Riuso lo stesso stato per identificare il giorno
-    setEditedExerciseValues({
-      rest: exercise.rest,
-      notes: exercise.notes || ''
-    });
-    setEditedPlannedSets(null);
+    setExerciseToEdit(target);
     setOpenEditExerciseDialog(true);
   };
-  
-  // Chiusura dialog modifica esercizio
+
+  const handleConfirmDeleteExercise = async (target) => {
+    try {
+      await deleteExercise(target);
+    } finally {
+      setOpenDeleteExerciseDialog(false);
+      setExerciseToDelete(null);
+    }
+  };
+
   const handleCloseEditExerciseDialog = () => {
     setOpenEditExerciseDialog(false);
-    closeEditTimer.current = setTimeout(() => {
-      setExerciseToEdit(null);
-      setDayIdToDeleteFrom(null);
-      setEditedExerciseValues({
-        rest: '',
-        notes: ''
-      });
-      setEditedPlannedSets(null);
-    }, 200);
-  };
-  
-  // Gestione cambiamenti nei campi del form di modifica
-  const handleEditExerciseChange = (e) => {
-    const { name, value } = e.target;
-    setEditedExerciseValues(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-  
-  // Conferma modifica esercizio
-  const handleConfirmEditExercise = async () => {
-    if (!exerciseToEdit || !dayIdToDeleteFrom) return;
-    
-    try {
-      // Prepara i dati da inviare, con controlli di tipo
-      const exerciseData = {
-        day_id: dayIdToDeleteFrom,
-        exercise_id: exerciseToEdit.id,
-        planned_sets: editedPlannedSets,
-        rest: parseInt(editedExerciseValues.rest) || 0,
-        notes: editedExerciseValues.notes || ''
-      };
-      
-      // Notifica l'utente che stiamo salvando le modifiche
-      setSnackbar({
-        open: true,
-        message: t('plans.msg.saving_changes'),
-        severity: 'info'
-      });
-      
-      const response = await fetch(`${API_BASE_URL}api/workout/update_exercise.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(exerciseData),
-        credentials: 'include' // Assicura che i cookie di sessione vengano inviati
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Chiudiamo il dialog
-        handleCloseEditExerciseDialog();
-
-        // Recupera i piani aggiornati
-        const updatedPlansResponse = await fetch(`${API_BASE_URL}api/workout/read_plans.php`, {
-          method: 'GET',
-          credentials: 'include'
-        });
-        
-        const updatedPlansData = await updatedPlansResponse.json();
-
-        // Verifica che i dati recuperati contengano la modifica effettuata
-        let modificaVerificata = false;
-        
-        if (updatedPlansData.records) {
-          // Cerca l'esercizio modificato nei dati aggiornati
-          updatedPlansData.records.forEach(plan => {
-            if (plan.days) {
-              plan.days.forEach(day => {
-                if (day.id === dayIdToDeleteFrom && day.exercises) {
-                  day.exercises.forEach(ex => {
-                    if (ex.id === exerciseToEdit.id) {
-                      // Verifica se i valori sono stati aggiornati correttamente
-                      if (samePlannedSets(exerciseData.planned_sets, ex.planned_sets) &&
-                          ex.rest === exerciseData.rest &&
-                          (ex.notes || '') === (exerciseData.notes || '')) {
-                        modificaVerificata = true;
-                      }
-                    }
-                  });
-                }
-              });
-            }
-          });
-          
-          // Se la verifica è andata a buon fine, aggiorna i dati locali
-          if (modificaVerificata) {
-            // Ordina i piani in modo che quelli attivi appaiano per primi
-            const sortedPlans = [...updatedPlansData.records].sort((a, b) => {
-              if (a.is_active && !b.is_active) return -1;
-              if (!a.is_active && b.is_active) return 1;
-              return 0;
-            });
-            
-            // Aggiorna i piani localmente
-            setWorkoutPlans(sortedPlans);
-            
-            // Mostra il messaggio di successo
-            setSnackbar({
-              open: true,
-              message: t('plans.msg.exercise_updated'),
-              severity: 'success'
-            });
-          } else {
-            console.error('ERRORE: La modifica non è stata trovata nei dati recuperati!');
-            
-            // Riprova il recupero dopo un timeout più lungo
-            setTimeout(async () => {
-              await fetchWorkoutPlans();
-              
-              setSnackbar({
-                open: true,
-                message: t('plans.msg.saved_reload'),
-                severity: 'warning'
-              });
-            }, 2000);
-          }
-        } else {
-          console.error('ERRORE: Nessun dato ricevuto nella risposta di recupero piani!');
-          throw new Error(t('plans.msg.refetch_error'));
-        }
-      } else {
-        throw new Error(data.message || t('plans.msg.edit_exercise_error'));
-      }
-    } catch (error) {
-      console.error('Errore nella modifica dell\'esercizio:', error);
-      setSnackbar({
-        open: true,
-        message: error.message || t('plans.msg.edit_exercise_error'),
-        severity: 'error'
-      });
-      handleCloseEditExerciseDialog();
-    }
-  };
-  
-  // Funzione per spostare un esercizio su nella lista
-  const handleMoveExerciseUp = async (dayId, exercise, currentIndex) => {
-    if (currentIndex <= 0) return; // Non può essere spostato più in alto
-    
-    try {
-      const response = await fetch(`${API_BASE_URL}api/workout/reorder_exercise.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          day_id: dayId,
-          exercise_id: exercise.id,
-          direction: 'up'
-        }),
-        credentials: 'include'
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setSnackbar({
-          open: true,
-          message: t('plans.msg.order_updated'),
-          severity: 'success'
-        });
-        // Aggiungiamo un timeout per dare tempo al database di aggiornare i dati
-        setTimeout(() => {
-          fetchWorkoutPlans();
-        }, 300);
-      } else {
-        throw new Error(data.message || t('plans.msg.server_error'));
-      }
-    } catch (error) {
-      console.error('Errore nel riordinamento (su):', error);
-      setSnackbar({
-        open: true,
-        message: error.message || t('plans.msg.move_error'),
-        severity: 'error'
-      });
-    }
-  };
-  
-  // Funzione per spostare un esercizio giù nella lista
-  const handleMoveExerciseDown = async (dayId, exercise, currentIndex, totalExercises) => {
-    if (currentIndex >= totalExercises - 1) return; // Non può essere spostato più in basso
-    
-    try {
-      const response = await fetch(`${API_BASE_URL}api/workout/reorder_exercise.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          day_id: dayId,
-          exercise_id: exercise.id,
-          direction: 'down'
-        }),
-        credentials: 'include'
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setSnackbar({
-          open: true,
-          message: t('plans.msg.order_updated'),
-          severity: 'success'
-        });
-        // Aggiungiamo un timeout per dare tempo al database di aggiornare i dati
-        setTimeout(() => {
-          fetchWorkoutPlans();
-        }, 300);
-      } else {
-        throw new Error(data.message || t('plans.msg.server_error'));
-      }
-    } catch (error) {
-      console.error('Errore nel riordinamento (giù):', error);
-      setSnackbar({
-        open: true,
-        message: error.message || t('plans.msg.move_error'),
-        severity: 'error'
-      });
-    }
+    closeEditTimer.current = setTimeout(() => setExerciseToEdit(null), 200);
   };
 
   const isFree = account.tier === 'free';
-  const maxDays = Math.min(MAX_DAY_OPTIONS, account.limits?.days_per_plan ?? MAX_DAY_OPTIONS);
-  // Senza focus_session_edit (piano Gratis) un allenamento Focus salvato su questo browser su un giorno eliminato non
-  // si potrebbe più registrare: si elimina il giorno solo dopo averlo salvato o scartato. Plus e Pro lo salvano
-  // comunque. Finché user/read.php carica, o se fallisce, `features` è vuoto e il blocco vale anche per Plus e Pro
-  // (scelta prudente). Una sessione in corso su un altro dispositivo da qui non si vede: limite accettato.
-  const draftDayId = savedDraftDayId();
-  const draftBlocksDelete = !!dayToDelete && !account.features.includes('focus_session_edit')
-    && draftDayId !== null && String(draftDayId) === String(dayToDelete.id);
-  // «Troppi giorni» riguarda una scheda sola: l'avviso sta sulla sua card. Con «troppe schede» il server le segna
-  // tutte: l'avviso sta una volta sola sopra l'elenco, e lì finisce anche un motivo che questa pagina non conosce.
-  const readOnlyOnCard = (plan) => plan.read_only && plan.read_only_reason === 'days_over_limit';
   const readOnlyAbovePlans = workoutPlans.some((plan) => plan.read_only && !readOnlyOnCard(plan));
   const atPlanLimit = isFree && !!account.limits && workoutPlans.length >= account.limits.plans;
 
@@ -842,550 +148,88 @@ const WorkoutPlans = ({ isEmbedded = false }) => {
       {readOnlyAbovePlans && <ReadOnlyNotice reason="plans_over_limit" limits={account.limits} isFree={isFree} />}
 
       <Grid container spacing={2.5}>
-        {workoutPlans.map((plan, planIndex) => {
-          const isExpanded = expandedPlans[plan.id];
-          const summary = planCardSummary(plan);
-
-          return (
-            <Grid item xs={12} md={6} key={plan.id}>
-              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <CardContent sx={{ p: 3, flexGrow: 1 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1.5 }}>
-                    <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 0.75, flexWrap: 'wrap' }}>
-                        <Typography sx={{ fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: 16 }}>
-                          {plan.name}
-                        </Typography>
-                        {!!plan.is_active && (
-                          <Box
-                            component="span"
-                            sx={{
-                              bgcolor: 'success.muted',
-                              color: 'success.title',
-                              fontSize: 13,
-                              fontWeight: 700,
-                              px: 1.25,
-                              py: 0.5,
-                              borderRadius: radius.pill,
-                            }}
-                          >
-                            {t('plans.active_badge')}
-                          </Box>
-                        )}
-                      </Box>
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
-                      <IconButton
-                        onClick={() => handleOpenEditPlanDialog(plan)}
-                        aria-label={t('plans.edit_plan.aria', { name: plan.name })}
-                        size="small"
-                        sx={{ color: 'text.secondary' }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        onClick={() => handleOpenDeletePlanDialog(plan)}
-                        aria-label={t('plans.delete_plan.aria', { name: plan.name })}
-                        size="small"
-                        sx={{ color: 'text.secondary' }}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
-                  </Box>
-
-                  {readOnlyOnCard(plan) && (
-                    <ReadOnlyNotice reason="days_over_limit" limits={account.limits} isFree={isFree} />
-                  )}
-                  {!isExpanded && summary.splitNames && (
-                    <Box sx={{ display: 'flex', mb: 0.75, fontSize: 16, fontWeight: 600, color: 'text.primary' }}>
-                      <FitNames names={summary.splitNames} sepSx={{ color: 'text.secondary' }} />
-                    </Box>
-                  )}
-                  {plan.description && (
-                    <Typography sx={{ fontSize: 16, color: 'text.secondary', lineHeight: 1.5 }}>
-                      {plan.description}
-                    </Typography>
-                  )}
-
-                  {isExpanded ? (
-                    <Box sx={{ mt: 2.25, pt: 2.25, borderTop: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      {plan.days && plan.days.map((day, dayIndex) => {
-                        const dayExpanded = !!expandedDays[day.id];
-                        const dayPanelId = `day-details-panel-${day.id}`;
-                        return (
-                          <Box key={day.id}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                              <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'text.primary' }}>
-                                {day.name}
-                              </Typography>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                <Button
-                                  variant="text"
-                                  size="small"
-                                  onClick={() => toggleDayExpansion(day.id)}
-                                  aria-expanded={dayExpanded}
-                                  aria-controls={dayPanelId}
-                                  sx={DAY_LINK_SX}
-                                >
-                                  {dayExpanded ? t('plans.hide') : t('plans.details')}
-                                </Button>
-                                {plan.days.length > 1 && (
-                                  <IconButton
-                                    size="small"
-                                    aria-label={t('plans.delete_day.aria', { name: day.name })}
-                                    onClick={() => setDayToDelete(day)}
-                                    sx={{ color: 'text.secondary' }}
-                                  >
-                                    <DeleteIcon fontSize="small" />
-                                  </IconButton>
-                                )}
-                              </Box>
-                            </Box>
-
-                            {day.exercises && day.exercises.length > 0 ? (
-                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                                {day.exercises.slice(0, MAX_EXERCISE_ROWS).map((exercise) => (
-                                  <Box key={exercise.id} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-                                    <Typography sx={{ fontSize: 14, fontWeight: 400, color: 'text.primary', flex: 1, minWidth: 0, lineHeight: 1.35 }}>
-                                      {exercise.exercise_name}
-                                    </Typography>
-                                    <Typography
-                                      sx={{
-                                        fontSize: 13, color: 'text.secondary', whiteSpace: 'nowrap', textAlign: 'right',
-                                        flexShrink: 0, lineHeight: 1.45, fontVariantNumeric: 'tabular-nums',
-                                      }}
-                                    >
-                                      {planSummaryCompact(exercise.planned_sets)}
-                                    </Typography>
-                                  </Box>
-                                ))}
-                              </Box>
-                            ) : (
-                              <Typography variant="body2" color="text.secondary">
-                                {t('plans.no_exercises')}
-                              </Typography>
-                            )}
-                            {day.exercises && day.exercises.length > MAX_EXERCISE_ROWS && !dayExpanded && (
-                              <Button
-                                variant="text"
-                                size="small"
-                                onClick={() => toggleDayExpansion(day.id)}
-                                aria-controls={dayPanelId}
-                                sx={{ ...DAY_LINK_SX, mt: 0.75, display: 'flex' }}
-                              >
-                                {t('plans.more_exercises', { count: day.exercises.length - MAX_EXERCISE_ROWS })}
-                              </Button>
-                            )}
-
-                            <Collapse in={dayExpanded} id={dayPanelId} timeout="auto">
-                              <Box sx={{
-                                mt: 1.25, mb: 1.5, borderRadius: radius.md, p: '12px 14px',
-                                bgcolor: 'background.subtle',
-                              }}>
-                                {day.exercises && day.exercises.length > 0 ? (
-                                  groupExercisesByMuscleGroup(day.exercises).map((group, groupIdx) => (
-                                    <Box key={groupIdx} sx={{ mb: 2, mt: groupIdx > 0 ? 2 : 0, '&:last-of-type': { mb: 0 } }}>
-                                      <Typography variant="subtitle2" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', color: 'text.primary' }}>
-                                        <FitnessCenterIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} /> {muscleLabel(group.name)}
-                                      </Typography>
-                                      <Divider sx={{ mt: 1, mb: 1.5 }} />
-                                      {group.exercises.map((exercise) => {
-                                        const exerciseGlobalIndex = day.exercises.findIndex(e => e.id === exercise.id);
-                                        return (
-                                          <Box key={exercise.id} sx={{ mb: 2 }}>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                              <div>
-                                                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                                                  {exercise.exercise_name}
-                                                </Typography>
-                                                <Typography variant="body2" color="text.secondary">
-                                                  {t('plans.plan_line', { summary: planSummary(exercise.planned_sets), rest: exercise.rest })}
-                                                </Typography>
-                                                {exercise.notes && (
-                                                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
-                                                    {t('plans.notes', { notes: exercise.notes })}
-                                                  </Typography>
-                                                )}
-                                              </div>
-                                              {!plan.read_only && (
-                                              <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                                                <ButtonGroup size="small" sx={{ mr: 1 }}>
-                                                  <IconButton
-                                                    size="small"
-                                                    aria-label={t('plans.move_up.aria', { name: exercise.exercise_name })}
-                                                    disabled={exerciseGlobalIndex <= 0}
-                                                    onClick={() => handleMoveExerciseUp(day.id, exercise, exerciseGlobalIndex)}
-                                                  >
-                                                    <ArrowUpwardIcon fontSize="small" />
-                                                  </IconButton>
-                                                  <IconButton
-                                                    size="small"
-                                                    aria-label={t('plans.move_down.aria', { name: exercise.exercise_name })}
-                                                    disabled={exerciseGlobalIndex >= day.exercises.length - 1}
-                                                    onClick={() => handleMoveExerciseDown(day.id, exercise, exerciseGlobalIndex, day.exercises.length)}
-                                                  >
-                                                    <ArrowDownwardIcon fontSize="small" />
-                                                  </IconButton>
-                                                </ButtonGroup>
-                                                <IconButton
-                                                  size="small"
-                                                  aria-label={t('plans.edit_exercise.aria', { name: exercise.exercise_name })}
-                                                  onClick={() => handleOpenEditExerciseDialog(day.id, exercise)}
-                                                  sx={{ mr: 1, color: 'text.secondary' }}
-                                                >
-                                                  <EditIcon fontSize="small" />
-                                                </IconButton>
-                                                <IconButton
-                                                  size="small"
-                                                  aria-label={t('plans.delete_exercise.aria', { name: exercise.exercise_name })}
-                                                  onClick={() => handleOpenDeleteExerciseDialog(day.id, exercise)}
-                                                  sx={{ color: 'text.secondary' }}
-                                                >
-                                                  <DeleteIcon fontSize="small" />
-                                                </IconButton>
-                                              </Box>
-                                              )}
-                                            </Box>
-                                          </Box>
-                                        );
-                                      })}
-                                    </Box>
-                                  ))
-                                ) : (
-                                  <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 1 }}>
-                                    {t('plans.no_exercises_day')}
-                                  </Typography>
-                                )}
-                              </Box>
-                            </Collapse>
-
-                            {!plan.read_only && (
-                              <Button
-                                onClick={() => handleOpenExerciseDialog(planIndex, dayIndex)}
-                                size="small"
-                                sx={{ ...DAY_LINK_SX, mt: 1, display: 'flex' }}
-                              >
-                                {t('plans.add_exercise')}
-                              </Button>
-                            )}
-                          </Box>
-                        );
-                      })}
-                    </Box>
-                  ) : (
-                    <Typography sx={{ mt: 1.75, fontSize: 16, color: 'text.secondary' }}>
-                      {summary.days === 0
-                        ? t('plans.no_days')
-                        : [
-                          summary.splitNames ? null : t('plans.days_count', { count: summary.days }),
-                          t('plans.exercises_count', { count: summary.exercises }),
-                          t('plans.sets_count', { count: summary.sets }),
-                        ].filter(Boolean).join(' · ')}
-                    </Typography>
-                  )}
-                </CardContent>
-                <CardActions sx={{ px: 3, pb: 2.5, pt: 2, mt: 'auto', borderTop: '1px solid', borderColor: 'divider', justifyContent: 'space-between', gap: 1 }}>
-                  <Button
-                    size="small"
-                    variant="text"
-                    onClick={() => togglePlanExpansion(plan.id)}
-                    aria-expanded={isExpanded}
-                    sx={{ fontSize: 16, fontWeight: 600, textTransform: 'none', color: 'text.secondary', minWidth: 0, p: 0, whiteSpace: 'nowrap' }}
-                  >
-                    {isExpanded ? t('plans.hide_days') : t('plans.show_days')}
-                  </Button>
-
-                  {!plan.is_active && (
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() => handleActivatePlan(plan.id)}
-                      sx={{
-                        color: 'text.primary', borderColor: 'text.secondary',
-                        borderRadius: radius.sm, px: 2, py: 1, fontSize: 16, fontWeight: 600, textTransform: 'none', whiteSpace: 'nowrap',
-                        '&:hover': { borderColor: 'text.primary', bgcolor: 'action.hover' },
-                      }}
-                    >
-                      {t('plans.activate')}
-                    </Button>
-                  )}
-                </CardActions>
-              </Card>
-            </Grid>
-          );
-        })}
+        {workoutPlans.map((plan, planIndex) => (
+          <Grid item xs={12} md={6} key={plan.id}>
+            <PlanCard
+              plan={plan}
+              expanded={expandedPlans[plan.id]}
+              expandedDays={expandedDays}
+              limits={account.limits}
+              isFree={isFree}
+              onToggle={() => togglePlanExpansion(plan.id)}
+              onToggleDay={toggleDayExpansion}
+              onEdit={handleOpenEditPlanDialog}
+              onDelete={handleOpenDeletePlanDialog}
+              onActivate={activatePlan}
+              onDeleteDay={setDayToDelete}
+              onAddExercise={(dayIndex) => handleOpenExerciseDialog(planIndex, dayIndex)}
+              onEditExercise={handleOpenEditExerciseDialog}
+              onDeleteExercise={handleOpenDeleteExerciseDialog}
+              onMoveExercise={moveExercise}
+            />
+          </Grid>
+        ))}
       </Grid>
-      
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{t('plans.new')}</DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-            <TextField
-              autoFocus
-              label={t('plans.new_dialog.name')}
-              type="text"
-              fullWidth
-              placeholder={t('plans.new_dialog.name_placeholder')}
-              value={newPlan.name}
-              onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })}
-            />
-            <TextField
-              label={t('plans.new_dialog.description')}
-              type="text"
-              fullWidth
-              multiline
-              rows={2}
-              placeholder={t('plans.new_dialog.description_placeholder')}
-              value={newPlan.description}
-              onChange={(e) => setNewPlan({ ...newPlan, description: e.target.value })}
-            />
-            <FormControl fullWidth>
-              <InputLabel id="num-days-label">{t('plans.new_dialog.days')}</InputLabel>
-              <Select
-                labelId="num-days-label"
-                value={numDays}
-                label={t('plans.new_dialog.days')}
-                onChange={(e) => setNumDays(parseInt(e.target.value, 10))}
-              >
-                {Array.from({ length: maxDays }, (_, i) => i + 1).map((num) => (
-                  <MenuItem key={num} value={num}>
-                    {t('plans.new_dialog.days_option', { count: num })}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            {isFree && maxDays < MAX_DAY_OPTIONS && (
-              <LockedRow sx={{ mb: 0 }}>{t('plans.locked_days', { max: maxDays })}</LockedRow>
-            )}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>{t('common.cancel')}</Button>
-          <Button onClick={handleAddPlan} variant="contained" disabled={!newPlan.name}>
-            {t('common.create')}
-          </Button>
-        </DialogActions>
-      </Dialog>
 
-      {/* Dialog Modifica Scheda */}
-      <Dialog open={openEditPlanDialog} onClose={handleCloseEditPlanDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>{t('plans.edit_dialog.title')}</DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-            <TextField
-              autoFocus
-              label={t('plans.new_dialog.name')}
-              type="text"
-              fullWidth
-              value={editedPlanValues.name}
-              onChange={(e) => setEditedPlanValues({ ...editedPlanValues, name: e.target.value })}
-            />
-            <TextField
-              label={t('plans.new_dialog.description')}
-              type="text"
-              fullWidth
-              multiline
-              rows={2}
-              value={editedPlanValues.description}
-              onChange={(e) => setEditedPlanValues({ ...editedPlanValues, description: e.target.value })}
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseEditPlanDialog} disabled={updatePlanLoading}>{t('common.cancel')}</Button>
-          <Button 
-            onClick={handleEditPlan} 
-            variant="contained" 
-            disabled={!editedPlanValues.name || updatePlanLoading}
-            startIcon={updatePlanLoading ? <ButtonSpinner /> : null}
-          >
-            {updatePlanLoading ? t('plans.saving') : t('common.save')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <NewPlanDialog
+        open={openDialog}
+        onClose={() => setOpenDialog(false)}
+        onCreate={createPlan}
+        dayLimit={account.limits?.days_per_plan}
+        isFree={isFree}
+      />
 
-      <Dialog
-        open={!!dayToDelete}
-        onClose={() => !deleteDayLoading && setDayToDelete(null)}
-        aria-labelledby="delete-day-title"
-        aria-describedby="delete-day-description"
-      >
-        <DialogTitle id="delete-day-title">{t('plans.delete_day.title')}</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="delete-day-description" component="div">
-            {draftBlocksDelete ? t('plans.delete_day.in_progress') : (
-              <>
-                {t('plans.delete_day.text')}
-                <Box sx={{ mt: 1.5 }}>{t('plans.delete_plan.history_kept')}</Box>
-              </>
-            )}
-            {dayToDelete && (
-              <Box sx={{ mt: 2, fontWeight: 'bold' }}>{t('plans.delete_day.name', { name: dayToDelete.name })}</Box>
-            )}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDayToDelete(null)} color="primary" disabled={deleteDayLoading}>{t('common.cancel')}</Button>
-          <Button
-            onClick={handleConfirmDeleteDay}
-            color="error"
-            variant="contained"
-            disabled={deleteDayLoading || draftBlocksDelete}
-            startIcon={deleteDayLoading ? <ButtonSpinner /> : <DeleteIcon />}
-          >
-            {deleteDayLoading ? t('plans.deleting') : t('common.delete')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <EditPlanDialog
+        open={openEditPlanDialog}
+        plan={planToEdit}
+        onClose={handleCloseEditPlanDialog}
+        onSave={updatePlan}
+      />
+
+      <DeleteDayDialog
+        day={dayToDelete}
+        onClose={() => setDayToDelete(null)}
+        onDelete={deleteDay}
+        features={account.features}
+      />
 
       <ExerciseDialog
         open={openExerciseDialog}
         onClose={() => setOpenExerciseDialog(false)}
-        onAdd={handleAddExercise}
+        onAdd={(dayIndex, exercise) => addExercise(workoutPlans[selectedPlanIndex].days[dayIndex].id, exercise)}
         dayIndex={selectedDayIndex}
         plansLink={isFree}
       />
 
-      <Dialog
+      <DeletePlanDialog
         open={openDeletePlanDialog}
+        plan={planToDelete}
         onClose={handleCloseDeletePlanDialog}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title">{t('plans.delete_plan.title')}</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description" component="div">
-            {t('plans.delete_plan.text')}
-            <Box sx={{ mt: 1.5 }}>{t('plans.delete_plan.history_kept')}</Box>
-            {goalAfterDelete !== null && (
-              <Box sx={{ mt: 1.5 }}>{t('plans.delete_plan.goal_reset', { n: goalAfterDelete })}</Box>
-            )}
-            {planToDelete && (
-              <Box sx={{ mt: 2, fontWeight: 'bold' }}>
-                {t('plans.delete_plan.name', { name: planToDelete.name })}
-              </Box>
-            )}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button 
-            onClick={handleCloseDeletePlanDialog} 
-            color="primary"
-            disabled={deletePlanLoading}
-          >
-            {t('common.cancel')}
-          </Button>
-          <Button 
-            onClick={handleConfirmDeletePlan} 
-            color="error" 
-            variant="contained"
-            disabled={deletePlanLoading}
-            startIcon={deletePlanLoading ? <ButtonSpinner /> : <DeleteIcon />}
-          >
-            {deletePlanLoading ? t('plans.deleting') : t('common.delete')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onDelete={(plan) => deletePlan(plan.id)}
+        readGoalAfterDelete={readGoalAfterDelete}
+      />
 
-      <Dialog
+      <DeleteExerciseDialog
         open={openDeleteExerciseDialog}
+        target={exerciseToDelete}
         onClose={handleCloseDeleteExerciseDialog}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title">{t('plans.delete_exercise.title')}</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            {t('plans.delete_exercise.text')}
-            {exerciseToDelete && (
-              <Box sx={{ mt: 2, fontWeight: 'bold' }}>
-                {t('plans.delete_exercise.name', { name: exerciseToDelete.name })}
-              </Box>
-            )}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button 
-            onClick={handleCloseDeleteExerciseDialog} 
-            color="primary"
-            disabled={deleteExerciseLoading}
-          >
-            {t('common.cancel')}
-          </Button>
-          <Button 
-            onClick={handleConfirmDeleteExercise} 
-            color="error" 
-            variant="contained"
-            disabled={deleteExerciseLoading}
-            startIcon={deleteExerciseLoading ? <ButtonSpinner /> : <DeleteIcon />}
-          >
-            {deleteExerciseLoading ? t('plans.deleting') : t('common.delete')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onDelete={handleConfirmDeleteExercise}
+      />
 
-      {/* Dialog per la modifica dell'esercizio */}
-      <Dialog
+      <EditExerciseDialog
         open={openEditExerciseDialog}
+        target={exerciseToEdit}
         onClose={handleCloseEditExerciseDialog}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>{t('plans.edit_exercise.title')}</DialogTitle>
-        <DialogContent>
-          {exerciseToEdit && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-              <Typography variant="h6">{exerciseToEdit.exercise_name}</Typography>
-              <Typography variant="body2" color="text.secondary">{muscleLabel(exerciseToEdit.muscle_group)}</Typography>
-              
-              <PlannedSetsEditor
-                key={exerciseToEdit.id}
-                value={exerciseToEdit.planned_sets?.length ? exerciseToEdit.planned_sets : null}
-                onChange={setEditedPlannedSets}
-              />
-              <TextField
-                name="rest"
-                label={t('plans.edit_exercise.rest')}
-                type="number"
-                value={editedExerciseValues.rest}
-                onChange={handleEditExerciseChange}
-                fullWidth
-                InputProps={{ inputProps: { min: 0 } }}
-              />
-              
-              <TextField
-                name="notes"
-                label={t('plans.edit_exercise.notes')}
-                value={editedExerciseValues.notes}
-                onChange={handleEditExerciseChange}
-                fullWidth
-                multiline
-                rows={3}
-                placeholder={t('plans.edit_exercise.notes_placeholder')}
-              />
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseEditExerciseDialog}>{t('common.cancel')}</Button>
-          <Button 
-            onClick={handleConfirmEditExercise} 
-            variant="contained"
-            disabled={!editedPlannedSets || !editedExerciseValues.rest}
-          >
-            {t('plans.edit_exercise.save')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onSave={updateExercise}
+      />
 
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        onClose={closeSnackbar}
       >
         <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          onClose={closeSnackbar}
           severity={snackbar.severity}
           sx={{ width: '100%' }}
         >
