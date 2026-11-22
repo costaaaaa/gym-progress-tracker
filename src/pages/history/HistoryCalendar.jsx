@@ -3,38 +3,27 @@ import { Box, ButtonBase, Card, IconButton, Typography } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { format } from 'date-fns';
-import { useLocation, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { formatDate, intlLocale } from '../../i18n/format';
-import { clockDay, shiftDay } from '../../utils/calendarDay';
-import { isMonthKey, monthCells, monthOf, shiftMonth } from './calendarMonth';
-import WorkoutListItem from './WorkoutListItem';
+import { clockDay } from '../../utils/calendarDay';
+import { monthCells, monthOf, shiftMonth } from './calendarMonth';
+import { calendarParams } from './historyAddress';
+import WorkoutGroupCard from './WorkoutGroupCard';
 
 const FULL_DAY = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
 const DAY_AND_MONTH = { day: 'numeric', month: 'long' };
 const MAX_DOTS = 3;
-const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 // Il nome del mese e le iniziali dei giorni vengono da Intl nella lingua corrente. Il 5 gennaio 2026 è un lunedì.
 const weekdayInitials = () => Array.from({ length: 7 }, (_, i) => new Date(Date.UTC(2026, 0, 5 + i)).toLocaleDateString(intlLocale(), { weekday: 'narrow', timeZone: 'UTC' }));
 
-const validDay = (value) => (DAY_RE.test(value ?? '') && shiftDay(value, 0) === value ? value : null);
-
-// Indirizzo del calendario: sempre `vista`, poi il mese e il giorno quando ci sono, nello stesso ordine
-const calendarParams = (month, day) => {
-  const params = new URLSearchParams({ vista: 'calendario' });
-  if (month) params.set('mese', month);
-  if (day) params.set('giorno', day);
-  return params;
-};
-
 // La vista «Calendario» dello Storico: una card col mese (un segno nei giorni allenati) e, sotto, quella del giorno scelto con
-// le stesse righe dell'elenco. Mese e giorno stanno nell'indirizzo (?mese=2026-11&giorno=2026-11-18), così «indietro» dalla
-// pagina di un allenamento torna qui com'era. Senza indirizzo: il mese corrente e oggi. `workouts` sono già quelli da mostrare.
-const HistoryCalendar = ({ workouts, summaries, weightUnit }) => {
+// le stesse righe dell'elenco. Mese e giorno stanno nell'indirizzo, che è di History: `address` ne sono mese e giorno già
+// letti (null se assenti o non validi), `replaceAddress(parametri)` lo cambia sostituendo la voce di cronologia, `backTo` è
+// l'indirizzo intero, che le righe portano alla pagina dell'allenamento. Senza mese né giorno: il mese corrente e oggi.
+// `workouts` sono già quelli da mostrare. Un giorno futuro si sceglie solo se ha allenamenti (capita con un altro fuso).
+const HistoryCalendar = ({ workouts, summaries, weightUnit, address, replaceAddress, backTo }) => {
   const { t } = useTranslation();
-  const { search } = useLocation();
-  const [params, setParams] = useSearchParams();
 
   // Il giorno di un allenamento è quello scritto nella sua data, come nell'elenco
   const byDay = useMemo(() => {
@@ -49,22 +38,22 @@ const HistoryCalendar = ({ workouts, summaries, weightUnit }) => {
   const today = format(new Date(), 'yyyy-MM-dd');
   const currentMonth = monthOf(today);
   const trainedDays = Object.keys(byDay).sort();
-  const firstMonth = trainedDays.length > 0 ? monthOf(trainedDays[0]) : currentMonth;
+  // I limiti dei mesi: dal primo allenamento (o dal mese corrente, se è prima) all'ultimo (o al corrente), sempre in ordine
+  const firstMonth = [currentMonth, ...trainedDays.slice(0, 1).map(monthOf)].sort()[0];
+  const lastMonth = [currentMonth, ...trainedDays.slice(-1).map(monthOf)].sort().pop();
+  const isOff = (day) => day > today && !byDay[day];
 
-  const monthParam = isMonthKey(params.get('mese')) ? params.get('mese') : null;
-  const dayParam = validDay(params.get('giorno'));
-  const requestedMonth = monthParam || (dayParam ? monthOf(dayParam) : currentMonth);
-  const month = [firstMonth, requestedMonth, currentMonth].sort()[1]; // dentro i limiti: dal primo allenamento al mese corrente
-  // Senza né mese né giorno nell'indirizzo il giorno scelto è oggi; con un mese e senza giorno, nessuno
-  let selected = dayParam ?? (monthParam ? null : today);
-  if (selected && (monthOf(selected) !== month || selected > today)) selected = null;
+  // Un giorno non valido o spento vale assente; senza né mese né giorno il giorno scelto è oggi, con un mese e senza giorno nessuno
+  const requestedDay = address.day && !isOff(address.day) ? address.day : null;
+  const requestedMonth = address.month || (requestedDay ? monthOf(requestedDay) : currentMonth);
+  const month = requestedMonth < firstMonth ? firstMonth : requestedMonth > lastMonth ? lastMonth : requestedMonth;
+  let selected = requestedDay ?? (address.month ? null : today);
+  if (selected && monthOf(selected) !== month) selected = null;
 
-  const go = (nextMonth, nextDay) => setParams(calendarParams(nextMonth, nextDay), { replace: true });
-  const chooseDay = (day) => go(monthParam && month, day);
+  const chooseDay = (day) => replaceAddress(calendarParams(address.month && month, day));
   const changeMonth = (delta) => {
     const next = shiftMonth(month, delta);
-    const lastTrained = trainedDays.filter((day) => monthOf(day) === next && day <= today).pop();
-    go(next, lastTrained);
+    replaceAddress(calendarParams(next, trainedDays.filter((day) => monthOf(day) === next).pop()));
   };
 
   const heading = formatDate(`${month}-01`, { month: 'long', year: 'numeric' });
@@ -78,7 +67,7 @@ const HistoryCalendar = ({ workouts, summaries, weightUnit }) => {
             <ChevronLeftIcon />
           </IconButton>
           <Typography id="history-calendar-month" component="h2" variant="cardTitle" sx={{ textAlign: 'center' }}>{heading}</Typography>
-          <IconButton aria-label={t('history.calendar.next')} disabled={month >= currentMonth} onClick={() => changeMonth(1)} sx={{ width: 44, height: 44 }}>
+          <IconButton aria-label={t('history.calendar.next')} disabled={month >= lastMonth} onClick={() => changeMonth(1)} sx={{ width: 44, height: 44 }}>
             <ChevronRightIcon />
           </IconButton>
         </Box>
@@ -97,7 +86,7 @@ const HistoryCalendar = ({ workouts, summaries, weightUnit }) => {
               <ButtonBase
                 key={day}
                 data-day={day}
-                disabled={day > today}
+                disabled={isOff(day)}
                 aria-pressed={day === selected}
                 aria-current={day === today ? 'date' : undefined}
                 aria-label={count > 0 ? t('history.calendar.day', { date, count }) : date}
@@ -124,18 +113,15 @@ const HistoryCalendar = ({ workouts, summaries, weightUnit }) => {
       </Card>
 
       {selected && (
-        <Card component="section" aria-labelledby="history-calendar-day" sx={{ mb: 3.5 }}>
-          <Typography id="history-calendar-day" component="h2" variant="cardTitle" sx={{ px: 2.5, pt: 2, pb: 1 }}>{formatDate(selected, FULL_DAY)}</Typography>
-          {dayWorkouts.length > 0 ? (
-            <Box component="ul" sx={{ m: 0, p: 0 }}>
-              {dayWorkouts.map((workout) => (
-                <WorkoutListItem key={workout.id} workout={workout} summary={summaries[workout.id]} weightUnit={weightUnit} linkState={{ historySearch: search }} />
-              ))}
-            </Box>
-          ) : (
-            <Typography sx={{ px: 2.5, pb: 2.5, fontSize: 16, color: 'text.secondary' }}>{t('history.calendar.empty_day')}</Typography>
-          )}
-        </Card>
+        <WorkoutGroupCard
+          id="history-calendar-day"
+          title={formatDate(selected, FULL_DAY)}
+          workouts={dayWorkouts}
+          summaries={summaries}
+          weightUnit={weightUnit}
+          backTo={backTo}
+          empty={t('history.calendar.empty_day')}
+        />
       )}
     </>
   );

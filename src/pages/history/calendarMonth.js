@@ -6,6 +6,11 @@ const MONTH_RE = /^(\d{4})-(0[1-9]|1[0-2])$/;
 
 export const isMonthKey = (value) => typeof value === 'string' && MONTH_RE.test(value);
 
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Un giorno che esiste davvero: 'YYYY-MM-DD' che passa il giro da giorni a data e ritorno (il 31 febbraio no)
+export const isDayKey = (value) => typeof value === 'string' && DAY_RE.test(value) && shiftDay(value, 0) === value;
+
 export const monthOf = (day) => day.slice(0, 7);
 
 /** Il mese `delta` mesi dopo (o prima, se negativo) quello dato. */
