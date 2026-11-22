@@ -7,9 +7,13 @@ const READ_ONLY_NOTICE = {
   days_over_limit: { key: 'plans.read_only_days', genericKey: 'plans.read_only_days_generic', limit: 'days_per_plan' },
 };
 
-// «Troppi giorni» riguarda una scheda sola: l'avviso sta sulla sua card. Con «troppe schede» il server le segna
-// tutte: l'avviso sta una volta sola sopra l'elenco, e lì finisce anche un motivo che questa pagina non conosce.
-export const readOnlyOnCard = (plan) => plan.read_only && plan.read_only_reason === 'days_over_limit';
+// Quale avviso spetta a una scheda in sola lettura (null se non lo è). «Troppi giorni» riguarda una scheda sola: sta
+// nella sua pagina. Con «troppe schede» il server le segna tutte: nella pagina c'è lo stesso avviso, e sopra l'elenco
+// una volta sola; lì finisce anche un motivo che questa pagina non conosce.
+export const readOnlyNoticeReason = (plan) => {
+  if (!plan.read_only) return null;
+  return plan.read_only_reason === 'days_over_limit' ? 'days_over_limit' : 'plans_over_limit';
+};
 
 // Avviso di sola lettura. Senza il limite dell'account (lettura fallita o valore null) la frase non ha numero.
 const ReadOnlyNotice = ({ reason, limits, isFree }) => {

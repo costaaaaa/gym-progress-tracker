@@ -75,6 +75,11 @@ describe('barra mobile: voci', () => {
     expect(current()).toEqual([name]);
   });
 
+  it('su una scheda (/schede/<id>) la voce «Schede» resta attiva, e solo quella', () => {
+    renderNav('light', '/schede/12');
+    expect(current()).toEqual(['Schede']);
+  });
+
   it('con il Profilo aperto nessuna voce della barra è attiva', () => {
     renderNav('light', '/profilo');
     expect(current()).toEqual([]);

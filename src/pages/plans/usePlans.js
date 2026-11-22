@@ -13,18 +13,20 @@ const activeFirst = (records) => [...records].sort((a, b) => {
 });
 
 // Schede, piano e limiti dell'utente, e i comandi che li cambiano. Ogni comando manda la richiesta, mostra
-// l'avviso e rilegge le schede. createPlan, updatePlan, activatePlan, deletePlan, deleteDay, addExercise e
-// deleteExercise restituiscono true se il server ha accettato, false se no; updateExercise e moveExercise non
-// restituiscono nulla. Non sa nulla di come la pagina mostra i dati.
+// l'avviso e rilegge le schede. updatePlan, activatePlan, deletePlan, deleteDay, addExercise e deleteExercise
+// restituiscono true se il server ha accettato, false se no; createPlan l'id della scheda creata o null;
+// updateExercise e moveExercise non restituiscono nulla. `plansLoaded` diventa vero alla prima lettura riuscita.
+// `notify` mostra un avviso (anche quello portato da un'altra schermata). Non sa nulla di come la pagina mostra i dati.
 export default function usePlans() {
   const { t } = useTranslation();
   const [workoutPlans, setWorkoutPlans] = useState([]);
+  const [plansLoaded, setPlansLoaded] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   // Piano, limiti e funzioni dell'utente (user/read.php). Se la lettura fallisce restano senza valori: nessun
   // tetto lato client, decide il server (limite accettato).
   const [account, setAccount] = useState({ loaded: false, tier: null, limits: null, features: [] });
 
-  const notify = (message, severity) => setSnackbar({ open: true, message, severity });
+  const notify = useCallback((message, severity) => setSnackbar({ open: true, message, severity }), []);
   const closeSnackbar = () => setSnackbar((prev) => ({ ...prev, open: false }));
 
   useEffect(() => {
@@ -57,6 +59,7 @@ export default function usePlans() {
 
       if (data.records) {
         setWorkoutPlans(activeFirst(data.records));
+        setPlansLoaded(true);
       }
     } catch (error) {
       console.error('Error fetching workout plans:', error);
@@ -108,13 +111,12 @@ export default function usePlans() {
         throw new Error(daysData.message || t('plans.msg.create_days_error'));
       }
 
-      notify(t('plans.msg.created'), 'success');
       fetchWorkoutPlans();
-      return true;
+      return data.plan.id;
     } catch (error) {
       console.error('Error creating workout plan:', error);
       notify(error.message || t('plans.msg.create_error'), 'error');
-      return false;
+      return null;
     }
   };
 
@@ -177,7 +179,6 @@ export default function usePlans() {
 
       const data = await response.json();
       if (response.ok) {
-        notify(t('plans.msg.plan_deleted'), 'success');
         fetchWorkoutPlans();
         return true;
       }
@@ -392,7 +393,7 @@ export default function usePlans() {
   };
 
   return {
-    workoutPlans, account, snackbar, closeSnackbar,
+    workoutPlans, plansLoaded, account, snackbar, closeSnackbar, notify,
     readGoalAfterDelete, createPlan, updatePlan, activatePlan, deletePlan, deleteDay,
     addExercise, deleteExercise, updateExercise, moveExercise,
   };

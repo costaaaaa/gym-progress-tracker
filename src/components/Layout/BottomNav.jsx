@@ -75,6 +75,8 @@ const BottomNav = () => {
   if (location.pathname === '/focus') return null;
 
   const isActive = (path) => location.pathname === path;
+  // Le schede hanno una pagina ciascuna: «Schede» resta attiva anche su /schede/<id>
+  const plansActive = isActive('/schede') || location.pathname.startsWith('/schede/');
 
   return (
     <Box
@@ -96,7 +98,7 @@ const BottomNav = () => {
       }}
     >
       <NavItem path="/" label={t('nav.home')} Icon={HomeOutlinedIcon} active={isActive('/')} />
-      <NavItem path="/schede" label={t('nav.plans')} Icon={CalendarTodayOutlinedIcon} active={isActive('/schede')} />
+      <NavItem path="/schede" label={t('nav.plans')} Icon={CalendarTodayOutlinedIcon} active={plansActive} />
 
       <ButtonBase
         ref={centerRef}
