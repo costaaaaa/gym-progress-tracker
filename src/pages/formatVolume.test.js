@@ -1,4 +1,4 @@
-// Il volume della settimana come testo: unità dell'utente, migliaia sempre separate, lingua dell'utente.
+// Un volume come testo: unità dell'utente, migliaia sempre separate, lingua dell'utente.
 import { describe, it, expect } from 'vitest';
 import i18n from '../i18n';
 import { formatVolume } from './formatVolume';

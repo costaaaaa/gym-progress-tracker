@@ -157,7 +157,7 @@ describe('card «Questa settimana»', () => {
     expect(within(muscleCard()).getAllByRole('listitem')).toHaveLength(12);
     expect(within(muscleCard()).getAllByText('nessun dato')).toHaveLength(12);
     expect(screen.queryByRole('alert')).toBeNull();
-    expect(screen.queryByText(/nessun (allenamento|dato di)/i)).toBeNull();
+    expect(screen.getAllByText(/nessun/i)).toHaveLength(12);
   });
 
   it('a 320 px i due numeri stanno su una riga e il testo lungo va a capo dentro la card', async () => {
