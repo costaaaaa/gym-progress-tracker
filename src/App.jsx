@@ -29,6 +29,13 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const FocusWorkout = lazy(() => import('./pages/FocusWorkout'));
 const Account = lazy(() => import('./pages/Account'));
+const AccountList = lazy(() => import('./pages/account/AccountList'));
+const ProfilePage = lazy(() => import('./pages/account/ProfilePage'));
+const PreferencesPage = lazy(() => import('./pages/account/PreferencesPage'));
+const ModulesPage = lazy(() => import('./pages/account/ModulesPage'));
+const TierPage = lazy(() => import('./pages/account/TierPage'));
+const DataPage = lazy(() => import('./pages/account/DataPage'));
+const SecurityPage = lazy(() => import('./pages/account/SecurityPage'));
 const Levels = lazy(() => import('./pages/Levels'));
 const Groups = lazy(() => import('./pages/Groups'));
 const GroupDetail = lazy(() => import('./pages/GroupDetail'));
@@ -62,7 +69,15 @@ function App() {
                 <Route path="/storico/:id" element={<WorkoutPage />} />
                 <Route path="/progressi" element={<Dashboard />} />
                 <Route path="/progressi/esercizi/:id" element={<ExercisePage />} />
-                <Route path="/account" element={<Account />} />
+                <Route path="/account" element={<Account />}>
+                  <Route index element={<AccountList />} />
+                  <Route path="profilo" element={<ProfilePage />} />
+                  <Route path="preferenze" element={<PreferencesPage />} />
+                  <Route path="moduli" element={<ModulesPage />} />
+                  <Route path="piano" element={<TierPage />} />
+                  <Route path="dati" element={<DataPage />} />
+                  <Route path="sicurezza" element={<SecurityPage />} />
+                </Route>
                 <Route path="/livelli" element={<Levels />} />
                 <Route path="/gruppi" element={<Groups />} />
                 <Route path="/gruppi/:id" element={<GroupDetail />} />

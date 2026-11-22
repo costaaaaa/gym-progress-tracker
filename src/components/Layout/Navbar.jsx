@@ -89,7 +89,7 @@ const Navbar = ({ redBar = false }) => {
 
   const phoneApp = isMobile && showAppNav;
   const onRed = phoneApp && redBar;
-  const onAccountPage = location.pathname === '/account';
+  const onAccountPage = location.pathname === '/account' || location.pathname.startsWith('/account/');
   const initials = user?.username ? user.username.charAt(0).toUpperCase() : '?';
 
   return (

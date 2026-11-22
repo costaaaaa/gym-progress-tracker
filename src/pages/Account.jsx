@@ -1,29 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, Snackbar, Alert, CircularProgress } from '@mui/material';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Box, Snackbar, Alert, CircularProgress } from '@mui/material';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useTranslation } from 'react-i18next';
-import { usePageMeta } from '../hooks/usePageMeta';
 import { loginWithNext } from '../utils/safeNext';
-import GroupsVisibilityCard from '../components/Groups/GroupsVisibilityCard';
-import ModulesCard from '../components/Account/ModulesCard';
 import useAccount from './account/useAccount';
-import ProfileCard from './account/ProfileCard';
-import PhysicalProfileForm from './account/PhysicalProfileForm';
-import FocusToolsSetting from './account/FocusToolsSetting';
-import LanguageSetting from './account/LanguageSetting';
-import WeightUnitSetting from './account/WeightUnitSetting';
-import WeeklyGoalSetting from './account/WeeklyGoalSetting';
-import PasswordCard from './account/PasswordCard';
-import ExportCard from './account/ExportCard';
-import ConsentCard from './account/ConsentCard';
-import AdminCard from './account/AdminCard';
-import SessionCard from './account/SessionCard';
-import DeleteAccountCard from './account/DeleteAccountCard';
 
+// Cornice dell'Account (la rotta /account, che ha per figlie l'elenco e le sei pagine): accesso, lettura dei dati e
+// notifica, una volta sola per tutte. Alle pagine passa `account`, `joinDate` e `notify` (Outlet context).
 const Account = () => {
-  const { t } = useTranslation();
-  usePageMeta(t('account.title'), t('account.meta.description'));
   const { user, isLoggedIn, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,14 +26,10 @@ const Account = () => {
     severity: 'info'
   });
 
-  // Esito di ogni salvataggio e cambio dei pezzi della pagina: annuncio e errore nella notifica della pagina
+  // Esito di ogni salvataggio e cambio dei pezzi delle pagine: annuncio e errore nella notifica della cornice
   const notify = (message, severity) => setSnackbar({ open: true, message, severity });
 
   const { account, joinDate, loading } = useAccount(notify);
-
-  // La parte «Modifica» del profilo sta qui e non nella card: quando cambia l'utente la lettura rimette la pagina in
-  // caricamento e smonta i pezzi, e una parte aperta non deve richiudersi
-  const [editOpen, setEditOpen] = useState(false);
 
   // Chiusura dello snackbar
   const handleCloseSnackbar = () => {
@@ -59,8 +39,9 @@ const Account = () => {
     });
   };
 
-  // Rendering condizionale durante il caricamento o se l'utente non è autenticato
-  if (loading || authLoading || !isLoggedIn) {
+  // L'attesa a pagina intera è solo alla prima lettura: quando i dati si rileggono (cambia l'utente) le pagine restano
+  // montate, con le loro finestre aperte e i loro stati, e ricevono i dati nuovi
+  if ((loading && !account) || authLoading || !isLoggedIn) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', pt: 8 }}>
         <CircularProgress />
@@ -74,33 +55,8 @@ const Account = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 640, mx: 'auto', display: 'flex', flexDirection: 'column', gap: 3, pb: 4 }}>
-      <Typography variant="pageTitle">{t('account.title')}</Typography>
-
-      <ProfileCard account={account} joinDate={joinDate} notify={notify} editOpen={editOpen} onToggleEdit={() => setEditOpen(o => !o)}>
-        <PhysicalProfileForm account={account} notify={notify} />
-        <FocusToolsSetting notify={notify} />
-        <LanguageSetting account={account} notify={notify} />
-        <WeightUnitSetting account={account} notify={notify} />
-        <WeeklyGoalSetting account={account} notify={notify} />
-      </ProfileCard>
-
-      {/* Card Moduli */}
-      <ModulesCard notify={notify} />
-
-      <PasswordCard account={account} notify={notify} />
-
-      <ExportCard username={account?.username} notify={notify} />
-
-      <ConsentCard username={account?.username} notify={notify} />
-
-      <GroupsVisibilityCard notify={notify} />
-
-      {account?.is_admin && <AdminCard />}
-
-      <SessionCard />
-
-      <DeleteAccountCard notify={notify} />
+    <Box sx={{ maxWidth: 640, mx: 'auto', pb: 4 }}>
+      <Outlet context={{ account, joinDate, notify }} />
 
       {/* Snackbar per notifiche */}
       <Snackbar

@@ -26,10 +26,10 @@ const GroupsVisibilityCard = ({ notify }) => {
     listGroups().then((res) => setGroups(res.ok ? res.data.groups : []));
   }, []);
 
-  // Chi arriva da un collegamento a «Cosa mostro» trova il fuoco sul blocco
+  // Chi arriva da un collegamento a «Cosa mostro» o all'elenco dei gruppi trova il fuoco sul blocco
   useEffect(() => {
-    if (hash !== '#groups-shown') return;
-    scrollToAndFocus('groups-shown');
+    if (hash !== '#groups-shown' && hash !== '#groups-list') return;
+    scrollToAndFocus(hash.slice(1));
   }, [hash]);
 
   const leave = async (group) => {
