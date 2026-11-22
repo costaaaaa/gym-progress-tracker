@@ -34,7 +34,7 @@ const WorkoutPage = () => {
   // La riga dell'elenco o del calendario porta il suo percorso nello stato: ritorno, eliminazione e allenamento che non c'è
   // tornano lì, con la vista, il mese e il giorno di prima
   const { state } = useLocation();
-  const backPath = typeof state?.backTo === 'string' && state.backTo.startsWith('/storico') ? state.backTo : '/storico';
+  const backPath = typeof state?.backTo === 'string' && /^\/storico(\?|$)/.test(state.backTo) ? state.backTo : '/storico';
   const { weightUnit, user } = useAuth();
   // Punti, streak e traguardi nelle anteprime sono del modulo Livelli: non attivo = non si mostrano
   const levelsOn = isModuleActive(user, 'levels');
@@ -48,7 +48,7 @@ const WorkoutPage = () => {
   const [openEditDate, setOpenEditDate] = useState(false);
   const [openDelete, setOpenDelete] = useState(false);
 
-  // Un allenamento che non c'è (o non è dell'utente) riporta all'elenco, ma solo a lettura finita e riuscita
+  // Un allenamento che non c'è (o non è dell'utente) riporta al percorso di ritorno (di base l'elenco), ma solo a lettura finita e riuscita
   useEffect(() => {
     if (!loading && !loadFailed && !workout) navigate(backPath, { replace: true });
   }, [loading, loadFailed, workout, navigate, backPath]);

@@ -90,7 +90,7 @@ describe('intestazione', () => {
     expect(screen.getByRole('link', { name: 'Storico' }).getAttribute('href')).toBe(BACK);
   });
 
-  it.each(['/altrove', 'https://altro.example/storico', '//storico', 5, null])('un percorso di ritorno non valido (%s) lascia il ritorno all\'elenco', async (valore) => {
+  it.each(['/altrove', 'https://altro.example/storico', '//storico', '/storicoX', '/storico/../altrove', 5, null])('un percorso di ritorno non valido (%s) lascia il ritorno all\'elenco', async (valore) => {
     await mount([workout], { path: { pathname: '/storico/7', state: { backTo: valore } } });
     expect(screen.getByRole('link', { name: 'Storico' }).getAttribute('href')).toBe('/storico');
   });

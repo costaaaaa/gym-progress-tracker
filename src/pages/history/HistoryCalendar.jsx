@@ -39,8 +39,10 @@ const HistoryCalendar = ({ workouts, summaries, weightUnit, address, replaceAddr
   const currentMonth = monthOf(today);
   const trainedDays = Object.keys(byDay).sort();
   // I limiti dei mesi: dal primo allenamento (o dal mese corrente, se è prima) all'ultimo (o al corrente), sempre in ordine
-  const firstMonth = [currentMonth, ...trainedDays.slice(0, 1).map(monthOf)].sort()[0];
-  const lastMonth = [currentMonth, ...trainedDays.slice(-1).map(monthOf)].sort().pop();
+  const firstTrained = trainedDays.length > 0 ? monthOf(trainedDays[0]) : currentMonth;
+  const lastTrained = trainedDays.length > 0 ? monthOf(trainedDays[trainedDays.length - 1]) : currentMonth;
+  const firstMonth = firstTrained < currentMonth ? firstTrained : currentMonth;
+  const lastMonth = lastTrained > currentMonth ? lastTrained : currentMonth;
   const isOff = (day) => day > today && !byDay[day];
 
   // Un giorno non valido o spento vale assente; senza né mese né giorno il giorno scelto è oggi, con un mese e senza giorno nessuno
@@ -120,7 +122,7 @@ const HistoryCalendar = ({ workouts, summaries, weightUnit, address, replaceAddr
           summaries={summaries}
           weightUnit={weightUnit}
           backTo={backTo}
-          empty={t('history.calendar.empty_day')}
+          emptyText={t('history.calendar.empty_day')}
         />
       )}
     </>
