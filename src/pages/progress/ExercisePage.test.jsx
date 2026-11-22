@@ -71,8 +71,8 @@ describe('intestazione', () => {
   it('h1 col nome dell\'esercizio, sotto il gruppo muscolare', async () => {
     const h1 = await mount();
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
-    expect(h1.closest('div').parentElement.textContent).toContain('Quadricipiti');
-    expect(textBelow(h1.parentElement.parentElement, 16)).toEqual([]);
+    expect(h1.parentElement.textContent).toContain('Quadricipiti');
+    expect(textBelow(h1.parentElement, 16)).toEqual([]);
   });
 
   it('il ritorno è un collegamento a /progressi con un nome, da 44px', async () => {
@@ -138,9 +138,10 @@ describe('cronologia', () => {
     const first = entries()[0];
     expect(within(first).getByText('07/10/2026')).toBeTruthy();
     expect(within(first).getByText('Miglior serie').nextElementSibling.textContent).toBe('50 × 15');
-    expect(within(first).getByText('1RM stimato').nextElementSibling.textContent).toBe('75 kg');
+    expect(within(first).getByText('1RM stimato').nextElementSibling.textContent).toBe('75\u00a0kg');
     expect(within(first).getByText('Volume totale (kg)').nextElementSibling.textContent).toBe('750');
-    expect(entries().map((li) => li.querySelector('strong, [data-entry-date]')?.textContent)).toEqual(['07/10/2026', '06/10/2026', '05/10/2026', '04/10/2026', '03/10/2026']);
+    // la prima riga di ogni voce è la data (qui senza badge)
+    expect(entries().map((li) => li.firstElementChild.textContent)).toEqual(['07/10/2026', '06/10/2026', '05/10/2026', '04/10/2026', '03/10/2026']);
   });
 
   it('i record hanno il segno PR accanto al valore, le altre sessioni no', async () => {
@@ -172,8 +173,8 @@ describe('cronologia', () => {
     expect(document.querySelector('table')).toBeNull();
     const scrolling = [...document.querySelectorAll('*')].filter((el) => ['auto', 'scroll'].includes(getComputedStyle(el).overflowX));
     expect(scrolling).toEqual([]);
-    const pairs = within(entries()[0]).getAllByText(/Miglior serie|1RM stimato|Volume totale/).map((dt) => dt.parentElement);
-    expect(getComputedStyle(pairs[0].parentElement).flexWrap).toBe('wrap');
+    const list = within(entries()[0]).getByText('Miglior serie').closest('dl');
+    expect(getComputedStyle(list).flexWrap).toBe('wrap');
   });
 
   it('il pulsante «Mostra tutti» è un\'area da 44px', async () => {

@@ -21,6 +21,7 @@ const ExercisesPage = lazy(() => import('./pages/plans/ExercisesPage'));
 const History = lazy(() => import('./pages/History'));
 const WorkoutPage = lazy(() => import('./pages/history/WorkoutPage'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const ExercisePage = lazy(() => import('./pages/progress/ExercisePage'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
@@ -58,6 +59,7 @@ function App() {
                 <Route path="/storico" element={<History />} />
                 <Route path="/storico/:id" element={<WorkoutPage />} />
                 <Route path="/progressi" element={<Dashboard />} />
+                <Route path="/progressi/esercizi/:id" element={<ExercisePage />} />
                 <Route path="/profilo" element={<Profile />} />
                 <Route path="/gruppi" element={<Groups />} />
                 <Route path="/gruppi/:id" element={<GroupDetail />} />
