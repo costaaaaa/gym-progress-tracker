@@ -2,7 +2,7 @@
 // ritorno all'elenco dopo l'eliminazione, id che non esiste, errore di lettura. La fetch è il confine.
 // Colori del tema chiaro scritti a mano: text.secondary #6b6663, rosso del marchio #d50000.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, within, act, waitForElementToBeRemoved } from '@testing-library/react';
+import { render, screen, fireEvent, within, act, waitFor, waitForElementToBeRemoved } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import WorkoutPage from './WorkoutPage';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
@@ -63,7 +63,7 @@ describe('intestazione', () => {
     expect(getComputedStyle(screen.getByRole('heading', { level: 1 })).fontSize).toBe('28px');
     const sotto = screen.getByText('domenica 18 ottobre 2026 · 02:00');
     expect(colorOf(sotto)).toBe(GREY);
-    expect(document.title).toBe('Push A | LiftIndex');
+    await waitFor(() => expect(document.title).toBe('Push A | LiftIndex')); // l'effetto del titolo gira dopo il disegno
     expectNoNestedContainer();
   });
 

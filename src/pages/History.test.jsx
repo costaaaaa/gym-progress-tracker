@@ -107,7 +107,7 @@ describe('pagina Storico', () => {
 
   it('il titolo del documento è «Storico | LiftIndex»', async () => {
     await mount();
-    expect(document.title).toBe('Storico | LiftIndex');
+    await waitFor(() => expect(document.title).toBe('Storico | LiftIndex'));
   });
 
   it('«Registra allenamento passato» sta nella riga del titolo, con una scheda attiva: pulsante di testo da 44 px, non rosso', async () => {
