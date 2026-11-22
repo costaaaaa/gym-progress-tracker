@@ -29,6 +29,8 @@ import WorkoutPhase from './focus/WorkoutPhase';
 import SummaryPhase from './focus/SummaryPhase';
 import { radius } from '../theme/radius';
 import { plansPath } from '../i18n/paths';
+import { useModule } from '../hooks/useModule';
+import { levelReachedText, achievementsText } from './focus/rewardTexts';
 
 // Focus Mode: switch tra le fasi; stato e transizioni stanno in useFocusSession, la UI di ogni fase in src/pages/focus
 const FocusWorkout = () => {
@@ -60,6 +62,13 @@ const FocusWorkout = () => {
   const tap = restTimer.restLeftAtTap;
   const restLeft = phase === 'rest_timer' && tap && !restOver
     ? `${t('focus.rest_left', { time: clockText(tap.seconds) })}${tap.taps % 2 ? '\u200b' : ''}` : '';
+
+  // Dopo il salvataggio: livello nuovo e traguardi nuovi a voce, una volta (la sola streak non si annuncia).
+  // Senza il modulo Livelli il riquadro non c'è e non c'è nemmeno l'annuncio.
+  const levelsOn = useModule('levels');
+  const savedAnnouncement = phase === 'summary' && levelsOn
+    ? [levelReachedText(t, summary.savedResult), achievementsText(t, summary.savedResult, summary.weightUnit)].filter(Boolean).join(' · ')
+    : '';
 
   // ================================================
   // RENDER — CONTENUTO IN BASE ALLA FASE
@@ -125,7 +134,7 @@ const FocusWorkout = () => {
     <Box component="main" ref={mainRef} sx={{ '& h1:focus': { outline: 'none' } }}>
       {renderContent()}
     </Box>
-    <Box role="status" aria-live="polite" sx={visuallyHidden}>{restOver ? t('focus.rest_over') : restLeft}</Box>
+    <Box role="status" aria-live="polite" sx={visuallyHidden}>{restOver ? t('focus.rest_over') : restLeft || savedAnnouncement}</Box>
       <FocusExercisePicker {...picker} />
       <Dialog open={lockedDialog.open} onClose={lockedDialog.onClose}
         PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: radius.xxl } }}>

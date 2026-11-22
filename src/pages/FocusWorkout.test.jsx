@@ -165,18 +165,6 @@ describe('flusso completo e salvataggio', () => {
     expect(mockTrack).toHaveBeenCalledWith('workout_saved');
   });
 
-  it('dopo il salvataggio «Vai allo storico» porta a /storico e chiede di rileggere l\'elenco', async () => {
-    await startDay('Push');
-    doSet();
-    click('Salta timer');
-    doSet('62.5', '7');
-    await act(async () => { click('Salva allenamento'); });
-    await advance(0);
-
-    click('Vai allo storico');
-    expect(mockNavigate).toHaveBeenCalledWith('/storico', { state: { refreshHistory: expect.any(Number) } });
-  });
-
   it('il cronometro dell\'allenamento avanza ogni secondo, senza toccare niente', async () => {
     await startDay('Push');
     expect(screen.getByText('00:00')).toBeTruthy();
@@ -482,109 +470,11 @@ describe('ripresa dal riepilogo: il tempo a pagina chiusa è una pausa', () => {
     if (finishedOn) fireEvent.change(screen.getByLabelText('Giorno dell\'allenamento'), { target: { value: finishedOn } });
     click(label);
   };
-  const addExerciseFromSummary = async (sets = 1) => {
-    click('Aggiungi esercizio');
-    await advance(0);
-    fireEvent.click(screen.getByText('Croci ai cavi'));
-    fireEvent.change(within(screen.getByRole('dialog')).getByLabelText('Serie'), { target: { value: String(sets) } });
-    click('Aggiungi');
-    await advance(0.5); // chiusura del dialog
-  };
   const save = async () => {
     await act(async () => { click('Salva allenamento'); });
     await advance(0);
     return saveBody();
   };
-
-  it('ripresa alle 21:00, un esercizio, una serie alle 21:05: la durata è 1 h 05, non 3 h 05', async () => {
-    await reachSummaryAt19();
-    closeApp();
-    await reopen(at(21, 0));
-    await addExerciseFromSummary();
-    vi.setSystemTime(at(21, 5));
-    doSet('40', '12');
-    expect(screen.getByText('Riepilogo')).toBeTruthy();
-
-    expect((await save()).duration_seconds).toBe(3900);
-  });
-
-  it('la serie confermata dopo la ripresa conta i secondi al netto della pausa: 21:05 sono 1 h 05, non 3 h 05', async () => {
-    await reachSummaryAt19();
-    closeApp();
-    await reopen(at(21, 0));
-    await addExerciseFromSummary();
-    vi.setSystemTime(at(21, 5));
-    doSet('40', '12');
-
-    expect((await save()).workout_records.map((r) => r.seconds_from_start)).toEqual([3600, 3600, 3900]);
-  });
-
-  it('il cronometro in allenamento riparte da 60:00 e cammina da lì', async () => {
-    await reachSummaryAt19();
-    closeApp();
-    await reopen(at(21, 0));
-    await addExerciseFromSummary();
-
-    expect(screen.getByText('60:00')).toBeTruthy();
-    await advance(30);
-    expect(screen.getByText('60:30')).toBeTruthy();
-  });
-
-  it('due chiusure: le pause si sommano nella bozza e la durata resta 1 h 05', async () => {
-    await reachSummaryAt19();
-    closeApp();
-    await reopen(at(21, 0));
-    await addExerciseFromSummary();
-    vi.setSystemTime(at(21, 5));
-    doSet('40', '12');
-    closeApp();
-
-    await reopen(at(23, 0), { label: 'Continuo ora' });
-    expect((await save()).duration_seconds).toBe(3900);
-  });
-
-  it('il picker in aggiunta accetta "8" e "8-10" e rifiuta Ripetizioni o Serie non valide', async () => {
-    await reachSummaryAt19();
-    click('Aggiungi esercizio');
-    await advance(0);
-    fireEvent.click(screen.getByText('Croci ai cavi'));
-    const dialog = within(screen.getByRole('dialog'));
-    const addButton = () => dialog.getByRole('button', { name: 'Aggiungi' });
-    const setField = (label, value) => fireEvent.change(dialog.getByLabelText(label), { target: { value } });
-
-    // Parte dalla forma dell'esercizio corrente (Panca: 2 × 8-10)
-    expect(dialog.getByLabelText('Serie').value).toBe('2');
-    expect(dialog.getByLabelText('Ripetizioni').value).toBe('8-10');
-    expect(addButton().disabled).toBe(false);
-
-    ['abc', '', '10-8', '8-10-12', '0'].forEach((reps) => {
-      setField('Ripetizioni', reps);
-      expect(addButton().disabled, `Ripetizioni "${reps}"`).toBe(true);
-    });
-    setField('Ripetizioni', '8-10');
-    expect(addButton().disabled).toBe(false);
-    ['0', '', '99'].forEach((sets) => {
-      setField('Serie', sets);
-      expect(addButton().disabled, `Serie "${sets}"`).toBe(true);
-    });
-    setField('Serie', '2');
-    expect(addButton().disabled).toBe(false);
-  });
-
-  it('l\'esercizio aggiunto ha l\'obiettivo scritto nel picker su ogni serie', async () => {
-    await reachSummaryAt19();
-    click('Aggiungi esercizio');
-    await advance(0);
-    fireEvent.click(screen.getByText('Croci ai cavi'));
-    const dialog = within(screen.getByRole('dialog'));
-    fireEvent.change(dialog.getByLabelText('Ripetizioni'), { target: { value: '8-10' } });
-    fireEvent.change(dialog.getByLabelText('Serie'), { target: { value: '2' } });
-    click('Aggiungi');
-    await advance(0.5);
-
-    expect(screen.getByText('Serie 1 di 2')).toBeTruthy();
-    expect(screen.getByLabelText('Ripetizioni').getAttribute('placeholder')).toBe('8-10');
-  });
 
   it('ripresa nel riepilogo senza aggiungere niente: la durata resta 1 h', async () => {
     await reachSummaryAt19();
@@ -629,62 +519,8 @@ describe('ripresa dal riepilogo: il tempo a pagina chiusa è una pausa', () => {
     expect((await save()).duration_seconds).toBe(5700);
   });
 
-  it('tornare ad allenarsi dal riepilogo e rientrarci senza chiudere la pagina fissa di nuovo la fine', async () => {
-    await reachSummaryAt19();
-    await addExerciseFromSummary();
-    vi.setSystemTime(at(19, 10));
-    doSet('40', '12');
-    expect(screen.getByText('Riepilogo')).toBeTruthy();
-    await advance(600);
-
-    expect(screen.getByText('70:00')).toBeTruthy();
-    expect((await save()).duration_seconds).toBe(4200);
-  });
-
-  it('una pausa è l\'ultima attività: se si chiude in allenamento senza serie, già finita non va sotto zero', async () => {
-    await reachSummaryAt19();
-    closeApp();
-    await reopen(at(21, 0));
-    await addExerciseFromSummary();
-    closeApp();
-
-    await reopen(at(10, 0, 21), { label: 'L\'avevo già finito', finishedOn: '2026-10-19' });
-    expect(screen.getByText('60:00')).toBeTruthy();
-    expect(await save()).toMatchObject({
-      start_time: at(18, 0, 19).toISOString(),
-      ended_at: at(19, 0, 19).toISOString(),
-    });
-  });
-
   describe('già finita il giorno scelto', () => {
     const reopenAsFinished = (when) => reopen(when, { label: 'L\'avevo già finito', finishedOn: '2026-10-19' });
-
-    it('un esercizio e una serie aggiunti dal riepilogo non spostano la fine: 1 h, fine alle 19:00', async () => {
-      await reachSummaryAt19();
-      closeApp();
-      await reopenAsFinished(at(10, 0, 21));
-      await addExerciseFromSummary();
-      vi.setSystemTime(at(10, 5, 21));
-      doSet('40', '12');
-      expect(screen.getByText('Riepilogo')).toBeTruthy();
-
-      expect(await save()).toMatchObject({
-        backdated: true,
-        start_time: at(18, 0, 19).toISOString(),
-        ended_at: at(19, 0, 19).toISOString(),
-      });
-    });
-
-    it('la serie confermata nel salvataggio "già finito" non ha orario; quelle già confermate lo tengono', async () => {
-      await reachSummaryAt19();
-      closeApp();
-      await reopenAsFinished(at(10, 0, 21));
-      await addExerciseFromSummary();
-      vi.setSystemTime(at(10, 5, 21));
-      doSet('40', '12');
-
-      expect((await save()).workout_records.map((r) => r.seconds_from_start)).toEqual([3600, 3600, null]);
-    });
 
     it('senza una fine nota (né fine del riepilogo né ultima serie) ended_at è null e la durata mostrata 0', async () => {
       storeDraft({ lastActivityAt: null });
@@ -695,51 +531,6 @@ describe('ripresa dal riepilogo: il tempo a pagina chiusa è una pausa', () => {
       expect(body).toMatchObject({ backdated: true, start_time: at(18, 0, 19).toISOString(), ended_at: null });
     });
 
-    it('il cronometro in allenamento è fermo sulla durata del riepilogo', async () => {
-      await reachSummaryAt19();
-      closeApp();
-      await reopenAsFinished(at(10, 0, 21));
-      await addExerciseFromSummary();
-
-      expect(screen.getByText('60:00')).toBeTruthy();
-      await advance(30);
-      expect(screen.getByText('60:00')).toBeTruthy();
-    });
-
-    it('con una pausa già in bozza la fine è al netto della pausa: 1 h 05, fine alle 19:05', async () => {
-      storeDraft({
-        idempotencyKey: 'chiave-con-pausa',
-        lastActivityAt: at(21, 5).toISOString(),
-        pausedMs: 2 * 3600 * 1000,
-        summaryEndAt: at(21, 5).toISOString(),
-      });
-      await reopenAsFinished(at(10, 0, 21));
-      await addExerciseFromSummary();
-      vi.setSystemTime(at(10, 5, 21));
-      doSet('40', '12');
-
-      expect(await save()).toMatchObject({
-        start_time: at(18, 0, 19).toISOString(),
-        ended_at: at(19, 5, 19).toISOString(),
-      });
-    });
-
-    it('pagina chiusa a metà delle serie aggiunte e riaperta come già finita: la fine è sempre alle 19:00', async () => {
-      await reachSummaryAt19();
-      closeApp();
-      await reopenAsFinished(at(10, 0, 21));
-      await addExerciseFromSummary(2);
-      vi.setSystemTime(at(10, 5, 21));
-      doSet('40', '12');
-      expect(screen.getByText('Recupero')).toBeTruthy();
-      closeApp();
-
-      await reopenAsFinished(at(10, 10, 21));
-      expect(await save()).toMatchObject({
-        start_time: at(18, 0, 19).toISOString(),
-        ended_at: at(19, 0, 19).toISOString(),
-      });
-    });
   });
 });
 
@@ -830,13 +621,6 @@ describe('errori e funzioni bloccate', () => {
     expect(screen.queryByText('Plus')).toBeNull();
     openMenu();
     expect(menuItem('Cambia esercizio')).toBeTruthy();
-  });
-
-  it('senza la funzione Plus anche "Aggiungi esercizio" del riepilogo mostra "Plus"', async () => {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...savedDraft, selectedDay: pushDay, selectedDayId: 1, phase: 'summary' }));
-    await mount();
-    click('Riprendi allenamento');
-    expect(screen.getByRole('button', { name: 'Aggiungi esercizio (Plus)' })).toBeTruthy();
   });
 
   it('senza la funzione Plus, cambiare esercizio apre il dialog Plus con il link ai piani', async () => {
@@ -998,29 +782,23 @@ describe('riepilogo', () => {
     };
     const award = { new_longest: true, current_streak_weeks: 3, leveled_up: true, new_level: 4, unlocked_achievements: [], xp_session_awarded: false, xp_session_reason: 'too_short' };
 
-    it('attivo: banner della streak, riga della streak e motivo dei punti non assegnati', async () => {
+    it('attivo: festa della streak, riga della streak, motivo dei punti non assegnati e livello', async () => {
       await saveWith(award);
       expect(screen.getByText('Nuovo record! 🏆 3 settimane consecutive')).toBeTruthy();
       expect(screen.getByText(/Nessun XP di sessione/)).toBeTruthy();
-      expect(screen.getByText(/Livello 4/)).toBeTruthy();
+      // Nel riquadro e, a voce, nella regione di stato
+      expect(screen.getAllByText(/Livello 4/)).toHaveLength(2);
     });
 
-    it('non attivo: né banner, né riga della streak, né motivo dei punti, né avviso di livello; il salvataggio riesce', async () => {
+    it('non attivo: né festa, né riga della streak, né motivo dei punti, né livello, né annuncio; il salvataggio riesce', async () => {
       account.user = { modules: { body: true, recovery: true, levels: false, groups: true, ai: true } };
       await saveWith(award);
       expect(screen.queryByText(/Nuovo record! 🏆/)).toBeNull();
       expect(screen.queryByText(/settimane consecutive/)).toBeNull();
       expect(screen.queryByText(/Nessun XP di sessione/)).toBeNull();
       expect(screen.queryByText(/Livello 4/)).toBeNull();
-      expect(screen.getByText('Riepilogo sessione')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Fine' })).toBeTruthy();
     });
-  });
-
-  it('con la funzione Plus "Aggiungi esercizio" del riepilogo non ha l\'etichetta "Plus" e il nome è semplice', async () => {
-    responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
-    await toSummary();
-    expect(screen.getByRole('button', { name: 'Aggiungi esercizio' })).toBeTruthy();
-    expect(screen.queryByText('Plus')).toBeNull();
   });
 });
 
@@ -2773,23 +2551,23 @@ describe('pallini e «Serie fatte» (F3)', () => {
     it('dopo la correzione i record di peso e di volume si aggiornano e il salvataggio porta i valori corretti', async () => {
       responses['workout_history/read.php'] = () => json({ records: history });
       await goSummary(summaryDraft(70));
-      expect(screen.getByText(/^Nuovo record/)).toBeTruthy();
-      expect(screen.getByText('Miglior volume')).toBeTruthy();
+      const rowsToday = () => within(screen.getByRole('heading', { name: 'Record di oggi' }).closest('.MuiPaper-root')).getAllByRole('listitem').map((li) => li.textContent.replace(/\s/g, ' '));
+      expect(rowsToday()).toEqual(['Panca piana Record di peso: 70 kg × 8']);
       fireEvent.click(chip('Correggi Panca piana, Serie 1: 70 kg × 8'));
       await advance(500);
       fireEvent.change(within(doneDialog()).getByLabelText('Peso (kg)'), { target: { value: '55' } });
       fireEvent.click(within(doneDialog()).getByRole('button', { name: 'Salva' }));
       await closeDone();
-      expect(screen.queryByText(/^Nuovo record/)).toBeNull();
-      // Il volume è dell'esercizio intero (440 + 400 kg contro i 480 dello storico): resta un record finché non scende sotto
-      expect(screen.getByText('Miglior volume')).toBeTruthy();
+      // Il peso non batte più lo storico; il volume è dell'esercizio intero (440 + 400 kg contro i 480 dello storico):
+      // resta un record finché non scende sotto
+      expect(rowsToday()).toEqual(['Panca piana Miglior volume']);
       expect(document.activeElement).toBe(chip('Correggi Panca piana, Serie 1: 55 kg × 8'));
       fireEvent.click(chip('Correggi Panca piana, Serie 2: 50 kg × 8, Rest pause'));
       await advance(500);
       fireEvent.change(within(doneDialog()).getByLabelText('Peso (kg)'), { target: { value: '1' } });
       fireEvent.click(within(doneDialog()).getByRole('button', { name: 'Salva' }));
       await closeDone();
-      expect(screen.queryByText('Miglior volume')).toBeNull();
+      expect(screen.queryByRole('heading', { name: 'Record di oggi' })).toBeNull();
       await act(async () => { click('Salva allenamento'); });
       await advance(0);
       expect(saveBody().workout_records.map((r) => [r.weight, r.reps, r.intensity_technique, r.set_number, r.seconds_from_start])).toEqual([
@@ -3049,6 +2827,329 @@ describe('recupero: ±15 s e serie successiva', () => {
       await startDay('Push');
       doSet('0', '10');
       expect(screen.queryByTestId('rest-next-set')).toBeNull();
+    });
+  });
+});
+
+describe('riepilogo di fine allenamento (F5)', () => {
+  const lastTime = (sets) => { responses['workout_history/read.php'] = () => json({ records: [{ id: 1, date: '2026-10-13', exercises: [{ exercise_id: 3, name: 'Panca piana', sets }] }] }); };
+  // Bozza ferma nel riepilogo con le serie date come [peso, ripetizioni]; si riprende e si arriva alla schermata
+  const goSummary = async (sets, { day = pushDay, dayId = 1 } = {}) => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      ...savedDraft, selectedDay: day, selectedDayId: dayId, phase: 'summary',
+      completedSets: { 9: sets.map(([weight, reps], i) => ({ setNumber: i + 1, weight, reps, intensity_technique: '', is_warmup: false, seconds_from_start: 300 + i * 100 })) },
+    }));
+    await mount();
+    click('Riprendi allenamento');
+  };
+  const saveNow = async () => {
+    await act(async () => { click('Salva allenamento'); });
+    await advance(0);
+  };
+  const recordsBox = () => screen.queryByRole('heading', { level: 2, name: /^(Record di oggi|Today's records)$/ })?.closest('.MuiPaper-root') ?? null;
+  // Testo di una riga del riquadro con gli spazi stretti di formatSetText come spazi normali
+  const recordRows = () => within(recordsBox()).getAllByRole('listitem').map((li) => li.textContent.replace(/\s/g, ' '));
+
+  describe('«Record di oggi»', () => {
+    it('con un record di peso: titolo h2, e una riga con il nome e «Record di peso: 80 kg × 8»', async () => {
+      lastTime([{ weight: 60, reps: '8' }]);
+      await goSummary([[80, '8']]);
+      expect(recordsBox()).not.toBeNull();
+      expect(recordRows()).toEqual(['Panca piana Record di peso: 80 kg × 8']);
+    });
+
+    it('il titolo è nello stesso stile di «Dettaglio esercizi» e le righe sono una lista, non bottoni', async () => {
+      lastTime([{ weight: 60, reps: '8' }]);
+      await goSummary([[80, '8']]);
+      const title = screen.getByRole('heading', { level: 2, name: 'Record di oggi' });
+      expect(getComputedStyle(title).color).toBe(GREY);
+      expect(within(recordsBox()).getByRole('list')).toBeTruthy();
+      expect(within(recordsBox()).queryAllByRole('button')).toEqual([]);
+      expect(within(recordsBox()).getByText('Panca piana').closest('[aria-hidden]')).toBeNull();
+      expect(recordsBox().querySelector('[data-testid="EmojiEventsIcon"]').closest('[aria-hidden="true"]')).not.toBeNull();
+    });
+
+    it('massimale stimato: la serie più leggera ma più lunga batte il massimale senza battere il peso', async () => {
+      lastTime([{ weight: 60, reps: '8' }]);
+      await goSummary([[55, '14']]);
+      expect(recordRows()).toEqual(['Panca piana Record di 1RM stimato: 55 kg × 14']);
+    });
+
+    it('ripetizioni a corpo libero', async () => {
+      lastTime([{ weight: 0, reps: '10' }]);
+      await goSummary([[0, '15']]);
+      // Il testo è quello che formatSetText dà a una serie senza peso
+      expect(recordRows()).toEqual(['Panca piana Record di ripetizioni: 0 kg × 15']);
+    });
+
+    it('solo miglior volume: «Miglior volume» senza serie', async () => {
+      lastTime([{ weight: 60, reps: '8' }]);
+      await goSummary([[50, '8'], [50, '8'], [50, '8']]);
+      expect(recordRows()).toEqual(['Panca piana Miglior volume']);
+    });
+
+    it('niente chip «Nuovo record» né «Miglior volume» accanto al nome nel dettaglio', async () => {
+      lastTime([{ weight: 60, reps: '8' }]);
+      await goSummary([[80, '8'], [80, '8'], [80, '8']]);
+      expect(screen.queryByText(/^Nuovo record/)).toBeNull();
+      expect(screen.getAllByText('Panca piana')).toHaveLength(2);
+      expect(screen.queryByText('Miglior volume')).toBeNull();
+    });
+
+    it('in lb per un account in lb', async () => {
+      account.weightUnit = 'lb';
+      lastTime([{ weight: 60, reps: '8' }]);
+      await goSummary([[80, '8']]);
+      expect(recordRows()).toEqual(['Panca piana Record di peso: 176,25 lb × 8']);
+    });
+
+    it('in inglese', async () => {
+      lastTime([{ weight: 60, reps: '8' }]);
+      await goSummary([[80, '8']]);
+      await act(async () => { await i18n.changeLanguage('en'); });
+      expect(recordRows()).toEqual(['Panca piana Weight record: 80 kg × 8']);
+      expect(screen.getByRole('heading', { level: 2, name: 'Today\'s records' })).toBeTruthy();
+    });
+
+    it('senza record il riquadro non c\'è, nemmeno il titolo', async () => {
+      lastTime([{ weight: 100, reps: '8' }]);
+      await goSummary([[80, '8']]);
+      expect(screen.queryByRole('heading', { name: 'Record di oggi' })).toBeNull();
+    });
+
+    it('una riga per esercizio con record, nell\'ordine degli esercizi', async () => {
+      responses['workout_history/read.php'] = () => json({ records: [{ id: 1, date: '2026-10-13', exercises: [
+        { exercise_id: 3, name: 'Panca piana', sets: [{ weight: 60, reps: '8' }] },
+        { exercise_id: 4, name: 'Croci', sets: [{ weight: 20, reps: '12' }] },
+      ] }] });
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        ...savedDraft, selectedDay: fullDay, selectedDayId: 2, phase: 'summary',
+        completedSets: {
+          9: [{ setNumber: 1, weight: 70, reps: '8', intensity_technique: '', is_warmup: false }],
+          10: [{ setNumber: 1, weight: 25, reps: '12', intensity_technique: '', is_warmup: false }],
+        },
+      }));
+      await mount();
+      click('Riprendi allenamento');
+      expect(recordRows()).toEqual(['Panca piana Record di peso: 70 kg × 8', 'Croci Record di peso: 25 kg × 12']);
+    });
+
+    it('il riquadro c\'è prima e dopo il salvataggio', async () => {
+      lastTime([{ weight: 60, reps: '8' }]);
+      await goSummary([[80, '8']]);
+      expect(recordsBox()).not.toBeNull();
+      await saveNow();
+      expect(recordRows()).toEqual(['Panca piana Record di peso: 80 kg × 8']);
+    });
+
+    it('dopo una correzione che toglie il record la riga sparisce e con lei il riquadro', async () => {
+      lastTime([{ weight: 60, reps: '8' }]);
+      await goSummary([[80, '8']]);
+      fireEvent.click(screen.getByRole('button', { name: /^Correggi Panca piana, Serie 1/ }));
+      await advance(500);
+      fireEvent.change(within(screen.getByRole('dialog')).getByLabelText('Peso (kg)'), { target: { value: '50' } });
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Salva' }));
+      await advance(500);
+      expect(screen.queryByRole('heading', { name: 'Record di oggi' })).toBeNull();
+    });
+  });
+  describe('serie per esercizio', () => {
+    it('prima del salvataggio c\'è la riga «Tocca una serie per correggerla.», dopo no', async () => {
+      await goSummary([[80, '8']]);
+      expect(screen.getByText('Tocca una serie per correggerla.')).toBeTruthy();
+      await saveNow();
+      expect(screen.queryByText('Tocca una serie per correggerla.')).toBeNull();
+      expect(screen.getByRole('heading', { level: 2, name: 'Dettaglio esercizi' })).toBeTruthy();
+    });
+  });
+
+  describe('blocco «Streak, livello e traguardi»', () => {
+    const saveWith = async (result, sets = [[80, '8']]) => {
+      responses['record_workout.php'] = () => json({ success: true, id: 77, ...result });
+      await goSummary(sets);
+      await saveNow();
+    };
+    const box = () => screen.queryByRole('heading', { level: 2, name: /^(Streak, livello e traguardi|Streak, level and achievements)$/ })?.closest('.MuiPaper-root') ?? null;
+    const rows = () => within(box()).getAllByRole('listitem').map((li) => li.textContent);
+    const status = () => screen.getByRole('status').textContent;
+    const noLevels = () => { account.user = { modules: { body: true, recovery: true, levels: false, groups: true, ai: true } }; };
+
+    it('prima del salvataggio non c\'è', async () => {
+      await goSummary([[80, '8']]);
+      expect(box()).toBeNull();
+    });
+
+    it('streak con festa: festa in evidenza e poi «Streak: N settimane»', async () => {
+      await saveWith({ new_longest: true, current_streak_weeks: 3 });
+      expect(rows()).toEqual(['Nuovo record! 🏆 3 settimane consecutive', 'Streak: 3 settimane']);
+    });
+
+    it('settimana completata e tappa: gli stessi testi di prima', async () => {
+      await saveWith({ week_completed_now: true, current_streak_weeks: 2 });
+      expect(rows()[0]).toBe('Settimana completata! 🔥');
+      cleanup(); localStorage.clear();
+      await saveWith({ streak_milestone: true, current_streak_weeks: 4 });
+      expect(rows()[0]).toBe('4 settimane di fila! 🔥');
+    });
+
+    it('streak senza festa: solo la riga «Streak: 1 settimana» (singolare)', async () => {
+      await saveWith({ current_streak_weeks: 1 });
+      expect(rows()).toEqual(['Streak: 1 settimana']);
+    });
+
+    it('nessuna streak: la riga non c\'è', async () => {
+      await saveWith({ current_streak_weeks: 0, level: 3 });
+      expect(rows()).toEqual(['Livello 3']);
+    });
+
+    it('livello nuovo: «Livello 4 raggiunto! 🎉» con i punti sulla stessa riga', async () => {
+      await saveWith({ leveled_up: true, new_level: 4, level: 4, xp_gained: 80 });
+      expect(rows()).toEqual(['Livello 4 raggiunto! 🎉 · +80 punti']);
+    });
+
+    it('livello senza salto con punti; «+1 punto» al singolare; senza punti niente « · »', async () => {
+      await saveWith({ level: 12, xp_gained: 80 });
+      expect(rows()).toEqual(['Livello 12 · +80 punti']);
+      cleanup(); localStorage.clear();
+      await saveWith({ level: 12, xp_gained: 1 });
+      expect(rows()).toEqual(['Livello 12 · +1 punto']);
+      cleanup(); localStorage.clear();
+      await saveWith({ level: 12, xp_gained: 0 });
+      expect(rows()).toEqual(['Livello 12']);
+    });
+
+    it('punti presi senza livello nella risposta: nessuna riga di livello', async () => {
+      await saveWith({ xp_gained: 80, current_streak_weeks: 2 });
+      expect(rows()).toEqual(['Streak: 2 settimane']);
+    });
+
+    it('punti di sessione non assegnati: il motivo, in grigio', async () => {
+      await saveWith({ level: 3, xp_session_awarded: false, xp_session_reason: 'too_short' });
+      expect(rows()).toEqual(['Livello 3', 'Nessun XP di sessione: l\'allenamento deve durare almeno 20 minuti.']);
+      expect(getComputedStyle(screen.getByText(/^Nessun XP di sessione/)).color).toBe(GREY);
+    });
+
+    it('uno e due traguardi nuovi', async () => {
+      await saveWith({ unlocked_achievements: [{ key: 'primo', label: 'Primo allenamento' }] });
+      expect(rows()).toEqual(['Nuovo traguardo: Primo allenamento']);
+      cleanup(); localStorage.clear();
+      await saveWith({ unlocked_achievements: [{ key: 'primo', label: 'Primo allenamento' }, { key: 'secondo', label: 'Secondo' }] });
+      expect(rows()).toEqual(['Nuovi traguardi: Primo allenamento, Secondo']);
+    });
+
+    it('in inglese', async () => {
+      await saveWith({ new_longest: true, current_streak_weeks: 2, leveled_up: true, new_level: 5, level: 5, xp_gained: 1, unlocked_achievements: [{ key: 'primo', label: 'Primo' }] });
+      await act(async () => { await i18n.changeLanguage('en'); });
+      expect(screen.getByRole('heading', { level: 2, name: 'Streak, level and achievements' })).toBeTruthy();
+      expect(rows()).toEqual(['New record! 🏆 2 weeks in a row', 'Streak: 2 weeks', 'Level 5 reached! 🎉 · +1 point', 'New achievement: Primo']);
+    });
+
+    it('nessuna riga: niente riquadro', async () => {
+      await saveWith({});
+      expect(box()).toBeNull();
+    });
+
+    it('«già salvato» senza dati: niente riquadro vuoto', async () => {
+      await saveWith({ already_saved: true });
+      expect(box()).toBeNull();
+      expect(screen.getByText('Allenamento già salvato')).toBeTruthy();
+    });
+
+    it('modulo Livelli spento: niente riquadro e niente annuncio, il salvataggio riesce', async () => {
+      noLevels();
+      await saveWith({ new_longest: true, current_streak_weeks: 3, leveled_up: true, new_level: 4, level: 4, xp_gained: 80, unlocked_achievements: [{ key: 'primo', label: 'Primo' }], xp_session_awarded: false, xp_session_reason: 'too_short' });
+      expect(box()).toBeNull();
+      expect(status()).toBe('');
+      expect(saveBody()).not.toBeNull();
+      expect(screen.getByRole('button', { name: 'Fine' })).toBeTruthy();
+    });
+
+    it('nessun avviso a scomparsa con livello o traguardi: li dice la regione di stato, una volta', async () => {
+      await saveWith({ leveled_up: true, new_level: 4, level: 4, unlocked_achievements: [{ key: 'primo', label: 'Primo' }] });
+      expect(screen.queryByRole('alert')).toBeNull();
+      expect(status()).toBe('Livello 4 raggiunto! 🎉 · Nuovo traguardo: Primo');
+      expect(screen.getAllByText(/Livello 4 raggiunto/)).toHaveLength(2);
+    });
+
+    it('niente annuncio per la sola streak', async () => {
+      await saveWith({ new_longest: true, current_streak_weeks: 3 });
+      expect(status()).toBe('');
+    });
+  });
+
+  describe('pulsanti', () => {
+    it('dopo il salvataggio: «Condividi» e «Fine», niente «Vai allo storico», «Torna alla home» né «Riepilogo sessione»', async () => {
+      await goSummary([[80, '8']]);
+      expect(screen.queryByRole('button', { name: 'Condividi' })).toBeNull();
+      await saveNow();
+      expect(screen.getByRole('button', { name: 'Condividi' })).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Vai allo storico' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Torna alla home' })).toBeNull();
+      expect(screen.queryByText('Riepilogo sessione')).toBeNull();
+      const share = screen.getByRole('button', { name: 'Condividi' });
+      const done = screen.getByRole('button', { name: 'Fine' });
+      expect(parseInt(getComputedStyle(share).minHeight, 10)).toBeGreaterThanOrEqual(44);
+      expect(parseInt(getComputedStyle(done).minHeight, 10)).toBeGreaterThanOrEqual(44);
+      expect(share.compareDocumentPosition(done) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('«Condividi» apre la card con gli stessi dati e conta l\'apertura', async () => {
+      await goSummary([[80, '8']]);
+      await saveNow();
+      expect(screen.queryByTestId('share-card')).toBeNull();
+      click('Condividi');
+      expect(screen.getByTestId('share-card').textContent).toBe('2026-10-20 17:40');
+      expect(mockTrack).toHaveBeenCalledWith('workout_card', { action: 'open', from: 'summary' });
+    });
+
+    it('«Fine» porta alla Home', async () => {
+      await goSummary([[80, '8']]);
+      await saveNow();
+      click('Fine');
+      expect(mockNavigate).toHaveBeenCalledWith('/');
+    });
+
+    it('prima del salvataggio non c\'è «Aggiungi esercizio», nemmeno con la funzione Plus', async () => {
+      responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
+      await goSummary([[80, '8']]);
+      expect(screen.queryByRole('button', { name: /^Aggiungi esercizio/ })).toBeNull();
+      expect(screen.getByRole('button', { name: 'Salva allenamento' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Annulla' })).toBeTruthy();
+    });
+
+    it('il picker in aggiunta, aperto dal «⋯», accetta "8" e "8-10" e rifiuta Ripetizioni o Serie non valide', async () => {
+      responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
+      await startDay('Push');
+      await chooseAction('Aggiungi esercizio');
+      fireEvent.click(screen.getByText('Croci ai cavi'));
+      const dialog = within(screen.getByRole('dialog'));
+      const addButton = () => dialog.getByRole('button', { name: 'Aggiungi' });
+      const setField = (label, value) => fireEvent.change(dialog.getByLabelText(label), { target: { value } });
+
+      // Parte dalla forma dell'esercizio corrente (Panca: 2 × 8-10)
+      expect(dialog.getByLabelText('Serie').value).toBe('2');
+      expect(dialog.getByLabelText('Ripetizioni').value).toBe('8-10');
+      expect(addButton().disabled).toBe(false);
+
+      ['abc', '', '10-8', '8-10-12', '0'].forEach((reps) => {
+        setField('Ripetizioni', reps);
+        expect(addButton().disabled, `Ripetizioni "${reps}"`).toBe(true);
+      });
+      setField('Ripetizioni', '8-10');
+      expect(addButton().disabled).toBe(false);
+      ['0', '', '99'].forEach((sets) => {
+        setField('Serie', sets);
+        expect(addButton().disabled, `Serie "${sets}"`).toBe(true);
+      });
+      setField('Serie', '2');
+      expect(addButton().disabled).toBe(false);
+    });
+
+    it('nel «⋯» della serie «Aggiungi esercizio» c\'è ancora', async () => {
+      responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
+      await startDay('Push');
+      openMenu();
+      expect(menuItem('Aggiungi esercizio')).toBeTruthy();
     });
   });
 });
