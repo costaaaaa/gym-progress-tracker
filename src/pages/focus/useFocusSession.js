@@ -145,13 +145,13 @@ export default function useFocusSession() {
         // Segno del formato con le serie pianificate: una bozza senza viene scartata
         plannedSetsFormat: true,
         // Fine mostrata nel riepilogo, o fissa se già finita: la ripresa riparte da qui
-        summaryEndAt: phase === 'summary' || retroDate ? endTime : null,
+        summaryEndAt: phase === 'summary' ? endTime : null,
         phase: phase === 'rest_timer' ? 'workout' : phase, // Se crasha durante il timer, riprendi dall'esercizio
         timestamp: new Date().getTime()
       };
       localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
     }
-  }, [phase, activePlan, selectedDay, selectedDayId, completedSets, skippedExercises, skippedSets, currentExerciseIndex, currentSetIndex, workoutNotes, startTime, timeZone, idempotencyKey, lastActivityAt, pausedMs, endTime, retroDate]);
+  }, [phase, activePlan, selectedDay, selectedDayId, completedSets, skippedExercises, skippedSets, currentExerciseIndex, currentSetIndex, workoutNotes, startTime, timeZone, idempotencyKey, lastActivityAt, pausedMs, endTime]);
 
   const clearDraft = useCallback(() => {
     localStorage.removeItem(DRAFT_STORAGE_KEY);
@@ -488,9 +488,9 @@ export default function useFocusSession() {
       // Con la tecnica spenta la serie si salva senza, anche se la scheda ne prevedeva una
       intensity_technique: techniqueOn ? intensityTechniqueInput : '',
       is_warmup: isWarmup,
-      // Secondi netti dall'inizio (stesso orologio della durata); in modalità "già finito" l'orario non è reale.
-      // Non passa da getElapsedSeconds()/netEnd: preferiscono endTime, congelato nel riepilogo e in retro, mentre qui serve "adesso"
-      seconds_from_start: retroDate || !startTime ? null : Math.max(0, Math.floor((Date.now() - startTime.getTime() - pausedMs) / 1000))
+      // Secondi netti dall'inizio (stesso orologio della durata).
+      // Non passa da getElapsedSeconds()/netEnd: preferiscono endTime, congelato nel riepilogo, mentre qui serve "adesso"
+      seconds_from_start: !startTime ? null : Math.max(0, Math.floor((Date.now() - startTime.getTime() - pausedMs) / 1000))
     });
 
     setCompletedSets(prev => ({
@@ -809,7 +809,7 @@ export default function useFocusSession() {
         celebrateStreak();
       }
 
-      // Level-up + achievement celebration
+      // Coriandoli per il livello nuovo o, in mancanza, per i traguardi
       if (data.leveled_up) {
         celebrateLevelUp();
       } else if (data.unlocked_achievements?.length) {
@@ -919,8 +919,6 @@ export default function useFocusSession() {
     lastSession: getLastSession(currentExercise),
     exerciseTransition,
     clockStart,
-    // Già finita: la durata è quella del riepilogo e il cronometro non cammina
-    finishedClock: retroDate ? getElapsedTime() : null,
     weightInput,
     weightUnit,
     weightValid: weightKg !== null,
