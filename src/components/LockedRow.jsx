@@ -15,16 +15,16 @@ const LockedRow = ({ children, sx, compare = true }) => {
       px: 1.5, py: 0.5, bgcolor: 'background.subtle', borderRadius: radius.md, ...sx,
     }}>
       <LockOutlinedIcon aria-hidden="true" fontSize="small" sx={{ color: 'text.secondary' }} />
-      <Typography sx={{ fontSize: 14, color: 'text.primary', flex: '1 1 160px', minWidth: 0 }}>{children}</Typography>
+      <Typography sx={{ fontSize: 16, color: 'text.primary', flex: '1 1 160px', minWidth: 0 }}>{children}</Typography>
       <Box component="span" sx={{
-        fontSize: 12, fontWeight: 700, color: 'text.secondary', border: '1px solid', borderColor: 'divider',
+        fontSize: 16, fontWeight: 700, color: 'text.secondary', border: '1px solid', borderColor: 'divider',
         borderRadius: radius.pill, px: 1, py: 0.25,
       }}>
         {t('plans.label_plus')}
       </Box>
       {compare && (
         <Link href={plansPath(i18n.language)} color="text.primary" underline="always"
-          sx={{ fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>
+          sx={{ fontSize: 16, fontWeight: 600, display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>
           {t('plans.compare')}
         </Link>
       )}
