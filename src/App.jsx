@@ -16,6 +16,7 @@ import LegacyWorkoutsRedirect from './pages/LegacyWorkoutsRedirect';
 const Home = lazy(() => import('./pages/Home'));
 const Plans = lazy(() => import('./pages/Plans'));
 const PlanPage = lazy(() => import('./pages/plans/PlanPage'));
+const ExercisesPage = lazy(() => import('./pages/plans/ExercisesPage'));
 const History = lazy(() => import('./pages/History'));
 const WorkoutPage = lazy(() => import('./pages/history/WorkoutPage'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -51,6 +52,7 @@ function App() {
               <Route element={<Layout />}>
                 <Route path="/" element={<Home />} />
                 <Route path="/schede" element={<Plans />} />
+                <Route path="/schede/esercizi" element={<ExercisesPage />} />
                 <Route path="/schede/:id" element={<PlanPage />} />
                 <Route path="/storico" element={<History />} />
                 <Route path="/storico/:id" element={<WorkoutPage />} />

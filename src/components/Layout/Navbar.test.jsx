@@ -170,6 +170,11 @@ describe('barra in alto: desktop', () => {
     expect(currentLinks()).toEqual(['Schede']);
   });
 
+  it('su «Tutti gli esercizi» (/schede/esercizi) la voce «Schede» resta attiva, e solo quella', () => {
+    mount(undefined, '/schede/esercizi');
+    expect(currentLinks()).toEqual(['Schede']);
+  });
+
   it('su un allenamento (/storico/<id>) la voce «Storico» resta attiva, e solo quella', () => {
     mount(undefined, '/storico/12');
     expect(currentLinks()).toEqual(['Storico']);
