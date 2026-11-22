@@ -2,6 +2,7 @@
 // rilettura a fine allenamento, eliminazione con «Annulla» di un allenamento tolto dalla sua pagina, errore di lettura.
 // Colori del tema chiaro scritti a mano: text.secondary #6b6663, rosso del marchio #d50000. La fetch è il confine.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { Fragment, StrictMode } from 'react';
 import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import History from './History';
@@ -10,7 +11,7 @@ import { json, expectNoNestedContainer, colorOf } from '../test/dom';
 import { setBrowserTimeZone } from '../test/timeZone';
 import { textBelow } from '../test/minText';
 import { strayListChildren } from '../test/accessibleNames';
-import { exercise, workout, made, plan, serve, deletions, historyReads } from '../test/storico';
+import { exercise, workout, made, plan, serve, deletions, historyReads } from '../test/history';
 import { isKeyboardFocus } from '../utils/focus';
 
 // jsdom dà :focus-visible a ogni focus: la distinzione tastiera/mouse si sostituisce (il resto del modulo resta vero)
@@ -18,6 +19,20 @@ vi.mock('../utils/focus', async (importOriginal) => ({ ...(await importOriginal(
 // Unità di peso dell'utente: kg salvo i test che la cambiano
 const account = vi.hoisted(() => ({ isLoggedIn: true, loading: false, weightUnit: 'kg', user: undefined }));
 vi.mock('../context/AuthContext', () => ({ useAuth: () => account }));
+
+// La finestra «Registra allenamento» ha le sue prove: qui basta sapere quando si apre e che cosa fa l'elenco dopo il salvataggio
+vi.mock('../components/RecordWorkoutDialog', async () => {
+  const { Dialog, DialogTitle } = await import('@mui/material');
+  return {
+    default: ({ open, onClose }) => (open ? (
+      <Dialog open onClose={() => onClose(false)}>
+        <DialogTitle>Registra allenamento</DialogTitle>
+        <button type="button" onClick={() => onClose(true, null, {})}>Salva finto</button>
+        <button type="button" onClick={() => onClose(false)}>Annulla</button>
+      </Dialog>
+    ) : null),
+  };
+});
 
 const GREY = 'rgb(107, 102, 99)';
 const RED = 'rgb(213, 0, 0)';
@@ -53,9 +68,10 @@ const Probe = () => {
 let navigate;
 const Nav = () => { navigate = useNavigate(); return null; };
 
-const mount = async (entry = '/storico', wait = NESSUNO) => {
+const mount = async (entry = '/storico', wait = NESSUNO, { strict = false } = {}) => {
+  const Root = strict ? StrictMode : Fragment;
   render(
-    <ThemeModeProvider>
+    <Root><ThemeModeProvider>
       <MemoryRouter initialEntries={[entry]}>
         <Nav />
         <Probe />
@@ -65,7 +81,7 @@ const mount = async (entry = '/storico', wait = NESSUNO) => {
           <Route path="/altrove" element={<p>Altra pagina</p>} />
         </Routes>
       </MemoryRouter>
-    </ThemeModeProvider>,
+    </ThemeModeProvider></Root>,
   );
   await screen.findAllByText(wait);
 };
@@ -102,10 +118,17 @@ describe('pagina Storico', () => {
     expect(style.fontSize).toBe('16px');
   });
 
-  it('senza una scheda attiva il comando non c\'è', async () => {
-    serve({ workouts: [], plans: [{ ...plan, is_active: false }] });
+  it('senza una scheda attiva il comando non c\'è, nemmeno quando la lettura delle schede finisce', async () => {
+    // Le schede arrivano solo quando lo decide il test: l'assenza si controlla prima e dopo il loro arrivo
+    let arrivano;
+    const inArrivo = new Promise((resolve) => { arrivano = () => resolve(json({ records: [{ ...plan, is_active: false }] })); });
+    serve({ workouts: [], on: { 'read_plans.php': () => inArrivo } });
     await mount();
     expect(screen.queryByRole('button', { name: 'Registra allenamento passato' })).toBeNull();
+    await act(async () => { arrivano(); });
+    await act(async () => {});
+    expect(screen.queryByRole('button', { name: 'Registra allenamento passato' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Registra il primo' })).toBeNull();
   });
 
   it('il comando apre la finestra «Registra allenamento»', async () => {
@@ -132,6 +155,18 @@ describe('rilettura a fine allenamento', () => {
     await waitFor(() => expect(historyReads()).toBe(2));
     // Resta nello stato: lo consuma solo openRecord
     expect(screen.getByTestId('state').textContent).toBe('{"refreshHistory":1730000000000}');
+  });
+});
+
+describe('salvataggio di un allenamento passato', () => {
+  it('l\'elenco viene riletto e compare l\'avviso', async () => {
+    await mount();
+    fireEvent.click(screen.getByRole('button', { name: 'Registra allenamento passato' }));
+    await waitFor(() => expect(dialogTitle()).toBeTruthy());
+    expect(historyReads()).toBe(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Salva finto' }));
+    await waitFor(() => expect(historyReads()).toBe(2));
+    expect(await screen.findByText('Allenamento registrato con successo')).toBeTruthy();
   });
 });
 
@@ -229,6 +264,16 @@ describe('elenco a mesi', () => {
     expect(screen.getAllByRole('list')).toHaveLength(3);
   });
 
+  it('l\'h2 del mese è la prima riga della sua card, che contiene anche le righe', async () => {
+    await mountWith([novembre, ottobre, settembre], 'Pull B');
+    screen.getAllByRole('heading', { level: 2 }).forEach((h2) => {
+      const card = h2.closest('.MuiCard-root');
+      expect(card).not.toBeNull();
+      expect(card.firstElementChild).toBe(h2);
+      expect(within(card).getAllByRole('link')).toHaveLength(1);
+    });
+  });
+
   it('l\'elenco ha solo voci <li> senza ruolo: nessun separatore né pannello come figlio diretto', async () => {
     await mountWith([ottobre, made({ id: 8, date: '2026-10-17 10:00:00' })]);
     const list = screen.getByRole('list');
@@ -241,7 +286,7 @@ describe('elenco a mesi', () => {
     const riga = screen.getByRole('link', { name: /^Push A/ });
     expect(riga.getAttribute('href')).toBe('/storico/7');
     expect(within(riga).getByText('Push A')).toBeTruthy();
-    const sotto = within(riga).getByText('dom 18 ott · 1h 00m · 1440 kg');
+    const sotto = within(riga).getByText('dom 18 ott · 60 min · 1440 kg');
     expect(colorOf(sotto)).toBe(GREY);
     expect(getComputedStyle(sotto).fontVariantNumeric).toBe('tabular-nums');
   });
@@ -259,7 +304,7 @@ describe('elenco a mesi', () => {
   it('senza giorno della scheda il titolo è la data e sotto c\'è l\'ora', async () => {
     await mountWith([made({ day_name: null })], 'domenica 18 ottobre');
     const riga = screen.getByRole('link', { name: /^domenica 18 ottobre/ });
-    expect(within(riga).getByText('02:00 · 1h 00m · 1440 kg')).toBeTruthy();
+    expect(within(riga).getByText('02:00 · 60 min · 1440 kg')).toBeTruthy();
   });
 
   it('senza durata e senza volume la riga ha solo ciò che c\'è', async () => {
@@ -267,13 +312,13 @@ describe('elenco a mesi', () => {
     const senzaVolume = made({ id: 8, date: '2026-10-17 10:00:00', exercises: [exercise(1, 'Corpo libero', [{ set_number: 1, weight: 0, reps: 0 }])] });
     await mountWith([senzaDurata, senzaVolume]);
     expect(screen.getByText('dom 18 ott · 1440 kg')).toBeTruthy();
-    expect(screen.getByText('sab 17 ott · 1h 00m')).toBeTruthy();
+    expect(screen.getByText('sab 17 ott · 60 min')).toBeTruthy();
   });
 
   it('il volume è nell\'unità dell\'utente: in lb 1440 kg sono 3175 lb', async () => {
     account.weightUnit = 'lb';
     await mountWith([ottobre]);
-    expect(screen.getByText('dom 18 ott · 1h 00m · 3175 lb')).toBeTruthy();
+    expect(screen.getByText('dom 18 ott · 60 min · 3175 lb')).toBeTruthy();
     expect(screen.queryByText(/kg/)).toBeNull();
   });
 
@@ -423,6 +468,33 @@ describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
     expect(deletions()).toHaveLength(1);
     expect(JSON.parse(deletions()[0][1].body)).toEqual({ id: 7 });
     expect(screen.queryByRole('link', { name: /^Push A/ })).toBeNull();
+  });
+
+  describe('con React.StrictMode (sviluppo)', () => {
+    it('il server non è chiamato prima dei 10 secondi, poi una volta sola', async () => {
+      serve({ workouts: [workout, altro] });
+      await mount({ pathname: '/storico', state: { deleted: 7 } }, 'Allenamento eliminato', { strict: true });
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(deletions()).toHaveLength(0);
+      conTimerFinti();
+      rilasciaFuoco();
+      await passano(9999);
+      expect(deletions()).toHaveLength(0);
+      await passano(1);
+      expect(deletions()).toHaveLength(1);
+      expect(JSON.parse(deletions()[0][1].body)).toEqual({ id: 7 });
+    });
+
+    it('«Annulla» evita la richiesta', async () => {
+      serve({ workouts: [workout, altro] });
+      await mount({ pathname: '/storico', state: { deleted: 7 } }, 'Allenamento eliminato', { strict: true });
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      fireEvent.click(annulla());
+      expect(await screen.findByRole('link', { name: /^Push A/ })).toBeTruthy();
+      conTimerFinti();
+      await passano(20000);
+      expect(deletions()).toHaveLength(0);
+    });
   });
 
   it('uscendo dall\'elenco durante i 10 secondi la richiesta parte subito, come prima', async () => {

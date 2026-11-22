@@ -10,7 +10,7 @@ import { json, expectNoNestedContainer, colorOf } from '../../test/dom';
 import { setBrowserTimeZone } from '../../test/timeZone';
 import { textBelow } from '../../test/minText';
 import { unnamedControls } from '../../test/accessibleNames';
-import { exercise, workout, made, serve, deletions, historyReads } from '../../test/storico';
+import { exercise, workout, made, serve, deletions, historyReads } from '../../test/history';
 
 // La card da condividere si disegna su canvas: qui basta sapere con quali dati si apre
 vi.mock('../../components/ShareCardDialog', () => ({
@@ -90,9 +90,14 @@ describe('intestazione', () => {
 describe('riquadri', () => {
   it('Durata, Volume (nell\'unità dell\'utente) e Serie allenanti', async () => {
     await mount();
-    expect(riquadro('Durata').getByText('1h 00m')).toBeTruthy();
+    expect(riquadro('Durata').getByText('60 min')).toBeTruthy();
     expect(riquadro('Volume').getByText('1440 kg')).toBeTruthy();
     expect(riquadro('Serie').getByText('3')).toBeTruthy();
+  });
+
+  it('sopra l\'ora la durata resta in minuti', async () => {
+    await mount([made({ duration_seconds: 5700 })]);
+    expect(riquadro('Durata').getByText('95 min')).toBeTruthy();
   });
 
   it('senza durata c\'è «–»', async () => {
@@ -123,7 +128,24 @@ describe('record', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Record' })).toBeTruthy();
     const card = within(screen.getByRole('heading', { level: 2, name: 'Record' }).closest('section'));
     expect(card.getAllByRole('listitem')).toHaveLength(2);
-    ['Panca piana', 'Peso massimo · 110 kg × 3', 'Flessioni', 'Più ripetizioni · 15'].forEach((testo) => expect(card.getByText(testo)).toBeTruthy());
+    ['Panca piana', 'Peso massimo · 110 kg × 3', 'Flessioni', 'Max ripetizioni · 15'].forEach((testo) => expect(card.getByText(testo)).toBeTruthy());
+  });
+
+  it('il massimale stimato si chiama come nel resto dell\'app: «1RM stimato»', async () => {
+    const solo = made({ id: 8, exercises: [exercise(1, 'Panca piana', [{ set_number: 1, weight: 90, reps: 8 }])] });
+    await mount([solo, prima], { path: '/storico/8' });
+    expect(screen.getByText(/^1RM stimato · /)).toBeTruthy();
+  });
+
+  it('due esercizi con lo stesso nome sono due voci, senza avvisi di chiavi uguali', async () => {
+    const errore = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const doppio = made({ id: 8, exercises: [exercise(1, 'Panca piana', [{ set_number: 1, weight: 110, reps: 3 }]), exercise(9, 'Panca piana', [{ set_number: 1, weight: 120, reps: 3 }])] });
+    const vecchio = made({ id: 6, date: '2026-10-10 02:00:00', exercises: [exercise(1, 'Panca piana', [{ set_number: 1, weight: 100, reps: 1 }]), exercise(9, 'Panca piana', [{ set_number: 1, weight: 100, reps: 1 }])] });
+    await mount([doppio, vecchio], { path: '/storico/8' });
+    const card = within(screen.getByRole('heading', { level: 2, name: 'Record' }).closest('section'));
+    expect(card.getAllByRole('listitem')).toHaveLength(2);
+    expect(errore.mock.calls.filter(([messaggio]) => String(messaggio).includes('same key'))).toEqual([]);
+    errore.mockRestore();
   });
 
   it('in lb il peso del record è in libbre', async () => {
@@ -386,7 +408,8 @@ describe('id che non c\'è, caricamento ed errore di lettura', () => {
       await mount([workout], { wait: ERRORE, on });
       await new Promise((resolve) => setTimeout(resolve, 50));
       expect(screen.queryByText('ELENCO')).toBeNull();
-      expect(screen.queryByRole('heading', { level: 1 })).toBeNull();
+      expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual(['Storico']);
+      expect(screen.getByRole('link', { name: 'Storico' }).getAttribute('href')).toBe('/storico');
       expect(parseFloat(getComputedStyle(screen.getByRole('button', { name: 'Riprova' })).minHeight)).toBeGreaterThanOrEqual(44);
     });
 

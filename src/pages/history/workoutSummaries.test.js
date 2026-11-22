@@ -2,13 +2,13 @@
 import { describe, it, expect } from 'vitest';
 import workoutSummaries from './workoutSummaries';
 import { historyRecords } from '../../utils/shareCard';
-import { exercise, workout, made } from '../../test/storico';
+import { exercise, workout, made } from '../../test/history';
 
 // Allenamenti finti ripetibili: pochi esercizi che tornano, carichi che salgono e scendono, qualche riscaldamento,
 // più allenamenti nello stesso istante (si distinguono per id) e un esercizio a corpo libero.
 const generate = (count) => Array.from({ length: count }, (_, i) => {
   const day = 1 + (i >> 1) % 28;
-  const month = 1 + (i % 9);
+  const month = 1 + ((i >> 1) % 9);
   return made({
     id: 1000 + i,
     date: `2026-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} 18:00:00`,
@@ -61,6 +61,9 @@ describe('workoutSummaries', () => {
     ['mescolati', (list) => [...list].sort((a, b) => ((a.id * 7919) % 101) - ((b.id * 7919) % 101))],
   ])('stessi risultati di historyRecords su 60 allenamenti %s', (_, order) => {
     const all = order(generate(60));
+    // il generatore ripete davvero gli istanti (a coppie) e produce anche record di solo volume
+    expect(new Set(all.map((w) => w.date)).size).toBeLessThan(all.length);
+    expect(all.some((w) => historyRecords(all, w).some((r) => r.type === 'volume'))).toBe(true);
     const summaries = workoutSummaries(all);
     expect(Object.keys(summaries)).toHaveLength(60);
     all.forEach((w) => {
