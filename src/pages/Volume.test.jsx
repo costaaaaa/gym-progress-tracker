@@ -2,7 +2,7 @@
 // attivo, la card «Per muscolo» (serie, variazione, barra e stato di recupero di ogni muscolo).
 // Colori del tema chiaro scritti a mano: text.secondary #6b6663, text.primary #1a1816, recovery.ready #15803d.
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import Volume from './Volume';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { json } from '../test/dom';
@@ -115,8 +115,9 @@ describe('card «Questa settimana»', () => {
     stubFetch(dashboardStats);
     renderVolume();
     expect(await screen.findByRole('heading', { level: 2, name: 'This week' })).toBeTruthy();
-    expect(within(weekCard()).getByText('Volume')).toBeTruthy();
-    expect(within(weekCard()).getByText('Sets')).toBeTruthy();
+    const card = within(screen.getByRole('region', { name: 'This week' }));
+    expect(card.getByText('Volume')).toBeTruthy();
+    expect(card.getByText('Sets')).toBeTruthy();
     expect(screen.getByRole('heading', { level: 2, name: 'By muscle' })).toBeTruthy();
   });
 
