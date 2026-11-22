@@ -37,7 +37,10 @@ afterEach(() => {
 });
 
 // Lo stato di navigazione della schermata in corso: dopo l'eliminazione l'elenco lo riceve
-const StateProbe = () => <p data-testid="stato">{JSON.stringify(useLocation().state)}</p>;
+const StateProbe = () => {
+  const { state, search } = useLocation();
+  return <><p data-testid="stato">{JSON.stringify(state)}</p><p data-testid="ricerca">{search}</p></>;
+};
 
 const mount = async (workouts = [workout], { path = '/storico/7', wait = 'Push A', on } = {}) => {
   serve({ workouts, on });
@@ -78,6 +81,23 @@ describe('intestazione', () => {
     expect(indietro.getAttribute('href')).toBe('/storico');
     expect(parseFloat(getComputedStyle(indietro).width)).toBeGreaterThanOrEqual(44);
     expect(parseFloat(getComputedStyle(indietro).height)).toBeGreaterThanOrEqual(44);
+  });
+
+  const BACK = '/storico?vista=calendario&mese=2026-10&giorno=2026-10-18';
+
+  it('arrivando con un percorso di ritorno nello stato, il ritorno «Storico» porta lì', async () => {
+    await mount([workout], { path: { pathname: '/storico/7', state: { backTo: BACK } } });
+    expect(screen.getByRole('link', { name: 'Storico' }).getAttribute('href')).toBe(BACK);
+  });
+
+  it.each(['/altrove', 'https://altro.example/storico', '//storico', '/storicoX', '/storico/../altrove', 5, null])('un percorso di ritorno non valido (%s) lascia il ritorno all\'elenco', async (valore) => {
+    await mount([workout], { path: { pathname: '/storico/7', state: { backTo: valore } } });
+    expect(screen.getByRole('link', { name: 'Storico' }).getAttribute('href')).toBe('/storico');
+  });
+
+  it('un allenamento che non c\'è riporta al percorso di ritorno, non all\'elenco di base', async () => {
+    await mount([workout], { path: { pathname: '/storico/99', state: { backTo: BACK } }, wait: 'ELENCO' });
+    expect(screen.getByTestId('ricerca').textContent).toBe('?vista=calendario&mese=2026-10&giorno=2026-10-18');
   });
 
   it('un titolo lungo va a capo', async () => {
@@ -298,6 +318,14 @@ describe('Elimina', () => {
     expect(await screen.findByText('ELENCO')).toBeTruthy();
     expect(screen.getByTestId('stato').textContent).toBe('{"deleted":7}');
     expect(deletions()).toHaveLength(0);
+  });
+
+  it('arrivando dal calendario, confermata l\'eliminazione si torna al calendario con mese e giorno, e l\'id nello stato', async () => {
+    await apri([workout], { path: { pathname: '/storico/7', state: { backTo: '/storico?vista=calendario&giorno=2026-10-18' } } });
+    fireEvent.click(confermaNelDialog());
+    expect(await screen.findByText('ELENCO')).toBeTruthy();
+    expect(screen.getByTestId('ricerca').textContent).toBe('?vista=calendario&giorno=2026-10-18');
+    expect(screen.getByTestId('stato').textContent).toBe('{"deleted":7}');
   });
 
   it('«Annulla» nella conferma lascia la pagina com\'è', async () => {

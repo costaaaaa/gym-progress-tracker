@@ -8,7 +8,7 @@ Il kit è separato dall'app: ha un suo `package.json` e non tocca quello di `gym
 
 ## Script
 
-- `shots.mjs <cartella> [porta]`: 18 pagine, «Tutti gli esercizi» (2 immagini), la pagina di una scheda in modifica con i dialog dell'editor
+- `shots.mjs <cartella> [porta]`: 20 pagine, «Tutti gli esercizi» (2 immagini), la pagina di una scheda in modifica con i dialog dell'editor
   delle serie (4 immagini) e le 5 schermate del Focus, con 390 e 1440 px di larghezza e tema
   chiaro/scuro. Ogni schermata usa un contesto browser nuovo con orologio fisso
   (2026-10-23 10:00, Europe/Rome), `reducedMotion: reduce`, animazioni CSS azzerate, font pronti
@@ -29,7 +29,8 @@ Pagine (file `<nome>_<390|1440>_<light|dark>.png`): `landing` (ospite), `home`, 
 `allenamenti-piani-aggiungi-compatto`, `allenamenti-piani-aggiungi-lista`,
 `allenamenti-piani-modifica-lista`, `allenamenti-esercizi` (pagina «Tutti gli esercizi», 13 esercizi con gli attrezzi e uno personale in revisione), `allenamenti-esercizi-cerca` (con «squat» cercato),
 `allenamenti-cronologia` (elenco con due mesi: un allenamento con giorno della scheda e record, uno senza giorno, uno senza durata),
-`storico-allenamento` (pagina di un allenamento), `storico-allenamento-elimina` (la stessa con la conferma aperta), `admin` (utente con `is_admin`),
+`storico-allenamento` (pagina di un allenamento), `storico-allenamento-elimina` (la stessa con la conferma aperta),
+`storico-calendario` (vista «Calendario»: ottobre con tre giorni allenati e il 22 scelto, col suo allenamento), `storico-calendario-vuoto` (il giorno scelto, oggi, senza allenamenti), `admin` (utente con `is_admin`),
 `focus-scelta-giorno`, `focus-allenamento`, `focus-recupero`, `focus-riscaldamento`, `focus-riepilogo`.
 
 Piano Gratis (account finto con `tier: free`, tetti di 2 schede e 4 giorni, risposta `dashboard` ridotta):

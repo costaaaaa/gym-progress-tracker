@@ -472,6 +472,10 @@ const SHOT_LIST = [
   ['allenamenti-cronologia', '/storico', { loggedIn: true, utente: 'storico', readyText: 'Gambe' }],
   // Pagina di un allenamento con giorno della scheda, record e dettaglio
   ['storico-allenamento', '/storico/250', { loggedIn: true, utente: 'storico', ready: 'Push A' }],
+  // Vista «Calendario»: ottobre 2026 con tre giorni allenati (15, 19 e 22), scelto il 22 col suo allenamento; senza ?giorno
+  // si apre su oggi (23 ottobre), che non ha allenamenti
+  ['storico-calendario', '/storico?vista=calendario&giorno=2026-10-22', { loggedIn: true, utente: 'storico', ready: 'Storico', readyText: 'Push A' }],
+  ['storico-calendario-vuoto', '/storico?vista=calendario', { loggedIn: true, utente: 'storico', readyText: 'Nessun allenamento in questo giorno.' }],
   ['admin', '/admin', { loggedIn: true, admin: true }],
 ];
 

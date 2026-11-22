@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, Box, Button, Card, CircularProgress, IconButton, Snackbar, Typography } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { format, subDays } from 'date-fns';
-import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import { isModuleActive } from '../../hooks/useModule';
@@ -31,6 +31,10 @@ const WorkoutPage = () => {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
+  // La riga dell'elenco o del calendario porta il suo percorso nello stato: ritorno, eliminazione e allenamento che non c'è
+  // tornano lì, con la vista, il mese e il giorno di prima
+  const { state } = useLocation();
+  const backPath = typeof state?.backTo === 'string' && /^\/storico(\?|$)/.test(state.backTo) ? state.backTo : '/storico';
   const { weightUnit, user } = useAuth();
   // Punti, streak e traguardi nelle anteprime sono del modulo Livelli: non attivo = non si mostrano
   const levelsOn = isModuleActive(user, 'levels');
@@ -44,10 +48,10 @@ const WorkoutPage = () => {
   const [openEditDate, setOpenEditDate] = useState(false);
   const [openDelete, setOpenDelete] = useState(false);
 
-  // Un allenamento che non c'è (o non è dell'utente) riporta all'elenco, ma solo a lettura finita e riuscita
+  // Un allenamento che non c'è (o non è dell'utente) riporta al percorso di ritorno (di base l'elenco), ma solo a lettura finita e riuscita
   useEffect(() => {
-    if (!loading && !loadFailed && !workout) navigate('/storico', { replace: true });
-  }, [loading, loadFailed, workout, navigate]);
+    if (!loading && !loadFailed && !workout) navigate(backPath, { replace: true });
+  }, [loading, loadFailed, workout, navigate, backPath]);
 
   // Il server sposta solo gli allenamenti degli ultimi 30 giorni
   const oldestMovable = useMemo(() => format(subDays(new Date(), 30), 'yyyy-MM-dd'), []);
@@ -62,7 +66,7 @@ const WorkoutPage = () => {
   // Alla conferma si torna all'elenco con l'id: è l'elenco a eliminare, con «Annulla» per 10 secondi
   const handleConfirmDelete = (toDelete) => {
     setOpenDelete(false);
-    navigate('/storico', { replace: true, state: { deleted: toDelete.id } });
+    navigate(backPath, { replace: true, state: { deleted: toDelete.id } });
   };
 
   const recordLine = (record) => {
@@ -71,7 +75,7 @@ const WorkoutPage = () => {
   };
 
   const back = (
-    <IconButton component={RouterLink} to="/storico" aria-label={t('nav.history')} edge="start" sx={{ width: 44, height: 44, color: 'text.primary' }}>
+    <IconButton component={RouterLink} to={backPath} aria-label={t('nav.history')} edge="start" sx={{ width: 44, height: 44, color: 'text.primary' }}>
       <ArrowBackIcon />
     </IconButton>
   );
