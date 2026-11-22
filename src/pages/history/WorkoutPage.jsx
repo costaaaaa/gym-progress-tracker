@@ -17,7 +17,8 @@ import { DANGER_TEXT, NEUTRAL_OUTLINED } from '../../utils/buttonStyles';
 import useWorkoutHistory from './useWorkoutHistory';
 import WorkoutDetail from './WorkoutDetail';
 import DeleteWorkoutDialog from './DeleteWorkoutDialog';
-import { durationText, volumeText, workoutTitle } from './workoutText';
+import { durationText, workoutTitle } from './workoutText';
+import { formatVolume } from '../formatVolume';
 
 const FULL_DAY = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
 const DATE_LOCKED_ID = 'workout-date-locked';
@@ -99,7 +100,7 @@ const WorkoutPage = () => {
     const summary = summaries[workout.id];
     const tiles = [
       [t('history.duration'), durationText(workout.duration_seconds) ?? '–'],
-      [t('history.volume'), volumeText(summary.volumeKg, weightUnit)],
+      [t('history.volume'), formatVolume(summary.volumeKg, weightUnit)],
       [t('history.sets'), String(summary.sets)],
     ];
     return (

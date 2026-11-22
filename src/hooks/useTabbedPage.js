@@ -26,7 +26,9 @@ export function useTabbedPage(tabs, { title, description, aliases = NO_ALIASES }
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get('tab');
-  const currentTab = aliases[requestedTab] || requestedTab || tabs[0].id;
+  // Solo le chiavi di `aliases`: `?tab=constructor` non è un alias
+  const isAlias = Object.hasOwn(aliases, requestedTab);
+  const currentTab = (isAlias ? aliases[requestedTab] : requestedTab) || tabs[0].id;
   const tabIndex = Math.max(tabs.findIndex((tab) => tab.id === currentTab), 0);
   const isValidTab = tabs.some((tab) => tab.id === currentTab);
   usePageMeta(`${t(tabs[tabIndex].label)} · ${title}`, description);
@@ -54,10 +56,10 @@ export function useTabbedPage(tabs, { title, description, aliases = NO_ALIASES }
   useEffect(() => {
     if (!isValidTab) {
       setSearchParams({ tab: tabs[0].id }, { replace: true });
-    } else if (aliases[requestedTab]) {
+    } else if (isAlias) {
       setSearchParams({ tab: currentTab }, { replace: true });
     }
-  }, [isValidTab, currentTab, requestedTab, aliases, tabs, setSearchParams]);
+  }, [isValidTab, isAlias, currentTab, tabs, setSearchParams]);
 
   return {
     currentTab,

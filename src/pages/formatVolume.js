@@ -1,5 +1,5 @@
-import { formatNumber } from '../../i18n/format';
-import { kgToTotal, weightUnitLabel } from '../../utils/weightUnit';
+import { formatNumber } from '../i18n/format';
+import { kgToTotal, weightUnitLabel } from '../utils/weightUnit';
 
 const NBSP = '\u00a0';
 

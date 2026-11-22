@@ -4,6 +4,7 @@ import { MUSCLE_GROUPS, isNeverTrained } from '../../utils/recoveryGroups';
 import { readyInDays } from '../../utils/recoveryDay';
 import { readyLabel } from '../../utils/recoveryStatus';
 import LockedRow from '../../components/LockedRow';
+import BasicMuscleRow from '../../components/BasicMuscleRow';
 import MuscleRow from './MuscleRow';
 
 const TITLE_ID = 'progress-muscles-title';
@@ -39,7 +40,7 @@ const MuscleCard = ({ stats }) => {
         {MUSCLE_GROUPS.map((muscle) => {
           const entry = recovery[muscle];
           const status = isNeverTrained(entry) ? null : entry?.status || null;
-          if (basic) return <MuscleRow key={muscle} muscle={muscle} status={status} recoveryLabel={basicText(t, status)} />;
+          if (basic) return <BasicMuscleRow key={muscle} muscle={muscle} status={status} label={basicText(t, status)} />;
           const days = entry?.ready_at ? readyInDays(entry.ready_at) : null;
           return (
             <MuscleRow

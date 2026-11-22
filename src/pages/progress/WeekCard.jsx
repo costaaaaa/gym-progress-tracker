@@ -1,7 +1,7 @@
 import { Box, Card, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import Delta from './Delta';
-import { formatVolume } from './volumeText';
+import { formatVolume } from '../formatVolume';
 
 const TITLE_ID = 'progress-week-title';
 
