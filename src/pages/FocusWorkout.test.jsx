@@ -22,11 +22,19 @@ vi.mock('../utils/celebrate', () => ({
   celebrate: () => {}, celebratePR: () => {}, celebrateStreak: () => {}, celebrateLevelUp: () => {},
 }));
 vi.mock('../utils/analytics', () => ({ track: mockTrack }));
+// La card mostra data, titolo, record (nome e tipo di ognuno) e settimane di streak: ciò che il riepilogo le passa
 vi.mock('../components/ShareCardDialog', () => ({
   default: ({ stats }) => (stats ? (
-    <div data-testid="share-card">
-      {`${stats.date.getFullYear()}-${stats.date.getMonth() + 1}-${stats.date.getDate()} ${stats.date.getHours()}:${stats.date.getMinutes()}`}
-    </div>
+    <>
+      <div data-testid="share-card">
+        {`${stats.date.getFullYear()}-${stats.date.getMonth() + 1}-${stats.date.getDate()} ${stats.date.getHours()}:${stats.date.getMinutes()}`}
+      </div>
+      <div data-testid="share-title">{stats.title}</div>
+      <ul data-testid="share-records">
+        {[stats.record, ...stats.recordList].filter(Boolean).map((r) => <li key={r.name}>{`${r.name}|${r.type}`}</li>)}
+      </ul>
+      <div data-testid="share-streak">{stats.streakWeeks}</div>
+    </>
   ) : null),
 }));
 vi.mock('../utils/workoutTime', async (importOriginal) => ({ ...(await importOriginal()), currentTimeZone: vi.fn() }));
@@ -519,8 +527,51 @@ describe('ripresa dal riepilogo: il tempo a pagina chiusa è una pausa', () => {
     expect((await save()).duration_seconds).toBe(5700);
   });
 
+  it('due chiusure nel riepilogo senza aggiungere niente: le pause si sommano nella bozza e la durata resta 1 h', async () => {
+    await reachSummaryAt19();
+    closeApp();
+    await reopen(at(21, 0));
+    expect(draft().pausedMs).toBe(2 * 3600 * 1000);
+    closeApp();
+
+    await reopen(at(23, 0), { label: 'Continuo ora' });
+    expect(draft().pausedMs).toBe(4 * 3600 * 1000);
+    expect(screen.getByText('60:00')).toBeTruthy();
+    expect((await save()).duration_seconds).toBe(3600);
+  });
+
   describe('già finita il giorno scelto', () => {
     const reopenAsFinished = (when) => reopen(when, { label: 'L\'avevo già finito', finishedOn: '2026-10-19' });
+
+    it('con una pausa già in bozza la fine è al netto della pausa: 1 h 05, fine alle 19:05', async () => {
+      storeDraft({
+        idempotencyKey: 'chiave-con-pausa',
+        lastActivityAt: at(21, 5).toISOString(),
+        pausedMs: 2 * 3600 * 1000,
+        summaryEndAt: at(21, 5).toISOString(),
+      });
+      await reopenAsFinished(at(10, 0, 21));
+
+      expect(screen.getByText('65:00')).toBeTruthy();
+      expect(await save()).toMatchObject({
+        start_time: at(18, 0, 19).toISOString(),
+        ended_at: at(19, 5, 19).toISOString(),
+      });
+    });
+
+    it('riaperta alle 21, chiusa nel riepilogo e riaperta come già finita: la fine resta alle 19:00, mai prima dell\'inizio', async () => {
+      await reachSummaryAt19();
+      closeApp();
+      await reopen(at(21, 0));
+      closeApp();
+
+      await reopenAsFinished(at(10, 0, 21));
+      expect(screen.getByText('60:00')).toBeTruthy();
+      expect(await save()).toMatchObject({
+        start_time: at(18, 0, 19).toISOString(),
+        ended_at: at(19, 0, 19).toISOString(),
+      });
+    });
 
     it('senza una fine nota (né fine del riepilogo né ultima serie) ended_at è null e la durata mostrata 0', async () => {
       storeDraft({ lastActivityAt: null });
@@ -3094,11 +3145,22 @@ describe('riepilogo di fine allenamento (F5)', () => {
       expect(screen.getByRole('button', { name: 'Fine' })).toBeTruthy();
     });
 
-    it('nessun avviso a scomparsa con livello o traguardi: li dice la regione di stato, una volta', async () => {
+    it('nessun avviso a scomparsa con livello o traguardi: li dice la regione di stato, una volta e senza riscriverli', async () => {
       await saveWith({ leveled_up: true, new_level: 4, level: 4, unlocked_achievements: [{ key: 'primo', label: 'Primo' }] });
+      const text = 'Livello 4 raggiunto! 🎉 · Nuovo traguardo: Primo';
       expect(screen.queryByRole('alert')).toBeNull();
-      expect(status()).toBe('Livello 4 raggiunto! 🎉 · Nuovo traguardo: Primo');
+      expect(status()).toBe(text);
       expect(screen.getAllByText(/Livello 4 raggiunto/)).toHaveLength(2);
+
+      // Un nuovo render (si apre la card, passa il tempo) non tocca la regione: il lettore di schermo non lo riannuncia
+      const changes = [];
+      const observer = new MutationObserver((records) => changes.push(...records));
+      observer.observe(screen.getByRole('status'), { childList: true, characterData: true, subtree: true });
+      click('Condividi');
+      await advance(5);
+      observer.disconnect();
+      expect(changes).toEqual([]);
+      expect(status()).toBe(text);
     });
 
     it('niente annuncio per la sola streak', async () => {
@@ -3107,7 +3169,49 @@ describe('riepilogo di fine allenamento (F5)', () => {
     });
   });
 
+  describe('tema scuro', () => {
+    // Valori del tema scuro: carta #141416, testo bianco, testo secondario #a0a0a2, arancio #f59e0b, filetto bianco all'8%
+    const PAPER = 'rgb(20, 20, 22)';
+    const WHITE = 'rgb(255, 255, 255)';
+    const GREY_DARK = 'rgb(160, 160, 162)';
+    const ORANGE = 'rgb(245, 158, 11)';
+    const LINE = 'rgba(255, 255, 255, 0.08)';
+    const css = (el) => getComputedStyle(el);
+
+    it('«Record di oggi»: carta, titolo, nome, testo, trofeo e filetto sono i colori del tema scuro', async () => {
+      localStorage.setItem('themeMode', 'dark');
+      lastTime([{ weight: 60, reps: '8' }]);
+      await goSummary([[80, '8']]);
+      const [li] = within(recordsBox()).getAllByRole('listitem');
+      const [name, what] = li.lastElementChild.children;
+      expect(css(recordsBox()).backgroundColor).toBe(PAPER);
+      expect(css(screen.getByRole('heading', { level: 2, name: 'Record di oggi' })).color).toBe(GREY_DARK);
+      expect(css(name).color).toBe(WHITE);
+      expect(css(what).color).toBe(GREY_DARK);
+      expect(css(li.querySelector('[data-testid="EmojiEventsIcon"]')).color).toBe(ORANGE);
+      expect(css(li).borderTopColor).toBe(LINE);
+    });
+
+    it('riquadro «Streak, livello e traguardi»: carta, titolo, festa con la fiamma, righe e motivo in grigio', async () => {
+      localStorage.setItem('themeMode', 'dark');
+      responses['record_workout.php'] = () => json({ success: true, id: 77, new_longest: true, current_streak_weeks: 3, level: 4, xp_gained: 80, xp_session_awarded: false, xp_session_reason: 'too_short' });
+      await goSummary([[80, '8']]);
+      await saveNow();
+      const box = screen.getByRole('heading', { level: 2, name: 'Streak, livello e traguardi' }).closest('.MuiPaper-root');
+      const rows = within(box).getAllByRole('listitem');
+      expect(css(box).backgroundColor).toBe(PAPER);
+      expect(css(screen.getByRole('heading', { level: 2, name: 'Streak, livello e traguardi' })).color).toBe(GREY_DARK);
+      expect(css(within(box).getByText('Nuovo record! 🏆 3 settimane consecutive')).color).toBe(WHITE);
+      expect(css(rows[0].querySelector('[data-testid="LocalFireDepartmentIcon"]')).color).toBe(ORANGE);
+      expect(css(within(box).getByText('Livello 4 · +80 punti')).color).toBe(WHITE);
+      expect(css(within(box).getByText(/^Nessun XP di sessione/)).color).toBe(GREY_DARK);
+      expect(css(rows[1]).borderTopColor).toBe(LINE);
+    });
+  });
+
   describe('pulsanti', () => {
+    // Account Pro: può cambiare e aggiungere esercizi durante l'allenamento
+    const proUser = () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
     it('dopo il salvataggio: «Condividi» e «Fine», niente «Vai allo storico», «Torna alla home» né «Riepilogo sessione»', async () => {
       await goSummary([[80, '8']]);
       expect(screen.queryByRole('button', { name: 'Condividi' })).toBeNull();
@@ -3140,6 +3244,35 @@ describe('riepilogo di fine allenamento (F5)', () => {
       expect([getComputedStyle(back()).width, getComputedStyle(back()).height]).toEqual(['44px', '44px']);
     });
 
+    it('«Condividi» passa alla card titolo, record e settimane di streak: sono quelli a schermo', async () => {
+      responses['workout_history/read.php'] = () => json({ records: [{ id: 1, date: '2026-10-13', exercises: [
+        { exercise_id: 3, name: 'Panca piana', sets: [{ weight: 60, reps: '8' }] },
+        { exercise_id: 4, name: 'Croci', sets: [{ weight: 0, reps: '10' }] },
+      ] }] });
+      responses['record_workout.php'] = () => json({ success: true, id: 77, new_longest: true, current_streak_weeks: 3 });
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        ...savedDraft, selectedDay: fullDay, selectedDayId: 2, phase: 'summary',
+        completedSets: {
+          9: [{ setNumber: 1, weight: 70, reps: '8', intensity_technique: '', is_warmup: false }],
+          10: [{ setNumber: 1, weight: 0, reps: '15', intensity_technique: '', is_warmup: false }],
+        },
+      }));
+      await mount();
+      click('Riprendi allenamento');
+      await saveNow();
+      const onScreen = within(recordsBox()).getAllByRole('listitem').map((li) => {
+        const [name, what] = [...li.lastElementChild.children].map((el) => el.textContent);
+        return `${name}|${what.startsWith('Record di peso') ? 'weight' : 'reps'}`;
+      });
+      expect(onScreen).toEqual(['Panca piana|weight', 'Croci|reps']);
+      const streakOnScreen = Number(/\d+/.exec(within(screen.getByRole('heading', { name: 'Streak, livello e traguardi' }).closest('.MuiPaper-root')).getAllByRole('listitem')[0].textContent)[0]);
+
+      click('Condividi');
+      expect(screen.getByTestId('share-title').textContent).toBe('Push Pull · Push completo');
+      expect(within(screen.getByTestId('share-records')).getAllByRole('listitem').map((li) => li.textContent).sort()).toEqual([...onScreen].sort());
+      expect(screen.getByTestId('share-streak').textContent).toBe(String(streakOnScreen));
+    });
+
     it('«Fine» porta alla Home', async () => {
       await goSummary([[80, '8']]);
       await saveNow();
@@ -3148,7 +3281,7 @@ describe('riepilogo di fine allenamento (F5)', () => {
     });
 
     it('prima del salvataggio non c\'è «Aggiungi esercizio», nemmeno con la funzione Plus', async () => {
-      responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
+      responses['user/read.php'] = proUser;
       await goSummary([[80, '8']]);
       expect(screen.queryByRole('button', { name: /^Aggiungi esercizio/ })).toBeNull();
       expect(screen.getByRole('button', { name: 'Salva allenamento' })).toBeTruthy();
@@ -3156,7 +3289,7 @@ describe('riepilogo di fine allenamento (F5)', () => {
     });
 
     it('il picker in aggiunta, aperto dal «⋯», accetta "8" e "8-10" e rifiuta Ripetizioni o Serie non valide', async () => {
-      responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
+      responses['user/read.php'] = proUser;
       await startDay('Push');
       await chooseAction('Aggiungi esercizio');
       fireEvent.click(screen.getByText('Croci ai cavi'));
@@ -3183,8 +3316,29 @@ describe('riepilogo di fine allenamento (F5)', () => {
       expect(addButton().disabled).toBe(false);
     });
 
+    it('l\'esercizio aggiunto dal «⋯» ha l\'obiettivo scritto nel picker su ogni serie', async () => {
+      responses['user/read.php'] = proUser;
+      await startDay('Push');
+      await chooseAction('Aggiungi esercizio');
+      fireEvent.click(screen.getByText('Croci ai cavi'));
+      const dialog = within(screen.getByRole('dialog'));
+      fireEvent.change(dialog.getByLabelText('Ripetizioni'), { target: { value: '6-8' } });
+      fireEvent.change(dialog.getByLabelText('Serie'), { target: { value: '3' } });
+      click('Aggiungi');
+      await advance(0.5);
+      // Messo subito dopo la Panca: finite le sue due serie si arriva all'esercizio aggiunto
+      doSet();
+      click('Salta timer');
+      doSet();
+      await advance(0.5);
+
+      expect(screen.getByRole('heading', { name: 'Croci ai cavi' })).toBeTruthy();
+      expect(screen.getByText('Serie 1 di 3')).toBeTruthy();
+      expect(screen.getByLabelText('Ripetizioni').getAttribute('placeholder')).toBe('6-8');
+    });
+
     it('nel «⋯» della serie «Aggiungi esercizio» c\'è ancora', async () => {
-      responses['user/read.php'] = () => json({ email_verified: true, email_verification: null, pending_email: null, tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null, rest_timer_enabled: true, features: ['focus_session_edit'] });
+      responses['user/read.php'] = proUser;
       await startDay('Push');
       openMenu();
       expect(menuItem('Aggiungi esercizio')).toBeTruthy();
