@@ -213,7 +213,8 @@ describe('riga «Tutti gli esercizi»', () => {
 
   it('sotto il titolo dice «Cerca nel catalogo», ha una freccia a destra ed è alta almeno 64px', async () => {
     await mount();
-    expect(row().getAttribute('aria-describedby')).toBeTruthy();
+    expect(document.getElementById(row().getAttribute('aria-describedby')).textContent).toBe('Cerca nel catalogo');
+    expect(document.getElementById(row().getAttribute('aria-labelledby')).textContent).toBe('Tutti gli esercizi');
     expect(within(row()).getByText('Cerca nel catalogo')).toBeTruthy();
     expect(row().querySelector('svg')).toBeTruthy();
     expect(parseFloat(getComputedStyle(row()).minHeight)).toBeGreaterThanOrEqual(64);

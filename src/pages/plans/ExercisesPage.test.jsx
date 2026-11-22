@@ -6,6 +6,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import ExercisesPage from './ExercisesPage';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
 import { json, expectNoNestedContainer, textsBelow16pxExceptActiveBadge } from '../../test/dom';
+import i18n from '../../i18n';
 import { unnamedControls } from '../../test/accessibleNames';
 
 const rec = (id, name, muscle_group, equipment, over = {}) => ({
@@ -46,11 +47,13 @@ const mountLoaded = async (handler) => {
   await mount(handler);
   await screen.findByRole('list');
 };
-const names = () => within(screen.getByRole('list')).getAllByRole('listitem').map((li) => li.firstChild.textContent);
+const nameOf = (li) => within(li).getByTestId('nome-esercizio');
+const names = () => within(screen.getByRole('list')).getAllByRole('listitem').map((li) => nameOf(li).textContent);
 const search = (text) => fireEvent.change(screen.getByRole('textbox', { name: 'Cerca un esercizio' }), { target: { value: text } });
 const chip = (name) => screen.getByRole('button', { name });
 
-afterEach(() => {
+afterEach(async () => {
+  await i18n.changeLanguage('it');
   vi.unstubAllGlobals();
   localStorage.clear();
 });
@@ -107,7 +110,7 @@ describe('elenco', () => {
   it('sotto il nome: gruppo muscolare e attrezzo; l\'etichetta solo per un personale non ancora approvato', async () => {
     await mountLoaded();
     const rows = within(screen.getByRole('list')).getAllByRole('listitem');
-    const byName = (name) => rows.find((li) => li.firstChild.textContent === name);
+    const byName = (name) => rows.find((li) => nameOf(li).textContent === name);
     expect(byName('Panca piana').textContent).toBe('Panca pianaPetto · Bilanciere');
     expect(byName('Trazioni').textContent).toBe('TrazioniSchiena · Corpo libero');
     expect(byName('Alzate laterali').textContent).toBe('Alzate lateraliSpalle');
@@ -129,8 +132,8 @@ describe('elenco', () => {
   it('il nome secondario è in text.secondary (#6b6663), quello principale in text.primary (#1a1816)', async () => {
     await mountLoaded();
     const row = within(screen.getByRole('list')).getAllByRole('listitem')[2];
-    expect(getComputedStyle(row.firstChild).color).toBe('rgb(26, 24, 22)');
-    expect(getComputedStyle(row.lastChild).color).toBe('rgb(107, 102, 99)');
+    expect(getComputedStyle(nameOf(row)).color).toBe('rgb(26, 24, 22)');
+    expect(getComputedStyle(within(row).getByTestId('dettaglio-esercizio')).color).toBe('rgb(107, 102, 99)');
   });
 });
 
@@ -139,6 +142,13 @@ describe('ricerca', () => {
     await mountLoaded();
     const field = screen.getByRole('textbox', { name: 'Cerca un esercizio' });
     expect(field.compareDocumentPosition(screen.getByRole('list')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('all\'inizio del campo c\'è l\'icona di ricerca, nascosta ai lettori di schermo', async () => {
+    await mountLoaded();
+    const icon = screen.getByRole('textbox', { name: 'Cerca un esercizio' }).closest('.MuiInputBase-root').querySelector('svg');
+    expect(icon.getAttribute('aria-hidden')).toBe('true');
+    expect(icon.parentElement.className).toContain('MuiInputAdornment-positionStart');
   });
 
   it('trova per nome mostrato, ordinando per pertinenza (prima chi inizia con il testo)', async () => {
@@ -175,6 +185,21 @@ describe('filtro per gruppo muscolare', () => {
     expect(within(group).getAllByRole('button').map((b) => b.textContent)).toEqual(['Tutti', 'Gambe', 'Petto', 'Schiena', 'Spalle']);
     expect(chip('Tutti').getAttribute('aria-pressed')).toBe('true');
     expect(chip('Petto').getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('in inglese i chip seguono l\'ordine alfabetico dell\'etichetta tradotta, non della chiave italiana', async () => {
+    await i18n.changeLanguage('en');
+    await mountLoaded();
+    const group = screen.getByRole('group', { name: 'Muscle group' });
+    expect(within(group).getAllByRole('button').map((b) => b.textContent)).toEqual(['All', 'Back', 'Chest', 'Legs', 'Shoulders']);
+  });
+
+  it('gruppi che differiscono solo per le maiuscole sono un chip solo, e il filtro li prende insieme', async () => {
+    await mountLoaded(ok([rec(1, 'Panca piana', 'petto', 'bilanciere'), rec(2, 'Croci', 'Petto', 'cavi'), rec(3, 'Squat', 'gambe', 'bilanciere')]));
+    const group = screen.getByRole('group', { name: 'Gruppo muscolare' });
+    expect(within(group).getAllByRole('button').map((b) => b.textContent)).toEqual(['Tutti', 'Gambe', 'Petto']);
+    fireEvent.click(chip('Petto'));
+    expect(names()).toEqual(['Croci', 'Panca piana']);
   });
 
   it('un gruppo senza esercizi non ha il chip', async () => {
@@ -259,6 +284,19 @@ describe('errore di lettura', () => {
     expect(calls()).toHaveLength(2);
     expect(screen.queryByRole('alert')).toBeNull();
     expect(names()).toHaveLength(6);
+  });
+
+  it('il 404 del catalogo vuoto (messaggio del server, senza success) è un elenco vuoto, senza «Riprova»', async () => {
+    await mount(() => Promise.resolve(json({ message: 'Nessun esercizio trovato.' }, 404)));
+    expect(await screen.findByText('Nessun esercizio trovato')).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Riprova' })).toBeNull();
+  });
+
+  it('un 404 che non è quello del catalogo vuoto (senza messaggio JSON) resta un errore', async () => {
+    await mount(() => Promise.resolve({ ok: false, status: 404, json: async () => { throw new Error('html'); } }));
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Riprova' })).toBeTruthy();
   });
 
   it('un errore senza messaggio del server non mostra «undefined»', async () => {

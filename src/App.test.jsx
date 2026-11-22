@@ -2,9 +2,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import App from './App';
+import { json } from './test/dom';
 import { ThemeModeProvider } from './context/ThemeModeContext';
 
-const json = (body, status = 200) => Promise.resolve(new Response(JSON.stringify(body), { status }));
+const reply = (body, status = 200) => Promise.resolve(json(body, status));
 
 beforeEach(() => {
   localStorage.setItem('isLoggedIn', 'true');
@@ -12,13 +13,13 @@ beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn((input) => {
     const url = String(input instanceof Request ? input.url : input);
     if (url.includes('exercise/read_all.php')) {
-      return json({ records: [{ id: 1, name: 'Panca piana', name_it: 'Panca piana', name_en: null, muscle_group: 'petto', equipment: 'bilanciere', is_mine: false, status: 'approved' }] });
+      return reply({ records: [{ id: 1, name: 'Panca piana', name_it: 'Panca piana', name_en: null, muscle_group: 'petto', equipment: 'bilanciere', is_mine: false, status: 'approved' }] });
     }
-    if (url.includes('workout/read_plans.php')) return json({ records: [{ id: 5, name: 'Push Pull', is_active: 1, days: [] }] });
+    if (url.includes('workout/read_plans.php')) return reply({ records: [{ id: 5, name: 'Push Pull', is_active: 1, days: [] }] });
     if (url.includes('user/read.php')) {
-      return json({ success: true, id: 7, username: 'mario', email: 'mario@example.com', pending_email: null, email_verified: true, email_verification: null, tier: 'free', tier_until: null, tier_last_day: null, signup_code: null });
+      return reply({ success: true, id: 7, username: 'mario', email: 'mario@example.com', pending_email: null, email_verified: true, email_verification: null, tier: 'free', tier_until: null, tier_last_day: null, signup_code: null });
     }
-    return json({ success: true });
+    return reply({ success: true });
   }));
 });
 afterEach(() => {
