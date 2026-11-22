@@ -8,7 +8,7 @@ Il kit è separato dall'app: ha un suo `package.json` e non tocca quello di `gym
 
 ## Script
 
-- `shots.mjs <cartella> [porta]`: 21 pagine, «Tutti gli esercizi» (2 immagini), la pagina di una scheda in modifica con i dialog dell'editor
+- `shots.mjs <cartella> [porta]`: 23 pagine, «Tutti gli esercizi» (2 immagini), la pagina di una scheda in modifica con i dialog dell'editor
   delle serie (4 immagini) e le 5 schermate del Focus, con 390 e 1440 px di larghezza e tema
   chiaro/scuro. Ogni schermata usa un contesto browser nuovo con orologio fisso
   (2026-10-23 10:00, Europe/Rome), `reducedMotion: reduce`, animazioni CSS azzerate, font pronti
@@ -22,7 +22,7 @@ Il kit è separato dall'app: ha un suo `package.json` e non tocca quello di `gym
   Esce con 1 se c'è almeno una differenza o un file mancante.
 
 Pagine (file `<nome>_<390|1440>_<light|dark>.png`): `landing` (ospite), `home`, `home-nuovo` (utente senza scheda né allenamenti), `progressi`, `progressi-nuovo` (un solo allenamento: ogni esercizio è "Nuovo"), `misure`,
-`progressi-esercizio` (pagina della panca: 12 sessioni con il carico che sale, grafico, record e cronologia),
+`volume` (tab Volume con il modulo Recupero attivo: la settimana e dodici muscoli: nove con serie, tre a zero, con recupero pronto, in recupero, affaticato o nessun dato), `volume-base` (la stessa con il modulo Recupero spento: solo la card della settimana), `progressi-esercizio` (pagina della panca: 12 sessioni con il carico che sale, grafico, record e cronologia),
 `account`, `profilo`, `gruppi`, `gruppo-dettaglio`, `allenamenti-piani` (elenco compatto, con la riga «Tutti gli esercizi» in fondo),
 `allenamenti-piani-ricche` (elenco con più schede), `allenamenti-piani-pagina` (pagina di una scheda attiva in lettura, con «Inizia»),
 `allenamenti-piani-pagina-non-attiva` (con «Rendi attiva»), `allenamenti-piani-pagina-ricche` (giorni con più di 4 esercizi, giorno vuoto),
@@ -35,7 +35,7 @@ Pagine (file `<nome>_<390|1440>_<light|dark>.png`): `landing` (ospite), `home`, 
 `focus-scelta-giorno`, `focus-allenamento`, `focus-recupero`, `focus-riscaldamento`, `focus-riepilogo`.
 
 Piano Gratis (account finto con `tier: free`, tetti di 2 schede e 4 giorni, risposta `dashboard` ridotta):
-`home-gratis`, `muscoli-gratis`, `allenamenti-piani-sola-lettura-schede` (elenco con l'avviso), `allenamenti-piani-sola-lettura-giorni` (pagina in modifica con l'avviso),
+`home-gratis`, `volume-gratis` (tab Volume con le righe con lucchetto), `allenamenti-piani-sola-lettura-schede` (elenco con l'avviso), `allenamenti-piani-sola-lettura-giorni` (pagina in modifica con l'avviso),
 `allenamenti-piani-limite`, `allenamenti-piani-nuova-gratis`, `allenamenti-piani-elimina-giorno` (dialog aperto dalla pagina),
 `focus-plus-allenamento`, `focus-plus-dialogo`. Tutte le altre pagine usano un account senza tetti
 (`tier: pro`, `dashboard` completo). Per scattare solo le nuove: terzo parametro con i loro nomi e cartella `after-gratis`.
@@ -43,7 +43,7 @@ Piano Gratis (account finto con `tier: free`, tetti di 2 schede e 4 giorni, risp
 Barra di navigazione: `barra-ventaglio-2` (senza modulo Misure: due voci), `barra-ventaglio-3` (tre voci),
 `barra-ventaglio-riprendi` (con un allenamento in corso: «Riprendi»), tutte con il bottone centrale aperto e
 solo sotto i 900 px; `barra-desktop-menu` (menu «Altre azioni» del bottone diviso, solo 1440). Le pagine
-Schede, Storico e Progressi stanno su `/schede`, `/storico` e `/progressi` (tab con `?tab=progress|muscles|body`); la pagina di una scheda su `/schede/<id>`, quella di un allenamento su `/storico/<id>`, quella di un esercizio su `/progressi/esercizi/<id>`.
+Schede, Storico e Progressi stanno su `/schede`, `/storico` e `/progressi` (tab con `?tab=progress|volume|body`); la pagina di una scheda su `/schede/<id>`, quella di un allenamento su `/storico/<id>`, quella di un esercizio su `/progressi/esercizi/<id>`.
 
 ## Prerequisiti
 

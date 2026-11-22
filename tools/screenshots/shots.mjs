@@ -307,6 +307,13 @@ const ATTIVO = {
   history: HISTORY,
   plans: [plan, planInactive],
   weekly: { workouts: 2, kg: 4820, reps: 118 },
+  // Serie della settimana per muscolo (53, contro 48 la settimana scorsa a quest'ora e 61 intera): nove muscoli con serie e tre a
+  // zero. Il recupero è quello di `recovery` (pronto, in recupero, affaticato); i muscoli senza voce restano «nessun dato»
+  sets: {
+    week: { petto: 12, schiena: 10, spalle: 6, bicipiti: 4, tricipiti: 3, addome: 0, quadricipiti: 8, femorali: 5, glutei: 3, adduttori: 2, abduttori: 0, polpacci: 0 },
+    previous_to_date: { petto: 8, schiena: 8, spalle: 4, bicipiti: 4, tricipiti: 3, addome: 3, quadricipiti: 9, femorali: 4, glutei: 3, adduttori: 0, abduttori: 0, polpacci: 2 },
+    previous_total: 61,
+  },
   recovery,
   streak: { current_streak_weeks: 3, longest_streak_weeks: 5, this_week: { count: 2, goal: 3, completed: false } },
   profile: PROFILE_ATTIVO,
@@ -344,7 +351,7 @@ const fixtures = [
   ['user/consent.php', () => ({ success: true, consents: { terms: { granted: true }, health_data: { granted: true } } })],
   ['workout_history/read.php', ({ u }) => ({ success: true, records: u.history })],
   ['workout/read_plans.php', ({ plans, u }) => ({ success: true, records: plans ? PLAN_SETS[plans] : u.plans })],
-  ['workout_stats/dashboard.php', ({ u, gratis }) => gratis ? ({
+  ['workout_stats/dashboard.php', ({ u, gratis, sets }) => gratis ? ({
     // Piano Gratis: solo il totale delle serie e lo stato pronto / in recupero, senza percentuali né date
     success: true, detail: 'basic', weekly_workouts: u.weekly.workouts, weekly_goal: 3,
     weekly_volume: { total_weight: u.weekly.kg, total_reps: u.weekly.reps }, weekly_sets: { total: 14 },
@@ -352,6 +359,8 @@ const fixtures = [
   }) : ({
     success: true, detail: 'full', weekly_workouts: u.weekly.workouts, weekly_goal: 3,
     weekly_volume: { total_weight: u.weekly.kg, total_reps: u.weekly.reps }, recovery: u.recovery,
+    // Le serie per muscolo le mandano solo i flussi della tab Volume (`sets`): le altre schermate restano com'erano
+    ...(sets ? { weekly_sets: u.sets } : {}),
   })],
   ['gamification/streak.php', ({ u }) => ({ success: true, ...u.streak })],
   ['gamification/profile.php', ({ u }) => u.profile],
@@ -452,7 +461,7 @@ async function openPage(vp, theme, opts, tag) {
   await ctx.route('**/backend/**', (route) => {
     const url = route.request().url();
     const hit = fixtures.find(([key]) => url.includes(key));
-    const body = hit ? hit[1]({ admin: opts.admin === true, gratis: opts.gratis === true, email: opts.email, tierState: opts.tierState, codice: opts.codice, modules: opts.modules, url, plans: opts.plans, catalog: opts.catalog, u: UTENTI[opts.utente ?? 'attivo'] }) : fallback;
+    const body = hit ? hit[1]({ admin: opts.admin === true, gratis: opts.gratis === true, email: opts.email, tierState: opts.tierState, codice: opts.codice, modules: opts.modules, url, plans: opts.plans, catalog: opts.catalog, sets: opts.sets === true, u: UTENTI[opts.utente ?? 'attivo'] }) : fallback;
     const { __status: status = 200, ...payload } = body;
     route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(payload) });
   });
@@ -469,6 +478,10 @@ const SHOT_LIST = [
   ['progressi', '/progressi?tab=progress', { loggedIn: true }],
   ['progressi-nuovo', '/progressi?tab=progress', { loggedIn: true, utente: 'un-allenamento' }],
   ['misure', '/progressi?tab=body', { loggedIn: true }],
+  // Tab Volume: con il modulo Recupero attivo (card «Questa settimana» e «Per muscolo») e con il modulo spento (solo la card
+  // della settimana)
+  ['volume', '/progressi?tab=volume', { loggedIn: true, sets: true, readyText: 'Per muscolo' }],
+  ['volume-base', '/progressi?tab=volume', { loggedIn: true, sets: true, modules: { recovery: false }, readyText: 'Questa settimana' }],
   // Pagina di un esercizio (la panca): 12 sessioni, grafico in salita, record e cronologia
   ['progressi-esercizio', '/progressi/esercizi/3', { loggedIn: true, utente: 'progressi', ready: 'Panca piana' }],
   ['account', '/account', { loggedIn: true }],
@@ -631,7 +644,7 @@ for (const vp of viewports) {
     });
 
     // Piano Gratis: schermate con i limiti, le righe con lucchetto e la sola lettura (account `gratis`)
-    for (const [name, url] of [['home-gratis', '/'], ['muscoli-gratis', '/progressi?tab=muscles']]) {
+    for (const [name, url] of [['home-gratis', '/'], ['volume-gratis', '/progressi?tab=volume']]) {
       if (!want(name)) continue;
       await attempt(tag, name, async () => {
         const { ctx, page } = await openPage(vp, theme, { loggedIn: true, gratis: true }, tag);
