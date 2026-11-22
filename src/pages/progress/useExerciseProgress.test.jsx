@@ -12,7 +12,7 @@ const session = (id, when, weight) => ({ id, ...when, exercises: [{ exercise_id:
 const catalog = [{ id: 1, name: 'Panca piana', muscle_group: 'Petto' }];
 const records = [session(1, day(10), 80), session(2, day(2), 90)];
 
-// `reply` decide la risposta di ogni lettura; ogni lettura può anche fallire con un errore di rete
+// `exercises` e `history` decidono la risposta delle due letture; ognuna può anche fallire con un errore di rete
 const stubFetch = ({ exercises = () => json({ records: catalog }), history = () => json({ records }) } = {}) => {
   vi.stubGlobal('fetch', vi.fn((url) => {
     try { return Promise.resolve(url.includes('read_all.php') ? exercises() : history()); } catch (error) { return Promise.reject(error); }

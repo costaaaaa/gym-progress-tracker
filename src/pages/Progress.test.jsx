@@ -360,6 +360,17 @@ describe('preferiti', () => {
     expect(chip()).toBeNull();
     expect(screen.getAllByRole('listitem')).toHaveLength(5);
   });
+
+  it('senza più preferiti il filtro torna spento: una nuova stella dà il chip non premuto e l\'elenco intero', async () => {
+    localStorage.setItem('liftindex.progress.favorites', JSON.stringify(['1']));
+    await mount();
+    fireEvent.click(chip());
+    fireEvent.click(star('Panca piana'));
+    expect(chip()).toBeNull();
+    fireEvent.click(star('Squat con bilanciere'));
+    expect(chip().getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getAllByRole('listitem')).toHaveLength(5);
+  });
 });
 
 describe('ricerca', () => {

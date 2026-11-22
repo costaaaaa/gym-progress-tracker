@@ -56,12 +56,13 @@ describe('rotte dei Progressi', () => {
     render(<ThemeModeProvider><App /></ThemeModeProvider>);
     await screen.findByRole('heading', { level: 1, name: 'Progressi' }, { timeout: 3000 });
   };
-  const where = () => window.location.pathname + window.location.search;
+  const where = () => window.location.pathname + window.location.search + window.location.hash;
 
   it.each([
     ['/dashboard', '/progressi'],
     ['/dashboard?tab=body', '/progressi?tab=body'],
     ['/dashboard?tab=muscles', '/progressi?tab=muscles'],
+    ['/dashboard?tab=body#x', '/progressi?tab=body#x'],
     ['/progress', '/progressi?tab=progress'],
     ['/body-stats', '/progressi?tab=body'],
   ])('%s rimanda a %s', async (from, to) => {
