@@ -486,7 +486,14 @@ const SHOT_LIST = [
   ['volume-base', '/progressi?tab=volume', { loggedIn: true, sets: true, modules: { recovery: false }, readyText: 'Questa settimana' }],
   // Pagina di un esercizio (la panca): 12 sessioni, grafico in salita, record e cronologia
   ['progressi-esercizio', '/progressi/esercizi/3', { loggedIn: true, utente: 'progressi', ready: 'Panca piana' }],
+  // Account: l'elenco delle sei voci e, una per una, le sue pagine
   ['account', '/account', { loggedIn: true }],
+  ['account-profilo', '/account/profilo', { loggedIn: true }],
+  ['account-preferenze', '/account/preferenze', { loggedIn: true }],
+  ['account-moduli', '/account/moduli', { loggedIn: true }],
+  ['account-piano', '/account/piano', { loggedIn: true }],
+  ['account-dati', '/account/dati', { loggedIn: true }],
+  ['account-sicurezza', '/account/sicurezza', { loggedIn: true }],
   ['livelli', '/livelli', { loggedIn: true }],
   ['gruppi', '/gruppi', { loggedIn: true }],
   ['gruppo-dettaglio', '/gruppi/1', { loggedIn: true }],
@@ -750,9 +757,9 @@ for (const vp of viewports) {
     for (const [name, url, opts] of [
       ['email-striscia', '/', { loggedIn: true, email: 'da-confermare' }],
       ['email-blocco', '/', { loggedIn: true, email: 'bloccato' }],
-      ['email-account-da-confermare', '/account', { loggedIn: true, email: 'da-confermare' }],
-      ['email-account-confermata', '/account', { loggedIn: true, email: 'confermata' }],
-      ['email-account-cambio-in-attesa', '/account', { loggedIn: true, email: 'cambio-in-attesa' }],
+      ['email-account-da-confermare', '/account/profilo', { loggedIn: true, email: 'da-confermare' }],
+      ['email-account-confermata', '/account/profilo', { loggedIn: true, email: 'confermata' }],
+      ['email-account-cambio-in-attesa', '/account/profilo', { loggedIn: true, email: 'cambio-in-attesa' }],
     ]) {
       if (!want(name)) continue;
       await attempt(tag, name, async () => {
@@ -780,7 +787,7 @@ for (const vp of viewports) {
     if (want('email-dialogo-cambia-indirizzo')) await attempt(tag, 'email-dialogo-cambia-indirizzo', async () => {
       const { ctx, page } = await openPage(vp, theme, { loggedIn: true, email: 'da-confermare' }, tag);
       try {
-        await page.goto(`${base}/account`, { waitUntil: 'domcontentloaded' });
+        await page.goto(`${base}/account/profilo`, { waitUntil: 'domcontentloaded' });
         await page.getByRole('button', { name: 'Cambia indirizzo' }).click();
         const dialog = page.getByRole('dialog');
         await dialog.waitFor();
@@ -793,10 +800,10 @@ for (const vp of viewports) {
     // Codici di registrazione: registrazione con il campo aperto (e il codice controllato o rifiutato), livello in Account, sezione admin
     for (const [name, url, opts] of [
       ['codici-registrazione-campo', '/register?code=PRIMAVERA-26', { loggedIn: false }],
-      ['codici-account-gratis', '/account', { loggedIn: true, tierState: 'gratis' }],
-      ['codici-account-plus', '/account', { loggedIn: true, tierState: 'plus' }],
-      ['codici-account-attesa', '/account', { loggedIn: true, tierState: 'attesa', email: 'da-confermare' }],
-      ['codici-account-non-applicato', '/account', { loggedIn: true, tierState: 'missed' }],
+      ['codici-account-gratis', '/account/piano', { loggedIn: true, tierState: 'gratis' }],
+      ['codici-account-plus', '/account/piano', { loggedIn: true, tierState: 'plus' }],
+      ['codici-account-attesa', '/account/piano', { loggedIn: true, tierState: 'attesa', email: 'da-confermare' }],
+      ['codici-account-non-applicato', '/account/piano', { loggedIn: true, tierState: 'missed' }],
     ]) {
       if (!want(name)) continue;
       await attempt(tag, name, async () => {
