@@ -456,9 +456,9 @@ const SHOT_LIST = [
   ['landing', '/', { loggedIn: false }],
   ['home', '/', { loggedIn: true }],
   ['home-nuovo', '/', { loggedIn: true, utente: 'nuovo' }],
-  ['progressi', '/dashboard?tab=progress', { loggedIn: true }],
-  ['progressi-nuovo', '/dashboard?tab=progress', { loggedIn: true, utente: 'un-allenamento' }],
-  ['misure', '/dashboard?tab=body', { loggedIn: true }],
+  ['progressi', '/progressi?tab=progress', { loggedIn: true }],
+  ['progressi-nuovo', '/progressi?tab=progress', { loggedIn: true, utente: 'un-allenamento' }],
+  ['misure', '/progressi?tab=body', { loggedIn: true }],
   ['account', '/account', { loggedIn: true }],
   ['profilo', '/profilo', { loggedIn: true }],
   ['gruppi', '/gruppi', { loggedIn: true }],
@@ -619,7 +619,7 @@ for (const vp of viewports) {
     });
 
     // Piano Gratis: schermate con i limiti, le righe con lucchetto e la sola lettura (account `gratis`)
-    for (const [name, url] of [['home-gratis', '/'], ['muscoli-gratis', '/dashboard?tab=muscles']]) {
+    for (const [name, url] of [['home-gratis', '/'], ['muscoli-gratis', '/progressi?tab=muscles']]) {
       if (!want(name)) continue;
       await attempt(tag, name, async () => {
         const { ctx, page } = await openPage(vp, theme, { loggedIn: true, gratis: true }, tag);

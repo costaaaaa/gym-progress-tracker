@@ -68,7 +68,7 @@ const BodyBlock = ({ today, weightUnit = 'kg', large = false }) => {
   return (
     <BlockShell
       title={t('home.block.body_title')}
-      to="/dashboard?tab=body"
+      to="/progressi?tab=body"
       status={status}
       summary={summary}
       sign={spark ? <Spark values={values} width={56} height={24} /> : null}

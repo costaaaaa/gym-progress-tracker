@@ -27,7 +27,7 @@ const navItems = [
   { label: 'nav.home', path: '/' },
   { label: 'nav.plans', path: '/schede' },
   { label: 'nav.history', path: '/storico' },
-  { label: 'nav.progress', path: '/dashboard' },
+  { label: 'nav.progress', path: '/progressi' },
 ];
 
 

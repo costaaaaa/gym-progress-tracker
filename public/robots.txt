@@ -5,6 +5,7 @@ Disallow: /workouts
 Disallow: /schede
 Disallow: /storico
 Disallow: /dashboard
+Disallow: /progressi
 Disallow: /profilo
 Disallow: /gruppi
 Disallow: /entra

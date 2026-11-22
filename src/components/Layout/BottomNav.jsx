@@ -75,7 +75,7 @@ const BottomNav = () => {
   if (location.pathname === '/focus') return null;
 
   const isActive = (path) => location.pathname === path;
-  // Schede e allenamenti hanno una pagina ciascuno: «Schede» e «Storico» restano attive anche su /schede/<id> e /storico/<id>
+  // Schede, allenamenti ed esercizi hanno una pagina ciascuno: «Schede», «Storico» e «Progressi» restano attive anche su /schede/<id>, /storico/<id> e /progressi/esercizi/<id>
   const isUnder = (path) => isActive(path) || location.pathname.startsWith(`${path}/`);
 
   return (
@@ -130,7 +130,7 @@ const BottomNav = () => {
       </ButtonBase>
 
       <NavItem path="/storico" label={t('nav.history')} Icon={HistoryIcon} active={isUnder('/storico')} />
-      <NavItem path="/dashboard" label={t('nav.progress')} Icon={EqualizerIcon} active={isActive('/dashboard')} />
+      <NavItem path="/progressi" label={t('nav.progress')} Icon={EqualizerIcon} active={isUnder('/progressi')} />
 
       <CenterFan open={fanOpen} onClose={() => setFanOpen(false)} items={actions} />
     </Box>
