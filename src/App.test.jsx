@@ -1,6 +1,6 @@
 // Le rotte delle Schede: «esercizi» è una pagina a sé, non l'id di una scheda.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import App from './App';
 import { json } from './test/dom';
 import { ThemeModeProvider } from './context/ThemeModeContext';
@@ -14,6 +14,9 @@ beforeEach(() => {
     const url = String(input instanceof Request ? input.url : input);
     if (url.includes('exercise/read_all.php')) {
       return reply({ records: [{ id: 1, name: 'Panca piana', name_it: 'Panca piana', name_en: null, muscle_group: 'petto', equipment: 'bilanciere', is_mine: false, status: 'approved' }] });
+    }
+    if (url.includes('workout_history/read.php')) {
+      return reply({ records: [{ id: 90, date: '2026-10-20 10:00:00', started_at: '2026-10-20T08:00:00.000Z', exercises: [{ exercise_id: 1, name: 'Panca piana', sets: [{ weight: 80, reps: 5 }] }] }] });
     }
     if (url.includes('workout/read_plans.php')) return reply({ records: [{ id: 5, name: 'Push Pull', is_active: 1, days: [] }] });
     if (url.includes('user/read.php')) {
@@ -43,5 +46,46 @@ describe('rotte delle Schede', () => {
     render(<ThemeModeProvider><App /></ThemeModeProvider>);
     expect(await screen.findByRole('heading', { level: 1, name: 'Push Pull' }, { timeout: 3000 })).toBeTruthy();
     expect(screen.queryByRole('heading', { name: 'Tutti gli esercizi' })).toBeNull();
+  }, 10000);
+});
+
+// La pagina dei Progressi sta a /progressi; gli indirizzi di prima rimandano lì con la stessa tab
+describe('rotte dei Progressi', () => {
+  const open = async (path) => {
+    window.history.pushState({}, '', path);
+    render(<ThemeModeProvider><App /></ThemeModeProvider>);
+    await screen.findByRole('heading', { level: 1, name: 'Progressi' }, { timeout: 3000 });
+  };
+  const where = () => window.location.pathname + window.location.search;
+
+  it.each([
+    ['/dashboard', '/progressi'],
+    ['/dashboard?tab=body', '/progressi?tab=body'],
+    ['/dashboard?tab=muscles', '/progressi?tab=muscles'],
+    ['/progress', '/progressi?tab=progress'],
+    ['/body-stats', '/progressi?tab=body'],
+  ])('%s rimanda a %s', async (from, to) => {
+    await open(from);
+    await waitFor(() => expect(where()).toBe(to));
+  }, 10000);
+
+  it('/progressi?tab=body apre la tab Misure e resta lì', async () => {
+    await open('/progressi?tab=body');
+    expect((await screen.findByRole('tab', { name: 'Misure' })).getAttribute('aria-selected')).toBe('true');
+    expect(where()).toBe('/progressi?tab=body');
+  }, 10000);
+
+  it('/progressi/esercizi/1 è la pagina dell\'esercizio e l\'indirizzo resta quello', async () => {
+    window.history.pushState({}, '', '/progressi/esercizi/1');
+    render(<ThemeModeProvider><App /></ThemeModeProvider>);
+    expect(await screen.findByRole('heading', { level: 1, name: 'Panca piana' }, { timeout: 3000 })).toBeTruthy();
+    expect(where()).toBe('/progressi/esercizi/1');
+  }, 10000);
+
+  it('un esercizio che non c\'è riporta a /progressi', async () => {
+    window.history.pushState({}, '', '/progressi/esercizi/999');
+    render(<ThemeModeProvider><App /></ThemeModeProvider>);
+    await screen.findByRole('heading', { level: 1, name: 'Progressi' }, { timeout: 3000 });
+    expect(where()).toBe('/progressi');
   }, 10000);
 });

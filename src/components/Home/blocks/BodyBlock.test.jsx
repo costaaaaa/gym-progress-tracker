@@ -20,7 +20,7 @@ describe('blocco «Peso»', () => {
     stubFetch(server());
     renderBlock(<BodyBlock today={TODAY} weightUnit="kg" />);
     const link = (await screen.findByText('78,4 kg · -0,6 kg nell\'ultimo mese')).closest('a');
-    expect(link.getAttribute('href')).toBe('/dashboard?tab=body');
+    expect(link.getAttribute('href')).toBe('/progressi?tab=body');
     expect(screen.getByRole('heading', { level: 2, name: 'Peso' })).toBeTruthy();
     const line = link.querySelector('svg polyline');
     expect(line.closest('svg').getAttribute('aria-hidden')).toBe('true');
@@ -67,7 +67,7 @@ describe('blocco «Peso»', () => {
     stubFetch(server([]));
     renderBlock(<BodyBlock today={TODAY} large />);
     const text = await screen.findByText('Aggiungi la prima misura');
-    expect(text.closest('a').getAttribute('href')).toBe('/dashboard?tab=body');
+    expect(text.closest('a').getAttribute('href')).toBe('/progressi?tab=body');
     expect(document.querySelector('svg polyline')).toBeNull();
   });
 
@@ -111,7 +111,7 @@ describe('blocco «Peso»', () => {
     stubFetch({ 'user_stats/read.php': body });
     renderBlock(<BodyBlock today={TODAY} />);
     expect(await screen.findByText('Dati non disponibili al momento.')).toBeTruthy();
-    expect(screen.getByRole('link').getAttribute('href')).toBe('/dashboard?tab=body');
+    expect(screen.getByRole('link').getAttribute('href')).toBe('/progressi?tab=body');
   });
 
   it('senza `today` (dashboard in errore): «oggi» è l\'ultima data delle misure', async () => {
@@ -130,7 +130,7 @@ describe('blocco «Peso»', () => {
     stubFetch(server());
     renderBlock(<BodyBlock today={TODAY} />);
     fireEvent.click((await screen.findByText(/78,4 kg/)).closest('a'));
-    expect(screen.getByTestId('where').textContent).toBe('/dashboard?tab=body');
+    expect(screen.getByTestId('where').textContent).toBe('/progressi?tab=body');
   });
 });
 
