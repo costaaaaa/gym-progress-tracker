@@ -137,6 +137,19 @@ const CATALOG = [
   { id: 8, name: 'Stacco da terra', name_it: 'Stacco da terra', name_en: 'Deadlift', muscle_group: 'femorali' },
 ];
 
+// Catalogo per «Tutti gli esercizi» (scelta `catalog: 'completo'`): con gli attrezzi e un esercizio personale in revisione.
+// A parte, perché gli attrezzi cambierebbero anche i dialog degli altri flussi.
+const CATALOG_COMPLETO = [
+  ...CATALOG.map((e, i) => ({ ...e, equipment: ['bilanciere', 'manubri', 'corpo_libero', 'bilanciere', 'bilanciere', 'bilanciere'][i], is_mine: false, status: 'approved' })),
+  { id: 9, name: 'Distensioni con manubri', name_it: 'Distensioni con manubri', name_en: 'Dumbbell press', muscle_group: 'petto', equipment: 'manubri', is_mine: false, status: 'approved' },
+  { id: 10, name: 'Croci ai cavi', name_it: 'Croci ai cavi', name_en: 'Cable fly', muscle_group: 'petto', equipment: 'cavi', is_mine: false, status: 'approved' },
+  { id: 11, name: 'Lat machine', name_it: 'Lat machine', name_en: 'Lat pulldown', muscle_group: 'schiena', equipment: 'cavi', is_mine: false, status: 'approved' },
+  { id: 12, name: 'Pressa orizzontale', name_it: 'Pressa orizzontale', name_en: 'Leg press', muscle_group: 'quadricipiti', equipment: 'macchina', is_mine: false, status: 'approved' },
+  { id: 13, name: 'Squat bulgaro', name_it: 'Squat bulgaro', name_en: 'Bulgarian split squat', muscle_group: 'quadricipiti', equipment: 'manubri', is_mine: false, status: 'approved' },
+  { id: 14, name: 'Alzate laterali', name_it: 'Alzate laterali', name_en: 'Lateral raise', muscle_group: 'spalle', equipment: 'manubri', is_mine: false, status: 'approved' },
+  { id: 15, name: 'Squat con pausa', name_it: 'Squat con pausa', name_en: 'Pause squat', muscle_group: 'quadricipiti', equipment: 'bilanciere', is_mine: true, status: 'pending' },
+];
+
 const set = (n, weight, reps) => ({ set_number: n, weight, reps: String(reps) });
 const HISTORY = Array.from({ length: 12 }, (_, i) => ({
   id: 200 - i,
@@ -304,7 +317,7 @@ const fixtures = [
   })],
   ['gamification/streak.php', ({ u }) => ({ success: true, ...u.streak })],
   ['gamification/profile.php', ({ u }) => u.profile],
-  ['exercise/read_all.php', () => ({ success: true, records: CATALOG })],
+  ['exercise/read_all.php', ({ catalog }) => ({ success: true, records: catalog === 'completo' ? CATALOG_COMPLETO : CATALOG })],
   ['user_stats/read.php', () => ({ success: true, records: BODY, consent_required: false, consent_updated: false })],
   ['groups/list.php', ({ u }) => ({ success: true, groups: u.groups })],
   ['groups/read.php', () => ({
@@ -401,7 +414,7 @@ async function openPage(vp, theme, opts, tag) {
   await ctx.route('**/backend/**', (route) => {
     const url = route.request().url();
     const hit = fixtures.find(([key]) => url.includes(key));
-    const body = hit ? hit[1]({ admin: opts.admin === true, gratis: opts.gratis === true, email: opts.email, tierState: opts.tierState, codice: opts.codice, modules: opts.modules, url, plans: opts.plans, u: UTENTI[opts.utente ?? 'attivo'] }) : fallback;
+    const body = hit ? hit[1]({ admin: opts.admin === true, gratis: opts.gratis === true, email: opts.email, tierState: opts.tierState, codice: opts.codice, modules: opts.modules, url, plans: opts.plans, catalog: opts.catalog, u: UTENTI[opts.utente ?? 'attivo'] }) : fallback;
     const { __status: status = 200, ...payload } = body;
     route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(payload) });
   });
@@ -602,6 +615,20 @@ for (const vp of viewports) {
         }
       });
     }
+    // «Tutti gli esercizi»: la pagina piena, poi con un testo cercato
+    if (want('allenamenti-esercizi', 'allenamenti-esercizi-cerca')) await attempt(tag, 'allenamenti-esercizi', async () => {
+      const { ctx, page } = await openPage(vp, theme, { loggedIn: true, catalog: 'completo' }, tag);
+      try {
+        await page.goto(`${base}/schede/esercizi`, { waitUntil: 'domcontentloaded' });
+        await page.getByRole('list').waitFor();
+        await snap(page, 'allenamenti-esercizi', tag);
+        await page.getByRole('textbox', { name: 'Cerca un esercizio' }).fill('squat');
+        await page.getByText('Squat bulgaro').waitFor();
+        await snap(page, 'allenamenti-esercizi-cerca', tag);
+      } finally {
+        await ctx.close();
+      }
+    });
     if (want('allenamenti-piani-nuova-gratis')) await attempt(tag, 'allenamenti-piani-nuova-gratis', async () => {
       const { ctx, page } = await openPage(vp, theme, { loggedIn: true, gratis: true, plans: 'gratis-nuova' }, tag);
       try {
