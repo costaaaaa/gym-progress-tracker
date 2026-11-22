@@ -45,6 +45,16 @@ describe('workoutSummaries', () => {
     expect(summaries[6].records).toEqual([]);
   });
 
+  it('una data illeggibile: l\'allenamento non ha storico e non ne dà agli altri, come in historyRecords', () => {
+    const rotto = made({ id: 3, date: 'non è una data', exercises: [exercise(1, 'Panca piana', [{ set_number: 1, weight: 500, reps: 1 }])] });
+    const prima = made({ id: 6, date: '2026-10-10 02:00:00', exercises: [exercise(1, 'Panca piana', [{ set_number: 1, weight: 100, reps: 1 }])] });
+    const vero = made({ id: 8, exercises: [exercise(1, 'Panca piana', [{ set_number: 1, weight: 110, reps: 3 }])] });
+    const all = [vero, prima, rotto];
+    const summaries = workoutSummaries(all);
+    all.forEach((w) => expect(summaries[w.id].records).toEqual(withoutVolume(historyRecords(all, w))));
+    expect(summaries[8].records).toHaveLength(1);
+  });
+
   it.each([
     ['in ordine dal più recente', (list) => list],
     ['in ordine inverso', (list) => [...list].reverse()],
