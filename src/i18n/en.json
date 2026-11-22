@@ -937,7 +937,7 @@
   "focus.records_today": "Today's records",
   "focus.record.weight": "Weight record: {{set}}",
   "focus.record.oneRM": "Estimated 1RM record: {{set}}",
-  "focus.record.reps": "Reps record: {{set}}",
+  "focus.record.reps": "Reps record: {{reps}}",
   "focus.rewards_title": "Streak, level and achievements",
   "focus.level_now": "Level {{level}}",
   "focus.points_gained_one": "+{{count}} point",

@@ -2875,11 +2875,19 @@ describe('riepilogo di fine allenamento (F5)', () => {
       expect(recordRows()).toEqual(['Panca piana Record di 1RM stimato: 55 kg × 14']);
     });
 
-    it('ripetizioni a corpo libero', async () => {
+    it('ripetizioni a corpo libero: solo le ripetizioni, senza «0 kg»', async () => {
       lastTime([{ weight: 0, reps: '10' }]);
       await goSummary([[0, '15']]);
-      // Il testo è quello che formatSetText dà a una serie senza peso
-      expect(recordRows()).toEqual(['Panca piana Record di ripetizioni: 0 kg × 15']);
+      expect(recordRows()).toEqual(['Panca piana Record di ripetizioni: 15']);
+    });
+
+    it('ripetizioni a corpo libero in lb e in inglese: niente «0 lb»', async () => {
+      account.weightUnit = 'lb';
+      lastTime([{ weight: 0, reps: '10' }]);
+      await goSummary([[0, '15']]);
+      expect(recordRows()).toEqual(['Panca piana Record di ripetizioni: 15']);
+      await act(async () => { await i18n.changeLanguage('en'); });
+      expect(recordRows()).toEqual(['Panca piana Reps record: 15']);
     });
 
     it('solo miglior volume: «Miglior volume» senza serie', async () => {

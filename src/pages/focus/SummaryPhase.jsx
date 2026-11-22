@@ -146,7 +146,7 @@ export default function SummaryPhase({
                   <Typography component="span" sx={{ fontWeight: 600, color: colors.text, minWidth: 0, overflowWrap: 'anywhere' }}>{record.name}</Typography>
                   {' '}
                   <Typography component="span" variant="body2" sx={{ color: colors.textSecondary, minWidth: 0, overflowWrap: 'anywhere' }}>
-                    {record.type === 'volume' ? t('focus.best_volume') : t(RECORD_KEYS[record.type], { set: formatSetText(record.weight, record.reps, weightUnit) })}
+                    {record.type === 'volume' ? t('focus.best_volume') : t(RECORD_KEYS[record.type], { set: formatSetText(record.weight, record.reps, weightUnit), reps: record.reps })}
                   </Typography>
                 </Box>
               ))}
