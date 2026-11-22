@@ -95,7 +95,7 @@ describe('riquadri', () => {
     expect(riquadro('Serie').getByText('3')).toBeTruthy();
   });
 
-  it('il valore di ogni riquadro sta su una riga e non scende sotto 16 px (a 320 px «62 min» non va a capo)', async () => {
+  it('il valore di ogni riquadro non può andare a capo (`nowrap`) e non scende sotto 16 px', async () => {
     await mount();
     ['60 min', '1440 kg', '3'].forEach((testo) => {
       const stile = getComputedStyle(screen.getByText(testo));

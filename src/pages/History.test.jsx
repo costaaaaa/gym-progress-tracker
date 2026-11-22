@@ -122,8 +122,8 @@ describe('pagina Storico', () => {
   });
 
   it('senza una scheda attiva il comando non c\'è, nemmeno quando la lettura delle schede finisce', async () => {
-    // Le schede arrivano solo quando lo decide il test, e il corpo della risposta segnala di essere stato letto: l'assenza
-    // si controlla prima, e poi solo dopo aver visto che la lettura è davvero conclusa
+    // Le schede arrivano solo quando lo decide il test, e la risposta segnala quando il suo corpo è stato letto: l'assenza
+    // si controlla prima, e poi dopo quel segnale (l'`act` che lo segue porta a schermo lo stato della lettura finita)
     let arrivano;
     let lette = 0;
     let corpoLetto = false;
@@ -135,7 +135,7 @@ describe('pagina Storico', () => {
           lette += 1;
           return inArrivo.then(() => {
             const risposta = json({ records: [{ ...plan, is_active: false }] });
-            return { ...risposta, json: async () => { corpoLetto = true; return risposta.json(); } };
+            return { ...risposta, json: async () => { const corpo = await risposta.json(); corpoLetto = true; return corpo; } };
           });
         },
       },
@@ -146,7 +146,7 @@ describe('pagina Storico', () => {
     expect(screen.queryByRole('button', { name: 'Registra allenamento passato' })).toBeNull();
     await act(async () => { arrivano(); });
     await waitFor(() => expect(corpoLetto).toBe(true));
-    await act(async () => {}); // lo stato aggiornato dalla lettura finita arriva allo schermo
+    await act(async () => {});
     expect(screen.queryByRole('button', { name: 'Registra allenamento passato' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Registra il primo' })).toBeNull();
   });
@@ -447,12 +447,11 @@ describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
   const passano = (ms) => act(() => vi.advanceTimersByTimeAsync(ms));
   // Il tempo che basta a letture, effetti e timer a 0 ms, molto meno dei 10 secondi
   const assesta = async () => { await passano(50); await passano(50); };
-  const monta = async (state = { deleted: 7 }, { strict = false, workouts = [workout, altro], plans } = {}) => {
-    serve({ workouts, plans });
+  const arriva = async (state = { deleted: 7 }, { strict = false, workouts = [workout, altro], plans, on } = {}) => {
+    serve({ workouts, plans, on });
     renderPage({ pathname: '/storico', state }, { strict });
     await assesta();
   };
-  const arriva = (state) => monta(state);
   const rilasciaFuoco = () => act(() => document.activeElement.blur());
 
   it('la riga sparisce subito, compare «Allenamento eliminato» con «Annulla» sul quale va il fuoco, e il server non è ancora chiamato', async () => {
@@ -469,7 +468,7 @@ describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
   });
 
   it('arrivando senza l\'indicazione non c\'è nessun messaggio', async () => {
-    await monta(null);
+    await arriva(null);
     expect(screen.queryByText('Allenamento eliminato')).toBeNull();
     expect(screen.getByRole('link', { name: /^Push A/ })).toBeTruthy();
   });
@@ -496,7 +495,7 @@ describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
 
   describe('con React.StrictMode (sviluppo)', () => {
     it('il server non è chiamato prima dei 10 secondi, poi una volta sola', async () => {
-      await monta({ deleted: 7 }, { strict: true });
+      await arriva({ deleted: 7 }, { strict: true });
       expect(deletions()).toHaveLength(0);
       rilasciaFuoco();
       await passano(9999);
@@ -507,7 +506,7 @@ describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
     });
 
     it('«Annulla» evita la richiesta', async () => {
-      await monta({ deleted: 7 }, { strict: true });
+      await arriva({ deleted: 7 }, { strict: true });
       expect(deletions()).toHaveLength(0);
       fireEvent.click(annulla());
       await assesta();
@@ -541,9 +540,7 @@ describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
   });
 
   it('se il server rifiuta, la riga torna in lista e compare l\'errore', async () => {
-    serve({ workouts: [workout, altro], on: { 'workout_history/delete.php': () => json({ message: 'Allenamento bloccato' }, 400) } });
-    renderPage({ pathname: '/storico', state: { deleted: 7 } });
-    await assesta();
+    await arriva({ deleted: 7 }, { on: { 'workout_history/delete.php': () => json({ message: 'Allenamento bloccato' }, 400) } });
     rilasciaFuoco();
     await passano(10000);
     expect(screen.getByRole('link', { name: /^Push A/ })).toBeTruthy();
@@ -551,7 +548,7 @@ describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
   });
 
   it('un altro avviso mentre «Annulla» aspetta sta sopra, senza coprirlo', async () => {
-    await monta({ deleted: 7 }, { plans: [{ ...plan, is_active: false }] });
+    await arriva({ deleted: 7 }, { plans: [{ ...plan, is_active: false }] });
     fireEvent.click(screen.getByRole('link', { name: 'Registra dal ventaglio' }));
     await assesta();
     const avviso = screen.getByText('Per registrare un allenamento serve una scheda attiva.').closest('.MuiSnackbar-root');
