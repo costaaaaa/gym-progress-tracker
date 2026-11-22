@@ -83,15 +83,21 @@ describe('intestazione', () => {
     expect(parseFloat(getComputedStyle(indietro).height)).toBeGreaterThanOrEqual(44);
   });
 
-  it('arrivando dal calendario il ritorno porta alla stessa vista, con mese e giorno', async () => {
-    const dalCalendario = { pathname: '/storico/7', state: { historySearch: '?vista=calendario&mese=2026-10&giorno=2026-10-18' } };
-    await mount([workout], { path: dalCalendario });
-    expect(screen.getByRole('link', { name: 'Storico' }).getAttribute('href')).toBe('/storico?vista=calendario&mese=2026-10&giorno=2026-10-18');
+  const BACK = '/storico?vista=calendario&mese=2026-10&giorno=2026-10-18';
+
+  it('arrivando con un percorso di ritorno nello stato, il ritorno «Storico» porta lì', async () => {
+    await mount([workout], { path: { pathname: '/storico/7', state: { backTo: BACK } } });
+    expect(screen.getByRole('link', { name: 'Storico' }).getAttribute('href')).toBe(BACK);
   });
 
-  it.each(['vista=calendario', '?vista=calendario&x=<b>', 'https://altro.example/?a=b', 5])('un historySearch non valido (%s) lascia il ritorno all\'elenco', async (valore) => {
-    await mount([workout], { path: { pathname: '/storico/7', state: { historySearch: valore } } });
+  it.each(['/altrove', 'https://altro.example/storico', '//storico', 5, null])('un percorso di ritorno non valido (%s) lascia il ritorno all\'elenco', async (valore) => {
+    await mount([workout], { path: { pathname: '/storico/7', state: { backTo: valore } } });
     expect(screen.getByRole('link', { name: 'Storico' }).getAttribute('href')).toBe('/storico');
+  });
+
+  it('un allenamento che non c\'è riporta al percorso di ritorno, non all\'elenco di base', async () => {
+    await mount([workout], { path: { pathname: '/storico/99', state: { backTo: BACK } }, wait: 'ELENCO' });
+    expect(screen.getByTestId('ricerca').textContent).toBe('?vista=calendario&mese=2026-10&giorno=2026-10-18');
   });
 
   it('un titolo lungo va a capo', async () => {
@@ -315,7 +321,7 @@ describe('Elimina', () => {
   });
 
   it('arrivando dal calendario, confermata l\'eliminazione si torna al calendario con mese e giorno, e l\'id nello stato', async () => {
-    await apri([workout], { path: { pathname: '/storico/7', state: { historySearch: '?vista=calendario&giorno=2026-10-18' } } });
+    await apri([workout], { path: { pathname: '/storico/7', state: { backTo: '/storico?vista=calendario&giorno=2026-10-18' } } });
     fireEvent.click(confermaNelDialog());
     expect(await screen.findByText('ELENCO')).toBeTruthy();
     expect(screen.getByTestId('ricerca').textContent).toBe('?vista=calendario&giorno=2026-10-18');

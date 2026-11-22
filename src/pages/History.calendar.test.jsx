@@ -159,11 +159,18 @@ describe('scelta della vista', () => {
     expect(indirizzo()).toBe('/storico?vista=calendario&mese=2026-10&giorno=2026-10-31');
   });
 
+  it('anche la riga dell\'elenco porta con sé il suo indirizzo, senza casi speciali', async () => {
+    await mount('/storico');
+    fireEvent.click(screen.getByRole('link', { name: /^Pull B/ }));
+    await screen.findByText('Pagina allenamento');
+    expect(screen.getByTestId('stato').textContent).toBe('{"backTo":"/storico"}');
+  });
+
   it('il collegamento di un allenamento porta con sé l\'indirizzo del calendario, perché la sua pagina possa tornarci', async () => {
     await mount('/storico?vista=calendario&giorno=2026-11-18');
     fireEvent.click(screen.getByRole('link', { name: /^Pull B/ }));
     await screen.findByText('Pagina allenamento');
-    expect(screen.getByTestId('stato').textContent).toBe('{"historySearch":"?vista=calendario&giorno=2026-11-18"}');
+    expect(screen.getByTestId('stato').textContent).toBe('{"backTo":"/storico?vista=calendario&giorno=2026-11-18"}');
   });
 });
 
@@ -201,9 +208,69 @@ describe('apertura e indirizzo', () => {
     expect(prec().hasAttribute('disabled')).toBe(true);
   });
 
-  it('un indirizzo illeggibile non rompe nulla: mese corrente e oggi', async () => {
-    await mount('/storico?vista=calendario&mese=boh&giorno=ieri');
+  // Una regola sola: un giorno non valido o futuro vale assente (e senza mese si apre su oggi); un mese non valido vale assente
+  it.each([
+    ['un giorno che non esiste (2026-02-31)', 'giorno=2026-02-31'],
+    ['un giorno scritto male', 'giorno=ieri'],
+    ['un giorno futuro nel mese corrente', 'giorno=2026-11-25'],
+    ['un giorno di un mese futuro', 'giorno=2027-03-01'],
+    ['un mese che non esiste (2026-13)', 'mese=2026-13'],
+    ['un mese scritto male', 'mese=boh&giorno=ieri'],
+  ])('con %s si apre su novembre con oggi scelto', async (_, parametri) => {
+    await mount(`/storico?vista=calendario&${parametri}`);
     expect(giorno('20 novembre').getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('heading', { level: 2, name: 'venerdì 20 novembre 2026' })).toBeTruthy();
+    expect(document.querySelectorAll('[aria-pressed="true"][data-day]')).toHaveLength(1);
+  });
+
+  it('con un mese valido e un giorno non valido il mese resta e nessun giorno è scelto', async () => {
+    await mount('/storico?vista=calendario&mese=2026-10&giorno=2026-02-31', 'ottobre 2026');
+    expect(document.querySelectorAll('[aria-pressed="true"][data-day]')).toHaveLength(0);
+  });
+
+  it('un valore di vista che non è «calendario» apre l\'elenco, senza calendario', async () => {
+    await mount('/storico?vista=altro&mese=2026-10&giorno=2026-10-31');
+    expect(screen.queryByRole('button', { name: 'Mese precedente' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Elenco' }).getAttribute('aria-pressed')).toBe('true');
+  });
+});
+
+describe('allenamenti con data oltre oggi (browser in un altro fuso)', () => {
+  const domani = made({ id: 40, date: '2026-11-21 08:00:00', day_name: 'Domani' });
+
+  it('il giorno con un allenamento è acceso, scelto per indirizzo e raggiungibile; gli altri futuri restano spenti', async () => {
+    serve({ workouts: [domani, pullB] });
+    await mount('/storico?vista=calendario&giorno=2026-11-21');
+    expect(giorno('21 novembre, 1 allenamento').hasAttribute('disabled')).toBe(false);
+    expect(giorno('21 novembre, 1 allenamento').getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('link', { name: /^Domani/ })).toBeTruthy();
+    expect(giorno('22 novembre').hasAttribute('disabled')).toBe(true);
+  });
+
+  it('«Mese successivo» è acceso fino al mese dell\'ultimo allenamento e il cambio sceglie anche un giorno futuro', async () => {
+    serve({ workouts: [made({ id: 41, date: '2026-12-02 09:00:00', day_name: 'Dicembre' }), pullB] });
+    await mount();
+    expect(succ().hasAttribute('disabled')).toBe(false);
+    fireEvent.click(succ());
+    expect(await screen.findByRole('heading', { level: 2, name: 'dicembre 2026' })).toBeTruthy();
+    expect(giorno('2 dicembre, 1 allenamento').getAttribute('aria-pressed')).toBe('true');
+    expect(succ().hasAttribute('disabled')).toBe(true);
+    expect(prec().hasAttribute('disabled')).toBe(false);
+  });
+
+  it('con tutti gli allenamenti nel futuro il calendario si apre lo stesso, sul mese corrente, e i mesi dei limiti sono in ordine', async () => {
+    serve({ workouts: [made({ id: 42, date: '2027-01-10 09:00:00', day_name: 'Lontano' }), made({ id: 43, date: '2027-03-10 09:00:00', day_name: 'Più lontano' })] });
+    await mount();
+    expect(giorno('20 novembre').getAttribute('aria-pressed')).toBe('true');
+    expect(prec().hasAttribute('disabled')).toBe(true);
+    expect(succ().hasAttribute('disabled')).toBe(false);
+  });
+
+  it('un mese oltre l\'ultimo allenamento vale il mese dell\'ultimo', async () => {
+    serve({ workouts: [domani, pullB] });
+    await mount('/storico?vista=calendario&mese=2027-03');
+    expect(mese('novembre 2026')).toBeTruthy();
+    expect(succ().hasAttribute('disabled')).toBe(true);
   });
 });
 

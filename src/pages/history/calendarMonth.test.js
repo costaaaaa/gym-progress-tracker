@@ -1,6 +1,6 @@
 // I conti del mese del calendario dello Storico: giorni, celle con la settimana che parte da lunedì, mese precedente e successivo.
 import { describe, it, expect } from 'vitest';
-import { isMonthKey, monthCells, monthDays, monthOf, shiftMonth } from './calendarMonth';
+import { isDayKey, isMonthKey, monthCells, monthDays, monthOf, shiftMonth } from './calendarMonth';
 
 const blanks = (cells) => cells.filter((cell) => cell === null).length;
 
@@ -84,4 +84,9 @@ describe('shiftMonth e monthOf', () => {
 describe('isMonthKey', () => {
   it.each(['2026-01', '2026-12', '1999-07'])('%s è un mese', (value) => expect(isMonthKey(value)).toBe(true));
   it.each(['2026-00', '2026-13', '2026-1', '26-11', '2026-11-03', '', null, undefined, 'novembre'])('%s non lo è', (value) => expect(isMonthKey(value)).toBe(false));
+});
+
+describe('isDayKey', () => {
+  it.each(['2026-11-18', '2026-01-01', '2026-12-31', '2024-02-29'])('%s è un giorno', (value) => expect(isDayKey(value)).toBe(true));
+  it.each(['2026-02-31', '2026-13-01', '2026-00-10', '2026-11-00', '2026-04-31', '2026-02-29', 'ieri', '2026-11', '2026-1-5', '2026-11-18 10:00:00', '', null, undefined, 20261118])('%s non lo è', (value) => expect(isDayKey(value)).toBe(false));
 });
