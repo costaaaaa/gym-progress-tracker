@@ -219,7 +219,7 @@ describe('invito', () => {
       </MemoryRouter>,
     );
     expect(await screen.findByText('Serve la data di nascita.')).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Vai alle impostazioni' }).getAttribute('href')).toBe('/account');
+    expect(screen.getByRole('link', { name: 'Vai alle impostazioni' }).getAttribute('href')).toBe('/account/profilo');
   });
 });
 
@@ -343,7 +343,7 @@ describe('visibilità nella classifica del gruppo', () => {
     expect(screen.getByText(NO_WORKOUTS).closest('[aria-hidden="true"]')).toBeNull();
     // Sotto il testo, il collegamento al blocco «Cosa mostro» dell'Account
     const link = screen.getByRole('link', { name: 'Cosa mostro' });
-    expect(link.getAttribute('href')).toBe('/account#groups-shown');
+    expect(link.getAttribute('href')).toBe('/account/dati#groups-shown');
     expect(parseInt(getComputedStyle(link).minHeight, 10)).toBeGreaterThanOrEqual(44);
   });
 

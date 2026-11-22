@@ -177,8 +177,8 @@ describe('struttura', () => {
 });
 
 describe('arrivo da un collegamento', () => {
-  it('con #groups-shown nell\'indirizzo il blocco prende il fuoco', async () => {
-    mount({ groups: true }, undefined, '/account#groups-shown');
-    await waitFor(() => expect(document.activeElement).toBe(document.getElementById('groups-shown')));
+  it.each([['groups-shown', 'il blocco «Cosa mostro»'], ['groups-list', 'l\'elenco dei gruppi']])('con #%s nell\'indirizzo prende il fuoco %s', async (id) => {
+    mount({ groups: true }, undefined, `/account/dati#${id}`);
+    await waitFor(() => expect(document.activeElement).toBe(document.getElementById(id)));
   });
 });

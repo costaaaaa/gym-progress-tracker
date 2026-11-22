@@ -20,20 +20,28 @@ const LoginProbe = () => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('Account senza accesso', () => {
-  it('va al login con next = pagina, parametri e ancora', async () => {
+  it.each([
+    ['/account?x=1#sezione', '?next=%2Faccount%3Fx%3D1%23sezione'],
+    ['/account/dati?x=1#groups-shown', '?next=%2Faccount%2Fdati%3Fx%3D1%23groups-shown'],
+    ['/account/sicurezza', '?next=%2Faccount%2Fsicurezza'],
+  ])('%s va al login con next = pagina, parametri e ancora', async (entry, expected) => {
     vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
     render(
-      <MemoryRouter initialEntries={['/account?x=1#sezione']}>
+      <MemoryRouter initialEntries={[entry]}>
         <ThemeModeProvider>
           <Routes>
-            <Route path="/account" element={<Account />} />
+            <Route path="/account" element={<Account />}>
+              <Route index element={<p>elenco</p>} />
+              <Route path="dati" element={<p>dati</p>} />
+              <Route path="sicurezza" element={<p>sicurezza</p>} />
+            </Route>
             <Route path="/login" element={<LoginProbe />} />
           </Routes>
         </ThemeModeProvider>
       </MemoryRouter>,
     );
     const search = (await screen.findByTestId('login')).textContent;
-    expect(search).toBe('?next=%2Faccount%3Fx%3D1%23sezione');
-    expect(safeNext(search)).toBe('/account?x=1#sezione');
+    expect(search).toBe(expected);
+    expect(safeNext(search)).toBe(entry);
   });
 });
