@@ -88,7 +88,8 @@ describe('la pagina', () => {
   it('si chiama «Profilo e preferenze», ha il titolo del documento e «indietro» verso /account', async () => {
     await mount();
     expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual(['Profilo e preferenze']);
-    expect(document.title).toBe('Profilo e preferenze | LiftIndex');
+    // il titolo del documento lo scrive un effetto, a volte dopo il primo disegno
+    await waitFor(() => expect(document.title).toBe('Profilo e preferenze | LiftIndex'));
     expect(screen.getByRole('link', { name: 'Torna all\'Account' }).getAttribute('href')).toBe('/account');
   });
 
