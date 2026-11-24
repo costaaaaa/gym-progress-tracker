@@ -16,7 +16,7 @@ const SettingDialog = ({ open, title, onClose, busy = false, children }) => {
       <DialogTitle id={titleId}>{title}</DialogTitle>
       <DialogContent>{children}</DialogContent>
       <DialogActions>
-        <Button onClick={close} aria-disabled={busy || undefined} sx={{ minHeight: 44 }}>{t('common.close')}</Button>
+        <Button onClick={close} aria-disabled={busy || undefined} sx={{ minHeight: 44, fontSize: 16 }}>{t('common.close')}</Button>
       </DialogActions>
     </Dialog>
   );

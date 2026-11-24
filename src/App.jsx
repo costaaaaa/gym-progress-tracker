@@ -31,7 +31,6 @@ const FocusWorkout = lazy(() => import('./pages/FocusWorkout'));
 const Account = lazy(() => import('./pages/Account'));
 const AccountList = lazy(() => import('./pages/account/AccountList'));
 const ProfilePage = lazy(() => import('./pages/account/ProfilePage'));
-const PreferencesPage = lazy(() => import('./pages/account/PreferencesPage'));
 const ModulesPage = lazy(() => import('./pages/account/ModulesPage'));
 const TierPage = lazy(() => import('./pages/account/TierPage'));
 const DataPage = lazy(() => import('./pages/account/DataPage'));
@@ -72,7 +71,6 @@ function App() {
                 <Route path="/account" element={<Account />}>
                   <Route index element={<AccountList />} />
                   <Route path="profilo" element={<ProfilePage />} />
-                  <Route path="preferenze" element={<PreferencesPage />} />
                   <Route path="moduli" element={<ModulesPage />} />
                   <Route path="piano" element={<TierPage />} />
                   <Route path="dati" element={<DataPage />} />

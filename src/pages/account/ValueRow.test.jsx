@@ -2,7 +2,6 @@
 // text.secondary #6b6663.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { createRef } from 'react';
 import { describedBy } from '../../test/accessibleNames';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
 import ValueRow from './ValueRow';
@@ -23,13 +22,11 @@ describe('ValueRow', () => {
     expect(describedBy(row)).toBe('Italiano');
   });
 
-  it('il clic chiama onClick, e il ref è quello del pulsante', () => {
+  it('il clic chiama onClick', () => {
     const onClick = vi.fn();
-    const ref = createRef();
-    show({ onClick, ref });
+    show({ onClick });
     fireEvent.click(screen.getByRole('button', { name: 'Lingua' }));
     expect(onClick).toHaveBeenCalledTimes(1);
-    expect(ref.current).toBe(screen.getByRole('button', { name: 'Lingua' }));
   });
 
   it('area toccabile alta almeno 56 px, valore a 16 px grigio su una riga sola, freccia decorativa', () => {

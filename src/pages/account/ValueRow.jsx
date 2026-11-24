@@ -1,18 +1,16 @@
-import { forwardRef, useId } from 'react';
+import { useId } from 'react';
 import { Box, CardActionArea, Typography } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 
 // Riga di un'impostazione: il titolo a sinistra, il valore di adesso e la freccia a destra. È un pulsante che apre la
 // finestra con il controllo (`onClick`). Il nome del pulsante è il titolo, il valore è la sua descrizione: il lettore di
-// schermo dice «Lingua, pulsante, Italiano». Se lo spazio non basta va a capo il titolo, mai il valore. Il `ref` è
-// quello del pulsante: la pagina vi riporta il fuoco quando la finestra si chiude.
-const ValueRow = forwardRef(({ title, value, onClick }, ref) => {
+// schermo dice «Lingua, pulsante, Italiano». Se lo spazio non basta va a capo il titolo, mai il valore.
+const ValueRow = ({ title, value, onClick }) => {
   const id = useId();
 
   return (
     <CardActionArea
-      ref={ref}
       type="button"
       onClick={onClick}
       aria-haspopup="dialog"
@@ -27,6 +25,6 @@ const ValueRow = forwardRef(({ title, value, onClick }, ref) => {
       </Box>
     </CardActionArea>
   );
-});
+};
 
 export default ValueRow;

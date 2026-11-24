@@ -1,6 +1,7 @@
-// Pagina «Profilo» (/account/profilo): nome utente ed email (la loro prova sta in ProfilePage.email.test.jsx), profilo
-// fisico (data di nascita, sesso, inizio allenamento) e unità di misura. Colori scritti a mano: text.primary #1a1816,
-// text.secondary #6b6663. La fetch è il confine.
+// Pagina «Profilo e preferenze» (/account/profilo), la parte alta: nome utente ed email (la loro prova sta in
+// ProfilePage.email.test.jsx) e profilo fisico (data di nascita, sesso, inizio allenamento). I gruppi «Allenamento» e
+// «App» (obiettivo, unità di misura, strumenti, lingua) sono in ProfilePage.settings.test.jsx. Colori scritti a mano:
+// text.primary #1a1816, text.secondary #6b6663. La fetch è il confine.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, within, fireEvent, waitFor, act } from '@testing-library/react';
 import { format, subYears, subDays, startOfToday } from 'date-fns';
@@ -31,16 +32,15 @@ vi.mock('../../context/AuthContext', () => {
 const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
 
-const stubFetch = ({ weight_unit = 'kg', settings } = {}) => vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
-  settings && url.includes('update_settings.php') ? settings()
-    : url.includes('groups/list.php') ? json({ success: true, groups: [] })
-      : url.includes('user/read.php') ? json({
-        id: 1, username: 'atleta_con_un_nome_molto_lungo', email: 'atleta.con.un.indirizzo.lungo@example.com',
-        created_at: '2025-03-01T10:00:00+01:00', is_admin: false, weight_unit, weekly_goal_default: 3,
-        email_verified: true, email_verification: null, pending_email: null,
-        tier: 'free', tier_until: null, tier_last_day: null, signup_code: null,
-      })
-        : json({ success: true, consents: [], id: 1, weekly_goal_default: 3 }),
+const stubFetch = () => vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
+  url.includes('groups/list.php') ? json({ success: true, groups: [] })
+    : url.includes('user/read.php') ? json({
+      id: 1, username: 'atleta_con_un_nome_molto_lungo', email: 'atleta.con.un.indirizzo.lungo@example.com',
+      created_at: '2025-03-01T10:00:00+01:00', is_admin: false, weight_unit: 'kg', weekly_goal_default: 3,
+      email_verified: true, email_verification: null, pending_email: null,
+      tier: 'free', tier_until: null, tier_last_day: null, signup_code: null,
+    })
+      : json({ success: true, consents: [], id: 1, weekly_goal_default: 3 }),
 )));
 
 beforeEach(() => {
@@ -61,24 +61,17 @@ const mount = async () => {
 const button = (name) => screen.getByRole('button', { name });
 
 describe('Profilo: le card', () => {
-  it('nome utente, email col suo stato e «membro da» nella prima card; poi il profilo fisico; poi l\'unità di misura', async () => {
+  it('nome utente, email col suo stato e «membro da» nella prima card; poi il profilo fisico; poi il gruppo «Allenamento»', async () => {
     await mount();
     const identity = within(screen.getByText('atleta_con_un_nome_molto_lungo').closest('.MuiCard-root'));
     expect(identity.getByText('atleta.con.un.indirizzo.lungo@example.com')).toBeTruthy();
     expect(identity.getByText('Confermata')).toBeTruthy();
     expect(identity.getByText('Membro da marzo 2025')).toBeTruthy();
     const physical = screen.getByText('Profilo fisico').closest('.MuiCard-root');
-    const unit = screen.getByLabelText('Unità di misura').closest('.MuiCard-root');
-    expect(new Set([identity.getByText('Confermata').closest('.MuiCard-root'), physical, unit]).size).toBe(3);
+    const training = screen.getByRole('heading', { level: 2, name: 'Allenamento' }).nextElementSibling;
+    expect(new Set([identity.getByText('Confermata').closest('.MuiCard-root'), physical, training]).size).toBe(3);
     expect(screen.getByText('atleta_con_un_nome_molto_lungo').closest('.MuiCard-root').compareDocumentPosition(physical) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(physical.compareDocumentPosition(unit) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  it('la prima riga di una card non ha la linea sopra né lo spazio per averla: l\'unità di misura', async () => {
-    await mount();
-    const unitRow = screen.getByLabelText('Unità di misura').closest('.MuiCard-root').firstElementChild;
-    expect(parseInt(getComputedStyle(unitRow).borderTopWidth, 10) || 0).toBe(0);
-    expect(parseInt(getComputedStyle(unitRow).paddingTop, 10) || 0).toBe(0);
+    expect(physical.compareDocumentPosition(training) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
 
@@ -100,45 +93,6 @@ describe('intestazione', () => {
       expect(getComputedStyle(el).textOverflow).not.toBe('ellipsis');
       expect(getComputedStyle(el).whiteSpace).not.toBe('nowrap');
     }
-  });
-});
-
-describe('unità di peso', () => {
-  const unitSelect = () => screen.getByLabelText('Unità di misura');
-  const savedBodies = () => fetch.mock.calls.filter(([url]) => url.includes('update_settings.php')).map(([, init]) => JSON.parse(init.body));
-  const choose = async (label) => {
-    fireEvent.mouseDown(unitSelect());
-    fireEvent.click(await screen.findByRole('option', { name: label, hidden: true }));
-  };
-
-  it('parte dall\'unità salvata sull\'account', async () => {
-    stubFetch({ weight_unit: 'lb' });
-    await mount();
-    await waitFor(() => expect(unitSelect().textContent).toBe('Imperiali (lb, in)'));
-    expect(screen.getByText(/restano salvati in kg e cm: cambia solo come si mostrano e si inseriscono/)).toBeTruthy();
-  });
-
-  it('salva la scelta e aggiorna il contesto', async () => {
-    stubFetch({ settings: () => json({ success: true, weight_unit: 'lb' }) });
-    await mount();
-    await waitFor(() => expect(unitSelect().textContent).toBe('Metriche (kg, cm)'));
-    await choose('Imperiali (lb, in)');
-    await waitFor(() => expect(updateUser).toHaveBeenCalledWith({ weight_unit: 'lb' }));
-    expect(savedBodies()).toEqual([{ weight_unit: 'lb' }]);
-    expect(unitSelect().textContent).toBe('Imperiali (lb, in)');
-  });
-
-  it.each([
-    ['errore del server', () => json({ success: false, message: 'no' }, 500)],
-    ['errore di rete', () => Promise.reject(new Error('offline'))],
-  ])('%s: la scelta torna al valore precedente e si mostra l\'errore', async (_, settings) => {
-    stubFetch({ weight_unit: 'lb', settings });
-    await mount();
-    await waitFor(() => expect(unitSelect().textContent).toBe('Imperiali (lb, in)'));
-    await choose('Metriche (kg, cm)');
-    await screen.findByText('Errore nel salvataggio dell\'unità di misura');
-    expect(unitSelect().textContent).toBe('Imperiali (lb, in)');
-    expect(updateUser).not.toHaveBeenCalled();
   });
 });
 

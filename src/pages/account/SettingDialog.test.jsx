@@ -20,6 +20,13 @@ describe('SettingDialog', () => {
     expect(within(dialog).getByText('Il controllo')).toBeTruthy();
   });
 
+  it('«Chiudi» è un pulsante da 16 px e almeno 44 px di altezza', () => {
+    show();
+    const style = getComputedStyle(screen.getByRole('button', { name: 'Chiudi' }));
+    expect(style.fontSize).toBe('16px');
+    expect(parseInt(style.minHeight, 10)).toBeGreaterThanOrEqual(44);
+  });
+
   it('chiusa non c\'è nel documento', () => {
     show({ open: false });
     expect(screen.queryByRole('dialog')).toBeNull();
