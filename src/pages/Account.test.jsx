@@ -66,7 +66,8 @@ describe('titolo della pagina', () => {
     expect(h1s.map((h) => h.textContent)).toEqual(['Account']);
     expect(getComputedStyle(h1s[0]).fontSize).toBe('28px');
     expect(getComputedStyle(h1s[0]).fontWeight).toBe('800');
-    expect(document.title).toBe('Account | LiftIndex');
+    // il titolo del documento lo scrive un effetto, a volte dopo il primo disegno
+    await waitFor(() => expect(document.title).toBe('Account | LiftIndex'));
   });
 });
 
@@ -231,7 +232,7 @@ describe('le cinque pagine', () => {
     await mount(href);
     expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual([name]);
     expect(getComputedStyle(screen.getByRole('heading', { level: 1 })).fontSize).toBe('28px');
-    expect(document.title).toBe(`${name} | LiftIndex`);
+    await waitFor(() => expect(document.title).toBe(`${name} | LiftIndex`));
     const back = screen.getByRole('link', { name: 'Torna all\'Account' });
     expect(back.getAttribute('href')).toBe('/account');
     const style = getComputedStyle(back);
