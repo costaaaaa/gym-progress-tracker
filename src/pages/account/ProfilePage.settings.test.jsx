@@ -12,9 +12,8 @@ import { describedBy, strayListChildren } from '../../test/accessibleNames';
 import { renderAccount } from '../../test/accountRoutes';
 
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
-// Come in AuthContext vero, updateUser cambia `user` e ridisegna chi lo legge (gli strumenti si leggono da lì); qui lo
-// cambia sul posto, senza un utente nuovo: un utente nuovo farebbe rileggere i dati alla cornice, e le prove di freschezza
-// contano le letture
+// Come in AuthContext vero, updateUser crea un `user` nuovo e ridisegna chi lo legge (gli strumenti si leggono da lì): un
+// utente nuovo fa rileggere i dati alla cornice, come nell'app
 const auth = {};
 const { readers } = vi.hoisted(() => ({ readers: new Set() }));
 vi.mock('../../context/AuthContext', async () => {
@@ -37,13 +36,13 @@ const serverAccount = (over = {}) => ({
   tier: 'free', tier_until: null, tier_last_day: null, signup_code: null, ...over,
 });
 
-// `account`: i campi del server (l'oggetto si legge a ogni lettura); `settings(body)`: la risposta a update_settings.php
-// (di base riflette il corpo)
-const stubFetch = ({ account = serverAccount(), settings = (body) => Promise.resolve(json({ success: true, ...body })) } = {}) => (
+// `account`: i campi del server (l'oggetto si legge a ogni lettura; `null` = la lettura risponde 500); `settings(body)`: la
+// risposta a update_settings.php (di base il server salva il corpo nell'account e lo riflette, come farebbe davvero)
+const stubFetch = ({ account = serverAccount(), settings = (body) => { Object.assign(account ?? {}, body); return Promise.resolve(json({ success: true, ...body })); } } = {}) => (
   vi.stubGlobal('fetch', vi.fn((url, init) => (
     String(url).includes('update_settings.php') ? settings(JSON.parse(init.body))
       : String(url).includes('groups/list.php') ? Promise.resolve(json({ success: true, groups: [] }))
-        : String(url).includes('user/read.php') ? Promise.resolve(json(account))
+        : String(url).includes('user/read.php') ? Promise.resolve(account ? json(account) : json({ success: false }, 500))
           : Promise.resolve(json({ success: true, consents: [], id: 1, weekly_goal_default: 3 }))
   )))
 );
@@ -60,7 +59,7 @@ beforeEach(async () => {
   localStorage.setItem('themeMode', 'light');
   Object.assign(auth, {
     user: { id: 1 }, isLoggedIn: true, loading: false, logout: vi.fn(),
-    updateUser: vi.fn((patch) => { Object.assign(auth.user, patch); readers.forEach((redraw) => redraw()); }),
+    updateUser: vi.fn((patch) => { auth.user = { ...auth.user, ...patch }; readers.forEach((redraw) => redraw()); }),
     emailState: { verified: true, email: 'mario@example.com', pendingEmail: null, blocked: false, daysLeft: null },
     openEmailDialog: vi.fn(), refreshEmailState: () => Promise.resolve(),
   });
@@ -339,6 +338,41 @@ describe.each([
   });
 });
 
+// Il caso opposto: l'account parte da lb o da en e la scelta di tornare indietro è rifiutata
+describe.each([
+  {
+    title: 'Unità di misura', account: { weight_unit: 'lb' }, chosen: 'Imperiali (lb, in)', other: 'Metriche (kg, cm)',
+    rowValue: 'lb, in', error: 'Errore nel salvataggio dell\'unità di misura',
+  },
+  {
+    title: 'Lingua', account: { locale: 'en' }, chosen: 'English', other: 'Italiano',
+    rowValue: 'English', error: 'Errore nel salvataggio della lingua',
+  },
+])('finestra «$title» partendo da $chosen', ({ title, account, chosen, other, rowValue, error }) => {
+  it('il valore scelto è quello dell\'account', async () => {
+    stubFetch({ account: serverAccount(account) });
+    await mount();
+    expect(describedBy(row(title))).toBe(rowValue);
+    const dialog = open(title);
+    expect(dialog.getByRole('radio', { name: chosen }).checked).toBe(true);
+    expect(dialog.getByRole('radio', { name: other }).checked).toBe(false);
+  });
+
+  it('un rifiuto: resta scelto il valore di prima, la riga non cambia e l\'errore sta nella finestra', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    stubFetch({ account: serverAccount(account), settings: () => Promise.resolve(json({ success: false }, 500)) });
+    await mount();
+    const dialog = open(title);
+    fireEvent.click(dialog.getByRole('radio', { name: other }));
+    await waitFor(() => expect(dialog.getByRole('alert').textContent).toBe(error));
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(dialog.getByRole('radio', { name: chosen }).checked).toBe(true);
+    expect(dialog.getByRole('radio', { name: other }).checked).toBe(false);
+    expect(describedBy(screen.getByRole('button', { name: title, hidden: true }))).toBe(rowValue);
+    expect(auth.updateUser).not.toHaveBeenCalled();
+  });
+});
+
 describe('finestra «Obiettivo settimanale»', () => {
   const goalGroup = (dialog) => dialog.getByRole('group', { name: 'Obiettivo settimanale' });
   const pressed = (dialog) => within(goalGroup(dialog)).getAllByRole('button').filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.textContent);
@@ -592,7 +626,19 @@ describe('valori sempre freschi, una sola fonte', () => {
     await screen.findByRole('button', { name: 'Lingua' });
     expect(describedBy(row('Unità di misura'))).toBe('lb, in');
     expect(describedBy(row('Lingua'))).toBe('English');
-    expect(reads()).toBe(1);
+  });
+});
+
+describe('lettura dell\'account fallita', () => {
+  it('scegliere lb salva lo stesso e la riga dice «lb, in»', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    stubFetch({ account: null });
+    await mount();
+    expect(describedBy(row('Unità di misura'))).toBe('kg, cm');
+    fireEvent.click(open('Unità di misura').getByRole('radio', { name: 'Imperiali (lb, in)' }));
+    await closed();
+    expect(settingsCalls()).toEqual([{ weight_unit: 'lb' }]);
+    expect(describedBy(row('Unità di misura'))).toBe('lb, in');
   });
 });
 
