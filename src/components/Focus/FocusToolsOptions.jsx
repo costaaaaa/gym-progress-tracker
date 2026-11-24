@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Box, Switch, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
@@ -15,14 +15,23 @@ const TEXTS = {
 // I tre strumenti della serie dell'account: una riga con interruttore ciascuno, il cambio si salva subito.
 // `notify(messaggio, gravità)` annuncia l'esito (e mostra l'errore). Senza `notify` (dentro una finestra, dove la
 // notifica della pagina non si legge) l'esito sta qui sotto: una regione «status» e una «alert», sempre nel DOM.
+// `onSavingChange(saving)` (facoltativa) è chiamata con true quando comincia il primo salvataggio in corso e con false
+// quando finisce l'ultimo, così chi ospita gli interruttori (una finestra) non si chiude a metà.
 // Usato prima dell'allenamento e in Account.
-const FocusToolsOptions = ({ notify, idPrefix }) => {
+const FocusToolsOptions = ({ notify, idPrefix, onSavingChange }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const save = useSaveFocusTool();
   // Strumenti con un salvataggio in corso, col valore atteso: l'interruttore lo mostra subito
   const [pending, setPending] = useState({});
   const [inline, setInline] = useState({ status: '', alert: '' });
+  const saving = Object.keys(pending).length > 0;
+  const reportedSaving = useRef(false);
+  useEffect(() => {
+    if (saving === reportedSaving.current) return;
+    reportedSaving.current = saving;
+    onSavingChange?.(saving);
+  }, [saving, onSavingChange]);
   const announce = (message, severity) => (notify
     ? notify(message, severity)
     : setInline(severity === 'error' ? { status: '', alert: message } : { status: message, alert: '' }));
