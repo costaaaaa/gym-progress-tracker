@@ -135,3 +135,31 @@ describe('useAccount: livello dopo la conferma dell\'email', () => {
     expect(hook.result.current.account.tier).toBe('pro');
   });
 });
+
+describe('useAccount: patchAccount', () => {
+  it('unisce i campi dentro account, senza rileggere né tornare in caricamento', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve(json(details({ age: 30, weekly_goal: null }))));
+    vi.stubGlobal('fetch', fetchMock);
+    const { result } = await mount();
+    act(() => result.current.patchAccount({ weekly_goal: 5, locale: 'en' }));
+    expect(result.current.account).toMatchObject({ username: 'mario', age: 30, weekly_goal: 5, locale: 'en' });
+    expect(result.current.loading).toBe(false);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('la funzione è la stessa a ogni disegno', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(json(details()))));
+    const hook = await mount();
+    const before = hook.result.current.patchAccount;
+    expect(before).toBeTypeOf('function');
+    hook.rerender();
+    expect(hook.result.current.patchAccount).toBe(before);
+  });
+
+  it('senza account (lettura fallita) non fa niente', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(json({}, 500))));
+    const { result } = await mount();
+    act(() => result.current.patchAccount({ locale: 'en' }));
+    expect(result.current.account).toBeNull();
+  });
+});

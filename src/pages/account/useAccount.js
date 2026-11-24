@@ -5,8 +5,9 @@ import { API_BASE_URL } from '../../config';
 
 // I dati dell'account, dalla lettura di user/read.php: `account` (la risposta del server; null finché non arriva o se la
 // lettura fallisce), `joinDate` (data di iscrizione; oggi se il server non la manda) e `loading`. Se la lettura fallisce
-// l'errore va a notify(message, severity). Si rilegge quando cambia l'utente di AuthContext. Non sa nulla di come le
-// pagine mostrano i dati.
+// l'errore va a notify(message, severity). Si rilegge quando cambia l'utente di AuthContext. `patchAccount(patch)` unisce
+// dei campi dentro `account` dopo un salvataggio riuscito, così le pagine rivedono il valore nuovo senza una nuova
+// lettura (non fa niente se `account` è null). Non sa nulla di come le pagine mostrano i dati.
 export default function useAccount(notify) {
   const { user, emailState } = useAuth();
   const { t } = useTranslation();
@@ -82,5 +83,7 @@ export default function useAccount(notify) {
       .catch((error) => console.error('Errore nel recupero del livello:', error));
   }, [emailState, user]);
 
-  return { account, joinDate, loading };
+  const patchAccount = useCallback((patch) => setAccount((prev) => (prev ? { ...prev, ...patch } : prev)), []);
+
+  return { account, joinDate, loading, patchAccount };
 }
