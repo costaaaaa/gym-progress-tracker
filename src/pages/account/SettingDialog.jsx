@@ -3,20 +3,20 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/
 import { useTranslation } from 'react-i18next';
 
 // Finestra di un'impostazione: il titolo della riga (una volta sola, non si ripete dentro), il controllo in `children` e
-// in fondo «Chiudi». Con `busy` (un salvataggio in corso) non si chiude né con «Chiudi» né con Esc né col clic fuori, così
+// in fondo «Chiudi». Con `saving` (un salvataggio in corso) non si chiude né con «Chiudi» né con Esc né col clic fuori, così
 // l'esito non arriva a finestra chiusa. «Chiudi» resta un pulsante normale (aria-disabled): un pulsante `disabled`
 // perderebbe il fuoco.
-const SettingDialog = ({ open, title, onClose, busy = false, children }) => {
+const SettingDialog = ({ open, title, onClose, saving = false, children }) => {
   const { t } = useTranslation();
   const titleId = useId();
-  const close = () => { if (!busy) onClose(); };
+  const closeUnlessSaving = () => { if (!saving) onClose(); };
 
   return (
-    <Dialog open={open} onClose={close} fullWidth maxWidth="xs" aria-labelledby={titleId}>
+    <Dialog open={open} onClose={closeUnlessSaving} fullWidth maxWidth="xs" aria-labelledby={titleId}>
       <DialogTitle id={titleId}>{title}</DialogTitle>
       <DialogContent>{children}</DialogContent>
       <DialogActions>
-        <Button onClick={close} aria-disabled={busy || undefined} sx={{ minHeight: 44, fontSize: 16 }}>{t('common.close')}</Button>
+        <Button onClick={closeUnlessSaving} aria-disabled={saving || undefined} sx={{ minHeight: 44, fontSize: 16 }}>{t('common.close')}</Button>
       </DialogActions>
     </Dialog>
   );

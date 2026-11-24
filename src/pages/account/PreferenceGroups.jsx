@@ -72,10 +72,10 @@ const PreferenceGroups = ({ account, patchAccount, notify }) => {
         <ValueRow title={t('account.language')} value={LANGUAGES.find((l) => l.value === language.value).label} onClick={openDialog('language', language)} />
       </SettingsGroup>
 
-      <SettingDialog open={openKey === 'goal'} title={t('account.weekly_goal.title')} onClose={close} busy={goal.saving}>
+      <SettingDialog open={openKey === 'goal'} title={t('account.weekly_goal.title')} onClose={close} saving={goal.saving}>
         <WeeklyGoalBody setting={goal} />
       </SettingDialog>
-      <SettingDialog open={openKey === 'unit'} title={t('account.weight_unit')} onClose={close} busy={unit.saving}>
+      <SettingDialog open={openKey === 'unit'} title={t('account.weight_unit')} onClose={close} saving={unit.saving}>
         <ChoiceSettingBody
           label={t('account.weight_unit')}
           options={[{ value: 'kg', label: t('units.metric') }, { value: 'lb', label: t('units.imperial') }]}
@@ -90,7 +90,7 @@ const PreferenceGroups = ({ account, patchAccount, notify }) => {
       <SettingDialog open={openKey === 'tools'} title={t('focus.tools.title')} onClose={close}>
         <FocusToolsOptions idPrefix="account-focus-tools" />
       </SettingDialog>
-      <SettingDialog open={openKey === 'language'} title={t('account.language')} onClose={close} busy={language.saving}>
+      <SettingDialog open={openKey === 'language'} title={t('account.language')} onClose={close} saving={language.saving}>
         <ChoiceSettingBody
           label={t('account.language')}
           options={LANGUAGES}

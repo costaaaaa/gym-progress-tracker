@@ -9,7 +9,7 @@ import SettingOutcome from './SettingOutcome';
 // disabilitato perde il fuoco) e il gruppo è «occupato». `setting` è useWeeklyGoalSetting.
 const WeeklyGoalBody = ({ setting }) => {
   const { t } = useTranslation();
-  const { goal, value, saving, error, status, change } = setting;
+  const { fields, value, saving, error, status, change } = setting;
 
   return (
     <>
@@ -27,15 +27,15 @@ const WeeklyGoalBody = ({ setting }) => {
           <ToggleButton key={n} value={n} sx={{ minWidth: 44, minHeight: 44, fontSize: 16, ...CHIP_FONT }}>{n}</ToggleButton>
         ))}
         <ToggleButton value="default" sx={{ minHeight: 44, fontSize: 16, ...CHIP_FONT }}>
-          {t('account.weekly_goal.default', { n: goal.weekly_goal_default })}
+          {t('account.weekly_goal.default', { n: fields.weekly_goal_default })}
         </ToggleButton>
       </ToggleButtonGroup>
       <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 1.5 }}>
-        {goal.weekly_goal_pending
-          ? t('account.weekly_goal.from_date', { date: format(parseISO(goal.weekly_goal_pending.from), 'dd/MM') })
+        {fields.weekly_goal_pending
+          ? t('account.weekly_goal.from_date', { date: format(parseISO(fields.weekly_goal_pending.from), 'dd/MM') })
           : t('account.weekly_goal.now')}
       </Typography>
-      <SettingOutcome status={status} alert={error} />
+      <SettingOutcome status={status} error={error} />
     </>
   );
 };

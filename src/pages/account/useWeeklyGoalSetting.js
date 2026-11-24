@@ -10,12 +10,12 @@ const goalFields = (data) => ({
 });
 
 // L'obiettivo mostrato è quello scelto per ultimo: il cambio in attesa, se c'è, altrimenti quello in vigore
-const shownChoice = (goal) => {
-  const shown = goal.weekly_goal_pending ? goal.weekly_goal_pending.goal : goal.weekly_goal;
+const shownChoice = (fields) => {
+  const shown = fields.weekly_goal_pending ? fields.weekly_goal_pending.goal : fields.weekly_goal;
   return shown ?? 'default';
 };
 
-// L'obiettivo settimanale dell'account. `goal` sono i suoi tre campi; `value` la scelta mostrata (un numero da 1 a 7 o
+// L'obiettivo settimanale dell'account. `fields` sono i suoi tre campi; `value` la scelta mostrata (un numero da 1 a 7 o
 // 'default'), la stessa per la riga e per la finestra: quella dell'account e, solo mentre si salva, la scelta in corso;
 // `label` è il testo della riga. `change(next)` salva, mette i tre campi della risposta nell'account della cornice
 // (`patchAccount`) e torna true se è riuscito: la finestra resta aperta e l'esito sta in `status` o in `error`.
@@ -25,10 +25,10 @@ export default function useWeeklyGoalSetting(account, patchAccount) {
     errorText: t('account.weekly_goal.error'),
     savedText: t('account.weekly_goal.saved'),
   });
-  const goal = goalFields(account ?? {});
-  const value = pending ?? shownChoice(goal);
+  const fields = goalFields(account ?? {});
+  const value = pending ?? shownChoice(fields);
   const label = value === 'default'
-    ? t('account.weekly_goal.default', { n: goal.weekly_goal_default })
+    ? t('account.weekly_goal.default', { n: fields.weekly_goal_default })
     : t('account.weekly_goal.value', { count: value });
 
   const change = (next) => save(next, async () => {
@@ -36,5 +36,5 @@ export default function useWeeklyGoalSetting(account, patchAccount) {
     patchAccount(goalFields(data));
   });
 
-  return { goal, value, label, saving: pending !== null, error, status, change, clearOutcome };
+  return { fields, value, label, saving: pending !== null, error, status, change, clearOutcome };
 }

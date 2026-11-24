@@ -17,7 +17,7 @@ const ChoiceSettingBody = ({ label, options, value, onChange, saving, help, exam
       </RadioGroup>
       <Typography id={helpId} sx={{ fontSize: 16, color: 'text.secondary', mt: 1 }}>{help}</Typography>
       {example && <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 1 }}>{example}</Typography>}
-      <SettingOutcome alert={error} />
+      <SettingOutcome error={error} />
     </>
   );
 };

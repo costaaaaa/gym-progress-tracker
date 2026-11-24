@@ -9,11 +9,11 @@ export default function useSettingSave({ errorText, savedText }) {
   const [pending, setPending] = useState(null);
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
-  const busy = useRef(false);
+  const savingRef = useRef(false);
 
   const save = async (next, request) => {
-    if (busy.current) return false;
-    busy.current = true;
+    if (savingRef.current) return false;
+    savingRef.current = true;
     setPending(next);
     setError('');
     setStatus('');
@@ -26,7 +26,7 @@ export default function useSettingSave({ errorText, savedText }) {
       setError(errorText);
       return false;
     } finally {
-      busy.current = false;
+      savingRef.current = false;
       setPending(null);
     }
   };
