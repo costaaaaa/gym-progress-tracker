@@ -24,6 +24,8 @@ const PreferenceGroups = ({ account, patchAccount, notify }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [openKey, setOpenKey] = useState(null);
+  // Gli interruttori degli strumenti salvano da soli (FocusToolsOptions): dicono qui se c'è un salvataggio in corso
+  const [toolsSaving, setToolsSaving] = useState(false);
   const lastRow = useRef(null);
 
   const goal = useWeeklyGoalSetting(account, patchAccount);
@@ -87,8 +89,8 @@ const PreferenceGroups = ({ account, patchAccount, notify }) => {
           error={unit.error}
         />
       </SettingDialog>
-      <SettingDialog open={openKey === 'tools'} title={t('focus.tools.title')} onClose={close}>
-        <FocusToolsOptions idPrefix="account-focus-tools" />
+      <SettingDialog open={openKey === 'tools'} title={t('focus.tools.title')} onClose={close} saving={toolsSaving}>
+        <FocusToolsOptions idPrefix="account-focus-tools" onSavingChange={setToolsSaving} />
       </SettingDialog>
       <SettingDialog open={openKey === 'language'} title={t('account.language')} onClose={close} saving={language.saving}>
         <ChoiceSettingBody

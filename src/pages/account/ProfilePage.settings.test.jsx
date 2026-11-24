@@ -503,6 +503,56 @@ describe('finestra «Strumenti della serie»', () => {
   });
 });
 
+// Come per le altre finestre: finché un salvataggio è in corso la finestra non si chiude (con Esc, «Chiudi» o il clic fuori),
+// così l'errore non si perde e non parte una seconda richiesta da una finestra riaperta
+describe('finestra «Strumenti della serie»: durante un salvataggio', () => {
+  const pressEsc = () => fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape', code: 'Escape' });
+  // Una finestra che si chiude resta nel documento per la dissolvenza: si aspetta più a lungo di quella
+  const stillOpen = async () => {
+    await new Promise((resolve) => { setTimeout(resolve, 500); });
+    expect(screen.getByRole('dialog')).toBeTruthy();
+  };
+  const slowSave = async () => {
+    const pending = deferred();
+    stubFetch({ settings: () => pending.promise });
+    await mount();
+    const dialog = open('Strumenti della serie');
+    fireEvent.click(dialog.getByRole('switch', { name: 'Tecnica di intensità' }));
+    await waitFor(() => expect(settingsCalls()).toHaveLength(1));
+    return { dialog, pending };
+  };
+
+  it('Esc e «Chiudi» non la chiudono', async () => {
+    const { dialog } = await slowSave();
+    await waitFor(() => expect(dialog.getByRole('button', { name: 'Chiudi' }).getAttribute('aria-disabled')).toBe('true'));
+    pressEsc();
+    fireEvent.click(dialog.getByRole('button', { name: 'Chiudi' }));
+    await stillOpen();
+  });
+
+  it('arriva un rifiuto: l\'errore si legge nella finestra, poi si può chiudere', async () => {
+    const { dialog, pending } = await slowSave();
+    pressEsc();
+    pending.release(json({ success: false }, 500));
+    await waitFor(() => expect(dialog.getByRole('alert').textContent).toBe('Errore nel salvataggio. Riprova.'));
+    await waitFor(() => expect(dialog.getByRole('button', { name: 'Chiudi' }).getAttribute('aria-disabled')).toBeNull());
+    await stillOpen();
+    fireEvent.click(dialog.getByRole('button', { name: 'Chiudi' }));
+    await closed();
+    expect(settingsCalls()).toHaveLength(1);
+  });
+
+  it('a salvataggio finito si chiude con Esc e «Chiudi»', async () => {
+    const { dialog, pending } = await slowSave();
+    pending.release(json({ success: true, rest_timer_enabled: true, focus_tools: { technique: false, suggested_weight: true } }));
+    await waitFor(() => expect(dialog.getByRole('status').textContent).toBe('Tecnica di intensità: spento'));
+    await waitFor(() => expect(dialog.getByRole('button', { name: 'Chiudi' }).getAttribute('aria-disabled')).toBeNull());
+    pressEsc();
+    await closed();
+    expect(settingsCalls()).toHaveLength(1);
+  });
+});
+
 describe('la finestra non porta pulsanti del profilo', () => {
   it('«Salva profilo» c\'è una volta sola, nella card del profilo fisico; nella finestra dell\'obiettivo solo 1-7, Default e Chiudi', async () => {
     await mount();
