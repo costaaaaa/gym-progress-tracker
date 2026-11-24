@@ -486,10 +486,9 @@ const SHOT_LIST = [
   ['volume-base', '/progressi?tab=volume', { loggedIn: true, sets: true, modules: { recovery: false }, readyText: 'Questa settimana' }],
   // Pagina di un esercizio (la panca): 12 sessioni, grafico in salita, record e cronologia
   ['progressi-esercizio', '/progressi/esercizi/3', { loggedIn: true, utente: 'progressi', ready: 'Panca piana' }],
-  // Account: l'elenco delle sei voci e, una per una, le sue pagine
+  // Account: l'elenco delle cinque voci e, una per una, le sue pagine
   ['account', '/account', { loggedIn: true }],
   ['account-profilo', '/account/profilo', { loggedIn: true }],
-  ['account-preferenze', '/account/preferenze', { loggedIn: true }],
   ['account-moduli', '/account/moduli', { loggedIn: true }],
   ['account-piano', '/account/piano', { loggedIn: true }],
   ['account-dati', '/account/dati', { loggedIn: true }],
@@ -722,6 +721,22 @@ for (const vp of viewports) {
         await ctx.close();
       }
     });
+    // «Profilo e preferenze» con la finestra di una riga aperta: l'obiettivo settimanale e l'unità di misura
+    for (const [name, row] of [['account-profilo-obiettivo', 'Obiettivo settimanale'], ['account-profilo-unita', 'Unità di misura']]) {
+      if (!want(name)) continue;
+      await attempt(tag, name, async () => {
+        const { ctx, page } = await openPage(vp, theme, { loggedIn: true }, tag);
+        try {
+          await page.goto(`${base}/account/profilo`, { waitUntil: 'domcontentloaded' });
+          await page.getByRole('button', { name: row, exact: true }).click();
+          const dialog = page.getByRole('dialog');
+          await dialog.waitFor();
+          await snap(page, name, tag, dialog);
+        } finally {
+          await ctx.close();
+        }
+      });
+    }
     if (want('allenamenti-piani-elimina-giorno')) await attempt(tag, 'allenamenti-piani-elimina-giorno', async () => {
       const { ctx, page } = await openPage(vp, theme, { loggedIn: true, gratis: true, plans: 'gratis-elimina' }, tag);
       try {
