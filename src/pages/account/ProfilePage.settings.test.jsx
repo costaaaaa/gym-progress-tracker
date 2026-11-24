@@ -80,6 +80,12 @@ const row = (name) => screen.getByRole('button', { name });
 const dialogOf = (name) => within(screen.getByRole('dialog', { name }));
 const open = (name) => { fireEvent.click(row(name)); return dialogOf(name); };
 const closed = () => waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+// Una finestra che si sta chiudendo resta nel documento per la dissolvenza, ma il fuoco è già tornato sulla riga: aperta
+// davvero vuol dire che il fuoco è ancora dentro
+const staysOpen = () => {
+  expect(screen.getByRole('dialog')).toBeTruthy();
+  expect(document.activeElement.closest('.MuiDialog-root')).not.toBeNull();
+};
 const settingsCalls = () => fetch.mock.calls.filter(([url]) => String(url).includes('update_settings.php')).map(([, init]) => JSON.parse(init.body));
 const reads = () => fetch.mock.calls.filter(([url]) => String(url).includes('user/read.php')).length;
 
@@ -330,7 +336,7 @@ describe.each([
     for (const radio of dialog.getAllByRole('radio')) expect(radio.disabled).toBe(false);
     fireEvent.click(dialog.getByRole('button', { name: 'Chiudi' }));
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
-    expect(screen.getByRole('dialog')).toBeTruthy();
+    staysOpen();
     answer.release(json({ success: true, ...body }));
     await closed();
     expect(settingsCalls()).toEqual([body]);
@@ -472,7 +478,7 @@ describe('finestra «Obiettivo settimanale»', () => {
     for (const b of within(goalGroup(dialog)).getAllByRole('button')) expect(b.disabled).toBe(false);
     fireEvent.click(dialog.getByRole('button', { name: 'Chiudi' }));
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
-    expect(screen.getByRole('dialog')).toBeTruthy();
+    staysOpen();
     answer.release(json({ success: true, weekly_goal: 5, weekly_goal_default: 3, weekly_goal_pending: null }));
     await waitFor(() => expect(dialog.getByRole('status').textContent).toBe('Obiettivo settimanale aggiornato'));
     expect(goalGroup(dialog).getAttribute('aria-busy')).toBe('false');
@@ -541,11 +547,6 @@ describe('finestra «Strumenti della serie»', () => {
 // così l'errore non si perde e non parte una seconda richiesta da una finestra riaperta
 describe('finestra «Strumenti della serie»: durante un salvataggio', () => {
   const pressEsc = () => fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape', code: 'Escape' });
-  // Una finestra che si chiude resta nel documento per la dissolvenza: si aspetta più a lungo di quella
-  const stillOpen = async () => {
-    await new Promise((resolve) => { setTimeout(resolve, 500); });
-    expect(screen.getByRole('dialog')).toBeTruthy();
-  };
   const slowSave = async () => {
     const pending = deferred();
     stubFetch({ settings: () => pending.promise });
@@ -561,7 +562,7 @@ describe('finestra «Strumenti della serie»: durante un salvataggio', () => {
     await waitFor(() => expect(dialog.getByRole('button', { name: 'Chiudi' }).getAttribute('aria-disabled')).toBe('true'));
     pressEsc();
     fireEvent.click(dialog.getByRole('button', { name: 'Chiudi' }));
-    await stillOpen();
+    staysOpen();
   });
 
   it('arriva un rifiuto: l\'errore si legge nella finestra, poi si può chiudere', async () => {
@@ -570,7 +571,7 @@ describe('finestra «Strumenti della serie»: durante un salvataggio', () => {
     pending.release(json({ success: false }, 500));
     await waitFor(() => expect(dialog.getByRole('alert').textContent).toBe('Errore nel salvataggio. Riprova.'));
     await waitFor(() => expect(dialog.getByRole('button', { name: 'Chiudi' }).getAttribute('aria-disabled')).toBeNull());
-    await stillOpen();
+    staysOpen();
     fireEvent.click(dialog.getByRole('button', { name: 'Chiudi' }));
     await closed();
     expect(settingsCalls()).toHaveLength(1);
