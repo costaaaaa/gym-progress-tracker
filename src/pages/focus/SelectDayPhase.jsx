@@ -9,7 +9,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import FocusToolsOptions from '../../components/Focus/FocusToolsOptions';
-import { FOCUS_TOOLS, toolsOnCount } from '../../utils/focusTools';
+import { focusToolsSummary } from '../../utils/focusToolsSummary';
 import { useFocusColors } from './useFocusColors';
 import { muscleLabel } from '../../i18n/labels';
 import { planSummary } from '../../utils/plannedSets';
@@ -25,7 +25,6 @@ export default function SelectDayPhase({
   const { colors } = useFocusColors();
   const { user } = useAuth();
   const [toolsOpen, setToolsOpen] = useState(false);
-  const onCount = toolsOnCount(user);
   // Frecce come in un gruppo di opzioni: scelgono il giorno accanto (con giro) e gli portano il fuoco
   const moveDay = (event) => {
     const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
@@ -177,7 +176,7 @@ export default function SelectDayPhase({
               <Box component="span" sx={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                 <Box component="span" sx={{ ...CHIP_FONT, fontWeight: 700, fontSize: '0.95rem' }}>{t('focus.tools.title')}</Box>
                 <Typography component="span" sx={{ color: colors.textSecondary, fontSize: '0.875rem' }}>
-                  {onCount === 0 ? t('focus.tools.none_on') : t('focus.tools.count', { count: onCount, total: FOCUS_TOOLS.length })}
+                  {focusToolsSummary(t, user)}
                 </Typography>
               </Box>
               <ChevronRightIcon aria-hidden sx={{ fontSize: 20, flexShrink: 0, color: colors.textSecondary }} />
