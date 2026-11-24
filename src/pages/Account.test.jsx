@@ -89,11 +89,10 @@ describe('elenco delle voci', () => {
     expect(screen.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(ROWS.map(([, href]) => href));
   });
 
-  it('la voce «Preferenze» di una volta non c\'è: nessun collegamento a /account/preferenze', async () => {
+  it('la voce «Preferenze» di una volta non c\'è: dopo i collegamenti dell\'elenco, nessuno si chiama così', async () => {
     await mount();
-    expect(screen.getAllByRole('link').length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link')).toHaveLength(ROWS.length);
     expect(screen.queryByRole('link', { name: 'Preferenze' })).toBeNull();
-    expect(screen.getAllByRole('link').map((a) => a.getAttribute('href'))).not.toContain('/account/preferenze');
   });
 
   it.each(ROWS)('«%s» porta a %s e ha la sua riga di aiuto', async (name, href, help) => {
