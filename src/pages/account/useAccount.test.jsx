@@ -156,10 +156,78 @@ describe('useAccount: patchAccount', () => {
     expect(hook.result.current.patchAccount).toBe(before);
   });
 
-  it('senza account (lettura fallita) non fa niente', async () => {
+  it('senza account (lettura fallita) unisce lo stesso: nasce un account con i soli campi salvati', async () => {
     vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(json({}, 500))));
     const { result } = await mount();
     act(() => result.current.patchAccount({ locale: 'en' }));
-    expect(result.current.account).toBeNull();
+    expect(result.current.account).toEqual({ locale: 'en' });
+  });
+});
+
+// Il vero updateUser crea un utente nuovo, quindi useAccount rilegge read.php e scrive l'account intero: una lettura
+// partita prima di un salvataggio non deve cancellarlo quando arriva dopo.
+describe('useAccount: patchAccount e letture in corso', () => {
+  const deferred = () => {
+    let resolve;
+    const promise = new Promise((done) => { resolve = done; });
+    return { promise, resolve };
+  };
+
+  // Una lettura già fatta, poi `user` cambia e ne parte una seconda che resta in attesa
+  const mountWithSlowSecondRead = async () => {
+    const second = deferred();
+    const fetchMock = vi.fn()
+      .mockImplementationOnce(() => Promise.resolve(json(details({ weekly_goal: 3 }))))
+      .mockImplementationOnce(() => second.promise);
+    vi.stubGlobal('fetch', fetchMock);
+    const hook = await mount();
+    auth.user = { id: 1, changed: true };
+    hook.rerender();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    return { ...hook, second, fetchMock };
+  };
+
+  it('una lettura partita prima della modifica e arrivata dopo non la cancella', async () => {
+    const { result, second } = await mountWithSlowSecondRead();
+    act(() => result.current.patchAccount({ weekly_goal: 5 }));
+    await act(async () => { second.resolve(json(details({ weekly_goal: 3, age: 31 }))); });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.account.weekly_goal).toBe(5);
+    expect(result.current.account.age).toBe(31);
+  });
+
+  it('una lettura partita dopo la modifica vince lei', async () => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockImplementationOnce(() => Promise.resolve(json(details({ weekly_goal: 3 }))))
+      .mockImplementationOnce(() => Promise.resolve(json(details({ weekly_goal: 2 })))));
+    const hook = await mount();
+    act(() => hook.result.current.patchAccount({ weekly_goal: 5 }));
+    auth.user = { id: 1, changed: true };
+    hook.rerender();
+    await waitFor(() => expect(hook.result.current.account.weekly_goal).toBe(2));
+  });
+
+  it('una modifica fatta a lettura finita non rientra in una lettura successiva', async () => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockImplementationOnce(() => Promise.resolve(json(details({ weekly_goal: 3 }))))
+      .mockImplementationOnce(() => Promise.resolve(json(details({ weekly_goal: 2 })))));
+    const hook = await mount();
+    act(() => hook.result.current.patchAccount({ weekly_goal: 5 }));
+    act(() => hook.result.current.patchAccount({ weekly_goal: 6 }));
+    expect(hook.result.current.account.weekly_goal).toBe(6);
+    auth.user = { id: 1, changed: true };
+    hook.rerender();
+    await waitFor(() => expect(hook.result.current.account.weekly_goal).toBe(2));
+  });
+
+  it('le modifiche fatte durante la lettura si riapplicano nell\'ordine, anche con la lettura iniziale', async () => {
+    const first = deferred();
+    vi.stubGlobal('fetch', vi.fn(() => first.promise));
+    const hook = renderHook(() => useAccount(vi.fn()));
+    act(() => hook.result.current.patchAccount({ weekly_goal: 4 }));
+    act(() => hook.result.current.patchAccount({ weekly_goal: 6, locale: 'en' }));
+    await act(async () => { first.resolve(json(details({ weekly_goal: 3, locale: 'it' }))); });
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    expect(hook.result.current.account).toMatchObject({ username: 'mario', weekly_goal: 6, locale: 'en' });
   });
 });
