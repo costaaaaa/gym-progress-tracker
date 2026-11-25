@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { format, isValid } from 'date-fns';
 import LabeledDatePicker from '../../components/LabeledDatePicker';
 import DateLocalization from '../../i18n/DateLocalization';
-import { formatMeasureText } from '../../i18n/format';
+import { formatNumber } from '../../i18n/format';
 import { BODY_LB_DIVISIONS, fieldTextToKgText, maxWeightInUnit, weightUnitLabel } from '../../utils/weightUnit';
 import { fieldTextToCmText, lengthUnitLabel, maxLengthInUnit } from '../../utils/lengthUnit';
 import { BODY_LIMITS, isValueOutOfRange } from '../../utils/bodyStatsRules';
@@ -68,10 +68,12 @@ const NewMeasurementDialog = ({ open, onClose, save, onNotify, weightUnit }) => 
     if (fieldErrors.date) setFieldErrors(({ date: _removed, ...others }) => others);
   };
 
+  // Il massimo si scrive senza punto delle migliaia: chi lo ricopia nel campo lo vede accettato
+  const maxText = (value) => formatNumber(value, { maximumFractionDigits: 2, useGrouping: false });
   // Il tetto del peso e delle circonferenze si mostra nell'unità dell'utente, gli altri com'è
   const rangeMax = (name, max) => {
-    if (name === 'weight') return formatMeasureText(maxWeightInUnit(max, weightUnit, BODY_LB_DIVISIONS));
-    return LENGTH_FIELDS.includes(name) ? formatMeasureText(maxLengthInUnit(max, weightUnit)) : max;
+    if (name === 'weight') return maxText(maxWeightInUnit(max, weightUnit, BODY_LB_DIVISIONS));
+    return LENGTH_FIELDS.includes(name) ? maxText(maxLengthInUnit(max, weightUnit)) : max;
   };
 
   // Il testo di un campo, nell'unità scelta, in kg (peso) o cm (circonferenze) per le regole e il payload; gli altri com'è
