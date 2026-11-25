@@ -108,7 +108,7 @@ describe('elenco delle voci', () => {
     await mount();
     const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'));
     expect(hrefs).toEqual(['/piani', ...ROWS.map(([, href]) => href)]);
-    expect(hrefs).not.toContain('/account/piano');
+    expect(hrefs.filter((href) => href.endsWith('/piano'))).toEqual([]);
   });
 
   it('la voce «Preferenze» di una volta non c\'è: dopo i collegamenti dell\'elenco, nessuno si chiama così', async () => {

@@ -486,11 +486,10 @@ const SHOT_LIST = [
   ['volume-base', '/progressi?tab=volume', { loggedIn: true, sets: true, modules: { recovery: false }, readyText: 'Questa settimana' }],
   // Pagina di un esercizio (la panca): 12 sessioni, grafico in salita, record e cronologia
   ['progressi-esercizio', '/progressi/esercizi/3', { loggedIn: true, utente: 'progressi', ready: 'Panca piana' }],
-  // Account: l'elenco delle cinque voci e, una per una, le sue pagine
+  // Account: l'elenco delle quattro voci (con il livello in testata) e, una per una, le sue pagine
   ['account', '/account', { loggedIn: true }],
   ['account-profilo', '/account/profilo', { loggedIn: true }],
   ['account-moduli', '/account/moduli', { loggedIn: true }],
-  ['account-piano', '/account/piano', { loggedIn: true }],
   ['account-dati', '/account/dati', { loggedIn: true }],
   ['account-sicurezza', '/account/sicurezza', { loggedIn: true }],
   ['livelli', '/livelli', { loggedIn: true }],
@@ -815,10 +814,10 @@ for (const vp of viewports) {
     // Codici di registrazione: registrazione con il campo aperto (e il codice controllato o rifiutato), livello in Account, sezione admin
     for (const [name, url, opts] of [
       ['codici-registrazione-campo', '/register?code=PRIMAVERA-26', { loggedIn: false }],
-      ['codici-account-gratis', '/account/piano', { loggedIn: true, tierState: 'gratis' }],
-      ['codici-account-plus', '/account/piano', { loggedIn: true, tierState: 'plus' }],
-      ['codici-account-attesa', '/account/piano', { loggedIn: true, tierState: 'attesa', email: 'da-confermare' }],
-      ['codici-account-non-applicato', '/account/piano', { loggedIn: true, tierState: 'missed' }],
+      ['codici-account-gratis', '/account', { loggedIn: true, tierState: 'gratis' }],
+      ['codici-account-plus', '/account', { loggedIn: true, tierState: 'plus' }],
+      ['codici-account-attesa', '/account', { loggedIn: true, tierState: 'attesa', email: 'da-confermare' }],
+      ['codici-account-non-applicato', '/account', { loggedIn: true, tierState: 'missed' }],
     ]) {
       if (!want(name)) continue;
       await attempt(tag, name, async () => {
