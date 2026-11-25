@@ -1,11 +1,19 @@
+import { visuallyHidden } from '@mui/utils';
 import LabeledDatePicker from '../../components/LabeledDatePicker';
 import DateLocalization from '../../i18n/DateLocalization';
 import SettingOutcome from './SettingOutcome';
 
-// MUI disegna etichetta e riga d'aiuto del campo più piccole di 16 px: qui si portano a 16
-const READABLE_TEXT = { '& .MuiInputLabel-root, & .MuiFormHelperText-root': { fontSize: 16 } };
+// Il titolo della finestra dice già a cosa serve il campo: l'etichetta resta (è il suo nome accessibile) ma non si vede,
+// e senza il suo testo anche la tacca che apre nel bordo sparisce. La riga d'aiuto, che MUI disegna più piccola di
+// 16 px, si porta a 16.
+const FIELD_STYLE = {
+  '& .MuiInputLabel-root': visuallyHidden,
+  '& legend': { display: 'none' },
+  '& .MuiFormHelperText-root': { fontSize: 16 },
+};
 
-// Corpo della finestra di un campo con la data (data di nascita, inizio allenamento): il campo col suo aiuto e sotto
+// Corpo della finestra di un campo con la data (data di nascita, inizio allenamento): il campo (la sua etichetta, uguale
+// al titolo della finestra, non si vede) col suo aiuto e sotto
 // l'esito di un rifiuto del server (`outcomeError`). `error` è l'errore di validazione, scritto al posto dell'aiuto e
 // letto col campo; `inputProps` e le altre proprietà (limiti, viste, formato) vanno al selettore. Il salvataggio sta nel
 // piede della finestra (SettingDialog con onSave).
@@ -20,7 +28,7 @@ const DateSettingBody = ({ label, value, onChange, help, error, outcomeError, in
           textField: {
             fullWidth: true,
             size: 'small',
-            sx: READABLE_TEXT,
+            sx: FIELD_STYLE,
             // undefined (non false) lascia a MUI X il suo errore di validazione (data fuori da minDate/maxDate)
             error: error ? true : undefined,
             inputRef,

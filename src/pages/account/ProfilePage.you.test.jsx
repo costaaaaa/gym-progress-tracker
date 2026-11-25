@@ -137,6 +137,24 @@ describe('il gruppo «Tu»: la forma', () => {
 });
 
 describe('il gruppo «Tu»: le finestre', () => {
+  // Il testo che si vede nella finestra: niente tacca del bordo (legend) e niente testo ritagliato a 1 px (visuallyHidden)
+  const clipped = (el) => (el ? getComputedStyle(el).width === '1px' || clipped(el.parentElement) : false);
+  const visibleTexts = (root, text) => [...root.querySelectorAll('*')].filter((el) => (
+    !el.closest('legend') && !clipped(el)
+    && [...el.childNodes].some((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim() === text)
+  ));
+
+  it.each([['Data di nascita'], ['Sesso'], ['Inizio allenamento']])('il titolo «%s» si legge una volta sola nella finestra, e il controllo ha il suo nome', async (name) => {
+    mockPointer(true);
+    await mount();
+    open(name);
+    const dialog = screen.getByRole('dialog');
+    expect(visibleTexts(dialog, name)).toHaveLength(1);
+    expect(visibleTexts(dialog, name)[0].closest('h2')).not.toBeNull();
+    const control = name === 'Sesso' ? within(dialog).getByRole('radiogroup', { name }) : within(dialog).getByRole('textbox', { name: new RegExp(`^${name}`) });
+    expect(control).toBeTruthy();
+  });
+
   it.each([
     ['Data di nascita', ['Annulla', 'Salva']],
     ['Sesso', ['Chiudi']],
@@ -146,10 +164,10 @@ describe('il gruppo «Tu»: le finestre', () => {
     await mount();
     const dialog = open(name);
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
-    // il titolo c'è una volta come titolo della finestra; i campi con la data lo ripetono come etichetta
+    // il titolo come nome della finestra: che si legge una volta sola lo prova il caso qui sopra
     expect(within(screen.getByRole('dialog')).getByRole('heading', { name }).textContent).toBe(name);
-    // la tacca del bordo (legend) non è testo disegnato
-    expect(textBelow(screen.getByRole('dialog'), 16, '.MuiChip-root, legend')).toEqual([]);
+    // la tacca del bordo (legend) non è testo disegnato, e l'etichetta del campo data è ritagliata (la prova sopra)
+    expect(textBelow(screen.getByRole('dialog'), 16, '.MuiChip-root, legend, .MuiInputLabel-root')).toEqual([]);
     const footer = screen.getByRole('dialog').querySelector('.MuiDialogActions-root');
     expect([...footer.querySelectorAll('button')].map((b) => b.textContent)).toEqual(buttons);
     expect(dialog).toBeTruthy();
