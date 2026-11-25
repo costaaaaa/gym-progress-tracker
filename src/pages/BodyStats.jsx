@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { BODY_LB_DIVISIONS, formatWeightInUnit } from '../utils/weightUnit';
 import { lengthUnitLabel } from '../utils/lengthUnit';
 import { dayNumber } from '../utils/calendarDay';
+import ConfirmDialog from '../components/ConfirmDialog';
 import HealthConsentCard from '../components/HealthConsentCard';
 import HealthAppHint from '../components/HealthAppHint';
 import { DEFAULT_PERIOD, filterByPeriod, periodStart, sortByDate, paginate } from '../utils/bodyStatsPeriod';
@@ -36,8 +37,10 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
 
   useOncePerRequest(openRequest, !loading, () => { if (!consentRequired) setIsDialogOpen(true); });
 
-  const handleDelete = async (id) => {
-    if (!window.confirm(t('body.confirm_delete'))) return;
+  const [deleting, setDeleting] = useState(null);
+  const confirmDelete = async () => {
+    const id = deleting;
+    setDeleting(null);
     const result = await remove(id);
     if (result.ok) notify(t('body.deleted'), 'success');
   };
@@ -125,7 +128,7 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
 
           {/* Tabella Storico */}
           <Grid item xs={12}>
-            <BodyHistory history={history} empty={stats.length === 0} onDelete={handleDelete} onPageChange={setPage} weightUnit={weightUnit} />
+            <BodyHistory history={history} empty={stats.length === 0} onDelete={setDeleting} onPageChange={setPage} weightUnit={weightUnit} />
           </Grid>
         </Grid>
       )}
@@ -140,6 +143,14 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
         <Box sx={{ mt: 4, mb: 4 }}>{renderContent()}</Box>
       )}
 
+      <ConfirmDialog
+        open={deleting !== null}
+        title={t('body.delete.title')}
+        text={t('body.confirm_delete')}
+        cta={t('common.delete')}
+        onConfirm={confirmDelete}
+        onClose={() => setDeleting(null)}
+      />
       <NewMeasurementDialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)} save={save} onNotify={notify} weightUnit={weightUnit} />
 
       <Snackbar

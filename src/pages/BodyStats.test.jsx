@@ -10,7 +10,7 @@ import { setBrowserTimeZone } from '../test/timeZone';
 import { textBelow } from '../test/minText';
 import { describedBy } from '../test/accessibleNames';
 import { mockPointer } from '../test/pointer';
-import { expectNoNestedContainer } from '../test/dom';
+import { expectNoNestedContainer, expectDestructiveConfirm } from '../test/dom';
 
 const account = vi.hoisted(() => ({ weightUnit: 'kg' }));
 vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ weightUnit: account.weightUnit }) }));
@@ -910,5 +910,36 @@ describe('aree da 44px', () => {
     const del = within(tableRows()[0]).getByRole('button', { name: 'Elimina' });
     expect(style(del).width).toBe('44px');
     expect(style(del).height).toBe('44px');
+  });
+});
+
+describe('eliminare una misurazione', () => {
+  const deleteCalls = () => fetch.mock.calls.filter(([url]) => String(url).includes('user_stats/delete.php'));
+
+  beforeEach(() => {
+    localStorage.setItem('themeMode', 'light');
+    records = measured();
+  });
+
+  it('chiede conferma in una finestra del tema, non con quella del browser, ed elimina solo dopo «Elimina»', async () => {
+    const browserConfirm = vi.spyOn(window, 'confirm');
+    await mount(themed);
+    fireEvent.click(within(tableRows()[0]).getByRole('button', { name: 'Elimina' }));
+    expect(within(screen.getByRole('dialog')).getByText('Eliminare la misurazione?')).toBeTruthy();
+    expectDestructiveConfirm('Sei sicuro di voler eliminare questa misurazione?', 'Elimina');
+    expect(deleteCalls()).toHaveLength(0);
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Elimina' }));
+    await waitFor(() => expect(deleteCalls()).toHaveLength(1));
+    expect(JSON.parse(deleteCalls()[0][1].body)).toEqual({ id: '2026-10-15' });
+    expect(await screen.findByText('Misurazione eliminata')).toBeTruthy();
+    expect(browserConfirm).not.toHaveBeenCalled();
+  });
+
+  it('«Annulla» chiude la finestra senza eliminare', async () => {
+    await mount(themed);
+    fireEvent.click(within(tableRows()[0]).getByRole('button', { name: 'Elimina' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Annulla' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(deleteCalls()).toHaveLength(0);
   });
 });

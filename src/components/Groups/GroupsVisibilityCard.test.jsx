@@ -1,12 +1,12 @@
 // Card «Visibilità nei gruppi» dell'Account: senza gruppi il collegamento a /gruppi c'è solo se il modulo Gruppi è attivo;
 // il blocco «Cosa mostro» ha quattro interruttori che salvano subito (la fetch è il confine, lo stato dell'account è un finto).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import GroupsVisibilityCard from './GroupsVisibilityCard';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
-import { json } from '../../test/dom';
+import { json, expectDestructiveConfirm } from '../../test/dom';
 
 const auth = vi.hoisted(() => ({ value: null }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth.value }));
@@ -180,5 +180,36 @@ describe('arrivo da un collegamento', () => {
   it.each([['groups-shown', 'il blocco «Cosa mostro»'], ['groups-list', 'l\'elenco dei gruppi']])('con #%s nell\'indirizzo prende il fuoco %s', async (id) => {
     mount({ groups: true }, undefined, `/account/dati#${id}`);
     await waitFor(() => expect(document.activeElement).toBe(document.getElementById(id)));
+  });
+});
+
+describe('uscire da un gruppo', () => {
+  const leaveCalls = () => fetch.mock.calls.filter(([url]) => String(url).includes('leave.php'));
+  const MEMBER_GROUP = { id: 7, name: 'Palestra Rossi', my_role: 'member' };
+
+  it('chiede conferma nella stessa finestra dell\'uscita dal dettaglio del gruppo, non con quella del browser, ed esce solo dopo «Esci»', async () => {
+    const browserConfirm = vi.spyOn(window, 'confirm');
+    groups = [MEMBER_GROUP];
+    mount({ groups: true });
+    fireEvent.click(await screen.findByRole('button', { name: 'Esci' }));
+    const dialog = within(screen.getByRole('dialog'));
+    expect(dialog.getByText('Uscire dal gruppo?')).toBeTruthy();
+    expectDestructiveConfirm('I tuoi dati spariscono subito dalla classifica. Per rientrare servirà un nuovo invito.', 'Esci');
+    expect(leaveCalls()).toHaveLength(0);
+    fireEvent.click(dialog.getByRole('button', { name: 'Esci' }));
+    await waitFor(() => expect(leaveCalls()).toHaveLength(1));
+    expect(JSON.parse(leaveCalls()[0][1].body)).toEqual({ group_id: 7 });
+    await waitFor(() => expect(screen.queryByText('Palestra Rossi')).toBeNull());
+    expect(browserConfirm).not.toHaveBeenCalled();
+  });
+
+  it('«Annulla» chiude la finestra e il gruppo resta', async () => {
+    groups = [MEMBER_GROUP];
+    mount({ groups: true });
+    fireEvent.click(await screen.findByRole('button', { name: 'Esci' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Annulla' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(leaveCalls()).toHaveLength(0);
+    expect(screen.getByText('Palestra Rossi')).toBeTruthy();
   });
 });

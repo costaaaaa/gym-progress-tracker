@@ -1,4 +1,5 @@
 import { expect } from 'vitest';
+import { screen, within } from '@testing-library/react';
 
 // Helper comuni dei test di pagina: risposta della fetch finta, colore calcolato di un elemento e controllo che la pagina non apra un Container annidato.
 export const json = (data, status = 200) => ({ ok: status < 400, status, json: async () => data, text: async () => '' });
@@ -24,3 +25,16 @@ export const textsBelow16pxExceptActiveBadge = () => [...document.body.querySele
   .filter((el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim() !== ''))
   .filter((el) => parseFloat(getComputedStyle(el).fontSize) < 16 && !(el.textContent === 'Attiva' && parseFloat(getComputedStyle(el).fontSize) >= 13))
   .map((el) => `${el.textContent} (${getComputedStyle(el).fontSize})`);
+
+// La finestra di conferma di un'eliminazione (o di un'uscita) è la stessa ovunque: «Elimina» (o il testo dato) rosso pieno senza
+// icona, corpo a 16 px nel colore del testo principale. Colori del tema chiaro scritti a mano: text.primary #1a1816, error #d50000.
+export const expectDestructiveConfirm = (corpo, conferma) => {
+  const dialog = within(screen.getByRole('dialog'));
+  const bottone = dialog.getByRole('button', { name: conferma });
+  expect(bottone.querySelector('svg')).toBeNull();
+  expect(bottone.classList.contains('MuiButton-containedError')).toBe(true);
+  expect(getComputedStyle(bottone).backgroundColor).toBe('rgb(213, 0, 0)');
+  const testo = dialog.getByText(corpo);
+  expect(colorOf(testo)).toBe('rgb(26, 24, 22)');
+  expect(getComputedStyle(testo).fontSize).toBe('16px');
+};
