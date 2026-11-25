@@ -461,3 +461,173 @@ describe('tema: modo iniziale', () => {
     expect(localStorage.getItem('themeMode')).toBe('light');
   });
 });
+
+// Preferenza del tema (Sistema, Chiaro, Scuro): senza scelta salvata vale «system» e il tema segue il sistema anche a
+// pagina aperta; «light» e «dark» si salvano in themeMode, «system» toglie la chiave (public/tema.js la legge uguale).
+describe('tema: preferenza', () => {
+  const DARK_QUERY = '(prefers-color-scheme: dark)';
+  const realMatchMedia = window.matchMedia;
+  afterEach(() => {
+    window.matchMedia = realMatchMedia;
+    vi.restoreAllMocks();
+  });
+
+  // Un sistema finto: `set(dark)` cambia l'aspetto e avvisa chi ascolta; `listeners()` dice quanti ascolti sono aperti
+  const fakeSystem = (dark) => {
+    const state = { dark };
+    const listeners = new Set();
+    window.matchMedia = (query) => ({
+      get matches() { return query === DARK_QUERY && state.dark; },
+      media: query,
+      addEventListener: (type, listener) => { if (query === DARK_QUERY && type === 'change') listeners.add(listener); },
+      removeEventListener: (type, listener) => { if (query === DARK_QUERY && type === 'change') listeners.delete(listener); },
+    });
+    return {
+      set: (next) => { state.dark = next; act(() => [...listeners].forEach((listener) => listener())); },
+      listeners: () => listeners.size,
+    };
+  };
+  const Probe = () => {
+    const { mode, themePreference, setThemePreference, toggleThemeMode } = useThemeMode();
+    return (
+      <>
+        <p>{`${themePreference}/${mode}`}</p>
+        {['system', 'light', 'dark'].map((choice) => (
+          <button key={choice} type="button" onClick={() => setThemePreference(choice)}>{choice}</button>
+        ))}
+        <button type="button" onClick={toggleThemeMode}>toggle</button>
+      </>
+    );
+  };
+  const mount = () => render(<ThemeModeProvider><Probe /></ThemeModeProvider>);
+  const choose = (name) => fireEvent.click(screen.getByRole('button', { name }));
+  const stored = () => localStorage.getItem('themeMode');
+
+  it.each([
+    [true, 'system/dark'],
+    [false, 'system/light'],
+  ])('senza scelta salvata la preferenza è «system» e il tema è quello del sistema (scuro: %s)', (dark, state) => {
+    fakeSystem(dark);
+    mount();
+    expect(screen.getByText(state)).toBeTruthy();
+  });
+
+  it('con «system» il cambio del sistema a pagina aperta cambia il tema, e <html> lo segue', () => {
+    const system = fakeSystem(false);
+    mount();
+    expect(screen.getByText('system/light')).toBeTruthy();
+    system.set(true);
+    expect(screen.getByText('system/dark')).toBeTruthy();
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    system.set(false);
+    expect(screen.getByText('system/light')).toBeTruthy();
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+  });
+
+  it.each(['light', 'dark'])('scegliere «%s» salva la chiave, cambia il tema e smette di seguire il sistema', (choice) => {
+    const system = fakeSystem(choice === 'light');
+    mount();
+    choose(choice);
+    expect(screen.getByText(`${choice}/${choice}`)).toBeTruthy();
+    expect(stored()).toBe(choice);
+    system.set(choice !== 'light');
+    system.set(choice === 'light');
+    expect(screen.getByText(`${choice}/${choice}`)).toBeTruthy();
+  });
+
+  it('scegliere «system» toglie la chiave e riprende a seguire il sistema', () => {
+    const system = fakeSystem(true);
+    localStorage.setItem('themeMode', 'light');
+    mount();
+    expect(screen.getByText('light/light')).toBeTruthy();
+    choose('system');
+    expect(screen.getByText('system/dark')).toBeTruthy();
+    expect(stored()).toBeNull();
+    system.set(false);
+    expect(screen.getByText('system/light')).toBeTruthy();
+  });
+
+  it('tornando a «system» vale l\'aspetto che il sistema ha adesso, anche se è cambiato mentre la scelta era fissa', () => {
+    const system = fakeSystem(true);
+    localStorage.setItem('themeMode', 'dark');
+    mount();
+    system.set(false);
+    expect(screen.getByText('dark/dark')).toBeTruthy();
+    choose('system');
+    expect(screen.getByText('system/light')).toBeTruthy();
+  });
+
+  it('tornando a «system» nessun disegno usa l\'aspetto che il sistema aveva al caricamento', () => {
+    const system = fakeSystem(true);
+    localStorage.setItem('themeMode', 'light');
+    const drawn = [];
+    const Recorder = () => { drawn.push(useThemeMode().mode); return null; };
+    render(<ThemeModeProvider><Probe /><Recorder /></ThemeModeProvider>);
+    system.set(false);
+    choose('system');
+    expect(screen.getByText('system/light')).toBeTruthy();
+    expect(new Set(drawn)).toEqual(new Set(['light']));
+  });
+
+  it('il caricamento non scrive e non toglie niente, nemmeno in StrictMode', () => {
+    fakeSystem(true);
+    const set = vi.spyOn(Storage.prototype, 'setItem');
+    const remove = vi.spyOn(Storage.prototype, 'removeItem');
+    render(<StrictMode><ThemeModeProvider><Probe /></ThemeModeProvider></StrictMode>);
+    expect(screen.getByText('system/dark')).toBeTruthy();
+    expect(set).not.toHaveBeenCalled();
+    expect(remove).not.toHaveBeenCalled();
+  });
+
+  it('un valore sconosciuto nella chiave vale «system»', () => {
+    fakeSystem(true);
+    localStorage.setItem('themeMode', 'blu');
+    mount();
+    expect(screen.getByText('system/dark')).toBeTruthy();
+  });
+
+  it('con lo storage bloccato (lettura e scrittura) vale «system» e la scelta vale per la visita', () => {
+    fakeSystem(true);
+    for (const method of ['getItem', 'setItem', 'removeItem']) {
+      vi.spyOn(Storage.prototype, method).mockImplementation(() => { throw new Error('bloccato'); });
+    }
+    mount();
+    expect(screen.getByText('system/dark')).toBeTruthy();
+    choose('light');
+    expect(screen.getByText('light/light')).toBeTruthy();
+    choose('system');
+    expect(screen.getByText('system/dark')).toBeTruthy();
+  });
+
+  it.each([
+    [true, 'light'],
+    [false, 'dark'],
+  ])('il bottone della barra da «system» (sistema scuro: %s) salva il tema opposto a quello in vigore: «%s»', (dark, saved) => {
+    fakeSystem(dark);
+    mount();
+    choose('toggle');
+    expect(screen.getByText(`${saved}/${saved}`)).toBeTruthy();
+    expect(stored()).toBe(saved);
+  });
+
+  it('l\'ascolto del sistema c\'è solo con «system» e si toglie quando si lascia e allo smontaggio', () => {
+    const system = fakeSystem(false);
+    const { unmount } = mount();
+    expect(system.listeners()).toBe(1);
+    choose('dark');
+    expect(system.listeners()).toBe(0);
+    choose('system');
+    expect(system.listeners()).toBe(1);
+    unmount();
+    expect(system.listeners()).toBe(0);
+  });
+
+  it('senza matchMedia vale il chiaro e scegliere «system» non rompe', () => {
+    window.matchMedia = undefined;
+    mount();
+    expect(screen.getByText('system/light')).toBeTruthy();
+    choose('dark');
+    choose('system');
+    expect(screen.getByText('system/light')).toBeTruthy();
+  });
+});

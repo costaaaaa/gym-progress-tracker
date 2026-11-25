@@ -1,5 +1,5 @@
 // Pagina «Profilo e preferenze» (/account/profilo), la parte dei gruppi «Allenamento» e «App»: righe col valore di adesso
-// e una finestra per ognuna (obiettivo settimanale, unità di misura, strumenti della serie, lingua). Il gruppo «Tu» e la
+// e una finestra per ognuna (obiettivo settimanale, unità di misura, strumenti della serie, lingua, tema). Il gruppo «Tu» e la
 // parte alta hanno i loro file: ProfilePage.you.test.jsx, ProfilePage.test.jsx e ProfilePage.email.test.jsx.
 // Colori scritti a mano: text.secondary #6b6663, primary/error #d50000. La fetch è il confine.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -48,9 +48,15 @@ const stubFetch = ({ account = serverAccount(), settings = (body) => { Object.as
   )))
 );
 
+// La scelta del tema salvata in questo browser: 'light', 'dark' o nessuna (null), che vuol dire «Sistema»
+const savedTheme = (choice) => {
+  if (choice) localStorage.setItem('themeMode', choice);
+  else localStorage.removeItem('themeMode');
+};
+
 beforeEach(async () => {
   await i18n.changeLanguage('it');
-  localStorage.setItem('themeMode', 'light');
+  savedTheme('light');
   Object.assign(auth, {
     user: { id: 1 }, isLoggedIn: true, loading: false, logout: vi.fn(),
     updateUser: vi.fn((patch) => { auth.user = { ...auth.user, ...patch }; readers.forEach((redraw) => redraw()); }),
@@ -80,13 +86,13 @@ describe('la pagina', () => {
     expect(screen.getByRole('link', { name: 'Torna all\'Account' }).getAttribute('href')).toBe('/account');
   });
 
-  it('il gruppo «Allenamento» (obiettivo, unità, strumenti) viene prima del gruppo «App» (lingua)', async () => {
+  it('il gruppo «Allenamento» (obiettivo, unità, strumenti) viene prima del gruppo «App» (lingua, tema)', async () => {
     await mount();
     const headings = screen.getAllByRole('heading', { level: 2 }).filter((h) => ['Allenamento', 'App'].includes(h.textContent));
     expect(headings.map((h) => h.textContent)).toEqual(['Allenamento', 'App']);
     const rowsAfter = (heading) => within(heading.nextElementSibling).getAllByRole('button').map((b) => b.textContent);
     expect(rowsAfter(headings[0])).toEqual(['Obiettivo settimanaleDefault (3)', 'Unità di misurakg, cm', 'Strumenti della serie3 accesi su 3']);
-    expect(rowsAfter(headings[1])).toEqual(['LinguaItaliano']);
+    expect(rowsAfter(headings[1])).toEqual(['LinguaItaliano', 'TemaChiaro']);
     expect(headings[0].compareDocumentPosition(headings[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
@@ -130,7 +136,7 @@ describe('la pagina', () => {
 describe('le righe', () => {
   it('ogni riga è un pulsante: nome = titolo, descrizione = valore di adesso', async () => {
     await mount();
-    for (const [name, value] of [['Obiettivo settimanale', 'Default (3)'], ['Unità di misura', 'kg, cm'], ['Strumenti della serie', '3 accesi su 3'], ['Lingua', 'Italiano']]) {
+    for (const [name, value] of [['Obiettivo settimanale', 'Default (3)'], ['Unità di misura', 'kg, cm'], ['Strumenti della serie', '3 accesi su 3'], ['Lingua', 'Italiano'], ['Tema', 'Chiaro']]) {
       const button = row(name);
       expect(button.getAttribute('aria-haspopup')).toBe('dialog');
       expect(describedBy(button)).toBe(value);
@@ -171,6 +177,16 @@ describe('le righe', () => {
   });
 
   it.each([
+    [null, 'Sistema'],
+    ['light', 'Chiaro'],
+    ['dark', 'Scuro'],
+  ])('Tema, con la chiave themeMode a %s: «%s»', async (saved, value) => {
+    savedTheme(saved);
+    await mount();
+    expect(describedBy(row('Tema'))).toBe(value);
+  });
+
+  it.each([
     ['it', 'Italiano'],
     ['en', 'English'],
   ])('Lingua, account con %s: «%s» (il nome della lingua non si traduce)', async (locale, value) => {
@@ -188,6 +204,7 @@ describe('le righe', () => {
     expect(describedBy(row('Weekly goal'))).toBe('4 workouts');
     expect(describedBy(row('Units'))).toBe('lb, in');
     expect(describedBy(row('Language'))).toBe('English');
+    expect(describedBy(row('Theme'))).toBe('Light');
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Profile and preferences');
     expect(screen.getByRole('heading', { level: 2, name: 'Training' })).toBeTruthy();
     expect(screen.getByRole('heading', { level: 2, name: 'App' })).toBeTruthy();
@@ -200,6 +217,7 @@ describe('le finestre', () => {
     ['Unità di misura'],
     ['Strumenti della serie'],
     ['Lingua'],
+    ['Tema'],
   ])('«%s» apre la sua finestra, col titolo scritto una volta sola, e «Chiudi» la chiude', async (name) => {
     await mount();
     const dialog = open(name);
@@ -215,6 +233,7 @@ describe('le finestre', () => {
     ['Unità di misura'],
     ['Strumenti della serie'],
     ['Lingua'],
+    ['Tema'],
   ])('chiusa la finestra di «%s» il fuoco è sulla sua riga', async (name) => {
     await mount();
     const dialog = open(name);
@@ -356,6 +375,68 @@ describe.each([
     expect(dialog.getByRole('radio', { name: other }).checked).toBe(false);
     expect(describedBy(screen.getByRole('button', { name: title, hidden: true }))).toBe(rowValue);
     expect(auth.updateUser).not.toHaveBeenCalled();
+  });
+});
+
+// Il tema è di questo browser: la scelta vale al clic, senza richiesta al server né avviso della pagina
+describe('finestra «Tema»', () => {
+  const html = () => document.documentElement.getAttribute('data-theme');
+
+  it.each([
+    [null, 'Sistema'],
+    ['light', 'Chiaro'],
+    ['dark', 'Scuro'],
+  ])('ha tre radio col nome del gruppo «Tema» e, con la chiave a %s, scelto «%s»; sotto l\'aiuto', async (saved, chosen) => {
+    savedTheme(saved);
+    await mount();
+    const dialog = open('Tema');
+    const group = dialog.getByRole('radiogroup', { name: 'Tema' });
+    expect(within(group).getAllByRole('radio').map((r) => [r.closest('label').textContent, r.checked])).toEqual(
+      ['Sistema', 'Chiaro', 'Scuro'].map((name) => [name, name === chosen]),
+    );
+    expect(describedBy(group)).toBe('Sistema segue l\'aspetto del dispositivo');
+    expect(dialog.getByText('Sistema segue l\'aspetto del dispositivo')).toBeTruthy();
+  });
+
+  it('in inglese i nomi e l\'aiuto sono inglesi', async () => {
+    await i18n.changeLanguage('en');
+    savedTheme(null);
+    renderAccount('/account/profilo');
+    await screen.findByRole('button', { name: 'Language' });
+    expect(describedBy(row('Theme'))).toBe('System');
+    const dialog = open('Theme');
+    expect(within(dialog.getByRole('radiogroup', { name: 'Theme' })).getAllByRole('radio').map((r) => r.closest('label').textContent)).toEqual(['System', 'Light', 'Dark']);
+    expect(describedBy(dialog.getByRole('radiogroup', { name: 'Theme' }))).toBe('System follows your device\'s appearance');
+    fireEvent.click(dialog.getByRole('radio', { name: 'Dark' }));
+    await closed();
+    expect(describedBy(row('Theme'))).toBe('Dark');
+  });
+
+  // Il sistema, in jsdom, è chiaro: da «Scuro» tornare a «Sistema» riporta <html> al chiaro e toglie la chiave
+  it.each([
+    ['Scuro', 'light', 'dark', 'dark'],
+    ['Chiaro', 'dark', 'light', 'light'],
+    ['Sistema', 'dark', 'light', null],
+  ])('scegliere «%s» da %s: il tema diventa %s subito, la finestra si chiude, la riga ha il valore nuovo e il fuoco torna sulla riga', async (name, from, theme, key) => {
+    savedTheme(from);
+    await mount();
+    expect(html()).toBe(from);
+    fireEvent.click(open('Tema').getByRole('radio', { name }));
+    await closed();
+    expect(html()).toBe(theme);
+    expect(localStorage.getItem('themeMode')).toBe(key);
+    expect(describedBy(row('Tema'))).toBe(name);
+    expect(document.activeElement).toBe(row('Tema'));
+  });
+
+  it('non fa richieste di salvataggio né avvisi della pagina', async () => {
+    await mount();
+    fireEvent.click(open('Tema').getByRole('radio', { name: 'Scuro' }));
+    await closed();
+    expect(describedBy(row('Tema'))).toBe('Scuro');
+    expect(settingsCalls()).toEqual([]);
+    // l'avviso della pagina è un alert: a finestra chiusa non ce n'è nessuno
+    expect(screen.queryAllByRole('alert')).toEqual([]);
   });
 });
 

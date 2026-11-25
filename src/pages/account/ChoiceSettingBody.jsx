@@ -2,7 +2,7 @@ import { useId } from 'react';
 import { FormControlLabel, Radio, RadioGroup, Typography } from '@mui/material';
 import SettingOutcome from './SettingOutcome';
 
-// Corpo della finestra di un'impostazione a scelta (unità di misura, lingua, sesso): i valori come radio, sotto l'aiuto
+// Corpo della finestra di un'impostazione a scelta (unità di misura, lingua, tema, sesso): i valori come radio, sotto l'aiuto
 // (se c'è) e, se c'è, una riga d'esempio. `label` è il nome del gruppo. Salva appena si sceglie (`onChange(valore)`);
 // mentre si salva i radio restano attivi (un controllo disabilitato perde il fuoco) e il gruppo è «occupato».
 const ChoiceSettingBody = ({ label, options, value, onChange, saving, help, example, error }) => {
