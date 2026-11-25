@@ -8,13 +8,13 @@ import { useAuth } from '../../context/AuthContext';
 import useAccountDeleted from '../../hooks/useAccountDeleted';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 import { NEUTRAL_OUTLINED, DANGER_TEXT } from '../../utils/buttonStyles';
-import { tierName } from '../../utils/tiers';
+import AccountTier from '../../components/Account/AccountTier';
 import DeleteAccountDialog from '../../components/Account/DeleteAccountDialog';
 import AccountIdentity from './AccountIdentity';
 import AccountRow from './AccountRow';
 import RowList from './RowList';
 
-// Elenco dell'Account (/account): la testata (avatar, nome utente, email), le cinque voci che portano alle loro pagine,
+// Elenco dell'Account (/account): la testata (avatar, nome utente, email e livello), le voci che portano alle loro pagine,
 // la voce dell'amministrazione per chi lo è, «Esci» e «Elimina account». I dati arrivano dalla cornice (Account).
 const AccountList = () => {
   const { t } = useTranslation();
@@ -24,12 +24,9 @@ const AccountList = () => {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const handleAccountDeleted = useAccountDeleted(notify);
 
-  // Senza il campo del livello (server più vecchio) la voce del piano resta senza riga di aiuto
-  const tierHelp = account?.tier ? (account.tier === 'free' ? t('account.tier.free') : tierName(account.tier)) : undefined;
   const rows = [
     { to: '/account/profilo', title: t('account.section.profile_prefs.title'), help: t('account.section.profile_prefs.help') },
     { to: '/account/moduli', title: t('modules.title'), help: t('account.section.modules.help') },
-    { to: '/account/piano', title: t('account.section.tier.title'), help: tierHelp },
     { to: '/account/dati', title: t('account.section.data.title'), help: t('account.section.data.help') },
     { to: '/account/sicurezza', title: t('account.section.security.title'), help: t('account.password.title') },
   ];
@@ -52,6 +49,7 @@ const AccountList = () => {
         </Avatar>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <AccountIdentity account={account} />
+          <AccountTier tier={account?.tier} lastDay={account?.tier_last_day} signupCode={account?.signup_code} />
         </Box>
       </Box>
 

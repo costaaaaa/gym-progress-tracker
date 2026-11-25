@@ -4,7 +4,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../../hooks/usePageMeta';
 
-// Scheletro delle cinque pagine sotto /account: «indietro» verso l'elenco, il titolo (che è anche il titolo del documento)
+// Scheletro delle pagine sotto /account: «indietro» verso l'elenco, il titolo (che è anche il titolo del documento)
 // e la colonna dei pezzi. La larghezza della colonna la dà la cornice (Account).
 const AccountSubpage = ({ title, children }) => {
   const { t } = useTranslation();

@@ -5,7 +5,7 @@ import { plansPath } from '../../i18n/paths';
 import { tierName } from '../../utils/tiers';
 
 
-// Riga del livello nella card del profilo, da user/read.php: tier e tier_last_day (ultimo giorno compreso, AAAA-MM-GG,
+// Riga del livello nella testata dell'elenco dell'Account, da user/read.php: tier e tier_last_day (ultimo giorno compreso, AAAA-MM-GG,
 // ora italiana: si scrive com'è, senza fuso) descrivono l'account; signup_code {status, tier} il codice di registrazione
 // (qui tier è quello del codice). Prima della conferma dell'email l'account è Gratis e il codice è «pending».
 // Senza il campo tier (server più vecchio) non si mostra nulla.

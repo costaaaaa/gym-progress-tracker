@@ -32,7 +32,6 @@ const Account = lazy(() => import('./pages/Account'));
 const AccountList = lazy(() => import('./pages/account/AccountList'));
 const ProfilePage = lazy(() => import('./pages/account/ProfilePage'));
 const ModulesPage = lazy(() => import('./pages/account/ModulesPage'));
-const TierPage = lazy(() => import('./pages/account/TierPage'));
 const DataPage = lazy(() => import('./pages/account/DataPage'));
 const SecurityPage = lazy(() => import('./pages/account/SecurityPage'));
 const Levels = lazy(() => import('./pages/Levels'));
@@ -72,7 +71,6 @@ function App() {
                   <Route index element={<AccountList />} />
                   <Route path="profilo" element={<ProfilePage />} />
                   <Route path="moduli" element={<ModulesPage />} />
-                  <Route path="piano" element={<TierPage />} />
                   <Route path="dati" element={<DataPage />} />
                   <Route path="sicurezza" element={<SecurityPage />} />
                 </Route>

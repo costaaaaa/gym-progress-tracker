@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { loginWithNext } from '../utils/safeNext';
 import useAccount from './account/useAccount';
 
-// Cornice dell'Account (la rotta /account, che ha per figlie l'elenco e le cinque pagine): accesso, lettura dei dati e
+// Cornice dell'Account (la rotta /account, che ha per figlie l'elenco e le sue pagine): accesso, lettura dei dati e
 // notifica, una volta sola per tutte. Alle pagine passa `account`, `joinDate`, `notify` e `patchAccount` (Outlet context):
 // dopo un salvataggio riuscito una pagina mette i campi salvati in `account`, così chi rientra vede il valore nuovo.
 const Account = () => {
