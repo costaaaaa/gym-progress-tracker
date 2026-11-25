@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { formatDate } from '../i18n/format';
 import { clockDate } from '../utils/calendarDay';
 import { focusedElement } from '../utils/focus';
-import { NEUTRAL_OUTLINED, NEUTRAL_TEXT } from '../utils/buttonStyles';
+import { NEUTRAL_OUTLINED } from '../utils/buttonStyles';
 import { CHIP_FONT } from '../utils/fonts';
 import useWorkoutHistory from './history/useWorkoutHistory';
 import useActivePlan from './history/useActivePlan';
@@ -153,7 +153,7 @@ const History = () => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 3 }}>
         <Typography variant="pageTitle">{t('nav.history')}</Typography>
         {isLoggedIn && activePlan && (
-          <Button onClick={() => setOpenRecordDialog(true)} sx={{ ...NEUTRAL_TEXT, minHeight: 44, fontWeight: 600 }}>
+          <Button variant="outlined" onClick={() => setOpenRecordDialog(true)} sx={{ ...NEUTRAL_OUTLINED, minHeight: 44, fontWeight: 600 }}>
             {t('history.record_past')}
           </Button>
         )}

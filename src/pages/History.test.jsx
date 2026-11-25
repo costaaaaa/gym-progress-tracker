@@ -110,12 +110,16 @@ describe('pagina Storico', () => {
     await waitFor(() => expect(document.title).toBe('Storico | LiftIndex'));
   });
 
-  it('«Registra allenamento passato» sta nella riga del titolo, con una scheda attiva: pulsante di testo da 44 px, non rosso', async () => {
+  it('«Registra allenamento passato» sta nella riga del titolo, con una scheda attiva: pulsante con bordo neutro da 44 px, non rosso', async () => {
     await mount();
     const bottone = screen.getByRole('button', { name: 'Registra allenamento passato' });
     expect(bottone.parentElement).toBe(screen.getByRole('heading', { level: 1 }).parentElement);
     const style = getComputedStyle(bottone);
     expect(parseFloat(style.minHeight)).toBeGreaterThanOrEqual(44);
+    expect(style.borderTopStyle).toBe('solid');
+    expect(style.borderTopWidth).toBe('1px');
+    expect(style.borderTopColor).toBe(GREY);
+    expect(style.borderTopColor).not.toBe(RED);
     expect(style.backgroundColor).not.toBe(RED);
     expect(style.color).not.toBe(RED);
     expect(style.fontSize).toBe('16px');
