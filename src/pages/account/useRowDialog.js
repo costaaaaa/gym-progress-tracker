@@ -7,7 +7,9 @@ import { useEffect, useRef, useState } from 'react';
 // `closeThen(next)` la chiude e, a fuoco già tornato sulla riga, esegue `next`: serve ad aprire un'altra finestra senza
 // che le due si sovrappongano e perché quella nuova, chiudendosi, riporti il fuoco sulla riga. Con nessuna finestra
 // aperta (un secondo clic durante la dissolvenza) non fa nulla: `next` non resta in attesa della chiusura di un'altra.
-export default function useRowDialog() {
+// `saved(saving, message)` è per i salvataggi che chiudono la finestra: se `saving` (la promessa del salvataggio) riesce
+// la chiude e avvisa con `message` dalla pagina (`notify`, della cornice); se no la lascia aperta con il suo errore.
+export default function useRowDialog(notify) {
   const [openKey, setOpenKey] = useState(null);
   const lastRow = useRef(null);
   const afterClose = useRef(null);
@@ -32,5 +34,12 @@ export default function useRowDialog() {
     setOpenKey(null);
   };
 
-  return { openKey, open, close, closeThen };
+  const saved = async (saving, message) => {
+    if (await saving) {
+      setOpenKey(null);
+      notify(message, 'success');
+    }
+  };
+
+  return { openKey, open, close, closeThen, saved };
 }

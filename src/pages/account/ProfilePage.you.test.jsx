@@ -1,8 +1,8 @@
 // Pagina «Profilo e preferenze» (/account/profilo), il gruppo «Tu»: le righe data di nascita, sesso e inizio allenamento
-// col valore di adesso, una finestra per ognuna e un salvataggio per campo (la riga «Email» e la sua finestra hanno
-// ProfilePage.email.test.jsx). I
-// gruppi «Allenamento» e «App» sono in ProfilePage.settings.test.jsx; la validazione della data di nascita in
-// ProfilePage.test.jsx. Colore scritto a mano: error #d50000. La fetch è il confine.
+// col valore di adesso, una finestra per ognuna e un salvataggio per campo, compresa la validazione della data di nascita
+// nella sua finestra (i suoi limiti e i suoi confini di fuso sono in ProfilePage.test.jsx). La riga «Email» e la sua
+// finestra sono in ProfilePage.email.test.jsx, i gruppi «Allenamento» e «App» in ProfilePage.settings.test.jsx. Colore
+// scritto a mano: text.secondary #6b6663. La fetch è il confine.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, within, fireEvent, waitFor } from '@testing-library/react';
 import i18n from '../../i18n';
@@ -56,11 +56,17 @@ const mount = async () => {
   await screen.findByRole('button', { name: 'Lingua' });
   return view;
 };
+// Con il puntatore preciso i campi data si scrivono da tastiera; su telefono sono di sola lettura
+const mountAndOpen = async (name) => {
+  mockPointer(true);
+  await mount();
+  return open(name);
+};
 const birthField = (dialog) => dialog.getByRole('textbox', { name: /^Data di nascita/ });
 const startField = (dialog) => dialog.getByRole('textbox', { name: /^Inizio allenamento/ });
 const save = (dialog) => fireEvent.click(dialog.getByRole('button', { name: 'Salva' }));
 const cancel = (dialog) => fireEvent.click(dialog.getByRole('button', { name: 'Annulla' }));
-// Il corpo dell'ultimo rifiuto del server: l'errore sta nella finestra, la notifica della pagina non lo ripete
+// Il server rifiuta ogni salvataggio (500 su update_settings.php): l'errore sta nella finestra, la notifica della pagina non lo ripete
 const refuse = () => stubFetch({ settings: () => Promise.resolve(json({ success: false }, 500)) });
 const GREY = 'rgb(107, 102, 99)';
 const SAVED = 'Profilo aggiornato con successo';
@@ -156,21 +162,21 @@ describe('il gruppo «Tu»: le finestre', () => {
   });
 
   it.each([
-    ['Data di nascita', ['Annulla', 'Salva']],
-    ['Sesso', ['Chiudi']],
-    ['Inizio allenamento', ['Annulla', 'Salva']],
-  ])('«%s» apre la sua finestra, col titolo come nome, a 16 px, e il piede ha %j', async (name, buttons) => {
+    ['Data di nascita', 'textbox', ['Annulla', 'Salva']],
+    ['Sesso', 'radiogroup', ['Chiudi']],
+    ['Inizio allenamento', 'textbox', ['Annulla', 'Salva']],
+  ])('«%s» apre la sua finestra, col titolo come nome, con il suo controllo (%s), a 16 px, e il piede ha %j', async (name, role, buttons) => {
     mockPointer(true);
     await mount();
     const dialog = open(name);
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
     // il titolo come nome della finestra: che si legge una volta sola lo prova il caso qui sopra
     expect(within(screen.getByRole('dialog')).getByRole('heading', { name }).textContent).toBe(name);
+    expect(dialog.getAllByRole(role, { name: new RegExp(`^${name}`) })).toHaveLength(1);
     // la tacca del bordo (legend) non è testo disegnato, e l'etichetta del campo data è ritagliata (la prova sopra)
     expect(textBelow(screen.getByRole('dialog'), 16, '.MuiChip-root, legend, .MuiInputLabel-root')).toEqual([]);
     const footer = screen.getByRole('dialog').querySelector('.MuiDialogActions-root');
     expect([...footer.querySelectorAll('button')].map((b) => b.textContent)).toEqual(buttons);
-    expect(dialog).toBeTruthy();
   });
 
   it.each([
@@ -196,14 +202,8 @@ describe('il gruppo «Tu»: le finestre', () => {
 });
 
 describe('finestra «Data di nascita»', () => {
-  const apri = async () => {
-    mockPointer(true);
-    await mount();
-    return open('Data di nascita');
-  };
-
   it('il campo parte dalla data dell\'account, con la riga d\'aiuto dell\'età', async () => {
-    const dialog = await apri();
+    const dialog = await mountAndOpen('Data di nascita');
     expect(birthField(dialog).value).toBe('14/05/1992');
     expect(birthField(dialog).getAttribute('autocomplete')).toBe('bday');
     expect(describedBy(birthField(dialog))).toBe('Età attuale: 34 anni');
@@ -211,24 +211,13 @@ describe('finestra «Data di nascita»', () => {
 
   it('senza data nell\'account il campo è vuoto e l\'aiuto dice che l\'età si calcola da sola', async () => {
     stubFetch({ account: serverAccount({ birth_date: null, age: null }) });
-    const dialog = await apri();
+    const dialog = await mountAndOpen('Data di nascita');
     expect(birthField(dialog).value).toBe('');
     expect(describedBy(birthField(dialog))).toBe('Calcolata automaticamente');
   });
 
-  it('una data non valida: errore sul campo, finestra aperta col fuoco sul campo, nessuna richiesta', async () => {
-    const dialog = await apri();
-    fireEvent.change(birthField(dialog), { target: { value: '21/07/0085' } });
-    save(dialog);
-    await waitFor(() => expect(birthField(dialog).getAttribute('aria-invalid')).toBe('true'));
-    expect(describedBy(birthField(dialog))).toBe('Inserisci una data di nascita valida');
-    expect(document.activeElement).toBe(birthField(dialog));
-    staysOpen();
-    expect(settingsCalls()).toEqual([]);
-  });
-
   it('il campo vuoto: «Inserisci la data di nascita», finestra aperta, fuoco sul campo, nessuna richiesta', async () => {
-    const dialog = await apri();
+    const dialog = await mountAndOpen('Data di nascita');
     fireEvent.change(birthField(dialog), { target: { value: '' } });
     save(dialog);
     await waitFor(() => expect(describedBy(birthField(dialog))).toBe('Inserisci la data di nascita'));
@@ -240,7 +229,7 @@ describe('finestra «Data di nascita»', () => {
 
   it('una data valida: parte la richiesta col solo birth_date, la finestra si chiude, la riga e l\'età (alla riapertura) sono nuovi e la pagina avvisa', async () => {
     stubFetch({ settings: () => Promise.resolve(json({ success: true, birth_date: '1985-07-21', age: 40 })) });
-    const dialog = await apri();
+    const dialog = await mountAndOpen('Data di nascita');
     fireEvent.change(birthField(dialog), { target: { value: '21/07/1985' } });
     save(dialog);
     await closed();
@@ -256,7 +245,7 @@ describe('finestra «Data di nascita»', () => {
   it('il rifiuto del server: la finestra resta aperta con l\'errore dentro, la riga non cambia, la pagina non avvisa', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     refuse();
-    const dialog = await apri();
+    const dialog = await mountAndOpen('Data di nascita');
     fireEvent.change(birthField(dialog), { target: { value: '21/07/1985' } });
     save(dialog);
     await waitFor(() => expect(dialog.getByRole('alert').textContent).toBe(ERROR));
@@ -269,7 +258,7 @@ describe('finestra «Data di nascita»', () => {
   it('riaperta dopo un rifiuto non ha l\'errore di prima e il campo riparte dal valore dell\'account', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     refuse();
-    const dialog = await apri();
+    const dialog = await mountAndOpen('Data di nascita');
     fireEvent.change(birthField(dialog), { target: { value: '21/07/1985' } });
     save(dialog);
     await waitFor(() => expect(dialog.getByRole('alert').textContent).toBe(ERROR));
@@ -281,7 +270,7 @@ describe('finestra «Data di nascita»', () => {
   });
 
   it('«Annulla» non salva; riaperta la finestra il campo ha il valore dell\'account', async () => {
-    const dialog = await apri();
+    const dialog = await mountAndOpen('Data di nascita');
     fireEvent.change(birthField(dialog), { target: { value: '21/07/1985' } });
     cancel(dialog);
     await closed();
@@ -290,7 +279,7 @@ describe('finestra «Data di nascita»', () => {
   });
 
   it('un errore di validazione non resta alla riapertura', async () => {
-    const dialog = await apri();
+    const dialog = await mountAndOpen('Data di nascita');
     fireEvent.change(birthField(dialog), { target: { value: '21/07/0085' } });
     save(dialog);
     await waitFor(() => expect(birthField(dialog).getAttribute('aria-invalid')).toBe('true'));
@@ -304,7 +293,7 @@ describe('finestra «Data di nascita»', () => {
   it('due clic su «Salva» fanno una richiesta sola; «Salva» è aria-disabled, «Annulla» ed Esc non chiudono; l\'esito chiude', async () => {
     const answer = deferred();
     stubFetch({ settings: () => answer.promise });
-    const dialog = await apri();
+    const dialog = await mountAndOpen('Data di nascita');
     fireEvent.change(birthField(dialog), { target: { value: '21/07/1985' } });
     save(dialog);
     await waitFor(() => expect(dialog.getByRole('button', { name: 'Salva' }).getAttribute('aria-disabled')).toBe('true'));
@@ -323,7 +312,7 @@ describe('finestra «Data di nascita»', () => {
 describe('finestra «Sesso»', () => {
   const group = (dialog) => dialog.getByRole('radiogroup', { name: 'Sesso' });
 
-  it('ha tre scelte e quella dell\'account è scelta; senza valore nell\'account nessuna lo è', async () => {
+  it('ha tre scelte, nell\'ordine Maschio, Femmina, Altro, e quella dell\'account è scelta', async () => {
     await mount();
     const dialog = open('Sesso');
     expect(within(group(dialog)).getAllByRole('radio').map((r) => [r.getAttribute('value'), r.checked])).toEqual([['M', true], ['F', false], ['O', false]]);
@@ -394,14 +383,8 @@ describe('finestra «Sesso»', () => {
 });
 
 describe('finestra «Inizio allenamento»', () => {
-  const apri = async () => {
-    mockPointer(true);
-    await mount();
-    return open('Inizio allenamento');
-  };
-
   it('il campo parte dal mese dell\'account (MM/AAAA), con l\'aiuto dell\'esperienza', async () => {
-    const dialog = await apri();
+    const dialog = await mountAndOpen('Inizio allenamento');
     expect(startField(dialog).value).toBe('01/2022');
     expect(startField(dialog).getAttribute('autocomplete')).not.toBe('bday');
     expect(describedBy(startField(dialog))).toBe('Esperienza: 4 anni');
@@ -409,20 +392,20 @@ describe('finestra «Inizio allenamento»', () => {
 
   it('senza dato nell\'account il campo è vuoto e l\'aiuto dice «Mese e anno di inizio»', async () => {
     stubFetch({ account: serverAccount({ training_start_date: null, experience_years: null }) });
-    const dialog = await apri();
+    const dialog = await mountAndOpen('Inizio allenamento');
     expect(startField(dialog).value).toBe('');
     expect(describedBy(startField(dialog))).toBe('Mese e anno di inizio');
   });
 
   it('un mese prima della nascita dell\'account è già rosso', async () => {
-    const dialog = await apri();
+    const dialog = await mountAndOpen('Inizio allenamento');
     fireEvent.change(startField(dialog), { target: { value: '03/1990' } });
     expect(startField(dialog).getAttribute('aria-invalid')).toBe('true');
   });
 
   it('un mese valido: parte la richiesta col solo training_start_date (primo del mese), la finestra si chiude, la riga e l\'esperienza sono nuove', async () => {
     stubFetch({ settings: () => Promise.resolve(json({ success: true, training_start_date: '2023-03-01', experience_years: 3 })) });
-    const dialog = await apri();
+    const dialog = await mountAndOpen('Inizio allenamento');
     fireEvent.change(startField(dialog), { target: { value: '03/2023' } });
     save(dialog);
     await closed();
@@ -435,7 +418,7 @@ describe('finestra «Inizio allenamento»', () => {
 
   it('il campo svuotato toglie il dato: la richiesta manda null e la riga dice «Da indicare»', async () => {
     stubFetch({ settings: () => Promise.resolve(json({ success: true, training_start_date: null, experience_years: null })) });
-    const dialog = await apri();
+    const dialog = await mountAndOpen('Inizio allenamento');
     fireEvent.change(startField(dialog), { target: { value: '' } });
     save(dialog);
     await closed();
@@ -446,7 +429,7 @@ describe('finestra «Inizio allenamento»', () => {
   it('il rifiuto: la finestra resta aperta con l\'errore dentro, la riga non cambia, riaperta riparte dal valore dell\'account', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     refuse();
-    const dialog = await apri();
+    const dialog = await mountAndOpen('Inizio allenamento');
     fireEvent.change(startField(dialog), { target: { value: '03/2023' } });
     save(dialog);
     await waitFor(() => expect(dialog.getByRole('alert').textContent).toBe(ERROR));
@@ -461,7 +444,7 @@ describe('finestra «Inizio allenamento»', () => {
   });
 
   it('«Annulla» non salva; riaperta la finestra il campo ha il valore dell\'account', async () => {
-    const dialog = await apri();
+    const dialog = await mountAndOpen('Inizio allenamento');
     fireEvent.change(startField(dialog), { target: { value: '03/2023' } });
     cancel(dialog);
     await closed();
@@ -472,7 +455,7 @@ describe('finestra «Inizio allenamento»', () => {
   it('due clic su «Salva» fanno una richiesta sola e la finestra non si chiude prima dell\'esito', async () => {
     const answer = deferred();
     stubFetch({ settings: () => answer.promise });
-    const dialog = await apri();
+    const dialog = await mountAndOpen('Inizio allenamento');
     fireEvent.change(startField(dialog), { target: { value: '03/2023' } });
     save(dialog);
     await waitFor(() => expect(dialog.getByRole('button', { name: 'Salva' }).getAttribute('aria-disabled')).toBe('true'));

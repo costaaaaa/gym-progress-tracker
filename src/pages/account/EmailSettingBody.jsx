@@ -12,11 +12,11 @@ import SettingOutcome from './SettingOutcome';
 // con «Scrivi il codice» e «Annulla», e «Cambia indirizzo». «Scrivi il codice» e «Cambia indirizzo» aprono un'altra
 // finestra: chi le usa (`onEnterCode`, `onChangeAddress`) chiude prima questa, e mentre l'annullamento è in corso non
 // fanno nulla (come «Chiudi»: aria-disabled, non disabled, così tengono il fuoco). «Annulla» resta qui e il suo esito si
-// legge qui sotto: `cancel` è useEmailChangeCancel. Senza lo stato dell'email (non ancora letto) c'è solo l'indirizzo.
-const EmailSettingBody = ({ account, cancel, onEnterCode, onChangeAddress }) => {
+// legge qui sotto: `pendingCancel` è useEmailChangeCancel. Senza lo stato dell'email (non ancora letto) c'è solo l'indirizzo.
+const EmailSettingBody = ({ account, pendingCancel, onEnterCode, onChangeAddress }) => {
   const { t } = useTranslation();
   const { emailState } = useAuth();
-  const unlessSaving = (action) => () => { if (!cancel.saving) action(); };
+  const unlessSaving = (action) => () => { if (!pendingCancel.saving) action(); };
 
   return (
     <>
@@ -34,7 +34,7 @@ const EmailSettingBody = ({ account, cancel, onEnterCode, onChangeAddress }) => 
                 <ErrorOutlineIcon aria-hidden="true" fontSize="small" />
                 {t('emailstatus.unconfirmed')}
               </Typography>
-              <Button onClick={unlessSaving(onEnterCode)} aria-disabled={cancel.saving || undefined} sx={LINK_BUTTON}>
+              <Button onClick={unlessSaving(onEnterCode)} aria-disabled={pendingCancel.saving || undefined} sx={LINK_BUTTON}>
                 {t('emailstatus.enter_code')}
               </Button>
             </>
@@ -47,12 +47,12 @@ const EmailSettingBody = ({ account, cancel, onEnterCode, onChangeAddress }) => 
             {t('emailstatus.pending', { email: emailState.pendingEmail })}
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 3 }}>
-            <Button onClick={unlessSaving(onEnterCode)} aria-disabled={cancel.saving || undefined} sx={LINK_BUTTON}>
+            <Button onClick={unlessSaving(onEnterCode)} aria-disabled={pendingCancel.saving || undefined} sx={LINK_BUTTON}>
               {t('emailstatus.enter_code')}
             </Button>
             <Button
-              onClick={cancel.cancel}
-              aria-disabled={cancel.saving || undefined}
+              onClick={pendingCancel.run}
+              aria-disabled={pendingCancel.saving || undefined}
               aria-label={t('emailstatus.cancel_aria')}
               sx={LINK_BUTTON}
             >
@@ -62,11 +62,11 @@ const EmailSettingBody = ({ account, cancel, onEnterCode, onChangeAddress }) => 
         </Box>
       )}
       {emailState && (
-        <Button variant="outlined" onClick={unlessSaving(onChangeAddress)} aria-disabled={cancel.saving || undefined} sx={{ ...NEUTRAL_OUTLINED, minHeight: 44, mt: 2 }}>
+        <Button variant="outlined" onClick={unlessSaving(onChangeAddress)} aria-disabled={pendingCancel.saving || undefined} sx={{ ...NEUTRAL_OUTLINED, minHeight: 44, mt: 2 }}>
           {t('emailchange.open')}
         </Button>
       )}
-      <SettingOutcome status={cancel.status} error={cancel.error} />
+      <SettingOutcome status={pendingCancel.status} error={pendingCancel.error} />
     </>
   );
 };

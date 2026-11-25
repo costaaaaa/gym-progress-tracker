@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Box, Typography } from '@mui/material';
 import { format, parseISO, startOfToday } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import ChangeEmailDialog from '../../components/EmailVerification/ChangeEmailDialog';
@@ -25,22 +26,17 @@ const GENDER_KEYS = { M: 'account.gender_m', F: 'account.gender_f', O: 'account.
 // «Scrivi il codice» e «Cambia indirizzo» aprono un'altra finestra: la finestra «Email» si chiude prima, così le due non
 // si sovrappongono e «Cambia indirizzo», chiudendosi, riporta il fuoco sulla riga «Email». La finestra «Cambia
 // indirizzo» (ChangeEmailDialog) è disegnata qui, non dentro la finestra che si chiude.
-const YouGroup = ({ account, joinDate, patchAccount, notify, dialog }) => {
+const YouGroup = ({ account, joinDate, patchAccount, dialog }) => {
   const { t } = useTranslation();
   const { emailState, openEmailDialog } = useAuth();
   const fields = useProfileFields(account, patchAccount);
-  const emailChange = useEmailChangeCancel();
+  const pendingCancel = useEmailChangeCancel();
   const [changeEmailOpen, setChangeEmailOpen] = useState(false);
   const { openKey } = dialog;
   const openDialog = (key, onOpen = fields.reset) => dialog.open(key, onOpen);
   const notSet = t('account.profile.not_set');
 
-  const finish = async (saved) => {
-    if (await saved) {
-      dialog.close();
-      notify(t('account.profile.saved'), 'success');
-    }
-  };
+  const saved = (saving) => dialog.saved(saving, t('account.profile.saved'));
 
   const birthDate = account?.birth_date ? format(parseISO(account.birth_date), 'dd/MM/yyyy') : notSet;
   const trainingStart = account?.training_start_date ? format(parseISO(account.training_start_date), 'MM/yyyy') : notSet;
@@ -51,31 +47,33 @@ const YouGroup = ({ account, joinDate, patchAccount, notify, dialog }) => {
 
   return (
     <>
-      <SettingsGroup
-        title={t('account.profile.group.you')}
-        footer={t('account.member_since', { date: joinDate ? format(joinDate, 'MMMM yyyy', { locale: dateFnsLocale() }) : t('account.date_unavailable') })}
-      >
-        <ValueRow
-          title={t('register.email')}
-          detail={emailState?.email || account?.email}
-          value={emailStatus}
-          valueColor={emailUnconfirmed ? 'warning.text' : undefined}
-          onClick={openDialog('email', emailChange.clearOutcome)}
-        />
-        <ValueRow title={t('account.profile.birth_date')} value={birthDate} onClick={openDialog('birth')} />
-        <ValueRow title={t('account.gender')} value={genderKey ? t(genderKey) : notSet} onClick={openDialog('gender')} />
-        <ValueRow title={t('account.profile.training_start')} value={trainingStart} onClick={openDialog('start')} />
-      </SettingsGroup>
+      <Box>
+        <SettingsGroup title={t('account.profile.group.you')}>
+          <ValueRow
+            title={t('register.email')}
+            detail={emailState?.email || account?.email}
+            value={emailStatus}
+            valueColor={emailUnconfirmed ? 'warning.text' : undefined}
+            onClick={openDialog('email', pendingCancel.clearOutcome)}
+          />
+          <ValueRow title={t('account.profile.birth_date')} value={birthDate} onClick={openDialog('birthDate')} />
+          <ValueRow title={t('account.gender')} value={genderKey ? t(genderKey) : notSet} onClick={openDialog('gender')} />
+          <ValueRow title={t('account.profile.training_start')} value={trainingStart} onClick={openDialog('trainingStart')} />
+        </SettingsGroup>
+        <Typography sx={{ mt: 1, fontSize: 16, color: 'text.secondary' }}>
+          {t('account.member_since', { date: joinDate ? format(joinDate, 'MMMM yyyy', { locale: dateFnsLocale() }) : t('account.date_unavailable') })}
+        </Typography>
+      </Box>
 
-      <SettingDialog open={openKey === 'email'} title={t('register.email')} onClose={dialog.close} saving={emailChange.saving}>
+      <SettingDialog open={openKey === 'email'} title={t('register.email')} onClose={dialog.close} saving={pendingCancel.saving}>
         <EmailSettingBody
           account={account}
-          cancel={emailChange}
+          pendingCancel={pendingCancel}
           onEnterCode={() => dialog.closeThen(openEmailDialog)}
           onChangeAddress={() => dialog.closeThen(() => setChangeEmailOpen(true))}
         />
       </SettingDialog>
-      <SettingDialog open={openKey === 'birth'} title={t('account.profile.birth_date')} onClose={dialog.close} onSave={() => finish(fields.birthDate.save())} saving={fields.saving}>
+      <SettingDialog open={openKey === 'birthDate'} title={t('account.profile.birth_date')} onClose={dialog.close} onSave={() => saved(fields.birthDate.save())} saving={fields.saving}>
         <DateSettingBody
           label={t('account.profile.birth_date')}
           value={fields.birthDate.value}
@@ -94,12 +92,12 @@ const YouGroup = ({ account, joinDate, patchAccount, notify, dialog }) => {
           label={t('account.gender')}
           options={Object.entries(GENDER_KEYS).map(([value, key]) => ({ value, label: t(key) }))}
           value={fields.gender.value}
-          onChange={(next) => finish(fields.gender.change(next))}
+          onChange={(next) => saved(fields.gender.change(next))}
           saving={fields.saving}
           error={fields.error}
         />
       </SettingDialog>
-      <SettingDialog open={openKey === 'start'} title={t('account.profile.training_start')} onClose={dialog.close} onSave={() => finish(fields.trainingStart.save())} saving={fields.saving}>
+      <SettingDialog open={openKey === 'trainingStart'} title={t('account.profile.training_start')} onClose={dialog.close} onSave={() => saved(fields.trainingStart.save())} saving={fields.saving}>
         <DateSettingBody
           label={t('account.profile.training_start')}
           value={fields.trainingStart.value}

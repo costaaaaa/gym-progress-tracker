@@ -19,9 +19,9 @@ const LANGUAGES = [{ value: 'it', label: 'Italiano' }, { value: 'en', label: 'En
 // Profilo e preferenze: una riga col valore di adesso per impostazione e, cliccandola, la finestra col controllo. Una
 // sola finestra è aperta alla volta: `dialog` è useRowDialog della pagina, che la divide con il gruppo «Tu». Il valore
 // di ogni impostazione viene da `account` (la cornice lo aggiorna con `patchAccount` dopo un salvataggio): la riga e la
-// finestra leggono lo stesso. Gli esiti che chiudono la finestra vanno a notify(messaggio, gravità) della cornice, dopo
-// la chiusura; gli altri stanno dentro la finestra.
-const PreferenceGroups = ({ account, patchAccount, notify, dialog }) => {
+// finestra leggono lo stesso. Un salvataggio riuscito chiude la finestra e avvisa dalla pagina (`dialog.saved`); gli
+// altri esiti stanno dentro la finestra.
+const PreferenceGroups = ({ account, patchAccount, dialog }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { openKey, close } = dialog;
@@ -44,14 +44,6 @@ const PreferenceGroups = ({ account, patchAccount, notify, dialog }) => {
 
   const openDialog = (key, setting) => dialog.open(key, setting?.clearOutcome);
 
-  // Scelta di un'impostazione che chiude la finestra: se il salvataggio riesce, chiude e avvisa dalla pagina
-  const choose = (setting, saved) => async (next) => {
-    if (await setting.change(next)) {
-      close();
-      notify(saved(next), 'success');
-    }
-  };
-
   return (
     <>
       <SettingsGroup title={t('account.profile.group.training')}>
@@ -71,7 +63,7 @@ const PreferenceGroups = ({ account, patchAccount, notify, dialog }) => {
           label={t('account.weight_unit')}
           options={[{ value: 'kg', label: t('units.metric') }, { value: 'lb', label: t('units.imperial') }]}
           value={unit.value}
-          onChange={choose(unit, () => t('account.weight_unit_saved'))}
+          onChange={(next) => dialog.saved(unit.change(next), t('account.weight_unit_saved'))}
           saving={unit.saving}
           help={t('account.weight_unit_help')}
           example={t('account.weight_unit_example')}
@@ -86,7 +78,7 @@ const PreferenceGroups = ({ account, patchAccount, notify, dialog }) => {
           label={t('account.language')}
           options={LANGUAGES}
           value={language.value}
-          onChange={choose(language, (next) => t('account.language_saved', { lng: next }))}
+          onChange={(next) => dialog.saved(language.change(next), t('account.language_saved', { lng: next }))}
           saving={language.saving}
           help={t('account.language_help')}
           error={language.error}

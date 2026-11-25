@@ -87,10 +87,10 @@ describe('Profilo: i gruppi', () => {
 });
 
 describe('«Membro da»', () => {
-  it('sta sotto la card del gruppo «Tu», a 16 px grigio, con mese e anno dell\'iscrizione', async () => {
+  it('sta sotto il gruppo «Tu», a 16 px grigio, con mese e anno dell\'iscrizione', async () => {
     await mount();
     const note = screen.getByText('Membro da marzo 2025');
-    expect(note.previousElementSibling).toBe(screen.getByRole('heading', { level: 2, name: 'Tu' }).nextElementSibling);
+    expect(note.previousElementSibling).toBe(screen.getByRole('heading', { level: 2, name: 'Tu' }).parentElement);
     const style = getComputedStyle(note);
     expect({ size: style.fontSize, color: style.color }).toEqual({ size: '16px', color: GREY });
   });
@@ -124,7 +124,7 @@ describe('campi data su telefono', () => {
 
 describe('data di nascita', () => {
   // Con il puntatore preciso il campo si scrive da tastiera; su telefono è di sola lettura
-  const apri = async () => {
+  const mountAndOpen = async () => {
     mockPointer(true);
     await mount();
     const dialog = open('Data di nascita');
@@ -133,7 +133,7 @@ describe('data di nascita', () => {
   const save = (dialog) => fireEvent.click(dialog.getByRole('button', { name: 'Salva' }));
 
   it('dichiara a cosa serve (autocomplete bday), il mese di inizio allenamento no', async () => {
-    const { birth } = await apri();
+    const { birth } = await mountAndOpen();
     expect(birth.getAttribute('autocomplete')).toBe('bday');
     fireEvent.click(screen.getByRole('button', { name: 'Annulla' }));
     await closed();
@@ -141,7 +141,7 @@ describe('data di nascita', () => {
   });
 
   it('oltre i 100 anni: errore sul campo, focus, nessuna richiesta di salvataggio, finestra aperta', async () => {
-    const { dialog, birth } = await apri();
+    const { dialog, birth } = await mountAndOpen();
     fireEvent.change(birth, { target: { value: '21/07/0085' } });
     fetch.mockClear();
     save(dialog);
@@ -153,7 +153,7 @@ describe('data di nascita', () => {
   });
 
   it('cambiando la data l\'errore sparisce', async () => {
-    const { dialog, birth } = await apri();
+    const { dialog, birth } = await mountAndOpen();
     fireEvent.change(birth, { target: { value: '21/07/0085' } });
     save(dialog);
     await waitFor(() => expect(birth.getAttribute('aria-invalid')).toBe('true'));
@@ -162,13 +162,13 @@ describe('data di nascita', () => {
   });
 
   it('una data fuori dai limiti (meno di 14 anni) è già rossa prima di salvare, come il resto dei campi data', async () => {
-    const { birth } = await apri();
+    const { birth } = await mountAndOpen();
     fireEvent.change(birth, { target: { value: format(startOfToday(), 'dd/MM/yyyy') } });
     expect(birth.getAttribute('aria-invalid')).toBe('true');
   });
 
   it('un Invalid Date (campo scritto a metà) è una data non valida: errore sul campo, fuoco, nessuna richiesta', async () => {
-    const { dialog, birth } = await apri();
+    const { dialog, birth } = await mountAndOpen();
     act(() => birthFieldChange.current(new Date(NaN)));
     fetch.mockClear();
     save(dialog);
@@ -187,7 +187,7 @@ describe('data di nascita', () => {
 
     // La data si calcola dopo il fuso: «oggi» dipende da lì
     const saveWith = async (dateFor) => {
-      const { dialog, birth } = await apri();
+      const { dialog, birth } = await mountAndOpen();
       fireEvent.change(birth, { target: { value: format(dateFor(), 'dd/MM/yyyy') } });
       fetch.mockClear();
       save(dialog);
@@ -208,7 +208,7 @@ describe('data di nascita', () => {
   });
 
   it('una data valida si salva', async () => {
-    const { dialog, birth } = await apri();
+    const { dialog, birth } = await mountAndOpen();
     fireEvent.change(birth, { target: { value: '21/07/1985' } });
     save(dialog);
     await waitFor(() => expect(settingsCalls()).toEqual([{ birth_date: '1985-07-21' }]));
