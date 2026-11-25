@@ -440,7 +440,7 @@ describe('sotto l\'apertura', () => {
     const link = (await screen.findByRole('heading', { level: 2, name: 'Ultimo allenamento' })).closest('a');
     expect(link.getAttribute('href')).toBe('/storico');
     expect(link.textContent).toContain('Giorno A · Push');
-    expect(link.textContent).toContain('Mercoledì 18 novembre');
+    expect(link.textContent).toContain('mercoledì 18 novembre');
     expect(link.textContent).not.toContain('2026');
     expect(link.textContent).toContain('58 min · 1.400 kg di volume');
   });

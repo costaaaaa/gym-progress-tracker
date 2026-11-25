@@ -3,17 +3,16 @@ import { Box, Card, CardActionArea, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { workoutLine } from './workoutLine';
-import { formatDate, intlLocale } from '../../i18n/format';
+import { formatDate } from '../../i18n/format';
 import { LABEL } from './homeStyles';
 import { TABULAR } from '../../utils/fonts';
 import { BlockEditContext } from './blocks/blockEdit';
 
-// «Mercoledì 18 novembre»: iniziale maiuscola, e l'anno solo se non è quello di oggi. L'anno di oggi viene dalla data
+// «mercoledì 18 novembre»: minuscolo in italiano, come nello Storico, e l'anno solo se non è quello di oggi. L'anno di oggi viene dalla data
 // del server (`today`, 'YYYY-MM-DD'), non dall'orologio del dispositivo; senza, l'anno si mostra sempre.
 const longDate = (date, today) => {
   const sameYear = Boolean(today) && String(date).slice(0, 4) === String(today).slice(0, 4);
-  const text = formatDate(date, { weekday: 'long', ...(sameYear ? {} : { year: 'numeric' }), month: 'long', day: 'numeric' });
-  return text.charAt(0).toLocaleUpperCase(intlLocale()) + text.slice(1);
+  return formatDate(date, { weekday: 'long', ...(sameYear ? {} : { year: 'numeric' }), month: 'long', day: 'numeric' });
 };
 
 // Blocco piccolo con l'ultimo allenamento; tutto porta allo Storico. `today`: la data di oggi del server.
