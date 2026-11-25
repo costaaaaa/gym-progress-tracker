@@ -1,7 +1,7 @@
-// Account: la cornice (dati letti una volta sola) e l'elenco di cinque voci a /account, con «Esci» e «Elimina account».
+// Account: la cornice (dati letti una volta sola) e l'elenco di quattro voci a /account, con la riga del livello in testata, con «Esci» e «Elimina account».
 // Colori scritti a mano: text.primary #1a1816, text.secondary #6b6663, primary/error #d50000 (in scuro error #ff5252).
 // La fetch è il confine.
-// Le pagine delle cinque voci hanno i loro file in src/pages/account/; qui c'è quello che hanno in comune.
+// Le pagine delle quattro voci hanno i loro file in src/pages/account/; qui c'è quello che hanno in comune.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, within, fireEvent, waitFor } from '@testing-library/react';
 import i18n from '../i18n';
@@ -54,7 +54,6 @@ const mount = async (path = '/account') => {
 const ROWS = [
   ['Profilo e preferenze', '/account/profilo', 'Email, profilo fisico, lingua, unità, tema, obiettivo', 'Profile and preferences', 'Email, physical profile, language, units, theme, goal'],
   ['Moduli', '/account/moduli', 'Cosa vedere in LiftIndex', 'Modules', 'What to see in LiftIndex'],
-  ['Piano', '/account/piano', 'Gratis', 'Plan', 'Free'],
   ['Dati e privacy', '/account/dati', 'Consenso alle misure, gruppi mostrati, esportazione', 'Data and privacy', 'Measurement consent, groups shown, export'],
   ['Sicurezza', '/account/sicurezza', 'Password', 'Security', 'Password'],
 ];
@@ -71,6 +70,8 @@ describe('titolo della pagina', () => {
   });
 });
 
+const TIER = () => screen.getByTestId('account-tier');
+
 describe('testata', () => {
   it('avatar con l\'iniziale, nome utente ed email, senza troncarli', async () => {
     await mount();
@@ -82,17 +83,37 @@ describe('testata', () => {
       expect(getComputedStyle(el).whiteSpace).not.toBe('nowrap');
     }
   });
+
+  it('la riga del livello sta sotto nome ed email e prima dell\'elenco, con un solo «Vedi i piani»', async () => {
+    stubFetch({ tierFields: { tier: 'plus', tier_until: null, tier_last_day: null, signup_code: null } });
+    await mount();
+    const follows = (a, b) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(TIER().textContent).toBe('Livello: Plus, senza scadenza');
+    expect(follows(screen.getByText('atleta_con_un_nome_molto_lungo'), TIER())).toBe(true);
+    expect(follows(screen.getByText('atleta.con.un.indirizzo.lungo@example.com'), TIER())).toBe(true);
+    expect(follows(TIER(), screen.getByRole('link', { name: 'Profilo e preferenze' }))).toBe(true);
+    expect(screen.getAllByRole('link', { name: 'Vedi i piani' })).toHaveLength(1);
+  });
+
+  it('senza il campo del livello (server più vecchio) la riga e il suo collegamento non compaiono', async () => {
+    stubFetch({ tierFields: {} });
+    await mount();
+    expect(screen.queryByTestId('account-tier')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Vedi i piani' })).toBeNull();
+  });
 });
 
 describe('elenco delle voci', () => {
-  it('cinque collegamenti, nell\'ordine: Profilo e preferenze, Moduli, Piano, Dati e privacy, Sicurezza', async () => {
+  it('quattro voci, nell\'ordine: Profilo e preferenze, Moduli, Dati e privacy, Sicurezza; prima di loro solo «Vedi i piani» della testata', async () => {
     await mount();
-    expect(screen.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(ROWS.map(([, href]) => href));
+    const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'));
+    expect(hrefs).toEqual(['/piani', ...ROWS.map(([, href]) => href)]);
+    expect(hrefs).not.toContain('/account/piano');
   });
 
   it('la voce «Preferenze» di una volta non c\'è: dopo i collegamenti dell\'elenco, nessuno si chiama così', async () => {
     await mount();
-    expect(screen.getAllByRole('link')).toHaveLength(ROWS.length);
+    expect(screen.getAllByRole('link')).toHaveLength(ROWS.length + 1);
     expect(screen.queryByRole('link', { name: 'Preferenze' })).toBeNull();
   });
 
@@ -110,16 +131,6 @@ describe('elenco delle voci', () => {
       expect(parseInt(getComputedStyle(link).minHeight, 10)).toBeGreaterThanOrEqual(44);
       expect(link.querySelector('svg[data-testid="ChevronRightIcon"]')).toBeTruthy();
     }
-  });
-
-  it('Piano mostra il nome del livello (Plus); senza il campo del livello non ha riga di aiuto', async () => {
-    stubFetch({ tierFields: { tier: 'plus', tier_until: null, tier_last_day: null, signup_code: null } });
-    const first = await mount();
-    expect(describedBy(screen.getByRole('link', { name: 'Piano' }))).toBe('Plus');
-    first.unmount();
-    stubFetch({ tierFields: {} });
-    await mount();
-    expect(screen.getByRole('link', { name: 'Piano' }).getAttribute('aria-describedby')).toBeNull();
   });
 
   it('in inglese i nomi e gli aiuti sono quelli inglesi', async () => {
@@ -227,7 +238,7 @@ describe('Elimina account', () => {
   });
 });
 
-describe('le cinque pagine', () => {
+describe('le quattro pagine', () => {
   it.each(ROWS)('«%s»: titolo, titolo del documento e «indietro» verso /account', async (name, href) => {
     await mount(href);
     expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual([name]);
@@ -268,13 +279,13 @@ describe('la cornice legge i dati una volta sola', () => {
     expect(screen.queryByRole('progressbar')).toBeNull();
   });
 
-  it('la rilettura arriva alle pagine: il nuovo livello compare nella riga del Piano', async () => {
+  it('la rilettura arriva alle pagine: il nuovo livello compare nella riga del livello della testata', async () => {
     const { rerenderAccount } = await mount();
-    expect(describedBy(screen.getByRole('link', { name: 'Piano' }))).toBe('Gratis');
+    expect(TIER().textContent).toBe('Livello: Gratis');
     stubFetch({ tierFields: { tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null } });
     auth.user = { id: 1 };
     rerenderAccount();
-    await waitFor(() => expect(describedBy(screen.getByRole('link', { name: 'Piano' }))).toBe('Pro'));
+    await waitFor(() => expect(TIER().textContent).toBe('Livello: Pro, senza scadenza'));
   });
 
   it('prima lettura fallita, poi riuscita: la pagina passa dai valori di ripiego ai dati veri', async () => {

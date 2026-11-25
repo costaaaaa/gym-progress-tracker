@@ -1,5 +1,5 @@
-// Pagina «Piano» (/account/piano): riga del livello (Gratis, Plus fino a…, Pro senza scadenza, codice di
-// registrazione in attesa o non applicato). La fetch è il confine; le date sono giorni scritti (tier_last_day),
+// Testata dell'elenco (/account): riga del livello sotto nome ed email (Gratis, Plus fino a…, Pro senza scadenza, codice
+// di registrazione in attesa o non applicato). La fetch è il confine; le date sono giorni scritti (tier_last_day),
 // senza conversione di fuso: stesso testo in ogni fuso del browser.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
@@ -39,16 +39,15 @@ afterEach(() => {
   localStorage.clear();
 });
 
-// La pagina è tutta la card del livello: le ricerche sono sullo schermo. Il titolo c'è a lettura finita (la cornice
-// aspetta i dati prima di mostrare la pagina).
+// Le ricerche sono sullo schermo. Il titolo c'è a lettura finita (la cornice aspetta i dati prima di mostrare la pagina).
 const mount = async () => {
-  renderAccount('/account/piano');
-  await screen.findByRole('heading', { level: 1, name: /^(Piano|Plan)$/ });
+  renderAccount('/account');
+  await screen.findByRole('heading', { level: 1, name: 'Account' });
   return screen;
 };
 const row = (card) => card.getByTestId('account-tier');
 
-describe('livello nella pagina del piano', () => {
+describe('livello nella testata dell\'elenco', () => {
   it('Gratis, con il link ai piani', async () => {
     const card = await mount();
     expect(row(card).textContent).toBe('Livello: Gratis');
@@ -148,7 +147,7 @@ describe('livello nella pagina del piano', () => {
 });
 
 describe('livello dopo la conferma dell\'email da questa pagina', () => {
-  const view = () => renderAccount('/account/piano');
+  const view = () => renderAccount('/account');
 
   it('lo stato passa a confermata: la riga si aggiorna senza ricaricare e la pagina non torna in caricamento', async () => {
     auth.emailState = { verified: false, email: 'mario@example.com', pendingEmail: null, blocked: false, daysLeft: 4 };
@@ -162,7 +161,7 @@ describe('livello dopo la conferma dell\'email da questa pagina', () => {
     rerenderAccount();
 
     await waitFor(() => expect(screen.getByTestId('account-tier').textContent).toBe('Livello: Plus fino al 15 febbraio 2027'));
-    expect(screen.getByRole('heading', { level: 1, name: 'Piano' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Account' })).toBeTruthy();
   });
 
   it('senza cambi nello stato dell\'email non rilegge nulla oltre al montaggio', async () => {
