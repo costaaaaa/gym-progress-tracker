@@ -20,7 +20,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useModule } from '../hooks/useModule';
 import { intlLocale } from '../i18n/format';
-import { NEUTRAL_TEXT, DANGER_TEXT, INK_LINK } from '../utils/buttonStyles';
+import { ALIGN_TEXT, NEUTRAL_TEXT, DANGER_TEXT, INK_LINK } from '../utils/buttonStyles';
 import { INK_TABS } from '../utils/inkTabs';
 
 const BOARDS = ['week', 'streak', 'level'];
@@ -260,7 +260,7 @@ const GroupDetailContent = () => {
                 </>
               )}
               {canManage && !group.name_locked && (renaming === null ? (
-                <Button onClick={() => setRenaming(group.name)} sx={{ ...NEUTRAL_TEXT, mb: 1 }}>{t('groups.detail.rename')}</Button>
+                <Button onClick={() => setRenaming(group.name)} sx={{ ...NEUTRAL_TEXT, ...ALIGN_TEXT, display: 'block', mb: 1 }}>{t('groups.detail.rename')}</Button>
               ) : (
                 <Box component="form" onSubmit={saveName} sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
                   <TextField size="small" value={renaming} onChange={(e) => setRenaming(e.target.value)} inputProps={{ maxLength: 60, 'aria-label': t('groups.new.name') }} fullWidth autoFocus />
@@ -269,7 +269,7 @@ const GroupDetailContent = () => {
               ))}
               {isOwner ? (
                 <Button
-                  sx={DANGER_TEXT}
+                  sx={{ ...DANGER_TEXT, ...ALIGN_TEXT, display: 'block' }}
                   onClick={() => setConfirm({
                     title: t('groups.detail.delete.title'),
                     text: t('groups.detail.delete.text'),
@@ -281,7 +281,7 @@ const GroupDetailContent = () => {
                 </Button>
               ) : (
                 <Button
-                  sx={NEUTRAL_TEXT}
+                  sx={{ ...NEUTRAL_TEXT, ...ALIGN_TEXT, display: 'block' }}
                   onClick={() => setConfirm({
                     title: t('groups.detail.leave.title'),
                     text: t('groups.detail.leave.text'),
@@ -294,7 +294,7 @@ const GroupDetailContent = () => {
               )}
               <Button
                 onClick={() => setReporting(true)}
-                sx={{ ...NEUTRAL_TEXT, display: 'block', mt: 1 }}
+                sx={{ ...NEUTRAL_TEXT, ...ALIGN_TEXT, display: 'block', mt: 1 }}
               >
                 {t('groups.detail.report.button')}
               </Button>

@@ -1,3 +1,6 @@
+// Rientro orizzontale interno di ogni bottone (lo scrive il tema): chi allinea il testo di un bottone al contenuto lo toglie.
+export const BUTTON_PADDING_X = 18;
+
 const TEXT_BUTTON = {
   fontSize: 16,
   '&:hover': { bgcolor: 'action.hover' },
@@ -16,6 +19,11 @@ export const NEUTRAL_TEXT = {
   ...TEXT_BUTTON,
   color: 'text.primary',
 };
+
+// Bottone di solo testo il cui testo, e non il suo bordo, sta in asse col contenuto: il margine negativo toglie il rientro
+// interno da entrambi i lati (a sinistra, o a destra se il bottone è allineato a destra), l'area toccabile resta quella
+// intera e di almeno 44 px. Va dato a un bottone che sta da solo sulla sua riga: due bottoni accanto si sovrapporrebbero.
+export const ALIGN_TEXT = { mx: `-${BUTTON_PADDING_X}px`, minHeight: 44 };
 
 // Comando in forma di link sottolineato (es. «Scrivi il codice»): senza rientro, allineato al testo che lo precede
 export const LINK_BUTTON = {

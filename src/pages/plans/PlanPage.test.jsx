@@ -209,7 +209,9 @@ describe('allineamento in modifica', () => {
     }
     for (const nome of [/^Elimina giorno/, 'Elimina scheda']) {
       const style = getComputedStyle(screen.getAllByRole('button', { name: nome })[0]);
-      expect(style.marginLeft).toBe('-8px');
+      // il rientro interno del pulsante (18 px) è tolto da entrambi i lati: il testo parte dal bordo del contenuto
+      expect(style.paddingLeft).toBe('18px');
+      expect([style.marginLeft, style.marginRight]).toEqual(['-18px', '-18px']);
       expect(parseFloat(style.minHeight)).toBeGreaterThanOrEqual(44);
     }
   });

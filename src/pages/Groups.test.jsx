@@ -141,6 +141,25 @@ describe('dettaglio del gruppo', () => {
     },
   );
 
+  it('«Rinomina il gruppo», «Elimina il gruppo» e «Segnala un contenuto» hanno il testo in asse col titolo della card, uno sotto l\'altro, con aree da 44 px', async () => {
+    await mount();
+    const buttons = ['Rinomina il gruppo', 'Elimina il gruppo', 'Segnala un contenuto'].map((name) => screen.getByRole('button', { name }));
+    for (const button of buttons) {
+      const style = getComputedStyle(button);
+      expect(style.paddingLeft).toBe('18px');
+      expect([style.marginLeft, style.marginRight]).toEqual(['-18px', '-18px']);
+      expect(parseFloat(style.minHeight)).toBeGreaterThanOrEqual(44);
+      expect(style.display).toBe('block');
+    }
+  });
+
+  it('chi non è proprietario ha «Esci dal gruppo» in asse come «Elimina il gruppo»', async () => {
+    stub({ myRole: 'member' });
+    await mount();
+    const style = getComputedStyle(screen.getByRole('button', { name: 'Esci dal gruppo' }));
+    expect([style.marginLeft, style.display]).toEqual(['-18px', 'block']);
+  });
+
   it('«Elimina il gruppo» è un bottone di testo rosso in grassetto, come nell\'app', async () => {
     await mount();
     const style = getComputedStyle(screen.getByRole('button', { name: 'Elimina il gruppo' }));

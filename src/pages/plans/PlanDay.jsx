@@ -7,7 +7,7 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { useTranslation } from 'react-i18next';
 import { planSummary } from '../../utils/plannedSets';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
-import { DANGER_TEXT, NEUTRAL_OUTLINED } from '../../utils/buttonStyles';
+import { ALIGN_TEXT, DANGER_TEXT, NEUTRAL_OUTLINED } from '../../utils/buttonStyles';
 
 // Comando a icona: area toccabile di 44 px
 const CONTROL_SX = { width: 44, height: 44, minWidth: 44, minHeight: 44, color: 'text.secondary' };
@@ -110,12 +110,12 @@ const PlanDay = ({
               {t('plans.add_exercise')}
             </Button>
           )}
-          {/* Rientro del bottone di solo testo (8 px): il margine negativo porta l'etichetta al bordo del testo della card */}
+          {/* Il margine negativo porta l'etichetta al bordo del testo della card (vedi ALIGN_TEXT) */}
           {canDelete && (
             <Button
               onClick={() => onDeleteDay(day)}
               aria-label={t('plans.delete_day.aria', { name: day.name })}
-              sx={{ ...DANGER_TEXT, minHeight: 44, mx: -1 }}
+              sx={{ ...DANGER_TEXT, ...ALIGN_TEXT, minHeight: 44 }}
             >
               {t('plans.delete_day_action')}
             </Button>

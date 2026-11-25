@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
 import { radius } from '../theme/radius';
 import { FIELD_INPUT_PADDING_Y } from '../theme/fieldHeight';
+import { BUTTON_PADDING_X } from '../utils/buttonStyles';
 
 const BRAND = '#d50000';
 const BRAND_DARK = '#9b0000';
@@ -367,7 +368,7 @@ export const ThemeModeProvider = ({ children }) => {
             styleOverrides: {
               root: {
                 borderRadius: radius.md,
-                padding: '10px 18px',
+                padding: `10px ${BUTTON_PADDING_X}px`,
                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
               },
               contained: {

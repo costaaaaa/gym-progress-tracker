@@ -5,7 +5,7 @@ import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import ExerciseDialog from '../../components/ExerciseDialog';
-import { DANGER_TEXT, NEUTRAL_OUTLINED } from '../../utils/buttonStyles';
+import { ALIGN_TEXT, DANGER_TEXT, NEUTRAL_OUTLINED } from '../../utils/buttonStyles';
 import ActiveBadge from './ActiveBadge';
 import usePlans from './usePlans';
 import useArrivalState from './useArrivalState';
@@ -191,7 +191,7 @@ const PlanPage = () => {
               <Button variant="outlined" onClick={handleOpenEditPlanDialog} sx={{ ...NEUTRAL_OUTLINED, minHeight: 44, fontWeight: 600 }}>
                 {t('plans.edit_details')}
               </Button>
-              <Button onClick={handleOpenDeletePlanDialog} sx={{ ...DANGER_TEXT, minHeight: 44, mx: -1 }}>
+              <Button onClick={handleOpenDeletePlanDialog} sx={{ ...DANGER_TEXT, ...ALIGN_TEXT, minHeight: 44 }}>
                 {t('plans.delete_plan_action')}
               </Button>
             </Box>
