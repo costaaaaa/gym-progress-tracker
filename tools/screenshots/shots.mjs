@@ -720,8 +720,8 @@ for (const vp of viewports) {
         await ctx.close();
       }
     });
-    // «Profilo e preferenze» con la finestra di una riga aperta: l'obiettivo settimanale, l'unità di misura, l'email e la data di nascita
-    for (const [name, row] of [['account-profilo-obiettivo', 'Obiettivo settimanale'], ['account-profilo-unita', 'Unità di misura'], ['account-profilo-email', 'Email'], ['account-profilo-nascita', 'Data di nascita']]) {
+    // «Profilo e preferenze» con la finestra di una riga aperta: l'obiettivo settimanale, l'unità di misura, l'email, la data di nascita e il tema
+    for (const [name, row] of [['account-profilo-obiettivo', 'Obiettivo settimanale'], ['account-profilo-unita', 'Unità di misura'], ['account-profilo-email', 'Email'], ['account-profilo-nascita', 'Data di nascita'], ['account-profilo-tema', 'Tema']]) {
       if (!want(name)) continue;
       await attempt(tag, name, async () => {
         const { ctx, page } = await openPage(vp, theme, { loggedIn: true }, tag);
