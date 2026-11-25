@@ -1,7 +1,7 @@
-// Account: la cornice (dati letti una volta sola) e l'elenco di quattro voci a /account, con la riga del livello in testata, con «Esci» e «Elimina account».
+// Account: la cornice (dati letti una volta sola) e l'elenco a /account: testata con il livello, voci, «Esci» ed «Elimina account».
 // Colori scritti a mano: text.primary #1a1816, text.secondary #6b6663, primary/error #d50000 (in scuro error #ff5252).
 // La fetch è il confine.
-// Le pagine delle quattro voci hanno i loro file in src/pages/account/; qui c'è quello che hanno in comune.
+// Le pagine delle voci hanno i loro file in src/pages/account/; qui c'è quello che hanno in comune.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, within, fireEvent, waitFor } from '@testing-library/react';
 import i18n from '../i18n';
@@ -70,7 +70,8 @@ describe('titolo della pagina', () => {
   });
 });
 
-const TIER = () => screen.getByTestId('account-tier');
+const tierRow = () => screen.getByTestId('account-tier');
+const follows = (a, b) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 
 describe('testata', () => {
   it('avatar con l\'iniziale, nome utente ed email, senza troncarli', async () => {
@@ -87,11 +88,14 @@ describe('testata', () => {
   it('la riga del livello sta sotto nome ed email e prima dell\'elenco, con un solo «Vedi i piani»', async () => {
     stubFetch({ tierFields: { tier: 'plus', tier_until: null, tier_last_day: null, signup_code: null } });
     await mount();
-    const follows = (a, b) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
-    expect(TIER().textContent).toBe('Livello: Plus, senza scadenza');
-    expect(follows(screen.getByText('atleta_con_un_nome_molto_lungo'), TIER())).toBe(true);
-    expect(follows(screen.getByText('atleta.con.un.indirizzo.lungo@example.com'), TIER())).toBe(true);
-    expect(follows(TIER(), screen.getByRole('link', { name: 'Profilo e preferenze' }))).toBe(true);
+    expect(tierRow().textContent).toBe('Livello: Plus, senza scadenza');
+    const name = screen.getByText('atleta_con_un_nome_molto_lungo');
+    expect(follows(name, tierRow())).toBe(true);
+    expect(follows(screen.getByText('atleta.con.un.indirizzo.lungo@example.com'), tierRow())).toBe(true);
+    expect(follows(tierRow(), screen.getByRole('link', { name: 'Profilo e preferenze' }))).toBe(true);
+    // nella colonna di nome ed email, non accanto all'avatar
+    expect(tierRow().parentElement.parentElement).toBe(name.parentElement);
+    expect(name.parentElement.contains(screen.getByText('A'))).toBe(false);
     expect(screen.getAllByRole('link', { name: 'Vedi i piani' })).toHaveLength(1);
   });
 
@@ -113,6 +117,7 @@ describe('elenco delle voci', () => {
 
   it('la voce «Preferenze» di una volta non c\'è: dopo i collegamenti dell\'elenco, nessuno si chiama così', async () => {
     await mount();
+    // i collegamenti della pagina: le voci e «Vedi i piani» della testata
     expect(screen.getAllByRole('link')).toHaveLength(ROWS.length + 1);
     expect(screen.queryByRole('link', { name: 'Preferenze' })).toBeNull();
   });
@@ -159,7 +164,7 @@ describe('Amministrazione', () => {
     expect(getComputedStyle(within(link).getByText('Amministrazione')).color).toBe(INK);
     const lastRow = screen.getByRole('link', { name: 'Sicurezza' });
     expect(link.closest('.MuiCard-root')).not.toBe(lastRow.closest('.MuiCard-root'));
-    expect(lastRow.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(follows(lastRow, link)).toBe(true);
   });
 
   it('per gli altri non c\'è', async () => {
@@ -199,7 +204,7 @@ describe('Elimina account', () => {
     const del = screen.getByRole('button', { name: 'Elimina account' });
     expect(del.classList.contains('MuiButton-text')).toBe(true);
     expect(getComputedStyle(del).color).toBe(RED);
-    expect(screen.getByRole('button', { name: 'Esci' }).compareDocumentPosition(del) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(follows(screen.getByRole('button', { name: 'Esci' }), del)).toBe(true);
   });
 
   it('in tema scuro il pulsante è nel rosso chiaro del tema (error.main), non nel rosso del marchio', async () => {
@@ -238,7 +243,7 @@ describe('Elimina account', () => {
   });
 });
 
-describe('le quattro pagine', () => {
+describe('le pagine delle voci', () => {
   it.each(ROWS)('«%s»: titolo, titolo del documento e «indietro» verso /account', async (name, href) => {
     await mount(href);
     expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual([name]);
@@ -281,11 +286,11 @@ describe('la cornice legge i dati una volta sola', () => {
 
   it('la rilettura arriva alle pagine: il nuovo livello compare nella riga del livello della testata', async () => {
     const { rerenderAccount } = await mount();
-    expect(TIER().textContent).toBe('Livello: Gratis');
+    expect(tierRow().textContent).toBe('Livello: Gratis');
     stubFetch({ tierFields: { tier: 'pro', tier_until: null, tier_last_day: null, signup_code: null } });
     auth.user = { id: 1 };
     rerenderAccount();
-    await waitFor(() => expect(TIER().textContent).toBe('Livello: Pro, senza scadenza'));
+    await waitFor(() => expect(tierRow().textContent).toBe('Livello: Pro, senza scadenza'));
   });
 
   it('prima lettura fallita, poi riuscita: la pagina passa dai valori di ripiego ai dati veri', async () => {

@@ -486,7 +486,7 @@ const SHOT_LIST = [
   ['volume-base', '/progressi?tab=volume', { loggedIn: true, sets: true, modules: { recovery: false }, readyText: 'Questa settimana' }],
   // Pagina di un esercizio (la panca): 12 sessioni, grafico in salita, record e cronologia
   ['progressi-esercizio', '/progressi/esercizi/3', { loggedIn: true, utente: 'progressi', ready: 'Panca piana' }],
-  // Account: l'elenco delle quattro voci (con il livello in testata) e, una per una, le sue pagine
+  // Account: l'elenco delle voci (con il livello in testata) e, una per una, le sue pagine
   ['account', '/account', { loggedIn: true }],
   ['account-profilo', '/account/profilo', { loggedIn: true }],
   ['account-moduli', '/account/moduli', { loggedIn: true }],

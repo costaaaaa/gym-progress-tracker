@@ -14,7 +14,7 @@ import AccountIdentity from './AccountIdentity';
 import AccountRow from './AccountRow';
 import RowList from './RowList';
 
-// Elenco dell'Account (/account): la testata (avatar, nome utente, email e livello), le quattro voci che portano alle loro pagine,
+// Elenco dell'Account (/account): la testata (avatar, nome utente, email e livello), le voci che portano alle loro pagine,
 // la voce dell'amministrazione per chi lo è, «Esci» e «Elimina account». I dati arrivano dalla cornice (Account).
 const AccountList = () => {
   const { t } = useTranslation();

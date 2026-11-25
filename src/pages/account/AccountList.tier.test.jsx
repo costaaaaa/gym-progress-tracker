@@ -39,110 +39,109 @@ afterEach(() => {
   localStorage.clear();
 });
 
-// Le ricerche sono sullo schermo. Il titolo c'è a lettura finita (la cornice aspetta i dati prima di mostrare la pagina).
+// Il titolo c'è a lettura finita (la cornice aspetta i dati prima di mostrare la pagina).
 const mount = async () => {
   renderAccount('/account');
   await screen.findByRole('heading', { level: 1, name: 'Account' });
-  return screen;
 };
-const row = (card) => card.getByTestId('account-tier');
+const tierRow = () => screen.getByTestId('account-tier');
 
 describe('livello nella testata dell\'elenco', () => {
   it('Gratis, con il link ai piani', async () => {
-    const card = await mount();
-    expect(row(card).textContent).toBe('Livello: Gratis');
-    expect(card.getByRole('link', { name: 'Vedi i piani' }).getAttribute('href')).toBe('/piani');
+    await mount();
+    expect(tierRow().textContent).toBe('Livello: Gratis');
+    expect(screen.getByRole('link', { name: 'Vedi i piani' }).getAttribute('href')).toBe('/piani');
   });
 
   it('Plus con ultimo giorno: «Plus fino al 15 febbraio 2027»', async () => {
     tierFields = { tier: 'plus', tier_until: '2027-02-15T23:00:00Z', tier_last_day: '2027-02-15', signup_code: { status: 'applied', tier: 'plus', duration_days: 90 } };
-    const card = await mount();
-    expect(row(card).textContent).toBe('Livello: Plus fino al 15 febbraio 2027');
+    await mount();
+    expect(tierRow().textContent).toBe('Livello: Plus fino al 15 febbraio 2027');
   });
 
   it('Pro senza scadenza', async () => {
     tierFields = { tier: 'pro', tier_until: null, tier_last_day: null, signup_code: { status: 'applied', tier: 'pro', duration_days: null } };
-    const card = await mount();
-    expect(row(card).textContent).toBe('Livello: Pro, senza scadenza');
+    await mount();
+    expect(tierRow().textContent).toBe('Livello: Pro, senza scadenza');
   });
 
   it('Plus senza scadenza assegnato a mano', async () => {
     tierFields = { tier: 'plus', tier_until: null, tier_last_day: null, signup_code: null };
-    const card = await mount();
-    expect(row(card).textContent).toBe('Livello: Plus, senza scadenza');
+    await mount();
+    expect(tierRow().textContent).toBe('Livello: Plus, senza scadenza');
   });
 
   it('prima della conferma: Gratis, con il livello del codice in attesa', async () => {
     tierFields = { tier: 'free', tier_until: null, tier_last_day: null, signup_code: { status: 'pending', tier: 'plus', duration_days: 90 } };
     auth.emailState = { ...auth.emailState, verified: false, daysLeft: 5 };
-    const card = await mount();
-    expect(row(card).textContent).toBe('Livello: Gratis. Plus in attesa: conferma l\'email per attivarlo');
+    await mount();
+    expect(tierRow().textContent).toBe('Livello: Gratis. Plus in attesa: conferma l\'email per attivarlo');
   });
 
   it('in attesa di un Pro: nomina Pro', async () => {
     tierFields = { tier: 'free', tier_until: null, tier_last_day: null, signup_code: { status: 'pending', tier: 'pro', duration_days: null } };
-    const card = await mount();
-    expect(row(card).textContent).toBe('Livello: Gratis. Pro in attesa: conferma l\'email per attivarlo');
+    await mount();
+    expect(tierRow().textContent).toBe('Livello: Gratis. Pro in attesa: conferma l\'email per attivarlo');
   });
 
   it('codice non applicato (posti finiti o spento): Gratis e lo dice', async () => {
     tierFields = { tier: 'free', tier_until: null, tier_last_day: null, signup_code: { status: 'missed', tier: 'plus', duration_days: 90 } };
-    const card = await mount();
-    expect(row(card).textContent).toBe('Livello: Gratis. Il codice di registrazione non è stato applicato.');
+    await mount();
+    expect(tierRow().textContent).toBe('Livello: Gratis. Il codice di registrazione non è stato applicato.');
   });
 
   it('codice non applicato ma l\'account ha un livello: mostra il livello, non il messaggio', async () => {
     tierFields = { tier: 'plus', tier_until: '2027-03-01T23:00:00Z', tier_last_day: '2027-03-01', signup_code: { status: 'missed', tier: 'plus', duration_days: 90 } };
-    const card = await mount();
-    expect(row(card).textContent).toBe('Livello: Plus fino al 1 marzo 2027');
+    await mount();
+    expect(tierRow().textContent).toBe('Livello: Plus fino al 1 marzo 2027');
   });
 
   it('livello finito dopo un codice applicato: Gratis, nessun messaggio', async () => {
     tierFields = { tier: 'free', tier_until: null, tier_last_day: null, signup_code: { status: 'applied', tier: 'plus', duration_days: 90 } };
-    const card = await mount();
-    expect(row(card).textContent).toBe('Livello: Gratis');
+    await mount();
+    expect(tierRow().textContent).toBe('Livello: Gratis');
   });
 
   it('un server senza i campi del livello: la riga non compare', async () => {
     tierFields = {};
-    const card = await mount();
-    expect(card.queryByTestId('account-tier')).toBeNull();
+    await mount();
+    expect(screen.queryByTestId('account-tier')).toBeNull();
   });
 
   it('in inglese: testi, data e link ai piani', async () => {
     await i18n.changeLanguage('en');
     tierFields = { tier: 'plus', tier_until: '2027-02-15T23:00:00Z', tier_last_day: '2027-02-15', signup_code: null };
-    const card = await mount();
-    expect(row(card).textContent).toBe('Plan: Plus until February 15, 2027');
-    expect(card.getByRole('link', { name: 'See plans' }).getAttribute('href')).toBe('/en/plans');
+    await mount();
+    expect(tierRow().textContent).toBe('Plan: Plus until February 15, 2027');
+    expect(screen.getByRole('link', { name: 'See plans' }).getAttribute('href')).toBe('/en/plans');
   });
 
   it('in inglese, in attesa', async () => {
     await i18n.changeLanguage('en');
     tierFields = { tier: 'free', tier_until: null, tier_last_day: null, signup_code: { status: 'pending', tier: 'pro', duration_days: null } };
-    const card = await mount();
-    expect(row(card).textContent).toBe('Plan: Free. Pro pending: confirm your email to activate it');
+    await mount();
+    expect(tierRow().textContent).toBe('Plan: Free. Pro pending: confirm your email to activate it');
   });
 
   it('testo di almeno 16px', async () => {
     tierFields = { tier: 'free', tier_until: null, tier_last_day: null, signup_code: { status: 'pending', tier: 'plus', duration_days: 90 } };
-    const card = await mount();
-    expect(textBelow(row(card).parentElement, 16)).toEqual([]);
+    await mount();
+    expect(textBelow(tierRow().parentElement, 16)).toEqual([]);
   });
 
   it.each(['UTC', 'Europe/Rome', 'America/Los_Angeles', 'Asia/Tokyo'])('la data è il giorno scritto anche con il browser in %s', async (zone) => {
     setBrowserTimeZone(zone);
     tierFields = { tier: 'plus', tier_until: '2027-02-15T23:00:00Z', tier_last_day: '2027-02-15', signup_code: null };
-    const card = await mount();
-    expect(row(card).textContent).toBe('Livello: Plus fino al 15 febbraio 2027');
+    await mount();
+    expect(tierRow().textContent).toBe('Livello: Plus fino al 15 febbraio 2027');
   });
 
   it.each(['UTC', 'Europe/Rome', 'America/Los_Angeles', 'Asia/Tokyo'])('in inglese la data è il giorno scritto anche con il browser in %s', async (zone) => {
     await i18n.changeLanguage('en');
     setBrowserTimeZone(zone);
     tierFields = { tier: 'plus', tier_until: '2027-02-15T23:00:00Z', tier_last_day: '2027-02-15', signup_code: null };
-    const card = await mount();
-    expect(row(card).textContent).toBe('Plan: Plus until February 15, 2027');
+    await mount();
+    expect(tierRow().textContent).toBe('Plan: Plus until February 15, 2027');
   });
 });
 
@@ -154,20 +153,19 @@ describe('livello dopo la conferma dell\'email da questa pagina', () => {
     tierFields = { tier: 'free', tier_until: null, tier_last_day: null, signup_code: { status: 'pending', tier: 'plus', duration_days: 90 } };
     const { rerenderAccount } = view();
     await screen.findByTestId('account-tier');
-    expect(screen.getByTestId('account-tier').textContent).toContain('Plus in attesa');
+    expect(tierRow().textContent).toBe('Livello: Gratis. Plus in attesa: conferma l\'email per attivarlo');
 
     tierFields = { tier: 'plus', tier_until: '2027-02-15T23:00:00Z', tier_last_day: '2027-02-15', signup_code: { status: 'applied', tier: 'plus', duration_days: 90 } };
     auth.emailState = { ...auth.emailState, verified: true, daysLeft: null };
     rerenderAccount();
 
-    await waitFor(() => expect(screen.getByTestId('account-tier').textContent).toBe('Livello: Plus fino al 15 febbraio 2027'));
+    await waitFor(() => expect(tierRow().textContent).toBe('Livello: Plus fino al 15 febbraio 2027'));
     expect(screen.getByRole('heading', { level: 1, name: 'Account' })).toBeTruthy();
   });
 
   it('senza cambi nello stato dell\'email non rilegge nulla oltre al montaggio', async () => {
     const { rerenderAccount } = view();
     await screen.findByTestId('account-tier');
-    await waitFor(() => expect(screen.getByTestId('account-tier')).toBeTruthy());
     const reads = () => fetch.mock.calls.filter(([u]) => String(u).includes('user/read.php')).length;
     const mounted = reads();
     // stesso stato, oggetto nuovo
@@ -205,7 +203,7 @@ describe('livello dopo la conferma dell\'email da questa pagina', () => {
     await waitFor(() => expect(held).toHaveLength(1));
     held[0](json({ success: false, message: 'errore' }));
     await new Promise((r) => setTimeout(r, 30));
-    expect(screen.getByTestId('account-tier').textContent).toContain('Plus in attesa');
+    expect(tierRow().textContent).toBe('Livello: Gratis. Plus in attesa: conferma l\'email per attivarlo');
   });
 
   it('una risposta vecchia arrivata dopo la nuova non scrive', async () => {
@@ -220,9 +218,9 @@ describe('livello dopo la conferma dell\'email da questa pagina', () => {
     rerenderAccount();
     await waitFor(() => expect(held).toHaveLength(2));
     held[1](readOf(PRO));
-    await waitFor(() => expect(screen.getByTestId('account-tier').textContent).toBe('Livello: Pro, senza scadenza'));
+    await waitFor(() => expect(tierRow().textContent).toBe('Livello: Pro, senza scadenza'));
     held[0](readOf(PLUS)); // la vecchia arriva dopo
     await new Promise((r) => setTimeout(r, 30));
-    expect(screen.getByTestId('account-tier').textContent).toBe('Livello: Pro, senza scadenza');
+    expect(tierRow().textContent).toBe('Livello: Pro, senza scadenza');
   });
 });

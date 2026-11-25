@@ -94,7 +94,7 @@ describe('rotte dei Progressi', () => {
   }, 10000);
 });
 
-// L'Account è un elenco (/account) e quattro pagine sotto /account/…: le rotte vere di App.jsx, con la cornice che le avvolge
+// L'Account è un elenco (/account) e le sue pagine sotto /account/…: le rotte vere di App.jsx, con la cornice che le avvolge
 describe('rotte dell\'Account', () => {
   const open = (path) => {
     window.history.pushState({}, '', path);
