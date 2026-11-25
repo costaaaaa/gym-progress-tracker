@@ -136,8 +136,7 @@ const PlanPage = () => {
     <Box sx={{ pb: 3 }}>
       {plan ? (
         <>
-          {/* Riga del titolo con la freccia: alta almeno 44 px, titolo al centro, come nelle sottopagine dell'Account */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, minHeight: 44 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
             <IconButton component={RouterLink} to="/schede" aria-label={t('nav.plans')} edge="start" sx={{ width: 44, height: 44, color: 'text.primary' }}>
               <ArrowBackIcon />
             </IconButton>
@@ -147,7 +146,7 @@ const PlanPage = () => {
               variant="outlined"
               aria-pressed={editing}
               onClick={() => setEditing((on) => !on)}
-              sx={{ ...NEUTRAL_OUTLINED, py: 0, minHeight: 44, fontWeight: 600, flexShrink: 0, ...(editing && { bgcolor: 'action.selected' }) }}
+              sx={{ ...NEUTRAL_OUTLINED, minHeight: 44, fontWeight: 600, flexShrink: 0, ...(editing && { bgcolor: 'action.selected' }) }}
             >
               {editing ? t('plans.edit_done') : t('plans.edit_mode')}
             </Button>

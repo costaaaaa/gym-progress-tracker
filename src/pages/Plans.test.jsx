@@ -6,7 +6,7 @@ import { render, screen, within, fireEvent, waitFor, act } from '@testing-librar
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Plans from './Plans';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
-import { json, expectNoNestedContainer, textsBelow16pxExceptActiveBadge } from '../test/dom';
+import { json, expectNoNestedContainer, textsBelow16pxExceptActiveBadge, expectPageTitleBlock } from '../test/dom';
 import { plannedSets, times } from '../test/plannedSets';
 import { unnamedControls } from '../test/accessibleNames';
 import i18n from '../i18n';
@@ -90,17 +90,13 @@ describe('pagina Schede', () => {
     expect(screen.queryByRole('tab')).toBeNull();
   });
 
-  it('sopra il titolo la pagina non dà spazio (resta quello sotto); la riga è alta 44 px e il pulsante pure', async () => {
+  it('sopra il titolo la pagina non dà spazio (resta quello sotto); il titolo sta in un blocco alto 44 px', async () => {
     await mount();
     const titolo = screen.getByRole('heading', { level: 1, name: 'Schede' });
-    const riga = titolo.parentElement;
-    const pagina = riga.parentElement;
+    const pagina = titolo.parentElement.parentElement;
     expect(parseFloat(getComputedStyle(pagina).paddingTop)).toBe(0);
     expect(getComputedStyle(pagina).paddingBottom).toBe('24px');
-    expect(getComputedStyle(riga).minHeight).toBe('44px');
-    expect(getComputedStyle(riga).alignItems).toBe('center');
-    expect(getComputedStyle(screen.getByRole('button', { name: 'Nuova scheda' })).minHeight).toBe('44px');
-    expect(parseFloat(getComputedStyle(screen.getByRole('button', { name: 'Nuova scheda' })).paddingTop)).toBe(0);
+    expectPageTitleBlock(titolo);
   });
 
   it('il titolo della pagina non si ripete sotto', async () => {

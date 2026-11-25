@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, within, fireEvent, waitFor } from '@testing-library/react';
 import i18n from '../i18n';
 import { textBelow } from '../test/minText';
-import { json } from '../test/dom';
+import { json, expectPageTitleBlock } from '../test/dom';
 import { describedBy } from '../test/accessibleNames';
 import { renderAccount } from '../test/accountRoutes';
 import { reads } from '../test/settingRows';
@@ -66,6 +66,7 @@ describe('titolo della pagina', () => {
     expect(h1s.map((h) => h.textContent)).toEqual(['Account']);
     expect(getComputedStyle(h1s[0]).fontSize).toBe('28px');
     expect(getComputedStyle(h1s[0]).fontWeight).toBe('800');
+    expectPageTitleBlock(h1s[0]);
     // il titolo del documento lo scrive un effetto, a volte dopo il primo disegno
     await waitFor(() => expect(document.title).toBe('Account | LiftIndex'));
   });
@@ -249,6 +250,7 @@ describe('le pagine delle voci', () => {
     await mount(href);
     expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual([name]);
     expect(getComputedStyle(screen.getByRole('heading', { level: 1 })).fontSize).toBe('28px');
+    expectPageTitleBlock(screen.getByRole('heading', { level: 1 }));
     await waitFor(() => expect(document.title).toBe(`${name} | LiftIndex`));
     const back = screen.getByRole('link', { name: 'Torna all\'Account' });
     expect(back.getAttribute('href')).toBe('/account');

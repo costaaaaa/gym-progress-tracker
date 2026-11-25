@@ -199,7 +199,12 @@ export const ThemeModeProvider = ({ children }) => {
           // che sostituisce, con un tag <p> (vedi variantMapping sotto).
           cardTitle: { fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: '17px', lineHeight: 1.5 },
           // Titolo di pagina: 28px a tutte le larghezze (nelle schermate di lavoro il titolo sta tra 24 e 32px). Interlinea come h1.
+          // Sta sempre in un blocco alto almeno 44 px (come pulsanti e freccia) con il testo al centro: così il titolo ha la
+          // stessa altezza in ogni pagina, con o senza pulsante o freccia sulla riga, anche quando il pulsante va a capo.
           pageTitle: {
+            display: 'flex',
+            alignItems: 'center',
+            minHeight: 44,
             fontFamily: TITLE_FONT_FAMILY,
             fontWeight: 800,
             letterSpacing: '-0.02em',

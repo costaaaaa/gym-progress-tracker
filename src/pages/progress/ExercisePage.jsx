@@ -41,7 +41,7 @@ const ExercisePage = () => {
     if (loadFailed) {
       return (
         <>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, minHeight: 44 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
             {back}
             <Typography variant="pageTitle" sx={{ flex: 1, minWidth: 0 }}>{t('dashboard.title')}</Typography>
           </Box>
@@ -58,11 +58,10 @@ const ExercisePage = () => {
     ];
     return (
       <>
-        {/* Con il sottotitolo la riga è più alta di 44 px: la freccia resta in cima, in asse con il titolo, e il titolo scende di
-            (44 − 32,7 px) / 2 per stare dove sta nelle altre sottopagine */}
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 2.5, minHeight: 44 }}>
+        {/* Con il sottotitolo la riga è più alta di 44 px: la freccia resta in cima, in asse con il blocco del titolo */}
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 2.5 }}>
           {back}
-          <Box sx={{ flex: 1, minWidth: 0, pt: '5.66px' }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography variant="pageTitle" sx={{ overflowWrap: 'anywhere' }}>{item.name}</Typography>
             <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{groupLabel(t, item.muscle)}</Typography>
           </Box>

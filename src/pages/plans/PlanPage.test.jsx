@@ -6,7 +6,7 @@ import { render, screen, within, fireEvent, waitFor, act } from '@testing-librar
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import PlanPage from './PlanPage';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
-import { json, colorOf, textsBelow16pxExceptActiveBadge } from '../../test/dom';
+import { json, colorOf, textsBelow16pxExceptActiveBadge, expectPageTitleBlock } from '../../test/dom';
 import { plannedSets, times } from '../../test/plannedSets';
 import { unnamedControls } from '../../test/accessibleNames';
 import i18n from '../../i18n';
@@ -81,17 +81,13 @@ describe('lettura', () => {
     expect(screen.getByRole('link', { name: 'Schede' }).getAttribute('href')).toBe('/schede');
   });
 
-  it('sopra la riga della freccia e del titolo la pagina non dà spazio (resta quello sotto); la riga è alta 44 px', async () => {
+  it('sopra la riga della freccia e del titolo la pagina non dà spazio (resta quello sotto); il titolo sta in un blocco alto 44 px', async () => {
     await mount([mk(1)]);
-    const riga = (await screen.findByRole('heading', { level: 1 })).parentElement;
-    const pagina = riga.parentElement;
+    const titolo = await screen.findByRole('heading', { level: 1 });
+    const pagina = titolo.parentElement.parentElement;
     expect(parseFloat(getComputedStyle(pagina).paddingTop)).toBe(0);
     expect(getComputedStyle(pagina).paddingBottom).toBe('24px');
-    expect(getComputedStyle(riga).minHeight).toBe('44px');
-    expect(getComputedStyle(riga).alignItems).toBe('center');
-    const modifica = getComputedStyle(screen.getByRole('button', { name: 'Modifica' }));
-    expect(modifica.minHeight).toBe('44px');
-    expect(parseFloat(modifica.paddingTop)).toBe(0);
+    expectPageTitleBlock(titolo);
   });
 
   it('mostra tutti gli esercizi del giorno, anche oltre i primi quattro, senza «Dettagli» né «+N altri»', async () => {

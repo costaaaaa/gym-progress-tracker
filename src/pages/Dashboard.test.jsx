@@ -6,7 +6,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { MemoryRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import Dashboard from './Dashboard';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
-import { json } from '../test/dom';
+import { json, expectPageTitleBlock } from '../test/dom';
 
 const auth = vi.hoisted(() => ({ value: null }));
 vi.mock('../context/AuthContext', () => ({ useAuth: () => auth.value }));
@@ -50,6 +50,7 @@ describe('shell di Progressi', () => {
     const style = getComputedStyle(h1s[0]);
     expect(style.fontSize).toBe('28px');
     expect(style.fontWeight).toBe('800');
+    expectPageTitleBlock(h1s[0]);
     expect(h1s[0].compareDocumentPosition(screen.getByRole('tablist')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 

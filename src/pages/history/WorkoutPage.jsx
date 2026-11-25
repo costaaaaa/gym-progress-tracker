@@ -85,7 +85,7 @@ const WorkoutPage = () => {
     if (loadFailed) {
       return (
         <>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, minHeight: 44 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
             {back}
             <Typography variant="pageTitle" sx={{ flex: 1, minWidth: 0 }}>{t('nav.history')}</Typography>
           </Box>
@@ -105,7 +105,7 @@ const WorkoutPage = () => {
     ];
     return (
       <>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, minHeight: 44 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
           {back}
           <Typography variant="pageTitle" sx={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{workoutTitle(workout)}</Typography>
         </Box>

@@ -9,6 +9,15 @@ export const expectNoNestedContainer = () => expect(document.querySelector('.Mui
 
 export const colorOf = (el) => getComputedStyle(el).color;
 
+// Il titolo di pagina sta in un blocco alto almeno 44 px (come pulsanti e freccia) con il testo al centro: così il titolo
+// ha la stessa altezza in ogni pagina, con o senza pulsante o freccia sulla sua riga.
+export const expectPageTitleBlock = (heading) => {
+  const stile = getComputedStyle(heading);
+  expect(stile.minHeight).toBe('44px');
+  expect(stile.display).toBe('flex');
+  expect(stile.alignItems).toBe('center');
+};
+
 // Guardia delle pagine delle Schede: i testi sotto i 16 px, come «testo (misura)». L'unica eccezione è il loro badge
 // «Attiva» (13 px o più): su una pagina con un altro «Attiva» questa guardia non va usata.
 export const textsBelow16pxExceptActiveBadge = () => [...document.body.querySelectorAll('*')]

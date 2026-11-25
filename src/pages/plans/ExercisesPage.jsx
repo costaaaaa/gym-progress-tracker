@@ -42,7 +42,7 @@ const ExercisesPage = () => {
 
   return (
     <Box sx={{ pb: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, minHeight: 44 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <IconButton component={RouterLink} to="/schede" aria-label={t('nav.plans')} edge="start" sx={{ width: 44, height: 44, color: 'text.primary' }}>
           <ArrowBackIcon />
         </IconButton>

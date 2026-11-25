@@ -11,7 +11,7 @@ import GroupDetail from './GroupDetail';
 import JoinGroup from './JoinGroup';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { textBelow } from '../test/minText';
-import { json, colorOf, expectNoNestedContainer } from '../test/dom';
+import { json, colorOf, expectNoNestedContainer, expectPageTitleBlock } from '../test/dom';
 
 const auth = vi.hoisted(() => ({ value: null }));
 vi.mock('../context/AuthContext', () => ({ useAuth: () => auth.value }));
@@ -86,17 +86,13 @@ describe('elenco dei gruppi', () => {
     expect(getComputedStyle(screen.getByRole('button', { name: 'Crea gruppo' })).backgroundColor).toBe(RED);
   });
 
-  it('sopra il titolo la pagina non dà spazio (resta quello sotto); la riga è alta 44 px e il pulsante pure', async () => {
+  it('sopra il titolo la pagina non dà spazio (resta quello sotto); il titolo sta in un blocco alto 44 px', async () => {
     await mount();
     const titolo = screen.getByRole('heading', { level: 1, name: 'Gruppi' });
-    const riga = titolo.parentElement;
-    const pagina = riga.parentElement;
+    const pagina = titolo.parentElement.parentElement;
     expect(parseFloat(getComputedStyle(pagina).paddingTop)).toBe(0);
     expect(getComputedStyle(pagina).paddingBottom).toBe('24px');
-    expect(getComputedStyle(riga).minHeight).toBe('44px');
-    expect(getComputedStyle(riga).alignItems).toBe('center');
-    expect(getComputedStyle(screen.getByRole('button', { name: 'Crea gruppo' })).minHeight).toBe('44px');
-    expect(parseFloat(getComputedStyle(screen.getByRole('button', { name: 'Crea gruppo' })).paddingTop)).toBe(0);
+    expectPageTitleBlock(titolo);
   });
 
   it('non apre un Container dentro quello del Layout', async () => {
