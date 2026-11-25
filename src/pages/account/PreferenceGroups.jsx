@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
+import { useThemeMode } from '../../context/ThemeModeContext';
 import FocusToolsOptions from '../../components/Focus/FocusToolsOptions';
 import { DEFAULT_WEIGHT_UNIT, isWeightUnit } from '../../utils/weightUnit';
 import { focusToolsSummary } from '../../utils/focusToolsSummary';
@@ -14,16 +15,19 @@ import useWeeklyGoalSetting from './useWeeklyGoalSetting';
 
 // I nomi delle lingue non si traducono: ognuno è scritto nella sua
 const LANGUAGES = [{ value: 'it', label: 'Italiano' }, { value: 'en', label: 'English' }];
+const THEMES = ['system', 'light', 'dark'];
 
-// I gruppi «Allenamento» (obiettivo settimanale, unità di misura, strumenti della serie) e «App» (lingua) della pagina
+// I gruppi «Allenamento» (obiettivo settimanale, unità di misura, strumenti della serie) e «App» (lingua, tema) della pagina
 // Profilo e preferenze: una riga col valore di adesso per impostazione e, cliccandola, la finestra col controllo. Una
 // sola finestra è aperta alla volta: `dialog` è useRowDialog della pagina, che la divide con il gruppo «Tu». Il valore
 // di ogni impostazione viene da `account` (la cornice lo aggiorna con `patchAccount` dopo un salvataggio): la riga e la
 // finestra leggono lo stesso. Un salvataggio riuscito chiude la finestra e avvisa dalla pagina (`dialog.saved`); gli
-// altri esiti stanno dentro la finestra.
+// altri esiti stanno dentro la finestra. Il tema è di questo browser: la scelta vale al clic e chiude la finestra, senza
+// richiesta al server né avviso.
 const PreferenceGroups = ({ account, patchAccount, dialog }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { themePreference, setThemePreference } = useThemeMode();
   const { openKey, close } = dialog;
   // Gli interruttori degli strumenti salvano da soli (FocusToolsOptions): dicono qui se c'è un salvataggio in corso
   const [toolsSaving, setToolsSaving] = useState(false);
@@ -53,6 +57,7 @@ const PreferenceGroups = ({ account, patchAccount, dialog }) => {
       </SettingsGroup>
       <SettingsGroup title={t('account.profile.group.app')}>
         <ValueRow title={t('account.language')} value={LANGUAGES.find((l) => l.value === language.value).label} onClick={openDialog('language', language)} />
+        <ValueRow title={t('settings.theme')} value={t(`settings.theme_${themePreference}`)} onClick={openDialog('theme')} />
       </SettingsGroup>
 
       <SettingDialog open={openKey === 'goal'} title={t('account.weekly_goal.title')} onClose={close} saving={goal.saving}>
@@ -82,6 +87,15 @@ const PreferenceGroups = ({ account, patchAccount, dialog }) => {
           saving={language.saving}
           help={t('account.language_help')}
           error={language.error}
+        />
+      </SettingDialog>
+      <SettingDialog open={openKey === 'theme'} title={t('settings.theme')} onClose={close}>
+        <ChoiceSettingBody
+          label={t('settings.theme')}
+          options={THEMES.map((value) => ({ value, label: t(`settings.theme_${value}`) }))}
+          value={themePreference}
+          onChange={(next) => { setThemePreference(next); close(); }}
+          help={t('account.theme_help')}
         />
       </SettingDialog>
     </>
