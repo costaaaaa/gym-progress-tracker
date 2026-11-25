@@ -295,7 +295,7 @@ describe('finestra «Data di nascita»', () => {
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     staysOpen();
     expect(settingsCalls()).toEqual([{ birth_date: '1985-07-21' }]);
-    answer.release(json({ success: true, birth_date: '1985-07-21', age: 40 }));
+    answer.resolve(json({ success: true, birth_date: '1985-07-21', age: 40 }));
     await closed();
     expect(settingsCalls()).toHaveLength(1);
     expect(await screen.findByText(SAVED)).toBeTruthy();
@@ -369,7 +369,7 @@ describe('finestra «Sesso»', () => {
     staysOpen();
     expect(settingsCalls()).toEqual([{ gender: 'F' }]);
     expect(dialog.getByRole('radio', { name: 'Femmina' }).checked).toBe(true);
-    answer.release(json({ success: true, gender: 'F' }));
+    answer.resolve(json({ success: true, gender: 'F' }));
     await closed();
     expect(settingsCalls()).toHaveLength(1);
   });
@@ -463,7 +463,7 @@ describe('finestra «Inizio allenamento»', () => {
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     staysOpen();
     expect(settingsCalls()).toEqual([{ training_start_date: '2023-03-01' }]);
-    answer.release(json({ success: true, training_start_date: '2023-03-01', experience_years: 3 }));
+    answer.resolve(json({ success: true, training_start_date: '2023-03-01', experience_years: 3 }));
     await closed();
     expect(settingsCalls()).toHaveLength(1);
   });

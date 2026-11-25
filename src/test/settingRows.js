@@ -21,9 +21,9 @@ export const staysOpen = () => {
 export const settingsCalls = () => fetch.mock.calls.filter(([url]) => String(url).includes('update_settings.php')).map(([, init]) => JSON.parse(init.body));
 export const reads = () => fetch.mock.calls.filter(([url]) => String(url).includes('user/read.php')).length;
 
-// Una risposta che arriva quando si chiama release(): il salvataggio resta in corso finché non si vuole
+// Una risposta che arriva quando si chiama resolve(valore): la richiesta resta in corso finché non si vuole
 export const deferred = () => {
   const control = {};
-  control.promise = new Promise((resolve) => { control.release = (response) => resolve(response); });
+  control.promise = new Promise((resolve) => { control.resolve = resolve; });
   return control;
 };

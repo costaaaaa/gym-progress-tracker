@@ -5,6 +5,7 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 import useAccount from './useAccount';
 import i18n from '../../i18n';
 import { json } from '../../test/dom';
+import { deferred } from '../../test/settingRows';
 
 const auth = {};
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth }));
@@ -167,12 +168,6 @@ describe('useAccount: patchAccount', () => {
 // Il vero updateUser crea un utente nuovo, quindi useAccount rilegge read.php e scrive l'account intero: una lettura
 // partita prima di un salvataggio non deve cancellarlo quando arriva dopo.
 describe('useAccount: patchAccount e letture in corso', () => {
-  const deferred = () => {
-    let resolve;
-    const promise = new Promise((done) => { resolve = done; });
-    return { promise, resolve };
-  };
-
   // Una lettura già fatta, poi `user` cambia e ne parte una seconda che resta in attesa
   const mountWithSlowSecondRead = async () => {
     const second = deferred();

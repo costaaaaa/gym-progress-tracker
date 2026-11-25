@@ -260,7 +260,7 @@ describe('«Annulla» del cambio in attesa, dentro la finestra «Email»', () =>
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     staysOpen();
     expect(cancelCalls()).toHaveLength(1);
-    answer.release(json({ success: true, cancelled: true }));
+    answer.resolve(json({ success: true, cancelled: true }));
     await waitFor(() => expect(dialog.getByRole('status').textContent).toBe('Cambio di indirizzo annullato.'));
     expect(cancelCalls()).toHaveLength(1);
   });

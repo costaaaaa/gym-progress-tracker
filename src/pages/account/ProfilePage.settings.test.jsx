@@ -317,7 +317,7 @@ describe.each([
     fireEvent.click(dialog.getByRole('button', { name: 'Chiudi' }));
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     staysOpen();
-    answer.release(json({ success: true, ...body }));
+    answer.resolve(json({ success: true, ...body }));
     await closed();
     expect(settingsCalls()).toEqual([body]);
     expect(await screen.findByText(saved)).toBeTruthy();
@@ -435,13 +435,13 @@ describe('finestra «Obiettivo settimanale»', () => {
     await mount();
     const dialog = open('Obiettivo settimanale');
     fireEvent.click(within(goalGroup(dialog)).getByRole('button', { name: '2' }));
-    answer.release(json({ success: true, weekly_goal: 2, weekly_goal_default: 3, weekly_goal_pending: null }));
+    answer.resolve(json({ success: true, weekly_goal: 2, weekly_goal_default: 3, weekly_goal_pending: null }));
     await waitFor(() => expect(dialog.getByRole('status').textContent).toBe('Obiettivo settimanale aggiornato'));
     const second = deferred();
     stubFetch({ settings: () => second.promise });
     fireEvent.click(within(goalGroup(dialog)).getByRole('button', { name: '3' }));
     await waitFor(() => expect(dialog.getByRole('status').textContent).toBe(''));
-    second.release(json({ success: true, weekly_goal: 3, weekly_goal_default: 3, weekly_goal_pending: null }));
+    second.resolve(json({ success: true, weekly_goal: 3, weekly_goal_default: 3, weekly_goal_pending: null }));
     await waitFor(() => expect(dialog.getByRole('status').textContent).toBe('Obiettivo settimanale aggiornato'));
   });
 
@@ -459,7 +459,7 @@ describe('finestra «Obiettivo settimanale»', () => {
     fireEvent.click(dialog.getByRole('button', { name: 'Chiudi' }));
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     staysOpen();
-    answer.release(json({ success: true, weekly_goal: 5, weekly_goal_default: 3, weekly_goal_pending: null }));
+    answer.resolve(json({ success: true, weekly_goal: 5, weekly_goal_default: 3, weekly_goal_pending: null }));
     await waitFor(() => expect(dialog.getByRole('status').textContent).toBe('Obiettivo settimanale aggiornato'));
     expect(goalGroup(dialog).getAttribute('aria-busy')).toBe('false');
   });
@@ -548,7 +548,7 @@ describe('finestra «Strumenti della serie»: durante un salvataggio', () => {
   it('arriva un rifiuto: l\'errore si legge nella finestra, poi si può chiudere', async () => {
     const { dialog, pending } = await slowSave();
     pressEsc();
-    pending.release(json({ success: false }, 500));
+    pending.resolve(json({ success: false }, 500));
     await waitFor(() => expect(dialog.getByRole('alert').textContent).toBe('Errore nel salvataggio. Riprova.'));
     await waitFor(() => expect(dialog.getByRole('button', { name: 'Chiudi' }).getAttribute('aria-disabled')).toBeNull());
     staysOpen();
@@ -559,7 +559,7 @@ describe('finestra «Strumenti della serie»: durante un salvataggio', () => {
 
   it('a salvataggio finito si chiude con Esc e «Chiudi»', async () => {
     const { dialog, pending } = await slowSave();
-    pending.release(json({ success: true, rest_timer_enabled: true, focus_tools: { technique: false, suggested_weight: true } }));
+    pending.resolve(json({ success: true, rest_timer_enabled: true, focus_tools: { technique: false, suggested_weight: true } }));
     await waitFor(() => expect(dialog.getByRole('status').textContent).toBe('Tecnica di intensità: spento'));
     await waitFor(() => expect(dialog.getByRole('button', { name: 'Chiudi' }).getAttribute('aria-disabled')).toBeNull());
     pressEsc();
