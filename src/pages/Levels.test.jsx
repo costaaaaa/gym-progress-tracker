@@ -91,6 +91,15 @@ describe('livello', () => {
     expect(style(screen.getByText('600 XP per il livello 8')).fontSize).toBe('16px');
     expect(style(screen.getByText('3.140 XP totali')).fontSize).toBe('16px');
   });
+
+  it('gli XP da quattro cifre in su hanno il punto delle migliaia: del livello, per il prossimo, di un esercizio', async () => {
+    const big = { ...profile, xp_into_level: 1100, xp_for_next_level: 1700, exercises: [{ exercise_id: 3, name: 'Panca piana', level: 6, xp: 1250 }] };
+    fetch.mockImplementation(() => Promise.resolve({ ok: true, status: 200, json: async () => big }));
+    await mount();
+    expect(screen.getByText('1.100 XP')).toBeTruthy();
+    expect(screen.getByText('1.700 XP per il livello 8')).toBeTruthy();
+    expect(screen.getByText('1.250 XP')).toBeTruthy();
+  });
 });
 
 // Reflow a 320 px e spaziatura del testo (1.4.10, 1.4.12): niente riga forzata né troncamento con i puntini
