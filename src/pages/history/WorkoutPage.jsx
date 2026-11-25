@@ -114,12 +114,13 @@ const WorkoutPage = () => {
           <TimeZoneBadge workout={workout} sx={{ fontSize: 16 }} />
         </Box>
 
-        {/* Tre colonne uguali a ogni larghezza; sotto sm riempimento e spazi stretti, perché il valore (anche «12 345 lb») stia su una riga a 320 px */}
+        {/* Tre colonne uguali a ogni larghezza; sotto sm riempimento e spazi stretti. Il valore (anche «4.820,5 kg») sta su una riga
+            se ci sta, altrimenti va a capo: con colonne uguali e senza capo uscirebbe dal riquadro a 320 px */}
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: { xs: 1, sm: 1.5 }, mb: 2.5 }}>
           {tiles.map(([label, value]) => (
             <Card key={label} sx={{ p: { xs: 1, sm: 1.5 }, minWidth: 0 }}>
               <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{label}</Typography>
-              <Typography sx={{ fontSize: { xs: 16, sm: 20 }, fontWeight: 700, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{value}</Typography>
+              <Typography sx={{ fontSize: { xs: 16, sm: 20 }, fontWeight: 700, fontVariantNumeric: 'tabular-nums', overflowWrap: 'anywhere' }}>{value}</Typography>
             </Card>
           ))}
         </Box>

@@ -115,11 +115,10 @@ describe('riquadri', () => {
     expect(riquadro('Serie').getByText('3')).toBeTruthy();
   });
 
-  it('il valore di ogni riquadro non può andare a capo (`nowrap`) e non scende sotto 16 px', async () => {
+  it('il valore di ogni riquadro non scende sotto 16 px', async () => {
     await mount();
     ['60 min', '1.440 kg', '3'].forEach((testo) => {
       const stile = getComputedStyle(screen.getByText(testo));
-      expect(stile.whiteSpace).toBe('nowrap');
       expect(parseFloat(stile.fontSize)).toBeGreaterThanOrEqual(16);
     });
   });
@@ -131,6 +130,16 @@ describe('riquadri', () => {
     expect(getComputedStyle(griglia).gridTemplateColumns).toBe('repeat(3, minmax(0, 1fr))');
     // Nessuna regola per una larghezza particolare: niente colonne «auto» sotto sm
     expect([...document.querySelectorAll('style')].map((el) => el.textContent).join('')).not.toContain('repeat(3, auto)');
+  });
+
+  it('il valore di un riquadro può andare a capo e non esce mai dal riquadro, nemmeno a 320 px', async () => {
+    await mount([made({ duration_seconds: 5700 })]);
+    for (const label of ['Durata', 'Volume', 'Serie']) {
+      const valore = screen.getByText(label).nextElementSibling;
+      expect(getComputedStyle(valore).whiteSpace).not.toBe('nowrap');
+      expect(getComputedStyle(valore).overflowWrap).toBe('anywhere');
+      expect(getComputedStyle(valore.parentElement).minWidth).toBe('0px');
+    }
   });
 
   it('sopra l\'ora la durata resta in minuti', async () => {
