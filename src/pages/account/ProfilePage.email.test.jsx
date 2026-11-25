@@ -325,6 +325,21 @@ describe('Cambia indirizzo', () => {
     expect(document.activeElement).toBe(row('Email'));
   });
 
+  it('un secondo clic su «Cambia indirizzo» a finestra già chiusa non lascia nulla in attesa: chiusa «Cambia indirizzo», un\'altra finestra non la riapre', async () => {
+    await mount();
+    const emailDialog = open('Email');
+    const change = emailDialog.getByRole('button', { name: 'Cambia indirizzo' });
+    fireEvent.click(change);
+    fireEvent.click(change);
+    expect(screen.getAllByRole('dialog').map((d) => d.getAttribute('aria-labelledby'))).toEqual(['email-change-title']);
+    fireEvent.click(changeDialog().getByRole('button', { name: 'Annulla' }));
+    await closed();
+    fireEvent.click(open('Sesso').getByRole('button', { name: 'Chiudi' }));
+    await closed();
+    expect(screen.queryByRole('dialog', { name: 'Cambia indirizzo email' })).toBeNull();
+    expect(document.activeElement).toBe(row('Sesso'));
+  });
+
   it('account non confermato: l\'indirizzo cambia subito e si apre la finestra del codice', async () => {
     auth.emailState = state({ verified: false, daysLeft: 4 });
     await mount();
