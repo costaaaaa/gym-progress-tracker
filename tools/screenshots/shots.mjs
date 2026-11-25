@@ -720,8 +720,8 @@ for (const vp of viewports) {
         await ctx.close();
       }
     });
-    // «Profilo e preferenze» con la finestra di una riga aperta: l'obiettivo settimanale, l'unità di misura e la data di nascita
-    for (const [name, row] of [['account-profilo-obiettivo', 'Obiettivo settimanale'], ['account-profilo-unita', 'Unità di misura'], ['account-profilo-nascita', 'Data di nascita']]) {
+    // «Profilo e preferenze» con la finestra di una riga aperta: l'obiettivo settimanale, l'unità di misura, l'email e la data di nascita
+    for (const [name, row] of [['account-profilo-obiettivo', 'Obiettivo settimanale'], ['account-profilo-unita', 'Unità di misura'], ['account-profilo-email', 'Email'], ['account-profilo-nascita', 'Data di nascita']]) {
       if (!want(name)) continue;
       await attempt(tag, name, async () => {
         const { ctx, page } = await openPage(vp, theme, { loggedIn: true }, tag);
@@ -767,7 +767,7 @@ for (const vp of viewports) {
       }
     });
 
-    // Conferma email: finestra del codice, striscia, schermata di blocco, card dell'account nei tre stati, cambio indirizzo
+    // Conferma email: finestra del codice, striscia, schermata di blocco, riga «Email» dell'account nei tre stati, cambio indirizzo
     for (const [name, url, opts] of [
       ['email-striscia', '/', { loggedIn: true, email: 'da-confermare' }],
       ['email-blocco', '/', { loggedIn: true, email: 'bloccato' }],
@@ -802,8 +802,9 @@ for (const vp of viewports) {
       const { ctx, page } = await openPage(vp, theme, { loggedIn: true, email: 'da-confermare' }, tag);
       try {
         await page.goto(`${base}/account/profilo`, { waitUntil: 'domcontentloaded' });
-        await page.getByRole('button', { name: 'Cambia indirizzo' }).click();
-        const dialog = page.getByRole('dialog');
+        await page.getByRole('button', { name: 'Email', exact: true }).click();
+        await page.getByRole('dialog').getByRole('button', { name: 'Cambia indirizzo' }).click();
+        const dialog = page.getByRole('dialog', { name: 'Cambia indirizzo email' });
         await dialog.waitFor();
         await snap(page, 'email-dialogo-cambia-indirizzo', tag, dialog);
       } finally {

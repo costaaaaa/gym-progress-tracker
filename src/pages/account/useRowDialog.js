@@ -4,12 +4,19 @@ import { useEffect, useRef, useState } from 'react';
 // nessuna). `open(key, onOpen)` dà il gestore del clic di una riga: ricorda la riga, esegue `onOpen` (che azzera
 // l'esito di prima) e apre la finestra `key`. `close()` la chiude. Alla chiusura il fuoco torna sulla riga che ha aperto
 // la finestra (non tutti i browser danno il fuoco al clic su un pulsante: quello che ricorda la finestra non basta).
+// `closeThen(next)` la chiude e, a fuoco già tornato sulla riga, esegue `next`: serve ad aprire un'altra finestra senza
+// che le due si sovrappongano e perché quella nuova, chiudendosi, riporti il fuoco sulla riga.
 export default function useRowDialog() {
   const [openKey, setOpenKey] = useState(null);
   const lastRow = useRef(null);
+  const afterClose = useRef(null);
 
   useEffect(() => {
-    if (openKey === null) lastRow.current?.focus();
+    if (openKey !== null) return;
+    lastRow.current?.focus();
+    const next = afterClose.current;
+    afterClose.current = null;
+    next?.();
   }, [openKey]);
 
   const open = (key, onOpen) => (event) => {
@@ -18,6 +25,10 @@ export default function useRowDialog() {
     setOpenKey(key);
   };
   const close = () => setOpenKey(null);
+  const closeThen = (next) => {
+    afterClose.current = next;
+    setOpenKey(null);
+  };
 
-  return { openKey, open, close };
+  return { openKey, open, close, closeThen };
 }

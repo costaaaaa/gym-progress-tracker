@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 
 // Nome utente ed email dell'account, con i ripieghi quando mancano: l'indirizzo è quello dello stato dell'email se c'è.
-// Sta nella testata dell'elenco e nella card del profilo.
+// Sta nella testata dell'elenco dell'Account.
 const AccountIdentity = ({ account }) => {
   const { t } = useTranslation();
   const { emailState } = useAuth();

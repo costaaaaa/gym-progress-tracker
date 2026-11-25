@@ -1,5 +1,6 @@
 // Pagina «Profilo e preferenze» (/account/profilo), il gruppo «Tu»: le righe data di nascita, sesso e inizio allenamento
-// (l'email ha ProfilePage.email.test.jsx) col valore di adesso, una finestra per ognuna e un salvataggio per campo. I
+// col valore di adesso, una finestra per ognuna e un salvataggio per campo (la riga «Email» e la sua finestra hanno
+// ProfilePage.email.test.jsx). I
 // gruppi «Allenamento» e «App» sono in ProfilePage.settings.test.jsx; la validazione della data di nascita in
 // ProfilePage.test.jsx. Colore scritto a mano: error #d50000. La fetch è il confine.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -126,7 +127,7 @@ describe('il gruppo «Tu»: la forma', () => {
     const list = within(card).getByRole('list');
     expect(strayListChildren(list)).toEqual([]);
     const top = (li) => parseInt(getComputedStyle(li).borderTopWidth, 10) || 0;
-    expect(within(card).getAllByRole('listitem').map(top)).toEqual([0, 1, 1]);
+    expect(within(card).getAllByRole('listitem').map(top)).toEqual([0, 1, 1, 1]);
   });
 
   it('nessun testo del gruppo è sotto i 16 px', async () => {

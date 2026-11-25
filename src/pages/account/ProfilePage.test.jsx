@@ -1,8 +1,8 @@
-// Pagina «Profilo e preferenze» (/account/profilo), la parte alta: nome utente ed email (la loro prova sta in
-// ProfilePage.email.test.jsx) e la validazione della data di nascita nella sua finestra. Le righe e i salvataggi del
-// gruppo «Tu» sono in ProfilePage.you.test.jsx, i gruppi «Allenamento» e «App» (obiettivo, unità di misura, strumenti,
-// lingua) in ProfilePage.settings.test.jsx. Colori scritti a mano: text.primary #1a1816, text.secondary #6b6663. La
-// fetch è il confine.
+// Pagina «Profilo e preferenze» (/account/profilo), la sua struttura: i tre gruppi in ordine, le quattro righe di «Tu»,
+// la riga «Membro da» e la validazione della data di nascita nella sua finestra. Le righe e i salvataggi di «Tu» sono
+// in ProfilePage.you.test.jsx, la riga «Email» con la sua finestra in ProfilePage.email.test.jsx, i gruppi
+// «Allenamento» e «App» (obiettivo, unità di misura, strumenti, lingua) in ProfilePage.settings.test.jsx. Colore
+// scritto a mano: text.secondary #6b6663. La fetch è il confine.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, within, fireEvent, waitFor, act } from '@testing-library/react';
 import { format, subYears, subDays, startOfToday } from 'date-fns';
@@ -12,6 +12,7 @@ import { birthFieldChange } from '../../test/birthFieldSpy';
 import { describedBy } from '../../test/accessibleNames';
 import { mockPointer } from '../../test/pointer';
 import { renderAccount } from '../../test/accountRoutes';
+import i18n from '../../i18n';
 import { open, closed, staysOpen, settingsCalls, reads } from '../../test/settingRows';
 
 // Il campo data vero, con l'onChange della data di nascita a portata di test (vedi src/test/birthFieldSpy.js)
@@ -31,7 +32,6 @@ vi.mock('../../context/AuthContext', () => {
   return { useAuth: () => auth };
 });
 
-const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
 
 const stubFetch = () => vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
@@ -57,50 +57,57 @@ afterEach(() => {
 
 const mount = async () => {
   const view = renderAccount('/account/profilo');
-  await screen.findByText('atleta_con_un_nome_molto_lungo');
+  await screen.findByText('Membro da marzo 2025');
   return view;
 };
 
-describe('Profilo: le card e i gruppi', () => {
-  it('nome utente, email col suo stato e «membro da» nella prima card; poi i gruppi «Tu», «Allenamento» e «App» in quest\'ordine', async () => {
+describe('Profilo: i gruppi', () => {
+  it('sono «Tu», «Allenamento» e «App», in quest\'ordine, e «Tu» è il primo della pagina', async () => {
     await mount();
-    const identity = within(screen.getByText('atleta_con_un_nome_molto_lungo').closest('.MuiCard-root'));
-    expect(identity.getByText('atleta.con.un.indirizzo.lungo@example.com')).toBeTruthy();
-    expect(identity.getByText('Confermata')).toBeTruthy();
-    expect(identity.getByText('Membro da marzo 2025')).toBeTruthy();
-    const headings = screen.getAllByRole('heading', { level: 2 }).filter((h) => ['Tu', 'Allenamento', 'App'].includes(h.textContent));
+    const headings = screen.getAllByRole('heading', { level: 2 });
     expect(headings.map((h) => h.textContent)).toEqual(['Tu', 'Allenamento', 'App']);
-    const identityCard = screen.getByText('atleta_con_un_nome_molto_lungo').closest('.MuiCard-root');
-    expect(identityCard.compareDocumentPosition(headings[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1 }).compareDocumentPosition(headings[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(headings[0].compareDocumentPosition(headings[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(headings[1].compareDocumentPosition(headings[2]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('le due card di una volta (profilo fisico e «Salva profilo») non ci sono più', async () => {
+  it('«Tu» ha quattro righe: email, data di nascita, sesso, inizio allenamento', async () => {
+    await mount();
+    const rows = within(screen.getByRole('heading', { level: 2, name: 'Tu' }).nextElementSibling).getAllByRole('button');
+    expect(rows.map((b) => b.getAttribute('aria-labelledby') && document.getElementById(b.getAttribute('aria-labelledby')).textContent))
+      .toEqual(['Email', 'Data di nascita', 'Sesso', 'Inizio allenamento']);
+  });
+
+  it('le card di una volta (nome ed email, profilo fisico con «Salva profilo», «Cambia indirizzo») non ci sono più nella pagina', async () => {
     await mount();
     expect(screen.queryByText('Profilo fisico')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Salva profilo' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Cambia indirizzo' })).toBeNull();
   });
 });
 
-describe('bottoni', () => {
-  it('«Cambia indirizzo» è outlined neutro: testo in inchiostro e bordo grigio visibile', async () => {
+describe('«Membro da»', () => {
+  it('sta sotto la card del gruppo «Tu», a 16 px grigio, con mese e anno dell\'iscrizione', async () => {
     await mount();
-    const style = getComputedStyle(screen.getAllByRole('button', { name: 'Cambia indirizzo' }).find((b) => b.classList.contains('MuiButton-outlined')));
-    expect(style.color).toBe(INK);
-    expect(style.borderColor).toBe(GREY);
+    const note = screen.getByText('Membro da marzo 2025');
+    expect(note.previousElementSibling).toBe(screen.getByRole('heading', { level: 2, name: 'Tu' }).nextElementSibling);
+    const style = getComputedStyle(note);
+    expect({ size: style.fontSize, color: style.color }).toEqual({ size: '16px', color: GREY });
   });
-});
 
-describe('intestazione', () => {
-  it('nome ed email non vengono troncati', async () => {
-    await mount();
-    const name = screen.getByText('atleta_con_un_nome_molto_lungo');
-    const email = screen.getByText('atleta.con.un.indirizzo.lungo@example.com');
-    for (const el of [name, email]) {
-      expect(getComputedStyle(el).textOverflow).not.toBe('ellipsis');
-      expect(getComputedStyle(el).whiteSpace).not.toBe('nowrap');
-    }
+  it('in inglese mese e anno sono inglesi', async () => {
+    await i18n.changeLanguage('en');
+    renderAccount('/account/profilo');
+    await screen.findByText('Member since March 2025');
+  });
+
+  it('se la lettura dell\'account fallisce c\'è il ripiego «data non disponibile»', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
+      url.includes('user/read.php') ? json({ success: false }, 500) : json({ success: true, groups: [], consents: [] }),
+    )));
+    renderAccount('/account/profilo');
+    await screen.findByText('Membro da data non disponibile');
   });
 });
 
