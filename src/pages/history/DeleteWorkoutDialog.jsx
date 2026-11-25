@@ -34,20 +34,20 @@ const DeleteWorkoutDialog = ({ workout, onClose, onConfirm, previewDelete, showL
       <DialogContent>
         {t('history.delete.body')}
         {showLevels && preview?.xp_removed > 0 && (
-          <Typography variant="body2" sx={{ mt: 1.5 }}>{t('history.delete.lose_xp', { xp: preview.xp_removed })}</Typography>
+          <Typography sx={{ mt: 1.5 }}>{t('history.delete.lose_xp', { xp: preview.xp_removed })}</Typography>
         )}
         {showLevels && preview && preview.streak_before !== preview.streak_after && (
-          <Typography variant="body2" sx={{ mt: 0.5 }}>
+          <Typography sx={{ mt: 0.5 }}>
             {t('history.streak_change', { from: preview.streak_before, to: preview.streak_after })}
           </Typography>
         )}
         {(showLevels ? (preview?.achievements_removed ?? []) : []).map(key => (
-          <Typography key={key} variant="body2" sx={{ mt: 0.5 }}>
+          <Typography key={key} sx={{ mt: 0.5 }}>
             {t('history.delete.lose_achievement', { label: achievementLabel(key, undefined, weightUnit) })}
           </Typography>
         ))}
         {workout?.health_written && (
-          <Typography variant="body2" sx={{ mt: 1.5 }}>{t('history.delete.health_note')}</Typography>
+          <Typography sx={{ mt: 1.5 }}>{t('history.delete.health_note')}</Typography>
         )}
       </DialogContent>
       <DialogActions>

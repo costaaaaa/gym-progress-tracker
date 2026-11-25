@@ -86,15 +86,15 @@ const DeleteAccountDialog = ({ open, onClose, onDeleted }) => {
         <DeleteForeverIcon sx={{ mr: 1 }} /> {t('account.delete.title')}
       </DialogTitle>
       <DialogContent>
-        <DialogContentText sx={{ mb: 2 }}>
+        <DialogContentText sx={{ mb: 2, color: 'text.primary' }}>
           {t('account.delete.intro')}
         </DialogContentText>
 
         <Alert severity="warning" sx={{ mb: 3 }}>
-          <Typography variant="subtitle2" fontWeight="bold">
+          <Typography variant="subtitle2" fontWeight="bold" sx={{ fontSize: 16 }}>
             {t('account.delete.warning_title')}
           </Typography>
-          <Typography variant="body2">
+          <Typography>
             {t('account.delete.warning_text')}
           </Typography>
         </Alert>
@@ -150,7 +150,6 @@ const DeleteAccountDialog = ({ open, onClose, onDeleted }) => {
           onClick={handleDelete}
           variant="contained"
           color="error"
-          startIcon={<DeleteForeverIcon />}
           disabled={deleting || !confirmed}
           sx={{ fontSize: 16 }}
         >

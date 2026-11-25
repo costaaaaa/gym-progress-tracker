@@ -181,6 +181,15 @@ describe('dettaglio del gruppo', () => {
     expect(getComputedStyle(document.querySelector('.MuiDialog-root .MuiButton-containedError')).backgroundColor).toBe(RED);
   });
 
+  it('il testo del dialogo di conferma è a 16 px nel colore del testo principale', async () => {
+    await mount();
+    fireEvent.click(screen.getByRole('button', { name: 'Elimina il gruppo' }));
+    const testo = await screen.findByText(/Il gruppo e la classifica spariscono per tutti i membri/);
+    expect(colorOf(testo)).toBe(INK);
+    expect(getComputedStyle(testo).fontSize).toBe('16px');
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Elimina' }).querySelector('svg')).toBeNull();
+  });
+
   it('nella classifica «tu» è un chip neutro e la riga propria ha il fondo grigio, non rosato', async () => {
     await mount();
     const me = screen.getByText('mario88', { selector: 'ol p' }).closest('li');

@@ -176,6 +176,20 @@ describe('interruttore delle misure corporee', () => {
   });
 });
 
+describe('conferma della revoca del consenso (cancella le misure)', () => {
+  it('il corpo è a 16 px nel colore del testo principale; «Revoca e cancella le misure» è rosso pieno senza icona', async () => {
+    await mount();
+    fireEvent.click(screen.getByLabelText('Consenso al trattamento delle misure corporee'));
+    const dialog = within(await screen.findByRole('dialog'));
+    const corpo = dialog.getByText(/Se revochi il consenso/);
+    expect(getComputedStyle(corpo).color).toBe(INK);
+    expect(getComputedStyle(corpo).fontSize).toBe('16px');
+    const conferma = dialog.getByRole('button', { name: 'Revoca e cancella le misure' });
+    expect(conferma.querySelector('svg')).toBeNull();
+    expect(getComputedStyle(conferma).backgroundColor).toBe('rgb(213, 0, 0)');
+  });
+});
+
 describe('esporta i dati', () => {
   afterEach(() => vi.useRealTimers());
 

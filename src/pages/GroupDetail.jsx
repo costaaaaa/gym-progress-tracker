@@ -35,7 +35,7 @@ const ConfirmDialog = ({ confirm, onClose }) => {
   return (
     <Dialog open={Boolean(confirm)} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle>{confirm?.title}</DialogTitle>
-      <DialogContent><DialogContentText>{confirm?.text}</DialogContentText></DialogContent>
+      <DialogContent><DialogContentText sx={{ color: 'text.primary' }}>{confirm?.text}</DialogContentText></DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} sx={{ fontSize: 16 }}>{t('common.cancel')}</Button>
         <Button color="error" variant="contained" onClick={() => { confirm.action(); onClose(); }} sx={{ fontSize: 16 }}>{confirm?.cta}</Button>

@@ -110,7 +110,7 @@ const ConsentCard = ({ username, notify }) => {
       <Dialog open={revokeDialogOpen} onClose={() => !consentBusy && setRevokeDialogOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>{t('account.revoke.title')}</DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ mb: 2 }}>
+          <DialogContentText sx={{ mb: 2, color: 'text.primary' }}>
             <Trans i18nKey="account.revoke.body" components={{ strong: <strong /> }} />
           </DialogContentText>
           <Button
