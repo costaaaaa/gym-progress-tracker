@@ -1,7 +1,7 @@
-// Account: la cornice (dati letti una volta sola) e l'elenco di sei voci a /account, con «Esci» e «Elimina account».
+// Account: la cornice (dati letti una volta sola) e l'elenco di cinque voci a /account, con «Esci» e «Elimina account».
 // Colori scritti a mano: text.primary #1a1816, text.secondary #6b6663, primary/error #d50000 (in scuro error #ff5252).
 // La fetch è il confine.
-// Le pagine delle sei voci hanno i loro file in src/pages/account/; qui c'è quello che hanno in comune.
+// Le pagine delle cinque voci hanno i loro file in src/pages/account/; qui c'è quello che hanno in comune.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, within, fireEvent, waitFor } from '@testing-library/react';
 import i18n from '../i18n';
@@ -52,8 +52,7 @@ const mount = async (path = '/account') => {
 };
 
 const ROWS = [
-  ['Profilo', '/account/profilo', 'Email, profilo fisico, unità di misura', 'Profile', 'Email, physical profile, units'],
-  ['Preferenze', '/account/preferenze', 'Lingua, obiettivo settimanale, strumenti della serie', 'Preferences', 'Language, weekly goal, set tools'],
+  ['Profilo e preferenze', '/account/profilo', 'Email, profilo fisico, lingua, unità, tema, obiettivo', 'Profile and preferences', 'Email, physical profile, language, units, theme, goal'],
   ['Moduli', '/account/moduli', 'Cosa vedere in LiftIndex', 'Modules', 'What to see in LiftIndex'],
   ['Piano', '/account/piano', 'Gratis', 'Plan', 'Free'],
   ['Dati e privacy', '/account/dati', 'Consenso alle misure, gruppi mostrati, esportazione', 'Data and privacy', 'Measurement consent, groups shown, export'],
@@ -67,7 +66,8 @@ describe('titolo della pagina', () => {
     expect(h1s.map((h) => h.textContent)).toEqual(['Account']);
     expect(getComputedStyle(h1s[0]).fontSize).toBe('28px');
     expect(getComputedStyle(h1s[0]).fontWeight).toBe('800');
-    expect(document.title).toBe('Account | LiftIndex');
+    // il titolo del documento lo scrive un effetto, a volte dopo il primo disegno
+    await waitFor(() => expect(document.title).toBe('Account | LiftIndex'));
   });
 });
 
@@ -85,9 +85,15 @@ describe('testata', () => {
 });
 
 describe('elenco delle voci', () => {
-  it('sei collegamenti, nell\'ordine: Profilo, Preferenze, Moduli, Piano, Dati e privacy, Sicurezza', async () => {
+  it('cinque collegamenti, nell\'ordine: Profilo e preferenze, Moduli, Piano, Dati e privacy, Sicurezza', async () => {
     await mount();
     expect(screen.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(ROWS.map(([, href]) => href));
+  });
+
+  it('la voce «Preferenze» di una volta non c\'è: dopo i collegamenti dell\'elenco, nessuno si chiama così', async () => {
+    await mount();
+    expect(screen.getAllByRole('link')).toHaveLength(ROWS.length);
+    expect(screen.queryByRole('link', { name: 'Preferenze' })).toBeNull();
   });
 
   it.each(ROWS)('«%s» porta a %s e ha la sua riga di aiuto', async (name, href, help) => {
@@ -221,12 +227,12 @@ describe('Elimina account', () => {
   });
 });
 
-describe('le sei pagine', () => {
+describe('le cinque pagine', () => {
   it.each(ROWS)('«%s»: titolo, titolo del documento e «indietro» verso /account', async (name, href) => {
     await mount(href);
     expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual([name]);
     expect(getComputedStyle(screen.getByRole('heading', { level: 1 })).fontSize).toBe('28px');
-    expect(document.title).toBe(`${name} | LiftIndex`);
+    await waitFor(() => expect(document.title).toBe(`${name} | LiftIndex`));
     const back = screen.getByRole('link', { name: 'Torna all\'Account' });
     expect(back.getAttribute('href')).toBe('/account');
     const style = getComputedStyle(back);
@@ -280,14 +286,14 @@ describe('la cornice legge i dati una volta sola', () => {
         : json({ success: true, consents: [], id: 1, weekly_goal_default: 3 }),
     )));
     try {
-      const { rerenderAccount } = renderAccount('/account/preferenze');
-      await screen.findByRole('heading', { level: 1, name: 'Preferenze' });
-      expect(screen.getByLabelText('Lingua').textContent).toBe('Italiano');
+      const { rerenderAccount } = renderAccount('/account/profilo');
+      await screen.findByRole('heading', { level: 1, name: 'Profilo e preferenze' });
+      expect(describedBy(screen.getByRole('button', { name: 'Lingua' }))).toBe('Italiano');
       expect(reads).toBe(1);
 
       auth.user = { id: 1 };
       rerenderAccount();
-      await waitFor(() => expect(screen.getByLabelText('Lingua').textContent).toBe('English'));
+      await waitFor(() => expect(describedBy(screen.getByRole('button', { name: 'Lingua' }))).toBe('English'));
       expect(reads).toBe(2);
     } finally {
       error.mockRestore();

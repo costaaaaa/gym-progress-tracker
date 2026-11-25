@@ -23,13 +23,13 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
-const Harness = ({ initial, inline = false }) => {
+const Harness = ({ initial, inline = false, onSavingChange }) => {
   const [user, setUser] = useState(initial);
   auth.value = { user, updateUser: (patch) => setUser((u) => ({ ...u, ...patch })) };
-  return <ThemeModeProvider><FocusToolsOptions notify={inline ? undefined : notify} idPrefix="test-tools" /></ThemeModeProvider>;
+  return <ThemeModeProvider><FocusToolsOptions notify={inline ? undefined : notify} idPrefix="test-tools" onSavingChange={onSavingChange} /></ThemeModeProvider>;
 };
 const mount = (user = { id: 1 }) => render(<Harness initial={user} />);
-const mountInline = (user = { id: 1 }) => render(<Harness initial={user} inline />);
+const mountInline = (user = { id: 1 }, onSavingChange) => render(<Harness initial={user} inline onSavingChange={onSavingChange} />);
 const sw = (name) => screen.getByRole('switch', { name });
 const saved = () => fetch.mock.calls.map(([, init]) => JSON.parse(init.body));
 
@@ -144,5 +144,60 @@ describe('senza notify: l\'esito si legge dentro il componente', () => {
     await waitFor(() => expect(screen.getByRole('alert').textContent).toBe(''));
     finish();
     await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('Errore nel salvataggio. Riprova.'));
+  });
+});
+
+// Chi ospita gli interruttori (la finestra dell'Account) sa quando c'è un salvataggio in corso, per non chiudersi
+describe('onSavingChange', () => {
+  const slow = () => {
+    const finishers = [];
+    settings = (body) => new Promise((resolve) => {
+      finishers.push(() => resolve(json({ success: true, rest_timer_enabled: true, focus_tools: { ...TOOLS, ...body.focus_tools } })));
+    });
+    return finishers;
+  };
+
+  it('non è chiamata al montaggio; è true quando comincia il salvataggio e false quando finisce', async () => {
+    const onSavingChange = vi.fn();
+    const finishers = slow();
+    mountInline({ id: 1 }, onSavingChange);
+    expect(onSavingChange).not.toHaveBeenCalled();
+    fireEvent.click(sw('Tecnica di intensità'));
+    await waitFor(() => expect(onSavingChange).toHaveBeenCalledWith(true));
+    expect(onSavingChange).toHaveBeenCalledTimes(1);
+    finishers[0]();
+    await waitFor(() => expect(onSavingChange).toHaveBeenLastCalledWith(false));
+    expect(onSavingChange).toHaveBeenCalledTimes(2);
+  });
+
+  it('con due salvataggi insieme resta true finché non finisce l\'ultimo', async () => {
+    const onSavingChange = vi.fn();
+    const finishers = slow();
+    mountInline({ id: 1 }, onSavingChange);
+    fireEvent.click(sw('Tecnica di intensità'));
+    fireEvent.click(sw('Peso suggerito'));
+    await waitFor(() => expect(finishers).toHaveLength(2));
+    finishers[0]();
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Tecnica di intensità: spento'));
+    expect(onSavingChange.mock.calls).toEqual([[true]]);
+    finishers[1]();
+    await waitFor(() => expect(onSavingChange).toHaveBeenLastCalledWith(false));
+    expect(onSavingChange.mock.calls).toEqual([[true], [false]]);
+  });
+
+  it('un rifiuto finisce il salvataggio: l\'errore c\'è e arriva false', async () => {
+    const onSavingChange = vi.fn();
+    settings = () => json({ success: false }, 500);
+    mountInline({ id: 1 }, onSavingChange);
+    fireEvent.click(sw('Peso suggerito'));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('Errore nel salvataggio. Riprova.'));
+    await waitFor(() => expect(onSavingChange).toHaveBeenLastCalledWith(false));
+    expect(onSavingChange.mock.calls).toEqual([[true], [false]]);
+  });
+
+  it('senza la prop non cambia niente', async () => {
+    mountInline();
+    fireEvent.click(sw('Tecnica di intensità'));
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Tecnica di intensità: spento'));
   });
 });

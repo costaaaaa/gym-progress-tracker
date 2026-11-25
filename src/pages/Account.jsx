@@ -5,8 +5,9 @@ import { useAuth } from '../context/AuthContext';
 import { loginWithNext } from '../utils/safeNext';
 import useAccount from './account/useAccount';
 
-// Cornice dell'Account (la rotta /account, che ha per figlie l'elenco e le sei pagine): accesso, lettura dei dati e
-// notifica, una volta sola per tutte. Alle pagine passa `account`, `joinDate` e `notify` (Outlet context).
+// Cornice dell'Account (la rotta /account, che ha per figlie l'elenco e le cinque pagine): accesso, lettura dei dati e
+// notifica, una volta sola per tutte. Alle pagine passa `account`, `joinDate`, `notify` e `patchAccount` (Outlet context):
+// dopo un salvataggio riuscito una pagina mette i campi salvati in `account`, così chi rientra vede il valore nuovo.
 const Account = () => {
   const { user, isLoggedIn, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ const Account = () => {
   // Esito di ogni salvataggio e cambio dei pezzi delle pagine: annuncio e errore nella notifica della cornice
   const notify = (message, severity) => setSnackbar({ open: true, message, severity });
 
-  const { account, joinDate, loading } = useAccount(notify);
+  const { account, joinDate, loading, patchAccount } = useAccount(notify);
 
   // Chiusura dello snackbar
   const handleCloseSnackbar = () => {
@@ -56,7 +57,7 @@ const Account = () => {
 
   return (
     <Box sx={{ maxWidth: 640, mx: 'auto', pb: 4 }}>
-      <Outlet context={{ account, joinDate, notify }} />
+      <Outlet context={{ account, joinDate, notify, patchAccount }} />
 
       {/* Snackbar per notifiche */}
       <Snackbar

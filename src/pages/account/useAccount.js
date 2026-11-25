@@ -5,8 +5,11 @@ import { API_BASE_URL } from '../../config';
 
 // I dati dell'account, dalla lettura di user/read.php: `account` (la risposta del server; null finché non arriva o se la
 // lettura fallisce), `joinDate` (data di iscrizione; oggi se il server non la manda) e `loading`. Se la lettura fallisce
-// l'errore va a notify(message, severity). Si rilegge quando cambia l'utente di AuthContext. Non sa nulla di come le
-// pagine mostrano i dati.
+// l'errore va a notify(message, severity). Si rilegge quando cambia l'utente di AuthContext. `patchAccount(patch)` unisce
+// dei campi dentro `account` dopo un salvataggio riuscito, così le pagine rivedono il valore nuovo senza una nuova
+// lettura; unisce sempre, anche se `account` è null (ne nasce uno con i soli campi salvati: le pagine leggono ogni campo
+// con `account?.x`). Una lettura partita prima di una `patchAccount` e arrivata dopo non la cancella: le modifiche fatte
+// mentre una lettura è in corso si riapplicano sopra la sua risposta. Non sa nulla di come le pagine mostrano i dati.
 export default function useAccount(notify) {
   const { user, emailState } = useAuth();
   const { t } = useTranslation();
@@ -16,10 +19,17 @@ export default function useAccount(notify) {
   // notify cambia a ogni disegno di chi chiama: la lettura non deve ripartire per questo
   const notifyRef = useRef(notify);
   notifyRef.current = notify;
+  // Le modifiche di patchAccount fatte mentre almeno una lettura è in corso; vuoto quando nessuna lo è
+  const patchLog = useRef([]);
+  const readsInFlight = useRef(0);
 
   // Funzione per recuperare i dati completi dell'utente
   const fetchUserData = useCallback(async () => {
     setLoading(true);
+    // Da qui in poi le modifiche si ricordano; quelle già fatte sono dentro la risposta che il server darà
+    if (readsInFlight.current === 0) patchLog.current = [];
+    readsInFlight.current += 1;
+    const logStart = patchLog.current.length;
     try {
       const response = await fetch(`${API_BASE_URL}api/user/read.php`, {
         method: 'GET',
@@ -32,7 +42,7 @@ export default function useAccount(notify) {
 
       const userDetails = await response.json();
 
-      setAccount({ ...userDetails, is_admin: userDetails.is_admin === true });
+      setAccount(Object.assign({ ...userDetails, is_admin: userDetails.is_admin === true }, ...patchLog.current.slice(logStart)));
 
       if (userDetails.created_at) {
         setJoinDate(new Date(userDetails.created_at));
@@ -43,6 +53,8 @@ export default function useAccount(notify) {
       console.error('Errore nel recupero dei dati utente:', error);
       notifyRef.current(t('account.load_error'), 'error');
     } finally {
+      readsInFlight.current -= 1;
+      if (readsInFlight.current === 0) patchLog.current = [];
       setLoading(false);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -82,5 +94,10 @@ export default function useAccount(notify) {
       .catch((error) => console.error('Errore nel recupero del livello:', error));
   }, [emailState, user]);
 
-  return { account, joinDate, loading };
+  const patchAccount = useCallback((patch) => {
+    if (readsInFlight.current > 0) patchLog.current.push(patch);
+    setAccount((prev) => ({ ...prev, ...patch }));
+  }, []);
+
+  return { account, joinDate, loading, patchAccount };
 }

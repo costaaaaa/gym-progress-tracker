@@ -12,8 +12,9 @@ import { tierName } from '../../utils/tiers';
 import DeleteAccountDialog from '../../components/Account/DeleteAccountDialog';
 import AccountIdentity from './AccountIdentity';
 import AccountRow from './AccountRow';
+import RowList from './RowList';
 
-// Elenco dell'Account (/account): la testata (avatar, nome utente, email), le sei voci che portano alle loro pagine,
+// Elenco dell'Account (/account): la testata (avatar, nome utente, email), le cinque voci che portano alle loro pagine,
 // la voce dell'amministrazione per chi lo è, «Esci» e «Elimina account». I dati arrivano dalla cornice (Account).
 const AccountList = () => {
   const { t } = useTranslation();
@@ -26,8 +27,7 @@ const AccountList = () => {
   // Senza il campo del livello (server più vecchio) la voce del piano resta senza riga di aiuto
   const tierHelp = account?.tier ? (account.tier === 'free' ? t('account.tier.free') : tierName(account.tier)) : undefined;
   const rows = [
-    { to: '/account/profilo', title: t('account.section.profile.title'), help: t('account.section.profile.help') },
-    { to: '/account/preferenze', title: t('account.section.preferences.title'), help: t('account.section.preferences.help') },
+    { to: '/account/profilo', title: t('account.section.profile_prefs.title'), help: t('account.section.profile_prefs.help') },
     { to: '/account/moduli', title: t('modules.title'), help: t('account.section.modules.help') },
     { to: '/account/piano', title: t('account.section.tier.title'), help: tierHelp },
     { to: '/account/dati', title: t('account.section.data.title'), help: t('account.section.data.help') },
@@ -55,15 +55,9 @@ const AccountList = () => {
         </Box>
       </Box>
 
-      <Card>
-        <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
-          {rows.map(({ to, title, help }, index) => (
-            <Box component="li" key={to} sx={index > 0 ? { borderTop: '1px solid', borderColor: 'divider' } : undefined}>
-              <AccountRow to={to} title={title} help={help} />
-            </Box>
-          ))}
-        </Box>
-      </Card>
+      <RowList>
+        {rows.map(({ to, title, help }) => <AccountRow key={to} to={to} title={title} help={help} />)}
+      </RowList>
 
       {account?.is_admin && (
         <Card>
