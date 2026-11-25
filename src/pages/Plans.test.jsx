@@ -90,6 +90,19 @@ describe('pagina Schede', () => {
     expect(screen.queryByRole('tab')).toBeNull();
   });
 
+  it('sopra il titolo la pagina non dà spazio (resta quello sotto); la riga è alta 44 px e il pulsante pure', async () => {
+    await mount();
+    const titolo = screen.getByRole('heading', { level: 1, name: 'Schede' });
+    const riga = titolo.parentElement;
+    const pagina = riga.parentElement;
+    expect(parseFloat(getComputedStyle(pagina).paddingTop)).toBe(0);
+    expect(getComputedStyle(pagina).paddingBottom).toBe('24px');
+    expect(getComputedStyle(riga).minHeight).toBe('44px');
+    expect(getComputedStyle(riga).alignItems).toBe('center');
+    expect(getComputedStyle(screen.getByRole('button', { name: 'Nuova scheda' })).minHeight).toBe('44px');
+    expect(parseFloat(getComputedStyle(screen.getByRole('button', { name: 'Nuova scheda' })).paddingTop)).toBe(0);
+  });
+
   it('il titolo della pagina non si ripete sotto', async () => {
     await mount();
     expect(screen.getAllByText('Schede')).toHaveLength(1);

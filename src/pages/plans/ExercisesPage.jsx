@@ -41,8 +41,8 @@ const ExercisesPage = () => {
   }, [records, group, query, i18n.language]);
 
   return (
-    <Box sx={{ py: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+    <Box sx={{ pb: 3 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, minHeight: 44 }}>
         <IconButton component={RouterLink} to="/schede" aria-label={t('nav.plans')} edge="start" sx={{ width: 44, height: 44, color: 'text.primary' }}>
           <ArrowBackIcon />
         </IconButton>

@@ -81,6 +81,19 @@ describe('lettura', () => {
     expect(screen.getByRole('link', { name: 'Schede' }).getAttribute('href')).toBe('/schede');
   });
 
+  it('sopra la riga della freccia e del titolo la pagina non dà spazio (resta quello sotto); la riga è alta 44 px', async () => {
+    await mount([mk(1)]);
+    const riga = (await screen.findByRole('heading', { level: 1 })).parentElement;
+    const pagina = riga.parentElement;
+    expect(parseFloat(getComputedStyle(pagina).paddingTop)).toBe(0);
+    expect(getComputedStyle(pagina).paddingBottom).toBe('24px');
+    expect(getComputedStyle(riga).minHeight).toBe('44px');
+    expect(getComputedStyle(riga).alignItems).toBe('center');
+    const modifica = getComputedStyle(screen.getByRole('button', { name: 'Modifica' }));
+    expect(modifica.minHeight).toBe('44px');
+    expect(parseFloat(modifica.paddingTop)).toBe(0);
+  });
+
   it('mostra tutti gli esercizi del giorno, anche oltre i primi quattro, senza «Dettagli» né «+N altri»', async () => {
     const many = day(11, 'Push', ['A', 'B', 'C', 'D', 'E', 'F'].map((n, i) => ex(20 + i, `Esercizio ${n}`)));
     await mount([mk(1, { days: [many] })]);

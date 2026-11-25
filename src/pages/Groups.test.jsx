@@ -86,6 +86,19 @@ describe('elenco dei gruppi', () => {
     expect(getComputedStyle(screen.getByRole('button', { name: 'Crea gruppo' })).backgroundColor).toBe(RED);
   });
 
+  it('sopra il titolo la pagina non dà spazio (resta quello sotto); la riga è alta 44 px e il pulsante pure', async () => {
+    await mount();
+    const titolo = screen.getByRole('heading', { level: 1, name: 'Gruppi' });
+    const riga = titolo.parentElement;
+    const pagina = riga.parentElement;
+    expect(parseFloat(getComputedStyle(pagina).paddingTop)).toBe(0);
+    expect(getComputedStyle(pagina).paddingBottom).toBe('24px');
+    expect(getComputedStyle(riga).minHeight).toBe('44px');
+    expect(getComputedStyle(riga).alignItems).toBe('center');
+    expect(getComputedStyle(screen.getByRole('button', { name: 'Crea gruppo' })).minHeight).toBe('44px');
+    expect(parseFloat(getComputedStyle(screen.getByRole('button', { name: 'Crea gruppo' })).paddingTop)).toBe(0);
+  });
+
   it('non apre un Container dentro quello del Layout', async () => {
     await mount();
     expectNoNestedContainer();

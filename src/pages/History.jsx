@@ -149,11 +149,12 @@ const History = () => {
   };
 
   return (
-    <Box ref={contentRef} tabIndex={-1} sx={{ py: 3, '&:focus': { outline: 'none' } }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 3 }}>
+    <Box ref={contentRef} tabIndex={-1} sx={{ pb: 3, '&:focus': { outline: 'none' } }}>
+      {/* Riga del titolo come in Schede: alta 44 px, stesso margine negativo */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 3, minHeight: 44, mt: '-5.66px' }}>
         <Typography variant="pageTitle">{t('nav.history')}</Typography>
         {isLoggedIn && activePlan && (
-          <Button variant="outlined" onClick={() => setOpenRecordDialog(true)} sx={{ ...NEUTRAL_OUTLINED, minHeight: 44, fontWeight: 600 }}>
+          <Button variant="outlined" onClick={() => setOpenRecordDialog(true)} sx={{ ...NEUTRAL_OUTLINED, py: 0, minHeight: 44, fontWeight: 600 }}>
             {t('history.record_past')}
           </Button>
         )}

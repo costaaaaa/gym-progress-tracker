@@ -131,7 +131,7 @@ const GroupDetailContent = () => {
 
   if (error) {
     return (
-      <Box sx={{ py: 3 }}>
+      <Box sx={{ pb: 3 }}>
         <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
         <Button component={RouterLink} to="/gruppi" startIcon={<ArrowBackIcon />} sx={{ fontSize: 16 }}>{t('groups.join.your_groups')}</Button>
       </Box>
@@ -175,7 +175,7 @@ const GroupDetailContent = () => {
   };
 
   return (
-    <Box sx={{ py: 3 }}>
+    <Box sx={{ pb: 3 }}>
       <Button component={RouterLink} to="/gruppi" startIcon={<ArrowBackIcon />} sx={{ ...NEUTRAL_TEXT, mb: 1 }}>{t('groups.join.your_groups')}</Button>
       <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, flexWrap: 'wrap', mb: 3 }}>
         <Typography variant="pageTitle">{group.name}</Typography>

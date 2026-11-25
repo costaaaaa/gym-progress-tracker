@@ -37,15 +37,17 @@ const Plans = () => {
   const atPlanLimit = isFree && !!account.limits && workoutPlans.length >= account.limits.plans;
 
   return (
-    <Box sx={{ py: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 3 }}>
+    <Box sx={{ pb: 3 }}>
+      {/* Il titolo sta alla stessa distanza dalla barra delle pagine senza pulsante: la riga è alta 44 px (pulsante compreso) con il
+          titolo al centro, e il margine negativo toglie la metà di (44 − 32,7 px di titolo) */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 3, minHeight: 44, mt: '-5.66px' }}>
         <Typography variant="pageTitle">{t('nav.plans')}</Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon sx={{ color: 'white' }} fontSize="small" />}
           onClick={() => setOpenDialog(true)}
           disabled={!account.loaded || atPlanLimit}
-          sx={{ fontSize: 16, fontWeight: 600 }}
+          sx={{ fontSize: 16, fontWeight: 600, py: 0, minHeight: 44 }}
         >
           {t('plans.new')}
         </Button>

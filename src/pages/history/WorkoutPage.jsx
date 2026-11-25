@@ -85,7 +85,7 @@ const WorkoutPage = () => {
     if (loadFailed) {
       return (
         <>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, minHeight: 44 }}>
             {back}
             <Typography variant="pageTitle" sx={{ flex: 1, minWidth: 0 }}>{t('nav.history')}</Typography>
           </Box>
@@ -105,7 +105,7 @@ const WorkoutPage = () => {
     ];
     return (
       <>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, minHeight: 44 }}>
           {back}
           <Typography variant="pageTitle" sx={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{workoutTitle(workout)}</Typography>
         </Box>
@@ -168,7 +168,7 @@ const WorkoutPage = () => {
   };
 
   return (
-    <Box sx={{ py: 3 }}>
+    <Box sx={{ pb: 3 }}>
       {body()}
 
       <ShareCardDialog open={!!shareStats} stats={shareStats} weightUnit={weightUnit} onClose={() => setShareStats(null)} />

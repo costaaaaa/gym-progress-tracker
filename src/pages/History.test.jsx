@@ -110,6 +110,20 @@ describe('pagina Storico', () => {
     await waitFor(() => expect(document.title).toBe('Storico | LiftIndex'));
   });
 
+  it('sopra il titolo la pagina non dà spazio (resta quello sotto); la riga è alta 44 px e il pulsante pure', async () => {
+    await mount();
+    const titolo = screen.getByRole('heading', { level: 1, name: 'Storico' });
+    const riga = titolo.parentElement;
+    const pagina = riga.parentElement;
+    const bottone = screen.getByRole('button', { name: 'Registra allenamento passato' });
+    expect(parseFloat(getComputedStyle(pagina).paddingTop)).toBe(0);
+    expect(getComputedStyle(pagina).paddingBottom).toBe('24px');
+    expect(getComputedStyle(riga).minHeight).toBe('44px');
+    expect(getComputedStyle(riga).alignItems).toBe('center');
+    expect(getComputedStyle(bottone).minHeight).toBe('44px');
+    expect(parseFloat(getComputedStyle(bottone).paddingTop)).toBe(0);
+  });
+
   it('«Registra allenamento passato» sta nella riga del titolo, con una scheda attiva: pulsante con bordo neutro da 44 px, non rosso', async () => {
     await mount();
     const bottone = screen.getByRole('button', { name: 'Registra allenamento passato' });

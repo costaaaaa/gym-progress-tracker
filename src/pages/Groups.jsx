@@ -93,12 +93,13 @@ const GroupsContent = () => {
   };
 
   return (
-    <Box sx={{ py: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', mb: 3 }}>
+    <Box sx={{ pb: 3 }}>
+      {/* Riga del titolo come in Schede: alta 44 px, stesso margine negativo */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', mb: 3, minHeight: 44, mt: '-5.66px' }}>
         <Typography variant="pageTitle">
           {t('groups.title')}
         </Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)} sx={{ fontSize: 16 }}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)} sx={{ fontSize: 16, py: 0, minHeight: 44 }}>
           {t('groups.create')}
         </Button>
       </Box>
