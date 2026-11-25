@@ -307,6 +307,9 @@ const ATTIVO = {
   history: HISTORY,
   plans: [plan, planInactive],
   weekly: { workouts: 2, kg: 4820, reps: 118 },
+  // I sette cerchi della settimana, da lunedì a domenica come `week_days` del server: la settimana di oggi (ven 23) ha
+  // l'allenamento di lunedì 19 e quello di giovedì 22 (i primi due di HISTORY), quindi «2 di 3 allenamenti»
+  weekDays: [true, false, false, true, false, false, false],
   // Serie della settimana per muscolo (53, contro 48 la settimana scorsa a quest'ora e 61 intera): nove muscoli con serie e tre a
   // zero. Il recupero è quello di `recovery` (pronto, in recupero, affaticato); i muscoli senza voce restano «nessun dato»
   sets: {
@@ -333,6 +336,7 @@ const UTENTI = {
     history: [],
     plans: [],
     weekly: { workouts: 0, kg: 0, reps: 0 },
+    weekDays: Array(7).fill(false),
     recovery: Object.fromEntries(MUSCLI.map((group) => [group, { status: 'PRONTO', percent: 100, last_trained: null }])),
     streak: { current_streak_weeks: 0, longest_streak_weeks: 0, this_week: { count: 0, goal: 3, completed: false } },
     profile: {
@@ -353,11 +357,11 @@ const fixtures = [
   ['workout/read_plans.php', ({ plans, u }) => ({ success: true, records: plans ? PLAN_SETS[plans] : u.plans })],
   ['workout_stats/dashboard.php', ({ u, gratis, sets }) => gratis ? ({
     // Piano Gratis: solo il totale delle serie e lo stato pronto / in recupero, senza percentuali né date
-    success: true, detail: 'basic', weekly_workouts: u.weekly.workouts, weekly_goal: 3,
+    success: true, detail: 'basic', weekly_workouts: u.weekly.workouts, week_days: u.weekDays, weekly_goal: 3,
     weekly_volume: { total_weight: u.weekly.kg, total_reps: u.weekly.reps }, weekly_sets: { total: 14 },
     recovery: Object.fromEntries(Object.entries(u.recovery).map(([group, r]) => [group, { status: r.status === 'PRONTO' ? 'PRONTO' : 'IN RECUPERO', last_trained: stamp(-3, '18:00:00') }])),
   }) : ({
-    success: true, detail: 'full', weekly_workouts: u.weekly.workouts, weekly_goal: 3,
+    success: true, detail: 'full', weekly_workouts: u.weekly.workouts, week_days: u.weekDays, weekly_goal: 3,
     weekly_volume: { total_weight: u.weekly.kg, total_reps: u.weekly.reps }, recovery: u.recovery,
     // Le serie per muscolo le mandano solo i flussi della tab Volume (`sets`): le altre schermate restano com'erano
     ...(sets ? { weekly_sets: u.sets } : {}),
