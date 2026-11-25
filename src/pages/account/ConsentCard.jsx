@@ -17,6 +17,7 @@ import { useTranslation, Trans } from 'react-i18next';
 import { legalPaths } from '../../i18n/paths';
 import { getConsents, setConsent } from '../../utils/consent';
 import ButtonSpinner from '../../components/ButtonSpinner';
+import { SWITCH_SLOT } from '../../utils/switchStyles';
 import useDataExport from '../../hooks/useDataExport';
 
 // Consenso per le misure corporee (dati sulla salute): concessione e revoca. La revoca cancella le misure, quindi chiede
@@ -81,7 +82,7 @@ const ConsentCard = ({ username, notify }) => {
       <Card sx={{ p: '24px' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
           <Typography variant="cardTitle">{t('account.consent.title')}</Typography>
-          <Box component="label" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, minWidth: 58, minHeight: 44 }}>
+          <Box component="label" sx={SWITCH_SLOT}>
             <Switch
               checked={healthConsent === true}
               disabled={healthConsent === null || consentBusy}

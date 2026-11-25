@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useModule } from '../../hooks/useModule';
 import { isGroupShown, useSaveGroupVisibility } from '../../hooks/useGroupVisibility';
+import { SWITCH_SLOT } from '../../utils/switchStyles';
 
 const OPTIONS = ['workouts', 'volume', 'streak', 'level'];
 
@@ -63,7 +64,7 @@ const GroupVisibilityOptions = ({ notify, idPrefix = 'groups-shown' }) => {
                     <Typography id={reasonId} sx={{ fontSize: 16, mt: 0.25 }}>{t('groups.shown.volume_needs_workouts')}</Typography>
                   )}
                 </Box>
-                <Box component="label" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, minWidth: 58, minHeight: 44 }}>
+                <Box component="label" sx={SWITCH_SLOT}>
                   <Switch
                     checked={on}
                     disabled={lock !== null}

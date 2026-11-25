@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useSaveFocusTool } from '../../hooks/useSaveFocusTool';
 import { FOCUS_TOOLS, isToolOn } from '../../utils/focusTools';
+import { SWITCH_SLOT } from '../../utils/switchStyles';
 
 // Nome e aiuto di ogni strumento: il timer di recupero ha i testi che aveva già nell'Account
 const TEXTS = {
@@ -67,7 +68,7 @@ const FocusToolsOptions = ({ notify, idPrefix, onSavingChange }) => {
                   <Typography sx={{ fontSize: 16, fontWeight: 700 }}>{t(TEXTS[tool].name)}</Typography>
                   <Typography id={helpId} sx={{ fontSize: 16, color: 'text.secondary', mt: 0.25 }}>{t(TEXTS[tool].help)}</Typography>
                 </Box>
-                <Box component="label" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, minWidth: 58, minHeight: 44 }}>
+                <Box component="label" sx={SWITCH_SLOT}>
                   <Switch
                     checked={pending[tool] ?? isToolOn(user, tool)}
                     onChange={(e) => toggle(tool, e.target.checked)}
