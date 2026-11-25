@@ -124,6 +124,15 @@ describe('riquadri', () => {
     });
   });
 
+  it('i tre riquadri sono tre colonne uguali a ogni larghezza, non larghe quanto il loro contenuto', async () => {
+    await mount();
+    const griglia = screen.getByText('Durata').parentElement.parentElement;
+    expect(getComputedStyle(griglia).display).toBe('grid');
+    expect(getComputedStyle(griglia).gridTemplateColumns).toBe('repeat(3, minmax(0, 1fr))');
+    // Nessuna regola per una larghezza particolare: niente colonne «auto» sotto sm
+    expect([...document.querySelectorAll('style')].map((el) => el.textContent).join('')).not.toContain('repeat(3, auto)');
+  });
+
   it('sopra l\'ora la durata resta in minuti', async () => {
     await mount([made({ duration_seconds: 5700 })]);
     expect(riquadro('Durata').getByText('95 min')).toBeTruthy();
