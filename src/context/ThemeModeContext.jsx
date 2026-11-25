@@ -28,30 +28,28 @@ export const useThemeMode = () => useContext(ThemeModeContext);
 
 const DARK_QUERY = '(prefers-color-scheme: dark)';
 const systemQuery = () => window.matchMedia?.(DARK_QUERY);
-
-// La preferenza salvata: 'light' o 'dark'; senza chiave, con un valore sconosciuto o con lo storage bloccato vale 'system'
-const readPreference = () => {
-  try {
-    const saved = localStorage.getItem('themeMode');
-    if (saved === 'light' || saved === 'dark') return saved;
-  } catch { /* storage bloccato: vale il sistema */ }
-  return 'system';
-};
+// Senza matchMedia vale il chiaro
+const systemIsDark = () => Boolean(systemQuery()?.matches);
 
 export const ThemeModeProvider = ({ children }) => {
-  const [themePreference, setPreference] = useState(readPreference);
-  const [systemDark, setSystemDark] = useState(() => Boolean(systemQuery()?.matches));
-  // Il tema in vigore: la scelta fissa o, con 'system', l'aspetto del sistema (senza matchMedia, il chiaro)
+  const [themePreference, setThemePreferenceState] = useState(() => {
+    // La scelta salvata ('light' o 'dark'); senza chiave, con un valore sconosciuto o con lo storage bloccato vale 'system'
+    try {
+      const saved = localStorage.getItem('themeMode');
+      if (saved === 'light' || saved === 'dark') return saved;
+    } catch { /* storage bloccato: vale il sistema */ }
+    return 'system';
+  });
+  const [systemDark, setSystemDark] = useState(systemIsDark);
+  // Il tema in vigore: la scelta fissa o, con 'system', l'aspetto del sistema
   const mode = themePreference === 'system' ? (systemDark ? 'dark' : 'light') : themePreference;
 
-  // Con 'system' il tema segue il sistema anche a pagina aperta; la lettura iniziale serve a riprendere l'aspetto di adesso
-  // quando si torna a 'system' (può essere cambiato mentre la scelta era fissa). Fuori da 'system' l'ascolto non c'è.
+  // Con 'system' il tema segue il sistema anche a pagina aperta. Fuori da 'system' l'ascolto non c'è.
   useEffect(() => {
     if (themePreference !== 'system') return undefined;
     const query = systemQuery();
     if (!query) return undefined;
     const follow = () => setSystemDark(query.matches);
-    follow();
     query.addEventListener('change', follow);
     return () => query.removeEventListener('change', follow);
   }, [themePreference]);
@@ -62,9 +60,11 @@ export const ThemeModeProvider = ({ children }) => {
   }, [mode]);
 
   // Una scelta si salva nel gestore e non in un effetto, così il solo caricamento non scrive niente. 'system' toglie la
-  // chiave: /tema.js, il blog e le pagine statiche, senza chiave, seguono il sistema.
+  // chiave: /tema.js, il blog e le pagine statiche, senza chiave, seguono il sistema. Tornando a 'system' l'aspetto del
+  // sistema si rilegge qui, insieme alla scelta: può essere cambiato mentre la scelta era fissa e nessuno ascoltava.
   const setThemePreference = (next) => {
-    setPreference(next);
+    setThemePreferenceState(next);
+    if (next === 'system') setSystemDark(systemIsDark());
     try {
       if (next === 'system') localStorage.removeItem('themeMode');
       else localStorage.setItem('themeMode', next);

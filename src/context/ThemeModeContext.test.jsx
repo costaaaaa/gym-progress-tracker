@@ -557,6 +557,18 @@ describe('tema: preferenza', () => {
     expect(screen.getByText('system/light')).toBeTruthy();
   });
 
+  it('tornando a «system» nessun disegno usa l\'aspetto che il sistema aveva al caricamento', () => {
+    const system = fakeSystem(true);
+    localStorage.setItem('themeMode', 'light');
+    const drawn = [];
+    const Recorder = () => { drawn.push(useThemeMode().mode); return null; };
+    render(<ThemeModeProvider><Probe /><Recorder /></ThemeModeProvider>);
+    system.set(false);
+    choose('system');
+    expect(screen.getByText('system/light')).toBeTruthy();
+    expect(new Set(drawn)).toEqual(new Set(['light']));
+  });
+
   it('il caricamento non scrive e non toglie niente, nemmeno in StrictMode', () => {
     fakeSystem(true);
     const set = vi.spyOn(Storage.prototype, 'setItem');

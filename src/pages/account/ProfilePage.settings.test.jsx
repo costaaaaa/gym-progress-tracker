@@ -48,9 +48,15 @@ const stubFetch = ({ account = serverAccount(), settings = (body) => { Object.as
   )))
 );
 
+// La scelta del tema salvata in questo browser: 'light', 'dark' o nessuna (null), che vuol dire «Sistema»
+const savedTheme = (choice) => {
+  if (choice) localStorage.setItem('themeMode', choice);
+  else localStorage.removeItem('themeMode');
+};
+
 beforeEach(async () => {
   await i18n.changeLanguage('it');
-  localStorage.setItem('themeMode', 'light');
+  savedTheme('light');
   Object.assign(auth, {
     user: { id: 1 }, isLoggedIn: true, loading: false, logout: vi.fn(),
     updateUser: vi.fn((patch) => { auth.user = { ...auth.user, ...patch }; readers.forEach((redraw) => redraw()); }),
@@ -175,8 +181,7 @@ describe('le righe', () => {
     ['light', 'Chiaro'],
     ['dark', 'Scuro'],
   ])('Tema, con la chiave themeMode a %s: «%s»', async (saved, value) => {
-    if (saved) localStorage.setItem('themeMode', saved);
-    else localStorage.removeItem('themeMode');
+    savedTheme(saved);
     await mount();
     expect(describedBy(row('Tema'))).toBe(value);
   });
@@ -382,8 +387,7 @@ describe('finestra «Tema»', () => {
     ['light', 'Chiaro'],
     ['dark', 'Scuro'],
   ])('ha tre radio col nome del gruppo «Tema» e, con la chiave a %s, scelto «%s»; sotto l\'aiuto', async (saved, chosen) => {
-    if (saved) localStorage.setItem('themeMode', saved);
-    else localStorage.removeItem('themeMode');
+    savedTheme(saved);
     await mount();
     const dialog = open('Tema');
     const group = dialog.getByRole('radiogroup', { name: 'Tema' });
@@ -396,13 +400,16 @@ describe('finestra «Tema»', () => {
 
   it('in inglese i nomi e l\'aiuto sono inglesi', async () => {
     await i18n.changeLanguage('en');
-    localStorage.removeItem('themeMode');
+    savedTheme(null);
     renderAccount('/account/profilo');
     await screen.findByRole('button', { name: 'Language' });
     expect(describedBy(row('Theme'))).toBe('System');
     const dialog = open('Theme');
     expect(within(dialog.getByRole('radiogroup', { name: 'Theme' })).getAllByRole('radio').map((r) => r.closest('label').textContent)).toEqual(['System', 'Light', 'Dark']);
     expect(describedBy(dialog.getByRole('radiogroup', { name: 'Theme' }))).toBe('System follows your device\'s appearance');
+    fireEvent.click(dialog.getByRole('radio', { name: 'Dark' }));
+    await closed();
+    expect(describedBy(row('Theme'))).toBe('Dark');
   });
 
   // Il sistema, in jsdom, è chiaro: da «Scuro» tornare a «Sistema» riporta <html> al chiaro e toglie la chiave
@@ -411,7 +418,7 @@ describe('finestra «Tema»', () => {
     ['Chiaro', 'dark', 'light', 'light'],
     ['Sistema', 'dark', 'light', null],
   ])('scegliere «%s» da %s: il tema diventa %s subito, la finestra si chiude, la riga ha il valore nuovo e il fuoco torna sulla riga', async (name, from, theme, key) => {
-    localStorage.setItem('themeMode', from);
+    savedTheme(from);
     await mount();
     expect(html()).toBe(from);
     fireEvent.click(open('Tema').getByRole('radio', { name }));
@@ -426,9 +433,10 @@ describe('finestra «Tema»', () => {
     await mount();
     fireEvent.click(open('Tema').getByRole('radio', { name: 'Scuro' }));
     await closed();
+    expect(describedBy(row('Tema'))).toBe('Scuro');
     expect(settingsCalls()).toEqual([]);
-    expect(screen.queryByRole('status')).toBeNull();
-    expect(screen.queryByText('Tema aggiornato')).toBeNull();
+    // l'avviso della pagina è un alert: a finestra chiusa non ce n'è nessuno
+    expect(screen.queryAllByRole('alert')).toEqual([]);
   });
 });
 

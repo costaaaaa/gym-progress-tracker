@@ -15,15 +15,15 @@ import useWeeklyGoalSetting from './useWeeklyGoalSetting';
 
 // I nomi delle lingue non si traducono: ognuno è scritto nella sua
 const LANGUAGES = [{ value: 'it', label: 'Italiano' }, { value: 'en', label: 'English' }];
-const THEMES = ['system', 'light', 'dark'];
+const THEME_PREFERENCES = ['system', 'light', 'dark'];
 
 // I gruppi «Allenamento» (obiettivo settimanale, unità di misura, strumenti della serie) e «App» (lingua, tema) della pagina
 // Profilo e preferenze: una riga col valore di adesso per impostazione e, cliccandola, la finestra col controllo. Una
 // sola finestra è aperta alla volta: `dialog` è useRowDialog della pagina, che la divide con il gruppo «Tu». Il valore
-// di ogni impostazione viene da `account` (la cornice lo aggiorna con `patchAccount` dopo un salvataggio): la riga e la
-// finestra leggono lo stesso. Un salvataggio riuscito chiude la finestra e avvisa dalla pagina (`dialog.saved`); gli
-// altri esiti stanno dentro la finestra. Il tema è di questo browser: la scelta vale al clic e chiude la finestra, senza
-// richiesta al server né avviso.
+// delle impostazioni dell'account viene da `account` (la cornice lo aggiorna con `patchAccount` dopo un salvataggio): la
+// riga e la finestra leggono lo stesso. Un salvataggio riuscito chiude la finestra e avvisa dalla pagina
+// (`dialog.saved`); gli altri esiti stanno dentro la finestra. Il tema non è dell'account ma di questo browser (viene da
+// useThemeMode): la scelta vale al clic e chiude la finestra, senza richiesta al server né avviso.
 const PreferenceGroups = ({ account, patchAccount, dialog }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -92,7 +92,7 @@ const PreferenceGroups = ({ account, patchAccount, dialog }) => {
       <SettingDialog open={openKey === 'theme'} title={t('settings.theme')} onClose={close}>
         <ChoiceSettingBody
           label={t('settings.theme')}
-          options={THEMES.map((value) => ({ value, label: t(`settings.theme_${value}`) }))}
+          options={THEME_PREFERENCES.map((value) => ({ value, label: t(`settings.theme_${value}`) }))}
           value={themePreference}
           onChange={(next) => { setThemePreference(next); close(); }}
           help={t('account.theme_help')}
