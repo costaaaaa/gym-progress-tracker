@@ -113,7 +113,7 @@ const Home = () => {
             <Typography sx={{ color: 'text.secondary', fontSize: 14, lineHeight: 1.5, mb: 2 }}>
               {t('home.start_here.text')}
             </Typography>
-            <Button variant="outlined" component={RouterLink} to="/schede" sx={{ borderRadius: radius.lg, fontWeight: 700 }}>
+            <Button variant="contained" component={RouterLink} to="/schede" sx={{ borderRadius: radius.lg, fontWeight: 700 }}>
               {t('home.start_here.cta')}
             </Button>
           </Card>
