@@ -78,7 +78,7 @@ const ReportDialog = ({ open, group, members, onClose, onSent }) => {
             label={t('groups.detail.report.good_faith')}
           />
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions>
           <Button onClick={onClose} disabled={sending}>{t('groups.detail.report.cancel')}</Button>
           <Button type="submit" variant="contained" disabled={sending || !ready}>{t('groups.detail.report.submit')}</Button>
         </DialogActions>

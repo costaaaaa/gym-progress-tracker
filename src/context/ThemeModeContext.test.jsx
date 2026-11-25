@@ -5,7 +5,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { StrictMode } from 'react';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import { useTheme } from '@mui/material/styles';
-import { BottomNavigation, BottomNavigationAction, Button, CardActionArea, Chip, CircularProgress, CssBaseline, IconButton, Link, MenuItem, Slider, Switch, Tab, Tabs, TextField, Typography } from '@mui/material';
+import { BottomNavigation, BottomNavigationAction, Button, CardActionArea, Chip, CircularProgress, CssBaseline, Dialog, DialogActions, DialogContent, IconButton, Link, MenuItem, Slider, Switch, Tab, Tabs, TextField, Typography } from '@mui/material';
 import { ThemeModeProvider, useThemeMode } from './ThemeModeContext';
 
 const RED = 'rgb(213, 0, 0)';
@@ -29,6 +29,25 @@ describe('tema: chip', () => {
   it('un badge resta Inter', () => {
     render(<ThemeModeProvider><Chip label="PR" /></ThemeModeProvider>);
     expect(font('PR').fontFamily).toMatch(/^"Inter"/);
+  });
+});
+
+describe('tema: piede delle finestre', () => {
+  it('ha lo stesso margine laterale del contenuto e 16 px sotto, senza che la finestra lo imposti', () => {
+    render(
+      <ThemeModeProvider>
+        <Dialog open>
+          <DialogContent>Testo</DialogContent>
+          <DialogActions><Button>Annulla</Button><Button variant="contained">Salva</Button></DialogActions>
+        </Dialog>
+      </ThemeModeProvider>,
+    );
+    const content = getComputedStyle(screen.getByText('Testo'));
+    const footer = getComputedStyle(screen.getByRole('button', { name: 'Salva' }).parentElement);
+    expect(content.paddingLeft).toBe('24px');
+    expect(footer.paddingLeft).toBe(content.paddingLeft);
+    expect(footer.paddingRight).toBe(content.paddingLeft);
+    expect(footer.paddingBottom).toBe('16px');
   });
 });
 

@@ -123,7 +123,7 @@ const ConsentCard = ({ username, notify }) => {
             {t('account.revoke.export_first')}
           </Button>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions>
           <Button onClick={() => setRevokeDialogOpen(false)} disabled={consentBusy} sx={{ fontSize: 16 }}>{t('common.cancel')}</Button>
           <Button onClick={handleConfirmRevoke} color="error" variant="contained" disabled={consentBusy} sx={{ fontSize: 16 }}>
             {t('account.revoke.confirm')}

@@ -117,7 +117,7 @@ const ChangeEmailDialog = ({ open, onClose, onChanged }) => {
             }}
           />
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions>
           <Button type="button" onClick={onClose} startIcon={<CancelIcon />} disabled={busy} sx={{ minHeight: 44 }}>
             {t('common.cancel')}
           </Button>

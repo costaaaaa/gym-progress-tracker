@@ -111,7 +111,7 @@ const ExerciseFormDialog = ({ open, exercise, muscleGroups, equipment, onClose, 
             </Typography>
           )}
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions>
           <Button onClick={onClose} disabled={saving}>Annulla</Button>
           <Button type="submit" variant="contained"
             disabled={saving || !name.trim() || !muscleGroup || (muscleGroup === 'gambe' && !primaryMuscle)}>Salva</Button>

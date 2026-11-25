@@ -61,7 +61,7 @@ const CreateGroupDialog = ({ open, onClose, onCreated }) => {
             {t('groups.new.help')}
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions>
           <Button onClick={onClose} disabled={saving} sx={{ fontSize: 16 }}>{t('common.cancel')}</Button>
           <Button type="submit" variant="contained" disabled={saving || !name.trim()} sx={{ fontSize: 16 }}>{t('common.create')}</Button>
         </DialogActions>

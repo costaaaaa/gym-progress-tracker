@@ -137,7 +137,7 @@ const DeleteAccountDialog = ({ open, onClose, onDeleted }) => {
           sx={{ mt: 1 }}
         />
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
+      <DialogActions>
         <Button
           onClick={onClose}
           startIcon={<CancelIcon />}

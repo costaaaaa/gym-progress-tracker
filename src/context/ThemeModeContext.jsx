@@ -435,6 +435,8 @@ export const ThemeModeProvider = ({ children }) => {
               },
             },
           },
+          // Piede di ogni finestra: stesso margine laterale del contenuto (24 px) e 16 px sotto
+          MuiDialogActions: { styleOverrides: { root: { padding: '8px 24px 16px' } } },
           MuiBottomNavigation: {
             styleOverrides: {
               root: {

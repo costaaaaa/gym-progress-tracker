@@ -109,7 +109,7 @@ const InterestsDialog = ({ waiting }) => {
           </Alert>
         )}
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+      <DialogActions sx={{ gap: 1 }}>
         <Button type="button" onClick={() => send({})} aria-busy={busy} sx={{ minHeight: 44, fontSize: 16 }}>{t('interests.skip')}</Button>
         <Button type="button" variant="contained" onClick={() => send(pickedPatch())} aria-busy={busy} sx={{ minHeight: 44, fontSize: 16 }}>{t('interests.continue')}</Button>
       </DialogActions>

@@ -426,7 +426,7 @@ const ShareCardDialog = ({ open, onClose, stats, weightUnit }) => {
 
         {error && <Typography variant="body2" color="error">{error}</Typography>}
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+      <DialogActions sx={{ gap: 1 }}>
         <Button variant="outlined" startIcon={<DownloadIcon />} onClick={handleDownload} disabled={!ready}>
           {t('share.download')}
         </Button>

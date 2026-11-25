@@ -157,7 +157,7 @@ const NewMeasurementDialog = ({ open, onClose, save, onNotify, weightUnit }) => 
           </Grid>
         </Grid>
       </DialogContent>
-      <DialogActions sx={{ p: 2 }}>
+      <DialogActions>
         <Button onClick={onClose}>{t('common.cancel')}</Button>
         <Button variant="contained" onClick={handleSubmit}>
           {t('common.save')}
