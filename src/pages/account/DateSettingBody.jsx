@@ -3,12 +3,11 @@ import LabeledDatePicker from '../../components/LabeledDatePicker';
 import DateLocalization from '../../i18n/DateLocalization';
 import SettingOutcome from './SettingOutcome';
 
-// Il titolo della finestra dice già a cosa serve il campo: l'etichetta resta (è il suo nome accessibile) ma non si vede,
-// e senza il suo testo anche la tacca che apre nel bordo sparisce. La riga d'aiuto, che MUI disegna più piccola di
-// 16 px, si porta a 16.
+// Il titolo della finestra dice già a cosa serve il campo: l'etichetta resta (è il suo nome accessibile) ma non si vede.
+// La tacca del bordo non si tocca: il tema la tiene già chiusa, e toglierla alzerebbe il bordo di 5 px sopra il campo,
+// dove la finestra lo taglia. La riga d'aiuto, che MUI disegna più piccola di 16 px, si porta a 16.
 const FIELD_STYLE = {
   '& .MuiInputLabel-root': visuallyHidden,
-  '& legend': { display: 'none' },
   '& .MuiFormHelperText-root': { fontSize: 16 },
 };
 

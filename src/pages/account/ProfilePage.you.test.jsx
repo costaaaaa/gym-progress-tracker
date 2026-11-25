@@ -161,6 +161,15 @@ describe('il gruppo «Tu»: le finestre', () => {
     expect(control).toBeTruthy();
   });
 
+  // La tacca del bordo (legend) resta al suo posto: tolta, il bordo salirebbe di 5 px sopra il campo e la finestra lo
+  // taglierebbe. A tenerla chiusa pensa il tema.
+  it.each([['Data di nascita'], ['Inizio allenamento']])('«%s»: il bordo del campo resta intero', async (name) => {
+    mockPointer(true);
+    await mount();
+    open(name);
+    expect(getComputedStyle(screen.getByRole('dialog').querySelector('legend')).display).toBe('block');
+  });
+
   it.each([
     ['Data di nascita', 'textbox', ['Annulla', 'Salva']],
     ['Sesso', 'radiogroup', ['Chiudi']],
