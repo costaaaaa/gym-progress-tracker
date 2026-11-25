@@ -1,6 +1,6 @@
 // Pagina «Profilo e preferenze» (/account/profilo), la parte dei gruppi «Allenamento» e «App»: righe col valore di adesso
-// e una finestra per ognuna (obiettivo settimanale, unità di misura, strumenti della serie, lingua). La parte alta
-// (email, profilo fisico) ha i suoi file: ProfilePage.test.jsx e ProfilePage.email.test.jsx.
+// e una finestra per ognuna (obiettivo settimanale, unità di misura, strumenti della serie, lingua). Il gruppo «Tu» e la
+// parte alta hanno i loro file: ProfilePage.you.test.jsx, ProfilePage.test.jsx e ProfilePage.email.test.jsx.
 // Colori scritti a mano: text.secondary #6b6663, primary/error #d50000. La fetch è il confine.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, within, fireEvent, waitFor } from '@testing-library/react';
@@ -10,6 +10,7 @@ import { setBrowserTimeZone } from '../../test/timeZone';
 import { textBelow } from '../../test/minText';
 import { describedBy, strayListChildren } from '../../test/accessibleNames';
 import { renderAccount } from '../../test/accountRoutes';
+import { row, open, closed, staysOpen, settingsCalls, reads, deferred } from '../../test/settingRows';
 
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
 // Come in AuthContext vero, updateUser crea un `user` nuovo e ridisegna chi lo legge (gli strumenti si leggono da lì): un
@@ -47,13 +48,6 @@ const stubFetch = ({ account = serverAccount(), settings = (body) => { Object.as
   )))
 );
 
-// Una risposta che arriva quando si chiama release(): il salvataggio resta in corso finché non si vuole
-const deferred = () => {
-  const control = {};
-  control.promise = new Promise((resolve) => { control.release = (response) => resolve(response); });
-  return control;
-};
-
 beforeEach(async () => {
   await i18n.changeLanguage('it');
   localStorage.setItem('themeMode', 'light');
@@ -76,18 +70,6 @@ const mount = async () => {
   await screen.findByRole('button', { name: 'Lingua' });
   return view;
 };
-const row = (name) => screen.getByRole('button', { name });
-const dialogOf = (name) => within(screen.getByRole('dialog', { name }));
-const open = (name) => { fireEvent.click(row(name)); return dialogOf(name); };
-const closed = () => waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-// Una finestra che si sta chiudendo resta nel documento per la dissolvenza, ma il fuoco è già tornato sulla riga: aperta
-// davvero vuol dire che il fuoco è ancora dentro
-const staysOpen = () => {
-  expect(screen.getByRole('dialog')).toBeTruthy();
-  expect(document.activeElement.closest('.MuiDialog-root')).not.toBeNull();
-};
-const settingsCalls = () => fetch.mock.calls.filter(([url]) => String(url).includes('update_settings.php')).map(([, init]) => JSON.parse(init.body));
-const reads = () => fetch.mock.calls.filter(([url]) => String(url).includes('user/read.php')).length;
 
 describe('la pagina', () => {
   it('si chiama «Profilo e preferenze», ha il titolo del documento e «indietro» verso /account', async () => {
@@ -98,15 +80,13 @@ describe('la pagina', () => {
     expect(screen.getByRole('link', { name: 'Torna all\'Account' }).getAttribute('href')).toBe('/account');
   });
 
-  it('dopo le due card c\'è il gruppo «Allenamento» (obiettivo, unità, strumenti) e il gruppo «App» (lingua)', async () => {
+  it('il gruppo «Allenamento» (obiettivo, unità, strumenti) viene prima del gruppo «App» (lingua)', async () => {
     await mount();
     const headings = screen.getAllByRole('heading', { level: 2 }).filter((h) => ['Allenamento', 'App'].includes(h.textContent));
     expect(headings.map((h) => h.textContent)).toEqual(['Allenamento', 'App']);
     const rowsAfter = (heading) => within(heading.nextElementSibling).getAllByRole('button').map((b) => b.textContent);
     expect(rowsAfter(headings[0])).toEqual(['Obiettivo settimanaleDefault (3)', 'Unità di misurakg, cm', 'Strumenti della serie3 accesi su 3']);
     expect(rowsAfter(headings[1])).toEqual(['LinguaItaliano']);
-    const physical = screen.getByText('Profilo fisico').closest('.MuiCard-root');
-    expect(physical.compareDocumentPosition(headings[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(headings[0].compareDocumentPosition(headings[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
@@ -589,9 +569,8 @@ describe('finestra «Strumenti della serie»: durante un salvataggio', () => {
 });
 
 describe('la finestra non porta pulsanti del profilo', () => {
-  it('«Salva profilo» c\'è una volta sola, nella card del profilo fisico; nella finestra dell\'obiettivo solo 1-7, Default e Chiudi', async () => {
+  it('nella finestra dell\'obiettivo solo 1-7, Default e Chiudi: niente «Annulla» né «Salva»', async () => {
     await mount();
-    expect(screen.getAllByRole('button', { name: 'Salva profilo' })).toHaveLength(1);
     const dialog = open('Obiettivo settimanale');
     expect(dialog.getAllByRole('button').map((b) => b.textContent)).toEqual(['1', '2', '3', '4', '5', '6', '7', 'Default (3)', 'Chiudi']);
   });

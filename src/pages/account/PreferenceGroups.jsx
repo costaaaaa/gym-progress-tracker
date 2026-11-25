@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import FocusToolsOptions from '../../components/Focus/FocusToolsOptions';
@@ -17,16 +17,16 @@ const LANGUAGES = [{ value: 'it', label: 'Italiano' }, { value: 'en', label: 'En
 
 // I gruppi «Allenamento» (obiettivo settimanale, unità di misura, strumenti della serie) e «App» (lingua) della pagina
 // Profilo e preferenze: una riga col valore di adesso per impostazione e, cliccandola, la finestra col controllo. Una
-// sola finestra è aperta alla volta. Il valore di ogni impostazione viene da `account` (la cornice lo aggiorna con
-// `patchAccount` dopo un salvataggio): la riga e la finestra leggono lo stesso. Gli esiti che chiudono la finestra vanno a
-// notify(messaggio, gravità) della cornice, dopo la chiusura; gli altri stanno dentro la finestra.
-const PreferenceGroups = ({ account, patchAccount, notify }) => {
+// sola finestra è aperta alla volta: `dialog` è useRowDialog della pagina, che la divide con il gruppo «Tu». Il valore
+// di ogni impostazione viene da `account` (la cornice lo aggiorna con `patchAccount` dopo un salvataggio): la riga e la
+// finestra leggono lo stesso. Gli esiti che chiudono la finestra vanno a notify(messaggio, gravità) della cornice, dopo
+// la chiusura; gli altri stanno dentro la finestra.
+const PreferenceGroups = ({ account, patchAccount, notify, dialog }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [openKey, setOpenKey] = useState(null);
+  const { openKey, close } = dialog;
   // Gli interruttori degli strumenti salvano da soli (FocusToolsOptions): dicono qui se c'è un salvataggio in corso
   const [toolsSaving, setToolsSaving] = useState(false);
-  const lastRow = useRef(null);
 
   const goal = useWeeklyGoalSetting(account, patchAccount);
   const unit = useAccountChoice({
@@ -42,18 +42,7 @@ const PreferenceGroups = ({ account, patchAccount, notify }) => {
     patchAccount,
   });
 
-  // Alla chiusura il fuoco torna sulla riga che ha aperto la finestra (non tutti i browser danno il fuoco al clic su un
-  // pulsante: quello che ricorda la finestra non basta)
-  useEffect(() => {
-    if (openKey === null) lastRow.current?.focus();
-  }, [openKey]);
-
-  const openDialog = (key, setting) => (event) => {
-    lastRow.current = event.currentTarget;
-    setting?.clearOutcome();
-    setOpenKey(key);
-  };
-  const close = () => setOpenKey(null);
+  const openDialog = (key, setting) => dialog.open(key, setting?.clearOutcome);
 
   // Scelta di un'impostazione che chiude la finestra: se il salvataggio riesce, chiude e avvisa dalla pagina
   const choose = (setting, saved) => async (next) => {

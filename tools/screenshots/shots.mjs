@@ -251,7 +251,7 @@ const user = ({ admin, gratis, email, tierState, modules }) => ({
   ...(EMAIL_STATES[email ?? 'confermata']),
   success: true, id: 1, username: 'atleta_demo', email: 'atleta@example.com',
   created_at: stamp(-900, '10:00:00'), password_changed_at: stamp(-140, '09:00:00'),
-  age: 34, gender: 'm', experience_years: 4, birth_date: '1992-05-14', training_start_date: '2022-01-10',
+  age: 34, gender: 'M', experience_years: 4, birth_date: '1992-05-14', training_start_date: '2022-01-10',
   rest_timer_enabled: true, locale: 'it', language: 'it', features: [], is_admin: admin,
   tier: gratis ? 'free' : 'pro', tier_until: null, tier_last_day: null, signup_code: null,
   ...(tierState ? TIER_STATES[tierState] : {}),
@@ -720,8 +720,8 @@ for (const vp of viewports) {
         await ctx.close();
       }
     });
-    // «Profilo e preferenze» con la finestra di una riga aperta: l'obiettivo settimanale e l'unità di misura
-    for (const [name, row] of [['account-profilo-obiettivo', 'Obiettivo settimanale'], ['account-profilo-unita', 'Unità di misura']]) {
+    // «Profilo e preferenze» con la finestra di una riga aperta: l'obiettivo settimanale, l'unità di misura e la data di nascita
+    for (const [name, row] of [['account-profilo-obiettivo', 'Obiettivo settimanale'], ['account-profilo-unita', 'Unità di misura'], ['account-profilo-nascita', 'Data di nascita']]) {
       if (!want(name)) continue;
       await attempt(tag, name, async () => {
         const { ctx, page } = await openPage(vp, theme, { loggedIn: true }, tag);
