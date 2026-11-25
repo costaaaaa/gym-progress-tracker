@@ -27,14 +27,15 @@ export const textsBelow16pxExceptActiveBadge = () => [...document.body.querySele
   .map((el) => `${el.textContent} (${getComputedStyle(el).fontSize})`);
 
 // La finestra di conferma di un'eliminazione (o di un'uscita) è la stessa ovunque: «Elimina» (o il testo dato) rosso pieno senza
-// icona, corpo a 16 px nel colore del testo principale. Colori del tema chiaro scritti a mano: text.primary #1a1816, error #d50000.
-export const expectDestructiveConfirm = (corpo, conferma) => {
+// icona, corpo a 16 px nel colore del testo principale. I colori (tema chiaro: text.primary e error) li dà il test che chiama:
+// i sorgenti fuori dai test non scrivono colori a mano.
+export const expectDestructiveConfirm = (corpo, conferma, { ink, red }) => {
   const dialog = within(screen.getByRole('dialog'));
   const bottone = dialog.getByRole('button', { name: conferma });
   expect(bottone.querySelector('svg')).toBeNull();
   expect(bottone.classList.contains('MuiButton-containedError')).toBe(true);
-  expect(getComputedStyle(bottone).backgroundColor).toBe('rgb(213, 0, 0)');
+  expect(getComputedStyle(bottone).backgroundColor).toBe(red);
   const testo = dialog.getByText(corpo);
-  expect(colorOf(testo)).toBe('rgb(26, 24, 22)');
+  expect(colorOf(testo)).toBe(ink);
   expect(getComputedStyle(testo).fontSize).toBe('16px');
 };

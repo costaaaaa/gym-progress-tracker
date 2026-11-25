@@ -59,6 +59,14 @@ afterEach(() => {
 // Esenti: chip e badge ("tu", tipo del gruppo) e le etichette dei campi, che MUI rimpicciolisce
 const small = () => textBelow(document.body, 16, '.MuiChip-root, .MuiFormLabel-root, .MuiFormHelperText-root, legend');
 
+// Bottone di testo a filo del contenuto a sinistra: il margine di quel lato toglie il rientro interno, l'altro è a zero, l'area resta da 44 px
+const expectFlushLeft = (style) => {
+  expect(parseFloat(style.paddingLeft)).toBeGreaterThan(0);
+  expect(style.marginLeft).toBe(`-${style.paddingLeft}`);
+  expect(parseFloat(style.marginRight)).toBe(0);
+  expect(parseFloat(style.minHeight)).toBeGreaterThanOrEqual(44);
+};
+
 describe('elenco dei gruppi', () => {
   const mount = async () => {
     render(<MemoryRouter><ThemeModeProvider><Groups /></ThemeModeProvider></MemoryRouter>);
@@ -155,9 +163,7 @@ describe('dettaglio del gruppo', () => {
     const buttons = ['Rinomina il gruppo', 'Elimina il gruppo', 'Segnala un contenuto'].map((name) => screen.getByRole('button', { name }));
     for (const button of buttons) {
       const style = getComputedStyle(button);
-      expect(style.paddingLeft).toBe('18px');
-      expect([style.marginLeft, style.marginRight]).toEqual(['-18px', '-18px']);
-      expect(parseFloat(style.minHeight)).toBeGreaterThanOrEqual(44);
+      expectFlushLeft(style);
       expect(style.display).toBe('block');
     }
   });
@@ -166,7 +172,8 @@ describe('dettaglio del gruppo', () => {
     stub({ myRole: 'member' });
     await mount();
     const style = getComputedStyle(screen.getByRole('button', { name: 'Esci dal gruppo' }));
-    expect([style.marginLeft, style.display]).toEqual(['-18px', 'block']);
+    expectFlushLeft(style);
+    expect(style.display).toBe('block');
   });
 
   it('«Elimina il gruppo» è un bottone di testo rosso in grassetto, come nell\'app', async () => {

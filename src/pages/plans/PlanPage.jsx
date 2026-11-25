@@ -5,7 +5,7 @@ import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import ExerciseDialog from '../../components/ExerciseDialog';
-import { ALIGN_TEXT, DANGER_TEXT, NEUTRAL_OUTLINED } from '../../utils/buttonStyles';
+import { ACTIONS_ROW, DANGER_TEXT, NEUTRAL_OUTLINED, flushTextButtonInActionsRow } from '../../utils/buttonStyles';
 import ActiveBadge from './ActiveBadge';
 import usePlans from './usePlans';
 import useArrivalState from './useArrivalState';
@@ -187,11 +187,11 @@ const PlanPage = () => {
           </Grid>
 
           {editing && (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 1, mt: 3 }}>
+            <Box sx={{ ...ACTIONS_ROW, mt: 3 }}>
               <Button variant="outlined" onClick={handleOpenEditPlanDialog} sx={{ ...NEUTRAL_OUTLINED, minHeight: 44, fontWeight: 600 }}>
                 {t('plans.edit_details')}
               </Button>
-              <Button onClick={handleOpenDeletePlanDialog} sx={{ ...DANGER_TEXT, ...ALIGN_TEXT, minHeight: 44 }}>
+              <Button onClick={handleOpenDeletePlanDialog} sx={(theme) => ({ ...DANGER_TEXT, ...flushTextButtonInActionsRow(theme) })}>
                 {t('plans.delete_plan_action')}
               </Button>
             </Box>

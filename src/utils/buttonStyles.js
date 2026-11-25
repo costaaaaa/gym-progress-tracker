@@ -1,5 +1,4 @@
-// Rientro orizzontale interno di ogni bottone (lo scrive il tema): chi allinea il testo di un bottone al contenuto lo toglie.
-export const BUTTON_PADDING_X = 18;
+import { BUTTON_PADDING_X } from '../theme/buttonPadding';
 
 const TEXT_BUTTON = {
   fontSize: 16,
@@ -20,10 +19,28 @@ export const NEUTRAL_TEXT = {
   color: 'text.primary',
 };
 
-// Bottone di solo testo il cui testo, e non il suo bordo, sta in asse col contenuto: il margine negativo toglie il rientro
-// interno da entrambi i lati (a sinistra, o a destra se il bottone è allineato a destra), l'area toccabile resta quella
-// intera e di almeno 44 px. Va dato a un bottone che sta da solo sulla sua riga: due bottoni accanto si sovrapporrebbero.
-export const ALIGN_TEXT = { mx: `-${BUTTON_PADDING_X}px`, minHeight: 44 };
+// Bottone di testo a filo del contenuto: il suo testo, e non il suo bordo, sta in asse col contenuto. Il margine negativo
+// toglie il rientro interno solo dal lato `side` ('left', oppure 'right' per un bottone allineato a destra); l'altro lato non
+// si tocca, così l'area toccabile resta intera (almeno 44 px) e non si sovrappone a quella di un bottone accanto.
+export const flushTextButton = (side) => ({ minHeight: 44, [side === 'right' ? 'mr' : 'ml']: `-${BUTTON_PADDING_X}px` });
+
+// Riga di azioni in fondo a una card o a una pagina: da sm in su i bottoni stanno accanto (il secondo a destra), sotto sm uno
+// per riga, a sinistra.
+export const ACTIONS_ROW = {
+  display: 'flex',
+  flexDirection: { xs: 'column', sm: 'row' },
+  alignItems: { xs: 'flex-start', sm: 'stretch' },
+  flexWrap: 'wrap',
+  justifyContent: 'space-between',
+  gap: 1,
+};
+
+// Il bottone di testo a destra in una ACTIONS_ROW: a filo a sinistra quando sta da solo sulla riga, a filo a destra accanto
+// all'altro bottone.
+export const flushTextButtonInActionsRow = (theme) => ({
+  ...flushTextButton('left'),
+  [theme.breakpoints.up('sm')]: { ml: 0, mr: `-${BUTTON_PADDING_X}px` },
+});
 
 // Comando in forma di link sottolineato (es. «Scrivi il codice»): senza rientro, allineato al testo che lo precede
 export const LINK_BUTTON = {

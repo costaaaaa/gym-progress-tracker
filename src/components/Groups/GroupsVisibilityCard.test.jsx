@@ -194,7 +194,7 @@ describe('uscire da un gruppo', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Esci' }));
     const dialog = within(screen.getByRole('dialog'));
     expect(dialog.getByText('Uscire dal gruppo?')).toBeTruthy();
-    expectDestructiveConfirm('I tuoi dati spariscono subito dalla classifica. Per rientrare servirà un nuovo invito.', 'Esci');
+    expectDestructiveConfirm('I tuoi dati spariscono subito dalla classifica. Per rientrare servirà un nuovo invito.', 'Esci', { ink: 'rgb(26, 24, 22)', red: 'rgb(213, 0, 0)' });
     expect(leaveCalls()).toHaveLength(0);
     fireEvent.click(dialog.getByRole('button', { name: 'Esci' }));
     await waitFor(() => expect(leaveCalls()).toHaveLength(1));

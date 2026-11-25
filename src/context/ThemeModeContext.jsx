@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
 import { radius } from '../theme/radius';
 import { FIELD_INPUT_PADDING_Y } from '../theme/fieldHeight';
-import { BUTTON_PADDING_X } from '../utils/buttonStyles';
+import { BUTTON_PADDING_X } from '../theme/buttonPadding';
 
 const BRAND = '#d50000';
 const BRAND_DARK = '#9b0000';

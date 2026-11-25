@@ -926,7 +926,7 @@ describe('eliminare una misurazione', () => {
     await mount(themed);
     fireEvent.click(within(tableRows()[0]).getByRole('button', { name: 'Elimina' }));
     expect(within(screen.getByRole('dialog')).getByText('Eliminare la misurazione?')).toBeTruthy();
-    expectDestructiveConfirm('Sei sicuro di voler eliminare questa misurazione?', 'Elimina');
+    expectDestructiveConfirm('Sei sicuro di voler eliminare questa misurazione?', 'Elimina', { ink: INK, red: RED });
     expect(deleteCalls()).toHaveLength(0);
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Elimina' }));
     await waitFor(() => expect(deleteCalls()).toHaveLength(1));

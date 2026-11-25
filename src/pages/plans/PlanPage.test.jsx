@@ -9,6 +9,7 @@ import { ThemeModeProvider } from '../../context/ThemeModeContext';
 import { json, colorOf, textsBelow16pxExceptActiveBadge, expectPageTitleBlock } from '../../test/dom';
 import { plannedSets, times } from '../../test/plannedSets';
 import { unnamedControls } from '../../test/accessibleNames';
+import { mediaStyle } from '../../test/mediaStyle';
 import i18n from '../../i18n';
 
 const GREY = 'rgb(107, 102, 99)';
@@ -217,11 +218,18 @@ describe('allineamento in modifica', () => {
       expect([style.width, style.height]).toEqual(['44px', '44px']);
     }
     for (const nome of [/^Elimina giorno/, 'Elimina scheda']) {
-      const style = getComputedStyle(screen.getAllByRole('button', { name: nome })[0]);
-      // il rientro interno del pulsante (18 px) è tolto da entrambi i lati: il testo parte dal bordo del contenuto
-      expect(style.paddingLeft).toBe('18px');
-      expect([style.marginLeft, style.marginRight]).toEqual(['-18px', '-18px']);
-      expect(parseFloat(style.minHeight)).toBeGreaterThanOrEqual(44);
+      const bottone = screen.getAllByRole('button', { name: nome })[0];
+      const rientro = getComputedStyle(bottone).paddingLeft;
+      expect(parseFloat(rientro)).toBeGreaterThan(0);
+      expect(parseFloat(getComputedStyle(bottone).minHeight)).toBeGreaterThanOrEqual(44);
+      // il rientro interno è tolto solo dal lato in cui il testo è in asse col contenuto: a sinistra quando sta da solo sulla
+      // riga (sotto sm), a destra quando sta accanto all'altro bottone (da sm); l'altro margine è a zero
+      const sotto = mediaStyle(bottone, null);
+      expect(sotto['margin-left']).toBe(`-${rientro}`);
+      expect(parseFloat(sotto['margin-right'] ?? '0')).toBe(0);
+      const da = mediaStyle(bottone, 600);
+      expect(parseFloat(da['margin-left'])).toBe(0);
+      expect(da['margin-right']).toBe(`-${rientro}`);
     }
   });
 

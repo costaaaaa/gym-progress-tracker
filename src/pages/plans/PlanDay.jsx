@@ -7,7 +7,7 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { useTranslation } from 'react-i18next';
 import { planSummary } from '../../utils/plannedSets';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
-import { ALIGN_TEXT, DANGER_TEXT, NEUTRAL_OUTLINED } from '../../utils/buttonStyles';
+import { ACTIONS_ROW, DANGER_TEXT, NEUTRAL_OUTLINED, flushTextButtonInActionsRow } from '../../utils/buttonStyles';
 
 // Comando a icona: area toccabile di 44 px
 const CONTROL_SX = { width: 44, height: 44, minWidth: 44, minHeight: 44, color: 'text.secondary' };
@@ -104,18 +104,18 @@ const PlanDay = ({
       )}
 
       {editing && (!readOnly || canDelete) && (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 1, mt: 'auto' }}>
+        <Box sx={{ ...ACTIONS_ROW, mt: 'auto' }}>
           {!readOnly && (
             <Button variant="outlined" color="inherit" startIcon={<AddIcon />} onClick={onAddExercise} sx={{ ...NEUTRAL_OUTLINED, minHeight: 44 }}>
               {t('plans.add_exercise')}
             </Button>
           )}
-          {/* Il margine negativo porta l'etichetta al bordo del testo della card (vedi ALIGN_TEXT) */}
+          {/* Il margine negativo porta l'etichetta al bordo del testo della card (vedi flushTextButtonInActionsRow) */}
           {canDelete && (
             <Button
               onClick={() => onDeleteDay(day)}
               aria-label={t('plans.delete_day.aria', { name: day.name })}
-              sx={{ ...DANGER_TEXT, ...ALIGN_TEXT, minHeight: 44 }}
+              sx={(theme) => ({ ...DANGER_TEXT, ...flushTextButtonInActionsRow(theme) })}
             >
               {t('plans.delete_day_action')}
             </Button>
