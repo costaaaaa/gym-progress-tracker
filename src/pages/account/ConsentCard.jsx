@@ -79,24 +79,26 @@ const ConsentCard = ({ username, notify }) => {
   return (
     <>
       <Card sx={{ p: '24px' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
-          <Box sx={{ maxWidth: 520 }}>
-            <Typography variant="cardTitle">{t('account.consent.title')}</Typography>
-            <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
-              {t('account.consent.help')}
-            </Typography>
-            {healthConsentOutdated && healthConsent !== true && (
-              <Typography sx={{ fontSize: 16, color: 'warning.text', mt: 0.5 }}>
-                {t('account.consent.outdated')}
-              </Typography>
-            )}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+          <Typography variant="cardTitle">{t('account.consent.title')}</Typography>
+          <Box component="label" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, minWidth: 58, minHeight: 44 }}>
+            <Switch
+              checked={healthConsent === true}
+              disabled={healthConsent === null || consentBusy}
+              onChange={(e) => handleHealthConsentToggle(e.target.checked)}
+              inputProps={{ 'aria-label': t('account.consent.aria') }}
+            />
           </Box>
-          <Switch
-            checked={healthConsent === true}
-            disabled={healthConsent === null || consentBusy}
-            onChange={(e) => handleHealthConsentToggle(e.target.checked)}
-            inputProps={{ 'aria-label': t('account.consent.aria') }}
-          />
+        </Box>
+        <Box sx={{ maxWidth: 520 }}>
+          <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
+            {t('account.consent.help')}
+          </Typography>
+          {healthConsentOutdated && healthConsent !== true && (
+            <Typography sx={{ fontSize: 16, color: 'warning.text', mt: 0.5 }}>
+              {t('account.consent.outdated')}
+            </Typography>
+          )}
         </Box>
         <Typography sx={{ fontSize: 16, mt: 1.5 }}>
           <Link href={legalPaths(i18n.language).privacy} target="_blank" rel="noopener noreferrer">{t('account.privacy')}</Link>
