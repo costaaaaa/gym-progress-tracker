@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useMemo, useEffect, useRef } from 'react';
+import { createContext, useState, useContext, useMemo, useEffect } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { grey } from '@mui/material/colors';
 import { GlobalStyles } from '@mui/material';
@@ -26,33 +26,53 @@ const ThemeModeContext = createContext();
 
 export const useThemeMode = () => useContext(ThemeModeContext);
 
-export const ThemeModeProvider = ({ children }) => {
-  const [mode, setMode] = useState(() => {
-    // Scelta salvata; senza (o con lo storage bloccato), la preferenza del sistema, letta una volta sola
-    try {
-      const savedMode = localStorage.getItem('themeMode');
-      if (savedMode === 'light' || savedMode === 'dark') return savedMode;
-    } catch { /* storage bloccato: vale il sistema */ }
-    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
+const DARK_QUERY = '(prefers-color-scheme: dark)';
+const systemQuery = () => window.matchMedia?.(DARK_QUERY);
 
-  // Vero solo dopo un clic sul bottone: il modo iniziale (scelta salvata o sistema) non va salvato come scelta
-  const chosen = useRef(false);
+// La preferenza salvata: 'light' o 'dark'; senza chiave, con un valore sconosciuto o con lo storage bloccato vale 'system'
+const readPreference = () => {
+  try {
+    const saved = localStorage.getItem('themeMode');
+    if (saved === 'light' || saved === 'dark') return saved;
+  } catch { /* storage bloccato: vale il sistema */ }
+  return 'system';
+};
+
+export const ThemeModeProvider = ({ children }) => {
+  const [themePreference, setPreference] = useState(readPreference);
+  const [systemDark, setSystemDark] = useState(() => Boolean(systemQuery()?.matches));
+  // Il tema in vigore: la scelta fissa o, con 'system', l'aspetto del sistema (senza matchMedia, il chiaro)
+  const mode = themePreference === 'system' ? (systemDark ? 'dark' : 'light') : themePreference;
+
+  // Con 'system' il tema segue il sistema anche a pagina aperta; la lettura iniziale serve a riprendere l'aspetto di adesso
+  // quando si torna a 'system' (può essere cambiato mentre la scelta era fissa). Fuori da 'system' l'ascolto non c'è.
+  useEffect(() => {
+    if (themePreference !== 'system') return undefined;
+    const query = systemQuery();
+    if (!query) return undefined;
+    const follow = () => setSystemDark(query.matches);
+    follow();
+    query.addEventListener('change', follow);
+    return () => query.removeEventListener('change', follow);
+  }, [themePreference]);
 
   // <html> segue il tema (come /tema.js prima di React): lo sfondo scuro di index.html non resta dopo il passaggio al chiaro.
-  // Dopo un clic si salva anche la scelta, fuori dall'aggiornamento di stato (che deve restare puro).
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', mode);
-    if (!chosen.current) return;
-    try {
-      localStorage.setItem('themeMode', mode);
-    } catch { /* vale solo per questa visita */ }
   }, [mode]);
 
-  const toggleThemeMode = () => {
-    chosen.current = true;
-    setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
+  // Una scelta si salva nel gestore e non in un effetto, così il solo caricamento non scrive niente. 'system' toglie la
+  // chiave: /tema.js, il blog e le pagine statiche, senza chiave, seguono il sistema.
+  const setThemePreference = (next) => {
+    setPreference(next);
+    try {
+      if (next === 'system') localStorage.removeItem('themeMode');
+      else localStorage.setItem('themeMode', next);
+    } catch { /* vale solo per questa visita */ }
   };
+
+  // Il bottone della barra: passa al tema opposto a quello in vigore e lo salva come scelta
+  const toggleThemeMode = () => setThemePreference(mode === 'light' ? 'dark' : 'light');
 
   const { i18n } = useTranslation();
   const muiLocale = i18n.language === 'en' ? enUS : itIT;
@@ -439,7 +459,7 @@ export const ThemeModeProvider = ({ children }) => {
   );
 
   return (
-    <ThemeModeContext.Provider value={{ mode, toggleThemeMode }}>
+    <ThemeModeContext.Provider value={{ mode, themePreference, setThemePreference, toggleThemeMode }}>
       <GlobalStyles
         styles={{
           ':root': {
