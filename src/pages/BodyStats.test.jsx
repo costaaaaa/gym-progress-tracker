@@ -652,13 +652,13 @@ describe('unità di peso dell\'account: lb', () => {
     expect(JSON.parse(posts()[0][1].body).weight).toBe('80.01');
   });
 
-  it('il tetto è mostrato in libbre: 500 kg = 1102,3 lb', async () => {
+  it('il tetto è mostrato in libbre: 500 kg = 1.102,3 lb', async () => {
     records = [row('2026-10-15', '80.0')];
     await open();
     type('Peso (lb)', '1200');
     save();
     expect(posts()).toHaveLength(0);
-    expect(describedBy(field('Peso (lb)'))).toBe('Il valore deve essere tra 0 e 1102,3, estremi inclusi.');
+    expect(describedBy(field('Peso (lb)'))).toBe('Il valore deve essere tra 0 e 1.102,3, estremi inclusi.');
   });
 
   it('un testo non valido in libbre dà l\'errore sotto il campo e non parte', async () => {
@@ -666,7 +666,7 @@ describe('unità di peso dell\'account: lb', () => {
     await open();
     type('Peso (lb)', '1e2');
     await act(async () => { save(); });
-    expect(describedBy(field('Peso (lb)'))).toBe('Il valore deve essere tra 0 e 1102,3, estremi inclusi.');
+    expect(describedBy(field('Peso (lb)'))).toBe('Il valore deve essere tra 0 e 1.102,3, estremi inclusi.');
     expect(fetch.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
   });
 
@@ -678,7 +678,7 @@ describe('unità di peso dell\'account: lb', () => {
       ? { ok: false, status: 400, json: async () => ({ message: 'Peso: fuori scala', field: 'weight', max: 500 }) }
       : { ok: true, json: async () => ({ records }) }));
     await act(async () => { save(); });
-    expect(describedBy(field('Peso (lb)'))).toBe('Il valore deve essere tra 0 e 1102,3, estremi inclusi.');
+    expect(describedBy(field('Peso (lb)'))).toBe('Il valore deve essere tra 0 e 1.102,3, estremi inclusi.');
   });
 });
 

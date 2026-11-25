@@ -88,7 +88,7 @@ describe('livello', () => {
     await mount();
     expect(style(screen.getByText('340 XP')).fontSize).toBe('16px');
     expect(style(screen.getByText('600 XP per il livello 8')).fontSize).toBe('16px');
-    expect(style(screen.getByText('3140 XP totali')).fontSize).toBe('16px');
+    expect(style(screen.getByText('3.140 XP totali')).fontSize).toBe('16px');
   });
 });
 
