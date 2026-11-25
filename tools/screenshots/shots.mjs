@@ -329,7 +329,8 @@ const ATTIVO = {
 const MUSCLI = ['petto', 'schiena', 'spalle', 'bicipiti', 'tricipiti', 'addome', 'quadricipiti', 'femorali', 'glutei', 'adduttori', 'abduttori', 'polpacci'];
 const UTENTI = {
   attivo: ATTIVO,
-  'un-allenamento': { ...ATTIVO, history: HISTORY.slice(0, 1) },
+  // L'unico allenamento è il primo di HISTORY (giovedì 22): nella settimana resta il cerchio di giovedì, non quello di lunedì
+  'un-allenamento': { ...ATTIVO, history: HISTORY.slice(0, 1), weekDays: [false, false, false, true, false, false, false] },
   progressi: { ...ATTIVO, history: SALITA },
   storico: { ...ATTIVO, history: STORICO },
   nuovo: {
