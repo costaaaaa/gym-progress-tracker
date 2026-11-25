@@ -125,6 +125,18 @@ describe('barra in alto: altezza pubblicata', () => {
     unmount();
     expect(value()).toBe('');
   });
+
+  it('una notifica di ridimensionamento già in coda che arriva dopo lo smontaggio non lancia e non riscrive il valore', () => {
+    let resize;
+    vi.stubGlobal('ResizeObserver', class { constructor(cb) { this.cb = cb; } observe() { resize = this.cb; } disconnect() {} });
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({ height: 64 });
+    const value = () => document.documentElement.style.getPropertyValue('--navbar-height');
+    const { unmount } = render(<MemoryRouter><ThemeModeProvider><Navbar /></ThemeModeProvider></MemoryRouter>);
+    expect(value()).toBe('64px');
+    unmount();
+    resize();
+    expect(value()).toBe('');
+  });
 });
 
 // Bersaglio tocco (2.5.8): il bottone del tema accanto al marchio è almeno 40 x 40 px, non i 30 px di size="small"

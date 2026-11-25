@@ -47,7 +47,10 @@ const Navbar = ({ redBar = false }) => {
   const toolbarRef = useRef(null);
   useEffect(() => {
     const root = document.documentElement;
-    const publish = () => root.style.setProperty('--navbar-height', `${toolbarRef.current.getBoundingClientRect().height}px`);
+    // Una notifica già in coda può arrivare a barra smontata: il riferimento è vuoto e non c'è più niente da pubblicare
+    const publish = () => {
+      if (toolbarRef.current) root.style.setProperty('--navbar-height', `${toolbarRef.current.getBoundingClientRect().height}px`);
+    };
     publish();
     const observer = new ResizeObserver(publish);
     observer.observe(toolbarRef.current);
