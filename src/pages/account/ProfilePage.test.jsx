@@ -1,7 +1,8 @@
-// Pagina «Profilo e preferenze» (/account/profilo), la parte alta: nome utente ed email (la loro prova sta in
-// ProfilePage.email.test.jsx) e profilo fisico (data di nascita, sesso, inizio allenamento). I gruppi «Allenamento» e
-// «App» (obiettivo, unità di misura, strumenti, lingua) sono in ProfilePage.settings.test.jsx. Colori scritti a mano:
-// text.primary #1a1816, text.secondary #6b6663. La fetch è il confine.
+// Pagina «Profilo e preferenze» (/account/profilo), la sua struttura: i tre gruppi in ordine, le quattro righe di «Tu»,
+// la riga «Membro da» e la validazione della data di nascita nella sua finestra. Le righe e i salvataggi di «Tu» sono
+// in ProfilePage.you.test.jsx, la riga «Email» con la sua finestra in ProfilePage.email.test.jsx, i gruppi
+// «Allenamento» e «App» (obiettivo, unità di misura, strumenti, lingua) in ProfilePage.settings.test.jsx. Colore
+// scritto a mano: text.secondary #6b6663. La fetch è il confine.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, within, fireEvent, waitFor, act } from '@testing-library/react';
 import { format, subYears, subDays, startOfToday } from 'date-fns';
@@ -11,6 +12,8 @@ import { birthFieldChange } from '../../test/birthFieldSpy';
 import { describedBy } from '../../test/accessibleNames';
 import { mockPointer } from '../../test/pointer';
 import { renderAccount } from '../../test/accountRoutes';
+import i18n from '../../i18n';
+import { open, closed, staysOpen, settingsCalls, reads } from '../../test/settingRows';
 
 // Il campo data vero, con l'onChange della data di nascita a portata di test (vedi src/test/birthFieldSpy.js)
 vi.mock('../../components/LabeledDatePicker', async (importOriginal) => (
@@ -29,7 +32,6 @@ vi.mock('../../context/AuthContext', () => {
   return { useAuth: () => auth };
 });
 
-const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
 
 const stubFetch = () => vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
@@ -55,112 +57,121 @@ afterEach(() => {
 
 const mount = async () => {
   const view = renderAccount('/account/profilo');
-  await screen.findByText('atleta_con_un_nome_molto_lungo');
+  await screen.findByText('Membro da marzo 2025');
   return view;
 };
-const button = (name) => screen.getByRole('button', { name });
 
-describe('Profilo: le card', () => {
-  it('nome utente, email col suo stato e «membro da» nella prima card; poi il profilo fisico; poi il gruppo «Allenamento»', async () => {
+describe('Profilo: i gruppi', () => {
+  it('sono «Tu», «Allenamento» e «App», in quest\'ordine, e «Tu» è il primo della pagina', async () => {
     await mount();
-    const identity = within(screen.getByText('atleta_con_un_nome_molto_lungo').closest('.MuiCard-root'));
-    expect(identity.getByText('atleta.con.un.indirizzo.lungo@example.com')).toBeTruthy();
-    expect(identity.getByText('Confermata')).toBeTruthy();
-    expect(identity.getByText('Membro da marzo 2025')).toBeTruthy();
-    const physical = screen.getByText('Profilo fisico').closest('.MuiCard-root');
-    const training = screen.getByRole('heading', { level: 2, name: 'Allenamento' }).nextElementSibling;
-    expect(new Set([identity.getByText('Confermata').closest('.MuiCard-root'), physical, training]).size).toBe(3);
-    expect(screen.getByText('atleta_con_un_nome_molto_lungo').closest('.MuiCard-root').compareDocumentPosition(physical) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(physical.compareDocumentPosition(training) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const headings = screen.getAllByRole('heading', { level: 2 });
+    expect(headings.map((h) => h.textContent)).toEqual(['Tu', 'Allenamento', 'App']);
+    expect(screen.getByRole('heading', { level: 1 }).compareDocumentPosition(headings[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(headings[0].compareDocumentPosition(headings[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(headings[1].compareDocumentPosition(headings[2]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('«Tu» ha quattro righe: email, data di nascita, sesso, inizio allenamento', async () => {
+    await mount();
+    const rows = within(screen.getByRole('heading', { level: 2, name: 'Tu' }).nextElementSibling).getAllByRole('button');
+    expect(rows.map((b) => b.getAttribute('aria-labelledby') && document.getElementById(b.getAttribute('aria-labelledby')).textContent))
+      .toEqual(['Email', 'Data di nascita', 'Sesso', 'Inizio allenamento']);
+  });
+
+  it('le card di una volta (nome ed email, profilo fisico con «Salva profilo», «Cambia indirizzo») non ci sono più nella pagina', async () => {
+    await mount();
+    expect(screen.queryByText('Profilo fisico')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Salva profilo' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Cambia indirizzo' })).toBeNull();
   });
 });
 
-describe('bottoni', () => {
-  it('«Cambia indirizzo» è outlined neutro: testo in inchiostro e bordo grigio visibile', async () => {
+describe('«Membro da»', () => {
+  it('sta sotto il gruppo «Tu», a 16 px grigio, con mese e anno dell\'iscrizione', async () => {
     await mount();
-    const style = getComputedStyle(screen.getAllByRole('button', { name: 'Cambia indirizzo' }).find((b) => b.classList.contains('MuiButton-outlined')));
-    expect(style.color).toBe(INK);
-    expect(style.borderColor).toBe(GREY);
+    const note = screen.getByText('Membro da marzo 2025');
+    expect(note.previousElementSibling).toBe(screen.getByRole('heading', { level: 2, name: 'Tu' }).parentElement);
+    const style = getComputedStyle(note);
+    expect({ size: style.fontSize, color: style.color }).toEqual({ size: '16px', color: GREY });
   });
-});
 
-describe('intestazione', () => {
-  it('nome ed email non vengono troncati', async () => {
-    await mount();
-    const name = screen.getByText('atleta_con_un_nome_molto_lungo');
-    const email = screen.getByText('atleta.con.un.indirizzo.lungo@example.com');
-    for (const el of [name, email]) {
-      expect(getComputedStyle(el).textOverflow).not.toBe('ellipsis');
-      expect(getComputedStyle(el).whiteSpace).not.toBe('nowrap');
-    }
+  it('in inglese mese e anno sono inglesi', async () => {
+    await i18n.changeLanguage('en');
+    renderAccount('/account/profilo');
+    await screen.findByText('Member since March 2025');
   });
-});
 
-describe('profilo fisico', () => {
-  it('il salvataggio del profilo non rimanda più il timer di recupero', async () => {
-    await mount();
-    fetch.mockClear();
-    fireEvent.click(button('Salva profilo'));
-    await waitFor(() => expect(fetch.mock.calls.filter(([url]) => url.includes('update_settings.php'))).toHaveLength(1));
-    const body = JSON.parse(fetch.mock.calls.find(([url]) => url.includes('update_settings.php'))[1].body);
-    expect(body).not.toHaveProperty('rest_timer_enabled');
+  it('se la lettura dell\'account fallisce c\'è il ripiego «data non disponibile»', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
+      url.includes('user/read.php') ? json({ success: false }, 500) : json({ success: true, groups: [], consents: [] }),
+    )));
+    renderAccount('/account/profilo');
+    await screen.findByText('Membro da data non disponibile');
   });
 });
 
 // 2.5.3: su telefono i campi data aprono un dialogo; il nome accessibile contiene l'etichetta visibile
 describe('campi data su telefono', () => {
-  it('data di nascita e mese di inizio allenamento hanno un nome che contiene l\'etichetta', async () => {
+  it.each([
+    ['Data di nascita'],
+    ['Inizio allenamento'],
+  ])('il campo di «%s» ha un nome che contiene l\'etichetta', async (name) => {
     await mount();
-    expect(screen.getByRole('textbox', { name: /^Data di nascita/ })).toBeTruthy();
-    expect(screen.getByRole('textbox', { name: /^Mese inizio allenamento/ })).toBeTruthy();
+    expect(open(name).getByRole('textbox', { name: new RegExp(`^${name}`) })).toBeTruthy();
   });
 });
 
 describe('data di nascita', () => {
   // Con il puntatore preciso il campo si scrive da tastiera; su telefono è di sola lettura
-  const apri = async () => {
+  const mountAndOpen = async () => {
     mockPointer(true);
     await mount();
-    return screen.getByRole('textbox', { name: /^Data di nascita/ });
+    const dialog = open('Data di nascita');
+    return { dialog, birth: dialog.getByRole('textbox', { name: /^Data di nascita/ }) };
   };
+  const save = (dialog) => fireEvent.click(dialog.getByRole('button', { name: 'Salva' }));
 
   it('dichiara a cosa serve (autocomplete bday), il mese di inizio allenamento no', async () => {
-    const birth = await apri();
+    const { birth } = await mountAndOpen();
     expect(birth.getAttribute('autocomplete')).toBe('bday');
-    expect(screen.getByRole('textbox', { name: /^Mese inizio allenamento/ }).getAttribute('autocomplete')).not.toBe('bday');
+    fireEvent.click(screen.getByRole('button', { name: 'Annulla' }));
+    await closed();
+    expect(open('Inizio allenamento').getByRole('textbox', { name: /^Inizio allenamento/ }).getAttribute('autocomplete')).not.toBe('bday');
   });
 
-  it('oltre i 100 anni: errore sul campo, focus, nessuna richiesta di salvataggio', async () => {
-    const birth = await apri();
+  it('oltre i 100 anni: errore sul campo, focus, nessuna richiesta di salvataggio, finestra aperta', async () => {
+    const { dialog, birth } = await mountAndOpen();
     fireEvent.change(birth, { target: { value: '21/07/0085' } });
     fetch.mockClear();
-    fireEvent.click(button('Salva profilo'));
+    save(dialog);
     await waitFor(() => expect(birth.getAttribute('aria-invalid')).toBe('true'));
     expect(describedBy(birth)).toBe('Inserisci una data di nascita valida');
     expect(document.activeElement).toBe(birth);
+    staysOpen();
     expect(fetch).not.toHaveBeenCalled();
   });
 
   it('cambiando la data l\'errore sparisce', async () => {
-    const birth = await apri();
+    const { dialog, birth } = await mountAndOpen();
     fireEvent.change(birth, { target: { value: '21/07/0085' } });
-    fireEvent.click(button('Salva profilo'));
+    save(dialog);
     await waitFor(() => expect(birth.getAttribute('aria-invalid')).toBe('true'));
     fireEvent.change(birth, { target: { value: '' } });
     expect(birth.getAttribute('aria-invalid')).not.toBe('true');
   });
 
   it('una data fuori dai limiti (meno di 14 anni) è già rossa prima di salvare, come il resto dei campi data', async () => {
-    const birth = await apri();
+    const { birth } = await mountAndOpen();
     fireEvent.change(birth, { target: { value: format(startOfToday(), 'dd/MM/yyyy') } });
     expect(birth.getAttribute('aria-invalid')).toBe('true');
   });
 
   it('un Invalid Date (campo scritto a metà) è una data non valida: errore sul campo, fuoco, nessuna richiesta', async () => {
-    const birth = await apri();
+    const { dialog, birth } = await mountAndOpen();
     act(() => birthFieldChange.current(new Date(NaN)));
     fetch.mockClear();
-    fireEvent.click(button('Salva profilo'));
+    save(dialog);
     await waitFor(() => expect(describedBy(birth)).toBe('Inserisci una data di nascita valida'));
     expect(birth.getAttribute('aria-invalid')).toBe('true');
     expect(document.activeElement).toBe(birth);
@@ -176,16 +187,16 @@ describe('data di nascita', () => {
 
     // La data si calcola dopo il fuso: «oggi» dipende da lì
     const saveWith = async (dateFor) => {
-      const birth = await apri();
+      const { dialog, birth } = await mountAndOpen();
       fireEvent.change(birth, { target: { value: format(dateFor(), 'dd/MM/yyyy') } });
       fetch.mockClear();
-      fireEvent.click(button('Salva profilo'));
+      save(dialog);
       return birth;
     };
 
     it('esattamente 100 anni fa oggi: il salvataggio parte', async () => {
       await saveWith(() => subYears(startOfToday(), 100));
-      await waitFor(() => expect(fetch.mock.calls.some(([url, init]) => url.includes('update_settings.php') && JSON.parse(init.body).birth_date === format(subYears(startOfToday(), 100), 'yyyy-MM-dd'))).toBe(true));
+      await waitFor(() => expect(settingsCalls()).toEqual([{ birth_date: format(subYears(startOfToday(), 100), 'yyyy-MM-dd') }]));
     });
 
     it('un giorno prima: errore sul campo, nessuna richiesta', async () => {
@@ -197,20 +208,19 @@ describe('data di nascita', () => {
   });
 
   it('una data valida si salva', async () => {
-    const birth = await apri();
+    const { dialog, birth } = await mountAndOpen();
     fireEvent.change(birth, { target: { value: '21/07/1985' } });
-    fireEvent.click(button('Salva profilo'));
-    await waitFor(() => expect(fetch.mock.calls.some(([url, init]) => url.includes('update_settings.php') && JSON.parse(init.body).birth_date === '1985-07-21')).toBe(true));
+    save(dialog);
+    await waitFor(() => expect(settingsCalls()).toEqual([{ birth_date: '1985-07-21' }]));
   });
 });
 
 describe('una rilettura dei dati', () => {
-  it('non smonta la pagina: il profilo fisico scritto a metà resta com\'è', async () => {
+  it('non smonta la pagina: la data di nascita scritta a metà nella finestra aperta resta com\'è', async () => {
     mockPointer(true);
     const { rerenderAccount } = await mount();
-    const birth = screen.getByRole('textbox', { name: /^Data di nascita/ });
+    const birth = open('Data di nascita').getByRole('textbox', { name: /^Data di nascita/ });
     fireEvent.change(birth, { target: { value: '21/07/1985' } });
-    const reads = () => fetch.mock.calls.filter(([url]) => String(url).includes('user/read.php')).length;
     expect(reads()).toBe(1);
     const { useAuth } = await import('../../context/AuthContext');
     useAuth().user = { id: 1 };
@@ -218,5 +228,6 @@ describe('una rilettura dei dati', () => {
     await waitFor(() => expect(reads()).toBe(2));
     expect(screen.getByRole('textbox', { name: /^Data di nascita/ })).toBe(birth);
     expect(birth.value).toBe('21/07/1985');
+    staysOpen();
   });
 });

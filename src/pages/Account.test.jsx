@@ -9,6 +9,7 @@ import { textBelow } from '../test/minText';
 import { json } from '../test/dom';
 import { describedBy } from '../test/accessibleNames';
 import { renderAccount } from '../test/accountRoutes';
+import { reads } from '../test/settingRows';
 
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
 const auth = {};
@@ -269,8 +270,6 @@ describe('le pagine delle voci', () => {
 });
 
 describe('la cornice legge i dati una volta sola', () => {
-  const reads = () => fetch.mock.calls.filter(([url]) => String(url).includes('user/read.php')).length;
-
   it('quando cambia l\'utente i dati si rileggono e la pagina resta montata: la finestra aperta resta aperta', async () => {
     const { rerenderAccount } = await mount();
     fireEvent.click(screen.getByRole('button', { name: 'Elimina account' }));
@@ -295,22 +294,22 @@ describe('la cornice legge i dati una volta sola', () => {
 
   it('prima lettura fallita, poi riuscita: la pagina passa dai valori di ripiego ai dati veri', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    let reads = 0;
+    let readCount = 0;
     vi.stubGlobal('fetch', vi.fn((url) => Promise.resolve(
       String(url).includes('user/read.php')
-        ? (++reads === 1 ? json({}, 500) : json({ id: 1, username: 'mario', email: 'mario@example.com', created_at: '2025-03-01T10:00:00+01:00', locale: 'en', weekly_goal_default: 3 }))
+        ? (++readCount === 1 ? json({}, 500) : json({ id: 1, username: 'mario', email: 'mario@example.com', created_at: '2025-03-01T10:00:00+01:00', locale: 'en', weekly_goal_default: 3 }))
         : json({ success: true, consents: [], id: 1, weekly_goal_default: 3 }),
     )));
     try {
       const { rerenderAccount } = renderAccount('/account/profilo');
       await screen.findByRole('heading', { level: 1, name: 'Profilo e preferenze' });
       expect(describedBy(screen.getByRole('button', { name: 'Lingua' }))).toBe('Italiano');
-      expect(reads).toBe(1);
+      expect(readCount).toBe(1);
 
       auth.user = { id: 1 };
       rerenderAccount();
       await waitFor(() => expect(describedBy(screen.getByRole('button', { name: 'Lingua' }))).toBe('English'));
-      expect(reads).toBe(2);
+      expect(readCount).toBe(2);
     } finally {
       error.mockRestore();
     }
