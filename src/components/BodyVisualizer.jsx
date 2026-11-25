@@ -8,7 +8,7 @@ import LockedRow from './LockedRow';
 import BasicMuscleRow from './BasicMuscleRow';
 
 // Una riga: nome, barra di avanzamento del recupero, scritta a destra.
-// Larghezze fisse: 104 px per "Quadricipiti", 112 px per "pronto tra N giorni" / "ready in N days".
+// Larghezze fisse: 104 px per "Quadricipiti", 112 px per "Pronto tra N giorni" / "Ready in N days".
 // `stacked`: sul telefono, dove le due colonne fisse non lasciano posto alla barra, nome e scritta stanno su una riga
 // e la barra sotto, larga quanto la riga.
 const MuscleRow = ({ group, status, percent, stacked = false, children }) => (
