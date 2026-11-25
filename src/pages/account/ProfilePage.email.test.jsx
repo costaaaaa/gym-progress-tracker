@@ -264,6 +264,32 @@ describe('«Annulla» del cambio in attesa, dentro la finestra «Email»', () =>
     await waitFor(() => expect(dialog.getByRole('status').textContent).toBe('Cambio di indirizzo annullato.'));
     expect(cancelCalls()).toHaveLength(1);
   });
+
+  it('mentre la richiesta è in corso nessuna via chiude la finestra, nemmeno «Scrivi il codice» e «Cambia indirizzo»: l\'esito si legge dentro', async () => {
+    const answer = deferred();
+    auth.cancelReply = () => answer.promise;
+    const dialog = await pendingMount();
+    cancel(dialog);
+    await waitFor(() => expect(dialog.getByRole('button', { name: 'Chiudi' }).getAttribute('aria-disabled')).toBe('true'));
+    for (const name of ['Cambia indirizzo', 'Scrivi il codice']) {
+      const button = dialog.getByRole('button', { name });
+      expect(button.getAttribute('aria-disabled')).toBe('true');
+      expect(button.disabled).toBe(false);
+      fireEvent.click(button);
+    }
+    fireEvent.click(dialog.getByRole('button', { name: 'Chiudi' }));
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    fireEvent.click(document.querySelector('.MuiBackdrop-root'));
+    staysOpen();
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+    expect(screen.queryByRole('dialog', { name: 'Cambia indirizzo email' })).toBeNull();
+    expect(auth.openEmailDialog).not.toHaveBeenCalled();
+    answer.resolve(json({ success: true, cancelled: true }));
+    await waitFor(() => expect(dialog.getByRole('status').textContent).toBe('Cambio di indirizzo annullato.'));
+    staysOpen();
+    expect(auth.openEmailDialog).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog', { name: 'Cambia indirizzo email' })).toBeNull();
+  });
 });
 
 describe('Cambia indirizzo', () => {
