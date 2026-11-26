@@ -9,7 +9,7 @@ import i18n from '../i18n';
 import { textBelow } from '../test/minText';
 import { unnamedControls } from '../test/accessibleNames';
 import { mediaStyle } from '../test/mediaStyle';
-import { expectPageTitleBlock } from '../test/dom';
+import { expectPageTitleBlock, expectBackArrow } from '../test/dom';
 
 const account = vi.hoisted(() => ({ weightUnit: 'kg', modules: undefined, isLoggedIn: true }));
 vi.mock('../context/AuthContext', () => ({
@@ -309,6 +309,11 @@ describe('titolo e titolo del documento', () => {
     expect(style(h1s[0]).fontWeight).toBe('800');
     expectPageTitleBlock(h1s[0]);
     expect(document.title).toBe('Livelli e traguardi | LiftIndex');
+  });
+
+  it('la freccia «Home» sta sulla riga del titolo e porta alla Home', async () => {
+    await mount();
+    expectBackArrow(screen.getByRole('heading', { level: 1 }), screen.getByRole('link', { name: 'Home' }), '/');
   });
 });
 

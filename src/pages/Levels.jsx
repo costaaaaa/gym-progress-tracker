@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Box, Card, CircularProgress, Grid, LinearProgress, Typography } from '@mui/material';
+import { Box, Card, CircularProgress, Grid, IconButton, LinearProgress, Typography } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { Link as RouterLink } from 'react-router-dom';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import CheckIcon from '@mui/icons-material/Check';
 import { useTranslation } from 'react-i18next';
@@ -230,7 +232,12 @@ const LevelsContent = () => {
   const { t } = useTranslation();
   return (
     <Box sx={{ width: '100%' }}>
-      <Typography variant="pageTitle" sx={{ mb: 3 }}>{t('modules.levels.name')}</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+        <IconButton component={RouterLink} to="/" aria-label={t('nav.home')} edge="start" sx={{ width: 44, height: 44, color: 'text.primary' }}>
+          <ArrowBackIcon />
+        </IconButton>
+        <Typography variant="pageTitle" sx={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{t('modules.levels.name')}</Typography>
+      </Box>
       <LevelsBody />
     </Box>
   );

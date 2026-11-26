@@ -162,9 +162,11 @@ const GroupDetailContent = () => {
 
   return (
     <Box sx={{ pb: 3 }}>
-      <Button component={RouterLink} to="/gruppi" startIcon={<ArrowBackIcon />} sx={{ ...NEUTRAL_TEXT, mb: 1 }}>{t('groups.join.your_groups')}</Button>
-      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, flexWrap: 'wrap', mb: 3 }}>
-        <Typography variant="pageTitle">{group.name}</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 3 }}>
+        <IconButton component={RouterLink} to="/gruppi" aria-label={t('groups.join.your_groups')} edge="start" sx={{ width: 44, height: 44, color: 'text.primary' }}>
+          <ArrowBackIcon />
+        </IconButton>
+        <Typography variant="pageTitle" sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>{group.name}</Typography>
         <Chip size="small" label={groupTypeLabel(group.type)} />
         <Typography sx={{ color: 'text.secondary', fontSize: 16 }}>
           {t('groups_card.members', { count: Number(group.members_count) })}

@@ -36,6 +36,17 @@ export const expectTitleRowButton = (heading, button) => {
   expect(parseFloat(stile.fontSize) * parseFloat(stile.lineHeight) + bordi).toBeLessThanOrEqual(blocco);
 };
 
+// La freccia «indietro» sta sulla riga del titolo, prima del titolo: un link con la sola icona, quadrato da 44 px, verso `href`.
+export const expectBackArrow = (heading, arrow, href) => {
+  expect(arrow.getAttribute('href')).toBe(href);
+  expect(arrow.parentElement).toBe(heading.parentElement);
+  expect(arrow.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(arrow.textContent).toBe('');
+  expect(arrow.querySelector('svg')).not.toBeNull();
+  const stile = getComputedStyle(arrow);
+  expect([stile.width, stile.height]).toEqual(['44px', '44px']);
+};
+
 // Guardia delle pagine delle Schede: i testi sotto i 16 px, come «testo (misura)». L'unica eccezione è il loro badge
 // «Attiva» (13 px o più): su una pagina con un altro «Attiva» questa guardia non va usata.
 export const textsBelow16pxExceptActiveBadge = () => [...document.body.querySelectorAll('*')]

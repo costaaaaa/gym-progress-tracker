@@ -2,10 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Alert, Box, Button, Card, CardActionArea, Chip, CircularProgress, Dialog, DialogActions,
-  DialogContent, DialogTitle, Grid, MenuItem, TextField, Typography,
+  DialogContent, DialogTitle, Grid, IconButton, MenuItem, TextField, Typography,
 } from '@mui/material';
 import GroupsOutlined from '@mui/icons-material/GroupsOutlined';
 import AddIcon from '@mui/icons-material/Add';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { usePageMeta } from '../hooks/usePageMeta';
 import RequireLogin from '../components/Groups/RequireLogin';
 import ModuleGate from '../components/ModuleGate';
@@ -94,8 +95,11 @@ const GroupsContent = () => {
 
   return (
     <Box sx={{ pb: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', mb: 3 }}>
-        <Typography variant="pageTitle">
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 3 }}>
+        <IconButton component={RouterLink} to="/" aria-label={t('nav.home')} edge="start" sx={{ width: 44, height: 44, color: 'text.primary' }}>
+          <ArrowBackIcon />
+        </IconButton>
+        <Typography variant="pageTitle" sx={{ flex: '1 1 auto', minWidth: 0 }}>
           {t('groups.title')}
         </Typography>
         <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)} sx={{ ...TITLE_ROW_BUTTON, fontSize: 16 }}>
