@@ -157,6 +157,39 @@ describe('interruttori e scelte', () => {
   });
 });
 
+describe('interruttore delle misure corporee', () => {
+  it('sta a destra del titolo «Misure corporee», come gli altri; testo e collegamenti sono sotto', async () => {
+    await mount();
+    const toggle = screen.getByLabelText('Consenso al trattamento delle misure corporee');
+    const title = screen.getByText('Misure corporee');
+    const row = title.parentElement;
+    expect(getComputedStyle(row).display).toBe('flex');
+    expect(getComputedStyle(row).justifyContent).toBe('space-between');
+    // titolo e interruttore sono i due figli della riga, l'interruttore dopo il titolo (a destra)
+    expect(row.contains(toggle)).toBe(true);
+    expect(row.firstElementChild).toBe(title);
+    expect(row.lastElementChild.contains(toggle)).toBe(true);
+    for (const below of [screen.getByText(/^Peso e misure sono dati sulla salute/), screen.getByRole('link', { name: 'Informativa privacy' })]) {
+      expect(row.contains(below)).toBe(false);
+      expect(toggle.compareDocumentPosition(below) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+  });
+});
+
+describe('conferma della revoca del consenso (cancella le misure)', () => {
+  it('il corpo è a 16 px nel colore del testo principale; «Revoca e cancella le misure» è rosso pieno senza icona', async () => {
+    await mount();
+    fireEvent.click(screen.getByLabelText('Consenso al trattamento delle misure corporee'));
+    const dialog = within(await screen.findByRole('dialog'));
+    const corpo = dialog.getByText(/Se revochi il consenso/);
+    expect(getComputedStyle(corpo).color).toBe(INK);
+    expect(getComputedStyle(corpo).fontSize).toBe('16px');
+    const conferma = dialog.getByRole('button', { name: 'Revoca e cancella le misure' });
+    expect(conferma.querySelector('svg')).toBeNull();
+    expect(getComputedStyle(conferma).backgroundColor).toBe('rgb(213, 0, 0)');
+  });
+});
+
 describe('esporta i dati', () => {
   afterEach(() => vi.useRealTimers());
 

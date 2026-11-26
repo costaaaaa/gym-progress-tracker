@@ -27,15 +27,29 @@ describe.each([
     render(<ThemeModeProvider><LeaderboardTable rows={rows} board="week" /></ThemeModeProvider>);
     const row = screen.getByText('atleta_demo').closest('li');
     const bg = over(toRgb(getComputedStyle(row).backgroundColor), paper);
-    const secondary = toRgb(getComputedStyle(screen.getByText('4820 kg', { exact: false })).color);
+    const secondary = toRgb(getComputedStyle(screen.getByText('4.820 kg', { exact: false })).color);
     expect(contrast(secondary, bg)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe('migliaia a quattro cifre', () => {
+  const level = (total_xp) => [{ rank: 1, username: 'luca', is_me: false, level: 12, total_xp, streak_weeks: null }];
+
+  it('classifica dei livelli: gli XP hanno il punto da quattro cifre', () => {
+    render(<ThemeModeProvider><LeaderboardTable rows={level(3140)} board="level" /></ThemeModeProvider>);
+    expect(screen.getByText('3.140 XP')).toBeTruthy();
+  });
+
+  it('classifica dei livelli: sotto le quattro cifre niente punto', () => {
+    render(<ThemeModeProvider><LeaderboardTable rows={level(950)} board="level" /></ThemeModeProvider>);
+    expect(screen.getByText('950 XP')).toBeTruthy();
   });
 });
 
 describe('unità di peso', () => {
   it('in kg il volume è quello di sempre', () => {
     render(<ThemeModeProvider><LeaderboardTable rows={rows} board="week" /></ThemeModeProvider>);
-    expect(screen.getByText('5200 kg')).toBeTruthy();
+    expect(screen.getByText('5.200 kg')).toBeTruthy();
   });
 
   it('in lb ognuno vede il volume (in kg dal server) convertito nel totale intero', () => {
@@ -57,7 +71,7 @@ describe('campi nascosti (null)', () => {
     expect(row.textContent).toContain('2/3');
     expect(row.textContent).not.toMatch(/undefined|null|NaN|kg|—|nascost/i);
     expect(within(row).getByRole('progressbar')).toBeTruthy();
-    expect(screen.getByText('5200 kg')).toBeTruthy();
+    expect(screen.getByText('5.200 kg')).toBeTruthy();
   });
 
   it('settimana: se nessuna riga ha il volume, non compare nessun volume', () => {

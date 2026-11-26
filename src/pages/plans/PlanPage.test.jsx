@@ -6,9 +6,10 @@ import { render, screen, within, fireEvent, waitFor, act } from '@testing-librar
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import PlanPage from './PlanPage';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
-import { json, colorOf, textsBelow16pxExceptActiveBadge } from '../../test/dom';
+import { json, colorOf, textsBelow16pxExceptActiveBadge, expectPageTitleBlock, expectTitleRowButton } from '../../test/dom';
 import { plannedSets, times } from '../../test/plannedSets';
 import { unnamedControls } from '../../test/accessibleNames';
+import { mediaStyle } from '../../test/mediaStyle';
 import i18n from '../../i18n';
 
 const GREY = 'rgb(107, 102, 99)';
@@ -79,6 +80,16 @@ describe('lettura', () => {
     expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['Giorno 101', 'Giorno 102']);
     expect(screen.getByText('Base')).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Schede' }).getAttribute('href')).toBe('/schede');
+  });
+
+  it('sopra la riga della freccia e del titolo la pagina non dà spazio (resta quello sotto); il titolo sta in un blocco alto 44 px', async () => {
+    await mount([mk(1)]);
+    const titolo = await screen.findByRole('heading', { level: 1 });
+    const pagina = titolo.parentElement.parentElement;
+    expect(parseFloat(getComputedStyle(pagina).paddingTop)).toBe(0);
+    expect(getComputedStyle(pagina).paddingBottom).toBe('24px');
+    expectPageTitleBlock(titolo);
+    expectTitleRowButton(titolo, screen.getByRole('button', { name: 'Modifica' }));
   });
 
   it('mostra tutti gli esercizi del giorno, anche oltre i primi quattro, senza «Dettagli» né «+N altri»', async () => {
@@ -208,9 +219,18 @@ describe('allineamento in modifica', () => {
       expect([style.width, style.height]).toEqual(['44px', '44px']);
     }
     for (const nome of [/^Elimina giorno/, 'Elimina scheda']) {
-      const style = getComputedStyle(screen.getAllByRole('button', { name: nome })[0]);
-      expect(style.marginLeft).toBe('-8px');
-      expect(parseFloat(style.minHeight)).toBeGreaterThanOrEqual(44);
+      const bottone = screen.getAllByRole('button', { name: nome })[0];
+      const rientro = getComputedStyle(bottone).paddingLeft;
+      expect(parseFloat(rientro)).toBeGreaterThan(0);
+      expect(parseFloat(getComputedStyle(bottone).minHeight)).toBeGreaterThanOrEqual(44);
+      // il rientro interno è tolto solo dal lato in cui il testo è in asse col contenuto: a sinistra quando sta da solo sulla
+      // riga (sotto sm), a destra quando sta accanto all'altro bottone (da sm); l'altro margine è a zero
+      const sotto = mediaStyle(bottone, null);
+      expect(sotto['margin-left']).toBe(`-${rientro}`);
+      expect(parseFloat(sotto['margin-right'] ?? '0')).toBe(0);
+      const da = mediaStyle(bottone, 600);
+      expect(parseFloat(da['margin-left'])).toBe(0);
+      expect(da['margin-right']).toBe(`-${rientro}`);
     }
   });
 
@@ -706,6 +726,21 @@ describe('scheda in sola lettura', () => {
     expect(screen.getByRole('button', { name: 'Modifica nome e descrizione' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Elimina scheda' })).toBeTruthy();
     expect(screen.getAllByRole('button', { name: /^Elimina giorno/ })).toHaveLength(days);
+  });
+
+  it('«Elimina giorno», rimasto solo sulla sua riga, sta a filo a sinistra a ogni larghezza', async () => {
+    await mount([readOnly('plans_over_limit')]);
+    startEdit();
+    const bottone = screen.getAllByRole('button', { name: /^Elimina giorno/ })[0];
+    const rientro = getComputedStyle(bottone).paddingLeft;
+    expect(parseFloat(rientro)).toBeGreaterThan(0);
+    expect(getComputedStyle(bottone).marginLeft).toBe(`-${rientro}`);
+    // da sm in su nessuna regola lo sposta a destra, come accade quando ha accanto «Aggiungi esercizio»
+    for (const larghezza of [600, 900, 1200, 1536]) {
+      const da = mediaStyle(bottone, larghezza);
+      expect(da['margin-left']).toBeUndefined();
+      expect(da['margin-right']).toBeUndefined();
+    }
   });
 
   it.each([

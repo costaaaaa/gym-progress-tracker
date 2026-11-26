@@ -13,7 +13,7 @@ import { createGroup, errorMessage, groupTypeLabel, listGroups, roleLabel } from
 import { track } from '../utils/analytics';
 import { useTranslation } from 'react-i18next';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
-import { NEUTRAL_OUTLINED } from '../utils/buttonStyles';
+import { NEUTRAL_OUTLINED, TITLE_ROW_BUTTON } from '../utils/buttonStyles';
 
 const CreateGroupDialog = ({ open, onClose, onCreated }) => {
   const { t } = useTranslation();
@@ -61,7 +61,7 @@ const CreateGroupDialog = ({ open, onClose, onCreated }) => {
             {t('groups.new.help')}
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions>
           <Button onClick={onClose} disabled={saving} sx={{ fontSize: 16 }}>{t('common.cancel')}</Button>
           <Button type="submit" variant="contained" disabled={saving || !name.trim()} sx={{ fontSize: 16 }}>{t('common.create')}</Button>
         </DialogActions>
@@ -93,12 +93,12 @@ const GroupsContent = () => {
   };
 
   return (
-    <Box sx={{ py: 3 }}>
+    <Box sx={{ pb: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', mb: 3 }}>
         <Typography variant="pageTitle">
           {t('groups.title')}
         </Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)} sx={{ fontSize: 16 }}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)} sx={{ ...TITLE_ROW_BUTTON, fontSize: 16 }}>
           {t('groups.create')}
         </Button>
       </Box>

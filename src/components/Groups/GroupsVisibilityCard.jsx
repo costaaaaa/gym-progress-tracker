@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { NEUTRAL_TEXT } from '../../utils/buttonStyles';
 import { scrollToAndFocus } from '../../utils/focus';
 import { useModule } from '../../hooks/useModule';
+import ConfirmDialog from '../ConfirmDialog';
 import GroupVisibilityOptions from './GroupVisibilityOptions';
 
 const FOCUS_RING = (theme) => ({
@@ -21,6 +22,7 @@ const GroupsVisibilityCard = ({ notify }) => {
   const groupsActive = useModule('groups');
   const [groups, setGroups] = useState(null);
   const [error, setError] = useState('');
+  const [groupToLeave, setGroupToLeave] = useState(null);
 
   useEffect(() => {
     listGroups().then((res) => setGroups(res.ok ? res.data.groups : []));
@@ -33,7 +35,7 @@ const GroupsVisibilityCard = ({ notify }) => {
   }, [hash]);
 
   const leave = async (group) => {
-    if (!window.confirm(t('groups.leave_confirm', { name: group.name }))) return;
+    setGroupToLeave(null);
     const res = await leaveGroup(group.id);
     if (res.ok) {
       track('group_left');
@@ -71,11 +73,19 @@ const GroupsVisibilityCard = ({ notify }) => {
             {g.my_role === 'owner' ? (
               <Button component={RouterLink} to={`/gruppi/${g.id}`} sx={NEUTRAL_TEXT}>{t('groups.visibility.manage')}</Button>
             ) : (
-              <Button onClick={() => leave(g)} sx={NEUTRAL_TEXT}>{t('groups.visibility.leave')}</Button>
+              <Button onClick={() => setGroupToLeave(g)} sx={NEUTRAL_TEXT}>{t('groups.visibility.leave')}</Button>
             )}
           </Box>
         ))}
       </Box>
+      <ConfirmDialog
+        open={groupToLeave !== null}
+        title={groupToLeave ? t('groups.visibility.leave_title', { name: groupToLeave.name }) : ''}
+        text={t('groups.detail.leave.text')}
+        cta={t('groups.detail.leave.cta')}
+        onConfirm={() => leave(groupToLeave)}
+        onClose={() => setGroupToLeave(null)}
+      />
     </Card>
   );
 };

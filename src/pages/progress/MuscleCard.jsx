@@ -9,7 +9,7 @@ import MuscleRow from './MuscleRow';
 
 const TITLE_ID = 'progress-muscles-title';
 
-// Testo di recupero di una riga: "Pronto" o il conto alla rovescia già usato in BodyVisualizer; "nessun dato" se il server non
+// Testo di recupero di una riga: "Pronto" o il conto alla rovescia già usato in BodyVisualizer; "Nessun dato" se il server non
 // ha (ancora) un recupero per questo muscolo.
 const recoveryText = (t, status, days) => {
   if (status === 'PRONTO') return t('recovery.ready');
@@ -17,12 +17,12 @@ const recoveryText = (t, status, days) => {
   return readyLabel(t, days);
 };
 
-// Etichetta di stato del piano Gratis: Puoi allenare / In recupero / nessun dato.
-const basicText = (t, status) => (status === 'PRONTO' ? t('recovery.can_train') : status ? t('recovery.basic_resting') : t('progress.volume.no_data'));
+// Etichetta di stato del piano Gratis: Pronto / In recupero / Nessun dato.
+const basicText = (t, status) => (status === 'PRONTO' ? t('recovery.ready') : status ? t('recovery.basic_resting') : t('progress.volume.no_data'));
 
 // La card «Per muscolo» (modulo Recupero): una riga per muscolo, nell'ordine del corpo, con le serie della settimana, la
 // variazione e lo stato di recupero. Nel piano Gratis (`stats.basic`) in cima le due righe con lucchetto e per ogni muscolo
-// solo «Puoi allenare» / «In recupero». `stats`: il risultato di useWeeklyStats.
+// solo «Pronto» / «In recupero». `stats`: il risultato di useWeeklyStats.
 const MuscleCard = ({ stats }) => {
   const { t } = useTranslation();
   const { sets, recovery, basic } = stats;

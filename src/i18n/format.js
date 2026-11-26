@@ -25,7 +25,9 @@ export const formatDate = (value, options) => (isClockString(value)
 // L'ora scritta in una data-ora senza fuso ("2026-10-20 18:30:00" → "18:30"), senza convertirla nel fuso del browser.
 export const formatClockTime = (value) => clockDate(value).toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
 
-export const formatNumber = (value, options) => Number(value || 0).toLocaleString(intlLocale(), options);
+// Un numero mostrato all'utente. Le migliaia sono separate da quattro cifre in su: in italiano toLocaleString di norma
+// parte da cinque («3140 XP» accanto a «4.820 kg»). Per un anno o un identificativo: useGrouping: false.
+export const formatNumber = (value, options) => Number(value || 0).toLocaleString(intlLocale(), { useGrouping: 'always', ...options });
 
 // Una misura in numero (grasso, circonferenze, peso in tabella): lingua dell'utente, al massimo due decimali, niente zeri finali
 export const formatMeasureText = (value) => formatWeight(value, intlLocale(), { unit: false });

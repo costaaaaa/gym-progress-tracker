@@ -150,12 +150,12 @@ describe('card «Questa settimana»', () => {
     expect(screen.queryByText(/nessun/i)).toBeNull();
   });
 
-  it('settimana a zero con il modulo attivo: due zeri, righe «nessun dato» e nessun altro testo di vuoto', async () => {
+  it('settimana a zero con il modulo attivo: due zeri, righe «Nessun dato» e nessun altro testo di vuoto', async () => {
     await mount(emptyWeek);
     expect(stat('Volume').textContent).toBe('0\u00a0kg');
     expect(stat('Serie').textContent).toBe('0');
     expect(within(muscleCard()).getAllByRole('listitem')).toHaveLength(12);
-    expect(within(muscleCard()).getAllByText('nessun dato')).toHaveLength(12);
+    expect(within(muscleCard()).getAllByText('Nessun dato')).toHaveLength(12);
     expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.getAllByText(/nessun/i)).toHaveLength(12);
   });
@@ -224,38 +224,38 @@ describe('card «Per muscolo»', () => {
     expect(getComputedStyle(bar('Addome')).width).toBe('0%');
   });
 
-  it('stato di recupero: Pronto, pronto domani, pronto tra N giorni, nessun dato', async () => {
+  it('stato di recupero: Pronto, Pronto domani, Pronto tra N giorni, Nessun dato', async () => {
     await mount();
     expect(within(row('Petto')).getByText('Pronto')).toBeTruthy();
-    expect(within(row('Schiena')).getByText('pronto domani')).toBeTruthy();
-    expect(within(row('Quadricipiti')).getByText('pronto tra 2 giorni')).toBeTruthy();
-    expect(within(row('Femorali')).getByText('pronto tra 3 giorni')).toBeTruthy();
-    expect(within(row('Abduttori')).getByText('nessun dato')).toBeTruthy();
+    expect(within(row('Schiena')).getByText('Pronto domani')).toBeTruthy();
+    expect(within(row('Quadricipiti')).getByText('Pronto tra 2 giorni')).toBeTruthy();
+    expect(within(row('Femorali')).getByText('Pronto tra 3 giorni')).toBeTruthy();
+    expect(within(row('Abduttori')).getByText('Nessun dato')).toBeTruthy();
   });
 
-  it('un muscolo mai allenato (last_trained null) mostra "nessun dato", non "Pronto"', async () => {
+  it('un muscolo mai allenato (last_trained null) mostra "Nessun dato", non "Pronto"', async () => {
     await mount({
       ...dashboardStats,
       recovery: { petto: { status: 'PRONTO', last_trained: null }, schiena: { status: 'PRONTO', last_trained: '2026-10-20 18:00:00' } },
     });
     expect(within(row('Schiena')).getByText('Pronto')).toBeTruthy();
-    expect(within(row('Petto')).getByText('nessun dato')).toBeTruthy();
+    expect(within(row('Petto')).getByText('Nessun dato')).toBeTruthy();
     expect(within(row('Petto')).queryByText('Pronto')).toBeNull();
   });
 
-  it('"pronto tra N giorni" va a capo, non è troncato con i puntini (1.4.12)', async () => {
+  it('"Pronto tra N giorni" va a capo, non è troncato con i puntini (1.4.12)', async () => {
     await mount();
-    const { whiteSpace, textOverflow } = getComputedStyle(within(row('Quadricipiti')).getByText('pronto tra 2 giorni'));
+    const { whiteSpace, textOverflow } = getComputedStyle(within(row('Quadricipiti')).getByText('Pronto tra 2 giorni'));
     expect(whiteSpace).not.toBe('nowrap');
     expect(textOverflow).not.toBe('ellipsis');
   });
 
-  it('"Pronto" è verde e semigrassetto, "nessun dato" è in secondario', async () => {
+  it('"Pronto" è verde e semigrassetto, "Nessun dato" è in secondario', async () => {
     await mount();
     const pronto = within(row('Petto')).getByText('Pronto');
     expect(getComputedStyle(pronto).color).toBe(GREEN);
     expect(getComputedStyle(pronto).fontWeight).toBe('600');
-    expect(getComputedStyle(within(row('Abduttori')).getByText('nessun dato')).color).toBe(GREY);
+    expect(getComputedStyle(within(row('Abduttori')).getByText('Nessun dato')).color).toBe(GREY);
   });
 });
 
@@ -310,13 +310,13 @@ describe('piano Gratis (detail "basic")', () => {
     expect(firstRow.compareDocumentPosition(row('Petto')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('ogni muscolo ha solo "Puoi allenare" o "In recupero" ("nessun dato" se mai allenato)', async () => {
+  it('ogni muscolo ha solo "Pronto" o "In recupero" ("Nessun dato" se mai allenato)', async () => {
     await mount(basicStats);
-    expect(within(row('Petto')).getByText('Puoi allenare')).toBeTruthy();
+    expect(within(row('Petto')).getByText('Pronto')).toBeTruthy();
     expect(within(row('Schiena')).getByText('In recupero')).toBeTruthy();
-    expect(within(row('Spalle')).getByText('nessun dato')).toBeTruthy();
-    expect(within(row('Abduttori')).getByText('nessun dato')).toBeTruthy();
-    expect(screen.queryByText(/pronto (oggi|domani|tra)/)).toBeNull();
+    expect(within(row('Spalle')).getByText('Nessun dato')).toBeTruthy();
+    expect(within(row('Abduttori')).getByText('Nessun dato')).toBeTruthy();
+    expect(screen.queryByText(/pronto (oggi|domani|tra)/i)).toBeNull();
   });
 
   it('con il modulo Recupero spento restano solo i numeri della settimana: nessuna riga con lucchetto', async () => {

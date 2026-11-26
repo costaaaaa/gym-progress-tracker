@@ -43,7 +43,7 @@ describe('card Stato muscolare', () => {
     expect(screen.getByText('Stato muscolare')).toBeTruthy();
     expect(within(block('Puoi allenare')).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['PettoPronto', 'GluteiPronto']);
     expect(within(block('A riposo')).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
-      'Bicipitipronto oggi', 'Schienapronto domani', 'Femoralipronto tra 2 giorni', 'Quadricipitipronto tra 3 giorni',
+      'BicipitiPronto oggi', 'SchienaPronto domani', 'FemoraliPronto tra 2 giorni', 'QuadricipitiPronto tra 3 giorni',
     ]);
   });
 
@@ -53,15 +53,15 @@ describe('card Stato muscolare', () => {
     expect(getComputedStyle(ready).color).toBe(GREEN);
     expect(getComputedStyle(ready).fontWeight).toBe('600');
 
-    const when = within(row('A riposo', 'Schiena')).getByText('pronto domani');
+    const when = within(row('A riposo', 'Schiena')).getByText('Pronto domani');
     expect(getComputedStyle(when).color).toBe(GREY);
     expect(getComputedStyle(when).fontSize).toBe('13px');
     expect(within(block('A riposo')).queryByText('Pronto')).toBeNull();
   });
 
-  it('la frase "pronto tra N giorni" va a capo, non è troncata con i puntini (1.4.12)', () => {
+  it('la frase "Pronto tra N giorni" va a capo, non è troncata con i puntini (1.4.12)', () => {
     mount(data);
-    const { whiteSpace, textOverflow } = getComputedStyle(within(row('A riposo', 'Femorali')).getByText('pronto tra 2 giorni'));
+    const { whiteSpace, textOverflow } = getComputedStyle(within(row('A riposo', 'Femorali')).getByText('Pronto tra 2 giorni'));
     expect(whiteSpace).not.toBe('nowrap');
     expect(textOverflow).not.toBe('ellipsis');
   });
@@ -126,7 +126,7 @@ describe('card Stato muscolare con detail "basic"', () => {
     expect(within(block('Puoi allenare')).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Petto']);
     expect(within(block('In recupero')).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Schiena', 'Bicipiti']);
     expect(screen.queryByRole('progressbar')).toBeNull();
-    expect(screen.queryByText(/pronto (oggi|domani|tra)/)).toBeNull();
+    expect(screen.queryByText(/pronto (oggi|domani|tra)/i)).toBeNull();
     expect(screen.queryByText('A riposo')).toBeNull();
   });
 

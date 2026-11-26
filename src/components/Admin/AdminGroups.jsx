@@ -73,7 +73,7 @@ const RenameDialog = ({ group, onClose, onDone }) => {
               margin="dense"
             />
           </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 2 }}>
+          <DialogActions>
             <Button onClick={onClose} disabled={saving}>Annulla</Button>
             <Button type="submit" variant="contained" disabled={saving || !name.trim() || !note.trim()}>Rinomina</Button>
           </DialogActions>

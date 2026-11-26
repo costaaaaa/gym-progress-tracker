@@ -8,6 +8,7 @@ import WorkoutPage from './WorkoutPage';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
 import { json, expectNoNestedContainer, colorOf } from '../../test/dom';
 import { setBrowserTimeZone } from '../../test/timeZone';
+import { mediaStyle } from '../../test/mediaStyle';
 import { textBelow } from '../../test/minText';
 import { unnamedControls } from '../../test/accessibleNames';
 import { exercise, workout, made, serve, deletions, historyReads } from '../../test/history';
@@ -115,13 +116,35 @@ describe('riquadri', () => {
     expect(riquadro('Serie').getByText('3')).toBeTruthy();
   });
 
-  it('il valore di ogni riquadro non può andare a capo (`nowrap`) e non scende sotto 16 px', async () => {
+  it('il valore di ogni riquadro non scende sotto 16 px', async () => {
     await mount();
     ['60 min', '1.440 kg', '3'].forEach((testo) => {
       const stile = getComputedStyle(screen.getByText(testo));
-      expect(stile.whiteSpace).toBe('nowrap');
       expect(parseFloat(stile.fontSize)).toBeGreaterThanOrEqual(16);
     });
+  });
+
+  it('i tre riquadri sono tre colonne uguali a ogni larghezza, non larghe quanto il loro contenuto', async () => {
+    await mount();
+    const griglia = screen.getByText('Durata').parentElement.parentElement;
+    expect(getComputedStyle(griglia).display).toBe('grid');
+    expect(getComputedStyle(griglia).gridTemplateColumns).toBe('repeat(3, minmax(0, 1fr))');
+    // Nessuna regola per una larghezza particolare cambia le colonne (jsdom non calcola le media query: le legge mediaStyle).
+    // Che mediaStyle veda davvero le regole di questa griglia lo dice lo spazio tra le colonne, che da sm cambia
+    expect(mediaStyle(griglia, 600).gap).toBe('12px');
+    for (const larghezza of [0, 600, 900, 1200, 1536]) {
+      expect(mediaStyle(griglia, larghezza)['grid-template-columns']).toBeUndefined();
+    }
+  });
+
+  it('il valore di un riquadro può andare a capo in qualunque punto e il riquadro può stringersi sotto la larghezza del valore', async () => {
+    await mount([made({ duration_seconds: 5700 })]);
+    for (const label of ['Durata', 'Volume', 'Serie']) {
+      const valore = screen.getByText(label).nextElementSibling;
+      expect(getComputedStyle(valore).whiteSpace).not.toBe('nowrap');
+      expect(getComputedStyle(valore).overflowWrap).toBe('anywhere');
+      expect(getComputedStyle(valore.parentElement).minWidth).toBe('0px');
+    }
   });
 
   it('sopra l\'ora la durata resta in minuti', async () => {

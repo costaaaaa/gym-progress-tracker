@@ -58,7 +58,8 @@ const ExercisePage = () => {
     ];
     return (
       <>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2.5 }}>
+        {/* Con il sottotitolo la riga è più alta di 44 px: la freccia resta in cima, in asse con il blocco del titolo */}
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 2.5 }}>
           {back}
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography variant="pageTitle" sx={{ overflowWrap: 'anywhere' }}>{item.name}</Typography>
@@ -89,7 +90,7 @@ const ExercisePage = () => {
     );
   };
 
-  return <Box sx={{ py: 3 }}>{body()}</Box>;
+  return <Box sx={{ pb: 3 }}>{body()}</Box>;
 };
 
 export default ExercisePage;

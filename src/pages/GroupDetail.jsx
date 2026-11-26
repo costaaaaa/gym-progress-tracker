@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import {
-  Alert, Box, Button, Card, Chip, CircularProgress, Dialog, DialogActions, DialogContent,
-  DialogContentText, DialogTitle, Grid, IconButton, Link, Snackbar, Switch, FormControlLabel, Tab, Tabs, TextField, Tooltip, Typography,
+  Alert, Box, Button, Card, Chip, CircularProgress, Grid, IconButton, Link, Snackbar, Switch, FormControlLabel, Tab, Tabs,
+  TextField, Tooltip, Typography,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -12,6 +12,7 @@ import RequireLogin from '../components/Groups/RequireLogin';
 import ModuleGate from '../components/ModuleGate';
 import LeaderboardTable from '../components/Groups/LeaderboardTable';
 import ReportDialog from '../components/Groups/ReportDialog';
+import ConfirmDialog from '../components/ConfirmDialog';
 import {
   errorMessage, groupTypeLabel, inviteLink, leaveGroup, manageGroup, readGroup, roleLabel,
 } from '../api/groups';
@@ -20,7 +21,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useModule } from '../hooks/useModule';
 import { intlLocale } from '../i18n/format';
-import { NEUTRAL_TEXT, DANGER_TEXT, INK_LINK } from '../utils/buttonStyles';
+import { flushTextButton, NEUTRAL_TEXT, DANGER_TEXT, INK_LINK } from '../utils/buttonStyles';
 import { INK_TABS } from '../utils/inkTabs';
 
 const BOARDS = ['week', 'streak', 'level'];
@@ -28,21 +29,6 @@ const BOARDS = ['week', 'streak', 'level'];
 const formatDay = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short' });
 // Il server manda un ISO con offset ("2026-10-30T18:05:00+01:00"): è un istante, si mostra nel fuso del browser
 const formatLockDate = (value) => new Date(value).toLocaleString(intlLocale(), { dateStyle: 'medium', timeStyle: 'short' });
-
-// Conferma per le azioni che non si annullano (uscire, eliminare, rimuovere un membro)
-const ConfirmDialog = ({ confirm, onClose }) => {
-  const { t } = useTranslation();
-  return (
-    <Dialog open={Boolean(confirm)} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>{confirm?.title}</DialogTitle>
-      <DialogContent><DialogContentText>{confirm?.text}</DialogContentText></DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} sx={{ fontSize: 16 }}>{t('common.cancel')}</Button>
-        <Button color="error" variant="contained" onClick={() => { confirm.action(); onClose(); }} sx={{ fontSize: 16 }}>{confirm?.cta}</Button>
-      </DialogActions>
-    </Dialog>
-  );
-};
 
 const InvitePanel = ({ group, onChange, notify }) => {
   const { t } = useTranslation();
@@ -131,7 +117,7 @@ const GroupDetailContent = () => {
 
   if (error) {
     return (
-      <Box sx={{ py: 3 }}>
+      <Box sx={{ pb: 3 }}>
         <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
         <Button component={RouterLink} to="/gruppi" startIcon={<ArrowBackIcon />} sx={{ fontSize: 16 }}>{t('groups.join.your_groups')}</Button>
       </Box>
@@ -175,7 +161,7 @@ const GroupDetailContent = () => {
   };
 
   return (
-    <Box sx={{ py: 3 }}>
+    <Box sx={{ pb: 3 }}>
       <Button component={RouterLink} to="/gruppi" startIcon={<ArrowBackIcon />} sx={{ ...NEUTRAL_TEXT, mb: 1 }}>{t('groups.join.your_groups')}</Button>
       <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, flexWrap: 'wrap', mb: 3 }}>
         <Typography variant="pageTitle">{group.name}</Typography>
@@ -260,7 +246,7 @@ const GroupDetailContent = () => {
                 </>
               )}
               {canManage && !group.name_locked && (renaming === null ? (
-                <Button onClick={() => setRenaming(group.name)} sx={{ ...NEUTRAL_TEXT, mb: 1 }}>{t('groups.detail.rename')}</Button>
+                <Button onClick={() => setRenaming(group.name)} sx={{ ...NEUTRAL_TEXT, ...flushTextButton('left'), display: 'block', mb: 1 }}>{t('groups.detail.rename')}</Button>
               ) : (
                 <Box component="form" onSubmit={saveName} sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
                   <TextField size="small" value={renaming} onChange={(e) => setRenaming(e.target.value)} inputProps={{ maxLength: 60, 'aria-label': t('groups.new.name') }} fullWidth autoFocus />
@@ -269,7 +255,7 @@ const GroupDetailContent = () => {
               ))}
               {isOwner ? (
                 <Button
-                  sx={DANGER_TEXT}
+                  sx={{ ...DANGER_TEXT, ...flushTextButton('left'), display: 'block' }}
                   onClick={() => setConfirm({
                     title: t('groups.detail.delete.title'),
                     text: t('groups.detail.delete.text'),
@@ -281,7 +267,7 @@ const GroupDetailContent = () => {
                 </Button>
               ) : (
                 <Button
-                  sx={NEUTRAL_TEXT}
+                  sx={{ ...NEUTRAL_TEXT, ...flushTextButton('left'), display: 'block' }}
                   onClick={() => setConfirm({
                     title: t('groups.detail.leave.title'),
                     text: t('groups.detail.leave.text'),
@@ -294,7 +280,7 @@ const GroupDetailContent = () => {
               )}
               <Button
                 onClick={() => setReporting(true)}
-                sx={{ ...NEUTRAL_TEXT, display: 'block', mt: 1 }}
+                sx={{ ...NEUTRAL_TEXT, ...flushTextButton('left'), display: 'block', mt: 1 }}
               >
                 {t('groups.detail.report.button')}
               </Button>
@@ -303,7 +289,15 @@ const GroupDetailContent = () => {
         </Grid>
       </Grid>
 
-      <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
+      {/* Le azioni che non si annullano (uscire, eliminare, rimuovere un membro) passano da qui */}
+      <ConfirmDialog
+        open={confirm !== null}
+        title={confirm?.title}
+        text={confirm?.text}
+        cta={confirm?.cta}
+        onConfirm={() => { confirm.action(); setConfirm(null); }}
+        onClose={() => setConfirm(null)}
+      />
       <ReportDialog
         open={reporting}
         group={group}

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
 import { useTranslation } from 'react-i18next';
 import ButtonSpinner from '../../components/ButtonSpinner';
 import { savedDraftDayId } from '../../utils/focusDraft';
@@ -39,7 +38,7 @@ const DeleteDayDialog = ({ day, onClose, onDelete, features }) => {
     >
       <DialogTitle id="delete-day-title">{t('plans.delete_day.title')}</DialogTitle>
       <DialogContent>
-        <DialogContentText id="delete-day-description" component="div">
+        <DialogContentText id="delete-day-description" sx={{ color: 'text.primary' }} component="div">
           {draftBlocksDelete ? t('plans.delete_day.in_progress') : (
             <>
               {t('plans.delete_day.text')}
@@ -58,7 +57,7 @@ const DeleteDayDialog = ({ day, onClose, onDelete, features }) => {
           color="error"
           variant="contained"
           disabled={deleteDayLoading || draftBlocksDelete}
-          startIcon={deleteDayLoading ? <ButtonSpinner /> : <DeleteIcon />}
+          startIcon={deleteDayLoading ? <ButtonSpinner /> : undefined}
         >
           {deleteDayLoading ? t('plans.deleting') : t('common.delete')}
         </Button>

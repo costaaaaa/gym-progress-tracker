@@ -7,7 +7,7 @@ import { render, screen, fireEvent, waitFor, within, act } from '@testing-librar
 import { MemoryRouter, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import History from './History';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
-import { json, expectNoNestedContainer, colorOf } from '../test/dom';
+import { json, expectNoNestedContainer, colorOf, expectPageTitleBlock, expectTitleRowButton } from '../test/dom';
 import { setBrowserTimeZone } from '../test/timeZone';
 import { textBelow } from '../test/minText';
 import { strayListChildren } from '../test/accessibleNames';
@@ -110,12 +110,24 @@ describe('pagina Storico', () => {
     await waitFor(() => expect(document.title).toBe('Storico | LiftIndex'));
   });
 
-  it('«Registra allenamento passato» sta nella riga del titolo, con una scheda attiva: pulsante di testo da 44 px, non rosso', async () => {
+  it('sopra il titolo la pagina non dà spazio (resta quello sotto); il titolo sta in un blocco alto 44 px', async () => {
+    await mount();
+    const titolo = screen.getByRole('heading', { level: 1, name: 'Storico' });
+    const pagina = titolo.parentElement.parentElement;
+    expect(parseFloat(getComputedStyle(pagina).paddingTop)).toBe(0);
+    expect(getComputedStyle(pagina).paddingBottom).toBe('24px');
+    expectPageTitleBlock(titolo);
+  });
+
+  it('«Registra allenamento passato» sta nella riga del titolo, con una scheda attiva: pulsante con bordo neutro da 44 px, non rosso', async () => {
     await mount();
     const bottone = screen.getByRole('button', { name: 'Registra allenamento passato' });
-    expect(bottone.parentElement).toBe(screen.getByRole('heading', { level: 1 }).parentElement);
+    expectTitleRowButton(screen.getByRole('heading', { level: 1 }), bottone);
     const style = getComputedStyle(bottone);
-    expect(parseFloat(style.minHeight)).toBeGreaterThanOrEqual(44);
+    expect(style.borderTopStyle).toBe('solid');
+    expect(style.borderTopWidth).toBe('1px');
+    expect(style.borderTopColor).toBe(GREY);
+    expect(style.borderTopColor).not.toBe(RED);
     expect(style.backgroundColor).not.toBe(RED);
     expect(style.color).not.toBe(RED);
     expect(style.fontSize).toBe('16px');

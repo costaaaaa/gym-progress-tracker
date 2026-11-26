@@ -17,6 +17,7 @@ import { useTranslation, Trans } from 'react-i18next';
 import { legalPaths } from '../../i18n/paths';
 import { getConsents, setConsent } from '../../utils/consent';
 import ButtonSpinner from '../../components/ButtonSpinner';
+import { SWITCH_SLOT } from '../../utils/switchStyles';
 import useDataExport from '../../hooks/useDataExport';
 
 // Consenso per le misure corporee (dati sulla salute): concessione e revoca. La revoca cancella le misure, quindi chiede
@@ -79,24 +80,26 @@ const ConsentCard = ({ username, notify }) => {
   return (
     <>
       <Card sx={{ p: '24px' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
-          <Box sx={{ maxWidth: 520 }}>
-            <Typography variant="cardTitle">{t('account.consent.title')}</Typography>
-            <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
-              {t('account.consent.help')}
-            </Typography>
-            {healthConsentOutdated && healthConsent !== true && (
-              <Typography sx={{ fontSize: 16, color: 'warning.text', mt: 0.5 }}>
-                {t('account.consent.outdated')}
-              </Typography>
-            )}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+          <Typography variant="cardTitle">{t('account.consent.title')}</Typography>
+          <Box component="label" sx={SWITCH_SLOT}>
+            <Switch
+              checked={healthConsent === true}
+              disabled={healthConsent === null || consentBusy}
+              onChange={(e) => handleHealthConsentToggle(e.target.checked)}
+              inputProps={{ 'aria-label': t('account.consent.aria') }}
+            />
           </Box>
-          <Switch
-            checked={healthConsent === true}
-            disabled={healthConsent === null || consentBusy}
-            onChange={(e) => handleHealthConsentToggle(e.target.checked)}
-            inputProps={{ 'aria-label': t('account.consent.aria') }}
-          />
+        </Box>
+        <Box sx={{ maxWidth: 520 }}>
+          <Typography sx={{ fontSize: 16, color: 'text.secondary', mt: 0.5 }}>
+            {t('account.consent.help')}
+          </Typography>
+          {healthConsentOutdated && healthConsent !== true && (
+            <Typography sx={{ fontSize: 16, color: 'warning.text', mt: 0.5 }}>
+              {t('account.consent.outdated')}
+            </Typography>
+          )}
         </Box>
         <Typography sx={{ fontSize: 16, mt: 1.5 }}>
           <Link href={legalPaths(i18n.language).privacy} target="_blank" rel="noopener noreferrer">{t('account.privacy')}</Link>
@@ -108,7 +111,7 @@ const ConsentCard = ({ username, notify }) => {
       <Dialog open={revokeDialogOpen} onClose={() => !consentBusy && setRevokeDialogOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>{t('account.revoke.title')}</DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ mb: 2 }}>
+          <DialogContentText sx={{ mb: 2, color: 'text.primary' }}>
             <Trans i18nKey="account.revoke.body" components={{ strong: <strong /> }} />
           </DialogContentText>
           <Button
@@ -121,7 +124,7 @@ const ConsentCard = ({ username, notify }) => {
             {t('account.revoke.export_first')}
           </Button>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions>
           <Button onClick={() => setRevokeDialogOpen(false)} disabled={consentBusy} sx={{ fontSize: 16 }}>{t('common.cancel')}</Button>
           <Button onClick={handleConfirmRevoke} color="error" variant="contained" disabled={consentBusy} sx={{ fontSize: 16 }}>
             {t('account.revoke.confirm')}

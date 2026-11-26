@@ -100,7 +100,7 @@ const ReportActionDialog = ({ pending, onClose, onDone }) => {
               margin="dense"
             />
           </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 2 }}>
+          <DialogActions>
             <Button onClick={onClose} disabled={saving}>Annulla</Button>
             <Button type="submit" variant="contained" disabled={saving || !note.trim() || (action.field && !value.trim())}>
               {action.cta}

@@ -9,6 +9,7 @@ import i18n from '../i18n';
 import { textBelow } from '../test/minText';
 import { unnamedControls } from '../test/accessibleNames';
 import { mediaStyle } from '../test/mediaStyle';
+import { expectPageTitleBlock } from '../test/dom';
 
 const account = vi.hoisted(() => ({ weightUnit: 'kg', modules: undefined, isLoggedIn: true }));
 vi.mock('../context/AuthContext', () => ({
@@ -88,7 +89,16 @@ describe('livello', () => {
     await mount();
     expect(style(screen.getByText('340 XP')).fontSize).toBe('16px');
     expect(style(screen.getByText('600 XP per il livello 8')).fontSize).toBe('16px');
-    expect(style(screen.getByText('3140 XP totali')).fontSize).toBe('16px');
+    expect(style(screen.getByText('3.140 XP totali')).fontSize).toBe('16px');
+  });
+
+  it('gli XP da quattro cifre in su hanno il punto delle migliaia: del livello, per il prossimo, di un esercizio', async () => {
+    const big = { ...profile, xp_into_level: 1100, xp_for_next_level: 1700, exercises: [{ exercise_id: 3, name: 'Panca piana', level: 6, xp: 1250 }] };
+    fetch.mockImplementation(() => Promise.resolve({ ok: true, status: 200, json: async () => big }));
+    await mount();
+    expect(screen.getByText('1.100 XP')).toBeTruthy();
+    expect(screen.getByText('1.700 XP per il livello 8')).toBeTruthy();
+    expect(screen.getByText('1.250 XP')).toBeTruthy();
   });
 });
 
@@ -297,6 +307,7 @@ describe('titolo e titolo del documento', () => {
     expect(h1s.map((h) => h.textContent)).toEqual(['Livelli e traguardi']);
     expect(style(h1s[0]).fontSize).toBe('28px');
     expect(style(h1s[0]).fontWeight).toBe('800');
+    expectPageTitleBlock(h1s[0]);
     expect(document.title).toBe('Livelli e traguardi | LiftIndex');
   });
 });

@@ -4,6 +4,15 @@ import { formatWeight } from './weightFormat';
 const NB = '\u00a0';
 
 describe('formatWeight', () => {
+  it('le migliaia sono separate da quattro cifre, anche in italiano (dove di norma partono da cinque)', () => {
+    expect(formatWeight(950, 'it-IT')).toBe(`950${NB}kg`);
+    expect(formatWeight(5420, 'it-IT')).toBe(`5.420${NB}kg`);
+    expect(formatWeight(4820.5, 'it-IT')).toBe(`4.820,5${NB}kg`);
+    expect(formatWeight(184250, 'it-IT')).toBe(`184.250${NB}kg`);
+    expect(formatWeight(5420, 'en-US')).toBe(`5,420${NB}kg`);
+    expect(formatWeight(-1250, 'it-IT', { signed: true })).toBe(`-1.250${NB}kg`);
+  });
+
   it('italiano: virgola, niente zeri finali, spazio non separabile prima di kg', () => {
     expect(formatWeight(82.5, 'it-IT')).toBe(`82,5${NB}kg`);
     expect(formatWeight(80, 'it-IT')).toBe(`80${NB}kg`);

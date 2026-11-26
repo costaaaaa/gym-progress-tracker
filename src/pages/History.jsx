@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { formatDate } from '../i18n/format';
 import { clockDate } from '../utils/calendarDay';
 import { focusedElement } from '../utils/focus';
-import { NEUTRAL_OUTLINED, NEUTRAL_TEXT } from '../utils/buttonStyles';
+import { NEUTRAL_OUTLINED, TITLE_ROW_BUTTON } from '../utils/buttonStyles';
 import { CHIP_FONT } from '../utils/fonts';
 import useWorkoutHistory from './history/useWorkoutHistory';
 import useActivePlan from './history/useActivePlan';
@@ -149,11 +149,11 @@ const History = () => {
   };
 
   return (
-    <Box ref={contentRef} tabIndex={-1} sx={{ py: 3, '&:focus': { outline: 'none' } }}>
+    <Box ref={contentRef} tabIndex={-1} sx={{ pb: 3, '&:focus': { outline: 'none' } }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 3 }}>
         <Typography variant="pageTitle">{t('nav.history')}</Typography>
         {isLoggedIn && activePlan && (
-          <Button onClick={() => setOpenRecordDialog(true)} sx={{ ...NEUTRAL_TEXT, minHeight: 44, fontWeight: 600 }}>
+          <Button variant="outlined" onClick={() => setOpenRecordDialog(true)} sx={{ ...NEUTRAL_OUTLINED, ...TITLE_ROW_BUTTON, fontWeight: 600 }}>
             {t('history.record_past')}
           </Button>
         )}

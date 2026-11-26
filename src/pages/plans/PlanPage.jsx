@@ -5,7 +5,7 @@ import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import ExerciseDialog from '../../components/ExerciseDialog';
-import { DANGER_TEXT, NEUTRAL_OUTLINED } from '../../utils/buttonStyles';
+import { ACTIONS_ROW, DANGER_TEXT, NEUTRAL_OUTLINED, TITLE_ROW_BUTTON, flushTextButtonInActionsRow } from '../../utils/buttonStyles';
 import ActiveBadge from './ActiveBadge';
 import usePlans from './usePlans';
 import useArrivalState from './useArrivalState';
@@ -133,7 +133,7 @@ const PlanPage = () => {
   const active = !!plan?.is_active;
 
   return (
-    <Box sx={{ py: 3 }}>
+    <Box sx={{ pb: 3 }}>
       {plan ? (
         <>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
@@ -146,7 +146,7 @@ const PlanPage = () => {
               variant="outlined"
               aria-pressed={editing}
               onClick={() => setEditing((on) => !on)}
-              sx={{ ...NEUTRAL_OUTLINED, minHeight: 44, fontWeight: 600, flexShrink: 0, ...(editing && { bgcolor: 'action.selected' }) }}
+              sx={{ ...NEUTRAL_OUTLINED, ...TITLE_ROW_BUTTON, fontWeight: 600, flexShrink: 0, ...(editing && { bgcolor: 'action.selected' }) }}
             >
               {editing ? t('plans.edit_done') : t('plans.edit_mode')}
             </Button>
@@ -187,11 +187,11 @@ const PlanPage = () => {
           </Grid>
 
           {editing && (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 1, mt: 3 }}>
+            <Box sx={{ ...ACTIONS_ROW, mt: 3 }}>
               <Button variant="outlined" onClick={handleOpenEditPlanDialog} sx={{ ...NEUTRAL_OUTLINED, minHeight: 44, fontWeight: 600 }}>
                 {t('plans.edit_details')}
               </Button>
-              <Button onClick={handleOpenDeletePlanDialog} sx={{ ...DANGER_TEXT, minHeight: 44, mx: -1 }}>
+              <Button onClick={handleOpenDeletePlanDialog} sx={(theme) => ({ ...DANGER_TEXT, ...flushTextButtonInActionsRow(theme) })}>
                 {t('plans.delete_plan_action')}
               </Button>
             </Box>

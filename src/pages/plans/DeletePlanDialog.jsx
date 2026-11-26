@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
 import { useTranslation } from 'react-i18next';
 import ButtonSpinner from '../../components/ButtonSpinner';
 
@@ -45,7 +44,7 @@ const DeletePlanDialog = ({ open, plan, onClose, onDelete, readGoalAfterDelete }
     >
       <DialogTitle id="alert-dialog-title">{t('plans.delete_plan.title')}</DialogTitle>
       <DialogContent>
-        <DialogContentText id="alert-dialog-description" component="div">
+        <DialogContentText id="alert-dialog-description" sx={{ color: 'text.primary' }} component="div">
           {t('plans.delete_plan.text')}
           <Box sx={{ mt: 1.5 }}>{t('plans.delete_plan.history_kept')}</Box>
           {goalAfterDelete !== null && (
@@ -71,7 +70,7 @@ const DeletePlanDialog = ({ open, plan, onClose, onDelete, readGoalAfterDelete }
           color="error"
           variant="contained"
           disabled={deletePlanLoading}
-          startIcon={deletePlanLoading ? <ButtonSpinner /> : <DeleteIcon />}
+          startIcon={deletePlanLoading ? <ButtonSpinner /> : undefined}
         >
           {deletePlanLoading ? t('plans.deleting') : t('common.delete')}
         </Button>

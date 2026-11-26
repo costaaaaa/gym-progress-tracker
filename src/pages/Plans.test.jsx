@@ -6,7 +6,7 @@ import { render, screen, within, fireEvent, waitFor, act } from '@testing-librar
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Plans from './Plans';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
-import { json, expectNoNestedContainer, textsBelow16pxExceptActiveBadge } from '../test/dom';
+import { json, expectNoNestedContainer, textsBelow16pxExceptActiveBadge, expectPageTitleBlock, expectTitleRowButton } from '../test/dom';
 import { plannedSets, times } from '../test/plannedSets';
 import { unnamedControls } from '../test/accessibleNames';
 import i18n from '../i18n';
@@ -88,6 +88,16 @@ describe('pagina Schede', () => {
     expect(style.fontWeight).toBe('800');
     expect(screen.queryByRole('tablist')).toBeNull();
     expect(screen.queryByRole('tab')).toBeNull();
+  });
+
+  it('sopra il titolo la pagina non dà spazio (resta quello sotto); il titolo sta in un blocco alto 44 px', async () => {
+    await mount();
+    const titolo = screen.getByRole('heading', { level: 1, name: 'Schede' });
+    const pagina = titolo.parentElement.parentElement;
+    expect(parseFloat(getComputedStyle(pagina).paddingTop)).toBe(0);
+    expect(getComputedStyle(pagina).paddingBottom).toBe('24px');
+    expectPageTitleBlock(titolo);
+    expectTitleRowButton(titolo, screen.getByRole('button', { name: 'Nuova scheda' }));
   });
 
   it('il titolo della pagina non si ripete sotto', async () => {

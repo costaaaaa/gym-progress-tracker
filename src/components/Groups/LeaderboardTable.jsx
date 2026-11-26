@@ -1,7 +1,7 @@
 import { Box, Chip, LinearProgress, Typography } from '@mui/material';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import { useTranslation } from 'react-i18next';
-import { intlLocale } from '../../i18n/format';
+import { formatNumber, intlLocale } from '../../i18n/format';
 import { formatTotalInUnit } from '../../utils/weightUnit';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
 import { radius } from '../../theme/radius';
@@ -29,7 +29,7 @@ const Metric = ({ row, board, weightUnit }) => {
     return (
       <Box sx={{ textAlign: 'right' }}>
         <Typography sx={{ fontWeight: 700 }}>{t('groups.board.level', { level: row.level })}</Typography>
-        {row.total_xp != null && <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{row.total_xp.toLocaleString(intlLocale())} XP</Typography>}
+        {row.total_xp != null && <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{formatNumber(row.total_xp)} XP</Typography>}
       </Box>
     );
   }

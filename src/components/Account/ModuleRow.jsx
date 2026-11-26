@@ -4,6 +4,7 @@ import { Box, Link, Switch, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { isModuleActive, useSaveModules } from '../../hooks/useModule';
+import { SWITCH_SLOT } from '../../utils/switchStyles';
 
 // Una riga della card «Moduli»: nome, descrizione, stato, «Apri» (solo se attivo) e interruttore. Il cambio si salva
 // subito; `notify(messaggio, gravità)` lo annuncia (e mostra l'errore). `name` e `help` sono già tradotti, così una
@@ -50,7 +51,7 @@ const ModuleRow = ({ moduleKey, name, help, openPath, first = false, notify, bel
         <Box
           component="label"
           title={t(on ? 'modules.turn_off' : 'modules.turn_on')}
-          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, minWidth: 58, minHeight: 44 }}
+          sx={SWITCH_SLOT}
         >
           <Switch
             checked={on}

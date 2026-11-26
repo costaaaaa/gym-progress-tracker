@@ -8,10 +8,12 @@ import { useAuth } from '../context/AuthContext';
 import { BODY_LB_DIVISIONS, formatWeightInUnit } from '../utils/weightUnit';
 import { lengthUnitLabel } from '../utils/lengthUnit';
 import { dayNumber } from '../utils/calendarDay';
+import ConfirmDialog from '../components/ConfirmDialog';
 import HealthConsentCard from '../components/HealthConsentCard';
 import HealthAppHint from '../components/HealthAppHint';
 import { DEFAULT_PERIOD, filterByPeriod, periodStart, sortByDate, paginate } from '../utils/bodyStatsPeriod';
 import { useOncePerRequest } from '../hooks/useNavigationRequest';
+import { TITLE_ROW_BUTTON } from '../utils/buttonStyles';
 import useBodyStats from './body/useBodyStats';
 import PeriodChips from './body/PeriodChips';
 import WeightCard from './body/WeightCard';
@@ -36,8 +38,10 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
 
   useOncePerRequest(openRequest, !loading, () => { if (!consentRequired) setIsDialogOpen(true); });
 
-  const handleDelete = async (id) => {
-    if (!window.confirm(t('body.confirm_delete'))) return;
+  const [idToDelete, setIdToDelete] = useState(null);
+  const confirmDelete = async () => {
+    const id = idToDelete;
+    setIdToDelete(null);
     const result = await remove(id);
     if (result.ok) notify(t('body.deleted'), 'success');
   };
@@ -73,7 +77,7 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
             {t('body.title')}
           </Typography>
         )}
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsDialogOpen(true)} sx={{ fontSize: 16 }}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsDialogOpen(true)} sx={{ ...(!isEmbedded && TITLE_ROW_BUTTON), fontSize: 16 }}>
           {t('body.new')}
         </Button>
       </Box>
@@ -125,7 +129,7 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
 
           {/* Tabella Storico */}
           <Grid item xs={12}>
-            <BodyHistory history={history} empty={stats.length === 0} onDelete={handleDelete} onPageChange={setPage} weightUnit={weightUnit} />
+            <BodyHistory history={history} empty={stats.length === 0} onDelete={setIdToDelete} onPageChange={setPage} weightUnit={weightUnit} />
           </Grid>
         </Grid>
       )}
@@ -140,6 +144,14 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
         <Box sx={{ mt: 4, mb: 4 }}>{renderContent()}</Box>
       )}
 
+      <ConfirmDialog
+        open={idToDelete !== null}
+        title={t('body.delete.title')}
+        text={t('body.confirm_delete')}
+        cta={t('common.delete')}
+        onConfirm={confirmDelete}
+        onClose={() => setIdToDelete(null)}
+      />
       <NewMeasurementDialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)} save={save} onNotify={notify} weightUnit={weightUnit} />
 
       <Snackbar

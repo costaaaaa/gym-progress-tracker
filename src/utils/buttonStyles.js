@@ -1,3 +1,6 @@
+import { BUTTON_PADDING_X } from '../theme/buttonPadding';
+import { PAGE_TITLE_BLOCK_HEIGHT } from '../theme/pageTitle';
+
 const TEXT_BUTTON = {
   fontSize: 16,
   '&:hover': { bgcolor: 'action.hover' },
@@ -16,6 +19,34 @@ export const NEUTRAL_TEXT = {
   ...TEXT_BUTTON,
   color: 'text.primary',
 };
+
+// Bottone di testo a filo del contenuto: il suo testo, e non il suo bordo, sta in asse col contenuto. Il margine negativo
+// toglie il rientro interno solo dal lato `side` ('left', oppure 'right' per un bottone allineato a destra); l'altro lato non
+// si tocca, così l'area toccabile resta intera (almeno 44 px) e non si sovrappone a quella di un bottone accanto.
+export const flushTextButton = (side) => ({ minHeight: 44, [side === 'right' ? 'mr' : 'ml']: `-${BUTTON_PADDING_X}px` });
+
+// Riga di azioni in fondo a una card o a una pagina: con due bottoni, da sm in su stanno accanto (il secondo a destra) e
+// sotto sm uno per riga, a sinistra. Con un bottone solo, quello resta a sinistra a ogni larghezza.
+export const ACTIONS_ROW = {
+  display: 'flex',
+  flexDirection: { xs: 'column', sm: 'row' },
+  alignItems: { xs: 'flex-start', sm: 'stretch' },
+  flexWrap: 'wrap',
+  justifyContent: 'space-between',
+  gap: 1,
+};
+
+// Il bottone di testo che in una ACTIONS_ROW viene per secondo: a filo a sinistra sotto sm (sta sulla sua riga), a filo a
+// destra da sm (sta accanto al primo). Se nella riga è l'unico bottone va usato flushTextButton('left').
+export const flushTextButtonInActionsRow = (theme) => ({
+  ...flushTextButton('left'),
+  [theme.breakpoints.up('sm')]: { ml: 0, ...flushTextButton('right') },
+});
+
+// Bottone sulla riga del titolo di pagina: senza spazio sopra e sotto l'etichetta è alto quanto il blocco del titolo, così la
+// riga non cresce e il titolo resta alla stessa altezza delle pagine senza pulsante. È un'altezza minima: se l'etichetta va
+// a capo il bottone cresce e il testo non esce dal bordo.
+export const TITLE_ROW_BUTTON = { minHeight: PAGE_TITLE_BLOCK_HEIGHT, py: 0 };
 
 // Comando in forma di link sottolineato (es. «Scrivi il codice»): senza rientro, allineato al testo che lo precede
 export const LINK_BUTTON = {

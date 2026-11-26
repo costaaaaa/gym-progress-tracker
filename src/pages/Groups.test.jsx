@@ -11,7 +11,7 @@ import GroupDetail from './GroupDetail';
 import JoinGroup from './JoinGroup';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { textBelow } from '../test/minText';
-import { json, colorOf, expectNoNestedContainer } from '../test/dom';
+import { json, colorOf, expectNoNestedContainer, expectPageTitleBlock, expectTitleRowButton } from '../test/dom';
 
 const auth = vi.hoisted(() => ({ value: null }));
 vi.mock('../context/AuthContext', () => ({ useAuth: () => auth.value }));
@@ -59,6 +59,14 @@ afterEach(() => {
 // Esenti: chip e badge ("tu", tipo del gruppo) e le etichette dei campi, che MUI rimpicciolisce
 const small = () => textBelow(document.body, 16, '.MuiChip-root, .MuiFormLabel-root, .MuiFormHelperText-root, legend');
 
+// Bottone di testo a filo del contenuto a sinistra: il margine di quel lato toglie il rientro interno, l'altro è a zero, l'area resta da 44 px
+const expectFlushLeft = (style) => {
+  expect(parseFloat(style.paddingLeft)).toBeGreaterThan(0);
+  expect(style.marginLeft).toBe(`-${style.paddingLeft}`);
+  expect(parseFloat(style.marginRight)).toBe(0);
+  expect(parseFloat(style.minHeight)).toBeGreaterThanOrEqual(44);
+};
+
 describe('elenco dei gruppi', () => {
   const mount = async () => {
     render(<MemoryRouter><ThemeModeProvider><Groups /></ThemeModeProvider></MemoryRouter>);
@@ -84,6 +92,16 @@ describe('elenco dei gruppi', () => {
   it('«Crea gruppo» resta l\'azione principale: pieno rosso', async () => {
     await mount();
     expect(getComputedStyle(screen.getByRole('button', { name: 'Crea gruppo' })).backgroundColor).toBe(RED);
+  });
+
+  it('sopra il titolo la pagina non dà spazio (resta quello sotto); il titolo sta in un blocco alto 44 px', async () => {
+    await mount();
+    const titolo = screen.getByRole('heading', { level: 1, name: 'Gruppi' });
+    const pagina = titolo.parentElement.parentElement;
+    expect(parseFloat(getComputedStyle(pagina).paddingTop)).toBe(0);
+    expect(getComputedStyle(pagina).paddingBottom).toBe('24px');
+    expectPageTitleBlock(titolo);
+    expectTitleRowButton(titolo, screen.getByRole('button', { name: 'Crea gruppo' }));
   });
 
   it('non apre un Container dentro quello del Layout', async () => {
@@ -141,6 +159,24 @@ describe('dettaglio del gruppo', () => {
     },
   );
 
+  it('«Rinomina il gruppo», «Elimina il gruppo» e «Segnala un contenuto» hanno il testo in asse col titolo della card, uno sotto l\'altro, con aree da 44 px', async () => {
+    await mount();
+    const buttons = ['Rinomina il gruppo', 'Elimina il gruppo', 'Segnala un contenuto'].map((name) => screen.getByRole('button', { name }));
+    for (const button of buttons) {
+      const style = getComputedStyle(button);
+      expectFlushLeft(style);
+      expect(style.display).toBe('block');
+    }
+  });
+
+  it('chi non è proprietario ha «Esci dal gruppo» in asse come «Elimina il gruppo»', async () => {
+    stub({ myRole: 'member' });
+    await mount();
+    const style = getComputedStyle(screen.getByRole('button', { name: 'Esci dal gruppo' }));
+    expectFlushLeft(style);
+    expect(style.display).toBe('block');
+  });
+
   it('«Elimina il gruppo» è un bottone di testo rosso in grassetto, come nell\'app', async () => {
     await mount();
     const style = getComputedStyle(screen.getByRole('button', { name: 'Elimina il gruppo' }));
@@ -160,6 +196,15 @@ describe('dettaglio del gruppo', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Elimina il gruppo' }));
     await waitFor(() => expect(document.querySelector('.MuiDialog-root .MuiButton-containedError')).not.toBeNull());
     expect(getComputedStyle(document.querySelector('.MuiDialog-root .MuiButton-containedError')).backgroundColor).toBe(RED);
+  });
+
+  it('il testo del dialogo di conferma è a 16 px nel colore del testo principale', async () => {
+    await mount();
+    fireEvent.click(screen.getByRole('button', { name: 'Elimina il gruppo' }));
+    const testo = await screen.findByText(/Il gruppo e la classifica spariscono per tutti i membri/);
+    expect(colorOf(testo)).toBe(INK);
+    expect(getComputedStyle(testo).fontSize).toBe('16px');
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Elimina' }).querySelector('svg')).toBeNull();
   });
 
   it('nella classifica «tu» è un chip neutro e la riga propria ha il fondo grigio, non rosato', async () => {

@@ -163,6 +163,14 @@ describe('primo accesso', () => {
     expect(blockTitles()).toEqual(['Inizia da qui']);
   });
 
+  it('«Crea la tua prima scheda» è il pulsante principale pieno e rosso, come «Nuova scheda»', async () => {
+    newUser();
+    renderHome();
+    const link = await screen.findByRole('link', { name: 'Crea la tua prima scheda' });
+    expect(link.classList.contains('MuiButton-contained')).toBe(true);
+    expect(getComputedStyle(link).backgroundColor).toBe('rgb(213, 0, 0)');
+  });
+
   it('niente apertura rossa: la barra resta neutra anche sul telefono', async () => {
     phone();
     newUser();
@@ -432,7 +440,7 @@ describe('sotto l\'apertura', () => {
     const link = (await screen.findByRole('heading', { level: 2, name: 'Ultimo allenamento' })).closest('a');
     expect(link.getAttribute('href')).toBe('/storico');
     expect(link.textContent).toContain('Giorno A · Push');
-    expect(link.textContent).toContain('Mercoledì 18 novembre');
+    expect(link.textContent).toContain('mercoledì 18 novembre');
     expect(link.textContent).not.toContain('2026');
     expect(link.textContent).toContain('58 min · 1.400 kg di volume');
   });

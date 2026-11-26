@@ -10,7 +10,7 @@ import { setBrowserTimeZone } from '../test/timeZone';
 import { textBelow } from '../test/minText';
 import { describedBy } from '../test/accessibleNames';
 import { mockPointer } from '../test/pointer';
-import { expectNoNestedContainer } from '../test/dom';
+import { expectNoNestedContainer, expectDestructiveConfirm } from '../test/dom';
 
 const account = vi.hoisted(() => ({ weightUnit: 'kg' }));
 vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ weightUnit: account.weightUnit }) }));
@@ -652,13 +652,16 @@ describe('unità di peso dell\'account: lb', () => {
     expect(JSON.parse(posts()[0][1].body).weight).toBe('80.01');
   });
 
-  it('il tetto è mostrato in libbre: 500 kg = 1102,3 lb', async () => {
+  it('il tetto è mostrato in libbre, senza punto delle migliaia: 500 kg = 1102,3 lb, e il campo lo accetta ricopiato', async () => {
     records = [row('2026-10-15', '80.0')];
     await open();
     type('Peso (lb)', '1200');
     save();
     expect(posts()).toHaveLength(0);
     expect(describedBy(field('Peso (lb)'))).toBe('Il valore deve essere tra 0 e 1102,3, estremi inclusi.');
+    type('Peso (lb)', '1102,3');
+    save();
+    expect(posts()).toHaveLength(1);
   });
 
   it('un testo non valido in libbre dà l\'errore sotto il campo e non parte', async () => {
@@ -910,5 +913,46 @@ describe('aree da 44px', () => {
     const del = within(tableRows()[0]).getByRole('button', { name: 'Elimina' });
     expect(style(del).width).toBe('44px');
     expect(style(del).height).toBe('44px');
+  });
+});
+
+describe('eliminare una misurazione', () => {
+  const deleteCalls = () => fetch.mock.calls.filter(([url]) => String(url).includes('user_stats/delete.php'));
+
+  beforeEach(() => {
+    localStorage.setItem('themeMode', 'light');
+    records = measured();
+  });
+
+  it('chiede conferma in una finestra del tema, non con quella del browser, ed elimina solo dopo «Elimina»', async () => {
+    const browserConfirm = vi.spyOn(window, 'confirm');
+    await mount(themed);
+    fireEvent.click(within(tableRows()[0]).getByRole('button', { name: 'Elimina' }));
+    expect(within(screen.getByRole('dialog')).getByText('Eliminare la misurazione?')).toBeTruthy();
+    expectDestructiveConfirm('Sei sicuro di voler eliminare questa misurazione?', 'Elimina', { ink: INK, red: RED });
+    expect(deleteCalls()).toHaveLength(0);
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Elimina' }));
+    await waitFor(() => expect(deleteCalls()).toHaveLength(1));
+    expect(JSON.parse(deleteCalls()[0][1].body)).toEqual({ id: '2026-10-15' });
+    expect(await screen.findByText('Misurazione eliminata')).toBeTruthy();
+    expect(browserConfirm).not.toHaveBeenCalled();
+  });
+
+  it('un secondo tocco su «Elimina» mentre la finestra si chiude non elimina due volte', async () => {
+    await mount(themed);
+    fireEvent.click(within(tableRows()[0]).getByRole('button', { name: 'Elimina' }));
+    const elimina = within(screen.getByRole('dialog')).getByRole('button', { name: 'Elimina' });
+    fireEvent.click(elimina);
+    fireEvent.click(elimina);
+    expect(await screen.findByText('Misurazione eliminata')).toBeTruthy();
+    expect(deleteCalls()).toHaveLength(1);
+  });
+
+  it('«Annulla» chiude la finestra senza eliminare', async () => {
+    await mount(themed);
+    fireEvent.click(within(tableRows()[0]).getByRole('button', { name: 'Elimina' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Annulla' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(deleteCalls()).toHaveLength(0);
   });
 });

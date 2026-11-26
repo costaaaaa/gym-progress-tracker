@@ -10,6 +10,7 @@ import { setBrowserTimeZone } from '../../test/timeZone';
 import { textBelow } from '../../test/minText';
 import { describedBy, strayListChildren } from '../../test/accessibleNames';
 import { renderAccount } from '../../test/accountRoutes';
+import { mediaStyle } from '../../test/mediaStyle';
 import { row, open, closed, staysOpen, settingsCalls, reads, deferred } from '../../test/settingRows';
 
 vi.mock('react-router-dom', async (importOriginal) => ({ ...(await importOriginal()), useNavigate: () => () => {} }));
@@ -453,6 +454,21 @@ describe('finestra «Obiettivo settimanale»', () => {
     expect(dialog.getByText('Vale da questa settimana. Un cambio fatto da mercoledì a domenica vale dal lunedì successivo')).toBeTruthy();
   });
 
+  it('i sette numeri stanno in colonne uguali (quattro sotto sm, sette da sm), «Default» su una riga sua, staccata di 8 px, ogni scelta da 44 px', async () => {
+    await mount();
+    const group = goalGroup(open('Obiettivo settimanale'));
+    const style = getComputedStyle(group);
+    expect(style.display).toBe('grid');
+    // jsdom non calcola le media query: le colonne per larghezza si leggono con mediaStyle (xs parte da 0 px, sm da 600 px)
+    expect(mediaStyle(group, 0)['grid-template-columns']).toBe('repeat(4, minmax(0, 1fr))');
+    expect(mediaStyle(group, 600)['grid-template-columns']).toBe('repeat(7, minmax(0, 1fr))');
+    expect(style.gap).toBe('8px');
+    const choices = within(group).getAllByRole('button');
+    expect(choices.map((b) => b.textContent)).toEqual(['1', '2', '3', '4', '5', '6', '7', 'Default (3)']);
+    for (const b of choices) expect(parseFloat(getComputedStyle(b).minHeight)).toBeGreaterThanOrEqual(44);
+    expect(getComputedStyle(choices[7]).gridColumn).toBe('1/-1');
+  });
+
   it('i pulsanti sono in Lexend 500, come i chip che si premono; quello scelto è neutro, non rosso', async () => {
     await mount();
     const dialog = open('Obiettivo settimanale');
@@ -483,6 +499,16 @@ describe('finestra «Obiettivo settimanale»', () => {
       // l'esito è dentro la finestra: la notifica della pagina non ripete nulla
       expect(screen.getAllByText('Obiettivo settimanale aggiornato')).toHaveLength(1);
     });
+  });
+
+  it('premere la scelta già attiva non salva di nuovo', async () => {
+    stubFetch({ account: serverAccount({ weekly_goal: 4 }) });
+    await mount();
+    const dialog = open('Obiettivo settimanale');
+    fireEvent.click(within(goalGroup(dialog)).getByRole('button', { name: '4' }));
+    fireEvent.click(within(goalGroup(dialog)).getByRole('button', { name: '5' }));
+    await waitFor(() => expect(settingsCalls()).toEqual([{ weekly_goal: 5 }]));
+    expect(pressed(dialog)).toEqual(['5']);
   });
 
   it('«Default» salva weekly_goal null', async () => {

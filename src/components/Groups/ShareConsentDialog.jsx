@@ -51,7 +51,7 @@ const ShareConsentDialog = ({ open, groupName, username, loading, onClose, onCon
           label={t('groups.consent.accept')}
         />
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
+      <DialogActions>
         <Button onClick={close} disabled={loading}>{t('common.cancel')}</Button>
         <Button variant="contained" onClick={onConfirm} disabled={!accepted || loading}>
           {t('groups.join.cta')}

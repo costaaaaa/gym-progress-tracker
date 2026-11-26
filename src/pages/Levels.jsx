@@ -142,9 +142,9 @@ const LevelsBody = () => {
 
         <Box sx={{ mb: 2.5 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
-            <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{t('profile.xp_current', { xp: xp_into_level })}</Typography>
+            <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{t('profile.xp_current', { xp: formatNumber(xp_into_level) })}</Typography>
             <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>
-              {t('profile.xp_to_next', { xp: xp_for_next_level, level: level + 1 })}
+              {t('profile.xp_to_next', { xp: formatNumber(xp_for_next_level), level: level + 1 })}
             </Typography>
           </Box>
           <LinearProgress variant="determinate" value={progress} aria-label={t('level.progress_aria', { level: level + 1 })} sx={solidBar(9)} />
@@ -189,7 +189,7 @@ const LevelsBody = () => {
                     </Box>
                   </Box>
                   <LinearProgress variant="determinate" value={exProgressPct(ex.xp)} aria-label={t('profile.exercise_xp_aria', { name: ex.name })} sx={{ ...solidBar(6), mb: 0.75 }} />
-                  <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{t('profile.xp_current', { xp: ex.xp })}</Typography>
+                  <Typography sx={{ fontSize: 16, color: 'text.secondary' }}>{t('profile.xp_current', { xp: formatNumber(ex.xp) })}</Typography>
                 </Card>
               </Grid>
             ))}

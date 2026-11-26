@@ -224,7 +224,7 @@ const PasswordCard = ({ account, notify }) => {
             }}
           />
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions>
           <Button
             onClick={handleClosePasswordDialog}
             startIcon={<CancelIcon />}

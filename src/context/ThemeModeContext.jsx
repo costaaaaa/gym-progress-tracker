@@ -7,6 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
 import { radius } from '../theme/radius';
 import { FIELD_INPUT_PADDING_Y } from '../theme/fieldHeight';
+import { BUTTON_PADDING_X } from '../theme/buttonPadding';
+import { PAGE_TITLE_FONT_SIZE, PAGE_TITLE_LINE_HEIGHT, PAGE_TITLE_PADDING_Y } from '../theme/pageTitle';
 
 const BRAND = '#d50000';
 const BRAND_DARK = '#9b0000';
@@ -198,12 +200,17 @@ export const ThemeModeProvider = ({ children }) => {
           // che sostituisce, con un tag <p> (vedi variantMapping sotto).
           cardTitle: { fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: '17px', lineHeight: 1.5 },
           // Titolo di pagina: 28px a tutte le larghezze (nelle schermate di lavoro il titolo sta tra 24 e 32px). Interlinea come h1.
+          // Lo spazio sopra e sotto porta una riga di titolo all'altezza di pulsanti e freccia: così il titolo parte alla
+          // stessa altezza in ogni pagina, con o senza pulsante o freccia sulla riga, anche quando il pulsante va a capo.
+          // Resta un blocco normale: il testo si allinea e va a capo come in ogni altro titolo.
           pageTitle: {
+            paddingTop: `${PAGE_TITLE_PADDING_Y}px`,
+            paddingBottom: `${PAGE_TITLE_PADDING_Y}px`,
             fontFamily: TITLE_FONT_FAMILY,
             fontWeight: 800,
             letterSpacing: '-0.02em',
-            fontSize: '28px',
-            lineHeight: 1.167,
+            fontSize: `${PAGE_TITLE_FONT_SIZE}px`,
+            lineHeight: PAGE_TITLE_LINE_HEIGHT,
           },
           // Numero grande (riepiloghi, 1RM, peso attuale, statistiche): cifre tabulari, così non ballano.
           statNumber: {
@@ -367,7 +374,7 @@ export const ThemeModeProvider = ({ children }) => {
             styleOverrides: {
               root: {
                 borderRadius: radius.md,
-                padding: '10px 18px',
+                padding: `10px ${BUTTON_PADDING_X}px`,
                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
               },
               contained: {
@@ -434,6 +441,8 @@ export const ThemeModeProvider = ({ children }) => {
               },
             },
           },
+          // Piede di ogni finestra: stesso margine laterale del contenuto (24 px) e 16 px sotto
+          MuiDialogActions: { styleOverrides: { root: { padding: '8px 24px 16px' } } },
           MuiBottomNavigation: {
             styleOverrides: {
               root: {

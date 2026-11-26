@@ -7,7 +7,7 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { useTranslation } from 'react-i18next';
 import { planSummary } from '../../utils/plannedSets';
 import { TITLE_FONT_FAMILY } from '../../utils/fonts';
-import { DANGER_TEXT, NEUTRAL_OUTLINED } from '../../utils/buttonStyles';
+import { ACTIONS_ROW, DANGER_TEXT, NEUTRAL_OUTLINED, flushTextButton, flushTextButtonInActionsRow } from '../../utils/buttonStyles';
 
 // Comando a icona: area toccabile di 44 px
 const CONTROL_SX = { width: 44, height: 44, minWidth: 44, minHeight: 44, color: 'text.secondary' };
@@ -21,6 +21,7 @@ const PlanDay = ({
 }) => {
   const { t } = useTranslation();
   const exercises = day.exercises || [];
+  const canAddExercise = !readOnly;
 
   return (
     <Card sx={{ height: '100%', p: 2.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -103,19 +104,19 @@ const PlanDay = ({
         </Button>
       )}
 
-      {editing && (!readOnly || canDelete) && (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 1, mt: 'auto' }}>
-          {!readOnly && (
+      {editing && (canAddExercise || canDelete) && (
+        <Box sx={{ ...ACTIONS_ROW, mt: 'auto' }}>
+          {canAddExercise && (
             <Button variant="outlined" color="inherit" startIcon={<AddIcon />} onClick={onAddExercise} sx={{ ...NEUTRAL_OUTLINED, minHeight: 44 }}>
               {t('plans.add_exercise')}
             </Button>
           )}
-          {/* Rientro del bottone di solo testo (8 px): il margine negativo porta l'etichetta al bordo del testo della card */}
+          {/* Il margine negativo porta l'etichetta al bordo del testo della card: senza «Aggiungi esercizio» è l'unico bottone della riga */}
           {canDelete && (
             <Button
               onClick={() => onDeleteDay(day)}
               aria-label={t('plans.delete_day.aria', { name: day.name })}
-              sx={{ ...DANGER_TEXT, minHeight: 44, mx: -1 }}
+              sx={(theme) => ({ ...DANGER_TEXT, ...(canAddExercise ? flushTextButtonInActionsRow(theme) : flushTextButton('left')) })}
             >
               {t('plans.delete_day_action')}
             </Button>
