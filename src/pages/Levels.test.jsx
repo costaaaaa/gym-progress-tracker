@@ -201,14 +201,14 @@ describe('traguardi', () => {
     expect(style(c).opacity).not.toBe('0.5');
   });
 
-  it('il primo bloccato di ogni categoria è "Prossimo": bordo in inchiostro, barra in inchiostro e avanzamento', async () => {
+  it('il primo bloccato di ogni categoria è "Prossimo": bordo in inchiostro, barra rossa come le altre e avanzamento', async () => {
     await mount();
     const c = card('Centurione');
     expect(within(c).getByText('Prossimo')).toBeTruthy();
     expect(style(c).borderColor).toBe(INK);
     expect(within(c).getByText('58 di 100')).toBeTruthy();
     const bar = c.querySelector('.MuiLinearProgress-bar');
-    expect(style(bar).backgroundColor).toBe(INK);
+    expect(style(bar).backgroundColor).toBe(RED);
     expect(c.querySelector('[role="progressbar"]').getAttribute('aria-valuenow')).toBe('58');
   });
 
