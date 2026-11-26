@@ -9,7 +9,7 @@ import i18n from '../i18n';
 import { textBelow } from '../test/minText';
 import { unnamedControls } from '../test/accessibleNames';
 import { mediaStyle } from '../test/mediaStyle';
-import { expectPageTitleBlock } from '../test/dom';
+import { expectPageTitleBlock, expectBackArrow } from '../test/dom';
 
 const account = vi.hoisted(() => ({ weightUnit: 'kg', modules: undefined, isLoggedIn: true }));
 vi.mock('../context/AuthContext', () => ({
@@ -201,14 +201,14 @@ describe('traguardi', () => {
     expect(style(c).opacity).not.toBe('0.5');
   });
 
-  it('il primo bloccato di ogni categoria è "Prossimo": bordo in inchiostro, barra in inchiostro e avanzamento', async () => {
+  it('il primo bloccato di ogni categoria è "Prossimo": bordo in inchiostro, barra rossa come le altre e avanzamento', async () => {
     await mount();
     const c = card('Centurione');
     expect(within(c).getByText('Prossimo')).toBeTruthy();
     expect(style(c).borderColor).toBe(INK);
     expect(within(c).getByText('58 di 100')).toBeTruthy();
     const bar = c.querySelector('.MuiLinearProgress-bar');
-    expect(style(bar).backgroundColor).toBe(INK);
+    expect(style(bar).backgroundColor).toBe(RED);
     expect(c.querySelector('[role="progressbar"]').getAttribute('aria-valuenow')).toBe('58');
   });
 
@@ -309,6 +309,11 @@ describe('titolo e titolo del documento', () => {
     expect(style(h1s[0]).fontWeight).toBe('800');
     expectPageTitleBlock(h1s[0]);
     expect(document.title).toBe('Livelli e traguardi | LiftIndex');
+  });
+
+  it('la freccia «Home» sta sulla riga del titolo e porta alla Home', async () => {
+    await mount();
+    expectBackArrow(screen.getByRole('heading', { level: 1 }), screen.getByRole('link', { name: 'Home' }), '/');
   });
 });
 

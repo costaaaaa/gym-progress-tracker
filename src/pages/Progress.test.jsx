@@ -9,12 +9,17 @@ import Progress from './Progress';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { textBelow } from '../test/minText';
 import { mediaStyle } from '../test/mediaStyle';
-import { json, expectNoNestedContainer } from '../test/dom';
+import { json, expectNoNestedContainer, expectChipOn, expectChipOff } from '../test/dom';
 import { format } from 'date-fns';
 
 const account = vi.hoisted(() => ({ weightUnit: 'kg' }));
 vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ weightUnit: account.weightUnit }) }));
 
+// Colori del chip in chiaro e in scuro: text.primary, text.secondary e background.paper
+const CHIP_COLORS = {
+  light: { ink: 'rgb(26, 24, 22)', grey: 'rgb(107, 102, 99)', paper: 'rgb(255, 255, 255)' },
+  dark: { ink: 'rgb(255, 255, 255)', grey: 'rgb(160, 160, 162)', paper: 'rgb(20, 20, 22)' },
+};
 const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
 const GREEN = 'rgb(21, 128, 61)';
@@ -310,6 +315,15 @@ describe('preferiti', () => {
     expect(getComputedStyle(c).fontSize).toBe('16px');
     const search = screen.getByRole('textbox', { name: 'Cerca esercizio' });
     expect(search.compareDocumentPosition(c) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it.each(['light', 'dark'])('spento è col contorno, acceso pieno: lo stesso stile degli altri chip che si scelgono, in %s', async (mode) => {
+    localStorage.setItem('themeMode', mode);
+    localStorage.setItem('liftindex.progress.favorites', JSON.stringify(['1']));
+    await mount();
+    expectChipOff(chip(), CHIP_COLORS[mode]);
+    fireEvent.click(chip());
+    expectChipOn(chip(), CHIP_COLORS[mode]);
   });
 
   it('acceso mostra solo i preferiti (e i gruppi che li contengono), spento li rimostra tutti', async () => {

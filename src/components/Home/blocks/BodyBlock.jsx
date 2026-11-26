@@ -7,6 +7,7 @@ import { intlLocale } from '../../../i18n/format';
 import { PERIOD_UI, filterByPeriod, periodWeightDelta, sortByDate, weightTrend } from '../../../utils/bodyStatsPeriod';
 import { BODY_LB_DIVISIONS, formatWeightInUnit } from '../../../utils/weightUnit';
 import { TITLE_FONT_FAMILY } from '../../../utils/fonts';
+import { CHART_LINE_COLOR } from '../../../utils/chartLine';
 
 const PERIOD = '1m';
 const SPARK_POINTS = 30;
@@ -35,7 +36,7 @@ const Spark = ({ values, height, width }) => {
     return `${x.toFixed(2)},${y.toFixed(2)}`;
   }).join(' ');
   return (
-    <Box component="svg" aria-hidden focusable="false" viewBox="0 0 100 100" preserveAspectRatio="none" sx={{ display: 'block', width, height, color: 'primary.text', flexShrink: 0 }}>
+    <Box component="svg" aria-hidden focusable="false" viewBox="0 0 100 100" preserveAspectRatio="none" sx={{ display: 'block', width, height, color: CHART_LINE_COLOR, flexShrink: 0 }}>
       <polyline points={points} fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
     </Box>
   );

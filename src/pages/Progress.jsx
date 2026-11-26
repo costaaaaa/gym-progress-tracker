@@ -2,7 +2,6 @@ import { useState, useMemo, useDeferredValue } from 'react';
 import {
   Box,
   Card,
-  Chip,
   CircularProgress,
   Grid,
   InputAdornment,
@@ -12,6 +11,7 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
+import ChoiceChip from '../components/ChoiceChip';
 import { exerciseMatches } from '../utils/exerciseCatalog';
 import { groupByMuscle, summarize } from '../utils/progressOverview';
 import { useFavoriteExercises } from '../hooks/useFavoriteExercises';
@@ -82,16 +82,11 @@ const Progress = ({ isEmbedded = false }) => {
             InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
           />
           {hasFavorites && (
-            <Chip
+            <ChoiceChip
               label={t('progress.favorites')}
-              variant="outlined"
-              aria-pressed={favoritesOn}
+              selected={favoritesOn}
               onClick={() => setOnlyFavorites(!favoritesOn)}
-              sx={{
-                mt: 1.5, height: 44, minHeight: 44, fontSize: 16, color: 'text.primary',
-                borderColor: favoritesOn ? 'text.primary' : 'text.secondary',
-                ...(favoritesOn && { bgcolor: 'action.selected', fontWeight: 600 }),
-              }}
+              sx={{ mt: 1.5, height: 44, minHeight: 44, fontSize: 16 }}
             />
           )}
         </Grid>

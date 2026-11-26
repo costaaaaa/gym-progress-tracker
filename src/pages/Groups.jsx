@@ -9,6 +9,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { usePageMeta } from '../hooks/usePageMeta';
 import RequireLogin from '../components/Groups/RequireLogin';
 import ModuleGate from '../components/ModuleGate';
+import BackArrow from '../components/BackArrow';
 import { createGroup, errorMessage, groupTypeLabel, listGroups, roleLabel } from '../api/groups';
 import { track } from '../utils/analytics';
 import { useTranslation } from 'react-i18next';
@@ -94,8 +95,9 @@ const GroupsContent = () => {
 
   return (
     <Box sx={{ pb: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', mb: 3 }}>
-        <Typography variant="pageTitle">
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 3 }}>
+        <BackArrow to="/" label={t('nav.home')} />
+        <Typography variant="pageTitle" sx={{ flex: '1 1 auto', minWidth: 0 }}>
           {t('groups.title')}
         </Typography>
         <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)} sx={{ ...TITLE_ROW_BUTTON, fontSize: 16 }}>

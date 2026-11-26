@@ -11,7 +11,7 @@ import GroupDetail from './GroupDetail';
 import JoinGroup from './JoinGroup';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { textBelow } from '../test/minText';
-import { json, colorOf, expectNoNestedContainer, expectPageTitleBlock, expectTitleRowButton } from '../test/dom';
+import { json, colorOf, expectNoNestedContainer, expectPageTitleBlock, expectTitleRowButton, expectBackArrow } from '../test/dom';
 
 const auth = vi.hoisted(() => ({ value: null }));
 vi.mock('../context/AuthContext', () => ({ useAuth: () => auth.value }));
@@ -104,6 +104,14 @@ describe('elenco dei gruppi', () => {
     expectTitleRowButton(titolo, screen.getByRole('button', { name: 'Crea gruppo' }));
   });
 
+  it('la freccia «Home» sta sulla riga del titolo, prima di «Crea gruppo» che resta a destra', async () => {
+    await mount();
+    const titolo = screen.getByRole('heading', { level: 1, name: 'Gruppi' });
+    expectBackArrow(titolo, screen.getByRole('link', { name: 'Home' }), '/');
+    const crea = screen.getByRole('button', { name: 'Crea gruppo' });
+    expect(titolo.compareDocumentPosition(crea) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('non apre un Container dentro quello del Layout', async () => {
     await mount();
     expectNoNestedContainer();
@@ -136,6 +144,30 @@ describe('dettaglio del gruppo', () => {
   it('anche con l\'errore di caricamento non apre un Container', async () => {
     await mount({ failing: true });
     expectNoNestedContainer();
+  });
+
+  it('la freccia «I tuoi gruppi» sta sulla riga del titolo, con il tipo e i membri dopo il titolo', async () => {
+    await mount();
+    const titolo = screen.getByRole('heading', { level: 1, name: 'Palestra Rossi' });
+    expectPageTitleBlock(titolo);
+    expectBackArrow(titolo, screen.getByRole('link', { name: 'I tuoi gruppi' }), '/gruppi');
+    // Freccia e titolo stanno in un blocco che non va a capo (un nome lungo non scende sotto la freccia);
+    // tipo e membri sono elementi della riga, che invece va a capo
+    const coppia = titolo.parentElement;
+    const riga = coppia.parentElement;
+    expect([getComputedStyle(coppia).display, getComputedStyle(coppia).flexWrap]).toEqual(['flex', 'nowrap']);
+    expect(getComputedStyle(riga).flexWrap).toBe('wrap');
+    const tipo = within(riga).getByText('Palestra', { selector: '.MuiChip-label' });
+    const membri = within(riga).getByText('3 membri');
+    [tipo, membri].forEach((el) => expect(coppia.contains(el)).toBe(false));
+    [tipo, membri].forEach((el) => expect(titolo.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy());
+  });
+
+  it('con l\'errore di caricamento «I tuoi gruppi» resta il pulsante di testo', async () => {
+    await mount({ failing: true });
+    const link = screen.getByRole('link', { name: 'I tuoi gruppi' });
+    expect(link.getAttribute('href')).toBe('/gruppi');
+    expect(link.textContent).toBe('I tuoi gruppi');
   });
 
   it('le tab della classifica non hanno flex-basis 0, che si scontra con il flex-grow di INK_TABS', async () => {

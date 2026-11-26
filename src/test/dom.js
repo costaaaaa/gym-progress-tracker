@@ -36,6 +36,17 @@ export const expectTitleRowButton = (heading, button) => {
   expect(parseFloat(stile.fontSize) * parseFloat(stile.lineHeight) + bordi).toBeLessThanOrEqual(blocco);
 };
 
+// La freccia «indietro» sta sulla riga del titolo, prima del titolo: un link con la sola icona, quadrato da 44 px, verso `href`.
+export const expectBackArrow = (heading, arrow, href) => {
+  expect(arrow.getAttribute('href')).toBe(href);
+  expect(arrow.parentElement).toBe(heading.parentElement);
+  expect(arrow.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(arrow.textContent).toBe('');
+  expect(arrow.querySelector('svg')).not.toBeNull();
+  const stile = getComputedStyle(arrow);
+  expect([stile.width, stile.height]).toEqual(['44px', '44px']);
+};
+
 // Guardia delle pagine delle Schede: i testi sotto i 16 px, come «testo (misura)». L'unica eccezione è il loro badge
 // «Attiva» (13 px o più): su una pagina con un altro «Attiva» questa guardia non va usata.
 export const textsBelow16pxExceptActiveBadge = () => [...document.body.querySelectorAll('*')]
@@ -55,4 +66,22 @@ export const expectDestructiveConfirm = (corpo, conferma, { ink, red }) => {
   const testo = dialog.getByText(corpo);
   expect(colorOf(testo)).toBe(ink);
   expect(getComputedStyle(testo).fontSize).toBe('16px');
+};
+
+// Il chip che si sceglie (periodo delle misure, gruppo muscolare, «Preferiti») ha uno stile solo: scelto è pieno nel colore
+// del testo, con il testo nel colore dello sfondo delle card; non scelto ha il contorno grigio e il testo normale. I colori
+// ({ ink, grey, paper } del tema in prova) li dà il test che chiama: i sorgenti fuori dai test non scrivono colori a mano.
+export const expectChipOn = (chip, { ink, paper }) => {
+  const stile = getComputedStyle(chip);
+  expect([stile.backgroundColor, stile.color]).toEqual([ink, paper]);
+  // Resta pieno anche con il fuoco da tastiera, che MUI segna sul chip con questa classe
+  chip.classList.add('Mui-focusVisible');
+  expect(getComputedStyle(chip).backgroundColor).toBe(ink);
+  chip.classList.remove('Mui-focusVisible');
+};
+
+export const expectChipOff = (chip, { ink, grey }) => {
+  const stile = getComputedStyle(chip);
+  expect([stile.color, stile.borderColor]).toEqual([ink, grey]);
+  expect(stile.backgroundColor).not.toBe(ink);
 };

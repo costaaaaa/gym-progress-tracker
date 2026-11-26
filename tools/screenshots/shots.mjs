@@ -282,6 +282,13 @@ const checkAvailability = ({ codice }) => {
   return { success: true, username_taken: false, email_taken: false, ...(codice === 'ok' ? { signup_code: { usable: true, tier: 'plus', duration_days: 90 } } : {}) };
 };
 
+// Un traguardo del profilo: `giornoSblocco` è il giorno dello sblocco contato da oggi (-40 = quaranta giorni fa);
+// senza, è bloccato
+const traguardo = (key, category, label, threshold, giornoSblocco) => {
+  const bloccato = giornoSblocco === undefined;
+  return { key, category, label, threshold, unlocked_at: bloccato ? null : stamp(giornoSblocco, '18:00:00'), locked: bloccato };
+};
+
 // Utenti dei dati finti: `attivo` è l'utente di tutte le pagine, `un-allenamento` ha un solo allenamento nello storico
 // (ogni esercizio è "Nuovo" nei Progressi), `progressi` anche (la panca sale a ogni allenamento). `nuovo` risponde come un account vuoto
 // (livello 1, nessuna streak, nessun gruppo, muscoli mai allenati). È scritto per esteso e non parte da
@@ -294,13 +301,25 @@ const PROFILE_ATTIVO = {
     { exercise_id: 6, name: 'Rematore con bilanciere', level: 5, xp: 610 },
     { exercise_id: 7, name: 'Squat', level: 4, xp: 430 },
   ],
+  // Il catalogo di backend/lib/gamification_rules.php (la pagina Livelli non mostra quelli di forza), con gli sbloccati
+  // coerenti con i numeri sopra: 58 sessioni, 184.250 kg, 5 settimane di fila. Il primo bloccato di ogni categoria è il «Prossimo»
   achievements: [
-    { key: 's10', category: 'sessions', label: '10 sessioni', threshold: 10, unlocked_at: stamp(-200, '18:00:00'), locked: false },
-    { key: 's50', category: 'sessions', label: '50 sessioni', threshold: 50, unlocked_at: null, locked: true },
-    { key: 't10000', category: 'tonnage', label: '10.000 kg sollevati', threshold: 10000, unlocked_at: stamp(-120, '18:00:00'), locked: false },
-    { key: 't100000', category: 'tonnage', label: '100.000 kg sollevati', threshold: 100000, unlocked_at: null, locked: true },
-    { key: 'st4', category: 'streak', label: '4 settimane di fila', threshold: 4, unlocked_at: stamp(-30, '18:00:00'), locked: false },
-    { key: 'st12', category: 'streak', label: '12 settimane di fila', threshold: 12, unlocked_at: null, locked: true },
+    traguardo('sessions_10', 'sessions', 'Prime 10 sessioni', 10, -200),
+    traguardo('sessions_50', 'sessions', '50 sessioni', 50, -40),
+    traguardo('sessions_100', 'sessions', 'Centurione', 100),
+    traguardo('sessions_250', 'sessions', '250 sessioni', 250),
+    traguardo('tonnage_auto', 'tonnage', '1,5 t — automobile', 1500, -180),
+    traguardo('tonnage_elephant', 'tonnage', '6 t — elefante', 6000, -150),
+    traguardo('tonnage_bus', 'tonnage', '15 t — autobus', 15000, -120),
+    traguardo('tonnage_tank', 'tonnage', '60 t — carro armato', 60000, -90),
+    traguardo('tonnage_whale', 'tonnage', '150 t — balenottera azzurra', 150000, -45),
+    traguardo('tonnage_iss', 'tonnage', '420 t — Stazione Spaziale', 420000),
+    traguardo('tonnage_shuttle', 'tonnage', '2.000 t — Space Shuttle', 2000000),
+    traguardo('tonnage_eiffel', 'tonnage', '7.300 t — Torre Eiffel', 7300000),
+    traguardo('streak_4', 'streak', '4 settimane consecutive', 4, -30),
+    traguardo('streak_8', 'streak', '8 settimane consecutive', 8),
+    traguardo('streak_12', 'streak', '12 settimane consecutive', 12),
+    traguardo('streak_24', 'streak', '24 settimane consecutive', 24),
   ],
 };
 const ATTIVO = {
@@ -578,8 +597,8 @@ for (const vp of viewports) {
         await page.getByRole('button', { name: 'Inizia allenamento', exact: true }).waitFor();
         await snap(page, FOCUS_SHOTS.scelta, tag);
 
-        await page.getByRole('combobox').click();
-        await page.getByRole('option', { name: 'Trazione', exact: true }).click();
+        // Il giorno si sceglie da un gruppo di opzioni (role="radio")
+        await page.getByRole('radio', { name: 'Trazione', exact: true }).click();
         await page.getByRole('button', { name: 'Inizia allenamento', exact: true }).click();
         await page.getByRole('button', { name: 'Conferma serie', exact: true }).waitFor();
 
@@ -607,9 +626,11 @@ for (const vp of viewports) {
         await confirmSet('8');
         await page.getByRole('heading', { name: 'Rematore con bilanciere' }).waitFor();
         await snap(page, FOCUS_SHOTS.riscaldamento, tag);
+        // «Salta esercizio» sta nel menu «Altre azioni» della barra: si apre, si sceglie la voce e si aspetta che il menu sparisca
         for (let i = 0; i < 10 && !(await page.getByText('Riepilogo', { exact: true }).isVisible()); i++) {
-          await page.getByRole('button', { name: 'Salta esercizio', exact: true }).click();
-          await page.waitForTimeout(300);
+          await page.getByRole('button', { name: 'Altre azioni', exact: true }).click();
+          await page.getByRole('menuitem', { name: 'Salta esercizio', exact: true }).click();
+          await page.getByRole('menu').waitFor({ state: 'detached' });
         }
         await page.getByText('Riepilogo', { exact: true }).waitFor();
         await snap(page, FOCUS_SHOTS.riepilogo, tag);
@@ -766,12 +787,14 @@ for (const vp of viewports) {
       try {
         await page.goto(`${base}/focus`, { waitUntil: 'domcontentloaded' });
         await page.getByRole('button', { name: 'Inizia allenamento', exact: true }).waitFor();
-        await page.getByRole('combobox').click();
-        await page.getByRole('option', { name: 'Trazione', exact: true }).click();
+        await page.getByRole('radio', { name: 'Trazione', exact: true }).click();
         await page.getByRole('button', { name: 'Inizia allenamento', exact: true }).click();
         await page.getByRole('button', { name: 'Conferma serie', exact: true }).waitFor();
         await snap(page, 'focus-plus-allenamento', tag);
-        await page.getByRole('button', { name: /Cambia esercizio/ }).click();
+        // «Cambia esercizio» è una voce del menu «Altre azioni»; senza Plus il suo nome finisce con «(Plus)» e la finestra
+        // si apre a menu chiuso
+        await page.getByRole('button', { name: 'Altre azioni', exact: true }).click();
+        await page.getByRole('menuitem', { name: /Cambia esercizio/ }).click();
         await page.getByRole('dialog').waitFor();
         await snap(page, 'focus-plus-dialogo', tag, page.getByRole('dialog'));
       } finally {

@@ -15,17 +15,18 @@ import { achievementLabel } from '../i18n/labels';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
 import { ELLIPSIS_FROM_390 } from '../theme/narrowScreens';
 import { radius } from '../theme/radius';
+import BackArrow from '../components/BackArrow';
 
 // Solo queste tre categorie hanno una griglia dedicata: "strength" è esclusa perché il suo
 // ruolo è coperto dalla sezione "Livelli per esercizio" (il catalogo backend resta invariato).
 const CATEGORY_ORDER = ['sessions', 'tonnage', 'streak'];
 
 const BORDERED = { boxShadow: 'none', border: '1px solid', borderColor: 'divider' };
-const solidBar = (height, color = 'primary.main') => ({
+const solidBar = (height) => ({
   height,
   borderRadius: `${height / 2}px`,
   bgcolor: 'divider',
-  '& .MuiLinearProgress-bar': { borderRadius: `${height / 2}px`, bgcolor: color },
+  '& .MuiLinearProgress-bar': { borderRadius: `${height / 2}px`, bgcolor: 'primary.main' },
 });
 
 function exProgressPct(xp) {
@@ -67,7 +68,7 @@ const AchievementCard = ({ achievement, isNext, progress, weightUnit }) => {
       )}
       {isNext && (
         <Box sx={{ width: '100%', mt: 'auto', pt: 1 }}>
-          <LinearProgress variant="determinate" value={progress.pct} aria-label={t('profile.achievement_progress_aria', { label })} sx={{ ...solidBar(6, 'text.primary'), mb: 0.75 }} />
+          <LinearProgress variant="determinate" value={progress.pct} aria-label={t('profile.achievement_progress_aria', { label })} sx={{ ...solidBar(6), mb: 0.75 }} />
           <Typography sx={{ fontSize: 16, color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>{progress.label}</Typography>
         </Box>
       )}
@@ -230,7 +231,10 @@ const LevelsContent = () => {
   const { t } = useTranslation();
   return (
     <Box sx={{ width: '100%' }}>
-      <Typography variant="pageTitle" sx={{ mb: 3 }}>{t('modules.levels.name')}</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+        <BackArrow to="/" label={t('nav.home')} />
+        <Typography variant="pageTitle" sx={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{t('modules.levels.name')}</Typography>
+      </Box>
       <LevelsBody />
     </Box>
   );

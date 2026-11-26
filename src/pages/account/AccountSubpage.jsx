@@ -1,6 +1,5 @@
-import { Box, IconButton, Typography } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { Link as RouterLink } from 'react-router-dom';
+import { Box, Typography } from '@mui/material';
+import BackArrow from '../../components/BackArrow';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../../hooks/usePageMeta';
 
@@ -13,9 +12,7 @@ const AccountSubpage = ({ title, children }) => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <IconButton component={RouterLink} to="/account" aria-label={t('account.back')} edge="start" sx={{ width: 44, height: 44, color: 'text.primary' }}>
-          <ArrowBackIcon />
-        </IconButton>
+        <BackArrow to="/account" label={t('account.back')} />
         <Typography variant="pageTitle" sx={{ flex: 1, minWidth: 0 }}>{title}</Typography>
       </Box>
       {children}

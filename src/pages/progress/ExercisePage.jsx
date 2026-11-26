@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
-import { Box, Card, CircularProgress, IconButton, Typography } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
+import { Box, Card, CircularProgress, Typography } from '@mui/material';
+import { useNavigate, useParams } from 'react-router-dom';
+import BackArrow from '../../components/BackArrow';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import { useAuth } from '../../context/AuthContext';
@@ -32,9 +32,7 @@ const ExercisePage = () => {
   }, [loading, loadFailed, item, navigate]);
 
   const back = (
-    <IconButton component={RouterLink} to={BACK_PATH} aria-label={t('progress.back')} edge="start" sx={{ width: 44, height: 44, color: 'text.primary' }}>
-      <ArrowBackIcon />
-    </IconButton>
+    <BackArrow to={BACK_PATH} label={t('progress.back')} />
   );
 
   const body = () => {

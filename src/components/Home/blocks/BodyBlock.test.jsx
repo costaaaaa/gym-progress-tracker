@@ -4,6 +4,7 @@ import BodyBlock from './BodyBlock';
 import i18n from '../../../i18n';
 import { renderBlock, stubFetch } from '../../../test/homeBlocks';
 import { pinLocalClock } from '../../../test/timeZone';
+import { colorOf } from '../../../test/dom';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -25,6 +26,20 @@ describe('blocco «Peso»', () => {
     const line = link.querySelector('svg polyline');
     expect(line.closest('svg').getAttribute('aria-hidden')).toBe('true');
     expect(line.getAttribute('points').split(' ').length).toBe(3);
+  });
+
+  // La linea del peso non dice «meglio» o «peggio»: colore del testo, mai il rosso del marchio (text.primary in chiaro e in scuro)
+  it.each([
+    ['light', 'rgb(26, 24, 22)'],
+    ['dark', 'rgb(255, 255, 255)'],
+  ])('la linea del peso, piccola e grande, è nel colore del testo e non rossa in %s', async (mode, ink) => {
+    localStorage.setItem('themeMode', mode);
+    stubFetch(server());
+    renderBlock(<BodyBlock today={TODAY} weightUnit="kg" large />);
+    await screen.findAllByText('78,4 kg', { exact: false });
+    const lines = document.querySelectorAll('svg polyline');
+    expect(lines.length).toBeGreaterThan(0);
+    lines.forEach((line) => expect(colorOf(line.closest('svg'))).toBe(ink));
   });
 
   it('peso salito: variazione col più; peso uguale: «Stabile nell\'ultimo mese»', async () => {
