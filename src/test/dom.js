@@ -106,9 +106,9 @@ export const expectNoticeAboveBar = (message) => {
 
 // Un avviso con un pulsante da 44 px è alto 56 px (6 px di margine interno sopra e sotto): quello che gli sta sopra
 // parte almeno da lì, altrimenti lo copre
-const NOTICE_WITH_BUTTON = 56;
+const NOTICE_WITH_BUTTON_HEIGHT = 56;
 export const expectNoticeStacked = (upper, lower) => {
-  expect(noticeOffset(upper)).toBeGreaterThanOrEqual(noticeOffset(lower) + NOTICE_WITH_BUTTON);
+  expect(noticeOffset(upper)).toBeGreaterThanOrEqual(noticeOffset(lower) + NOTICE_WITH_BUTTON_HEIGHT);
 };
 
 // Senza la barra l'avviso resta dov'è di default in MUI: nessuna distanza in più

@@ -1,4 +1,5 @@
-// Conferma dell'email nel layout: striscia, schermata di blocco al posto delle pagine, ripartenza dopo la conferma.
+// Conferma dell'email nel layout: striscia, schermata di blocco al posto delle pagine, ripartenza dopo la conferma;
+// e gli avvisi di esito (dell'email e delle pagine) rispetto alla barra in basso.
 // Qui il contesto è quello vero e il confine è la fetch.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
@@ -243,7 +244,8 @@ describe('avvisi e barra in basso', () => {
   it('da md in su, senza barra, l\'avviso di una pagina resta dov\'è', async () => {
     phone(false);
     mount('/storico');
-    await screen.findByText('Fatto');
+    // L'accesso è fatto: la barra in alto del desktop ha il menu delle azioni
+    await screen.findByRole('button', { name: 'Altre azioni' });
     expect(screen.queryByRole('navigation', { name: 'Navigazione principale' })).toBeNull();
     expectNoticeInPlace(screen.getByText('Fatto'));
   });
