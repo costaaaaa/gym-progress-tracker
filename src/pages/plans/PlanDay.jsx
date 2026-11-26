@@ -21,6 +21,7 @@ const PlanDay = ({
 }) => {
   const { t } = useTranslation();
   const exercises = day.exercises || [];
+  const canAddExercise = !readOnly;
 
   return (
     <Card sx={{ height: '100%', p: 2.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -103,19 +104,19 @@ const PlanDay = ({
         </Button>
       )}
 
-      {editing && (!readOnly || canDelete) && (
+      {editing && (canAddExercise || canDelete) && (
         <Box sx={{ ...ACTIONS_ROW, mt: 'auto' }}>
-          {!readOnly && (
+          {canAddExercise && (
             <Button variant="outlined" color="inherit" startIcon={<AddIcon />} onClick={onAddExercise} sx={{ ...NEUTRAL_OUTLINED, minHeight: 44 }}>
               {t('plans.add_exercise')}
             </Button>
           )}
-          {/* Il margine negativo porta l'etichetta al bordo del testo della card: in sola lettura è l'unico bottone della riga */}
+          {/* Il margine negativo porta l'etichetta al bordo del testo della card: senza «Aggiungi esercizio» è l'unico bottone della riga */}
           {canDelete && (
             <Button
               onClick={() => onDeleteDay(day)}
               aria-label={t('plans.delete_day.aria', { name: day.name })}
-              sx={(theme) => ({ ...DANGER_TEXT, ...(readOnly ? flushTextButton('left') : flushTextButtonInActionsRow(theme)) })}
+              sx={(theme) => ({ ...DANGER_TEXT, ...(canAddExercise ? flushTextButtonInActionsRow(theme) : flushTextButton('left')) })}
             >
               {t('plans.delete_day_action')}
             </Button>

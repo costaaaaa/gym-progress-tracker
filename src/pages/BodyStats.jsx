@@ -13,6 +13,7 @@ import HealthConsentCard from '../components/HealthConsentCard';
 import HealthAppHint from '../components/HealthAppHint';
 import { DEFAULT_PERIOD, filterByPeriod, periodStart, sortByDate, paginate } from '../utils/bodyStatsPeriod';
 import { useOncePerRequest } from '../hooks/useNavigationRequest';
+import { TITLE_ROW_BUTTON } from '../utils/buttonStyles';
 import useBodyStats from './body/useBodyStats';
 import PeriodChips from './body/PeriodChips';
 import WeightCard from './body/WeightCard';
@@ -76,7 +77,7 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
             {t('body.title')}
           </Typography>
         )}
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsDialogOpen(true)} sx={{ fontSize: 16 }}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsDialogOpen(true)} sx={{ ...(!isEmbedded && TITLE_ROW_BUTTON), fontSize: 16 }}>
           {t('body.new')}
         </Button>
       </Box>

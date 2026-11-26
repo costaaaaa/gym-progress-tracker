@@ -282,7 +282,7 @@ const checkAvailability = ({ codice }) => {
   return { success: true, username_taken: false, email_taken: false, ...(codice === 'ok' ? { signup_code: { usable: true, tier: 'plus', duration_days: 90 } } : {}) };
 };
 
-// Utenti dei dati finti: `attivo` è l'utente di tutte le pagine, `un-allenamento` ha un solo allenamento nello storico e nella settimana
+// Utenti dei dati finti: `attivo` è l'utente di tutte le pagine, `un-allenamento` ha un solo allenamento nello storico
 // (ogni esercizio è "Nuovo" nei Progressi), `progressi` anche (la panca sale a ogni allenamento). `nuovo` risponde come un account vuoto
 // (livello 1, nessuna streak, nessun gruppo, muscoli mai allenati). È scritto per esteso e non parte da
 // `attivo`; prende solo l'elenco dei traguardi da `PROFILE_ATTIVO`, tutti bloccati.
@@ -329,7 +329,8 @@ const ATTIVO = {
 const MUSCLI = ['petto', 'schiena', 'spalle', 'bicipiti', 'tricipiti', 'addome', 'quadricipiti', 'femorali', 'glutei', 'adduttori', 'abduttori', 'polpacci'];
 const UTENTI = {
   attivo: ATTIVO,
-  // L'unico allenamento è il primo di HISTORY (giovedì 22): nella settimana resta il cerchio di giovedì, non quello di lunedì
+  // L'unico allenamento è il primo di HISTORY (giovedì 22): nella settimana resta il cerchio di giovedì, non quello di lunedì.
+  // Chili, ripetizioni e serie della settimana restano quelli di `attivo`: nessuno scatto con questo utente li mostra
   'un-allenamento': {
     ...ATTIVO,
     history: HISTORY.slice(0, 1),

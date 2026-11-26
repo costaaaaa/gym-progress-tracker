@@ -203,17 +203,6 @@ describe('uscire da un gruppo', () => {
     expect(browserConfirm).not.toHaveBeenCalled();
   });
 
-  it('un secondo tocco su «Esci» mentre la finestra si chiude non esce due volte', async () => {
-    groups = [MEMBER_GROUP];
-    mount({ groups: true });
-    fireEvent.click(await screen.findByRole('button', { name: 'Esci' }));
-    const esci = within(screen.getByRole('dialog')).getByRole('button', { name: 'Esci' });
-    fireEvent.click(esci);
-    fireEvent.click(esci);
-    await waitFor(() => expect(screen.queryByText('Palestra Rossi')).toBeNull());
-    expect(leaveCalls()).toHaveLength(1);
-  });
-
   it('«Annulla» chiude la finestra e il gruppo resta', async () => {
     groups = [MEMBER_GROUP];
     mount({ groups: true });

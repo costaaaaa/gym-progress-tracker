@@ -23,11 +23,17 @@ export const expectPageTitleBlock = (heading) => {
   expect(pageTitleBlockHeight(heading)).toBeCloseTo(44, 5);
 };
 
-// Il pulsante sulla riga del titolo è alto quanto il blocco del titolo: più alto farebbe crescere la riga e il titolo,
-// centrato, scenderebbe rispetto alle pagine senza pulsante.
+// Il pulsante sulla riga del titolo, con l'etichetta su una riga, è alto quanto il blocco del titolo: più alto farebbe
+// crescere la riga e il titolo, centrato, scenderebbe rispetto alle pagine senza pulsante. L'altezza è una minima (se
+// l'etichetta va a capo il pulsante cresce), e senza spazio sopra e sotto una riga di etichetta col suo bordo ci sta dentro.
 export const expectTitleRowButton = (heading, button) => {
   expect(button.parentElement).toBe(heading.parentElement);
-  expect(parseFloat(getComputedStyle(button).height)).toBeCloseTo(pageTitleBlockHeight(heading), 5);
+  const stile = getComputedStyle(button);
+  const blocco = pageTitleBlockHeight(heading);
+  expect(parseFloat(stile.minHeight)).toBeCloseTo(blocco, 5);
+  expect([stile.paddingTop, stile.paddingBottom]).toEqual(['0px', '0px']);
+  const bordi = (parseFloat(stile.borderTopWidth) || 0) + (parseFloat(stile.borderBottomWidth) || 0);
+  expect(parseFloat(stile.fontSize) * parseFloat(stile.lineHeight) + bordi).toBeLessThanOrEqual(blocco);
 };
 
 // Guardia delle pagine delle Schede: i testi sotto i 16 px, come «testo (misura)». L'unica eccezione è il loro badge

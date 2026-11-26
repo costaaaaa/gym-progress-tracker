@@ -43,9 +43,10 @@ export const flushTextButtonInActionsRow = (theme) => ({
   [theme.breakpoints.up('sm')]: { ml: 0, ...flushTextButton('right') },
 });
 
-// Bottone sulla riga del titolo di pagina: alto quanto il blocco del titolo, così la riga non cresce e il titolo resta alla
-// stessa altezza delle pagine senza pulsante.
-export const TITLE_ROW_BUTTON = { height: PAGE_TITLE_BLOCK_HEIGHT };
+// Bottone sulla riga del titolo di pagina: senza spazio sopra e sotto l'etichetta è alto quanto il blocco del titolo, così la
+// riga non cresce e il titolo resta alla stessa altezza delle pagine senza pulsante. È un'altezza minima: se l'etichetta va
+// a capo il bottone cresce e il testo non esce dal bordo.
+export const TITLE_ROW_BUTTON = { minHeight: PAGE_TITLE_BLOCK_HEIGHT, py: 0 };
 
 // Comando in forma di link sottolineato (es. «Scrivi il codice»): senza rientro, allineato al testo che lo precede
 export const LINK_BUTTON = {
