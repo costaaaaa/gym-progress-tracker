@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished } from 
 import { render, screen, fireEvent, act, cleanup, within } from '@testing-library/react';
 import FocusWorkout from './FocusWorkout';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
-import { json } from '../test/dom';
+import { json, expectNoticeInPlace } from '../test/dom';
 import { currentTimeZone } from '../utils/workoutTime';
 import { setBrowserTimeZone } from '../test/timeZone';
 import { DROP, plannedSets, times } from '../test/plannedSets';
@@ -627,6 +627,13 @@ describe('errori e funzioni bloccate', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     await mount();
     expect(screen.getByText('Errore nel caricamento dei dati: Errore caricamento schede (500)')).toBeTruthy();
+  });
+
+  it('l\'avviso sta dov\'è di default: in Focus la barra in basso non c\'è e non sale', async () => {
+    responses['read_plans.php'] = () => ({ ok: false, status: 500, json: async () => { throw new Error('non json'); }, text: async () => '' });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    await mount();
+    expectNoticeInPlace(screen.getByText('Errore nel caricamento dei dati: Errore caricamento schede (500)'));
   });
 
   it('senza scheda attiva avvisa e mostra la schermata senza scheda', async () => {

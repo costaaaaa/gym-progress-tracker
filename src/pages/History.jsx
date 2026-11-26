@@ -6,6 +6,7 @@ import RecordWorkoutDialog from '../components/RecordWorkoutDialog';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { useNavigationRequest, useOncePerRequest } from '../hooks/useNavigationRequest';
 import { useAuth } from '../context/AuthContext';
+import { useSnackbarAboveBar } from '../hooks/useSnackbarAboveBar';
 import { formatDate } from '../i18n/format';
 import { clockDate } from '../utils/calendarDay';
 import { focusedElement } from '../utils/focus';
@@ -51,6 +52,9 @@ const History = () => {
   const { workouts: allWorkouts, summaries, loading, loadFailed, snackbar, notify, closeSnackbar, refresh } = useWorkoutHistory({ refreshKey: location.state?.refreshHistory });
   const { activePlan, planLoaded, planReadFailed } = useActivePlan();
   const { hiddenIds, pendingId, undo: undoDelete, holdProps: undoHoldProps } = useUndoableWorkoutDelete(notify);
+  // «Annulla» sta sopra la barra in basso (se c'è); un altro avviso, mentre aspetta, sta sopra di lui
+  const undoSx = useSnackbarAboveBar();
+  const noticeSx = useSnackbarAboveBar(pendingId !== null);
   const workouts = useMemo(() => allWorkouts.filter((workout) => !hiddenIds.includes(workout.id)), [allWorkouts, hiddenIds]);
   const [openRecordDialog, setOpenRecordDialog] = useState(false);
 
@@ -179,11 +183,12 @@ const History = () => {
       <Snackbar
         open={pendingId !== null}
         message={t('history.delete.removed')}
+        sx={undoSx}
         {...undoHoldProps}
         action={<Button ref={undoButtonRef} color="inherit" size="small" onClick={undoDelete} sx={{ minHeight: 44 }}>{t('history.delete.undo')}</Button>}
       />
       {/* Con l'«Annulla» in attesa gli altri messaggi stanno sopra, senza coprirlo */}
-      <Snackbar open={snackbar.open} autoHideDuration={6000} sx={pendingId !== null ? { bottom: 88 } : undefined} onClose={closeSnackbar}>
+      <Snackbar open={snackbar.open} autoHideDuration={6000} sx={noticeSx} onClose={closeSnackbar}>
         <Alert onClose={closeSnackbar} severity={snackbar.severity}>{snackbar.message}</Alert>
       </Snackbar>
     </Box>

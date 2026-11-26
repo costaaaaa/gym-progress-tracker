@@ -10,6 +10,7 @@ import { readJson, isSuccess } from '../utils/readJson';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { useHomeLayout } from '../hooks/useHomeLayout';
+import { useSnackbarAboveBar } from '../hooks/useSnackbarAboveBar';
 import { setHidden } from '../utils/homeLayout';
 import { MODULE_KEYS } from '../hooks/useModule';
 import { hasFocusSessionInProgress, savedDraftDayName } from '../utils/focusDraft';
@@ -24,6 +25,7 @@ const NO_DAYS = new Array(7).fill(false);
 const Home = () => {
   const { isLoggedIn, user, weightUnit } = useAuth();
   const { t } = useTranslation();
+  const noticeSx = useSnackbarAboveBar();
   usePageMeta(null, t('meta.description'));
   // Stato di ogni richiesta: 'pending' | 'ok' | 'failed'. Un errore di rete non deve far passare un utente per nuovo
   const [historyStatus, setHistoryStatus] = useState('pending');
@@ -188,7 +190,7 @@ const Home = () => {
         </Box>
       )}
 
-      <Snackbar open={layoutError || offerFailed} autoHideDuration={6000} onClose={closeNotice} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+      <Snackbar open={layoutError || offerFailed} autoHideDuration={6000} onClose={closeNotice} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} sx={noticeSx}>
         <Alert onClose={closeNotice} severity="error" sx={{ width: '100%' }}>
           {t(layoutError ? 'home.edit.save_error' : 'home.offer.error')}
         </Alert>

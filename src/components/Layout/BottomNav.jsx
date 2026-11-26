@@ -6,12 +6,12 @@ import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
 import HistoryIcon from '@mui/icons-material/History';
 import EqualizerIcon from '@mui/icons-material/Equalizer';
-import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import LogoMark from '../LogoMark';
 import CenterFan from './CenterFan';
 import { BAR_HEIGHT, CIRCLE } from './barMetrics';
 import { useCenterActions } from '../../hooks/useCenterActions';
+import { useBottomBarVisible } from '../../hooks/useBottomBarVisible';
 
 // Voce di navigazione standard (icona + etichetta), come link/bottone accessibile
 // (component=RouterLink su ButtonBase: focus da tastiera, aria-current sulla voce attiva).
@@ -53,7 +53,7 @@ const BottomNav = () => {
   const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { isLoggedIn, emailState } = useAuth();
+  const barVisible = useBottomBarVisible();
   const actions = useCenterActions();
   const [fanOpen, setFanOpen] = useState(false);
   const centerRef = useRef(null);
@@ -68,11 +68,9 @@ const BottomNav = () => {
   // Il ventaglio non sopravvive a un cambio di indirizzo (indietro del browser, swipe) né al passaggio al desktop
   useEffect(() => { setFanOpen(false); }, [location.key, isMobile]);
 
-  // Con l'app bloccata dalla conferma dell'email le voci porterebbero a pagine che rispondono 403
-  if (!isMobile || !isLoggedIn || emailState?.blocked === true) return null;
-
-  // La modalità Focus vive fuori dal Layout (full screen, senza Navbar): niente barra lì.
-  if (location.pathname === '/focus') return null;
+  // C'è solo sotto md e con l'accesso fatto; con l'app bloccata dalla conferma dell'email le voci porterebbero a pagine
+  // che rispondono 403, e la modalità Focus è a schermo intero. La stessa regola dice agli avvisi se salire sopra la barra.
+  if (!barVisible) return null;
 
   const isActive = (path) => location.pathname === path;
   // Schede, allenamenti ed esercizi hanno una pagina ciascuno: «Schede», «Storico» e «Progressi» restano attive anche su /schede/<id>, /storico/<id> e /progressi/esercizi/<id>

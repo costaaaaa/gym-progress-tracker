@@ -13,6 +13,7 @@ import EmailStrip from '../EmailVerification/EmailStrip';
 import EmailGate from '../EmailVerification/EmailGate';
 import InterestsGate from '../Modules/InterestsGate';
 import EmailBlockedScreen from '../EmailVerification/EmailBlockedScreen';
+import { BottomBarContext, useBottomBarVisible } from '../../hooks/useBottomBarVisible';
 
 const MAIN_ID = 'main-content';
 
@@ -49,76 +50,80 @@ const Layout = () => {
   // Dal giorno 8 senza email confermata, al posto di ogni pagina dell'app c'è la schermata di conferma (le pagine di accesso restano)
   const blocked = isLoggedIn && emailState?.blocked === true && !isAccessPath(pathname);
   const red = barRed && isLoggedIn && !blocked;
+  // Gli avvisi delle pagine stanno sopra la barra in basso, se c'è
+  const barVisible = useBottomBarVisible();
 
   return (
-    // Solo per gli ospiti: serve al campo pieno della home (100cqw); i Safari più vecchi trattavano il container
-    // come riferimento dei position: fixed, e le pagine con login ne hanno (BottomNav, Snackbar).
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', containerType: isLoggedIn ? 'normal' : 'inline-size' }}>
-      <Link
-        href={`#${MAIN_ID}`}
-        onClick={(event) => {
-          event.preventDefault();
-          document.getElementById(MAIN_ID)?.focus();
-        }}
-        sx={skipLinkSx}
-      >
-        {t('nav.skip_to_content')}
-      </Link>
-      {!isLoggedIn && <LanguageHint />}
-      <Navbar redBar={red} />
-      <EmailStrip />
-      <Container
-        component="main"
-        id={MAIN_ID}
-        tabIndex={-1}
-        disableGutters
-        sx={{
-          mt: red ? { xs: 0, md: 4 } : 4,
-          mb: isLoggedIn ? 10 : 4,
-          flexGrow: 1,
-          maxWidth: { xs: '100%', md: '1180px' },
-          px: { xs: red ? 0 : 2, md: '32px' },
-          '&:focus': { outline: 'none' },
-        }}
-      >
-        {blocked ? <EmailBlockedScreen /> : <Outlet context={{ setBarRed }} />}
-      </Container>
-      <Box
-        component="footer"
-        sx={{ textAlign: 'center', pb: { xs: isLoggedIn ? 10 : 2, md: 2 }, px: 2 }}
-      >
-        <Typography variant="caption" color="text.secondary" sx={{ fontSize: 14 }}>
-          <Link href={legalPaths(i18n.language).privacy} color="inherit" underline="hover">{t('footer.privacy')}</Link>
-          {' · '}
-          <Link href={legalPaths(i18n.language).terms} color="inherit" underline="hover">{t('footer.terms')}</Link>
-          {!isLoggedIn && (
-            <>
-              {/* Pagine PHP del blog, fuori dalla SPA: link normali, non del router */}
-              {' · '}
-              <Link href={blogPaths(i18n.language).calculator} color="inherit" underline="hover">{t('footer.calculator')}</Link>
-              {' · '}
-              <Link href={blogPaths(i18n.language).mcp} color="inherit" underline="hover">{t('footer.mcp')}</Link>
-              {' · '}
-              <Link href={plansPath(i18n.language)} color="inherit" underline="hover">{t('footer.plans')}</Link>
-              {' · '}
-              <Link
-                component={RouterLink}
-                to={withLangPrefix(stripLangPrefix(pathname), otherLang) + search}
-                lang={otherLang}
-                onClick={() => setLanguageChoice(otherLang)}
-                color="inherit"
-                underline="hover"
-              >
-                {t('footer.switch_language')}
-              </Link>
-            </>
-          )}
-        </Typography>
+    <BottomBarContext.Provider value={barVisible}>
+      {/* containerType solo per gli ospiti: serve al campo pieno della home (100cqw); i Safari più vecchi trattavano il
+          container come riferimento dei position: fixed, e le pagine con login ne hanno (BottomNav, Snackbar). */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', containerType: isLoggedIn ? 'normal' : 'inline-size' }}>
+        <Link
+          href={`#${MAIN_ID}`}
+          onClick={(event) => {
+            event.preventDefault();
+            document.getElementById(MAIN_ID)?.focus();
+          }}
+          sx={skipLinkSx}
+        >
+          {t('nav.skip_to_content')}
+        </Link>
+        {!isLoggedIn && <LanguageHint />}
+        <Navbar redBar={red} />
+        <EmailStrip />
+        <Container
+          component="main"
+          id={MAIN_ID}
+          tabIndex={-1}
+          disableGutters
+          sx={{
+            mt: red ? { xs: 0, md: 4 } : 4,
+            mb: isLoggedIn ? 10 : 4,
+            flexGrow: 1,
+            maxWidth: { xs: '100%', md: '1180px' },
+            px: { xs: red ? 0 : 2, md: '32px' },
+            '&:focus': { outline: 'none' },
+          }}
+        >
+          {blocked ? <EmailBlockedScreen /> : <Outlet context={{ setBarRed }} />}
+        </Container>
+        <Box
+          component="footer"
+          sx={{ textAlign: 'center', pb: { xs: isLoggedIn ? 10 : 2, md: 2 }, px: 2 }}
+        >
+          <Typography variant="caption" color="text.secondary" sx={{ fontSize: 14 }}>
+            <Link href={legalPaths(i18n.language).privacy} color="inherit" underline="hover">{t('footer.privacy')}</Link>
+            {' · '}
+            <Link href={legalPaths(i18n.language).terms} color="inherit" underline="hover">{t('footer.terms')}</Link>
+            {!isLoggedIn && (
+              <>
+                {/* Pagine PHP del blog, fuori dalla SPA: link normali, non del router */}
+                {' · '}
+                <Link href={blogPaths(i18n.language).calculator} color="inherit" underline="hover">{t('footer.calculator')}</Link>
+                {' · '}
+                <Link href={blogPaths(i18n.language).mcp} color="inherit" underline="hover">{t('footer.mcp')}</Link>
+                {' · '}
+                <Link href={plansPath(i18n.language)} color="inherit" underline="hover">{t('footer.plans')}</Link>
+                {' · '}
+                <Link
+                  component={RouterLink}
+                  to={withLangPrefix(stripLangPrefix(pathname), otherLang) + search}
+                  lang={otherLang}
+                  onClick={() => setLanguageChoice(otherLang)}
+                  color="inherit"
+                  underline="hover"
+                >
+                  {t('footer.switch_language')}
+                </Link>
+              </>
+            )}
+          </Typography>
+        </Box>
+        <EmailGate onNoticeOpenChange={setNoticeOpen} />
+        <InterestsGate waiting={noticeOpen} />
+        <BottomNav />
       </Box>
-      <EmailGate onNoticeOpenChange={setNoticeOpen} />
-      <InterestsGate waiting={noticeOpen} />
-      <BottomNav />
-    </Box>
+    </BottomBarContext.Provider>
   );
 };
 

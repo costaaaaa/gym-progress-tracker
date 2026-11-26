@@ -1,12 +1,16 @@
-// Conferma dell'email nel layout: striscia, schermata di blocco al posto delle pagine, ripartenza dopo la conferma.
+// Conferma dell'email nel layout: striscia, schermata di blocco al posto delle pagine, ripartenza dopo la conferma;
+// e gli avvisi di esito (dell'email e delle pagine) rispetto alla barra in basso.
 // Qui il contesto è quello vero e il confine è la fetch.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { Snackbar } from '@mui/material';
 import Layout from './Layout';
 import { AuthProvider } from '../../context/AuthContext';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
 import { DRAFT_STORAGE_KEY } from '../../utils/focusDraft';
+import { useSnackbarAboveBar } from '../../hooks/useSnackbarAboveBar';
+import { expectNoticeAboveBar, expectNoticeInPlace } from '../../test/dom';
 
 const original = window.fetch;
 let server;
@@ -43,6 +47,8 @@ const LoginPage = () => <h1>Accesso</h1>;
 const CallsServer = () => (
   <button onClick={() => window.fetch('/backend/api/page.php')}>carica</button>
 );
+// Una pagina dell'app con un suo avviso di esito
+const PageWithNotice = () => <Snackbar open message="Fatto" sx={useSnackbarAboveBar()} />;
 
 const mount = (path = '/schede') => render(
   <MemoryRouter initialEntries={[path]}>
@@ -51,6 +57,7 @@ const mount = (path = '/schede') => render(
         <Routes>
           <Route element={<Layout />}>
             <Route path="/schede" element={<><Page /><CallsServer /></>} />
+            <Route path="/storico" element={<PageWithNotice />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/en/login" element={<LoginPage />} />
           </Route>
@@ -199,3 +206,72 @@ describe('schermata «Cosa ti interessa?» dopo la conferma', () => {
   });
 });
 
+
+// Gli avvisi delle pagine stanno sopra la barra in basso del telefono, dove la barra c'è
+describe('avvisi e barra in basso', () => {
+  const realMatchMedia = window.matchMedia;
+  const phone = (isPhone) => {
+    window.matchMedia = (query) => ({
+      matches: isPhone && query.includes('max-width'),
+      media: query,
+      addEventListener: () => {}, removeEventListener: () => {},
+      addListener: () => {}, removeListener: () => {},
+    });
+  };
+  afterEach(() => { window.matchMedia = realMatchMedia; });
+
+  const confirmWithCode = async () => {
+    server.read = { ...server.read, ...unverified };
+    localStorage.setItem('lx_email_reminder_7', today());
+    mount();
+    fireEvent.click(await screen.findByRole('button', { name: 'Scrivi il codice' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Conferma la tua email' });
+    fireEvent.change(within(dialog).getByLabelText(/^Codice di 6 cifre/), { target: { value: '123456' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Conferma' }));
+    const notice = await screen.findByRole('alert');
+    expect(notice.textContent).toContain('Email confermata.');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    return notice;
+  };
+
+  it('sul telefono l\'avviso di una pagina sta sopra la barra, che c\'è', async () => {
+    phone(true);
+    mount('/storico');
+    await screen.findByRole('navigation', { name: 'Navigazione principale' });
+    expectNoticeAboveBar(screen.getByText('Fatto'));
+  });
+
+  it('da md in su, senza barra, l\'avviso di una pagina resta dov\'è', async () => {
+    phone(false);
+    mount('/storico');
+    // L'accesso è fatto: la barra in alto del desktop ha il menu delle azioni
+    await screen.findByRole('button', { name: 'Altre azioni' });
+    expect(screen.queryByRole('navigation', { name: 'Navigazione principale' })).toBeNull();
+    expectNoticeInPlace(screen.getByText('Fatto'));
+  });
+
+  it('sul telefono l\'avviso di esito dell\'email sta sopra la barra, che c\'è', async () => {
+    phone(true);
+    const notice = await confirmWithCode();
+    expect(screen.getByRole('navigation', { name: 'Navigazione principale' })).toBeTruthy();
+    expectNoticeAboveBar(notice);
+  });
+
+  it('da md in su, senza barra, l\'avviso resta dov\'è', async () => {
+    phone(false);
+    const notice = await confirmWithCode();
+    expect(screen.queryByRole('navigation', { name: 'Navigazione principale' })).toBeNull();
+    expectNoticeInPlace(notice);
+  });
+
+  it('con l\'email bloccata, senza barra, l\'avviso della schermata di conferma non sale', async () => {
+    phone(true);
+    server.read = { ...server.read, ...blockedState };
+    mount();
+    fireEvent.click(await screen.findByRole('button', { name: 'Esporta i miei dati' }));
+    expect(screen.queryByRole('navigation', { name: 'Navigazione principale' })).toBeNull();
+    const notice = await screen.findByRole('alert');
+    expect(notice.textContent).toContain('Download completato con successo');
+    expectNoticeInPlace(notice);
+  });
+});

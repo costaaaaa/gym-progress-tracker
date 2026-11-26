@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Box, Snackbar, Alert, CircularProgress } from '@mui/material';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSnackbarAboveBar } from '../hooks/useSnackbarAboveBar';
 import { loginWithNext } from '../utils/safeNext';
 import useAccount from './account/useAccount';
 
@@ -9,6 +10,7 @@ import useAccount from './account/useAccount';
 // notifica, una volta sola per tutte. Alle pagine passa `account`, `joinDate`, `notify` e `patchAccount` (Outlet context):
 // dopo un salvataggio riuscito una pagina mette i campi salvati in `account`, così chi rientra vede il valore nuovo.
 const Account = () => {
+  const noticeSx = useSnackbarAboveBar();
   const { user, isLoggedIn, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -65,6 +67,7 @@ const Account = () => {
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={noticeSx}
       >
         <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}

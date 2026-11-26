@@ -3,10 +3,14 @@ import confetti from 'canvas-confetti';
 const reducedMotion = () =>
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// useWorker vale solo quando si crea l'istanza: la funzione predefinita della libreria nasce con il worker, che la CSP
+// del sito blocca (worker da blob:) e lascia un errore in console. Quindi si lancia da un'istanza creata senza, una volta sola.
+let fire;
+const getFire = () => (fire ??= confetti.create(undefined, { useWorker: false, resize: true }));
+
 export const celebrate = (opts = {}) => {
   if (reducedMotion()) return;
-  // useWorker: false, perché la CSP del sito blocca i worker creati da blob:
-  confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, useWorker: false, ...opts });
+  getFire()({ particleCount: 100, spread: 70, origin: { y: 0.6 }, ...opts });
 };
 
 export const celebratePR = () =>

@@ -13,6 +13,7 @@ import HealthConsentCard from '../components/HealthConsentCard';
 import HealthAppHint from '../components/HealthAppHint';
 import { DEFAULT_PERIOD, filterByPeriod, periodStart, sortByDate, paginate } from '../utils/bodyStatsPeriod';
 import { useOncePerRequest } from '../hooks/useNavigationRequest';
+import { useSnackbarAboveBar } from '../hooks/useSnackbarAboveBar';
 import { TITLE_ROW_BUTTON } from '../utils/buttonStyles';
 import useBodyStats from './body/useBodyStats';
 import PeriodChips from './body/PeriodChips';
@@ -28,6 +29,7 @@ import { BODY_COMPOSITION_SERIES, CIRCUMFERENCE_SERIES } from './body/series';
 // La lettura e i comandi sono di useBodyStats; qui si compone la pagina.
 const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
   const { t } = useTranslation();
+  const noticeSx = useSnackbarAboveBar();
   const { weightUnit } = useAuth();
   const { stats, loading, loadFailed, consentRequired, consentUpdated, refresh, save, remove } = useBodyStats();
   const [period, setPeriod] = useState(DEFAULT_PERIOD);
@@ -158,6 +160,7 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
         open={snackbar.open}
         autoHideDuration={4000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
+        sx={noticeSx}
       >
         <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })}>
           {snackbar.message}

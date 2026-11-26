@@ -5,6 +5,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { useSnackbarAboveBar } from '../hooks/useSnackbarAboveBar';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
 import { TITLE_ROW_BUTTON } from '../utils/buttonStyles';
 import LockedRow from '../components/LockedRow';
@@ -17,6 +18,7 @@ import NewPlanDialog from './plans/NewPlanDialog';
 // Pagina «Schede» (/schede): l'elenco compatto, una card per scheda che porta alla sua pagina (/schede/:id).
 const Plans = () => {
   const { t } = useTranslation();
+  const noticeSx = useSnackbarAboveBar();
   const navigate = useNavigate();
   usePageMeta(t('nav.plans'), t('plans.meta.description'));
   const { workoutPlans, account, snackbar, closeSnackbar, notify, createPlan } = usePlans();
@@ -93,7 +95,7 @@ const Plans = () => {
         isFree={isFree}
       />
 
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={closeSnackbar}>
+      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={closeSnackbar} sx={noticeSx}>
         <Alert onClose={closeSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>

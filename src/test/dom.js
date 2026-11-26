@@ -1,5 +1,8 @@
+import { createElement } from 'react';
 import { expect } from 'vitest';
 import { screen, within } from '@testing-library/react';
+import { BottomBarContext } from '../hooks/useBottomBarVisible';
+import { BAR_HEIGHT } from '../components/Layout/barMetrics';
 
 // Helper comuni dei test di pagina: risposta della fetch finta, colore calcolato di un elemento e controllo che la pagina non apra un Container annidato.
 export const json = (data, status = 200) => ({ ok: status < 400, status, json: async () => data, text: async () => '' });
@@ -85,3 +88,28 @@ export const expectChipOff = (chip, { ink, grey }) => {
   expect([stile.color, stile.borderColor]).toEqual([ink, grey]);
   expect(stile.backgroundColor).not.toBe(ink);
 };
+
+// Avvisi e barra in basso del telefono. La pagina si monta come dentro il Layout sul telefono (la barra c'è) con
+// withBottomBar. jsdom non risolve env(): si controlla che l'avviso stia sopra l'altezza della barra e porti l'area sicura;
+// la distanza vera sul telefono resta da guardare in un browser.
+export const withBottomBar = (page) => createElement(BottomBarContext.Provider, { value: true }, page);
+
+// `message` è un elemento col testo dell'avviso (o un suo discendente)
+const noticeBottom = (message) => getComputedStyle(message.closest('.MuiSnackbar-root')).bottom;
+// Distanza dell'avviso dal fondo in px, senza l'area sicura
+export const noticeOffset = (message) => parseFloat(/^(?:calc\()?([\d.]+)px/.exec(noticeBottom(message))[1]);
+
+export const expectNoticeAboveBar = (message) => {
+  expect(noticeBottom(message)).toContain('env(safe-area-inset-bottom)');
+  expect(noticeOffset(message)).toBeGreaterThan(BAR_HEIGHT);
+};
+
+// Un avviso con un pulsante da 44 px è alto 56 px (6 px di margine interno sopra e sotto): quello che gli sta sopra
+// parte almeno da lì, altrimenti lo copre
+const NOTICE_WITH_BUTTON_HEIGHT = 56;
+export const expectNoticeStacked = (upper, lower) => {
+  expect(noticeOffset(upper)).toBeGreaterThanOrEqual(noticeOffset(lower) + NOTICE_WITH_BUTTON_HEIGHT);
+};
+
+// Senza la barra l'avviso resta dov'è di default in MUI: nessuna distanza in più
+export const expectNoticeInPlace = (message) => expect(noticeBottom(message)).toMatch(/^(8|24)px$/);
