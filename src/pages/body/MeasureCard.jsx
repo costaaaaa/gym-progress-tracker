@@ -1,7 +1,8 @@
 import { Box, Card, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { buildPoints } from '../../components/ChartCard';
-import { CHART_LINE_COLOR, hasValue, lastValueOf, measureText } from './series';
+import { CHART_LINE_COLOR } from '../../utils/chartLine';
+import { hasValue, lastValueOf, measureText } from './series';
 
 const SPARK_W = 120;
 const SPARK_H = 36;

@@ -3,7 +3,8 @@ import ChartCard from '../../components/ChartCard';
 import { formatDate, intlLocale } from '../../i18n/format';
 import { BODY_LB_DIVISIONS, formatWeightInUnit, kgToDisplay, weightUnitLabel } from '../../utils/weightUnit';
 import { PERIOD_UI, periodWeightDelta, weightTrend } from '../../utils/bodyStatsPeriod';
-import { CHART_LINE_COLOR, lastValueOf } from './series';
+import { CHART_LINE_COLOR } from '../../utils/chartLine';
+import { lastValueOf } from './series';
 
 // Andamento del peso nel periodo: grafico, ultimo valore e variazione. `data` sono le righe del periodo con `day`.
 const WeightCard = ({ data, domain, period, weightUnit }) => {

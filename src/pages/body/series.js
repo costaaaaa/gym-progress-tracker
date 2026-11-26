@@ -21,9 +21,6 @@ export const measureText = (series, value, weightUnit) => (series.isLength
   ? `${formatLengthInUnit(value, weightUnit, intlLocale(), { unit: false })} ${lengthUnitLabel(weightUnit)}`
   : `${formatMeasureText(value)}${series.unit}`);
 
-// Linea dei grafici del corpo (peso e altre misure): neutra, il rosso del marchio non è un dato
-export const CHART_LINE_COLOR = 'text.primary';
-
 export const hasValue = (v) => v !== null && v !== undefined && v !== '';
 
 export const lastValueOf = (data, key) => {
