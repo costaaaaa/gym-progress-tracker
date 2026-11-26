@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, Card, CircularProgress, Grid, IconButton, LinearProgress, Typography } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { Link as RouterLink } from 'react-router-dom';
+import { Box, Card, CircularProgress, Grid, LinearProgress, Typography } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import CheckIcon from '@mui/icons-material/Check';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +15,7 @@ import { achievementLabel } from '../i18n/labels';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
 import { ELLIPSIS_FROM_390 } from '../theme/narrowScreens';
 import { radius } from '../theme/radius';
+import BackArrow from '../components/BackArrow';
 
 // Solo queste tre categorie hanno una griglia dedicata: "strength" è esclusa perché il suo
 // ruolo è coperto dalla sezione "Livelli per esercizio" (il catalogo backend resta invariato).
@@ -233,9 +232,7 @@ const LevelsContent = () => {
   return (
     <Box sx={{ width: '100%' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-        <IconButton component={RouterLink} to="/" aria-label={t('nav.home')} edge="start" sx={{ width: 44, height: 44, color: 'text.primary' }}>
-          <ArrowBackIcon />
-        </IconButton>
+        <BackArrow to="/" label={t('nav.home')} />
         <Typography variant="pageTitle" sx={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{t('modules.levels.name')}</Typography>
       </Box>
       <LevelsBody />

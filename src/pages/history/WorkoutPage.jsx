@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Box, Button, Card, CircularProgress, IconButton, Snackbar, Typography } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { Alert, Box, Button, Card, CircularProgress, Snackbar, Typography } from '@mui/material';
 import { format, subDays } from 'date-fns';
-import { Link as RouterLink, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import BackArrow from '../../components/BackArrow';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import { isModuleActive } from '../../hooks/useModule';
@@ -76,9 +76,7 @@ const WorkoutPage = () => {
   };
 
   const back = (
-    <IconButton component={RouterLink} to={backPath} aria-label={t('nav.history')} edge="start" sx={{ width: 44, height: 44, color: 'text.primary' }}>
-      <ArrowBackIcon />
-    </IconButton>
+    <BackArrow to={backPath} label={t('nav.history')} />
   );
 
   const body = () => {

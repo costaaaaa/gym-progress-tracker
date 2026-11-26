@@ -74,6 +74,10 @@ export const expectDestructiveConfirm = (corpo, conferma, { ink, red }) => {
 export const expectChipOn = (chip, { ink, paper }) => {
   const stile = getComputedStyle(chip);
   expect([stile.backgroundColor, stile.color]).toEqual([ink, paper]);
+  // Resta pieno anche con il fuoco da tastiera, che MUI segna sul chip con questa classe
+  chip.classList.add('Mui-focusVisible');
+  expect(getComputedStyle(chip).backgroundColor).toBe(ink);
+  chip.classList.remove('Mui-focusVisible');
 };
 
 export const expectChipOff = (chip, { ink, grey }) => {

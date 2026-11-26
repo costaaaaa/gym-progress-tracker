@@ -197,7 +197,7 @@ const WHITE = 'rgb(255, 255, 255)';
 const style = (el) => getComputedStyle(el);
 // Colori del chip in chiaro e in scuro: text.primary, text.secondary e background.paper
 const CHIP_COLORS = {
-  light: { ink: 'rgb(26, 24, 22)', grey: 'rgb(107, 102, 99)', paper: 'rgb(255, 255, 255)' },
+  light: { ink: INK, grey: GREY, paper: WHITE },
   dark: { ink: 'rgb(255, 255, 255)', grey: 'rgb(160, 160, 162)', paper: 'rgb(20, 20, 22)' },
 };
 const themed = (page) => <ThemeModeProvider>{page}</ThemeModeProvider>;

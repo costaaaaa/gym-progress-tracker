@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Box, Button, CircularProgress, Grid, IconButton, Snackbar, Typography } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
+import { Alert, Box, Button, CircularProgress, Grid, Snackbar, Typography } from '@mui/material';
+import { useNavigate, useParams } from 'react-router-dom';
+import BackArrow from '../../components/BackArrow';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import ExerciseDialog from '../../components/ExerciseDialog';
@@ -137,9 +137,7 @@ const PlanPage = () => {
       {plan ? (
         <>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-            <IconButton component={RouterLink} to="/schede" aria-label={t('nav.plans')} edge="start" sx={{ width: 44, height: 44, color: 'text.primary' }}>
-              <ArrowBackIcon />
-            </IconButton>
+            <BackArrow to="/schede" label={t('nav.plans')} />
             <Typography variant="pageTitle" sx={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{plan.name}</Typography>
             <Button
               ref={toggleRef}

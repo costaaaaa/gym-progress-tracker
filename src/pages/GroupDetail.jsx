@@ -13,6 +13,7 @@ import ModuleGate from '../components/ModuleGate';
 import LeaderboardTable from '../components/Groups/LeaderboardTable';
 import ReportDialog from '../components/Groups/ReportDialog';
 import ConfirmDialog from '../components/ConfirmDialog';
+import BackArrow from '../components/BackArrow';
 import {
   errorMessage, groupTypeLabel, inviteLink, leaveGroup, manageGroup, readGroup, roleLabel,
 } from '../api/groups';
@@ -163,10 +164,11 @@ const GroupDetailContent = () => {
   return (
     <Box sx={{ pb: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 3 }}>
-        <IconButton component={RouterLink} to="/gruppi" aria-label={t('groups.join.your_groups')} edge="start" sx={{ width: 44, height: 44, color: 'text.primary' }}>
-          <ArrowBackIcon />
-        </IconButton>
-        <Typography variant="pageTitle" sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>{group.name}</Typography>
+        {/* Freccia e titolo restano insieme: con un nome lungo va a capo il titolo accanto alla freccia, non sotto */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+          <BackArrow to="/gruppi" label={t('groups.join.your_groups')} />
+          <Typography variant="pageTitle" sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>{group.name}</Typography>
+        </Box>
         <Chip size="small" label={groupTypeLabel(group.type)} />
         <Typography sx={{ color: 'text.secondary', fontSize: 16 }}>
           {t('groups_card.members', { count: Number(group.members_count) })}

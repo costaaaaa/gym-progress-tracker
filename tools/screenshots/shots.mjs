@@ -282,10 +282,11 @@ const checkAvailability = ({ codice }) => {
   return { success: true, username_taken: false, email_taken: false, ...(codice === 'ok' ? { signup_code: { usable: true, tier: 'plus', duration_days: 90 } } : {}) };
 };
 
-// Un traguardo del profilo: `giorni` è lo sblocco in giorni rispetto a oggi (negativo), senza `giorni` è bloccato
-const traguardo = (key, category, label, threshold, giorni = null) => ({
-  key, category, label, threshold, unlocked_at: giorni === null ? null : stamp(giorni, '18:00:00'), locked: giorni === null,
-});
+// Un traguardo del profilo: `sbloccatoGiorniFa` è il giorno dello sblocco rispetto a oggi (negativo); senza, è bloccato
+const traguardo = (key, category, label, threshold, sbloccatoGiorniFa) => {
+  const bloccato = sbloccatoGiorniFa === undefined;
+  return { key, category, label, threshold, unlocked_at: bloccato ? null : stamp(sbloccatoGiorniFa, '18:00:00'), locked: bloccato };
+};
 
 // Utenti dei dati finti: `attivo` è l'utente di tutte le pagine, `un-allenamento` ha un solo allenamento nello storico
 // (ogni esercizio è "Nuovo" nei Progressi), `progressi` anche (la panca sale a ogni allenamento). `nuovo` risponde come un account vuoto
@@ -595,7 +596,7 @@ for (const vp of viewports) {
         await page.getByRole('button', { name: 'Inizia allenamento', exact: true }).waitFor();
         await snap(page, FOCUS_SHOTS.scelta, tag);
 
-        // Il giorno è un gruppo di opzioni (role="radio"), non più una tendina
+        // Il giorno si sceglie da un gruppo di opzioni (role="radio")
         await page.getByRole('radio', { name: 'Trazione', exact: true }).click();
         await page.getByRole('button', { name: 'Inizia allenamento', exact: true }).click();
         await page.getByRole('button', { name: 'Conferma serie', exact: true }).waitFor();

@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Alert, Box, Button, Card, CircularProgress, IconButton, InputAdornment, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Card, CircularProgress, InputAdornment, TextField, Typography } from '@mui/material';
 import { visuallyHidden } from '@mui/utils';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SearchIcon from '@mui/icons-material/Search';
-import { Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import BackArrow from '../../components/BackArrow';
 import ChoiceChip from '../../components/ChoiceChip';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import { personalLabel } from '../../api/exercises';
@@ -44,9 +43,7 @@ const ExercisesPage = () => {
   return (
     <Box sx={{ pb: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-        <IconButton component={RouterLink} to="/schede" aria-label={t('nav.plans')} edge="start" sx={{ width: 44, height: 44, color: 'text.primary' }}>
-          <ArrowBackIcon />
-        </IconButton>
+        <BackArrow to="/schede" label={t('nav.plans')} />
         <Typography variant="pageTitle" sx={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{t('plans.exercises.title')}</Typography>
       </Box>
 

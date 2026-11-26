@@ -10,7 +10,7 @@ const ChoiceChip = ({ selected, sx, ...rest }) => (
       selected
         ? { bgcolor: 'text.primary', color: 'background.paper', '&:hover, &.Mui-focusVisible': { bgcolor: 'text.primary' } }
         : { borderColor: 'text.secondary', color: 'text.primary' },
-      ...(Array.isArray(sx) ? sx : [sx]),
+      sx,
     ]}
     {...rest}
   />
