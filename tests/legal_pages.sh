@@ -126,8 +126,8 @@ cerca() { grep -q -- "$2" "$ROOT/public/$1" && ok "$3" || ko "$3" "manca «$2» 
 assenza() { grep -qi -- "$2" "$ROOT/public/$1" && ko "$3" "trovato «$2» in $1" || ok "$3"; }
 cerca termini.html 'Versione 2026-11 · aggiornati il 17 novembre 2026' "termini IT: versione 2026-11, data 17 novembre 2026"
 cerca en/terms.html 'Version 2026-11 · updated on 17 November 2026' "termini EN: versione 2026-11, data 17 novembre 2026"
-cerca privacy.html 'Versione 2026-11 · aggiornata il 17 novembre 2026' "privacy IT: versione 2026-11, data 17 novembre 2026"
-cerca en/privacy.html 'Version 2026-11 · updated on 17 November 2026' "privacy EN: versione 2026-11, data 17 novembre 2026"
+cerca privacy.html 'Versione 2026-11 · aggiornata il 26 novembre 2026' "privacy IT: versione 2026-11, data 26 novembre 2026"
+cerca en/privacy.html 'Version 2026-11 · updated on 26 November 2026' "privacy EN: versione 2026-11, data 26 novembre 2026"
 cerca privacy.html '<li>2026-11, aggiornata il 17 novembre 2026:' "privacy IT: voce nella cronologia"
 cerca en/privacy.html '<li>2026-11, updated on 17 November 2026:' "privacy EN: voce nella cronologia"
 cerca termini.html 'href="/piani"' "termini IT: link alla pagina dei piani"
