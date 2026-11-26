@@ -7,7 +7,7 @@ import { render, screen, fireEvent, waitFor, within, act } from '@testing-librar
 import { MemoryRouter, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import History from './History';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
-import { json, expectNoNestedContainer, colorOf, expectPageTitleBlock, expectTitleRowButton, withBottomBar, expectNoticeAboveBar } from '../test/dom';
+import { json, expectNoNestedContainer, colorOf, expectPageTitleBlock, expectTitleRowButton, withBottomBar, expectNoticeAboveBar, expectNoticeStacked } from '../test/dom';
 import { setBrowserTimeZone } from '../test/timeZone';
 import { textBelow } from '../test/minText';
 import { strayListChildren } from '../test/accessibleNames';
@@ -580,8 +580,7 @@ describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
     const attesa = screen.getByText('Allenamento eliminato');
     expectNoticeAboveBar(attesa);
     expectNoticeAboveBar(avviso);
-    const distanza = (el) => parseFloat(/calc\(([\d.]+)px/.exec(getComputedStyle(el.closest('.MuiSnackbar-root')).bottom)[1]);
-    expect(distanza(avviso)).toBeGreaterThan(distanza(attesa) + 48);
+    expectNoticeStacked(avviso, attesa);
   });
 
   // 2.4.3 e 2.2.1: la tastiera arriva subito a «Annulla», il conto si ferma finché lo si usa, il fuoco non finisce su body

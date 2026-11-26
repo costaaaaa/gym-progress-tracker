@@ -13,7 +13,7 @@ import EmailStrip from '../EmailVerification/EmailStrip';
 import EmailGate from '../EmailVerification/EmailGate';
 import InterestsGate from '../Modules/InterestsGate';
 import EmailBlockedScreen from '../EmailVerification/EmailBlockedScreen';
-import { BottomBarContext, useBottomBarVisible } from '../../hooks/useSnackbarAboveBar';
+import { BottomBarContext, useBottomBarVisible } from '../../hooks/useBottomBarVisible';
 
 const MAIN_ID = 'main-content';
 

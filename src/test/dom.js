@@ -1,7 +1,7 @@
 import { createElement } from 'react';
 import { expect } from 'vitest';
 import { screen, within } from '@testing-library/react';
-import { BottomBarContext } from '../hooks/useSnackbarAboveBar';
+import { BottomBarContext } from '../hooks/useBottomBarVisible';
 import { BAR_HEIGHT } from '../components/Layout/barMetrics';
 
 // Helper comuni dei test di pagina: risposta della fetch finta, colore calcolato di un elemento e controllo che la pagina non apra un Container annidato.
@@ -94,13 +94,21 @@ export const expectChipOff = (chip, { ink, grey }) => {
 // la distanza vera sul telefono resta da guardare in un browser.
 export const withBottomBar = (page) => createElement(BottomBarContext.Provider, { value: true }, page);
 
-const noticeBottom = (message) => getComputedStyle(message.closest('.MuiSnackbar-root')).bottom;
-
 // `message` è un elemento col testo dell'avviso (o un suo discendente)
+const noticeBottom = (message) => getComputedStyle(message.closest('.MuiSnackbar-root')).bottom;
+// Distanza dell'avviso dal fondo in px, senza l'area sicura
+export const noticeOffset = (message) => parseFloat(/^(?:calc\()?([\d.]+)px/.exec(noticeBottom(message))[1]);
+
 export const expectNoticeAboveBar = (message) => {
-  const bottom = noticeBottom(message);
-  expect(bottom).toContain('env(safe-area-inset-bottom)');
-  expect(parseFloat(/calc\(([\d.]+)px/.exec(bottom)[1])).toBeGreaterThan(BAR_HEIGHT);
+  expect(noticeBottom(message)).toContain('env(safe-area-inset-bottom)');
+  expect(noticeOffset(message)).toBeGreaterThan(BAR_HEIGHT);
+};
+
+// Un avviso con un pulsante da 44 px è alto 56 px (6 px di margine interno sopra e sotto): quello che gli sta sopra
+// parte almeno da lì, altrimenti lo copre
+const NOTICE_WITH_BUTTON = 56;
+export const expectNoticeStacked = (upper, lower) => {
+  expect(noticeOffset(upper)).toBeGreaterThanOrEqual(noticeOffset(lower) + NOTICE_WITH_BUTTON);
 };
 
 // Senza la barra l'avviso resta dov'è di default in MUI: nessuna distanza in più

@@ -11,7 +11,7 @@ import LogoMark from '../LogoMark';
 import CenterFan from './CenterFan';
 import { BAR_HEIGHT, CIRCLE } from './barMetrics';
 import { useCenterActions } from '../../hooks/useCenterActions';
-import { useBottomBarVisible } from '../../hooks/useSnackbarAboveBar';
+import { useBottomBarVisible } from '../../hooks/useBottomBarVisible';
 
 // Voce di navigazione standard (icona + etichetta), come link/bottone accessibile
 // (component=RouterLink su ButtonBase: focus da tastiera, aria-current sulla voce attiva).
@@ -68,8 +68,8 @@ const BottomNav = () => {
   // Il ventaglio non sopravvive a un cambio di indirizzo (indietro del browser, swipe) né al passaggio al desktop
   useEffect(() => { setFanOpen(false); }, [location.key, isMobile]);
 
-  // Non c'è sotto md né senza accesso, e con l'app bloccata dalla conferma dell'email le voci porterebbero a pagine che
-  // rispondono 403; la modalità Focus vive fuori dal Layout (full screen, senza Navbar). La regola è condivisa con gli avvisi.
+  // C'è solo sotto md e con l'accesso fatto; con l'app bloccata dalla conferma dell'email le voci porterebbero a pagine
+  // che rispondono 403, e la modalità Focus è a schermo intero. La stessa regola dice agli avvisi se salire sopra la barra.
   if (!barVisible) return null;
 
   const isActive = (path) => location.pathname === path;

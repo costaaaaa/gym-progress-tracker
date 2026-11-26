@@ -1,4 +1,4 @@
-// Supporto comune alle guardie del tema (colori, raggi): i file sorgente sotto src/ (.js/.jsx, test
+// Supporto comune alle guardie sul codice (colori, raggi, avvisi): i file sorgente sotto src/ (.js/.jsx, test
 // esclusi) e la loro scansione.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';

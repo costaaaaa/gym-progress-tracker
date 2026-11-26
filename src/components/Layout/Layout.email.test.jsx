@@ -3,10 +3,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { Snackbar } from '@mui/material';
 import Layout from './Layout';
 import { AuthProvider } from '../../context/AuthContext';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
 import { DRAFT_STORAGE_KEY } from '../../utils/focusDraft';
+import { useSnackbarAboveBar } from '../../hooks/useSnackbarAboveBar';
 import { expectNoticeAboveBar, expectNoticeInPlace } from '../../test/dom';
 
 const original = window.fetch;
@@ -44,6 +46,8 @@ const LoginPage = () => <h1>Accesso</h1>;
 const CallsServer = () => (
   <button onClick={() => window.fetch('/backend/api/page.php')}>carica</button>
 );
+// Una pagina dell'app con un suo avviso di esito
+const PageWithNotice = () => <Snackbar open message="Fatto" sx={useSnackbarAboveBar()} />;
 
 const mount = (path = '/schede') => render(
   <MemoryRouter initialEntries={[path]}>
@@ -52,6 +56,7 @@ const mount = (path = '/schede') => render(
         <Routes>
           <Route element={<Layout />}>
             <Route path="/schede" element={<><Page /><CallsServer /></>} />
+            <Route path="/storico" element={<PageWithNotice />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/en/login" element={<LoginPage />} />
           </Route>
@@ -227,6 +232,21 @@ describe('avvisi e barra in basso', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     return notice;
   };
+
+  it('sul telefono l\'avviso di una pagina sta sopra la barra, che c\'è', async () => {
+    phone(true);
+    mount('/storico');
+    await screen.findByRole('navigation', { name: 'Navigazione principale' });
+    expectNoticeAboveBar(screen.getByText('Fatto'));
+  });
+
+  it('da md in su, senza barra, l\'avviso di una pagina resta dov\'è', async () => {
+    phone(false);
+    mount('/storico');
+    await screen.findByText('Fatto');
+    expect(screen.queryByRole('navigation', { name: 'Navigazione principale' })).toBeNull();
+    expectNoticeInPlace(screen.getByText('Fatto'));
+  });
 
   it('sul telefono l\'avviso di esito dell\'email sta sopra la barra, che c\'è', async () => {
     phone(true);
