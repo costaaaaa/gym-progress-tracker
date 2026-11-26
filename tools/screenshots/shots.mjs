@@ -595,8 +595,8 @@ for (const vp of viewports) {
         await page.getByRole('button', { name: 'Inizia allenamento', exact: true }).waitFor();
         await snap(page, FOCUS_SHOTS.scelta, tag);
 
-        await page.getByRole('combobox').click();
-        await page.getByRole('option', { name: 'Trazione', exact: true }).click();
+        // Il giorno è un gruppo di opzioni (role="radio"), non più una tendina
+        await page.getByRole('radio', { name: 'Trazione', exact: true }).click();
         await page.getByRole('button', { name: 'Inizia allenamento', exact: true }).click();
         await page.getByRole('button', { name: 'Conferma serie', exact: true }).waitFor();
 
@@ -624,9 +624,11 @@ for (const vp of viewports) {
         await confirmSet('8');
         await page.getByRole('heading', { name: 'Rematore con bilanciere' }).waitFor();
         await snap(page, FOCUS_SHOTS.riscaldamento, tag);
+        // «Salta esercizio» sta nel menu «Altre azioni» della barra: si apre, si sceglie la voce e si aspetta che il menu sparisca
         for (let i = 0; i < 10 && !(await page.getByText('Riepilogo', { exact: true }).isVisible()); i++) {
-          await page.getByRole('button', { name: 'Salta esercizio', exact: true }).click();
-          await page.waitForTimeout(300);
+          await page.getByRole('button', { name: 'Altre azioni', exact: true }).click();
+          await page.getByRole('menuitem', { name: 'Salta esercizio', exact: true }).click();
+          await page.getByRole('menu').waitFor({ state: 'detached' });
         }
         await page.getByText('Riepilogo', { exact: true }).waitFor();
         await snap(page, FOCUS_SHOTS.riepilogo, tag);
@@ -783,12 +785,14 @@ for (const vp of viewports) {
       try {
         await page.goto(`${base}/focus`, { waitUntil: 'domcontentloaded' });
         await page.getByRole('button', { name: 'Inizia allenamento', exact: true }).waitFor();
-        await page.getByRole('combobox').click();
-        await page.getByRole('option', { name: 'Trazione', exact: true }).click();
+        await page.getByRole('radio', { name: 'Trazione', exact: true }).click();
         await page.getByRole('button', { name: 'Inizia allenamento', exact: true }).click();
         await page.getByRole('button', { name: 'Conferma serie', exact: true }).waitFor();
         await snap(page, 'focus-plus-allenamento', tag);
-        await page.getByRole('button', { name: /Cambia esercizio/ }).click();
+        // «Cambia esercizio» è una voce del menu «Altre azioni»; senza Plus il suo nome finisce con «(Plus)» e la finestra
+        // si apre a menu chiuso
+        await page.getByRole('button', { name: 'Altre azioni', exact: true }).click();
+        await page.getByRole('menuitem', { name: /Cambia esercizio/ }).click();
         await page.getByRole('dialog').waitFor();
         await snap(page, 'focus-plus-dialogo', tag, page.getByRole('dialog'));
       } finally {
