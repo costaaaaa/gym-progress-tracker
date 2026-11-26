@@ -103,7 +103,8 @@ const WorkoutPage = () => {
     ];
     return (
       <>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+        {/* Con un titolo su più righe la freccia resta all'altezza della prima */}
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 0.5 }}>
           {back}
           <Typography variant="pageTitle" sx={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{workoutTitle(workout)}</Typography>
         </Box>

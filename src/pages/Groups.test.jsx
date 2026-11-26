@@ -155,10 +155,11 @@ describe('dettaglio del gruppo', () => {
     // tipo e membri sono elementi della riga, che invece va a capo
     const coppia = titolo.parentElement;
     const riga = coppia.parentElement;
-    expect(getComputedStyle(coppia).flexWrap).not.toBe('wrap');
+    expect([getComputedStyle(coppia).display, getComputedStyle(coppia).flexWrap]).toEqual(['flex', 'nowrap']);
     expect(getComputedStyle(riga).flexWrap).toBe('wrap');
     const tipo = within(riga).getByText('Palestra', { selector: '.MuiChip-label' });
     const membri = within(riga).getByText('3 membri');
+    [tipo, membri].forEach((el) => expect(coppia.contains(el)).toBe(false));
     [tipo, membri].forEach((el) => expect(titolo.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy());
   });
 

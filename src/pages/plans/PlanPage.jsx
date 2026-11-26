@@ -136,7 +136,8 @@ const PlanPage = () => {
     <Box sx={{ pb: 3 }}>
       {plan ? (
         <>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+          {/* Con un nome su più righe freccia e pulsante restano all'altezza della prima */}
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
             <BackArrow to="/schede" label={t('nav.plans')} />
             <Typography variant="pageTitle" sx={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{plan.name}</Typography>
             <Button
