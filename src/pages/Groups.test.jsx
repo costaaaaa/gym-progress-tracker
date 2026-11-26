@@ -151,7 +151,12 @@ describe('dettaglio del gruppo', () => {
     const titolo = screen.getByRole('heading', { level: 1, name: 'Palestra Rossi' });
     expectPageTitleBlock(titolo);
     expectBackArrow(titolo, screen.getByRole('link', { name: 'I tuoi gruppi' }), '/gruppi');
-    const riga = titolo.parentElement;
+    // Freccia e titolo stanno in un blocco che non va a capo (un nome lungo non scende sotto la freccia);
+    // tipo e membri sono elementi della riga, che invece va a capo
+    const coppia = titolo.parentElement;
+    const riga = coppia.parentElement;
+    expect(getComputedStyle(coppia).flexWrap).not.toBe('wrap');
+    expect(getComputedStyle(riga).flexWrap).toBe('wrap');
     const tipo = within(riga).getByText('Palestra', { selector: '.MuiChip-label' });
     const membri = within(riga).getByText('3 membri');
     [tipo, membri].forEach((el) => expect(titolo.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy());

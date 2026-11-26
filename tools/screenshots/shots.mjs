@@ -282,10 +282,11 @@ const checkAvailability = ({ codice }) => {
   return { success: true, username_taken: false, email_taken: false, ...(codice === 'ok' ? { signup_code: { usable: true, tier: 'plus', duration_days: 90 } } : {}) };
 };
 
-// Un traguardo del profilo: `sbloccatoGiorniFa` è il giorno dello sblocco rispetto a oggi (negativo); senza, è bloccato
-const traguardo = (key, category, label, threshold, sbloccatoGiorniFa) => {
-  const bloccato = sbloccatoGiorniFa === undefined;
-  return { key, category, label, threshold, unlocked_at: bloccato ? null : stamp(sbloccatoGiorniFa, '18:00:00'), locked: bloccato };
+// Un traguardo del profilo: `giornoSblocco` è il giorno dello sblocco contato da oggi (-40 = quaranta giorni fa);
+// senza, è bloccato
+const traguardo = (key, category, label, threshold, giornoSblocco) => {
+  const bloccato = giornoSblocco === undefined;
+  return { key, category, label, threshold, unlocked_at: bloccato ? null : stamp(giornoSblocco, '18:00:00'), locked: bloccato };
 };
 
 // Utenti dei dati finti: `attivo` è l'utente di tutte le pagine, `un-allenamento` ha un solo allenamento nello storico
