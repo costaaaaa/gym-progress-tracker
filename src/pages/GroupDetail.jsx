@@ -164,8 +164,9 @@ const GroupDetailContent = () => {
   return (
     <Box sx={{ pb: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 3 }}>
-        {/* Freccia e titolo restano insieme: con un nome lungo va a capo il titolo accanto alla freccia, non sotto */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+        {/* Freccia e titolo restano insieme: con un nome lungo va a capo il titolo accanto alla freccia, non sotto;
+            la freccia resta all'altezza della prima riga */}
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, minWidth: 0 }}>
           <BackArrow to="/gruppi" label={t('groups.join.your_groups')} />
           <Typography variant="pageTitle" sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>{group.name}</Typography>
         </Box>
