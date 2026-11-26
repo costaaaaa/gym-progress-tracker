@@ -938,6 +938,16 @@ describe('eliminare una misurazione', () => {
     expect(browserConfirm).not.toHaveBeenCalled();
   });
 
+  it('un secondo tocco su «Elimina» mentre la finestra si chiude non elimina due volte', async () => {
+    await mount(themed);
+    fireEvent.click(within(tableRows()[0]).getByRole('button', { name: 'Elimina' }));
+    const elimina = within(screen.getByRole('dialog')).getByRole('button', { name: 'Elimina' });
+    fireEvent.click(elimina);
+    fireEvent.click(elimina);
+    expect(await screen.findByText('Misurazione eliminata')).toBeTruthy();
+    expect(deleteCalls()).toHaveLength(1);
+  });
+
   it('«Annulla» chiude la finestra senza eliminare', async () => {
     await mount(themed);
     fireEvent.click(within(tableRows()[0]).getByRole('button', { name: 'Elimina' }));

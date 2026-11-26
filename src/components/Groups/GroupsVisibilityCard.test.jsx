@@ -193,7 +193,7 @@ describe('uscire da un gruppo', () => {
     mount({ groups: true });
     fireEvent.click(await screen.findByRole('button', { name: 'Esci' }));
     const dialog = within(screen.getByRole('dialog'));
-    expect(dialog.getByText('Uscire dal gruppo?')).toBeTruthy();
+    expect(dialog.getByText('Uscire da «Palestra Rossi»?')).toBeTruthy();
     expectDestructiveConfirm('I tuoi dati spariscono subito dalla classifica. Per rientrare servirà un nuovo invito.', 'Esci', { ink: 'rgb(26, 24, 22)', red: 'rgb(213, 0, 0)' });
     expect(leaveCalls()).toHaveLength(0);
     fireEvent.click(dialog.getByRole('button', { name: 'Esci' }));
@@ -201,6 +201,17 @@ describe('uscire da un gruppo', () => {
     expect(JSON.parse(leaveCalls()[0][1].body)).toEqual({ group_id: 7 });
     await waitFor(() => expect(screen.queryByText('Palestra Rossi')).toBeNull());
     expect(browserConfirm).not.toHaveBeenCalled();
+  });
+
+  it('un secondo tocco su «Esci» mentre la finestra si chiude non esce due volte', async () => {
+    groups = [MEMBER_GROUP];
+    mount({ groups: true });
+    fireEvent.click(await screen.findByRole('button', { name: 'Esci' }));
+    const esci = within(screen.getByRole('dialog')).getByRole('button', { name: 'Esci' });
+    fireEvent.click(esci);
+    fireEvent.click(esci);
+    await waitFor(() => expect(screen.queryByText('Palestra Rossi')).toBeNull());
+    expect(leaveCalls()).toHaveLength(1);
   });
 
   it('«Annulla» chiude la finestra e il gruppo resta', async () => {

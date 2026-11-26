@@ -8,6 +8,7 @@ import { CHIP_FONT, TITLE_FONT_FAMILY } from '../utils/fonts';
 import { radius } from '../theme/radius';
 import { FIELD_INPUT_PADDING_Y } from '../theme/fieldHeight';
 import { BUTTON_PADDING_X } from '../theme/buttonPadding';
+import { PAGE_TITLE_FONT_SIZE, PAGE_TITLE_LINE_HEIGHT, PAGE_TITLE_PADDING_Y } from '../theme/pageTitle';
 
 const BRAND = '#d50000';
 const BRAND_DARK = '#9b0000';
@@ -199,17 +200,17 @@ export const ThemeModeProvider = ({ children }) => {
           // che sostituisce, con un tag <p> (vedi variantMapping sotto).
           cardTitle: { fontFamily: TITLE_FONT_FAMILY, fontWeight: 700, fontSize: '17px', lineHeight: 1.5 },
           // Titolo di pagina: 28px a tutte le larghezze (nelle schermate di lavoro il titolo sta tra 24 e 32px). Interlinea come h1.
-          // Sta sempre in un blocco alto almeno 44 px (come pulsanti e freccia) con il testo al centro: così il titolo ha la
+          // Lo spazio sopra e sotto porta una riga di titolo all'altezza di pulsanti e freccia: così il titolo parte alla
           // stessa altezza in ogni pagina, con o senza pulsante o freccia sulla riga, anche quando il pulsante va a capo.
+          // Resta un blocco normale: il testo si allinea e va a capo come in ogni altro titolo.
           pageTitle: {
-            display: 'flex',
-            alignItems: 'center',
-            minHeight: 44,
+            paddingTop: `${PAGE_TITLE_PADDING_Y}px`,
+            paddingBottom: `${PAGE_TITLE_PADDING_Y}px`,
             fontFamily: TITLE_FONT_FAMILY,
             fontWeight: 800,
             letterSpacing: '-0.02em',
-            fontSize: '28px',
-            lineHeight: 1.167,
+            fontSize: `${PAGE_TITLE_FONT_SIZE}px`,
+            lineHeight: PAGE_TITLE_LINE_HEIGHT,
           },
           // Numero grande (riepiloghi, 1RM, peso attuale, statistiche): cifre tabulari, così non ballano.
           statNumber: {

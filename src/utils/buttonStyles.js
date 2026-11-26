@@ -1,4 +1,5 @@
 import { BUTTON_PADDING_X } from '../theme/buttonPadding';
+import { PAGE_TITLE_BLOCK_HEIGHT } from '../theme/pageTitle';
 
 const TEXT_BUTTON = {
   fontSize: 16,
@@ -24,8 +25,8 @@ export const NEUTRAL_TEXT = {
 // si tocca, così l'area toccabile resta intera (almeno 44 px) e non si sovrappone a quella di un bottone accanto.
 export const flushTextButton = (side) => ({ minHeight: 44, [side === 'right' ? 'mr' : 'ml']: `-${BUTTON_PADDING_X}px` });
 
-// Riga di azioni in fondo a una card o a una pagina: da sm in su i bottoni stanno accanto (il secondo a destra), sotto sm uno
-// per riga, a sinistra.
+// Riga di azioni in fondo a una card o a una pagina: con due bottoni, da sm in su stanno accanto (il secondo a destra) e
+// sotto sm uno per riga, a sinistra. Con un bottone solo, quello resta a sinistra a ogni larghezza.
 export const ACTIONS_ROW = {
   display: 'flex',
   flexDirection: { xs: 'column', sm: 'row' },
@@ -35,12 +36,16 @@ export const ACTIONS_ROW = {
   gap: 1,
 };
 
-// Il bottone di testo a destra in una ACTIONS_ROW: a filo a sinistra quando sta da solo sulla riga, a filo a destra accanto
-// all'altro bottone.
+// Il bottone di testo che in una ACTIONS_ROW viene per secondo: a filo a sinistra sotto sm (sta sulla sua riga), a filo a
+// destra da sm (sta accanto al primo). Se nella riga è l'unico bottone va usato flushTextButton('left').
 export const flushTextButtonInActionsRow = (theme) => ({
   ...flushTextButton('left'),
-  [theme.breakpoints.up('sm')]: { ml: 0, mr: `-${BUTTON_PADDING_X}px` },
+  [theme.breakpoints.up('sm')]: { ml: 0, ...flushTextButton('right') },
 });
+
+// Bottone sulla riga del titolo di pagina: alto quanto il blocco del titolo, così la riga non cresce e il titolo resta alla
+// stessa altezza delle pagine senza pulsante.
+export const TITLE_ROW_BUTTON = { height: PAGE_TITLE_BLOCK_HEIGHT };
 
 // Comando in forma di link sottolineato (es. «Scrivi il codice»): senza rientro, allineato al testo che lo precede
 export const LINK_BUTTON = {

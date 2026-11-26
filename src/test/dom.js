@@ -10,13 +10,24 @@ export const expectNoNestedContainer = () => expect(document.querySelector('.Mui
 
 export const colorOf = (el) => getComputedStyle(el).color;
 
-// Il titolo di pagina sta in un blocco alto almeno 44 px (come pulsanti e freccia) con il testo al centro: così il titolo
-// ha la stessa altezza in ogni pagina, con o senza pulsante o freccia sulla sua riga.
+// Una riga di titolo di pagina occupa 44 px (come pulsanti e freccia), con il testo al centro: interlinea più lo stesso
+// spazio sopra e sotto. Così il titolo parte alla stessa altezza in ogni pagina, con o senza pulsante o freccia sulla riga.
+const pageTitleBlockHeight = (heading) => {
+  const stile = getComputedStyle(heading);
+  return parseFloat(stile.fontSize) * parseFloat(stile.lineHeight) + parseFloat(stile.paddingTop) + parseFloat(stile.paddingBottom);
+};
+
 export const expectPageTitleBlock = (heading) => {
   const stile = getComputedStyle(heading);
-  expect(stile.minHeight).toBe('44px');
-  expect(stile.display).toBe('flex');
-  expect(stile.alignItems).toBe('center');
+  expect(stile.paddingTop).toBe(stile.paddingBottom);
+  expect(pageTitleBlockHeight(heading)).toBeCloseTo(44, 5);
+};
+
+// Il pulsante sulla riga del titolo è alto quanto il blocco del titolo: più alto farebbe crescere la riga e il titolo,
+// centrato, scenderebbe rispetto alle pagine senza pulsante.
+export const expectTitleRowButton = (heading, button) => {
+  expect(button.parentElement).toBe(heading.parentElement);
+  expect(parseFloat(getComputedStyle(button).height)).toBeCloseTo(pageTitleBlockHeight(heading), 5);
 };
 
 // Guardia delle pagine delle Schede: i testi sotto i 16 px, come «testo (misura)». L'unica eccezione è il loro badge

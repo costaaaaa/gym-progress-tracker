@@ -13,7 +13,7 @@ import { createGroup, errorMessage, groupTypeLabel, listGroups, roleLabel } from
 import { track } from '../utils/analytics';
 import { useTranslation } from 'react-i18next';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
-import { NEUTRAL_OUTLINED } from '../utils/buttonStyles';
+import { NEUTRAL_OUTLINED, TITLE_ROW_BUTTON } from '../utils/buttonStyles';
 
 const CreateGroupDialog = ({ open, onClose, onCreated }) => {
   const { t } = useTranslation();
@@ -98,7 +98,7 @@ const GroupsContent = () => {
         <Typography variant="pageTitle">
           {t('groups.title')}
         </Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)} sx={{ fontSize: 16 }}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateOpen(true)} sx={{ ...TITLE_ROW_BUTTON, fontSize: 16 }}>
           {t('groups.create')}
         </Button>
       </Box>

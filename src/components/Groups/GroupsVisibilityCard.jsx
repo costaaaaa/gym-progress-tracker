@@ -22,7 +22,7 @@ const GroupsVisibilityCard = ({ notify }) => {
   const groupsActive = useModule('groups');
   const [groups, setGroups] = useState(null);
   const [error, setError] = useState('');
-  const [leaving, setLeaving] = useState(null);
+  const [groupToLeave, setGroupToLeave] = useState(null);
 
   useEffect(() => {
     listGroups().then((res) => setGroups(res.ok ? res.data.groups : []));
@@ -35,7 +35,7 @@ const GroupsVisibilityCard = ({ notify }) => {
   }, [hash]);
 
   const leave = async (group) => {
-    setLeaving(null);
+    setGroupToLeave(null);
     const res = await leaveGroup(group.id);
     if (res.ok) {
       track('group_left');
@@ -73,18 +73,18 @@ const GroupsVisibilityCard = ({ notify }) => {
             {g.my_role === 'owner' ? (
               <Button component={RouterLink} to={`/gruppi/${g.id}`} sx={NEUTRAL_TEXT}>{t('groups.visibility.manage')}</Button>
             ) : (
-              <Button onClick={() => setLeaving(g)} sx={NEUTRAL_TEXT}>{t('groups.visibility.leave')}</Button>
+              <Button onClick={() => setGroupToLeave(g)} sx={NEUTRAL_TEXT}>{t('groups.visibility.leave')}</Button>
             )}
           </Box>
         ))}
       </Box>
       <ConfirmDialog
-        open={leaving !== null}
-        title={t('groups.detail.leave.title')}
+        open={groupToLeave !== null}
+        title={groupToLeave ? t('groups.visibility.leave_title', { name: groupToLeave.name }) : ''}
         text={t('groups.detail.leave.text')}
         cta={t('groups.detail.leave.cta')}
-        onConfirm={() => leave(leaving)}
-        onClose={() => setLeaving(null)}
+        onConfirm={() => leave(groupToLeave)}
+        onClose={() => setGroupToLeave(null)}
       />
     </Card>
   );

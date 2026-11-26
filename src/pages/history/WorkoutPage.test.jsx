@@ -129,13 +129,15 @@ describe('riquadri', () => {
     const griglia = screen.getByText('Durata').parentElement.parentElement;
     expect(getComputedStyle(griglia).display).toBe('grid');
     expect(getComputedStyle(griglia).gridTemplateColumns).toBe('repeat(3, minmax(0, 1fr))');
-    // Nessuna regola per una larghezza particolare cambia le colonne (jsdom non calcola le media query: le legge mediaStyle)
+    // Nessuna regola per una larghezza particolare cambia le colonne (jsdom non calcola le media query: le legge mediaStyle).
+    // Che mediaStyle veda davvero le regole di questa griglia lo dice lo spazio tra le colonne, che da sm cambia
+    expect(mediaStyle(griglia, 600).gap).toBe('12px');
     for (const larghezza of [0, 600, 900, 1200, 1536]) {
       expect(mediaStyle(griglia, larghezza)['grid-template-columns']).toBeUndefined();
     }
   });
 
-  it('il valore di un riquadro può andare a capo e non esce mai dal riquadro, nemmeno a 320 px', async () => {
+  it('il valore di un riquadro può andare a capo in qualunque punto e il riquadro può stringersi sotto la larghezza del valore', async () => {
     await mount([made({ duration_seconds: 5700 })]);
     for (const label of ['Durata', 'Volume', 'Serie']) {
       const valore = screen.getByText(label).nextElementSibling;

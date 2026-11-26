@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import {
-  Alert, Box, Button, Card, Chip, CircularProgress, Dialog, DialogActions, DialogContent,
-  DialogContentText, DialogTitle, Grid, IconButton, Link, Snackbar, Switch, FormControlLabel, Tab, Tabs, TextField, Tooltip, Typography,
+  Alert, Box, Button, Card, Chip, CircularProgress, Grid, IconButton, Link, Snackbar, Switch, FormControlLabel, Tab, Tabs,
+  TextField, Tooltip, Typography,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -12,6 +12,7 @@ import RequireLogin from '../components/Groups/RequireLogin';
 import ModuleGate from '../components/ModuleGate';
 import LeaderboardTable from '../components/Groups/LeaderboardTable';
 import ReportDialog from '../components/Groups/ReportDialog';
+import ConfirmDialog from '../components/ConfirmDialog';
 import {
   errorMessage, groupTypeLabel, inviteLink, leaveGroup, manageGroup, readGroup, roleLabel,
 } from '../api/groups';
@@ -28,21 +29,6 @@ const BOARDS = ['week', 'streak', 'level'];
 const formatDay = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short' });
 // Il server manda un ISO con offset ("2026-10-30T18:05:00+01:00"): è un istante, si mostra nel fuso del browser
 const formatLockDate = (value) => new Date(value).toLocaleString(intlLocale(), { dateStyle: 'medium', timeStyle: 'short' });
-
-// Conferma per le azioni che non si annullano (uscire, eliminare, rimuovere un membro)
-const ConfirmDialog = ({ confirm, onClose }) => {
-  const { t } = useTranslation();
-  return (
-    <Dialog open={Boolean(confirm)} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>{confirm?.title}</DialogTitle>
-      <DialogContent><DialogContentText sx={{ color: 'text.primary' }}>{confirm?.text}</DialogContentText></DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} sx={{ fontSize: 16 }}>{t('common.cancel')}</Button>
-        <Button color="error" variant="contained" onClick={() => { confirm.action(); onClose(); }} sx={{ fontSize: 16 }}>{confirm?.cta}</Button>
-      </DialogActions>
-    </Dialog>
-  );
-};
 
 const InvitePanel = ({ group, onChange, notify }) => {
   const { t } = useTranslation();
@@ -303,7 +289,15 @@ const GroupDetailContent = () => {
         </Grid>
       </Grid>
 
-      <ConfirmDialog confirm={confirm} onClose={() => setConfirm(null)} />
+      {/* Le azioni che non si annullano (uscire, eliminare, rimuovere un membro) passano da qui */}
+      <ConfirmDialog
+        open={confirm !== null}
+        title={confirm?.title}
+        text={confirm?.text}
+        cta={confirm?.cta}
+        onConfirm={() => { confirm.action(); setConfirm(null); }}
+        onClose={() => setConfirm(null)}
+      />
       <ReportDialog
         open={reporting}
         group={group}

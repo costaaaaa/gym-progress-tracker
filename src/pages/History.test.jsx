@@ -7,7 +7,7 @@ import { render, screen, fireEvent, waitFor, within, act } from '@testing-librar
 import { MemoryRouter, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import History from './History';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
-import { json, expectNoNestedContainer, colorOf, expectPageTitleBlock } from '../test/dom';
+import { json, expectNoNestedContainer, colorOf, expectPageTitleBlock, expectTitleRowButton } from '../test/dom';
 import { setBrowserTimeZone } from '../test/timeZone';
 import { textBelow } from '../test/minText';
 import { strayListChildren } from '../test/accessibleNames';
@@ -122,9 +122,8 @@ describe('pagina Storico', () => {
   it('«Registra allenamento passato» sta nella riga del titolo, con una scheda attiva: pulsante con bordo neutro da 44 px, non rosso', async () => {
     await mount();
     const bottone = screen.getByRole('button', { name: 'Registra allenamento passato' });
-    expect(bottone.parentElement).toBe(screen.getByRole('heading', { level: 1 }).parentElement);
+    expectTitleRowButton(screen.getByRole('heading', { level: 1 }), bottone);
     const style = getComputedStyle(bottone);
-    expect(parseFloat(style.minHeight)).toBeGreaterThanOrEqual(44);
     expect(style.borderTopStyle).toBe('solid');
     expect(style.borderTopWidth).toBe('1px');
     expect(style.borderTopColor).toBe(GREY);

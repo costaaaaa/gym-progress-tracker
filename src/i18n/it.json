@@ -604,6 +604,7 @@
   "groups.visibility.go": "Vai ai gruppi",
   "groups.visibility.manage": "Gestisci",
   "groups.visibility.leave": "Esci",
+  "groups.visibility.leave_title": "Uscire da «{{name}}»?",
   "groups.shown.title": "Cosa mostro",
   "groups.shown.reciprocity": "Se non mostri un dato, non vedi quello degli altri membri.",
   "groups.shown.workouts.name": "Allenamenti della settimana",

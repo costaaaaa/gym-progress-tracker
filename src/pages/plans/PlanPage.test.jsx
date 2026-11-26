@@ -6,7 +6,7 @@ import { render, screen, within, fireEvent, waitFor, act } from '@testing-librar
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import PlanPage from './PlanPage';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
-import { json, colorOf, textsBelow16pxExceptActiveBadge, expectPageTitleBlock } from '../../test/dom';
+import { json, colorOf, textsBelow16pxExceptActiveBadge, expectPageTitleBlock, expectTitleRowButton } from '../../test/dom';
 import { plannedSets, times } from '../../test/plannedSets';
 import { unnamedControls } from '../../test/accessibleNames';
 import { mediaStyle } from '../../test/mediaStyle';
@@ -89,6 +89,7 @@ describe('lettura', () => {
     expect(parseFloat(getComputedStyle(pagina).paddingTop)).toBe(0);
     expect(getComputedStyle(pagina).paddingBottom).toBe('24px');
     expectPageTitleBlock(titolo);
+    expectTitleRowButton(titolo, screen.getByRole('button', { name: 'Modifica' }));
   });
 
   it('mostra tutti gli esercizi del giorno, anche oltre i primi quattro, senza «Dettagli» né «+N altri»', async () => {
@@ -725,6 +726,21 @@ describe('scheda in sola lettura', () => {
     expect(screen.getByRole('button', { name: 'Modifica nome e descrizione' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Elimina scheda' })).toBeTruthy();
     expect(screen.getAllByRole('button', { name: /^Elimina giorno/ })).toHaveLength(days);
+  });
+
+  it('«Elimina giorno», rimasto solo sulla sua riga, sta a filo a sinistra a ogni larghezza', async () => {
+    await mount([readOnly('plans_over_limit')]);
+    startEdit();
+    const bottone = screen.getAllByRole('button', { name: /^Elimina giorno/ })[0];
+    const rientro = getComputedStyle(bottone).paddingLeft;
+    expect(parseFloat(rientro)).toBeGreaterThan(0);
+    expect(getComputedStyle(bottone).marginLeft).toBe(`-${rientro}`);
+    // da sm in su nessuna regola lo sposta a destra, come accade quando ha accanto «Aggiungi esercizio»
+    for (const larghezza of [600, 900, 1200, 1536]) {
+      const da = mediaStyle(bottone, larghezza);
+      expect(da['margin-left']).toBeUndefined();
+      expect(da['margin-right']).toBeUndefined();
+    }
   });
 
   it.each([

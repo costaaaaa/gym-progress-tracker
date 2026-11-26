@@ -604,6 +604,7 @@
   "groups.visibility.go": "Go to groups",
   "groups.visibility.manage": "Manage",
   "groups.visibility.leave": "Leave",
+  "groups.visibility.leave_title": "Leave “{{name}}”?",
   "groups.shown.title": "What I show",
   "groups.shown.reciprocity": "If you don't show a piece of data, you don't see other members'.",
   "groups.shown.workouts.name": "This week's workouts",

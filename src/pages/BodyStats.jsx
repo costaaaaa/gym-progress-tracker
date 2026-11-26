@@ -37,10 +37,10 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
 
   useOncePerRequest(openRequest, !loading, () => { if (!consentRequired) setIsDialogOpen(true); });
 
-  const [deleting, setDeleting] = useState(null);
+  const [idToDelete, setIdToDelete] = useState(null);
   const confirmDelete = async () => {
-    const id = deleting;
-    setDeleting(null);
+    const id = idToDelete;
+    setIdToDelete(null);
     const result = await remove(id);
     if (result.ok) notify(t('body.deleted'), 'success');
   };
@@ -128,7 +128,7 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
 
           {/* Tabella Storico */}
           <Grid item xs={12}>
-            <BodyHistory history={history} empty={stats.length === 0} onDelete={setDeleting} onPageChange={setPage} weightUnit={weightUnit} />
+            <BodyHistory history={history} empty={stats.length === 0} onDelete={setIdToDelete} onPageChange={setPage} weightUnit={weightUnit} />
           </Grid>
         </Grid>
       )}
@@ -144,12 +144,12 @@ const BodyStats = ({ isEmbedded = false, openRequest = null }) => {
       )}
 
       <ConfirmDialog
-        open={deleting !== null}
+        open={idToDelete !== null}
         title={t('body.delete.title')}
         text={t('body.confirm_delete')}
         cta={t('common.delete')}
         onConfirm={confirmDelete}
-        onClose={() => setDeleting(null)}
+        onClose={() => setIdToDelete(null)}
       />
       <NewMeasurementDialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)} save={save} onNotify={notify} weightUnit={weightUnit} />
 

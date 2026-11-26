@@ -5,7 +5,7 @@ import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import ExerciseDialog from '../../components/ExerciseDialog';
-import { ACTIONS_ROW, DANGER_TEXT, NEUTRAL_OUTLINED, flushTextButtonInActionsRow } from '../../utils/buttonStyles';
+import { ACTIONS_ROW, DANGER_TEXT, NEUTRAL_OUTLINED, TITLE_ROW_BUTTON, flushTextButtonInActionsRow } from '../../utils/buttonStyles';
 import ActiveBadge from './ActiveBadge';
 import usePlans from './usePlans';
 import useArrivalState from './useArrivalState';
@@ -146,7 +146,7 @@ const PlanPage = () => {
               variant="outlined"
               aria-pressed={editing}
               onClick={() => setEditing((on) => !on)}
-              sx={{ ...NEUTRAL_OUTLINED, minHeight: 44, fontWeight: 600, flexShrink: 0, ...(editing && { bgcolor: 'action.selected' }) }}
+              sx={{ ...NEUTRAL_OUTLINED, ...TITLE_ROW_BUTTON, fontWeight: 600, flexShrink: 0, ...(editing && { bgcolor: 'action.selected' }) }}
             >
               {editing ? t('plans.edit_done') : t('plans.edit_mode')}
             </Button>

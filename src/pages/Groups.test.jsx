@@ -11,7 +11,7 @@ import GroupDetail from './GroupDetail';
 import JoinGroup from './JoinGroup';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
 import { textBelow } from '../test/minText';
-import { json, colorOf, expectNoNestedContainer, expectPageTitleBlock } from '../test/dom';
+import { json, colorOf, expectNoNestedContainer, expectPageTitleBlock, expectTitleRowButton } from '../test/dom';
 
 const auth = vi.hoisted(() => ({ value: null }));
 vi.mock('../context/AuthContext', () => ({ useAuth: () => auth.value }));
@@ -101,6 +101,7 @@ describe('elenco dei gruppi', () => {
     expect(parseFloat(getComputedStyle(pagina).paddingTop)).toBe(0);
     expect(getComputedStyle(pagina).paddingBottom).toBe('24px');
     expectPageTitleBlock(titolo);
+    expectTitleRowButton(titolo, screen.getByRole('button', { name: 'Crea gruppo' }));
   });
 
   it('non apre un Container dentro quello del Layout', async () => {

@@ -6,6 +6,7 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { TITLE_FONT_FAMILY } from '../utils/fonts';
+import { TITLE_ROW_BUTTON } from '../utils/buttonStyles';
 import LockedRow from '../components/LockedRow';
 import usePlans from './plans/usePlans';
 import useArrivalState from './plans/useArrivalState';
@@ -45,7 +46,7 @@ const Plans = () => {
           startIcon={<AddIcon sx={{ color: 'white' }} fontSize="small" />}
           onClick={() => setOpenDialog(true)}
           disabled={!account.loaded || atPlanLimit}
-          sx={{ fontSize: 16, fontWeight: 600 }}
+          sx={{ ...TITLE_ROW_BUTTON, fontSize: 16, fontWeight: 600 }}
         >
           {t('plans.new')}
         </Button>
