@@ -56,3 +56,17 @@ export const expectDestructiveConfirm = (corpo, conferma, { ink, red }) => {
   expect(colorOf(testo)).toBe(ink);
   expect(getComputedStyle(testo).fontSize).toBe('16px');
 };
+
+// Il chip che si sceglie (periodo delle misure, gruppo muscolare, «Preferiti») ha uno stile solo: scelto è pieno nel colore
+// del testo, con il testo nel colore dello sfondo delle card; non scelto ha il contorno grigio e il testo normale. I colori
+// ({ ink, grey, paper } del tema in prova) li dà il test che chiama: i sorgenti fuori dai test non scrivono colori a mano.
+export const expectChipOn = (chip, { ink, paper }) => {
+  const stile = getComputedStyle(chip);
+  expect([stile.backgroundColor, stile.color]).toEqual([ink, paper]);
+};
+
+export const expectChipOff = (chip, { ink, grey }) => {
+  const stile = getComputedStyle(chip);
+  expect([stile.color, stile.borderColor]).toEqual([ink, grey]);
+  expect(stile.backgroundColor).not.toBe(ink);
+};

@@ -1,9 +1,10 @@
-import { Box, Chip } from '@mui/material';
+import { Box } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { PERIODS, PERIOD_UI } from '../../utils/bodyStatsPeriod';
 import { radius } from '../../theme/radius';
+import ChoiceChip from '../../components/ChoiceChip';
 
-// Pillole: piena in inchiostro se selezionata, con il contorno le altre (il rosso resta sull'azione principale).
+// Pillole del periodo: lo stile del chip scelto è quello di ChoiceChip (il rosso resta sull'azione principale).
 const PeriodChips = ({ value, onChange }) => {
   const { t } = useTranslation();
   return (
@@ -11,19 +12,12 @@ const PeriodChips = ({ value, onChange }) => {
       {PERIODS.map((period) => {
         const selected = period === value;
         return (
-          <Chip
+          <ChoiceChip
             key={period}
             label={t(PERIOD_UI[period].label)}
-            clickable
-            variant={selected ? 'filled' : 'outlined'}
+            selected={selected}
             onClick={() => onChange(period)}
-            aria-pressed={selected}
-            sx={{
-              fontSize: 13, height: 32, borderRadius: radius.pill, px: 0.5,
-              ...(selected
-                ? { bgcolor: 'text.primary', color: 'background.paper', '&:hover, &.Mui-focusVisible': { bgcolor: 'text.primary' } }
-                : { borderColor: 'divider', color: 'text.primary' }),
-            }}
+            sx={{ fontSize: 13, height: 32, borderRadius: radius.pill, px: 0.5 }}
           />
         );
       })}

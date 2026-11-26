@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Alert, Box, Button, Card, Chip, CircularProgress, IconButton, InputAdornment, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Card, CircularProgress, IconButton, InputAdornment, TextField, Typography } from '@mui/material';
 import { visuallyHidden } from '@mui/utils';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SearchIcon from '@mui/icons-material/Search';
 import { Link as RouterLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import ChoiceChip from '../../components/ChoiceChip';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import { personalLabel } from '../../api/exercises';
 import { rankExerciseMatches } from '../../utils/exerciseCatalog';
@@ -77,17 +78,12 @@ const ExercisesPage = () => {
             {['', ...groups].map((key) => {
               const on = group === key;
               return (
-                <Chip
+                <ChoiceChip
                   key={key || 'all'}
                   label={key ? muscleLabel(key) : t('plans.exercises.all')}
-                  variant="outlined"
-                  aria-pressed={on}
+                  selected={on}
                   onClick={() => setGroup(key)}
-                  sx={{
-                    height: 44, minHeight: 44, fontSize: 16, color: 'text.primary',
-                    borderColor: on ? 'text.primary' : 'text.secondary',
-                    ...(on && { bgcolor: 'action.selected', fontWeight: 600 }),
-                  }}
+                  sx={{ height: 44, minHeight: 44, fontSize: 16 }}
                 />
               );
             })}

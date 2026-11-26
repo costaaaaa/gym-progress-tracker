@@ -5,7 +5,7 @@ import { render, screen, within, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import ExercisesPage from './ExercisesPage';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
-import { json, expectNoNestedContainer, textsBelow16pxExceptActiveBadge } from '../../test/dom';
+import { json, expectNoNestedContainer, textsBelow16pxExceptActiveBadge, expectChipOn, expectChipOff } from '../../test/dom';
 import i18n from '../../i18n';
 import { unnamedControls } from '../../test/accessibleNames';
 
@@ -29,9 +29,9 @@ const stub = (handler) => {
 };
 const ok = (records = RECORDS) => () => Promise.resolve(json({ records }));
 
-const mount = async (handler = ok()) => {
+const mount = async (handler = ok(), mode = 'light') => {
   stub(handler);
-  localStorage.setItem('themeMode', 'light');
+  localStorage.setItem('themeMode', mode);
   render(
     <ThemeModeProvider>
       <MemoryRouter initialEntries={['/schede/esercizi']}>
@@ -43,14 +43,19 @@ const mount = async (handler = ok()) => {
     </ThemeModeProvider>,
   );
 };
-const mountLoaded = async (handler) => {
-  await mount(handler);
+const mountLoaded = async (handler, mode) => {
+  await mount(handler, mode);
   await screen.findByRole('list');
 };
 const nameOf = (li) => within(li).getByTestId('exercise-name');
 const names = () => within(screen.getByRole('list')).getAllByRole('listitem').map((li) => nameOf(li).textContent);
 const search = (text) => fireEvent.change(screen.getByRole('textbox', { name: 'Cerca un esercizio' }), { target: { value: text } });
 const chip = (name) => screen.getByRole('button', { name });
+// Colori del chip in chiaro e in scuro: text.primary, text.secondary e background.paper
+const CHIP_COLORS = {
+  light: { ink: 'rgb(26, 24, 22)', grey: 'rgb(107, 102, 99)', paper: 'rgb(255, 255, 255)' },
+  dark: { ink: 'rgb(255, 255, 255)', grey: 'rgb(160, 160, 162)', paper: 'rgb(20, 20, 22)' },
+};
 
 afterEach(async () => {
   await i18n.changeLanguage('it');
@@ -185,6 +190,15 @@ describe('filtro per gruppo muscolare', () => {
     expect(within(group).getAllByRole('button').map((b) => b.textContent)).toEqual(['Tutti', 'Gambe', 'Petto', 'Schiena', 'Spalle']);
     expect(chip('Tutti').getAttribute('aria-pressed')).toBe('true');
     expect(chip('Petto').getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it.each(['light', 'dark'])('il chip scelto ha lo stesso stile degli altri chip che si scelgono, in %s', async (mode) => {
+    await mountLoaded(ok(), mode);
+    expectChipOn(chip('Tutti'), CHIP_COLORS[mode]);
+    expectChipOff(chip('Petto'), CHIP_COLORS[mode]);
+    fireEvent.click(chip('Petto'));
+    expectChipOn(chip('Petto'), CHIP_COLORS[mode]);
+    expectChipOff(chip('Tutti'), CHIP_COLORS[mode]);
   });
 
   it('in inglese i chip seguono l\'ordine alfabetico dell\'etichetta tradotta, non della chiave italiana', async () => {

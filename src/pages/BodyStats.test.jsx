@@ -10,7 +10,7 @@ import { setBrowserTimeZone } from '../test/timeZone';
 import { textBelow } from '../test/minText';
 import { describedBy } from '../test/accessibleNames';
 import { mockPointer } from '../test/pointer';
-import { expectNoNestedContainer, expectDestructiveConfirm } from '../test/dom';
+import { expectNoNestedContainer, expectDestructiveConfirm, expectChipOn, expectChipOff } from '../test/dom';
 
 const account = vi.hoisted(() => ({ weightUnit: 'kg' }));
 vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ weightUnit: account.weightUnit }) }));
@@ -189,13 +189,17 @@ describe('titolo della pagina', () => {
 });
 
 // Aspetto, sul tema chiaro. Colori scritti per esteso: text.primary #1a1816, text.secondary #6b6663,
-// primary #d50000, divider #ececea, background.paper #ffffff.
+// primary #d50000, background.paper #ffffff.
 const INK = 'rgb(26, 24, 22)';
 const GREY = 'rgb(107, 102, 99)';
 const RED = 'rgb(213, 0, 0)';
-const DIVIDER = 'rgb(236, 236, 234)';
 const WHITE = 'rgb(255, 255, 255)';
 const style = (el) => getComputedStyle(el);
+// Colori del chip in chiaro e in scuro: text.primary, text.secondary e background.paper
+const CHIP_COLORS = {
+  light: { ink: 'rgb(26, 24, 22)', grey: 'rgb(107, 102, 99)', paper: 'rgb(255, 255, 255)' },
+  dark: { ink: 'rgb(255, 255, 255)', grey: 'rgb(160, 160, 162)', paper: 'rgb(20, 20, 22)' },
+};
 const themed = (page) => <ThemeModeProvider>{page}</ThemeModeProvider>;
 
 const measured = () => [
@@ -214,7 +218,14 @@ describe('pillole del periodo', () => {
     expect(style(pill('3M')).color).toBe(WHITE);
     expect(style(pill('6M')).backgroundColor).not.toBe(INK);
     expect(style(pill('6M')).color).toBe(INK);
-    expect(style(pill('6M')).borderColor).toBe(DIVIDER);
+    expect(style(pill('6M')).borderColor).toBe(GREY);
+  });
+
+  it.each(['light', 'dark'])('stesso stile del chip scelto delle altre pagine, in %s', async (mode) => {
+    localStorage.setItem('themeMode', mode);
+    await mount(themed);
+    expectChipOn(pill('3M'), CHIP_COLORS[mode]);
+    expectChipOff(pill('6M'), CHIP_COLORS[mode]);
   });
 
   it('il rosso resta su "Nuova misurazione": nessuna pillola è rossa', async () => {
