@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import BackArrow from '../../components/BackArrow';
 import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../../hooks/usePageMeta';
+import { useSnackbarAboveBar } from '../../hooks/useSnackbarAboveBar';
 import ExerciseDialog from '../../components/ExerciseDialog';
 import { ACTIONS_ROW, DANGER_TEXT, NEUTRAL_OUTLINED, TITLE_ROW_BUTTON, flushTextButtonInActionsRow } from '../../utils/buttonStyles';
 import ActiveBadge from './ActiveBadge';
@@ -21,6 +22,7 @@ import EditExerciseDialog from './EditExerciseDialog';
 // modifica compaiono solo dopo «Modifica». Lo stato «Modifica» sta qui, non nell'indirizzo.
 const PlanPage = () => {
   const { t } = useTranslation();
+  const noticeSx = useSnackbarAboveBar();
   const { id } = useParams();
   const navigate = useNavigate();
   const {
@@ -244,7 +246,7 @@ const PlanPage = () => {
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}><CircularProgress /></Box>
       )}
 
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={closeSnackbar}>
+      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={closeSnackbar} sx={noticeSx}>
         <Alert onClose={closeSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>

@@ -10,7 +10,7 @@ import { setBrowserTimeZone } from '../test/timeZone';
 import { textBelow } from '../test/minText';
 import { describedBy } from '../test/accessibleNames';
 import { mockPointer } from '../test/pointer';
-import { expectNoNestedContainer, expectDestructiveConfirm, expectChipOn, expectChipOff } from '../test/dom';
+import { expectNoNestedContainer, expectDestructiveConfirm, expectChipOn, expectChipOff, withBottomBar, expectNoticeAboveBar, expectNoticeInPlace } from '../test/dom';
 
 const account = vi.hoisted(() => ({ weightUnit: 'kg' }));
 vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ weightUnit: account.weightUnit }) }));
@@ -947,6 +947,20 @@ describe('eliminare una misurazione', () => {
     expect(JSON.parse(deleteCalls()[0][1].body)).toEqual({ id: '2026-10-15' });
     expect(await screen.findByText('Misurazione eliminata')).toBeTruthy();
     expect(browserConfirm).not.toHaveBeenCalled();
+  });
+
+  it('sul telefono l\'avviso «Misurazione eliminata» sta sopra la barra in basso', async () => {
+    await mount(withBottomBar);
+    fireEvent.click(within(tableRows()[0]).getByRole('button', { name: 'Elimina' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Elimina' }));
+    expectNoticeAboveBar(await screen.findByText('Misurazione eliminata'));
+  });
+
+  it('senza la barra in basso l\'avviso «Misurazione eliminata» resta dov\'è', async () => {
+    await mount();
+    fireEvent.click(within(tableRows()[0]).getByRole('button', { name: 'Elimina' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Elimina' }));
+    expectNoticeInPlace(await screen.findByText('Misurazione eliminata'));
   });
 
   it('un secondo tocco su «Elimina» mentre la finestra si chiude non elimina due volte', async () => {

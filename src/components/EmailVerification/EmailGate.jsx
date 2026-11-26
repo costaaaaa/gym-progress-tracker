@@ -3,6 +3,7 @@ import { Alert, Snackbar } from '@mui/material';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
+import { useSnackbarAboveBar } from '../../hooks/useSnackbarAboveBar';
 import { hasFocusSessionInProgress } from '../../utils/focusDraft';
 import EmailConfirmDialog from './EmailConfirmDialog';
 
@@ -36,6 +37,7 @@ const markShownToday = (userId) => {
 // `onNoticeOpenChange(aperto)`, facoltativa: dice al layout quando l'avviso di esito compare e quando si chiude.
 const EmailGate = ({ onNoticeOpenChange }) => {
   const { t } = useTranslation();
+  const noticeSx = useSnackbarAboveBar();
   const { isLoggedIn, user, emailState, emailDialogOpen, openEmailDialog, closeEmailDialog, claimEmailReminder } = useAuth();
   const [notice, setNoticeState] = useState('');
   // Mostra o chiude l'avviso e lo comunica al layout nello stesso punto
@@ -88,8 +90,7 @@ const EmailGate = ({ onNoticeOpenChange }) => {
         autoHideDuration={6000}
         onClose={() => setNotice('')}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        // Sopra la barra in basso del telefono
-        sx={{ bottom: { xs: 'calc(80px + env(safe-area-inset-bottom))', md: 24 } }}
+        sx={noticeSx}
       >
         <Alert onClose={() => setNotice('')} severity="success" sx={{ width: '100%' }}>{notice}</Alert>
       </Snackbar>

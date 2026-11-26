@@ -7,6 +7,7 @@ import Layout from './Layout';
 import { AuthProvider } from '../../context/AuthContext';
 import { ThemeModeProvider } from '../../context/ThemeModeContext';
 import { DRAFT_STORAGE_KEY } from '../../utils/focusDraft';
+import { expectNoticeAboveBar, expectNoticeInPlace } from '../../test/dom';
 
 const original = window.fetch;
 let server;
@@ -199,3 +200,56 @@ describe('schermata «Cosa ti interessa?» dopo la conferma', () => {
   });
 });
 
+
+// Gli avvisi delle pagine stanno sopra la barra in basso del telefono, dove la barra c'è
+describe('avvisi e barra in basso', () => {
+  const realMatchMedia = window.matchMedia;
+  const phone = (isPhone) => {
+    window.matchMedia = (query) => ({
+      matches: isPhone && query.includes('max-width'),
+      media: query,
+      addEventListener: () => {}, removeEventListener: () => {},
+      addListener: () => {}, removeListener: () => {},
+    });
+  };
+  afterEach(() => { window.matchMedia = realMatchMedia; });
+
+  const confirmWithCode = async () => {
+    server.read = { ...server.read, ...unverified };
+    localStorage.setItem('lx_email_reminder_7', today());
+    mount();
+    fireEvent.click(await screen.findByRole('button', { name: 'Scrivi il codice' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Conferma la tua email' });
+    fireEvent.change(within(dialog).getByLabelText(/^Codice di 6 cifre/), { target: { value: '123456' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Conferma' }));
+    const notice = await screen.findByRole('alert');
+    expect(notice.textContent).toContain('Email confermata.');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    return notice;
+  };
+
+  it('sul telefono l\'avviso di esito dell\'email sta sopra la barra, che c\'è', async () => {
+    phone(true);
+    const notice = await confirmWithCode();
+    expect(screen.getByRole('navigation', { name: 'Navigazione principale' })).toBeTruthy();
+    expectNoticeAboveBar(notice);
+  });
+
+  it('da md in su, senza barra, l\'avviso resta dov\'è', async () => {
+    phone(false);
+    const notice = await confirmWithCode();
+    expect(screen.queryByRole('navigation', { name: 'Navigazione principale' })).toBeNull();
+    expectNoticeInPlace(notice);
+  });
+
+  it('con l\'email bloccata, senza barra, l\'avviso della schermata di conferma non sale', async () => {
+    phone(true);
+    server.read = { ...server.read, ...blockedState };
+    mount();
+    fireEvent.click(await screen.findByRole('button', { name: 'Esporta i miei dati' }));
+    expect(screen.queryByRole('navigation', { name: 'Navigazione principale' })).toBeNull();
+    const notice = await screen.findByRole('alert');
+    expect(notice.textContent).toContain('Download completato con successo');
+    expectNoticeInPlace(notice);
+  });
+});

@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import { isModuleActive } from '../../hooks/useModule';
 import { useAuth } from '../../context/AuthContext';
+import { useSnackbarAboveBar } from '../../hooks/useSnackbarAboveBar';
 import EditWorkoutDateDialog from '../../components/EditWorkoutDateDialog';
 import ShareCardDialog from '../../components/ShareCardDialog';
 import TimeZoneBadge from '../../components/TimeZoneBadge';
@@ -30,6 +31,7 @@ const RECORD_LABEL_KEY = { weight: 'history.pr.weight', oneRM: 'history.pr.one_r
 // l'eliminazione con «Annulla».
 const WorkoutPage = () => {
   const { t } = useTranslation();
+  const noticeSx = useSnackbarAboveBar();
   const { id } = useParams();
   const navigate = useNavigate();
   // La riga dell'elenco o del calendario porta il suo percorso nello stato: ritorno, eliminazione e allenamento che non c'è
@@ -188,7 +190,7 @@ const WorkoutPage = () => {
         showLevels={levelsOn}
         weightUnit={weightUnit}
       />
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={closeSnackbar}>
+      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={closeSnackbar} sx={noticeSx}>
         <Alert onClose={closeSnackbar} severity={snackbar.severity}>{snackbar.message}</Alert>
       </Snackbar>
     </Box>

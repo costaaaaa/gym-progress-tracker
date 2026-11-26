@@ -21,6 +21,7 @@ import { track } from '../utils/analytics';
 import { Trans, useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useModule } from '../hooks/useModule';
+import { useSnackbarAboveBar } from '../hooks/useSnackbarAboveBar';
 import { intlLocale } from '../i18n/format';
 import { flushTextButton, NEUTRAL_TEXT, DANGER_TEXT, INK_LINK } from '../utils/buttonStyles';
 import { INK_TABS } from '../utils/inkTabs';
@@ -86,6 +87,7 @@ const InvitePanel = ({ group, onChange, notify }) => {
 
 const GroupDetailContent = () => {
   const { t } = useTranslation();
+  const noticeSx = useSnackbarAboveBar();
   const { weightUnit } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
@@ -313,7 +315,7 @@ const GroupDetailContent = () => {
           setToast(t('groups.detail.report.sent'));
         }}
       />
-      <Snackbar open={Boolean(toast)} autoHideDuration={4000} onClose={() => setToast('')} message={toast} />
+      <Snackbar open={Boolean(toast)} autoHideDuration={4000} onClose={() => setToast('')} message={toast} sx={noticeSx} />
     </Box>
   );
 };

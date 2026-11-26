@@ -7,7 +7,7 @@ import { render, screen, fireEvent, waitFor, within, act } from '@testing-librar
 import { MemoryRouter, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import History from './History';
 import { ThemeModeProvider } from '../context/ThemeModeContext';
-import { json, expectNoNestedContainer, colorOf, expectPageTitleBlock, expectTitleRowButton } from '../test/dom';
+import { json, expectNoNestedContainer, colorOf, expectPageTitleBlock, expectTitleRowButton, withBottomBar, expectNoticeAboveBar } from '../test/dom';
 import { setBrowserTimeZone } from '../test/timeZone';
 import { textBelow } from '../test/minText';
 import { strayListChildren } from '../test/accessibleNames';
@@ -68,10 +68,13 @@ const Probe = () => {
 let navigate;
 const Nav = () => { navigate = useNavigate(); return null; };
 
-const renderPage = (entry = '/storico', { strict = false } = {}) => {
+// La pagina montata come dentro il Layout sul telefono: la barra in basso c'è
+const PhoneBar = ({ children }) => withBottomBar(children);
+const renderPage = (entry = '/storico', { strict = false, phone = false } = {}) => {
   const Root = strict ? StrictMode : Fragment;
+  const Bar = phone ? PhoneBar : Fragment;
   render(
-    <Root><ThemeModeProvider>
+    <Root><Bar><ThemeModeProvider>
       <MemoryRouter initialEntries={[entry]}>
         <Nav />
         <Probe />
@@ -81,7 +84,7 @@ const renderPage = (entry = '/storico', { strict = false } = {}) => {
           <Route path="/altrove" element={<p>Altra pagina</p>} />
         </Routes>
       </MemoryRouter>
-    </ThemeModeProvider></Root>,
+    </ThemeModeProvider></Bar></Root>,
   );
 };
 const mount = async (entry = '/storico', wait = NESSUNO, options) => {
@@ -459,9 +462,9 @@ describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
   const passano = (ms) => act(() => vi.advanceTimersByTimeAsync(ms));
   // Il tempo che basta a letture, effetti e timer a 0 ms, molto meno dei 10 secondi
   const assesta = async () => { await passano(50); await passano(50); };
-  const arriva = async (state = { deleted: 7 }, { strict = false, workouts = [workout, altro], plans, on } = {}) => {
+  const arriva = async (state = { deleted: 7 }, { strict = false, phone = false, workouts = [workout, altro], plans, on } = {}) => {
     serve({ workouts, plans, on });
-    renderPage({ pathname: '/storico', state }, { strict });
+    renderPage({ pathname: '/storico', state }, { strict, phone });
     await assesta();
   };
   const rilasciaFuoco = () => act(() => document.activeElement.blur());
@@ -566,6 +569,19 @@ describe('eliminazione fatta dalla pagina dell\'allenamento', () => {
     const avviso = screen.getByText('Per registrare un allenamento serve una scheda attiva.').closest('.MuiSnackbar-root');
     const attesa = screen.getByText('Allenamento eliminato').closest('.MuiSnackbar-root');
     expect(getComputedStyle(avviso).bottom).not.toBe(getComputedStyle(attesa).bottom);
+  });
+
+  // Sul telefono la barra in basso c'è: «Annulla» sta sopra la barra e l'altro avviso sopra «Annulla»
+  it('sul telefono «Annulla» sta sopra la barra e l\'altro avviso sopra di lui, senza coprirsi', async () => {
+    await arriva({ deleted: 7 }, { phone: true, plans: [{ ...plan, is_active: false }] });
+    fireEvent.click(screen.getByRole('link', { name: 'Registra dal ventaglio' }));
+    await assesta();
+    const avviso = screen.getByText('Per registrare un allenamento serve una scheda attiva.');
+    const attesa = screen.getByText('Allenamento eliminato');
+    expectNoticeAboveBar(attesa);
+    expectNoticeAboveBar(avviso);
+    const distanza = (el) => parseFloat(/calc\(([\d.]+)px/.exec(getComputedStyle(el.closest('.MuiSnackbar-root')).bottom)[1]);
+    expect(distanza(avviso)).toBeGreaterThan(distanza(attesa) + 48);
   });
 
   // 2.4.3 e 2.2.1: la tastiera arriva subito a «Annulla», il conto si ferma finché lo si usa, il fuoco non finisce su body
