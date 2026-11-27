@@ -134,17 +134,24 @@ describe('riga degli strumenti della serie', () => {
     // Come in Account: con un salvataggio in corso la finestra resta aperta (Esc, «Chiudi»), così l'esito non si perde
     describe('durante un salvataggio', () => {
       const pressEsc = () => fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape', code: 'Escape' });
-      const slowSave = async () => {
+      // La finestra aperta con la fetch che resta in sospeso finché non si chiama pending.resolve
+      const openWithPendingFetch = async () => {
         const pending = deferred();
         vi.stubGlobal('fetch', vi.fn(() => pending.promise));
         renderPhase(1);
         // Il fuoco parte dalla riga: se la finestra si chiude, ci torna (è così che staysOpen se ne accorge)
         row().focus();
         fireEvent.click(row());
-        const dialog = within(await screen.findByRole('dialog'));
+        return { dialog: within(await screen.findByRole('dialog')), pending };
+      };
+      const toggleTechnique = async (dialog) => {
         fireEvent.click(dialog.getByRole('switch', { name: 'Tecnica di intensità' }));
         await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
-        return { dialog, pending };
+      };
+      const slowSave = async () => {
+        const opened = await openWithPendingFetch();
+        await toggleTechnique(opened.dialog);
+        return opened;
       };
 
       it('Esc e «Chiudi» non la chiudono', async () => {
@@ -167,28 +174,23 @@ describe('riga degli strumenti della serie', () => {
         await closed();
       });
 
-      it('a salvataggio finito si chiude con Esc e «Chiudi»', async () => {
+      it.each([
+        ['Esc', () => pressEsc()],
+        ['«Chiudi»', (dialog) => fireEvent.click(dialog.getByRole('button', { name: 'Chiudi' }))],
+      ])('a salvataggio finito si chiude con %s', async (_, close) => {
         const { dialog, pending } = await slowSave();
         pending.resolve(json({ success: true, rest_timer_enabled: true, focus_tools: { technique: false, suggested_weight: true } }));
         await waitFor(() => expect(dialog.getByRole('status').textContent).toBe('Tecnica di intensità: spento'));
         await waitFor(() => expect(dialog.getByRole('button', { name: 'Chiudi' }).getAttribute('aria-disabled')).toBeNull());
-        pressEsc();
-        await closed();
-        fireEvent.click(row());
-        fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Chiudi' }));
+        close(dialog);
         await closed();
       });
 
       it('un interruttore toccato mentre la finestra si chiude non la blocca: riaperta, si chiude', async () => {
-        const pending = deferred();
-        vi.stubGlobal('fetch', vi.fn(() => pending.promise));
-        renderPhase(1);
-        fireEvent.click(row());
-        const dialog = within(await screen.findByRole('dialog'));
+        const { dialog } = await openWithPendingFetch();
         fireEvent.click(dialog.getByRole('button', { name: 'Chiudi' }));
         // La finestra sta sfumando ma è ancora nel documento
-        fireEvent.click(dialog.getByRole('switch', { name: 'Tecnica di intensità' }));
-        await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+        await toggleTechnique(dialog);
         await closed();
         fireEvent.click(row());
         const reopened = within(await screen.findByRole('dialog'));
