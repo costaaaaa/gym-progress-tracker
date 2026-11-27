@@ -17,7 +17,7 @@ const TEXTS = {
 // `notify(messaggio, gravità)` annuncia l'esito (e mostra l'errore). Senza `notify` (dentro una finestra, dove la
 // notifica della pagina non si legge) l'esito sta qui sotto: una regione «status» e una «alert», sempre nel DOM.
 // `onSavingChange(saving)` (facoltativa) è chiamata con true quando comincia il primo salvataggio in corso e con false
-// quando finisce l'ultimo, così chi ospita gli interruttori (una finestra) non si chiude a metà.
+// quando finisce l'ultimo (o il componente si smonta), così chi ospita gli interruttori (una finestra) non si chiude a metà.
 // Usato prima dell'allenamento e in Account.
 const FocusToolsOptions = ({ notify, idPrefix, onSavingChange }) => {
   const { t } = useTranslation();
@@ -33,6 +33,13 @@ const FocusToolsOptions = ({ notify, idPrefix, onSavingChange }) => {
     reportedSaving.current = saving;
     onSavingChange?.(saving);
   }, [saving, onSavingChange]);
+  // Smontato a metà salvataggio (la finestra che lo ospita si è chiusa): chi ascolta non resta su «salvataggio in
+  // corso», altrimenti alla riapertura non si chiuderebbe più
+  useEffect(() => () => {
+    if (!reportedSaving.current) return;
+    reportedSaving.current = false;
+    onSavingChange?.(false);
+  }, [onSavingChange]);
   const announce = (message, severity) => (notify
     ? notify(message, severity)
     : setInline(severity === 'error' ? { status: '', alert: message } : { status: message, alert: '' }));

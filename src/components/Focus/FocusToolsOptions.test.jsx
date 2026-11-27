@@ -185,6 +185,25 @@ describe('onSavingChange', () => {
     expect(onSavingChange.mock.calls).toEqual([[true], [false]]);
   });
 
+  // La finestra che lo ospita può chiudersi (e smontarlo) con un salvataggio partito durante la dissolvenza: chi
+  // ascolta non deve restare su «salvataggio in corso», o alla riapertura non si chiuderebbe più
+  it('smontato a metà salvataggio dice false', async () => {
+    const onSavingChange = vi.fn();
+    slow();
+    const { unmount } = mountInline({ id: 1 }, onSavingChange);
+    fireEvent.click(sw('Tecnica di intensità'));
+    await waitFor(() => expect(onSavingChange).toHaveBeenLastCalledWith(true));
+    unmount();
+    expect(onSavingChange.mock.calls).toEqual([[true], [false]]);
+  });
+
+  it('smontato senza salvataggi in corso non chiama niente', () => {
+    const onSavingChange = vi.fn();
+    const { unmount } = mountInline({ id: 1 }, onSavingChange);
+    unmount();
+    expect(onSavingChange).not.toHaveBeenCalled();
+  });
+
   it('un rifiuto finisce il salvataggio: l\'errore c\'è e arriva false', async () => {
     const onSavingChange = vi.fn();
     settings = () => json({ success: false }, 500);

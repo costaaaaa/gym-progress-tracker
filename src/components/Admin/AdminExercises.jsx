@@ -132,7 +132,7 @@ const AdminExercises = () => {
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState(null);
   const [form, setForm] = useState({ open: false, exercise: null });
-  // Come `form`: l'esercizio resta anche a finestra chiusa, così il testo non si svuota durante la dissolvenza
+  // L'esercizio resta anche a finestra chiusa, così il testo non si svuota durante la dissolvenza
   const [confirmDelete, setConfirmDelete] = useState({ open: false, exercise: null });
 
   const load = useCallback(async () => {

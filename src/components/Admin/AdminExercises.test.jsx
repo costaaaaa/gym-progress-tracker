@@ -187,7 +187,7 @@ describe('AdminExercises · select Attrezzo del form', () => {
 });
 
 describe('AdminExercises · eliminazione', () => {
-  const deleteCalls = () => fetchMock.mock.calls.filter(([, opts]) => opts?.method === 'POST');
+  const postCalls = () => fetchMock.mock.calls.filter(([, opts]) => opts?.method === 'POST');
   const mostra = async () => {
     exercisesFixture = [{ id: 7, name: 'Panca Piana', muscle_group: 'petto', equipment: '', uses: 0 }];
     render(<AdminExercises />);
@@ -204,7 +204,7 @@ describe('AdminExercises · eliminazione', () => {
     elimina();
     expect(dialog().getByText('Eliminare l\'esercizio?')).toBeTruthy();
     expect(dialog().getByText('Vuoi eliminare «Panca Piana»?')).toBeTruthy();
-    expect(deleteCalls()).toHaveLength(0);
+    expect(postCalls()).toHaveLength(0);
     expect(browserConfirm).not.toHaveBeenCalled();
   });
 
@@ -213,7 +213,7 @@ describe('AdminExercises · eliminazione', () => {
     elimina();
     fireEvent.click(dialog().getByRole('button', { name: 'Annulla' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    expect(deleteCalls()).toHaveLength(0);
+    expect(postCalls()).toHaveLength(0);
     expect(screen.getByText('Panca Piana')).toBeTruthy();
     expect(browserConfirm).not.toHaveBeenCalled();
   });
@@ -223,8 +223,8 @@ describe('AdminExercises · eliminazione', () => {
     elimina();
     fireEvent.click(dialog().getByRole('button', { name: 'Elimina' }));
     await waitFor(() => expect(screen.queryByText('Panca Piana')).toBeNull());
-    expect(deleteCalls()).toHaveLength(1);
-    expect(JSON.parse(deleteCalls()[0][1].body)).toEqual({ action: 'delete', id: 7 });
+    expect(postCalls()).toHaveLength(1);
+    expect(JSON.parse(postCalls()[0][1].body)).toEqual({ action: 'delete', id: 7 });
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(browserConfirm).not.toHaveBeenCalled();
   });

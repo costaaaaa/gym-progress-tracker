@@ -1,8 +1,8 @@
 import { screen, within, fireEvent, waitFor } from '@testing-library/react';
 import { expect } from 'vitest';
 
-// Gli aiuti comuni ai test delle righe e delle finestre di «Profilo e preferenze» (ProfilePage.*.test.jsx): la fetch è
-// quella finta del test (`fetch.mock.calls`).
+// Gli aiuti comuni ai test delle righe e delle finestre delle impostazioni («Profilo e preferenze», gli strumenti della
+// serie prima dell'allenamento): la fetch è quella finta del test (`fetch.mock.calls`).
 
 // La riga di un'impostazione (un pulsante) col suo nome
 export const row = (name) => screen.getByRole('button', { name });

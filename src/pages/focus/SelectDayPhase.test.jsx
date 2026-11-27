@@ -174,6 +174,27 @@ describe('riga degli strumenti della serie', () => {
         await waitFor(() => expect(dialog.getByRole('button', { name: 'Chiudi' }).getAttribute('aria-disabled')).toBeNull());
         pressEsc();
         await closed();
+        fireEvent.click(row());
+        fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Chiudi' }));
+        await closed();
+      });
+
+      it('un interruttore toccato mentre la finestra si chiude non la blocca: riaperta, si chiude', async () => {
+        const pending = deferred();
+        vi.stubGlobal('fetch', vi.fn(() => pending.promise));
+        renderPhase(1);
+        fireEvent.click(row());
+        const dialog = within(await screen.findByRole('dialog'));
+        fireEvent.click(dialog.getByRole('button', { name: 'Chiudi' }));
+        // La finestra sta sfumando ma è ancora nel documento
+        fireEvent.click(dialog.getByRole('switch', { name: 'Tecnica di intensità' }));
+        await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+        await closed();
+        fireEvent.click(row());
+        const reopened = within(await screen.findByRole('dialog'));
+        expect(reopened.getByRole('button', { name: 'Chiudi' }).getAttribute('aria-disabled')).toBeNull();
+        fireEvent.click(reopened.getByRole('button', { name: 'Chiudi' }));
+        await closed();
       });
     });
   });
