@@ -7,6 +7,7 @@ import { ThemeModeProvider } from '../../context/ThemeModeContext';
 import i18n from '../../i18n';
 import SelectDayPhase from './SelectDayPhase';
 import { json } from '../../test/dom';
+import { closed, staysOpen, deferred } from '../../test/settingRows';
 
 const account = vi.hoisted(() => ({ user: undefined }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ user: account.user, updateUser: () => {} }) }));
@@ -128,6 +129,75 @@ describe('riga degli strumenti della serie', () => {
       const dialog = await openDialog();
       fireEvent.click(within(dialog).getByRole('switch', { name: 'Peso suggerito' }));
       await waitFor(() => expect(within(dialog).getByRole('alert').textContent).toBe('Errore nel salvataggio. Riprova.'));
+    });
+
+    // Come in Account: con un salvataggio in corso la finestra resta aperta (Esc, «Chiudi»), così l'esito non si perde
+    describe('durante un salvataggio', () => {
+      const pressEsc = () => fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape', code: 'Escape' });
+      // La finestra aperta con la fetch che resta in sospeso finché non si chiama pending.resolve
+      const openWithPendingFetch = async () => {
+        const pending = deferred();
+        vi.stubGlobal('fetch', vi.fn(() => pending.promise));
+        renderPhase(1);
+        // Il fuoco parte dalla riga: se la finestra si chiude, ci torna (è così che staysOpen se ne accorge)
+        row().focus();
+        fireEvent.click(row());
+        return { dialog: within(await screen.findByRole('dialog')), pending };
+      };
+      const toggleTechnique = async (dialog) => {
+        fireEvent.click(dialog.getByRole('switch', { name: 'Tecnica di intensità' }));
+        await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+      };
+      const slowSave = async () => {
+        const opened = await openWithPendingFetch();
+        await toggleTechnique(opened.dialog);
+        return opened;
+      };
+
+      it('Esc e «Chiudi» non la chiudono', async () => {
+        const { dialog } = await slowSave();
+        await waitFor(() => expect(dialog.getByRole('button', { name: 'Chiudi' }).getAttribute('aria-disabled')).toBe('true'));
+        pressEsc();
+        fireEvent.click(dialog.getByRole('button', { name: 'Chiudi' }));
+        staysOpen();
+      });
+
+      it('arriva un rifiuto: l\'errore si legge nella finestra, poi si può chiudere', async () => {
+        const { dialog, pending } = await slowSave();
+        pressEsc();
+        staysOpen();
+        pending.resolve(json({ success: false }, 500));
+        await waitFor(() => expect(dialog.getByRole('alert').textContent).toBe('Errore nel salvataggio. Riprova.'));
+        await waitFor(() => expect(dialog.getByRole('button', { name: 'Chiudi' }).getAttribute('aria-disabled')).toBeNull());
+        staysOpen();
+        fireEvent.click(dialog.getByRole('button', { name: 'Chiudi' }));
+        await closed();
+      });
+
+      it.each([
+        ['Esc', () => pressEsc()],
+        ['«Chiudi»', (dialog) => fireEvent.click(dialog.getByRole('button', { name: 'Chiudi' }))],
+      ])('a salvataggio finito si chiude con %s', async (_, close) => {
+        const { dialog, pending } = await slowSave();
+        pending.resolve(json({ success: true, rest_timer_enabled: true, focus_tools: { technique: false, suggested_weight: true } }));
+        await waitFor(() => expect(dialog.getByRole('status').textContent).toBe('Tecnica di intensità: spento'));
+        await waitFor(() => expect(dialog.getByRole('button', { name: 'Chiudi' }).getAttribute('aria-disabled')).toBeNull());
+        close(dialog);
+        await closed();
+      });
+
+      it('un interruttore toccato mentre la finestra si chiude non la blocca: riaperta, si chiude', async () => {
+        const { dialog } = await openWithPendingFetch();
+        fireEvent.click(dialog.getByRole('button', { name: 'Chiudi' }));
+        // La finestra sta sfumando ma è ancora nel documento
+        await toggleTechnique(dialog);
+        await closed();
+        fireEvent.click(row());
+        const reopened = within(await screen.findByRole('dialog'));
+        expect(reopened.getByRole('button', { name: 'Chiudi' }).getAttribute('aria-disabled')).toBeNull();
+        fireEvent.click(reopened.getByRole('button', { name: 'Chiudi' }));
+        await closed();
+      });
     });
   });
 });

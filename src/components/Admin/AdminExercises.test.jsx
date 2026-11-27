@@ -2,7 +2,7 @@
 // obbligatorio (5 opzioni), con "glutei" si scegie tra glutei (default) e abduttori,
 // gli altri gruppi non mostrano la select (il server lo deriva da solo).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, act, within } from '@testing-library/react';
+import { render, screen, fireEvent, act, within, waitFor } from '@testing-library/react';
 import AdminExercises from './AdminExercises';
 import i18n from '../../i18n';
 import { json } from '../../test/dom';
@@ -183,5 +183,49 @@ describe('AdminExercises · select Attrezzo del form', () => {
     expect(screen.getByRole('option', { name: 'Bodyweight' })).toBeTruthy();
     expect(screen.getByRole('option', { name: 'Barbell' })).toBeTruthy();
     expect(screen.queryByRole('option', { name: 'Corpo libero' })).toBeNull();
+  });
+});
+
+describe('AdminExercises · eliminazione', () => {
+  const postCalls = () => fetchMock.mock.calls.filter(([, opts]) => opts?.method === 'POST');
+  const mostra = async () => {
+    exercisesFixture = [{ id: 7, name: 'Panca Piana', muscle_group: 'petto', equipment: '', uses: 0 }];
+    render(<AdminExercises />);
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+  };
+  const elimina = () => fireEvent.click(screen.getByRole('button', { name: 'Elimina' }));
+  const dialog = () => within(screen.getByRole('dialog'));
+  let browserConfirm;
+  beforeEach(() => { browserConfirm = vi.spyOn(window, 'confirm').mockReturnValue(true); });
+  afterEach(() => browserConfirm.mockRestore());
+
+  it('«Elimina» apre la finestra dell\'app col nome dell\'esercizio e non chiama il server', async () => {
+    await mostra();
+    elimina();
+    expect(dialog().getByText('Eliminare l\'esercizio?')).toBeTruthy();
+    expect(dialog().getByText('Vuoi eliminare «Panca Piana»?')).toBeTruthy();
+    expect(postCalls()).toHaveLength(0);
+    expect(browserConfirm).not.toHaveBeenCalled();
+  });
+
+  it('«Annulla» chiude senza eliminare: la riga resta', async () => {
+    await mostra();
+    elimina();
+    fireEvent.click(dialog().getByRole('button', { name: 'Annulla' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(postCalls()).toHaveLength(0);
+    expect(screen.getByText('Panca Piana')).toBeTruthy();
+    expect(browserConfirm).not.toHaveBeenCalled();
+  });
+
+  it('la conferma elimina e toglie la riga', async () => {
+    await mostra();
+    elimina();
+    fireEvent.click(dialog().getByRole('button', { name: 'Elimina' }));
+    await waitFor(() => expect(screen.queryByText('Panca Piana')).toBeNull());
+    expect(postCalls()).toHaveLength(1);
+    expect(JSON.parse(postCalls()[0][1].body)).toEqual({ action: 'delete', id: 7 });
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(browserConfirm).not.toHaveBeenCalled();
   });
 });

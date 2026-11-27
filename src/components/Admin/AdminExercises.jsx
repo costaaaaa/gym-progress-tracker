@@ -4,6 +4,7 @@ import {
   MenuItem, TextField, ToggleButton, ToggleButtonGroup, Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import ConfirmDialog from '../ConfirmDialog';
 import { adminExerciseAction, errorMessage, listAdminExercises } from '../../api/exercises';
 import { rankExerciseMatches } from '../../utils/exerciseCatalog';
 import { equipmentName } from '../../i18n/labels';
@@ -131,6 +132,8 @@ const AdminExercises = () => {
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState(null);
   const [form, setForm] = useState({ open: false, exercise: null });
+  // L'esercizio resta anche a finestra chiusa, così il testo non si svuota durante la dissolvenza
+  const [confirmDelete, setConfirmDelete] = useState({ open: false, exercise: null });
 
   const load = useCallback(async () => {
     setExercises(null);
@@ -149,7 +152,6 @@ const AdminExercises = () => {
   useEffect(() => { load(); }, [load]);
 
   const act = async (action, exercise) => {
-    if (action === 'delete' && !window.confirm(`Eliminare «${exercise.name}»?`)) return;
     setBusyId(exercise.id);
     setError('');
     const res = await adminExerciseAction(action, { id: exercise.id });
@@ -223,12 +225,21 @@ const AdminExercises = () => {
                 )}
                 <Button size="small" color="error" disabled={busyId === e.id || e.uses > 0}
                   title={e.uses > 0 ? 'È usato in schede o allenamenti' : undefined}
-                  onClick={() => act('delete', e)}>Elimina</Button>
+                  onClick={() => setConfirmDelete({ open: true, exercise: e })}>Elimina</Button>
               </Box>
             </Box>
           ))}
         </Box>
       )}
+
+      <ConfirmDialog
+        open={confirmDelete.open}
+        title="Eliminare l'esercizio?"
+        text={`Vuoi eliminare «${confirmDelete.exercise?.name}»?`}
+        cta="Elimina"
+        onConfirm={() => { setConfirmDelete((c) => ({ ...c, open: false })); act('delete', confirmDelete.exercise); }}
+        onClose={() => setConfirmDelete((c) => ({ ...c, open: false }))}
+      />
 
       <ExerciseFormDialog
         open={form.open}

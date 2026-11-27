@@ -32,7 +32,10 @@ Pagine (file `<nome>_<390|1440>_<light|dark>.png`): `landing` (ospite), `home`, 
 `allenamenti-cronologia` (elenco con due mesi: un allenamento con giorno della scheda e record, uno senza giorno, uno senza durata),
 `storico-allenamento` (pagina di un allenamento), `storico-allenamento-elimina` (la stessa con la conferma aperta),
 `storico-calendario` (vista «Calendario»: ottobre con tre giorni allenati e il 22 scelto, col suo allenamento), `storico-calendario-vuoto` (il giorno scelto, oggi, senza allenamenti), `admin` (utente con `is_admin`),
-`focus-scelta-giorno`, `focus-allenamento`, `focus-recupero`, `focus-riscaldamento`, `focus-riepilogo`.
+`focus-scelta-giorno`, `focus-allenamento`, `focus-recupero`, `focus-riscaldamento`, `focus-riepilogo`,
+`email-striscia` (home con la striscia «Conferma la tua email», 5 giorni alla scadenza), `email-blocco` (home con la schermata di blocco, scadenza passata),
+`email-account-da-confermare`, `email-account-confermata` e `email-account-cambio-in-attesa` (la pagina «Profilo e preferenze» con la riga «Email» nei tre stati),
+`email-dialogo-conferma` (la finestra del codice, aperta dal promemoria in home) ed `email-dialogo-cambia-indirizzo` (la finestra «Cambia indirizzo email», aperta dalla riga «Email»).
 
 Piano Gratis (account finto con `tier: free`, tetti di 2 schede e 4 giorni, risposta `dashboard` ridotta):
 `home-gratis`, `volume-gratis` (tab Volume con le righe con lucchetto), `allenamenti-piani-sola-lettura-schede` (elenco con l'avviso), `allenamenti-piani-sola-lettura-giorni` (pagina in modifica con l'avviso),

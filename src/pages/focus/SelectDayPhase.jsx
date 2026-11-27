@@ -25,6 +25,9 @@ export default function SelectDayPhase({
   const { colors } = useFocusColors();
   const { user } = useAuth();
   const [toolsOpen, setToolsOpen] = useState(false);
+  // Gli interruttori salvano da soli: con un salvataggio in corso la finestra resta aperta, così l'esito non si perde
+  const [toolsSaving, setToolsSaving] = useState(false);
+  const closeTools = () => { if (!toolsSaving) setToolsOpen(false); };
   // Frecce come in un gruppo di opzioni: scelgono il giorno accanto (con giro) e gli portano il fuoco
   const moveDay = (event) => {
     const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
@@ -182,14 +185,15 @@ export default function SelectDayPhase({
               <ChevronRightIcon aria-hidden sx={{ fontSize: 20, flexShrink: 0, color: colors.textSecondary }} />
             </ButtonBase>
 
-            <Dialog open={toolsOpen} onClose={() => setToolsOpen(false)} fullWidth maxWidth="xs" aria-labelledby="focus-tools-title"
+            <Dialog open={toolsOpen} onClose={closeTools} fullWidth maxWidth="xs" aria-labelledby="focus-tools-title"
               PaperProps={{ sx: { bgcolor: colors.bgCard, color: colors.text, borderRadius: radius.xxl } }}>
               <DialogTitle id="focus-tools-title" sx={{ color: colors.text }}>{t('focus.tools.title')}</DialogTitle>
               <DialogContent>
-                <FocusToolsOptions idPrefix="focus-tools-dialog" />
+                <FocusToolsOptions idPrefix="focus-tools-dialog" onSavingChange={setToolsSaving} />
               </DialogContent>
               <DialogActions>
-                <Button onClick={() => setToolsOpen(false)} sx={{ color: colors.text, minHeight: 44 }}>{t('common.close')}</Button>
+                {/* Come in Account: aria-disabled e non disabled, che farebbe perdere il fuoco */}
+                <Button onClick={closeTools} aria-disabled={toolsSaving || undefined} sx={{ color: colors.text, minHeight: 44 }}>{t('common.close')}</Button>
               </DialogActions>
             </Dialog>
           </>
