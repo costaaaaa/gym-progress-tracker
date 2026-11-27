@@ -7,6 +7,7 @@ import { ThemeModeProvider } from '../../context/ThemeModeContext';
 import i18n from '../../i18n';
 import SelectDayPhase from './SelectDayPhase';
 import { json } from '../../test/dom';
+import { closed, staysOpen, deferred } from '../../test/settingRows';
 
 const account = vi.hoisted(() => ({ user: undefined }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ user: account.user, updateUser: () => {} }) }));
@@ -128,6 +129,52 @@ describe('riga degli strumenti della serie', () => {
       const dialog = await openDialog();
       fireEvent.click(within(dialog).getByRole('switch', { name: 'Peso suggerito' }));
       await waitFor(() => expect(within(dialog).getByRole('alert').textContent).toBe('Errore nel salvataggio. Riprova.'));
+    });
+
+    // Come in Account: con un salvataggio in corso la finestra resta aperta (Esc, «Chiudi»), così l'esito non si perde
+    describe('durante un salvataggio', () => {
+      const pressEsc = () => fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape', code: 'Escape' });
+      const slowSave = async () => {
+        const pending = deferred();
+        vi.stubGlobal('fetch', vi.fn(() => pending.promise));
+        renderPhase(1);
+        // Il fuoco parte dalla riga: se la finestra si chiude, ci torna (è così che staysOpen se ne accorge)
+        row().focus();
+        fireEvent.click(row());
+        const dialog = within(await screen.findByRole('dialog'));
+        fireEvent.click(dialog.getByRole('switch', { name: 'Tecnica di intensità' }));
+        await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+        return { dialog, pending };
+      };
+
+      it('Esc e «Chiudi» non la chiudono', async () => {
+        const { dialog } = await slowSave();
+        await waitFor(() => expect(dialog.getByRole('button', { name: 'Chiudi' }).getAttribute('aria-disabled')).toBe('true'));
+        pressEsc();
+        fireEvent.click(dialog.getByRole('button', { name: 'Chiudi' }));
+        staysOpen();
+      });
+
+      it('arriva un rifiuto: l\'errore si legge nella finestra, poi si può chiudere', async () => {
+        const { dialog, pending } = await slowSave();
+        pressEsc();
+        staysOpen();
+        pending.resolve(json({ success: false }, 500));
+        await waitFor(() => expect(dialog.getByRole('alert').textContent).toBe('Errore nel salvataggio. Riprova.'));
+        await waitFor(() => expect(dialog.getByRole('button', { name: 'Chiudi' }).getAttribute('aria-disabled')).toBeNull());
+        staysOpen();
+        fireEvent.click(dialog.getByRole('button', { name: 'Chiudi' }));
+        await closed();
+      });
+
+      it('a salvataggio finito si chiude con Esc e «Chiudi»', async () => {
+        const { dialog, pending } = await slowSave();
+        pending.resolve(json({ success: true, rest_timer_enabled: true, focus_tools: { technique: false, suggested_weight: true } }));
+        await waitFor(() => expect(dialog.getByRole('status').textContent).toBe('Tecnica di intensità: spento'));
+        await waitFor(() => expect(dialog.getByRole('button', { name: 'Chiudi' }).getAttribute('aria-disabled')).toBeNull());
+        pressEsc();
+        await closed();
+      });
     });
   });
 });
